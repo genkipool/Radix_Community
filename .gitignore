@@ -41,3 +41,6 @@ lint_output.txt
 lint_results.txt
 events_dump.json
 .npmrc
+
+# wrangler
+wrangler.toml
