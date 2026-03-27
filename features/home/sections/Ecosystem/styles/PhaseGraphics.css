@@ -1,0 +1,2381 @@
+.radix-svg {
+    cursor: default;
+}
+
+.hitbox {
+    cursor: pointer;
+    pointer-events: all;
+}
+
+/* Animations that were embedded in SVG */
+.phase {
+    opacity: 0.45;
+    transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.status-text {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.title-main {
+    font-size: 42px;
+    font-weight: 800;
+    fill: var(--color-text-main);
+    letter-spacing: -1px;
+}
+
+.subtitle {
+    font-size: 18px;
+    font-weight: 500;
+    fill: var(--color-text-muted);
+}
+
+.card-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    fill: var(--color-text-main);
+    text-transform: uppercase;
+}
+
+.inner-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    fill: var(--color-text-main);
+}
+
+.desc-text {
+    font-size: 12px;
+    fill: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.code {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    fill: var(--color-text-muted);
+}
+
+/* Syntax highlighting map */
+.kw {
+    fill: var(--color-primary);
+    font-weight: 600;
+}
+
+.fn {
+    fill: var(--color-secondary);
+}
+
+.str {
+    fill: var(--color-accent);
+}
+
+.var {
+    fill: var(--color-primary);
+}
+
+
+.ph1 {
+    animation: h1 128s infinite;
+}
+
+.ph2 {
+    animation: h2 128s infinite;
+}
+
+.ph3 {
+    animation: h3 128s infinite;
+}
+
+.ph4 {
+    animation: h4 128s infinite;
+}
+
+.ph5 {
+    animation: h5 128s infinite;
+}
+
+.ph6 {
+    animation: h6 128s infinite;
+}
+
+.ph7 {
+    animation: h7 128s infinite;
+}
+
+.ph8 {
+    animation: h8 128s infinite;
+}
+
+.ph9 {
+    animation: h9 128s infinite;
+}
+
+.ph10 {
+    animation: h10 128s infinite;
+}
+
+.ph11 {
+    animation: h11 128s infinite;
+}
+
+.ph12 {
+    animation: h12 128s infinite;
+}
+
+.ph13 {
+    animation: h13 128s infinite;
+}
+
+.ph14 {
+    animation: h14 128s infinite;
+}
+
+.ph15 {
+    animation: h15 128s infinite;
+}
+
+.ph16 {
+    animation: h16 128s infinite;
+}
+
+.ph17 {
+    animation: h17 128s infinite;
+}
+
+.ph18 {
+    animation: h18 128s infinite;
+}
+
+.ph19 {
+    animation: h19 128s infinite;
+}
+
+.ph20 {
+    animation: h20 128s infinite;
+}
+
+.ph21 {
+    animation: h21 128s infinite;
+}
+
+.ph22 {
+    animation: h22 128s infinite;
+}
+
+.ph23 {
+    animation: h23 128s infinite;
+}
+
+.ph24 {
+    animation: h24 128s infinite;
+}
+
+.ph25 {
+    animation: h25 128s infinite;
+}
+
+.ph26 {
+    animation: h26 128s infinite;
+}
+
+.ph27 {
+    animation: h27 128s infinite;
+}
+
+.ph28 {
+    animation: h28 128s infinite;
+}
+
+.ph29 {
+    animation: h29 128s infinite;
+}
+
+.ph30 {
+    animation: h30 128s infinite;
+}
+
+.ph31 {
+    animation: h31 128s infinite;
+}
+
+.ph32 {
+    animation: h32 128s infinite;
+}
+
+/* Clean elegant fade highlight overrides, devoid of dropshadow/neon effects */
+@keyframes h1 {
+
+    0%,
+    2.9% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    3.1%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h2 {
+
+    0%,
+    3.0% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    3.1%,
+    6.0% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    6.2%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h3 {
+
+    0%,
+    6.1% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    6.2%,
+    9.1% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    9.3%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h4 {
+
+    0%,
+    9.2% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    9.3%,
+    12.2% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    12.5%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h5 {
+
+    0%,
+    12.4% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    12.5%,
+    15.4% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    15.6%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h6 {
+
+    0%,
+    15.5% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    15.6%,
+    18.5% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    18.7%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h7 {
+
+    0%,
+    18.6% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    18.7%,
+    21.6% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    21.8%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h8 {
+
+    0%,
+    21.7% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    21.8%,
+    24.7% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    25.0%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h9 {
+
+    0%,
+    24.9% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    25.0%,
+    27.9% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    28.1%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h10 {
+
+    0%,
+    28.0% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    28.1%,
+    31.0% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    31.2%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h11 {
+
+    0%,
+    31.1% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    31.2%,
+    34.1% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    34.3%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h12 {
+
+    0%,
+    34.2% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    34.3%,
+    37.2% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    37.5%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h13 {
+
+    0%,
+    37.4% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    37.5%,
+    40.4% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    40.6%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h14 {
+
+    0%,
+    40.5% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    40.6%,
+    43.5% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    43.7%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h15 {
+
+    0%,
+    43.6% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    43.7%,
+    46.6% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    46.8%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h16 {
+
+    0%,
+    46.7% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    46.8%,
+    49.7% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    50.0%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h17 {
+
+    0%,
+    49.9% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    50.0%,
+    52.9% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    53.1%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h18 {
+
+    0%,
+    53.0% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    53.1%,
+    56.0% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    56.2%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h19 {
+
+    0%,
+    56.1% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    56.2%,
+    59.1% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    59.3%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h20 {
+
+    0%,
+    59.2% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    59.3%,
+    62.2% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    62.5%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h21 {
+
+    0%,
+    62.4% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    62.5%,
+    65.4% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    65.6%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h22 {
+
+    0%,
+    65.5% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    65.6%,
+    68.5% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    68.7%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h23 {
+
+    0%,
+    68.6% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    68.7%,
+    71.6% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    71.8%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h24 {
+
+    0%,
+    71.7% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    71.8%,
+    74.7% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    75.0%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h25 {
+
+    0%,
+    74.9% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    75.0%,
+    77.9% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    78.1%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h26 {
+
+    0%,
+    78.0% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    78.1%,
+    81.0% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    81.2%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h27 {
+
+    0%,
+    81.1% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    81.2%,
+    84.1% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    84.3%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h28 {
+
+    0%,
+    84.2% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    84.3%,
+    87.2% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    87.5%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h29 {
+
+    0%,
+    87.4% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    87.5%,
+    90.4% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    90.6%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h30 {
+
+    0%,
+    90.5% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    90.6%,
+    93.5% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    93.7%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h31 {
+
+    0%,
+    93.6% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    93.7%,
+    96.6% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+
+    96.8%,
+    100% {
+        opacity: 0.45;
+        filter: none;
+    }
+}
+
+@keyframes h32 {
+
+    0%,
+    96.7% {
+        opacity: 0.45;
+        filter: none;
+    }
+
+    96.8%,
+    100% {
+        opacity: 1;
+        filter: brightness(1.1);
+    }
+}
+
+.s1 {
+    animation: t1 128s infinite;
+}
+
+.s2 {
+    animation: t2 128s infinite;
+}
+
+.s3 {
+    animation: t3 128s infinite;
+}
+
+.s4 {
+    animation: t4 128s infinite;
+}
+
+.s5 {
+    animation: t5 128s infinite;
+}
+
+.s6 {
+    animation: t6 128s infinite;
+}
+
+.s7 {
+    animation: t7 128s infinite;
+}
+
+.s8 {
+    animation: t8 128s infinite;
+}
+
+.s9 {
+    animation: t9 128s infinite;
+}
+
+.s10 {
+    animation: t10 128s infinite;
+}
+
+.s11 {
+    animation: t11 128s infinite;
+}
+
+.s12 {
+    animation: t12 128s infinite;
+}
+
+.s13 {
+    animation: t13 128s infinite;
+}
+
+.s14 {
+    animation: t14 128s infinite;
+}
+
+.s15 {
+    animation: t15 128s infinite;
+}
+
+.s16 {
+    animation: t16 128s infinite;
+}
+
+.s17 {
+    animation: t17 128s infinite;
+}
+
+.s18 {
+    animation: t18 128s infinite;
+}
+
+.s19 {
+    animation: t19 128s infinite;
+}
+
+.s20 {
+    animation: t20 128s infinite;
+}
+
+.s21 {
+    animation: t21 128s infinite;
+}
+
+.s22 {
+    animation: t22 128s infinite;
+}
+
+.s23 {
+    animation: t23 128s infinite;
+}
+
+.s24 {
+    animation: t24 128s infinite;
+}
+
+.s25 {
+    animation: t25 128s infinite;
+}
+
+.s26 {
+    animation: t26 128s infinite;
+}
+
+.s27 {
+    animation: t27 128s infinite;
+}
+
+.s28 {
+    animation: t28 128s infinite;
+}
+
+.s29 {
+    animation: t29 128s infinite;
+}
+
+.s30 {
+    animation: t30 128s infinite;
+}
+
+.s31 {
+    animation: t31 128s infinite;
+}
+
+.s32 {
+    animation: t32 128s infinite;
+}
+
+@keyframes t1 {
+
+    0%,
+    2.9% {
+        opacity: 1;
+    }
+
+    3.1%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t2 {
+
+    0%,
+    3.0% {
+        opacity: 0;
+    }
+
+    3.1%,
+    6.0% {
+        opacity: 1;
+    }
+
+    6.2%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t3 {
+
+    0%,
+    6.1% {
+        opacity: 0;
+    }
+
+    6.2%,
+    9.1% {
+        opacity: 1;
+    }
+
+    9.3%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t4 {
+
+    0%,
+    9.2% {
+        opacity: 0;
+    }
+
+    9.3%,
+    12.2% {
+        opacity: 1;
+    }
+
+    12.5%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t5 {
+
+    0%,
+    12.4% {
+        opacity: 0;
+    }
+
+    12.5%,
+    15.4% {
+        opacity: 1;
+    }
+
+    15.6%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t6 {
+
+    0%,
+    15.5% {
+        opacity: 0;
+    }
+
+    15.6%,
+    18.5% {
+        opacity: 1;
+    }
+
+    18.7%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t7 {
+
+    0%,
+    18.6% {
+        opacity: 0;
+    }
+
+    18.7%,
+    21.6% {
+        opacity: 1;
+    }
+
+    21.8%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t8 {
+
+    0%,
+    21.7% {
+        opacity: 0;
+    }
+
+    21.8%,
+    24.7% {
+        opacity: 1;
+    }
+
+    25.0%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t9 {
+
+    0%,
+    24.9% {
+        opacity: 0;
+    }
+
+    25.0%,
+    27.9% {
+        opacity: 1;
+    }
+
+    28.1%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t10 {
+
+    0%,
+    28.0% {
+        opacity: 0;
+    }
+
+    28.1%,
+    31.0% {
+        opacity: 1;
+    }
+
+    31.2%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t11 {
+
+    0%,
+    31.1% {
+        opacity: 0;
+    }
+
+    31.2%,
+    34.1% {
+        opacity: 1;
+    }
+
+    34.3%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t12 {
+
+    0%,
+    34.2% {
+        opacity: 0;
+    }
+
+    34.3%,
+    37.2% {
+        opacity: 1;
+    }
+
+    37.5%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t13 {
+
+    0%,
+    37.4% {
+        opacity: 0;
+    }
+
+    37.5%,
+    40.4% {
+        opacity: 1;
+    }
+
+    40.6%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t14 {
+
+    0%,
+    40.5% {
+        opacity: 0;
+    }
+
+    40.6%,
+    43.5% {
+        opacity: 1;
+    }
+
+    43.7%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t15 {
+
+    0%,
+    43.6% {
+        opacity: 0;
+    }
+
+    43.7%,
+    46.6% {
+        opacity: 1;
+    }
+
+    46.8%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t16 {
+
+    0%,
+    46.7% {
+        opacity: 0;
+    }
+
+    46.8%,
+    49.7% {
+        opacity: 1;
+    }
+
+    50.0%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t17 {
+
+    0%,
+    49.9% {
+        opacity: 0;
+    }
+
+    50.0%,
+    52.9% {
+        opacity: 1;
+    }
+
+    53.1%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t18 {
+
+    0%,
+    53.0% {
+        opacity: 0;
+    }
+
+    53.1%,
+    56.0% {
+        opacity: 1;
+    }
+
+    56.2%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t19 {
+
+    0%,
+    56.1% {
+        opacity: 0;
+    }
+
+    56.2%,
+    59.1% {
+        opacity: 1;
+    }
+
+    59.3%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t20 {
+
+    0%,
+    59.2% {
+        opacity: 0;
+    }
+
+    59.3%,
+    62.2% {
+        opacity: 1;
+    }
+
+    62.5%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t21 {
+
+    0%,
+    62.4% {
+        opacity: 0;
+    }
+
+    62.5%,
+    65.4% {
+        opacity: 1;
+    }
+
+    65.6%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t22 {
+
+    0%,
+    65.5% {
+        opacity: 0;
+    }
+
+    65.6%,
+    68.5% {
+        opacity: 1;
+    }
+
+    68.7%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t23 {
+
+    0%,
+    68.6% {
+        opacity: 0;
+    }
+
+    68.7%,
+    71.6% {
+        opacity: 1;
+    }
+
+    71.8%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t24 {
+
+    0%,
+    71.7% {
+        opacity: 0;
+    }
+
+    71.8%,
+    74.7% {
+        opacity: 1;
+    }
+
+    75.0%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t25 {
+
+    0%,
+    74.9% {
+        opacity: 0;
+    }
+
+    75.0%,
+    77.9% {
+        opacity: 1;
+    }
+
+    78.1%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t26 {
+
+    0%,
+    78.0% {
+        opacity: 0;
+    }
+
+    78.1%,
+    81.0% {
+        opacity: 1;
+    }
+
+    81.2%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t27 {
+
+    0%,
+    81.1% {
+        opacity: 0;
+    }
+
+    81.2%,
+    84.1% {
+        opacity: 1;
+    }
+
+    84.3%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t28 {
+
+    0%,
+    84.2% {
+        opacity: 0;
+    }
+
+    84.3%,
+    87.2% {
+        opacity: 1;
+    }
+
+    87.5%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t29 {
+
+    0%,
+    87.4% {
+        opacity: 0;
+    }
+
+    87.5%,
+    90.4% {
+        opacity: 1;
+    }
+
+    90.6%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t30 {
+
+    0%,
+    90.5% {
+        opacity: 0;
+    }
+
+    90.6%,
+    93.5% {
+        opacity: 1;
+    }
+
+    93.7%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t31 {
+
+    0%,
+    93.6% {
+        opacity: 0;
+    }
+
+    93.7%,
+    96.6% {
+        opacity: 1;
+    }
+
+    96.8%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes t32 {
+
+    0%,
+    96.7% {
+        opacity: 0;
+    }
+
+    96.8%,
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Animated Continuous Progress Bar */
+.radix-svg:not(.has-hover):not(.click-active) .prog-bar {
+    animation: fillBar 128s linear infinite;
+}
+
+@keyframes fillBar {
+    0% {
+        width: 0px;
+    }
+
+    100% {
+        width: 1520px;
+    }
+}
+
+/* HOVER & CLICK INTERACTIVITY OVERRIDES */
+.radix-svg.is-paused * {
+    animation-play-state: paused !important;
+}
+
+.radix-svg.has-hover .phase {
+    opacity: 0.45 !important;
+    filter: none !important;
+    animation: none !important;
+}
+
+.radix-svg.has-hover .status-text {
+    opacity: 0 !important;
+    animation: none !important;
+}
+
+.radix-svg.has-hover .prog-bar {
+    animation: none !important;
+    transition: width 0.2s ease-out;
+}
+
+/* Highlighting hovered cards */
+.radix-svg.hover-ph1 .ph1 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph2 .ph2 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph3 .ph3 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph4 .ph4 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph5 .ph5 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph6 .ph6 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph7 .ph7 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph8 .ph8 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph9 .ph9 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph10 .ph10 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph11 .ph11 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph12 .ph12 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph13 .ph13 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph14 .ph14 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph15 .ph15 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph16 .ph16 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph17 .ph17 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph18 .ph18 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph19 .ph19 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph20 .ph20 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph21 .ph21 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph22 .ph22 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph23 .ph23 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph24 .ph24 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph25 .ph25 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph26 .ph26 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph27 .ph27 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph28 .ph28 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph29 .ph29 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph30 .ph30 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph31 .ph31 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+.radix-svg.hover-ph32 .ph32 {
+    opacity: 1 !important;
+    filter: brightness(1.2) !important;
+}
+
+/* Reveal only active text */
+.radix-svg.hover-ph1 .s1 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph2 .s2 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph3 .s3 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph4 .s4 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph5 .s5 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph6 .s6 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph7 .s7 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph8 .s8 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph9 .s9 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph10 .s10 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph11 .s11 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph12 .s12 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph13 .s13 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph14 .s14 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph15 .s15 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph16 .s16 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph17 .s17 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph18 .s18 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph19 .s19 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph20 .s20 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph21 .s21 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph22 .s22 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph23 .s23 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph24 .s24 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph25 .s25 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph26 .s26 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph27 .s27 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph28 .s28 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph29 .s29 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph30 .s30 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph31 .s31 {
+    opacity: 1 !important;
+}
+
+.radix-svg.hover-ph32 .s32 {
+    opacity: 1 !important;
+}
+
+/* Set progress bar width based on 47.5px increments (1520 / 32) */
+.radix-svg.hover-ph1 .prog-bar {
+    width: 47.5px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph2 .prog-bar {
+    width: 95px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph3 .prog-bar {
+    width: 142.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph4 .prog-bar {
+    width: 190px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph5 .prog-bar {
+    width: 237.5px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph6 .prog-bar {
+    width: 285px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph7 .prog-bar {
+    width: 332.5px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph8 .prog-bar {
+    width: 380px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph9 .prog-bar {
+    width: 427.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph10 .prog-bar {
+    width: 475px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph11 .prog-bar {
+    width: 522.5px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph12 .prog-bar {
+    width: 570px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph13 .prog-bar {
+    width: 617.5px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph14 .prog-bar {
+    width: 665px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph15 .prog-bar {
+    width: 712.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph16 .prog-bar {
+    width: 760px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph17 .prog-bar {
+    width: 807.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph18 .prog-bar {
+    width: 855px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph19 .prog-bar {
+    width: 902.5px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph20 .prog-bar {
+    width: 950px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph21 .prog-bar {
+    width: 997.5px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph22 .prog-bar {
+    width: 1045px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph23 .prog-bar {
+    width: 1092.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph24 .prog-bar {
+    width: 1140px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph25 .prog-bar {
+    width: 1187.5px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph26 .prog-bar {
+    width: 1235px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph27 .prog-bar {
+    width: 1282.5px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph28 .prog-bar {
+    width: 1330px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph29 .prog-bar {
+    width: 1377.5px !important;
+    fill: var(--color-accent) !important;
+}
+
+.radix-svg.hover-ph30 .prog-bar {
+    width: 1425px !important;
+    fill: var(--color-secondary) !important;
+}
+
+.radix-svg.hover-ph31 .prog-bar {
+    width: 1472.5px !important;
+    fill: var(--color-primary) !important;
+}
+
+.radix-svg.hover-ph32 .prog-bar {
+    width: 1520px !important;
+    fill: var(--color-secondary) !important;
+}
+
+/* Click Active Override */
+.radix-svg.click-active .phase {
+    opacity: 1 !important;
+    filter: none !important;
+    animation: none !important;
+}
+
+.radix-svg.click-active .prog-bar {
+    width: 1520px !important;
+    fill: var(--color-secondary) !important;
+    animation: none !important;
+}
+
+.radix-svg.click-active .s32 {
+    opacity: 1 !important;
+}
+
+.radix-svg.click-active .status-text:not(.s32) {
+    opacity: 0 !important;
+}
+
+/* CUSTOM INTERNAL DRAWING ANIMATIONS */
+/* ── GPU compositing note ──────────────────────────────────────────────────
+   `stroke-dashoffset` is not a compositable CSS property (Chrome/Lighthouse
+   will flag it). The combination of `will-change: stroke-dashoffset` +
+   `backface-visibility: hidden` + `transform: translateZ(0)` promotes each
+   animated element to its own GPU layer, allowing the browser to animate
+   these elements without triggering a full main-thread repaint.
+   ──────────────────────────────────────────────────────────────────────── */
+.draw-swift {
+    stroke-dasharray: 4 4;
+    animation: swiftFlow 2s linear infinite;
+    will-change: stroke-dashoffset;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+@keyframes swiftFlow {
+    to {
+        stroke-dashoffset: -8;
+    }
+}
+
+.draw-leak {
+    animation: leak 2.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes leak {
+    0% {
+        transform: translateY(0);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    80% {
+        transform: translateY(25px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(35px);
+        opacity: 0;
+    }
+}
+
+.draw-bucket {
+    animation: buckTransit 3.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes buckTransit {
+
+    0%,
+    10% {
+        transform: translateX(0);
+    }
+
+    45%,
+    55% {
+        transform: translateX(95px);
+    }
+
+    90%,
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.draw-float {
+    animation: float-svg 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes float-svg {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.draw-pulse {
+    animation: pulseS 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+@keyframes pulseS {
+    0% {
+        transform: scale(0.97);
+        filter: brightness(1);
+    }
+
+    100% {
+        transform: scale(1.06);
+        filter: brightness(1.2);
+    }
+}
+
+.draw-spin {
+    animation: spin 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.draw-lane1 {
+    animation: dropL 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.draw-lane2 {
+    animation: dropL 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes dropL {
+    0% {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+}
+
+.draw-swap1 {
+    animation: sw1 2.5s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+
+.draw-swap2 {
+    animation: sw2 2.5s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+}
+
+@keyframes sw1 {
+
+    0%,
+    15% {
+        transform: translateX(0);
+    }
+
+    85%,
+    100% {
+        transform: translateX(110px);
+    }
+}
+
+@keyframes sw2 {
+
+    0%,
+    15% {
+        transform: translateX(0);
+    }
+
+    85%,
+    100% {
+        transform: translateX(-110px);
+    }
+}
+
+.draw-chart {
+    stroke-dasharray: 300;
+    animation: chartGrow 3s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    will-change: stroke-dashoffset;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+@keyframes chartGrow {
+    0% {
+        stroke-dashoffset: 300;
+    }
+
+    70%,
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.draw-mesh {
+    animation: meshPulse 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+@keyframes meshPulse {
+    0% {
+        opacity: 0.5;
+        filter: blur(1px);
+    }
+
+    100% {
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+.draw-wave1 {
+    animation: wave1 4s linear infinite;
+    will-change: stroke-dashoffset;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.draw-wave2 {
+    animation: wave2 4s linear infinite;
+    will-change: stroke-dashoffset;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+@keyframes wave1 {
+    to {
+        stroke-dashoffset: -40;
+    }
+}
+
+@keyframes wave2 {
+    to {
+        stroke-dashoffset: 40;
+    }
+}
+
+.draw-magnify {
+    animation: panGlass 4.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes panGlass {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(70px);
+    }
+}
+
+.draw-shield {
+    animation: shieldDefend 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+@keyframes shieldDefend {
+    0% {
+        filter: brightness(1);
+        transform: scale(0.98);
+    }
+
+    100% {
+        filter: brightness(1.3);
+        transform: scale(1.02);
+    }
+}
+
+/* ── prefers-reduced-motion ─────────────────────────────────────────────────
+   Users who opt in to reduced motion (vestibular disorders, epilepsy, etc.)
+   get static visuals. This also removes all GPU layers for those users,
+   which improves battery life on low-power devices.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .draw-swift,
+    .draw-leak,
+    .draw-bucket,
+    .draw-float,
+    .draw-pulse,
+    .draw-spin,
+    .draw-lane1,
+    .draw-lane2,
+    .draw-swap1,
+    .draw-swap2,
+    .draw-chart,
+    .draw-mesh,
+    .draw-wave1,
+    .draw-wave2,
+    .draw-magnify,
+    .draw-shield,
+    .ph1, .ph2, .ph3, .ph4, .ph5, .ph6, .ph7, .ph8,
+    .ph9, .ph10, .ph11, .ph12, .ph13, .ph14, .ph15, .ph16,
+    .ph17, .ph18, .ph19, .ph20, .ph21, .ph22, .ph23, .ph24,
+    .ph25, .ph26, .ph27, .ph28, .ph29, .ph30, .ph31, .ph32,
+    .s1, .s2, .s3, .s4, .s5, .s6, .s7, .s8,
+    .s9, .s10, .s11, .s12, .s13, .s14, .s15, .s16,
+    .s17, .s18, .s19, .s20, .s21, .s22, .s23, .s24,
+    .s25, .s26, .s27, .s28, .s29, .s30, .s31, .s32 {
+        animation: none !important;
+        will-change: auto !important;
+        transform: none !important;
+    }
+}

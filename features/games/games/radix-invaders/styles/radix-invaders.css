@@ -1,0 +1,84 @@
+:root {
+  --ri-bg: #010614;
+  --ri-bg-grad: #02122a;
+  --ri-primary: #00e5ff;
+  --ri-primary-rgb: 0, 229, 255;
+  --ri-secondary: #ff00aa;
+  --ri-secondary-rgb: 255, 0, 170;
+  --ri-accent: #39ff14;
+  --ri-accent-rgb: 57, 255, 20;
+  --ri-gold: #ffd700;
+  --ri-gold-rgb: 255, 215, 0;
+  --ri-white: #ffffff;
+  --ri-dim-white: rgba(255, 255, 255, 0.55);
+  --ri-player-ship: #00e5ff;
+  --ri-bullet-p: #39ff14;
+  --ri-bullet-spread: #ff9900;
+  --ri-bullet-laser: #ff2288;
+  --ri-bullet-rapid: #aaff00;
+  --ri-bullet-e: #ff4444;
+  --ri-bullet-banana: #ffdd00;
+  --ri-shield: #00bfff;
+  --ri-ufo: #ff00aa;
+  --ri-alien0: #ff4dff;
+  --ri-alien1: #00e5ff;
+  --ri-alien2: #39ff14;
+  --ri-alien3: #ff8800;
+  --ri-glow0: rgba(255, 77, 255, 0.6);
+  --ri-glow1: rgba(0, 229, 255, 0.6);
+  --ri-glow2: rgba(57, 255, 20, 0.6);
+  --ri-glow3: rgba(255, 136, 0, 0.7);
+  --ri-glow-p: rgba(0, 229, 255, 0.8);
+}
+
+@keyframes si-twinkle {
+  from { opacity: 0.15; }
+  to { opacity: 1; }
+}
+
+@keyframes si-glow {
+  0%, 100% { text-shadow: 0 0 10px #00e5ff, 0 0 30px #00e5ff; }
+  50% { text-shadow: 0 0 20px #00e5ff, 0 0 60px #00e5ff; }
+}
+
+@keyframes si-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes si-alien-in {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes si-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes si-pink {
+  0%, 100% { text-shadow: 0 0 8px #ff00aa; }
+  50% { text-shadow: 0 0 18px #ff00aa, 0 0 40px #ff00aa; }
+}
+
+@keyframes si-slidein {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes si-badge {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  80% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Base classes for modular game styling if needed */
+.radix-invaders-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #010614;
+  position: relative;
+  font-family: 'Courier New', Courier, monospace;
+}

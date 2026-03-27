@@ -1,0 +1,300 @@
+/* eslint-disable @next/next/no-img-element */
+'use client';
+import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Check, Copy, ChevronDown, Box, FileJson, Activity } from 'lucide-react';
+import { Pill } from '@/components/ui/Pill';
+import { getMetaValue } from '../utils/metadataUtils';
+import {
+    PanelTabBar,
+    PanelMetadataTab,
+    PanelConfigurationTab,
+    PanelRawTab,
+} from './EntityPanelShared';
+
+import { NftCollectionPanelProps } from '../types';
+
+export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | 'raw';
+
+export function NftCollectionPanel({
+    resourceAddress: _resourceAddress, meta, nftData, nftLoading, ids, type,
+    onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, unstakeXrdExpected, network: _network,
+}: NftCollectionPanelProps) {
+    const [activeTab, setActiveTab] = useState<NftPanelTab>('items');
+    const [expandedNfts, setExpandedNfts] = useState<Set<string>>(new Set());
+
+    const metadataItems = meta?.metadata?.items || [];
+    const name = getMetaValue(metadataItems, 'name') || tt?.nft_collection || 'NFT Collection';
+    const symbol = getMetaValue(metadataItems, 'symbol') || '';
+    const description = getMetaValue(metadataItems, 'description');
+    const iconUrl = getMetaValue(metadataItems, 'icon_url');
+    const totalSupply = meta?.details?.total_supply;
+    const totalMinted = meta?.details?.total_minted;
+    const totalBurned = meta?.details?.total_burned;
+    const resourceType = meta?.details?.type;
+    const divisibility = meta?.details?.divisibility;
+    const ra = meta?.details?.role_assignments;
+    const behaviors = deriveBehaviors(ra, tt);
+    const configEntries = getConfigEntries(ra, tt);
+    const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString();
+
+    // Detect if this collection is a Stake Claim resource
+    const isStakeClaim = isStakeClaimOverride || /stake.?claim/i.test(name) || /stake.?claim/i.test(getMetaValue(metadataItems, 'description') || '');
+
+    /* ── NFT item helpers ── */
+    const getNftImage = (nft: Record<string, unknown>): string | null => {
+        const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
+        if (!Array.isArray(fields)) return null;
+        for (const f of fields) {
+            if (f.field_name === 'key_image_url' || f.field_name === 'icon_url') return f.value || f.fields?.[0]?.value || null;
+        }
+        return null;
+    };
+    const getNftName = (nft: Record<string, unknown>): string | null => {
+        const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
+        if (!Array.isArray(fields)) return null;
+        const f = fields.find((f) => (f as Record<string, string>).field_name === 'name');
+        return f?.value ? String(f.value) : null;
+    };
+    const getNftFields = (nft: Record<string, unknown>): { name: string; value: string }[] => {
+        const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
+        if (!Array.isArray(fields)) return [];
+        return fields.map((f) => ({
+            name: f.field_name || f.type_name || 'field',
+            value: f.value != null ? String(f.value) : (f.fields?.[0]?.value != null ? String(f.fields[0].value) : JSON.stringify(f)),
+        }));
+    };
+    const getStakeClaimXrd = (nft: Record<string, unknown>): number | null => {
+        const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
+        if (!Array.isArray(fields)) return null;
+        const namedField = fields.find((f) =>
+            f.field_name === 'claim_amount' || f.field_name === 'claimable_amount' ||
+            f.field_name === 'xrd_amount' || f.field_name === 'amount'
+        );
+        const decimalField = namedField || fields.find((f) =>
+            (f.kind === 'Decimal' || f.kind === 'PreciseDecimal') && f.value
+        );
+        if (!decimalField?.value) return null;
+        const n = parseFloat(String(decimalField.value));
+        return isNaN(n) || n <= 0 ? null : n;
+    };
+
+    const tabs: { key: NftPanelTab; label: string }[] = [
+        { key: 'items', label: `${tt?.nft_panel_items || 'Items'} (${ids.length})` },
+        { key: 'summary', label: tt?.nft_panel_summary || 'Summary' },
+        { key: 'metadata', label: tt?.nft_panel_metadata || 'Metadata' },
+        { key: 'configuration', label: tt?.nft_panel_configuration || 'Configuration' },
+        { key: 'raw', label: tt?.nft_panel_raw || 'Raw' },
+    ];
+
+    return (
+        <div
+            className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
+            onClick={e => e.stopPropagation()}
+        >
+            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+
+            <div className="px-5 py-4">
+                {/* ── ITEMS ── */}
+                {activeTab === 'items' && (
+                    nftLoading ? (
+                        <div className="flex items-center gap-2 py-3 text-[var(--color-text-muted)]">
+                            <Activity className="w-3.5 h-3.5 animate-spin text-[var(--color-primary)]" />
+                            <span className="text-xs">{tt?.loading_nft_data || 'Loading NFT data...'}</span>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {ids.map((id, idx) => {
+                                const nftItem = nftData.find((n) => n.non_fungible_id === id);
+                                const imageUrl = nftItem ? getNftImage(nftItem) : null;
+                                const nftName = nftItem ? getNftName(nftItem) : null;
+                                const fields = nftItem ? getNftFields(nftItem) : [];
+                                const claimXrd = (nftItem ? getStakeClaimXrd(nftItem) : null) ?? (isClaim ? claimXrdTotal : null) ?? (isStakeClaim ? unstakeXrdExpected : null);
+                                const hasData = !!nftItem && (!!imageUrl || !!nftName || fields.length > 0);
+                                const shortId = id.length > 20 ? `${id.slice(0, 8)}...${id.slice(-8)}` : id;
+                                const isOpen = expandedNfts.has(id);
+                                const isReceived = type === 'added';
+                                return (
+                                    <div key={idx} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
+                                        <div
+                                            className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]' : ''}`}
+                                            onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
+                                        >
+                                            <div className="w-10 h-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
+                                                {imageUrl ? <img src={imageUrl} alt={shortId} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                                    : <Box className="w-4 h-4 text-[var(--color-text-muted)] opacity-40" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <div className="font-bold text-xs text-[var(--color-text-main)] truncate">{nftName || `#${shortId}`}</div>
+                                                    {hasData && <ChevronDown className={`w-3 h-3 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
+                                                </div>
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <span className="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[100px]" title={id}>{shortId}</span>
+                                                    <button onClick={e => { e.stopPropagation(); onCopy?.(id); }} className={`p-0.5 rounded transition-colors ${copiedAddress === id ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                        {copiedAddress === id ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                                    </button>
+                                                </div>
+                                                {(isStakeClaim || claimXrd != null) && (
+                                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 border border-amber-600/30 bg-amber-600/10 px-1.5 rounded leading-none py-0.5"
+                                                            title={tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period'}>
+                                                            Stake Claim
+                                                        </span>
+                                                        {claimXrd != null && (
+                                                            <span className="text-[9px] font-bold font-mono text-[var(--color-primary)]">
+                                                                ~{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} XRD
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {isClaim && type === 'removed' ? (
+                                                    <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
+                                                        <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
+                                                        {claimXrd != null ? (
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                        ) : (
+                                                            <div className="font-mono font-bold text-base tabular-nums text-red-600 dark:text-red-400">−1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
+                                                        )}
+                                                    </div>
+                                                ) : isClaim && type === 'added' ? (
+                                                    <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
+                                                        <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
+                                                        {claimXrd != null ? (
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                        ) : (
+                                                            <div className="font-mono font-bold text-base tabular-nums text-green-700 dark:text-green-400">+1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
+                                                        )}
+                                                    </div>
+                                                ) : (isStakeClaim || claimXrd != null) ? (
+                                                    <div className="text-right" title={tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period'}>
+                                                        <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_amount || 'XRD Reclamables'}</div>
+                                                        {claimXrd != null ? (
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">~{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                        ) : (
+                                                            <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <Pill color={isReceived ? 'green' : 'red'}>
+                                                        {isReceived ? (tt?.nft_received || 'Received') : (tt?.nft_sent || 'Sent')}
+                                                    </Pill>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <AnimatePresence>
+                                            {isOpen && hasData && (
+                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                                                    <div className="border-t border-[var(--color-card-border)] px-4 py-3 space-y-3">
+                                                        {(claimXrd != null || (isClaim && claimXrdTotal) || (isStakeClaim && unstakeXrdExpected)) && (
+                                                            <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-600/8 border border-amber-600/20">
+                                                                <div>
+                                                                    <p className="text-[9px] uppercase tracking-wider font-black text-amber-600 mb-0.5">
+                                                                        {isClaim ? (tt?.stake_claim_xrd_claimed || 'XRD Reclamados') : (tt?.stake_claim_xrd_amount || 'XRD Reclamables')}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
+                                                                        {isClaim ? (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD') : (tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period')}
+                                                                    </p>
+                                                                </div>
+                                                                <span className="text-base font-black font-mono text-amber-600 shrink-0 tabular-nums">
+                                                                    {isClaim ? '' : '~'}{parseFloat(String(claimXrd ?? claimXrdTotal ?? unstakeXrdExpected)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span>
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {imageUrl && (
+                                                            <div className="rounded-xl overflow-hidden border border-[var(--color-card-border)] max-w-[140px]">
+                                                                <img src={imageUrl} alt={shortId} className="w-full object-cover" onError={e => { const p = e.currentTarget.parentElement; if (p) (p as HTMLElement).style.display = 'none'; }} />
+                                                            </div>
+                                                        )}
+                                                        {fields.length > 0 && (
+                                                            <div>
+                                                                <p className="text-[9px] uppercase tracking-widest font-black text-[var(--color-text-muted)] opacity-60 mb-2 flex items-center gap-1">
+                                                                    <FileJson className="w-3 h-3" />{tt?.nft_data_fields || 'NFT Data Fields'}
+                                                                </p>
+                                                                <div className="space-y-2">
+                                                                    {fields.map((f, fi) => {
+                                                                        const isUrl = typeof f.value === 'string' && (f.value.startsWith('http') || f.value.startsWith('ipfs'));
+                                                                        return (
+                                                                            <div key={fi}>
+                                                                                <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{f.name}</p>
+                                                                                <p className="text-xs text-[var(--color-text-main)] break-words leading-relaxed">
+                                                                                    {isUrl ? <a href={f.value as string} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{(f.value as string).length > 60 ? (f.value as string).slice(0, 60) + '...' : (f.value as string)}</a> : String(f.value)}
+                                                                                </p>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
+                )}
+
+                {/* ── SUMMARY ── */}
+                {activeTab === 'summary' && (
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            {iconUrl ? <img src={iconUrl} alt={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0"><Box className="w-4 h-4" /></div>}
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</p>
+                                {symbol && <p className="text-[10px] text-[var(--color-primary)] font-mono truncate">{symbol}</p>}
+                            </div>
+                        </div>
+                        {description && <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-4 italic border-l-2 border-[var(--color-primary)]/30 pl-3">{description}</p>}
+                        <div className="border-t border-[var(--color-card-border)] mb-4" />
+                        <dl className="space-y-3">
+                            {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{String(resourceType)}</dd></div>}
+                            {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{String(divisibility)}</dd></div>}
+                            {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.nft_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply as number)}</dd></div>}
+                            {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-green-700 dark:text-green-400 font-mono">+{fmt(totalMinted as number)}</dd></div>}
+                            {totalBurned && parseFloat(String(totalBurned)) > 0 && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_burned || 'Total Burned'}</dt><dd className="text-xs font-semibold text-red-400 font-mono">−{fmt(totalBurned as number)}</dd></div>}
+                            {(() => {
+                                const tagList = parseTags(metadataItems.find((m) => m.key === 'tags') || null);
+                                return tagList.length > 0 ? (
+                                    <div className="flex items-start justify-between gap-4">
+                                        <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">{tt?.nft_panel_tags || 'Tags'}</dt>
+                                        <dd className="flex flex-wrap gap-1.5 justify-end">{tagList.map((tag: string, i: number) => <Pill key={i}>{tag}</Pill>)}</dd>
+                                    </div>
+                                ) : null;
+                            })()}
+                        </dl>
+                        {behaviors.length > 0 && (
+                            <>
+                                <div className="border-t border-[var(--color-card-border)] mt-4 mb-3" />
+                                <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt?.nft_panel_behavior || 'Behavior'}</p>
+                                <ul className="space-y-1.5">{behaviors.map((b, i) => <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="w-1 h-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}</ul>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'metadata' && (
+                    <PanelMetadataTab metadataItems={metadataItems} tt={tt} />
+                )}
+
+                {activeTab === 'configuration' && (
+                    <PanelConfigurationTab
+                        configEntries={configEntries}
+                        tt={tt}
+                        onCopy={onCopy ?? (() => { })}
+                        copiedAddress={copiedAddress}
+                    />
+                )}
+
+                {activeTab === 'raw' && <PanelRawTab data={meta} />}
+            </div>
+        </div>
+    );
+}
+

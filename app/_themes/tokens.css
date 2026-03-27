@@ -1,0 +1,40 @@
+/* Force dark variant to respond only to our specific dark theme classes, ignoring OS settings */
+@variant dark (&:where(.radix-dark, .oro-dark, .radix-original-dark, .dark) *);
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Mapping of variables for Tailwind v4 utility classes (e.g., bg-primary, text-accent) */
+  --color-bg: #ffffff;
+  --color-text-main: #0f172a;
+  --color-text-muted: #475569;
+  --color-primary: #4f46e5;
+  --color-secondary: #0ea5e9;
+  --color-accent: #10b981;
+  --color-surface: #f8fafc;
+  --color-card-bg: #ffffff;
+  --color-card-border: #e2e8f0;
+  --color-text-secondary: #64748b;
+  --color-text-dim: #94a3b8;
+  --color-bg-alt: #f1f5f9;
+  --color-bg-secondary: #e2e8f0;
+  --color-border: #e2e8f0;
+  --color-surface-hover: #f1f5f9;
+
+  --color-gradient-start: #6366f1;
+  --color-gradient-mid: #38bdf8;
+  --color-gradient-end: #34d399;
+
+  --animate-gradient: gradient 8s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+}

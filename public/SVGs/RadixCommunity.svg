@@ -1,0 +1,319 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 850" width="100%" height="100%" style="background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: visible;">
+    <defs>
+        <!-- ========================================== -->
+        <!-- 1. FILTERS (SHADOWS & GLOWS)               -->
+        <!-- ========================================== -->
+
+        <!-- Floor Shadow -->
+        <filter id="floor-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="25" result="blur"/>
+            <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0.05   0 0 0 0 0.15  0 0 0 0.4 0"/>
+        </filter>
+
+        <!-- Layer Drop Shadow -->
+        <filter id="layer-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="-5" dy="25" stdDeviation="15" flood-color="#050a2e" flood-opacity="0.25"/>
+        </filter>
+
+        <!-- Inner Icon Shadow / Lift -->
+        <filter id="float-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.2"/>
+        </filter>
+
+        <!-- Glow Effects -->
+        <filter id="glow-intense" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur1"/>
+            <feGaussianBlur stdDeviation="12" result="blur2"/>
+            <feMerge>
+                <feMergeNode in="blur2"/>
+                <feMergeNode in="blur1"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3"/>
+            <feMerge>
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <radialGradient id="nebula-aura" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#4a22f5" stop-opacity="0.2"/>
+            <stop offset="50%" stop-color="#aa00ff" stop-opacity="0.08"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- ========================================== -->
+        <!-- 2. MAIN 3D LAYER GRADIENTS                 -->
+        <!-- ========================================== -->
+
+        <!-- LAYER 1 (Top): Green corner -> Blue Center -> Purple extending further -->
+        <linearGradient id="l1-face" x1="0%" y1="0%" x2="100%" y2="100%">
+            <!-- Green/Cyan in the top left corner only -->
+            <stop offset="0%" stop-color="#00e9bc"/>
+            <!-- Blue takes over early -->
+            <stop offset="32%" stop-color="#1b41ab"/>
+            <!-- Blue holds the majority of the center -->
+            <stop offset="55%" stop-color="#1b41ab"/>
+            <!-- Purple starts sooner and stretches further in -->
+            <stop offset="100%" stop-color="#c10086"/>
+        </linearGradient>
+
+        <linearGradient id="l1-wall" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00a1ff"/>
+            <stop offset="50%" stop-color="#0f2669"/>
+            <stop offset="100%" stop-color="#690048"/>
+        </linearGradient>
+
+        <!-- LAYER 2: Light blue starting top-left, darkening to navy -->
+        <linearGradient id="l2-face" x1="0%" y1="0%" x2="100%" y2="100%">
+            <!-- Starts with a bright, clear light blue -->
+            <stop offset="0%" stop-color="#4785ff"/>
+            <!-- Smoothly darkens into deep navy -->
+            <stop offset="100%" stop-color="#040b2e"/>
+        </linearGradient>
+        <linearGradient id="l2-wall" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#020412"/>
+            <stop offset="100%" stop-color="#2a52cc"/>
+        </linearGradient>
+
+        <!-- LAYER 3: Magenta to Bright Mint/Cyan -->
+        <linearGradient id="l3-face" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff0080"/>
+            <stop offset="40%" stop-color="#c430d1"/>
+            <stop offset="100%" stop-color="#00f2fe"/>
+        </linearGradient>
+        <linearGradient id="l3-wall" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#b3005a"/>
+            <stop offset="40%" stop-color="#761782"/>
+            <stop offset="100%" stop-color="#00949c"/>
+        </linearGradient>
+
+        <!-- LAYER 4 (Bottom): Royal Blue to Cyan -->
+        <linearGradient id="l4-face" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0044ff"/>
+            <stop offset="100%" stop-color="#00e5ff"/>
+        </linearGradient>
+        <linearGradient id="l4-wall" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#002bb3"/>
+            <stop offset="100%" stop-color="#0097a8"/>
+        </linearGradient>
+
+        <!-- Circle Icon Gradient (Vibrant Cyan -> Blue -> Pink) -->
+        <linearGradient id="icon-circle" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00f2fe"/>
+            <stop offset="40%" stop-color="#1b41ab"/>
+            <stop offset="100%" stop-color="#ff00a0"/>
+        </linearGradient>
+
+        <!-- ========================================== -->
+        <!-- 3. GEOMETRY MACROS & LOGOS                 -->
+        <!-- ========================================== -->
+
+        <!-- Base Flat Rounded Square (240x240 centered at 0,0) -->
+        <rect id="base-square" x="-120" y="-120" width="240" height="240" rx="45" />
+
+        <!-- Standard Isometric Transform (Stack) -->
+        <g id="iso-plane">
+            <use href="#base-square" transform="scale(1, 0.55) rotate(45)" />
+        </g>
+
+        <!-- "Lifted" Isometric Transform (For the top-left mini icon) -->
+        <g id="iso-plane-lifted">
+            <use href="#base-square" transform="scale(1, 0.75) rotate(45)" />
+        </g>
+
+        <!-- SÍMBOLO DE RAÍZ CUADRADA CENTRADO -->
+        <g id="logo-main" transform="scale(1, 0.55) rotate(45)">
+            <path d="M -90,2.5 L -50,2.5 L -20,52.5 L 40,-62.5 L 90,-62.5" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+
+        <!-- Lifted Logo (matches the lifted perspective of icon 1) -->
+        <g id="logo-lifted" transform="scale(1, 0.75) rotate(45)">
+            <path d="M -90,2.5 L -50,2.5 L -20,52.5 L 40,-62.5 L 90,-62.5" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+
+        <!-- Símbolo pequeño para el círculo -->
+        <g id="logo-small">
+            <path d="M -20,2.5 L -10,2.5 L -5,15.5 L 10,-10.5 L 20,-10.5" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+    </defs>
+
+    <!-- ========================================== -->
+    <!-- 4. CONNECTING DIAGRAM LINES                -->
+    <!-- ========================================== -->
+    <g fill="none" stroke="#e0e5f2" stroke-width="1.5">
+        <path d="M 100,240 L 600,240"/>
+        <path d="M 100,380 L 600,380"/>
+        <path d="M 100,520 L 600,520"/>
+        <path d="M 100,660 L 600,660"/>
+        <path d="M 100,240 L 100,660"/>
+        <path d="M 0,450 L 100,450"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- 5. SMALL ICONS (LEFT COLUMN)               -->
+    <!-- ========================================== -->
+    <g id="small-icons" transform="translate(240, 0)">
+
+        <!-- Icon 1: Mini Layer Stack (LIFTED PERSPECTIVE) -->
+        <g transform="translate(0, 240)">
+            <ellipse cx="0" cy="18" rx="35" ry="14" fill="#000000" filter="url(#glow-soft)" opacity="0.12"/>
+            <g transform="scale(0.32)">
+                <g fill="url(#l1-wall)">
+                    <use href="#iso-plane-lifted" transform="translate(0, 2)"/> <use href="#iso-plane-lifted" transform="translate(0, 4)"/> <use href="#iso-plane-lifted" transform="translate(0, 6)"/> <use href="#iso-plane-lifted" transform="translate(0, 8)"/> <use href="#iso-plane-lifted" transform="translate(0, 10)"/> <use href="#iso-plane-lifted" transform="translate(0, 12)"/> <use href="#iso-plane-lifted" transform="translate(0, 14)"/> <use href="#iso-plane-lifted" transform="translate(0, 16)"/> <use href="#iso-plane-lifted" transform="translate(0, 18)"/>
+                </g>
+                <use href="#iso-plane-lifted" fill="url(#l1-face)"/>
+                <use href="#logo-lifted" transform="scale(0.8)"/>
+            </g>
+        </g>
+
+        <!-- Icon 2: Circle Logo -->
+        <g transform="translate(0, 380)">
+            <circle cx="0" cy="12" r="35" fill="#000000" filter="url(#glow-soft)" opacity="0.12"/>
+            <circle cx="0" cy="0" r="38" fill="url(#icon-circle)"/>
+            <path d="M -34,-12 A 36 36 0 0 1 34,-12 A 36 24 0 0 0 -34,-12" fill="#ffffff" opacity="0.25"/>
+            <use href="#logo-small" transform="scale(1.2)"/>
+        </g>
+
+        <!-- Icon 3: Standing Glass Panels Pierced by Light (REDESIGNED) -->
+        <g transform="translate(0, 520)">
+            <!-- Sombra en el suelo -->
+            <ellipse cx="0" cy="30" rx="40" ry="12" fill="#000000" filter="url(#glow-soft)" opacity="0.15"/>
+
+            <!-- LÁSER (Sección Trasera: Entrando a la figura) -->
+            <!-- Las matemáticas de la línea aseguran una recta perfecta cruzando el punto (0, 8.5) -->
+            <line x1="70" y1="-50" x2="30" y2="-16.5" stroke="#00e5ff" stroke-width="5" filter="url(#glow-soft)" opacity="0.8"/>
+            <line x1="50" y1="-33" x2="30" y2="-16.5" stroke="#ffffff" stroke-width="1.5"/>
+
+            <!-- PANEL TRASERO (Azul oscuro, posición vertical) -->
+            <!-- Centro en (30, -16.5) -->
+            <g transform="translate(15, -15)">
+                <polygon points="0,-28 30,-15 30,25 0,12" fill="#0f299e" stroke="#2a5cff" stroke-width="0.5"/>
+                <polygon points="0,-28 -5,-25 -5,15 0,12" fill="#061152"/>
+                <polygon points="0,-28 30,-15 25,-12 -5,-25" fill="#1a3db5"/>
+                <!-- Destello de impacto trasero -->
+                <ellipse cx="15" cy="-1.5" rx="6" ry="10" fill="#00ffff" filter="url(#glow-intense)" opacity="0.7"/>
+            </g>
+
+            <!-- LÁSER (Sección Media: Entre los dos paneles) -->
+            <line x1="30" y1="-16.5" x2="0" y2="8.5" stroke="#00e5ff" stroke-width="6" filter="url(#glow-soft)" opacity="0.6"/>
+            <line x1="30" y1="-16.5" x2="0" y2="8.5" stroke="#ffffff" stroke-width="2"/>
+
+            <!-- PANEL FRONTAL (Cristal Cian Translúcido, posición vertical) -->
+            <!-- Centro en (0, 8.5) -->
+            <g transform="translate(-15, 10)">
+                <polygon points="0,-28 30,-15 30,25 0,12" fill="#00e9bc" opacity="0.65" stroke="#00ffff" stroke-width="1"/>
+                <polygon points="0,-28 -5,-25 -5,15 0,12" fill="#00a1d6" opacity="0.8"/>
+                <polygon points="0,-28 30,-15 25,-12 -5,-25" fill="#00ffff" opacity="0.9"/>
+
+                <!-- EFECTO DE ATRAVESAMIENTO (Agujero, ondas y grietas en el cristal) -->
+                <g transform="translate(15, -1.5)">
+                    <ellipse cx="0" cy="0" rx="3" ry="5" fill="#ffffff" filter="url(#glow-intense)"/>
+                    <!-- Ondas de choque superficiales -->
+                    <ellipse cx="0" cy="0" rx="8" ry="14" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.8"/>
+                    <ellipse cx="0" cy="0" rx="15" ry="25" fill="none" stroke="#00ffff" stroke-width="1" opacity="0.5"/>
+                    <!-- Grietas de energía radiales -->
+                    <path d="M 0,0 L -8,-10 M 0,0 L 12,15 M 0,0 L 18,-6 M 0,0 L -12,8" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+                </g>
+            </g>
+
+            <!-- LÁSER (Sección Frontal: Saliendo con mucha intensidad) -->
+            <line x1="0" y1="8.5" x2="-35" y2="37.6" stroke="#00e5ff" stroke-width="8" filter="url(#glow-soft)" opacity="0.9"/>
+            <line x1="0" y1="8.5" x2="-35" y2="37.6" stroke="#ffffff" stroke-width="3"/>
+
+            <!-- GRAN DESTELLO DE LUZ FRONTAL (Star Lens Flare) -->
+            <g transform="translate(0, 8.5)">
+                <!-- Aura resplandeciente -->
+                <circle cx="0" cy="0" r="16" fill="#00ffff" filter="url(#glow-intense)" opacity="0.8"/>
+                <!-- Rayos de luz diagonales cruzados -->
+                <path d="M -18,-18 L 18,18 M -18,18 L 18,-18" stroke="#00ffff" stroke-width="3" filter="url(#glow-soft)" opacity="0.9"/>
+                <path d="M -12,-12 L 12,12 M -12,12 L 12,-12" stroke="#ffffff" stroke-width="1.5"/>
+                <!-- Rayos horizontales/verticales extendidos -->
+                <path d="M -30,0 L 30,0 M 0,-30 L 0,30" stroke="#00ffff" stroke-width="1.5" filter="url(#glow-soft)" opacity="0.7"/>
+                <path d="M -20,0 L 20,0 M 0,-20 L 0,20" stroke="#ffffff" stroke-width="1"/>
+                <!-- Núcleo brillante y ardiente -->
+                <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+            </g>
+        </g>
+
+        <!-- Icon 4: ATOM NEBULA -->
+        <g transform="translate(0, 660)">
+            <circle cx="0" cy="0" r="55" fill="url(#nebula-aura)"/>
+            <circle cx="0" cy="0" r="20" fill="#a100ff" filter="url(#glow-intense)" opacity="0.5"/>
+
+            <!-- Atom Orbital Rings -->
+            <g stroke="#ffffff" stroke-width="0.8" opacity="0.4" fill="none">
+                <ellipse cx="0" cy="0" rx="42" ry="14" transform="rotate(20)"/>
+                <ellipse cx="0" cy="0" rx="42" ry="14" transform="rotate(-40)"/>
+                <ellipse cx="0" cy="0" rx="42" ry="14" transform="rotate(80)"/>
+            </g>
+
+            <!-- Connecting Constellation Lines -->
+            <path d="M 38,15 L -12,40 L -32,-28 L 22,-38 Z" fill="none" stroke="#a5b4fc" stroke-width="0.6" opacity="0.6"/>
+            <path d="M -32,-28 L 0,0 L 22,-38" fill="none" stroke="#00e5ff" stroke-width="0.8" opacity="0.5"/>
+            <path d="M 38,15 L 0,0 L -12,40" fill="none" stroke="#ff00a0" stroke-width="0.8" opacity="0.5"/>
+
+            <!-- Electrons / Atomic Nodes -->
+            <circle cx="38" cy="15" r="3.5" fill="#00e5ff" filter="url(#glow-soft)"/>
+            <circle cx="-32" cy="-28" r="4" fill="#ff00a0" filter="url(#glow-soft)"/>
+            <circle cx="-12" cy="40" r="3" fill="#144dff" filter="url(#glow-soft)"/>
+            <circle cx="22" cy="-38" r="4.5" fill="#00e5ff" filter="url(#glow-soft)"/>
+
+            <circle cx="18" cy="18" r="1.5" fill="#ffffff"/>
+            <circle cx="-25" cy="8" r="2" fill="#ffffff" opacity="0.8"/>
+            <circle cx="5" cy="-25" r="1" fill="#ffffff"/>
+
+            <circle cx="0" cy="0" r="5" fill="#ffffff" filter="url(#glow-intense)"/>
+        </g>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- 6. MAIN 3D STACK                           -->
+    <!-- ========================================== -->
+    <g id="main-stack" transform="translate(620, 0)">
+
+        <!-- Huge soft shadow anchoring the entire stack to the floor -->
+        <ellipse cx="0" cy="730" rx="180" ry="70" filter="url(#floor-shadow)"/>
+
+        <!-- LAYER 4 (BOTTOM) -->
+        <g transform="translate(0, 620)" filter="url(#layer-shadow)">
+            <g fill="url(#l4-wall)">
+                <use href="#iso-plane" transform="translate(0, 1)"/> <use href="#iso-plane" transform="translate(0, 2)"/> <use href="#iso-plane" transform="translate(0, 3)"/> <use href="#iso-plane" transform="translate(0, 4)"/> <use href="#iso-plane" transform="translate(0, 5)"/> <use href="#iso-plane" transform="translate(0, 6)"/> <use href="#iso-plane" transform="translate(0, 7)"/> <use href="#iso-plane" transform="translate(0, 8)"/> <use href="#iso-plane" transform="translate(0, 9)"/> <use href="#iso-plane" transform="translate(0, 10)"/> <use href="#iso-plane" transform="translate(0, 11)"/> <use href="#iso-plane" transform="translate(0, 12)"/> <use href="#iso-plane" transform="translate(0, 13)"/> <use href="#iso-plane" transform="translate(0, 14)"/> <use href="#iso-plane" transform="translate(0, 15)"/> <use href="#iso-plane" transform="translate(0, 16)"/> <use href="#iso-plane" transform="translate(0, 17)"/> <use href="#iso-plane" transform="translate(0, 18)"/> <use href="#iso-plane" transform="translate(0, 19)"/> <use href="#iso-plane" transform="translate(0, 20)"/> <use href="#iso-plane" transform="translate(0, 21)"/> <use href="#iso-plane" transform="translate(0, 22)"/> <use href="#iso-plane" transform="translate(0, 23)"/> <use href="#iso-plane" transform="translate(0, 24)"/> <use href="#iso-plane" transform="translate(0, 25)"/> <use href="#iso-plane" transform="translate(0, 26)"/> <use href="#iso-plane" transform="translate(0, 27)"/> <use href="#iso-plane" transform="translate(0, 28)"/> <use href="#iso-plane" transform="translate(0, 29)"/> <use href="#iso-plane" transform="translate(0, 30)"/> <use href="#iso-plane" transform="translate(0, 31)"/> <use href="#iso-plane" transform="translate(0, 32)"/> <use href="#iso-plane" transform="translate(0, 33)"/> <use href="#iso-plane" transform="translate(0, 34)"/> <use href="#iso-plane" transform="translate(0, 35)"/>
+            </g>
+            <use href="#iso-plane" fill="url(#l4-face)"/>
+        </g>
+
+        <!-- LAYER 3 -->
+        <g transform="translate(0, 480)" filter="url(#layer-shadow)">
+            <g fill="url(#l3-wall)">
+                <use href="#iso-plane" transform="translate(0, 1)"/> <use href="#iso-plane" transform="translate(0, 2)"/> <use href="#iso-plane" transform="translate(0, 3)"/> <use href="#iso-plane" transform="translate(0, 4)"/> <use href="#iso-plane" transform="translate(0, 5)"/> <use href="#iso-plane" transform="translate(0, 6)"/> <use href="#iso-plane" transform="translate(0, 7)"/> <use href="#iso-plane" transform="translate(0, 8)"/> <use href="#iso-plane" transform="translate(0, 9)"/> <use href="#iso-plane" transform="translate(0, 10)"/> <use href="#iso-plane" transform="translate(0, 11)"/> <use href="#iso-plane" transform="translate(0, 12)"/> <use href="#iso-plane" transform="translate(0, 13)"/> <use href="#iso-plane" transform="translate(0, 14)"/> <use href="#iso-plane" transform="translate(0, 15)"/> <use href="#iso-plane" transform="translate(0, 16)"/> <use href="#iso-plane" transform="translate(0, 17)"/> <use href="#iso-plane" transform="translate(0, 18)"/> <use href="#iso-plane" transform="translate(0, 19)"/> <use href="#iso-plane" transform="translate(0, 20)"/> <use href="#iso-plane" transform="translate(0, 21)"/> <use href="#iso-plane" transform="translate(0, 22)"/> <use href="#iso-plane" transform="translate(0, 23)"/> <use href="#iso-plane" transform="translate(0, 24)"/> <use href="#iso-plane" transform="translate(0, 25)"/> <use href="#iso-plane" transform="translate(0, 26)"/> <use href="#iso-plane" transform="translate(0, 27)"/> <use href="#iso-plane" transform="translate(0, 28)"/> <use href="#iso-plane" transform="translate(0, 29)"/> <use href="#iso-plane" transform="translate(0, 30)"/> <use href="#iso-plane" transform="translate(0, 31)"/> <use href="#iso-plane" transform="translate(0, 32)"/> <use href="#iso-plane" transform="translate(0, 33)"/> <use href="#iso-plane" transform="translate(0, 34)"/> <use href="#iso-plane" transform="translate(0, 35)"/>
+            </g>
+            <use href="#iso-plane" fill="url(#l3-face)"/>
+        </g>
+
+        <!-- LAYER 2 -->
+        <g transform="translate(0, 340)" filter="url(#layer-shadow)">
+            <g fill="url(#l2-wall)">
+                <use href="#iso-plane" transform="translate(0, 1)"/> <use href="#iso-plane" transform="translate(0, 2)"/> <use href="#iso-plane" transform="translate(0, 3)"/> <use href="#iso-plane" transform="translate(0, 4)"/> <use href="#iso-plane" transform="translate(0, 5)"/> <use href="#iso-plane" transform="translate(0, 6)"/> <use href="#iso-plane" transform="translate(0, 7)"/> <use href="#iso-plane" transform="translate(0, 8)"/> <use href="#iso-plane" transform="translate(0, 9)"/> <use href="#iso-plane" transform="translate(0, 10)"/> <use href="#iso-plane" transform="translate(0, 11)"/> <use href="#iso-plane" transform="translate(0, 12)"/> <use href="#iso-plane" transform="translate(0, 13)"/> <use href="#iso-plane" transform="translate(0, 14)"/> <use href="#iso-plane" transform="translate(0, 15)"/> <use href="#iso-plane" transform="translate(0, 16)"/> <use href="#iso-plane" transform="translate(0, 17)"/> <use href="#iso-plane" transform="translate(0, 18)"/> <use href="#iso-plane" transform="translate(0, 19)"/> <use href="#iso-plane" transform="translate(0, 20)"/> <use href="#iso-plane" transform="translate(0, 21)"/> <use href="#iso-plane" transform="translate(0, 22)"/> <use href="#iso-plane" transform="translate(0, 23)"/> <use href="#iso-plane" transform="translate(0, 24)"/> <use href="#iso-plane" transform="translate(0, 25)"/> <use href="#iso-plane" transform="translate(0, 26)"/> <use href="#iso-plane" transform="translate(0, 27)"/> <use href="#iso-plane" transform="translate(0, 28)"/> <use href="#iso-plane" transform="translate(0, 29)"/> <use href="#iso-plane" transform="translate(0, 30)"/> <use href="#iso-plane" transform="translate(0, 31)"/> <use href="#iso-plane" transform="translate(0, 32)"/> <use href="#iso-plane" transform="translate(0, 33)"/> <use href="#iso-plane" transform="translate(0, 34)"/> <use href="#iso-plane" transform="translate(0, 35)"/>
+            </g>
+            <use href="#iso-plane" fill="url(#l2-face)"/>
+        </g>
+
+        <!-- LAYER 1 (TOP) -->
+        <g transform="translate(0, 200)" filter="url(#layer-shadow)">
+            <g fill="url(#l1-wall)">
+                <use href="#iso-plane" transform="translate(0, 1)"/> <use href="#iso-plane" transform="translate(0, 2)"/> <use href="#iso-plane" transform="translate(0, 3)"/> <use href="#iso-plane" transform="translate(0, 4)"/> <use href="#iso-plane" transform="translate(0, 5)"/> <use href="#iso-plane" transform="translate(0, 6)"/> <use href="#iso-plane" transform="translate(0, 7)"/> <use href="#iso-plane" transform="translate(0, 8)"/> <use href="#iso-plane" transform="translate(0, 9)"/> <use href="#iso-plane" transform="translate(0, 10)"/> <use href="#iso-plane" transform="translate(0, 11)"/> <use href="#iso-plane" transform="translate(0, 12)"/> <use href="#iso-plane" transform="translate(0, 13)"/> <use href="#iso-plane" transform="translate(0, 14)"/> <use href="#iso-plane" transform="translate(0, 15)"/> <use href="#iso-plane" transform="translate(0, 16)"/> <use href="#iso-plane" transform="translate(0, 17)"/> <use href="#iso-plane" transform="translate(0, 18)"/> <use href="#iso-plane" transform="translate(0, 19)"/> <use href="#iso-plane" transform="translate(0, 20)"/> <use href="#iso-plane" transform="translate(0, 21)"/> <use href="#iso-plane" transform="translate(0, 22)"/> <use href="#iso-plane" transform="translate(0, 23)"/> <use href="#iso-plane" transform="translate(0, 24)"/> <use href="#iso-plane" transform="translate(0, 25)"/> <use href="#iso-plane" transform="translate(0, 26)"/> <use href="#iso-plane" transform="translate(0, 27)"/> <use href="#iso-plane" transform="translate(0, 28)"/> <use href="#iso-plane" transform="translate(0, 29)"/> <use href="#iso-plane" transform="translate(0, 30)"/> <use href="#iso-plane" transform="translate(0, 31)"/> <use href="#iso-plane" transform="translate(0, 32)"/> <use href="#iso-plane" transform="translate(0, 33)"/> <use href="#iso-plane" transform="translate(0, 34)"/> <use href="#iso-plane" transform="translate(0, 35)"/>
+            </g>
+
+            <use href="#iso-plane" fill="url(#l1-face)"/>
+
+            <g filter="url(#float-shadow)">
+                <use href="#logo-main" />
+            </g>
+        </g>
+
+    </g>
+</svg>

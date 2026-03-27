@@ -1,0 +1,145 @@
+.oro-light {
+  /* Gold/Platinum Light Theme - Elegant */
+  color-scheme: light;
+  --color-bg: #fdfcfb;
+  --color-text-main: #1f1d19;
+  --color-text-muted: #5e5a52;
+  --color-text-secondary: #78716c;
+  --color-text-dim: #a8a29e;
+  --color-text: #1f1d19;
+  --color-bg-alt: #f5f0eb;
+  --color-bg-secondary: #ede8e3;
+  --color-border: #d6d3d1;
+  --color-surface-hover: #ede8e3;
+  --color-primary-rgb: 180, 83, 9;
+
+  --color-primary: #d4af37;
+  /* Classic Gold */
+  --color-secondary: #e5c158;
+  /* Warm Gold */
+  --color-accent: #b8972e;
+  /* Richer Gold for accents */
+  --color-surface: #ffffff;
+
+  --color-card-bg: #ffffff;
+  --color-card-border: #e8e6e1;
+
+  --color-gradient-start: #d45c37;
+  --color-gradient-mid: #e5c158;
+  --color-gradient-end: #b8972e;
+
+  --text-glow: none;
+  --color-grid-dot: rgba(94, 90, 82, 0.1);
+
+  --color-primary-glow: transparent;
+  --color-secondary-glow: transparent;
+  --color-scrollbar: rgba(94, 90, 82, 0.3);
+
+  /* Code Syntax Highlighting - Gold Light */
+  --code-bg: #f9f8f6;
+  --code-comment: #635e50;
+  --code-keyword: #7a5200;
+  --code-type: #1f3d3d;
+  --code-string: #7a3018;
+  --code-punct: #2a2721;
+
+  /* SidebarGraphic Gold Light Theme Variables */
+  --sidebar-bg: #FAF9F6;
+  --sidebar-primary: #94A3B8;
+  --sidebar-secondary: #D4AF37;
+  --sidebar-text-main: #2C261A;
+  --sidebar-grad1: #ffffff;
+  --sidebar-grad-mid: #F4E2A6;
+  --sidebar-grad2: #D4AF37;
+  --sidebar-shadow: #D6CDBA;
+  --sidebar-shadow2: #EBE5D8;
+
+  --sidebar-glow-op-1: 0.6;
+  --sidebar-glow-op-2: 0.6;
+  --sidebar-glow-op-3: 0.4;
+
+  --sidebar-net-primary: #94A3B8;
+  --sidebar-net-secondary: #D4AF37;
+  --sidebar-net-thick: #DDAA33;
+  --sidebar-node-fill: #ffffff;
+  --sidebar-net-opacity: 0.8;
+
+  --sidebar-layer-shadow: #050a2e;
+  --sidebar-comm-lines: #CBD5E1;
+  --sidebar-card-base: #A89F8F;
+  --sidebar-card-stroke: #A38840;
+  --sidebar-card-mid-stroke: #B89742;
+}
+
+.oro-dark {
+  /* Gold/Platinum Dark Theme - Elegant */
+  color-scheme: dark;
+  --color-bg: #0a0a0a;
+  --color-text-main: #fcfcfc;
+  --color-text-muted: #a19f99;
+  --color-text-secondary: #a19f99;
+  --color-text-dim: #78716c;
+  --color-text: #fcfcfc;
+  --color-bg-alt: #1c1a16;
+  --color-bg-secondary: #292521;
+  --color-border: #44403c;
+  --color-surface-hover: #44403c;
+  --color-primary-rgb: 217, 119, 6;
+
+  --color-primary: #e2c044;
+  /* Brighter gold */
+  --color-secondary: #e8ca68;
+  /* Warm Pale Gold */
+  --color-accent: #f2d570;
+  /* Light gold */
+  --color-surface: #141414;
+
+  --color-card-bg: #141414;
+  --color-card-border: #292825;
+
+  --color-gradient-start: #e2c044;
+  --color-gradient-mid: #e8ca68;
+  --color-gradient-end: #d4af37;
+
+  --text-glow: 0 0 15px rgba(226, 192, 68, 0.4);
+  --color-grid-dot: rgba(226, 192, 68, 0.15);
+
+  --color-primary-glow: rgba(226, 192, 68, 0.04);
+  --color-secondary-glow: rgba(229, 228, 226, 0.04);
+  --color-scrollbar: rgba(161, 159, 153, 0.3);
+
+  /* Code Syntax Highlighting - Gold Dark (Premium Luxury) */
+  --code-bg: #000000;
+  --code-comment: #9c9780;
+  --code-keyword: #e2c044;
+  --code-type: #aab7b8;
+  --code-string: #e5a97a;
+  --code-punct: #e8e6e1;
+
+  /* SidebarGraphic Gold Dark Theme Variables */
+  --sidebar-bg: #0d0d0f;
+  --sidebar-primary: #e2c044;
+  --sidebar-secondary: #e5e4e2;
+  --sidebar-text-main: #ffffff;
+  --sidebar-grad1: #ffffff;
+  --sidebar-grad-mid: #d4af37;
+  --sidebar-grad2: #694d04;
+  --sidebar-shadow: #050505;
+  --sidebar-shadow2: #1f1702;
+
+  --sidebar-glow-op-1: 0.45;
+  --sidebar-glow-op-2: 0.5;
+  --sidebar-glow-op-3: 0.15;
+
+  --sidebar-net-primary: var(--sidebar-primary);
+  --sidebar-net-secondary: var(--sidebar-secondary);
+  --sidebar-net-thick: #ffffff;
+  --sidebar-node-fill: #ffffff;
+  --sidebar-net-opacity: 0.8;
+
+  --sidebar-layer-shadow: #050a2e;
+  --sidebar-comm-lines: rgba(255, 255, 255, 0.15);
+  --sidebar-card-base: #030821;
+  --sidebar-card-stroke: #020512;
+  --sidebar-card-mid-stroke: #1b003a;
+}

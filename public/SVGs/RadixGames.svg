@@ -1,0 +1,477 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="100%" height="100%" style="background-color: #060b26; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <defs>
+        <!-- Background Gradients -->
+        <radialGradient id="bg-magenta-glow" cx="10%" cy="10%" r="70%">
+            <stop offset="0%" stop-color="#db00ff" stop-opacity="0.45"/>
+            <stop offset="60%" stop-color="#6a008a" stop-opacity="0.1"/>
+            <stop offset="100%" stop-color="#060b26" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="bg-cyan-glow" cx="90%" cy="90%" r="80%">
+            <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.5"/>
+            <stop offset="50%" stop-color="#0077aa" stop-opacity="0.1"/>
+            <stop offset="100%" stop-color="#060b26" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="bg-center-glow" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#0022ff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#060b26" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- Depth of Field Filters -->
+        <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <filter id="glow-soft" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <filter id="blur-far" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="5"/>
+        </filter>
+        <filter id="blur-extreme" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="12"/>
+        </filter>
+
+        <!-- Base Tech Node Definition -->
+        <g id="dot-cyan">
+            <circle r="2.5" fill="#00e5ff" filter="url(#glow-soft)"/>
+            <circle r="1" fill="#ffffff"/>
+        </g>
+        <g id="dot-magenta">
+            <circle r="2.5" fill="#ff00aa" filter="url(#glow-soft)"/>
+            <circle r="1" fill="#ffffff"/>
+        </g>
+
+        <!-- Glassy Bubbles/Orbs -->
+        <radialGradient id="glass-sphere-cyan" cx="30%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+            <stop offset="15%" stop-color="#ffffff" stop-opacity="0.1"/>
+            <stop offset="70%" stop-color="#00e5ff" stop-opacity="0.1"/>
+            <stop offset="95%" stop-color="#00e5ff" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.9"/>
+        </radialGradient>
+        <radialGradient id="glass-sphere-magenta" cx="30%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+            <stop offset="15%" stop-color="#ffffff" stop-opacity="0.1"/>
+            <stop offset="70%" stop-color="#ff00aa" stop-opacity="0.1"/>
+            <stop offset="95%" stop-color="#ff00aa" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#ff00aa" stop-opacity="0.9"/>
+        </radialGradient>
+
+        <g id="orb-cyan">
+            <circle r="15" fill="url(#glass-sphere-cyan)"/>
+            <circle cx="-5" cy="-5" r="3" fill="#ffffff" filter="url(#glow-soft)" opacity="0.8"/>
+            <circle cx="8" cy="8" r="6" fill="#00e5ff" filter="url(#glow-soft)" opacity="0.3"/>
+        </g>
+        <g id="orb-magenta">
+            <circle r="15" fill="url(#glass-sphere-magenta)"/>
+            <circle cx="-5" cy="-5" r="3" fill="#ffffff" filter="url(#glow-soft)" opacity="0.8"/>
+            <circle cx="8" cy="8" r="6" fill="#ff00aa" filter="url(#glow-soft)" opacity="0.3"/>
+        </g>
+
+        <!-- 3D Wireframe Glass Cubes (Isometric) -->
+        <g id="cube-cyan">
+            <!-- Top Face -->
+            <polygon points="0,-16 18,-6 0,4 -18,-6" fill="#00ffff" fill-opacity="0.15" stroke="#ffffff" stroke-width="0.8"/>
+            <!-- Right Face -->
+            <polygon points="18,-6 18,14 0,24 0,4" fill="#00aaff" fill-opacity="0.1" stroke="#00e5ff" stroke-width="0.8"/>
+            <!-- Left Face -->
+            <polygon points="-18,-6 0,4 0,24 -18,14" fill="#00e5ff" fill-opacity="0.25" stroke="#00e5ff" stroke-width="0.8"/>
+            <!-- Inner core -->
+            <circle cx="0" cy="4" r="2" fill="#ffffff" filter="url(#glow-soft)"/>
+            <path d="M 0,4 L 0,24" stroke="#00e5ff" stroke-width="1.5" opacity="0.6"/>
+        </g>
+
+        <g id="cube-magenta">
+            <polygon points="0,-16 18,-6 0,4 -18,-6" fill="#ffccff" fill-opacity="0.15" stroke="#ffffff" stroke-width="0.8"/>
+            <polygon points="18,-6 18,14 0,24 0,4" fill="#aa00ff" fill-opacity="0.1" stroke="#ff00aa" stroke-width="0.8"/>
+            <polygon points="-18,-6 0,4 0,24 -18,14" fill="#ff00aa" fill-opacity="0.25" stroke="#ff00aa" stroke-width="0.8"/>
+            <circle cx="0" cy="4" r="2" fill="#ffffff" filter="url(#glow-soft)"/>
+            <path d="M 0,4 L 0,24" stroke="#ff00aa" stroke-width="1.5" opacity="0.6"/>
+        </g>
+
+        <!-- Mini Padlock for Security/Assets -->
+        <g id="lock-cyan">
+            <rect x="-6" y="-2" width="12" height="10" rx="1.5" fill="#00e5ff" fill-opacity="0.6" stroke="#00e5ff" stroke-width="1"/>
+            <path d="M -3,-2 L -3,-4 A 3 3 0 0 1 3 -4 L 3,-2" fill="none" stroke="#00e5ff" stroke-width="1.5"/>
+            <circle cx="0" cy="3" r="1.5" fill="#ffffff"/>
+            <line x1="0" y1="3" x2="0" y2="6" stroke="#ffffff" stroke-width="1.5"/>
+        </g>
+
+        <!-- ========================================== -->
+        <!-- ELEMENTOS DE LA ESFERA DE ENERGÍA          -->
+        <!-- ========================================== -->
+        <filter id="glow-cyan-sphere" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="glow-purple-sphere" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="10" result="blur" />
+            <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="glow-magenta-sphere" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="intense-glow-sphere" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="24" result="blur1" />
+            <feGaussianBlur stdDeviation="12" result="blur2" />
+            <feMerge>
+                <feMergeNode in="blur1" />
+                <feMergeNode in="blur2" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+
+        <radialGradient id="plasma-core" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+            <stop offset="20%" stop-color="#e0ffff" stop-opacity="0.95" />
+            <stop offset="45%" stop-color="#00ffff" stop-opacity="0.85" />
+            <stop offset="70%" stop-color="#cc00ff" stop-opacity="0.65" />
+            <stop offset="90%" stop-color="#140a38" stop-opacity="0.2" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+        </radialGradient>
+
+        <radialGradient id="mask-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="50%" stop-color="#ffffff" stop-opacity="1" />
+            <stop offset="98%" stop-color="#ffffff" stop-opacity="0" />
+        </radialGradient>
+        <mask id="sphere-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="800">
+            <circle cx="600" cy="400" r="390" fill="url(#mask-grad)" />
+        </mask>
+
+        <g id="dna-ray-normal">
+            <path d="M -550,25 L -550,-25 M -450,25 L -450,-25 M -350,25 L -350,-25 M -250,25 L -250,-25 M -150,25 L -150,-25 M -50,25 L -50,-25 M 50,25 L 50,-25 M 150,25 L 150,-25 M 250,25 L 250,-25 M 350,25 L 350,-25 M 450,25 L 450,-25 M 550,25 L 550,-25" fill="none" stroke="currentColor" stroke-width="1.8" opacity="0.45"/>
+            <path d="M -600,0 C -525,60 -425,-60 -350,0 C -275,60 -175,-60 -100,0 C -25,60 75,-60 150,0 C 225,60 325,-60 400,0 C 475,60 575,-60 650,0" fill="none" stroke="currentColor" stroke-width="5" opacity="0.35" stroke-linecap="round"/>
+            <path d="M -600,0 C -525,60 -425,-60 -350,0 C -275,60 -175,-60 -100,0 C -25,60 75,-60 150,0 C 225,60 325,-60 400,0 C 475,60 575,-60 650,0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M -600,0 C -525,60 -425,-60 -350,0 C -275,60 -175,-60 -100,0 C -25,60 75,-60 150,0 C 225,60 325,-60 400,0 C 475,60 575,-60 650,0" fill="none" stroke="#ffffff" stroke-width="0.6" opacity="0.95" stroke-linecap="round"/>
+            <path d="M -600,0 C -525,-60 -425,60 -350,0 C -275,-60 -175,60 -100,0 C -25,-60 75,60 150,0 C 225,-60 325,60 400,0 C 475,-60 575,60 650,0" fill="none" stroke="currentColor" stroke-width="5" opacity="0.35" stroke-linecap="round"/>
+            <path d="M -600,0 C -525,-60 -425,60 -350,0 C -275,-60 -175,60 -100,0 C -25,-60 75,60 150,0 C 225,-60 325,60 400,0 C 475,-60 575,60 650,0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M -600,0 C -525,-60 -425,60 -350,0 C -275,-60 -175,60 -100,0 C -25,-60 75,60 150,0 C 225,-60 325,60 400,0 C 475,-60 575,60 650,0" fill="none" stroke="#ffffff" stroke-width="0.6" opacity="0.95" stroke-linecap="round"/>
+        </g>
+
+        <g id="dna-ray-tight">
+            <path d="M -550,15 L -550,-15 M -450,15 L -450,-15 M -350,15 L -350,-15 M -250,15 L -250,-15 M -150,15 L -150,-15 M -50,15 L -50,-15 M 50,15 L 50,-15 M 150,15 L 150,-15 M 250,15 L 250,-15 M 350,15 L 350,-15 M 450,15 L 450,-15 M 550,15 L 550,-15" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.4"/>
+            <path d="M -600,0 C -575,35 -525,-35 -500,0 C -475,35 -425,-35 -400,0 C -375,35 -325,-35 -300,0 C -275,35 -225,-35 -200,0 C -175,35 -125,-35 -100,0 C -75,35 -25,-35 0,0 C 25,35 75,-35 100,0 C 125,35 175,-35 200,0 C 225,35 275,-35 300,0 C 325,35 375,-35 400,0 C 425,35 475,-35 500,0 C 525,35 575,-35 600,0" fill="none" stroke="currentColor" stroke-width="3.5" opacity="0.35"/>
+            <path d="M -600,0 C -575,35 -525,-35 -500,0 C -475,35 -425,-35 -400,0 C -375,35 -325,-35 -300,0 C -275,35 -225,-35 -200,0 C -175,35 -125,-35 -100,0 C -75,35 -25,-35 0,0 C 25,35 75,-35 100,0 C 125,35 175,-35 200,0 C 225,35 275,-35 300,0 C 325,35 375,-35 400,0 C 425,35 475,-35 500,0 C 525,35 575,-35 600,0" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M -600,0 C -575,35 -525,-35 -500,0 C -475,35 -425,-35 -400,0 C -375,35 -325,-35 -300,0 C -275,35 -225,-35 -200,0 C -175,35 -125,-35 -100,0 C -75,35 -25,-35 0,0 C 25,35 75,-35 100,0 C 125,35 175,-35 200,0 C 225,35 275,-35 300,0 C 325,35 375,-35 400,0 C 425,35 475,-35 500,0 C 525,35 575,-35 600,0" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.95"/>
+            <path d="M -600,0 C -575,-35 -525,35 -500,0 C -475,-35 -425,35 -400,0 C -375,-35 -325,35 -300,0 C -275,-35 -225,35 -200,0 C -175,-35 -125,35 -100,0 C -75,-35 -25,35 0,0 C 25,-35 75,35 100,0 C 125,-35 175,35 200,0 C 225,-35 275,35 300,0 C 325,-35 375,35 400,0 C 425,-35 475,35 500,0 C 525,-35 575,35 600,0" fill="none" stroke="currentColor" stroke-width="3.5" opacity="0.35"/>
+            <path d="M -600,0 C -575,-35 -525,35 -500,0 C -475,-35 -425,35 -400,0 C -375,-35 -325,35 -300,0 C -275,-35 -225,35 -200,0 C -175,-35 -125,35 -100,0 C -75,-35 -25,35 0,0 C 25,-35 75,35 100,0 C 125,-35 175,35 200,0 C 225,-35 275,35 300,0 C 325,-35 375,35 400,0 C 425,-35 475,35 500,0 C 525,-35 575,35 600,0" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M -600,0 C -575,-35 -525,35 -500,0 C -475,-35 -425,35 -400,0 C -375,-35 -325,35 -300,0 C -275,-35 -225,35 -200,0 C -175,-35 -125,35 -100,0 C -75,-35 -25,35 0,0 C 25,-35 75,35 100,0 C 125,-35 175,35 200,0 C 225,-35 275,35 300,0 C 325,-35 375,35 400,0 C 425,-35 475,35 500,0 C 525,-35 575,35 600,0" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.95"/>
+        </g>
+
+        <g id="dna-ray-wide">
+            <path d="M -500,50 L -500,-50 M -400,60 L -400,-60 M -200,60 L -200,-60 M -100,50 L -100,-50 M 100,50 L 100,-50 M 200,60 L 200,-60 M 400,60 L 400,-60 M 500,50 L 500,-50" fill="none" stroke="currentColor" stroke-width="2.5" opacity="0.3"/>
+            <path d="M -600,0 C -450,110 -150,-110 0,0 C 150,110 450,-110 600,0" fill="none" stroke="currentColor" stroke-width="6" opacity="0.3"/>
+            <path d="M -600,0 C -450,110 -150,-110 0,0 C 150,110 450,-110 600,0" fill="none" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M -600,0 C -450,110 -150,-110 0,0 C 150,110 450,-110 600,0" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="1"/>
+            <path d="M -600,0 C -450,-110 -150,110 0,0 C 150,-110 450,110 600,0" fill="none" stroke="currentColor" stroke-width="6" opacity="0.3"/>
+            <path d="M -600,0 C -450,-110 -150,110 0,0 C 150,-110 450,110 600,0" fill="none" stroke="currentColor" stroke-width="2.2"/>
+            <path d="M -600,0 C -450,-110 -150,110 0,0 C 150,-110 450,110 600,0" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="1"/>
+        </g>
+    </defs>
+
+    <!-- ========================================== -->
+    <!-- BACKGROUND BASE COLORS                     -->
+    <!-- ========================================== -->
+    <rect width="1200" height="560" fill="#060b26"/>
+    <rect width="1200" height="560" fill="url(#bg-magenta-glow)"/>
+    <rect width="1200" height="560" fill="url(#bg-cyan-glow)"/>
+    <rect width="1200" height="560" fill="url(#bg-center-glow)"/>
+
+    <!-- ========================================== -->
+    <!-- BACKGROUND LAYER 1 (DEEP & BLURRY)         -->
+    <!-- ========================================== -->
+    <g filter="url(#blur-far)" opacity="0.6">
+        <path d="M 100,50 L 300,150 L 350,100 M 400,400 L 600,500 L 800,400 M 800,100 L 1000,200 L 1100,150 M -50,300 L 200,400 L 300,350" fill="none" stroke="#00e5ff" stroke-width="2" opacity="0.3"/>
+        <use href="#cube-cyan" x="200" y="100" transform="scale(1.2)"/>
+        <use href="#cube-magenta" x="900" y="450" transform="scale(1.5)"/>
+        <use href="#cube-cyan" x="600" y="50" transform="scale(0.8)"/>
+        <use href="#orb-magenta" x="400" y="80" transform="scale(1.5)"/>
+        <use href="#orb-cyan" x="800" y="500" transform="scale(2)"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- BACKGROUND LAYER 2 (MIDGROUND / SHARP)     -->
+    <!-- ========================================== -->
+    <!-- The main isometric/tech grid lines -->
+    <g fill="none" stroke-linejoin="round" opacity="0.8">
+
+        <!-- Cyan Network Lines -->
+        <g stroke="#00e5ff" stroke-width="0.8">
+            <path d="M 0,220 L 120,220 L 180,250 L 280,250 L 320,300 L 400,300 L 440,250 L 520,250"/>
+            <path d="M 60,320 L 150,320 L 200,380 L 350,380 L 400,440 L 550,440 L 620,500"/>
+            <path d="M 280,250 L 280,180 L 350,140 L 450,140 L 500,180 L 650,180"/>
+            <path d="M 400,300 L 400,380"/>
+            <path d="M 440,250 L 440,140 L 550,80 L 700,80 L 750,130"/>
+            <path d="M 520,250 L 600,250 L 650,300 L 800,300 L 850,250 L 1000,250"/>
+            <path d="M 350,380 L 350,480 L 450,540"/>
+            <path d="M 650,300 L 650,400 L 750,450 L 900,450 L 980,380 L 1150,380"/>
+            <path d="M 800,300 L 800,180 L 900,120 L 1050,120 L 1100,160"/>
+        </g>
+
+        <!-- Magenta Network Lines -->
+        <g stroke="#ff00aa" stroke-width="0.8" opacity="0.9">
+            <path d="M 100,150 L 200,150 L 250,200 L 380,200 L 420,150 L 500,150"/>
+            <path d="M 180,250 L 180,350 L 250,400 L 400,400"/>
+            <path d="M 380,200 L 380,300 L 480,350 L 600,350 L 650,400 L 800,400"/>
+            <path d="M 600,350 L 600,220 L 700,160 L 850,160 L 900,220 L 1050,220"/>
+            <path d="M 850,160 L 850,80 L 950,50 L 1100,50"/>
+            <path d="M 750,450 L 750,530"/>
+            <path d="M 980,380 L 980,480 L 1100,540"/>
+        </g>
+
+        <!-- Glowing Highlights on Paths (Data Flow) -->
+        <g stroke="#ffffff" stroke-width="2" filter="url(#glow-soft)">
+            <path d="M 120,220 L 180,250" opacity="0.8"/>
+            <path d="M 350,140 L 450,140" opacity="0.5"/>
+            <path d="M 600,350 L 650,400" opacity="0.7"/>
+            <path d="M 850,250 L 1000,250" opacity="0.4"/>
+            <path d="M 200,380 L 350,380" opacity="0.6"/>
+        </g>
+    </g>
+
+    <!-- Main Grid Nodes -->
+    <g>
+        <!-- Cyan Nodes -->
+        <use href="#dot-cyan" x="60" y="320"/>
+        <use href="#dot-cyan" x="120" y="220"/>
+        <use href="#dot-cyan" x="280" y="250"/>
+        <use href="#dot-cyan" x="280" y="180"/>
+        <use href="#dot-cyan" x="350" y="140"/>
+        <use href="#dot-cyan" x="320" y="300"/>
+        <use href="#dot-cyan" x="400" y="300"/>
+        <use href="#dot-cyan" x="440" y="250"/>
+        <use href="#dot-cyan" x="550" y="80"/>
+        <use href="#dot-cyan" x="700" y="80"/>
+        <use href="#dot-cyan" x="520" y="250"/>
+        <use href="#dot-cyan" x="650" y="300"/>
+        <use href="#dot-cyan" x="800" y="300"/>
+        <use href="#dot-cyan" x="850" y="250"/>
+        <use href="#dot-cyan" x="1000" y="250"/>
+        <use href="#dot-cyan" x="150" y="320"/>
+        <use href="#dot-cyan" x="200" y="380"/>
+        <use href="#dot-cyan" x="400" y="440"/>
+        <use href="#dot-cyan" x="550" y="440"/>
+        <use href="#dot-cyan" x="620" y="500"/>
+        <use href="#dot-cyan" x="650" y="400"/>
+        <use href="#dot-cyan" x="750" y="450"/>
+        <use href="#dot-cyan" x="900" y="450"/>
+        <use href="#dot-cyan" x="980" y="380"/>
+        <use href="#dot-cyan" x="900" y="120"/>
+        <use href="#dot-cyan" x="1050" y="120"/>
+
+        <!-- Magenta Nodes -->
+        <use href="#dot-magenta" x="100" y="150"/>
+        <use href="#dot-magenta" x="200" y="150"/>
+        <use href="#dot-magenta" x="250" y="200"/>
+        <use href="#dot-magenta" x="380" y="200"/>
+        <use href="#dot-magenta" x="500" y="150"/>
+        <use href="#dot-magenta" x="180" y="250"/>
+        <use href="#dot-magenta" x="180" y="350"/>
+        <use href="#dot-magenta" x="250" y="400"/>
+        <use href="#dot-magenta" x="400" y="400"/>
+        <use href="#dot-magenta" x="380" y="300"/>
+        <use href="#dot-magenta" x="480" y="350"/>
+        <use href="#dot-magenta" x="600" y="350"/>
+        <use href="#dot-magenta" x="800" y="400"/>
+        <use href="#dot-magenta" x="600" y="220"/>
+        <use href="#dot-magenta" x="700" y="160"/>
+        <use href="#dot-magenta" x="850" y="160"/>
+        <use href="#dot-magenta" x="900" y="220"/>
+        <use href="#dot-magenta" x="1050" y="220"/>
+        <use href="#dot-magenta" x="850" y="80"/>
+        <use href="#dot-magenta" x="950" y="50"/>
+        <use href="#dot-magenta" x="980" y="480"/>
+    </g>
+
+    <!-- Cubes & Assets Overlay (Midground) -->
+    <g>
+        <!-- Left Section -->
+        <use href="#cube-cyan" x="80" y="380" transform="scale(1.2) translate(-15, -60)"/>
+        <use href="#cube-magenta" x="200" y="150" transform="scale(1)"/>
+        <use href="#cube-cyan" x="300" y="280" transform="scale(0.8) translate(0,0)"/>
+        <use href="#orb-cyan" x="60" y="220" transform="scale(0.9) translate(0,0)"/>
+
+        <!-- Center Section -->
+        <use href="#cube-cyan" x="420" y="150" transform="scale(1.1)"/>
+        <use href="#cube-magenta" x="500" y="350" transform="scale(1)"/>
+        <use href="#cube-cyan" x="650" y="400" transform="scale(1.4) translate(-20, -10)"/>
+        <use href="#cube-magenta" x="700" y="160" transform="scale(0.9)"/>
+        <use href="#cube-cyan" x="380" y="440" transform="scale(1.2)"/>
+        <use href="#orb-magenta" x="550" y="100" transform="scale(0.8)"/>
+        <use href="#orb-cyan" x="800" y="400" transform="scale(0.8)"/>
+
+        <!-- Right Section -->
+        <use href="#cube-magenta" x="900" y="220" transform="scale(1.1)"/>
+        <use href="#cube-cyan" x="1000" y="450" transform="scale(1)"/>
+        <use href="#cube-cyan" x="1100" y="160" transform="scale(0.8)"/>
+        <use href="#orb-cyan" x="950" y="150" transform="scale(0.6)"/>
+
+        <!-- Locks (representing security/assets) placed near specific cubes -->
+        <use href="#lock-cyan" x="395" y="130"/>
+        <use href="#lock-cyan" x="475" y="325"/>
+        <use href="#lock-cyan" x="680" y="145"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- LA ESFERA DE ENERGÍA Y SUS ÓRBITAS         -->
+    <!-- ========================================== -->
+    <g transform="translate(950, 280) scale(0.48) translate(-600, -400)">
+
+        <!-- ÓRBITAS TRASERAS -->
+        <g transform="rotate(12 600 400)" opacity="0.6">
+            <ellipse cx="600" cy="400" rx="580" ry="260" fill="none" stroke="#ff00cc" stroke-width="2" filter="url(#glow-magenta-sphere)"/>
+            <ellipse cx="600" cy="400" rx="583" ry="263" fill="none" stroke="#cc00ff" stroke-width="2.5" transform="rotate(1 600 400)" filter="url(#glow-purple-sphere)"/>
+        </g>
+        <g transform="rotate(-8 600 400)" opacity="0.65">
+            <ellipse cx="600" cy="400" rx="500" ry="200" fill="none" stroke="#00ffff" stroke-width="1.5" filter="url(#glow-cyan-sphere)"/>
+            <ellipse cx="600" cy="400" rx="504" ry="204" fill="none" stroke="#00ffff" stroke-width="2.5" transform="rotate(1.5 600 400)" filter="url(#glow-cyan-sphere)"/>
+        </g>
+
+        <!-- NÚCLEO DE PLASMA Y ENJAMBRE EXTREMO DE HÉLICES -->
+        <g>
+            <!-- Esfera de Plasma Masiva -->
+            <circle cx="600" cy="400" r="390" fill="url(#plasma-core)" filter="url(#intense-glow-sphere)"/>
+
+            <!-- ENJAMBRE HOLOGRÁFICO HIPER-DENSO -->
+            <g mask="url(#sphere-mask)" opacity="1">
+                <g transform="translate(600, 400)">
+                    <!-- Capa Profunda -->
+                    <use href="#dna-ray-tight" color="#6600cc" transform="rotate(20) scale(1.3)" opacity="0.4"/>
+                    <use href="#dna-ray-normal" color="#8000ff" transform="rotate(-40) scale(1.2)" filter="url(#glow-purple-sphere)" opacity="0.5"/>
+                    <use href="#dna-ray-tight" color="#cc00ff" transform="rotate(110) scale(1.5)" filter="url(#glow-purple-sphere)" opacity="0.45"/>
+                    <use href="#dna-ray-normal" color="#0066cc" transform="rotate(75) scale(1.1)" filter="url(#glow-cyan-sphere)" opacity="0.5"/>
+                    <use href="#dna-ray-wide" color="#cc00ff" transform="rotate(-130) scale(-1.1, 1.1)" filter="url(#glow-purple-sphere)" opacity="0.4"/>
+                    <use href="#dna-ray-tight" color="#0088aa" transform="rotate(15) scale(1.6)" opacity="0.4"/>
+
+                    <!-- Capa Intermedia -->
+                    <use href="#dna-ray-normal" color="#00ffff" transform="rotate(-15) scale(1.4)" filter="url(#glow-cyan-sphere)" opacity="0.85"/>
+                    <use href="#dna-ray-wide" color="#ff00cc" transform="rotate(55) scale(1.2)" filter="url(#glow-magenta-sphere)" opacity="0.8"/>
+                    <use href="#dna-ray-tight" color="#00ffff" transform="rotate(-70) scale(1.3)" filter="url(#glow-cyan-sphere)" opacity="0.85"/>
+                    <use href="#dna-ray-normal" color="#ff00aa" transform="rotate(160) scale(1.3)" filter="url(#glow-magenta-sphere)" opacity="0.8"/>
+                    <use href="#dna-ray-tight" color="#cc00ff" transform="rotate(-115) scale(1.2)" filter="url(#glow-purple-sphere)" opacity="0.85"/>
+                    <use href="#dna-ray-normal" color="#00ffcc" transform="rotate(-90) scale(-1.25, 1.25)" filter="url(#glow-cyan-sphere)" opacity="0.75"/>
+                    <use href="#dna-ray-wide" color="#9900ff" transform="rotate(135) scale(1.15)" filter="url(#glow-purple-sphere)" opacity="0.8"/>
+                    <use href="#dna-ray-normal" color="#ff00ff" transform="rotate(5) scale(-1.3, 1.3)" filter="url(#glow-magenta-sphere)" opacity="0.85"/>
+
+                    <!-- Capa Frontal Extrema -->
+                    <use href="#dna-ray-wide" color="#ffffff" transform="rotate(-5) scale(0.95)" filter="url(#intense-glow-sphere)" opacity="1"/>
+                    <use href="#dna-ray-tight" color="#ffffff" transform="rotate(85) scale(1.1)" filter="url(#glow-cyan-sphere)" opacity="0.95"/>
+                    <use href="#dna-ray-normal" color="#00ffff" transform="rotate(30) scale(1.5)" filter="url(#intense-glow-sphere)" opacity="1"/>
+                    <use href="#dna-ray-tight" color="#ff00cc" transform="rotate(-35) scale(1.4)" filter="url(#glow-magenta-sphere)" opacity="0.95"/>
+                    <use href="#dna-ray-normal" color="#e0ffff" transform="rotate(-55) scale(1.45)" filter="url(#glow-purple-sphere)" opacity="0.95"/>
+                    <use href="#dna-ray-wide" color="#00ffff" transform="rotate(105) scale(0.85)" filter="url(#glow-cyan-sphere)" opacity="0.95"/>
+                    <use href="#dna-ray-normal" color="#ffffff" transform="rotate(-165) scale(1.1)" filter="url(#intense-glow-sphere)" opacity="0.9"/>
+                </g>
+            </g>
+
+            <!-- Centro exacto de calor de fisión -->
+            <circle cx="600" cy="400" r="150" fill="#ffffff" opacity="0.25" filter="url(#intense-glow-sphere)"/>
+            <circle cx="600" cy="400" r="60" fill="#ffffff" opacity="0.4" filter="url(#glow-cyan-sphere)"/>
+        </g>
+
+        <!-- ÓRBITAS DELANTERAS -->
+        <g transform="rotate(-45 600 400)" opacity="0.95">
+            <ellipse cx="600" cy="400" rx="480" ry="320" fill="none" stroke="#ff00cc" stroke-width="2" filter="url(#glow-magenta-sphere)" opacity="0.8"/>
+            <ellipse cx="600" cy="400" rx="484" ry="324" fill="none" stroke="#ff00aa" stroke-width="3" transform="rotate(1.5 600 400)" filter="url(#glow-magenta-sphere)"/>
+            <ellipse cx="600" cy="400" rx="480" ry="320" fill="none" stroke="#cc00ff" stroke-width="2" transform="rotate(5 600 400)" filter="url(#glow-purple-sphere)"/>
+        </g>
+
+        <g transform="rotate(-140 600 400)" opacity="0.95">
+            <ellipse cx="600" cy="410" rx="580" ry="260" fill="none" stroke="#cc00ff" stroke-width="2" filter="url(#glow-purple-sphere)" opacity="1"/>
+            <ellipse cx="600" cy="405" rx="585" ry="265" fill="none" stroke="#9900ff" stroke-width="3.5" transform="rotate(1 600 400)" filter="url(#glow-purple-sphere)"/>
+            <ellipse cx="600" cy="400" rx="580" ry="260" fill="none" stroke="#00ffff" stroke-width="2.5" transform="rotate(3 600 400)" filter="url(#glow-cyan-sphere)"/>
+        </g>
+
+        <g transform="rotate(0 600 400)" opacity="1">
+            <ellipse cx="600" cy="400" rx="500" ry="500" fill="none" stroke="#00ffff" stroke-width="2" filter="url(#glow-cyan-sphere)" opacity="0.9"/>
+            <ellipse cx="600" cy="400" rx="506" ry="206" fill="none" stroke="#00ffff" stroke-width="4" transform="rotate(1.5 600 400)" filter="url(#glow-cyan-sphere)"/>
+            <ellipse cx="600" cy="400" rx="500" ry="400" fill="none" stroke="#00ffff" stroke-width="2.5" transform="rotate(4 600 400)" filter="url(#glow-cyan-sphere)"/>
+        </g>
+
+        <!-- SÍMBOLO CENTRAL (Raíz Cuadrada / Check - Ultra Brillante) -->
+        <g transform="translate(460, 390) scale(1.15)">
+            <polyline points="0,0 50,0 100,100 200,-100 260,-100" fill="none" stroke="#00ffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" filter="url(#intense-glow-sphere)" opacity="1"/>
+            <polyline points="0,0 50,0 100,100 200,-100 260,-100" fill="none" stroke="#e0ffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-cyan-sphere)"/>
+            <polyline points="0,0 50,0 100,100 200,-100 260,-100" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- FOREGROUND EXTREME BLUR (Depth of Field)   -->
+    <!-- ========================================== -->
+    <g filter="url(#blur-extreme)" opacity="0.7">
+        <use href="#orb-magenta" x="-10" y="50" transform="scale(2)"/>
+        <use href="#orb-cyan" x="250" y="-30" transform="scale(1.8)"/>
+        <use href="#cube-cyan" x="30" y="520" transform="scale(3)"/>
+        <use href="#cube-magenta" x="1150" y="480" transform="scale(2.5)"/>
+        <use href="#orb-cyan" x="1200" y="80" transform="scale(3)"/>
+
+        <!-- A big out-of-focus line crossing foreground -->
+        <path d="M -50,150 L 300,300" stroke="#ff00aa" stroke-width="8" opacity="0.3"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- MAIN TYPOGRAPHY                            -->
+    <!-- ========================================== -->
+    <!-- Text properly aligned and legible against the new background -->
+    <g transform="translate(80, 145)">
+        <!-- Radix Babylon Ledger App -->
+        <text x="0" y="0" font-size="44" font-weight="700" fill="#ffffff" letter-spacing="0.5">Radix Babylon Ledger App</text>
+
+        <!-- Atomic Composability -->
+        <text x="0" y="130" font-size="60" font-weight="800" fill="#1cf5a9" letter-spacing="1">Atomic Composability</text>
+
+        <!-- Unlocking Modular Logic & Assets. -->
+        <text x="0" y="195" font-size="34" font-weight="400" fill="#ffffff" letter-spacing="0.5">Desbloqueando lógica modular &amp; Activos.</text>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM LOGOS (Ledger & Radix)              -->
+    <!-- ========================================== -->
+    <g transform="translate(80, 450)">
+        <!-- Ledger Logo -->
+        <g>
+            <!-- Brackets -->
+            <path d="M 22,0 L 0,0 L 0,22" fill="none" stroke="#ffffff" stroke-width="4"/>
+            <path d="M 0,38 L 0,60 L 22,60" fill="none" stroke="#ffffff" stroke-width="4"/>
+            <path d="M 154,0 L 176,0 L 176,22" fill="none" stroke="#ffffff" stroke-width="4"/>
+            <path d="M 176,38 L 176,60 L 154,60" fill="none" stroke="#ffffff" stroke-width="4"/>
+            <!-- Text -->
+            <text x="20" y="42" font-size="32" font-weight="bold" fill="#ffffff" letter-spacing="3">LEDGER</text>
+        </g>
+
+        <!-- Vertical Divider -->
+        <line x1="240" y1="0" x2="240" y2="60" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+
+        <!-- Radix Logo -->
+        <g transform="translate(295, 10)">
+            <!-- Radix Root Symbol -->
+            <path d="M 0,20 L 12,20 L 24,40 L 46,0 L 62,0" fill="none" stroke="#1cf5a9" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Text -->
+            <text x="50" y="32" font-size="30" font-weight="bold" fill="#ffffff" letter-spacing="4">RADIX</text>
+        </g>
+    </g>
+
+</svg>
+

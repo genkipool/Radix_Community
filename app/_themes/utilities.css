@@ -1,0 +1,165 @@
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  /* Reserve scrollbar space at all times so opening/closing a modal
+     (which toggles overflow:hidden) never shifts the page width */
+  scrollbar-gutter: stable;
+}
+
+/* Global Scrollbar - thin & elegant */
+
+/* Standard (Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+  transition: background-color 0.2s;
+}
+
+/* Track is transparent by default */
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+/* When hovering the scrollbar area, the track becomes slightly visible to give feedback */
+*::-webkit-scrollbar:hover,
+*::-webkit-scrollbar-track:hover {
+  background-color: var(--color-card-border);
+}
+
+/* Default thumb is subtle */
+*::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border-radius: 9999px;
+}
+
+/* Hovering the thumb itself -> primary color */
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.bg-clip-text {
+  background-size: 200% 200%;
+}
+
+.grid-bg {
+  background-image: linear-gradient(to right, var(--color-grid-line, rgba(0, 0, 0, 0.05)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line, rgba(0, 0, 0, 0.05)) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 70%);
+}
+
+/* Apply correctly to all dark themes */
+:is(.radix-dark, .oro-dark, .radix-original-dark, .dark) .grid-bg {
+  --color-grid-line: rgba(255, 255, 255, 0.05);
+}
+
+.text-shadow-soft {
+  text-shadow: 0 1px 2.5px rgba(0, 0, 0, 0.15);
+}
+
+.glass-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.glass-card-hifi {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dot-grid {
+  background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.ambient-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 10% 10%, var(--color-primary-glow, rgba(99, 102, 241, 0.015)) 0%, transparent 60%),
+    radial-gradient(circle at 90% 90%, var(--color-secondary-glow, rgba(56, 189, 248, 0.015)) 0%, transparent 60%);
+}
+
+/* Hide scrollbar without disabling scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Cursor pointer for interactive elements */
+button,
+a,
+[role="button"],
+[role="tab"],
+[role="option"],
+[role="menuitem"],
+[tabindex]:not([tabindex="-1"]),
+label[for],
+select,
+summary {
+  cursor: pointer;
+}
+
+/* Transaction loading bar */
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Footer */
+.footer-premium {
+  background: radial-gradient(circle at 50% -20%,
+      color-mix(in srgb, var(--color-primary) 3%, transparent),
+      var(--color-bg) 80%);
+}
+
+/* ── RadixLogo stroke-dashoffset animation ────────────────────────────────
+   Previously used an arbitrary Tailwind value class
+   `animate-[dash_3s_ease-in-out_infinite]` which:
+     (a) forced Tailwind's JIT to emit legacy @supports blocks (old JS),
+     (b) had no GPU compositing hints (Lighthouse non-composited warning).
+   Replaced with a plain CSS class that:
+     • uses will-change + backface-visibility to promote to a GPU layer,
+     • removes 14 KiB of legacy polyfill output (Lighthouse "old JS" audit).
+   ─────────────────────────────────────────────────────────────────────── */
+.logo-dash-animate {
+  will-change: stroke-dashoffset;
+  backface-visibility: hidden;
+  animation: dash 3s ease-in-out infinite;
+}
+
+@keyframes dash {
+  0%   { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-dash-animate {
+    animation: none !important;
+    will-change: auto !important;
+  }
+}

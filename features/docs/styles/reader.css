@@ -1,0 +1,152 @@
+.docs-reader-content { color: var(--color-text-main); line-height: 1.85; font-size: 1rem; }
+
+.docs-reader-content h1 { font-size:2.25em; font-weight:800; margin:2rem 0 1rem; scroll-margin-top:5rem; color:var(--color-text-main); }
+.docs-reader-content h2 { font-size:1.55em; font-weight:700; margin:2.5rem 0 .75rem; scroll-margin-top:5rem; color:var(--color-text-main); }
+.docs-reader-content h3 { font-size:1.2em;  font-weight:600; margin:2rem 0 .6rem;   scroll-margin-top:5rem; color:var(--color-text-main); }
+.docs-reader-content h4 { font-size:1em;    font-weight:600; margin:1.5rem 0 .5rem; scroll-margin-top:5rem; color:var(--color-text-main); }
+
+.docs-reader-content p        { margin:.8em 0; color:var(--color-text-muted); }
+.docs-reader-content strong   { font-weight:700; color:var(--color-text-main); }
+.docs-reader-content em       { font-style:italic; }
+.docs-reader-content u        { text-decoration:underline; }
+.docs-reader-content s        { text-decoration:line-through; }
+
+.docs-reader-content ul { list-style:disc;    padding-left:1.6em; margin:.75em 0; color:var(--color-text-muted); }
+.docs-reader-content ol { list-style:decimal; padding-left:1.6em; margin:.75em 0; color:var(--color-text-muted); }
+.docs-reader-content li { margin:.3em 0; }
+
+.docs-reader-content blockquote {
+  border-left:3px solid var(--color-primary); padding:.75em 1.25em; margin:1.5em 0;
+  color:var(--color-text-muted); font-style:italic;
+  background:var(--color-surface); border-radius:8px;
+}
+.docs-reader-content a       { color:var(--color-primary); text-decoration:underline; }
+.docs-reader-content a:hover { opacity:.8; }
+
+.docs-reader-content code {
+  font-family:ui-monospace,'Cascadia Code',monospace;
+  background:var(--color-surface); padding:2px 7px;
+  border-radius:5px; font-size:.875em;
+  color:var(--color-primary); border:1px solid var(--color-card-border);
+}
+
+.docs-reader-content pre {
+  background:var(--color-surface); border:1px solid var(--color-card-border);
+  border-radius:12px; padding:1.25rem 1.5rem; overflow-x:auto;
+  margin:1.5rem 0; font-size:.9em; line-height:1.65;
+  width: 100%;
+}
+.docs-reader-content pre code {
+  background:none; border:none; padding:0;
+  font-size:1em; color:var(--color-text-main); border-radius:0;
+}
+
+.docs-reader-content hr   { border:none; border-top:1px solid var(--color-card-border); margin:2rem 0; }
+.docs-reader-content img  { max-width:100%; border-radius:10px; margin:1rem 0; }
+
+.docs-reader-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95em;
+  border: 1px solid var(--color-card-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.docs-reader-content th {
+  background: var(--color-surface);
+  font-weight: 700;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-card-border);
+  color: var(--color-text-main);
+}
+.docs-reader-content td {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--color-card-border);
+  color: var(--color-text-muted);
+}
+.docs-reader-content tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-surface) 40%, transparent);
+}
+
+.docs-reader-content font[size="1"] { font-size:.72em; }
+.docs-reader-content font[size="3"] { font-size:1em; }
+.docs-reader-content font[size="5"] { font-size:1.4em; }
+
+/* ── Print Optimization ─────────────────────────────────────────────────── */
+@media print {
+  /* Hide all non-essential UI */
+  nav,
+  footer,
+  aside,
+  .reader-sidebar,
+  .docs-reader-controls,
+  .action-buttons,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout for clean print */
+  body, html {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  /* Force full width for the content */
+  .max-w-7xl, 
+  .mx-auto,
+  .flex,
+  .lg\:flex-row {
+    display: block !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure text is black and readable */
+  .docs-reader-content,
+  .docs-reader-content p,
+  .docs-reader-content h1,
+  .docs-reader-content h2,
+  .docs-reader-content h3,
+  .docs-reader-content h4,
+  h1, h2, h3, h4 {
+    color: black !important;
+  }
+
+  /* Remove sticky positioning and shadows */
+  .sticky,
+  .fixed,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-2xl {
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* Handle images and code blocks */
+  .docs-reader-content pre {
+    background: #f8f8f8 !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+
+  .docs-reader-content img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Show URLs after links in print */
+  .docs-reader-content a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #444;
+  }
+}

@@ -1,0 +1,143 @@
+.radix-original-light {
+  /* Radix Original Light */
+  color-scheme: light;
+  --color-bg: #ffffff;
+  --color-text-main: #052350;
+  --color-text-muted: #4a5f80;
+  --color-text-secondary: #4a5f80;
+  --color-text-dim: #6b7fa0;
+  --color-text: #052350;
+  --color-bg-alt: #eef3fa;
+  --color-bg-secondary: #dde8f5;
+  --color-border: #bfd0e8;
+  --color-surface-hover: #dde8f5;
+  --color-primary-rgb: 0, 82, 255;
+
+  --color-primary: #052CC0;
+  --color-secondary: #d829aa;
+  --color-accent: #00C389;
+  --color-surface: #f4f7fc;
+
+  --color-card-bg: #ffffff;
+  --color-card-border: #dde4f0;
+
+  --color-gradient-start: #00C389;
+  --color-gradient-mid: #052CC0;
+  --color-gradient-end: #d829aa;
+
+  --text-glow: none;
+  --color-grid-dot: rgba(5, 44, 192, 0.06);
+
+  --color-primary-glow: transparent;
+  --color-secondary-glow: transparent;
+  --color-scrollbar: rgba(5, 44, 192, 0.25);
+
+  /* Code Syntax Highlighting — Radix Original Light */
+
+  --code-bg: #f8fafc;
+  --code-comment: #475569;
+  --code-keyword: #b01ea0;
+  --code-type: #047857;
+  --code-string: #1d4ed8;
+  --code-punct: #1e293b;
+
+
+  /* SidebarGraphic Light Theme Variables */
+  --sidebar-bg: #f0f4ff;
+  --sidebar-primary: #4f46e5;
+  --sidebar-secondary: #d946ef;
+  --sidebar-text-main: #0f172a;
+  --sidebar-grad1: #2dd4bf;
+  --sidebar-grad-mid: #3b82f6;
+  --sidebar-grad2: #d946ef;
+  --sidebar-shadow: #020617;
+  --sidebar-shadow2: #0f172a;
+
+  --sidebar-glow-op-1: 0.18;
+  --sidebar-glow-op-2: 0.22;
+  --sidebar-glow-op-3: 0.06;
+
+  --sidebar-net-primary: var(--sidebar-primary);
+  --sidebar-net-secondary: var(--sidebar-secondary);
+  --sidebar-net-thick: var(--sidebar-primary);
+  --sidebar-node-fill: var(--sidebar-bg);
+  --sidebar-net-opacity: 0.8;
+
+  --sidebar-layer-shadow: #000000;
+  --sidebar-comm-lines: #e0e5f2;
+  --sidebar-card-base: #1e293b;
+  --sidebar-card-stroke: #1e293b;
+  --sidebar-card-mid-stroke: rgba(0, 0, 0, 0.15);
+}
+
+.radix-original-dark {
+  /* Radix Original Dark */
+  color-scheme: dark;
+  --color-bg: #060c24;
+  --color-text-main: #f0f4ff;
+  --color-text-muted: #8ea0c4;
+  --color-text-secondary: #8ea0c4;
+  --color-text-dim: #6b82a8;
+  --color-text: #f0f4ff;
+  --color-bg-alt: #0d1525;
+  --color-bg-secondary: #172035;
+  --color-border: #1e3050;
+  --color-surface-hover: #1e3050;
+  --color-primary-rgb: 79, 140, 255;
+
+  --color-primary: #3B6BF5;
+  --color-secondary: #d829aa;
+  --color-accent: #2BDFAA;
+  --color-surface: #0d1538;
+
+  --color-card-bg: #0d1538;
+  --color-card-border: #1a2550;
+
+  --color-gradient-start: #2BDFAA;
+  --color-gradient-mid: #3B6BF5;
+  --color-gradient-end: #d829aa;
+
+  --text-glow: 0 0 20px rgba(59, 107, 245, 0.3);
+  --color-grid-dot: rgba(59, 107, 245, 0.12);
+
+  --color-primary-glow: rgba(59, 107, 245, 0.04);
+  --color-secondary-glow: rgba(216, 41, 170, 0.04);
+  --color-scrollbar: rgba(142, 160, 196, 0.3);
+
+
+
+  /* Code Syntax Highlighting - Dark Standard */
+  --code-bg: #111113;
+  --code-comment: #9ca3af;
+  --code-keyword: #c678dd;
+  --code-type: #34d399;
+  --code-string: #818cf8;
+  --code-punct: #d4d4d8;
+
+  /* SidebarGraphic Dark Theme Variables */
+  --sidebar-bg: #060b26;
+  --sidebar-primary: #00e5ff;
+  --sidebar-secondary: #ff00aa;
+  --sidebar-text-main: #ffffff;
+  --sidebar-grad1: #00e9bc;
+  --sidebar-grad-mid: #1b41ab;
+  --sidebar-grad2: #c10086;
+  --sidebar-shadow: #04123b;
+  --sidebar-shadow2: #3a0035;
+
+  --sidebar-glow-op-1: 0.45;
+  --sidebar-glow-op-2: 0.5;
+  --sidebar-glow-op-3: 0.15;
+
+  --sidebar-net-primary: var(--sidebar-primary);
+  --sidebar-net-secondary: var(--sidebar-secondary);
+  --sidebar-net-thick: #ffffff;
+  --sidebar-node-fill: #ffffff;
+  --sidebar-net-opacity: 0.8;
+
+  --sidebar-layer-shadow: #050a2e;
+  --sidebar-comm-lines: rgba(255, 255, 255, 0.15);
+  --sidebar-card-base: #030821;
+  --sidebar-card-stroke: #020512;
+  --sidebar-card-mid-stroke: #1b003a;
+}
