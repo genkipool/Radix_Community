@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useLayout } from '@/context/LayoutContext';
 import { getCookie, setCookie } from '@/utils/cookies';
 import '../styles/radix-invaders.css';
 import { type GameMode, type GameState, type SfxEvent } from '../types/radix-invaders.types';
@@ -579,6 +580,12 @@ export default function RadixInvadersGame() {
   const [badgeStep, setBadgeStep] = useState<'acquiring' | 'success'>('acquiring');
   const [soundMuted, setSoundMuted] = useState(false);
   const [pendingMode, setPendingMode] = useState<GameMode>('FUN');
+  const { setTheaterMode } = useLayout();
+  const isMobileRef = useRef(false);
+
+  useEffect(() => {
+    isMobileRef.current = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }, []);
 
   // Load mute preference from cookie
   useEffect(() => {
@@ -590,12 +597,9 @@ export default function RadixInvadersGame() {
   }, []);
 
   // ── Request full-screen on mobile (must be called from user gesture) ──
-  const requestMobileFullscreen = () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile && containerRef.current && !document.fullscreenElement) {
-      containerRef.current.requestFullscreen?.().catch(() => {
-        // Silently ignore — some browsers block even user-gesture requests
-      });
+  const activateTheaterIfMobile = () => {
+    if (isMobileRef.current) {
+      setTheaterMode(true);
     }
   };
 
@@ -622,18 +626,18 @@ export default function RadixInvadersGame() {
   };
 
   const handleTournament = () => {
-    requestMobileFullscreen();
+    activateTheaterIfMobile();
     setAppScreen('BADGE_ACQUIRING');
     setBadgeStep('acquiring');
     setTimeout(() => setBadgeStep('success'), 2200);
   };
   const handleBadgePlay = () => {
-    requestMobileFullscreen();
+    activateTheaterIfMobile();
     setPendingMode('TOURNAMENT');
     setAppScreen('ALIEN_INTRO');
   };
   const handleFun = () => {
-    requestMobileFullscreen();
+    activateTheaterIfMobile();
     setPendingMode('FUN');
     setAppScreen('ALIEN_INTRO');
   };
@@ -749,21 +753,22 @@ export default function RadixInvadersGame() {
       stateRef.current = updated;
 
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-      drawBackground(ctx, updated);
-      drawGroundLine(ctx);
-      drawShields(ctx, updated);
-      drawAliens(ctx, updated);
-      drawUFO(ctx, updated);
-      drawBullets(ctx, updated);
-      drawPowerUpItems(ctx, updated);
-      drawPlayer(ctx, updated);
-      drawParticles(ctx, updated);
-      drawHUD(ctx, updated, tRef.current, modeRef.current);
-      drawFlashMessage(ctx, updated);
-      drawUFOScorePopup(ctx, updated);
-      if (updated.screen === 'GAME_OVER') drawGameOver(ctx, updated, tRef.current);
-      if (updated.screen === 'STAGE_CLEAR') drawStageClear(ctx, updated, tRef.current);
-      if (updated.screen === 'PAUSED') drawPaused(ctx, tRef.current);
+      const isMob = isMobileRef.current;
+      drawBackground(ctx, updated, isMob);
+      drawGroundLine(ctx, isMob);
+      drawShields(ctx, updated, isMob);
+      drawAliens(ctx, updated, isMob);
+      drawUFO(ctx, updated, isMob);
+      drawBullets(ctx, updated, isMob);
+      drawPowerUpItems(ctx, updated, isMob);
+      drawPlayer(ctx, updated, isMob);
+      drawParticles(ctx, updated, isMob);
+      drawHUD(ctx, updated, tRef.current, modeRef.current, isMob);
+      drawFlashMessage(ctx, updated, isMob);
+      drawUFOScorePopup(ctx, updated, isMob);
+      if (updated.screen === 'GAME_OVER') drawGameOver(ctx, updated, tRef.current, isMob);
+      if (updated.screen === 'STAGE_CLEAR') drawStageClear(ctx, updated, tRef.current, isMob);
+      if (updated.screen === 'PAUSED') drawPaused(ctx, tRef.current, isMob);
       drawScanlines(ctx);
 
       rafRef.current = requestAnimationFrame(loop);
