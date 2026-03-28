@@ -564,10 +564,12 @@ export default function RadixInvadersGame() {
   tRef.current = t;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<GameState | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
   const mouseXRef = useRef<number>(0);
   const isMouseRef = useRef<boolean>(false);
+  const isTouchingRef = useRef<boolean>(false);
   const clickRef = useRef<boolean>(false);
   const rafRef = useRef<number>(0);
   const hiRef = useRef<number>(0);
@@ -586,6 +588,18 @@ export default function RadixInvadersGame() {
       setMuted(true);
     }
   }, []);
+
+  // ── Full-screen on mobile activation ─────────────────────────────
+  useEffect(() => {
+    if (appScreen === 'GAME') {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile && containerRef.current) {
+        containerRef.current.requestFullscreen?.().catch(() => {
+          // Ignore full-screen request errors (e.g. if browser blocks it)
+        });
+      }
+    }
+  }, [appScreen]);
 
   const handleSoundToggle = () => {
     setSoundMuted(prev => {
@@ -653,7 +667,7 @@ export default function RadixInvadersGame() {
     return () => { window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); };
   }, [appScreen]);
 
-  // ── Canvas mouse handlers ────────────────────────────────────────
+  // ── Canvas mouse/touch handlers ──────────────────────────────────
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -661,6 +675,22 @@ export default function RadixInvadersGame() {
     mouseXRef.current = (e.clientX - rect.left) * (CANVAS_W / rect.width);
     isMouseRef.current = true;
   };
+
+  const handleTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    mouseXRef.current = (touch.clientX - rect.left) * (CANVAS_W / rect.width);
+    isMouseRef.current = true;
+    isTouchingRef.current = true;
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = () => {
+    isTouchingRef.current = false;
+  };
+
   const handleMouseLeave = () => { isMouseRef.current = false; };
   const handleMouseEnter = () => { isMouseRef.current = true; };
   const handleClick = () => {
@@ -685,6 +715,11 @@ export default function RadixInvadersGame() {
     const loop = () => {
       const s = stateRef.current;
       if (!s) { rafRef.current = requestAnimationFrame(loop); return; }
+
+      // Auto-shoot while touching
+      if (isTouchingRef.current) {
+        clickRef.current = true;
+      }
 
       const updated = updateGame(s, keysRef.current, isMouseRef.current, mouseXRef.current, clickRef.current, () => { clickRef.current = false; });
 
@@ -735,7 +770,10 @@ export default function RadixInvadersGame() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}
+    >
       <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
       <canvas
         ref={canvasRef}
@@ -745,6 +783,9 @@ export default function RadixInvadersGame() {
         onMouseLeave={handleMouseLeave}
         onMouseEnter={handleMouseEnter}
         onClick={handleClick}
+        onTouchStart={handleTouch}
+        onTouchMove={handleTouch}
+        onTouchEnd={handleTouchEnd}
         style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain' }}
         tabIndex={0}
       />
