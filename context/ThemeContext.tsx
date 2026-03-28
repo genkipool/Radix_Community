@@ -13,17 +13,17 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getHtmlTheme(): Theme {
-  if (typeof document === 'undefined') return 'radix-dark';
+  if (typeof document === 'undefined') return 'radix-light';
   const cl = document.documentElement.classList;
   for (const t of THEMES) {
     if (cl.contains(t)) return t;
   }
-  return 'radix-dark';
+  return 'radix-light';
 }
 
 export function ThemeProvider({ children, initialTheme }: { children: ReactNode; initialTheme?: Theme }) {
   const [theme, setThemeState] = useState<Theme>(() =>
-    typeof window !== 'undefined' ? getHtmlTheme() : (initialTheme ?? 'radix-dark')
+    typeof window !== 'undefined' ? getHtmlTheme() : (initialTheme ?? 'radix-light')
   );
 
   const setTheme = (t: Theme) => {

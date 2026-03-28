@@ -1,3 +1,4 @@
+// Vercel deployment test - minor change
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/app/globals.css'
@@ -45,7 +46,7 @@ function parseTheme(value: string | undefined): Theme {
   if (value && (VALID_THEMES as string[]).includes(value)) {
     return value as Theme;
   }
-  return 'radix-dark';
+  return 'radix-light';
 }
 
 export default async function RootLayout({
@@ -74,7 +75,7 @@ export default async function RootLayout({
         <Script
           id="theme-strategy"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-dark';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`,
+            __html: `(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`,
           }}
         />
       </head>
