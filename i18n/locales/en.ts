@@ -21,6 +21,30 @@ export const en = {
     community: {
       title: 'Community | Radix Community Transparency Hub',
       description: 'Explore the Radix Community transparency hub — RWA funding, ecosystem tasks, and community governance.',
+    },
+    dapps: {
+      title: 'DApps | Radix Ecosystem Applications',
+      description: 'Discover decentralized applications built on Radix — DEXs, lending protocols, NFT platforms, and more.',
+    },
+    games: {
+      title: 'Games | Radix Blockchain Games',
+      description: 'Play blockchain games on Radix. Earn XRD, compete in tournaments, and explore the Radix gaming ecosystem.',
+    },
+    academy: {
+      title: 'Academy | Learn Radix',
+      description: 'Learn Radix from the ground up — DeFi fundamentals, Scrypto development, validator operations, and more.',
+    },
+    dashboard: {
+      title: 'Dashboard | Radix Validators & Explorer',
+      description: 'Real-time Radix validator stats, staking data, epoch performance, and transaction explorer.',
+    },
+    blog: {
+      title: 'Blog | Radix News & Updates',
+      description: 'Latest news, updates, and insights from the Radix ecosystem.',
+    },
+    infrastructure: {
+      title: 'Infrastructure | Run a Radix Node',
+      description: 'Everything you need to run a Radix validator node — setup guides, hardware requirements, and monitoring.',
     }
   },
   errors: {

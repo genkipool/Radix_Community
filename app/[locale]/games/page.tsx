@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
+import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import GamesClient from '@/features/games/GamesClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
 
@@ -11,12 +12,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEs = locale === 'es';
+  const t = await getDictionary(locale as Locale);
   return {
-    title: isEs ? 'Juegos | Juegos Blockchain en Radix' : 'Games | Radix Blockchain Games',
-    description: isEs
-      ? 'Juega juegos blockchain en Radix. Gana XRD, compite en torneos y explora el ecosistema de juegos de Radix.'
-      : 'Play blockchain games on Radix. Earn XRD, compete in tournaments, and explore the Radix gaming ecosystem.',
+    title: t.seo.games.title,
+    description: t.seo.games.description,
   };
 }
 

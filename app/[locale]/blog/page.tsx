@@ -10,12 +10,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEs = locale === 'es';
+  const t = await getDictionary(locale as Locale);
   return {
-    title: isEs ? 'Blog | Noticias y Actualizaciones de Radix' : 'Blog | Radix News & Updates',
-    description: isEs
-      ? 'Últimas noticias, actualizaciones e información del ecosistema Radix.'
-      : 'Latest news, updates, and insights from the Radix ecosystem.',
+    title: t.seo.blog.title,
+    description: t.seo.blog.description,
   };
 }
 

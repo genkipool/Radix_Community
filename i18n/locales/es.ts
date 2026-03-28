@@ -21,6 +21,30 @@ export const es = {
     community: {
       title: 'Comunidad | Hub de Transparencia de Radix Community',
       description: 'Explora el hub de transparencia de Radix Community: financiación de RWAs, tareas del ecosistema y gobernanza.',
+    },
+    dapps: {
+      title: 'DApps | Aplicaciones del Ecosistema Radix',
+      description: 'Descubre aplicaciones descentralizadas construidas en Radix — DEXs, protocolos de préstamos, plataformas NFT y más.',
+    },
+    games: {
+      title: 'Juegos | Juegos Blockchain en Radix',
+      description: 'Juega juegos blockchain en Radix. Gana XRD, compite en torneos y explora el ecosistema de juegos de Radix.',
+    },
+    academy: {
+      title: 'Academia | Aprende Radix',
+      description: 'Aprende Radix desde cero — fundamentos de DeFi, desarrollo con Scrypto, operaciones de staking y más.',
+    },
+    dashboard: {
+      title: 'Dashboard | Validadores y Explorador Radix',
+      description: 'Estadísticas de staking Radix en tiempo real, datos de staking, rendimiento por época y explorador de transacciones.',
+    },
+    blog: {
+      title: 'Blog | Noticias y Actualizaciones de Radix',
+      description: 'Últimas noticias, actualizaciones e información del ecosistema Radix.',
+    },
+    infrastructure: {
+      title: 'Infraestructura | Ejecuta un Nodo Radix',
+      description: 'Todo lo que necesitas para ejecutar un nodo validador Radix — guías de configuración, requisitos de hardware y monitoreo.',
     }
   },
   errors: {

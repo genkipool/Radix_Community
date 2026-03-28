@@ -9,12 +9,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEs = locale === 'es';
+  const t = await getDictionary(locale as Locale);
   return {
-    title: isEs ? 'Academia | Aprende Radix' : 'Academy | Learn Radix',
-    description: isEs
-      ? 'Aprende Radix desde cero — fundamentos de DeFi, desarrollo con Scrypto, operaciones de staking y más.'
-      : 'Learn Radix from the ground up — DeFi fundamentals, Scrypto development, validator operations, and more.',
+    title: t.seo.academy.title,
+    description: t.seo.academy.description,
   };
 }
 
