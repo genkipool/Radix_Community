@@ -584,8 +584,12 @@ export default function RadixInvadersGame() {
   const isMobileRef = useRef(false);
 
   useEffect(() => {
-    isMobileRef.current = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  }, []);
+    const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    isMobileRef.current = isMob;
+    if (isMob) {
+      setTheaterMode(true);
+    }
+  }, [setTheaterMode]);
 
   // Load mute preference from cookie
   useEffect(() => {
