@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useLayout } from '@/context/LayoutContext';
 import { getCookie, setCookie } from '@/utils/cookies';
 import '../styles/radix-invaders.css';
 import { type GameMode, type GameState, type SfxEvent } from '../types/radix-invaders.types';
@@ -564,10 +565,13 @@ export default function RadixInvadersGame() {
   tRef.current = t;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<GameState | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
   const mouseXRef = useRef<number>(0);
   const isMouseRef = useRef<boolean>(false);
+  const isMouseDownRef = useRef<boolean>(false);
+  const isTouchingRef = useRef<boolean>(false);
   const clickRef = useRef<boolean>(false);
   const rafRef = useRef<number>(0);
   const hiRef = useRef<number>(0);
@@ -577,6 +581,16 @@ export default function RadixInvadersGame() {
   const [badgeStep, setBadgeStep] = useState<'acquiring' | 'success'>('acquiring');
   const [soundMuted, setSoundMuted] = useState(false);
   const [pendingMode, setPendingMode] = useState<GameMode>('FUN');
+  const { setTheaterMode } = useLayout();
+  const isMobileRef = useRef(false);
+
+  useEffect(() => {
+    const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    isMobileRef.current = isMob;
+    if (isMob) {
+      setTheaterMode(true);
+    }
+  }, [setTheaterMode]);
 
   // Load mute preference from cookie
   useEffect(() => {
@@ -586,6 +600,13 @@ export default function RadixInvadersGame() {
       setMuted(true);
     }
   }, []);
+
+  // ── Request full-screen on mobile (must be called from user gesture) ──
+  const activateTheaterIfMobile = () => {
+    if (isMobileRef.current) {
+      setTheaterMode(true);
+    }
+  };
 
   const handleSoundToggle = () => {
     setSoundMuted(prev => {
@@ -610,15 +631,18 @@ export default function RadixInvadersGame() {
   };
 
   const handleTournament = () => {
+    activateTheaterIfMobile();
     setAppScreen('BADGE_ACQUIRING');
     setBadgeStep('acquiring');
     setTimeout(() => setBadgeStep('success'), 2200);
   };
   const handleBadgePlay = () => {
+    activateTheaterIfMobile();
     setPendingMode('TOURNAMENT');
     setAppScreen('ALIEN_INTRO');
   };
   const handleFun = () => {
+    activateTheaterIfMobile();
     setPendingMode('FUN');
     setAppScreen('ALIEN_INTRO');
   };
@@ -653,7 +677,7 @@ export default function RadixInvadersGame() {
     return () => { window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); };
   }, [appScreen]);
 
-  // ── Canvas mouse handlers ────────────────────────────────────────
+  // ── Canvas mouse/touch handlers ──────────────────────────────────
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -661,8 +685,35 @@ export default function RadixInvadersGame() {
     mouseXRef.current = (e.clientX - rect.left) * (CANVAS_W / rect.width);
     isMouseRef.current = true;
   };
-  const handleMouseLeave = () => { isMouseRef.current = false; };
+
+  const handleTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    mouseXRef.current = (touch.clientX - rect.left) * (CANVAS_W / rect.width);
+    isMouseRef.current = true;
+    isTouchingRef.current = true;
+    // Handle game-over / paused restart via touch
+    const s = stateRef.current;
+    if (s?.screen === 'GAME_OVER') {
+      const f = initGameState(1, hiRef.current);
+      f.mode = modeRef.current;
+      stateRef.current = f;
+    } else if (s?.screen === 'PAUSED') {
+      stateRef.current = { ...s, screen: 'PLAYING' };
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isTouchingRef.current = false;
+  };
+
+  const handleMouseLeave = () => { isMouseRef.current = false; isMouseDownRef.current = false; };
   const handleMouseEnter = () => { isMouseRef.current = true; };
+  const handleMouseDown = () => { isMouseDownRef.current = true; };
+  const handleMouseUp = () => { isMouseDownRef.current = false; };
   const handleClick = () => {
     isMouseRef.current = true;
     const s = stateRef.current;
@@ -686,6 +737,11 @@ export default function RadixInvadersGame() {
       const s = stateRef.current;
       if (!s) { rafRef.current = requestAnimationFrame(loop); return; }
 
+      // Auto-shoot while finger is touching the screen or mouse is held
+      if (isTouchingRef.current || isMouseDownRef.current) {
+        clickRef.current = true;
+      }
+
       const updated = updateGame(s, keysRef.current, isMouseRef.current, mouseXRef.current, clickRef.current, () => { clickRef.current = false; });
 
       // Dispatch SFX events
@@ -704,21 +760,22 @@ export default function RadixInvadersGame() {
       stateRef.current = updated;
 
       ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-      drawBackground(ctx, updated);
-      drawGroundLine(ctx);
-      drawShields(ctx, updated);
-      drawAliens(ctx, updated);
-      drawUFO(ctx, updated);
-      drawBullets(ctx, updated);
-      drawPowerUpItems(ctx, updated);
-      drawPlayer(ctx, updated);
-      drawParticles(ctx, updated);
-      drawHUD(ctx, updated, tRef.current, modeRef.current);
-      drawFlashMessage(ctx, updated);
-      drawUFOScorePopup(ctx, updated);
-      if (updated.screen === 'GAME_OVER') drawGameOver(ctx, updated, tRef.current);
-      if (updated.screen === 'STAGE_CLEAR') drawStageClear(ctx, updated, tRef.current);
-      if (updated.screen === 'PAUSED') drawPaused(ctx, tRef.current);
+      const isMob = isMobileRef.current;
+      drawBackground(ctx, updated, isMob);
+      drawGroundLine(ctx, isMob);
+      drawShields(ctx, updated, isMob);
+      drawAliens(ctx, updated, isMob);
+      drawUFO(ctx, updated, isMob);
+      drawBullets(ctx, updated, isMob);
+      drawPowerUpItems(ctx, updated, isMob);
+      drawPlayer(ctx, updated, isMob);
+      drawParticles(ctx, updated, isMob);
+      drawHUD(ctx, updated, tRef.current, modeRef.current, isMob);
+      drawFlashMessage(ctx, updated, isMob);
+      drawUFOScorePopup(ctx, updated, isMob);
+      if (updated.screen === 'GAME_OVER') drawGameOver(ctx, updated, tRef.current, isMob);
+      if (updated.screen === 'STAGE_CLEAR') drawStageClear(ctx, updated, tRef.current, isMob);
+      if (updated.screen === 'PAUSED') drawPaused(ctx, tRef.current, isMob);
       drawScanlines(ctx);
 
       rafRef.current = requestAnimationFrame(loop);
@@ -728,26 +785,38 @@ export default function RadixInvadersGame() {
   }, [appScreen]); // t is read via tRef.current (stable ref) — no dep needed
 
   // ── Render ────────────────────────────────────────────────────────
-  if (appScreen === 'INTRO') return <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />;
-  if (appScreen === 'ALIEN_INTRO') return <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />;
-  if (appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS') {
-    return <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />;
-  }
+  const renderContent = () => {
+    if (appScreen === 'INTRO') return <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />;
+    if (appScreen === 'ALIEN_INTRO') return <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />;
+    if (appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS') {
+      return <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />;
+    }
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
+        <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onMouseEnter={handleMouseEnter}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onClick={handleClick}
+          onTouchStart={handleTouch}
+          onTouchMove={handleTouch}
+          onTouchEnd={handleTouchEnd}
+          style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain', touchAction: 'none' }}
+          tabIndex={0}
+        />
+      </div>
+    );
+  };
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
-      <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onMouseEnter={handleMouseEnter}
-        onClick={handleClick}
-        style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain' }}
-        tabIndex={0}
-      />
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      {renderContent()}
     </div>
   );
 }
