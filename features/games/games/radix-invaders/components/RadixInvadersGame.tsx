@@ -589,17 +589,15 @@ export default function RadixInvadersGame() {
     }
   }, []);
 
-  // ── Full-screen on mobile activation ─────────────────────────────
-  useEffect(() => {
-    if (appScreen === 'GAME') {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile && containerRef.current) {
-        containerRef.current.requestFullscreen?.().catch(() => {
-          // Ignore full-screen request errors (e.g. if browser blocks it)
-        });
-      }
+  // ── Request full-screen on mobile (must be called from user gesture) ──
+  const requestMobileFullscreen = () => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile && containerRef.current && !document.fullscreenElement) {
+      containerRef.current.requestFullscreen?.().catch(() => {
+        // Silently ignore — some browsers block even user-gesture requests
+      });
     }
-  }, [appScreen]);
+  };
 
   const handleSoundToggle = () => {
     setSoundMuted(prev => {
@@ -624,15 +622,18 @@ export default function RadixInvadersGame() {
   };
 
   const handleTournament = () => {
+    requestMobileFullscreen();
     setAppScreen('BADGE_ACQUIRING');
     setBadgeStep('acquiring');
     setTimeout(() => setBadgeStep('success'), 2200);
   };
   const handleBadgePlay = () => {
+    requestMobileFullscreen();
     setPendingMode('TOURNAMENT');
     setAppScreen('ALIEN_INTRO');
   };
   const handleFun = () => {
+    requestMobileFullscreen();
     setPendingMode('FUN');
     setAppScreen('ALIEN_INTRO');
   };
@@ -679,12 +680,21 @@ export default function RadixInvadersGame() {
   const handleTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas || e.touches.length === 0) return;
+    e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     const touch = e.touches[0];
     mouseXRef.current = (touch.clientX - rect.left) * (CANVAS_W / rect.width);
     isMouseRef.current = true;
     isTouchingRef.current = true;
-    e.preventDefault();
+    // Handle game-over / paused restart via touch
+    const s = stateRef.current;
+    if (s?.screen === 'GAME_OVER') {
+      const f = initGameState(1, hiRef.current);
+      f.mode = modeRef.current;
+      stateRef.current = f;
+    } else if (s?.screen === 'PAUSED') {
+      stateRef.current = { ...s, screen: 'PLAYING' };
+    }
   };
 
   const handleTouchEnd = () => {
@@ -716,7 +726,7 @@ export default function RadixInvadersGame() {
       const s = stateRef.current;
       if (!s) { rafRef.current = requestAnimationFrame(loop); return; }
 
-      // Auto-shoot while touching
+      // Auto-shoot while finger is touching the screen
       if (isTouchingRef.current) {
         clickRef.current = true;
       }
@@ -763,32 +773,36 @@ export default function RadixInvadersGame() {
   }, [appScreen]); // t is read via tRef.current (stable ref) — no dep needed
 
   // ── Render ────────────────────────────────────────────────────────
-  if (appScreen === 'INTRO') return <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />;
-  if (appScreen === 'ALIEN_INTRO') return <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />;
-  if (appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS') {
-    return <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />;
-  }
+  const renderContent = () => {
+    if (appScreen === 'INTRO') return <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />;
+    if (appScreen === 'ALIEN_INTRO') return <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />;
+    if (appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS') {
+      return <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />;
+    }
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
+        <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_W}
+          height={CANVAS_H}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onMouseEnter={handleMouseEnter}
+          onClick={handleClick}
+          onTouchStart={handleTouch}
+          onTouchMove={handleTouch}
+          onTouchEnd={handleTouchEnd}
+          style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain', touchAction: 'none' }}
+          tabIndex={0}
+        />
+      </div>
+    );
+  };
 
   return (
-    <div
-      ref={containerRef}
-      style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}
-    >
-      <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onMouseEnter={handleMouseEnter}
-        onClick={handleClick}
-        onTouchStart={handleTouch}
-        onTouchMove={handleTouch}
-        onTouchEnd={handleTouchEnd}
-        style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain' }}
-        tabIndex={0}
-      />
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      {renderContent()}
     </div>
   );
 }
