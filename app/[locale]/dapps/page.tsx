@@ -10,12 +10,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEs = locale === 'es';
+  const t = await getDictionary(locale as Locale);
   return {
-    title: isEs ? 'DApps | Aplicaciones del Ecosistema Radix' : 'DApps | Radix Ecosystem Applications',
-    description: isEs
-      ? 'Descubre aplicaciones descentralizadas construidas en Radix — DEXs, protocolos de préstamos, plataformas NFT y más.'
-      : 'Discover decentralized applications built on Radix — DEXs, lending protocols, NFT platforms, and more.',
+    title: t.seo.dapps.title,
+    description: t.seo.dapps.description,
   };
 }
 

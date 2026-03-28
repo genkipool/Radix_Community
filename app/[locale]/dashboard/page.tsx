@@ -19,6 +19,7 @@ import { COOKIE_KEYS } from '@/constants/dashboard';
 
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
+import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -27,12 +28,10 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEs = locale === 'es';
+  const t = await getDictionary(locale as Locale);
   return {
-    title: isEs ? 'Dashboard | Validadores y Explorador Radix' : 'Dashboard | Radix Validators & Explorer',
-    description: isEs
-      ? 'Estadísticas de staking Radix en tiempo real, datos de staking, rendimiento por época y explorador de transacciones.'
-      : 'Real-time Radix validator stats, staking data, epoch performance, and transaction explorer.',
+    title: t.seo.dashboard.title,
+    description: t.seo.dashboard.description,
   };
 }
 
