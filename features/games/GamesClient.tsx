@@ -98,6 +98,13 @@ export default function GamesClient({
         setTheaterMode((prev: boolean) => {
             const next = !prev;
             setCookie(COOKIE_THEATER_MODE, String(next));
+
+            // If we are exiting theater mode on mobile, also close the current game
+            const isMobile = window.innerWidth < 768;
+            if (!next && isMobile) {
+                setGame(null);
+            }
+
             return next;
         });
     };

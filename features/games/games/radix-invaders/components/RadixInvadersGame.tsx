@@ -570,6 +570,7 @@ export default function RadixInvadersGame() {
   const keysRef = useRef<Set<string>>(new Set());
   const mouseXRef = useRef<number>(0);
   const isMouseRef = useRef<boolean>(false);
+  const isMouseDownRef = useRef<boolean>(false);
   const isTouchingRef = useRef<boolean>(false);
   const clickRef = useRef<boolean>(false);
   const rafRef = useRef<number>(0);
@@ -709,8 +710,10 @@ export default function RadixInvadersGame() {
     isTouchingRef.current = false;
   };
 
-  const handleMouseLeave = () => { isMouseRef.current = false; };
+  const handleMouseLeave = () => { isMouseRef.current = false; isMouseDownRef.current = false; };
   const handleMouseEnter = () => { isMouseRef.current = true; };
+  const handleMouseDown = () => { isMouseDownRef.current = true; };
+  const handleMouseUp = () => { isMouseDownRef.current = false; };
   const handleClick = () => {
     isMouseRef.current = true;
     const s = stateRef.current;
@@ -734,8 +737,8 @@ export default function RadixInvadersGame() {
       const s = stateRef.current;
       if (!s) { rafRef.current = requestAnimationFrame(loop); return; }
 
-      // Auto-shoot while finger is touching the screen
-      if (isTouchingRef.current) {
+      // Auto-shoot while finger is touching the screen or mouse is held
+      if (isTouchingRef.current || isMouseDownRef.current) {
         clickRef.current = true;
       }
 
@@ -798,6 +801,8 @@ export default function RadixInvadersGame() {
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onMouseEnter={handleMouseEnter}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
           onClick={handleClick}
           onTouchStart={handleTouch}
           onTouchMove={handleTouch}
