@@ -19,12 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '/dashboard'
     ]
 
-    // Generamos todas las combinaciones de idioma + ruta
+    // We generate all the language + path combinations
     const fullSitemap = paths.flatMap((path) =>
         locales.map((locale) => ({
             url: `${baseUrl}/${locale}${path}`,
             lastModified: new Date(),
-            // Priority y changeFrequency son opcionales
+            // Priority and changeFrequency are optional
             changeFrequency: 'weekly' as const,
             priority: path === '' ? 1 : 0.8,
         }))
