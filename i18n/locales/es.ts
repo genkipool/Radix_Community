@@ -1973,7 +1973,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
   dashboard: {
     hero: {
       title: 'Dashboard',
-      subtitle: 'Conecta tu wallet, Gestiona tu staking, analiza trasacciones y controla tus XRD — todo desde un único panel.',
+      subtitle: 'Conecta tu wallet, Gestiona tu staking, analiza transacciones y controla tus XRD — todo desde un único panel.',
     },
     loading: {
       title: 'Cargando datos de la red...',
