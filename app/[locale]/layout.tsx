@@ -8,6 +8,8 @@ import { getDictionary, Locale } from '@/i18n/dictionaries';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import type { Theme } from '@/context/ThemeContext';
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -83,6 +85,8 @@ export default async function RootLayout({
         <Providers locale={locale} dictionary={dictionary} theme={theme}>
           <AppShell>{children}</AppShell>
         </Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
