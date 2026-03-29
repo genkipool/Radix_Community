@@ -208,7 +208,7 @@ export const es = {
     btn_dev: "Empezar a Construir",
     metric1: "Shards (Escalabilidad Infinita)",
     metric2: "Trazabilidad AML / MiCA",
-    metric3: "Seguridad Nativa",
+    metric3: "Seguridad Nativa: Activos reales, no promesas de código.",
     metric4: "Liquidación Atómica DvP",
     snippet: {
       title: "Manifiesto",
@@ -1973,7 +1973,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
   dashboard: {
     hero: {
       title: 'Dashboard',
-      subtitle: 'Explora el staking, monitoriza la salud de la red y gestiona tus XRD — todo en un solo lugar.',
+      subtitle: 'Conecta tu wallet, Gestiona tu staking, analiza trasacciones y controla tus XRD — todo desde un único panel.',
     },
     loading: {
       title: 'Cargando datos de la red...',
