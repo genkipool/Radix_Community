@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
                 allow: '/',
             },
         ],
-        sitemap: 'https://radix.community/sitemap.xml',
+        sitemap: 'https://radix-community.genkipool.com/sitemap.xml',
     };
 }

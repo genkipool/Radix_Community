@@ -2,7 +2,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://radix.community'
+    const baseUrl = 'https://radix-community.genkipool.com'
     const locales = ['en', 'es']
 
     // Base routes of the application (based on the [locale] folder structure)
