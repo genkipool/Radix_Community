@@ -23,14 +23,10 @@ export async function GET(request: Request) {
 
   try {
     // Purge the cache globally across Vercel
-    // @ts-expect-error - Next.js 15 type definitions experimental
-    revalidateTag('validators');
-    // @ts-expect-error - Next.js 15 type definitions experimental
-    revalidateTag('transactions');
-    // @ts-expect-error - Next.js 15 type definitions experimental
-    revalidateTag('entities');
-    // @ts-expect-error - Next.js 15 type definitions experimental
-    revalidateTag('stake-history');
+    revalidateTag('validators', 'max');
+    revalidateTag('transactions', 'max');
+    revalidateTag('entities', 'max');
+    revalidateTag('stake-history', 'max');
 
     return NextResponse.json({ 
       success: true, 
