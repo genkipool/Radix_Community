@@ -7,6 +7,7 @@
 
 import { getGateway, withRetry, type Network } from './client';
 import logger from '@/lib/logger';
+import { unstable_cache } from 'next/cache';
 
 /** Minimal shape returned by the Gateway for an entity detail response */
 export type EntityDetailsResponse = unknown;
@@ -53,38 +54,46 @@ const RESOURCE_METADATA_KEYS = [
   'dapp_definitions',
 ];
 
+const getCachedEntityDetails = unstable_cache(
+  async (address: string, network: Network): Promise<EntityDetailsResponse | null> => {
+    const gateway = getGateway(network);
+    try {
+      // Use innerClient directly so we can pass opt_ins.explicit_metadata.
+      // getEntityDetailsVaultAggregated() is a convenience wrapper that does not
+      // forward opt_ins, so tokens with many metadata keys (DFP2, etc.) would
+      // only return the first page of metadata — showing as "Unknown" in the UI.
+      const res = await withRetry(() =>
+        gateway.state.innerClient.stateEntityDetails({
+          stateEntityDetailsRequest: {
+            addresses: [address],
+            opt_ins: {
+              explicit_metadata: RESOURCE_METADATA_KEYS,
+              ancestor_identities: false,
+              component_royalty_vault_balance: false,
+              package_royalty_vault_balance: false,
+              non_fungible_include_nfids: false,
+            },
+          },
+        }),
+      );
+      // The response is a list; extract the first (and only) item
+      const item = (res as { items?: unknown[] })?.items?.[0] ?? null;
+      return item as EntityDetailsResponse | null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error({ err: error }, 'Error fetching entity details: %s', message);
+      return null;
+    }
+  },
+  ['entity-details-base'],
+  { revalidate: 3600, tags: ['entities'] }
+);
+
 export async function fetchEntityDetails(
   address: string,
   network: Network = 'mainnet',
 ): Promise<EntityDetailsResponse | null> {
-  const gateway = getGateway(network);
-  try {
-    // Use innerClient directly so we can pass opt_ins.explicit_metadata.
-    // getEntityDetailsVaultAggregated() is a convenience wrapper that does not
-    // forward opt_ins, so tokens with many metadata keys (DFP2, etc.) would
-    // only return the first page of metadata — showing as "Unknown" in the UI.
-    const res = await withRetry(() =>
-      gateway.state.innerClient.stateEntityDetails({
-        stateEntityDetailsRequest: {
-          addresses: [address],
-          opt_ins: {
-            explicit_metadata: RESOURCE_METADATA_KEYS,
-            ancestor_identities: false,
-            component_royalty_vault_balance: false,
-            package_royalty_vault_balance: false,
-            non_fungible_include_nfids: false,
-          },
-        },
-      }),
-    );
-    // The response is a list; extract the first (and only) item
-    const item = (res as { items?: unknown[] })?.items?.[0] ?? null;
-    return item as EntityDetailsResponse | null;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error({ err: error }, 'Error fetching entity details: %s', message);
-    return null;
-  }
+  return getCachedEntityDetails(address, network);
 }
 
 // ── NFT data ──────────────────────────────────────────────────────────────────

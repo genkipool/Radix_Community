@@ -18,6 +18,7 @@
 import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
+import { unstable_cache } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 
@@ -60,10 +61,7 @@ type GatewayItem    = {
 };
 type BalanceChange  = { resource_address: string; entity_address: string; balance_change: string };
 
-// ── Server-side stake-history cache ──────────────────────────────────────────
-// Key: "network:address"
-const stakeHistoryCache = new Map<string, { data: StakeHistoryEntry[]; expiry: number }>();
-const STAKE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// ── Global stake-history caching is now handled by Next.js Data Cache ────────
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared opt-ins used by all streamTransactions calls
@@ -365,45 +363,53 @@ export async function fetchRecentTransactions(
 // Returns the raw Gateway item used by both /api/transactions/[hash] and
 // the txid_ fast-path in searchTransactionsByAddress.
 // ─────────────────────────────────────────────────────────────────────────────
+const getCachedTransactionDetails = unstable_cache(
+    async (hash: string, network: Network): Promise<unknown | null> => {
+        const restBase =
+            network === 'stokenet'
+                ? 'https://stokenet.radixdlt.com'
+                : 'https://mainnet.radixdlt.com';
+        try {
+            const res = await withRetry(async () => {
+                const r = await fetch(`${restBase}/transaction/committed-details`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        intent_hash: hash,
+                        opt_ins: {
+                            receipt_events:           true,
+                            affected_global_entities: true,
+                            balance_changes:          true,
+                            receipt_fee_summary:      true,
+                            receipt_fee_destination:  true,
+                            manifest_instructions:    true,
+                            confirmed_at:             true,
+                        },
+                    }),
+                });
+                if (!r.ok)
+                    throw Object.assign(new Error(`Gateway ${r.status}`), { status: r.status });
+                return r.json();
+            });
+            return res?.transaction ?? null;
+        } catch (error) {
+            logger.error(
+                { err: error },
+                'fetchTransactionDetails error: %s',
+                error instanceof Error ? error.message : String(error),
+            );
+            return null;
+        }
+    },
+    ['tx-details-base'],
+    { revalidate: 3600, tags: ['transactions', 'tx-details'] }
+);
+
 export async function fetchTransactionDetails(
     hash: string,
     network: Network = 'mainnet',
 ): Promise<unknown | null> {
-    const restBase =
-        network === 'stokenet'
-            ? 'https://stokenet.radixdlt.com'
-            : 'https://mainnet.radixdlt.com';
-    try {
-        const res = await withRetry(async () => {
-            const r = await fetch(`${restBase}/transaction/committed-details`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    intent_hash: hash,
-                    opt_ins: {
-                        receipt_events:           true,
-                        affected_global_entities: true,
-                        balance_changes:          true,
-                        receipt_fee_summary:      true,
-                        receipt_fee_destination:  true,
-                        manifest_instructions:    true,
-                        confirmed_at:             true,
-                    },
-                }),
-            });
-            if (!r.ok)
-                throw Object.assign(new Error(`Gateway ${r.status}`), { status: r.status });
-            return r.json();
-        });
-        return res?.transaction ?? null;
-    } catch (error) {
-        logger.error(
-            { err: error },
-            'fetchTransactionDetails error: %s',
-            error instanceof Error ? error.message : String(error),
-        );
-        return null;
-    }
+    return getCachedTransactionDetails(hash, network);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -539,75 +545,67 @@ export async function fetchFilteredTransactions(options: {
 // Results are memory-cached for 5 minutes. Uses native date filtering so the
 // Gateway only returns transactions from the last 90 days.
 // ─────────────────────────────────────────────────────────────────────────────
+const getCachedStakeHistory = unstable_cache(
+    async (validatorAddress: string, network: Network): Promise<StakeHistoryEntry[]> => {
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        ninetyDaysAgo.setHours(0, 0, 0, 0);
+
+        // Pre-fill every day so days with no activity still appear in the chart
+        const dailyMap = new Map<string, { stake: number; unstake: number; claim: number }>();
+        for (let i = 0; i < 90; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            dailyMap.set(d.toISOString().split('T')[0], { stake: 0, unstake: 0, claim: 0 });
+        }
+
+        const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+        let cursor: string | undefined;
+        let done = false;
+        let pageCount = 0;
+        const MAX_PAGES = 20;
+
+        while (!done && pageCount < MAX_PAGES) {
+            const page = await searchTransactionsByAddress(
+                validatorAddress,
+                cursor,
+                100,
+                network,
+                { start: startDate },
+            );
+            pageCount++;
+
+            for (const tx of page.transactions) {
+                const confirmedAt =
+                    tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
+                if (confirmedAt < ninetyDaysAgo) { done = true; break; }
+
+                const dateStr = confirmedAt.toISOString().split('T')[0];
+                const day     = dailyMap.get(dateStr);
+                if (!day) continue;
+
+                if (tx.stakeXrd)   day.stake   += tx.stakeXrd;
+                if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
+                if (tx.claimXrd)   day.claim   += tx.claimXrd;
+            }
+
+            if (!page.nextCursor) done = true;
+            else cursor = page.nextCursor;
+        }
+
+        return Array.from(dailyMap.entries())
+            .map(([date, vals]) => ({ date, ...vals }))
+            .sort((a, b) => a.date.localeCompare(b.date));
+    },
+    ['stake-history-base'],
+    { revalidate: 300, tags: ['stake-history'] }
+);
+
 export async function fetchStakeHistoryCached(
     validatorAddress: string,
     network: Network = 'mainnet',
 ): Promise<StakeHistoryEntry[]> {
-    const cacheKey = `${network}:${validatorAddress}`;
-    const cached   = stakeHistoryCache.get(cacheKey);
-    const now      = Date.now();
-
-    if (cached && cached.expiry > now) return cached.data;
-
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    ninetyDaysAgo.setHours(0, 0, 0, 0);
-
-    // Pre-fill every day so days with no activity still appear in the chart
-    const dailyMap = new Map<string, { stake: number; unstake: number; claim: number }>();
-    for (let i = 0; i < 90; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        dailyMap.set(d.toISOString().split('T')[0], { stake: 0, unstake: 0, claim: 0 });
-    }
-
-    const startDate = ninetyDaysAgo.toISOString().split('T')[0];
-    let cursor: string | undefined;
-    let done = false;
-    let pageCount = 0;
-    const MAX_PAGES = 20;
-
-    while (!done && pageCount < MAX_PAGES) {
-        const page = await searchTransactionsByAddress(
-            validatorAddress,
-            cursor,
-            100,
-            network,
-            { start: startDate },
-        );
-        pageCount++;
-
-        for (const tx of page.transactions) {
-            const confirmedAt =
-                tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
-            if (confirmedAt < ninetyDaysAgo) { done = true; break; }
-
-            const dateStr = confirmedAt.toISOString().split('T')[0];
-            const day     = dailyMap.get(dateStr);
-            if (!day) continue;
-
-            if (tx.stakeXrd)   day.stake   += tx.stakeXrd;
-            if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
-            if (tx.claimXrd)   day.claim   += tx.claimXrd;
-        }
-
-        if (!page.nextCursor) done = true;
-        else cursor = page.nextCursor;
-    }
-
-    const history = Array.from(dailyMap.entries())
-        .map(([date, vals]) => ({ date, ...vals }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-
-    stakeHistoryCache.set(cacheKey, { data: history, expiry: now + STAKE_CACHE_TTL });
-
-    // Evict oldest entry when cache grows large
-    if (stakeHistoryCache.size > 500) {
-        const oldestKey = stakeHistoryCache.keys().next().value;
-        if (oldestKey) stakeHistoryCache.delete(oldestKey);
-    }
-
-    return history;
+    return getCachedStakeHistory(validatorAddress, network);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
