@@ -4,6 +4,7 @@ import { ExternalLink, Globe, Server } from 'lucide-react';
 import { type Validator, type StakeHistoryEntry } from '@/types/radix';
 import { formatXRD, formatNumber } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
+import { getUptimeColor } from '@/utils/validators';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge } from './ValidatorBadges';
 import { Label, DR, AR } from './ValidatorExpandedPrimitives';
@@ -113,11 +114,6 @@ export const DelegationBlock = ({
 /* ─────────────────────────────────────────
    PerformanceBlock
 ───────────────────────────────────────── */
-const getUptimeColor = (p: number) => {
-    if (p >= 99) return '#16a34a'; // Green
-    if (p >= 98) return '#f59e0b'; // Amber
-    return '#dc2626';             // Red
-};
 export const PerformanceBlock = ({
     validator, dt, live, className = '',
 }: {
@@ -134,7 +130,7 @@ export const PerformanceBlock = ({
             <div className="veb-perf-section">
                 <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
                 <div className="veb-drows">
-                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={dt?.details?.uptime_tooltip} />
+                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={dt?.details?.uptime_recent_tooltip} />
                     <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
                     <DR label={dt?.details?.proposals_missed ?? 'Perdidas'}    value={<span className="veb-missed">{live.recentMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
@@ -142,7 +138,7 @@ export const PerformanceBlock = ({
             <div className="veb-perf-section mt-4">
                 <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
                 <div className="veb-drows">
-                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={dt?.details?.uptime_tooltip} />
+                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={dt?.details?.uptime_total_tooltip} />
                     <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
                     <DR label={dt?.details?.proposals_missed ?? 'Perdidas'}    value={<span className="veb-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>

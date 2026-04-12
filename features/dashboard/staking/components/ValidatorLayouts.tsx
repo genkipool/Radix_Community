@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe, ExternalLink, Server, AlertCircle, Stamp } from 'lucide-react';
-import { getStatusColor } from '@/utils/validators';
+import { getStatusColor, getUptimeColor } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
@@ -101,7 +101,12 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             },
                             { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%` },
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: '#16a34a' },
+                            { 
+                                label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
+                                tooltip: dt?.details?.uptime_recent_tooltip, 
+                                value: `${validator.recentUptime.toFixed(2)}%`, 
+                                accent: getUptimeColor(validator.recentUptime) 
+                            },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
 
@@ -226,7 +231,12 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         ]} />
                         <StatDivider items={[
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: '#16a34a' },
+                            { 
+                                label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
+                                tooltip: dt?.details?.uptime_recent_tooltip, 
+                                value: `${validator.recentUptime.toFixed(2)}%`, 
+                                accent: getUptimeColor(validator.recentUptime) 
+                            },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
                     </div>
@@ -407,7 +417,13 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 />
                 <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1)}%`} vertical={columns >= 8} />
                 <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1)}%`} vertical={columns >= 8} />
-                <BizRow label={dt?.card?.uptime_14d ?? 'Uptime'} value={`${validator.recentUptime.toFixed(1)}%`} accent="#16a34a" vertical={columns >= 8} />
+                <BizRow 
+                    label={dt?.card?.uptime_14d ?? 'Uptime'} 
+                    value={`${validator.recentUptime.toFixed(1)}%`} 
+                    accent={getUptimeColor(validator.recentUptime)} 
+                    tooltip={dt?.details?.uptime_recent_tooltip}
+                    vertical={columns >= 8} 
+                />
                 <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0)} vertical={columns >= 8} />
             </div>
 
