@@ -207,8 +207,8 @@ export const VEB_STYLES = `
     /* CTA */
     .veb-cta { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 24px; padding: 16px 32px !important; width: 100%; box-sizing: border-box; }
     .veb-cta-hint { font-size: 14px; color: var(--color-text-muted); font-weight: 500; line-height: 1.4; margin: 0 !important; flex: 1; }
-    .veb-cta-btn { height: 40px !important; padding: 0 40px !important; border-radius: 12px !important; font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; white-space: nowrap; background: var(--color-primary) !important; color: white !important; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 20%, transparent) !important; transition: all 0.3s ease !important; flex-shrink: 0; }
-    .veb-cta-btn:hover { opacity: 0.9 !important; box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 30%, transparent) !important; }
+    .veb-cta-btn { height: 40px !important; padding: 0 40px !important; border-radius: 12px !important; font-size: 13px !important; font-weight: 700 !important; white-space: nowrap; background: var(--color-primary) !important; color: white !important; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 20%, transparent) !important; transition: all 0.3s ease !important; flex-shrink: 0; }
+    .veb-cta-btn:hover { opacity: 0.9 !important; }
     .veb-cta-btn:active { transform: scale(0.96) !important; }
 
     /* LABEL */

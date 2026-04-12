@@ -111,7 +111,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             />
                         </div>
                         <button
-                            className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-extrabold uppercase tracking-[0.06em] text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:-translate-y-[1px] hover:shadow-[0_6px_18px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] active:scale-[0.96]"
+                            className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
                             style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
                             onClick={e => {
                                 e.stopPropagation();
@@ -179,7 +179,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                 </p>
                 <Button
                     variant="primary"
-                    className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold !uppercase !tracking-wider whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
+                    className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
                     onClick={e => {
                         e.stopPropagation();
                         setShowUnderConstruction(true);
