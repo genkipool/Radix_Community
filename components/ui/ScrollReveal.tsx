@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { observe, unobserve } from '@/lib/observerManager';
 
 interface ScrollRevealProps {
     children: React.ReactNode;
@@ -35,6 +36,9 @@ function deriveTarget(from: Record<string, number>): Record<string, number> {
  * - Elements **below the fold** animate in when the user scrolls to them.
  * - Works on every page load — no localStorage gate.
  * - Does NOT animate on page load, reload, or client-side navigation.
+ *
+ * Uses a shared singleton IntersectionObserver (via observerManager)
+ * instead of creating one per instance — ~15+ observers → 1 on homepage.
  */
 export function ScrollReveal({
     children,
@@ -64,19 +68,22 @@ export function ScrollReveal({
         const raf = requestAnimationFrame(() => {
             setAnimState('waiting');
 
-            const io = new IntersectionObserver(
-                ([entry]) => {
+            observe(
+                el,
+                (entry) => {
                     if (entry.isIntersecting) {
                         setAnimState('entering');
-                        io.disconnect();
+                        unobserve(el);
                     }
                 },
                 { threshold, rootMargin: '-40px 0px 0px 0px' },
             );
-            io.observe(el);
         });
 
-        return () => cancelAnimationFrame(raf);
+        return () => {
+            cancelAnimationFrame(raf);
+            if (el) unobserve(el);
+        };
     }, [threshold]);
 
     const Tag = motion[as] as typeof motion.div;
