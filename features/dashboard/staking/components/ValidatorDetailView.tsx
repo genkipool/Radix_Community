@@ -179,7 +179,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                 </p>
                 <Button
                     variant="primary"
-                    className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!-translate-y-[1px] hover:!shadow-[0_6px_16px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] active:!scale-[0.97]"
+                    className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold !uppercase !tracking-wider whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
                     onClick={e => {
                         e.stopPropagation();
                         setShowUnderConstruction(true);
