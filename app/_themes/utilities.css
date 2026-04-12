@@ -83,7 +83,7 @@ body {
 
 .dot-grid {
   background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-size: 48px 48px;
 }
 
 .ambient-glow {
@@ -162,4 +162,10 @@ summary {
     animation: none !important;
     will-change: auto !important;
   }
+}
+
+/* Prevents layout recalculation from propagating across sibling sections.
+   Apply to each homepage <section> wrapper. */
+.section-contained {
+  contain: layout style;
 }

@@ -161,7 +161,7 @@ function ThemeCard({
       <button
         onClick={onClick}
         className={[
-          'relative flex flex-col gap-2.5 p-3 rounded-xl text-left transition-all duration-150 cursor-pointer overflow-hidden w-full',
+          'relative flex flex-col gap-2.5 p-3 rounded-xl text-left transition-[transform,box-shadow] duration-150 cursor-pointer overflow-hidden w-full',
           isActive
             ? 'ring-2 ring-[var(--color-primary)] shadow-md'
             : 'hover:scale-[1.02] hover:shadow-md active:scale-95',
@@ -231,7 +231,7 @@ function NavLinkList({
 
         const inner = (
           <div className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--color-surface)] transition-colors group/item cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center flex-shrink-0 mt-0.5 text-[var(--color-accent)] group-hover/item:bg-[var(--color-accent)] group-hover/item:text-white group-hover/item:border-transparent transition-all duration-150">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center flex-shrink-0 mt-0.5 text-[var(--color-accent)] group-hover/item:bg-[var(--color-accent)] group-hover/item:text-white group-hover/item:border-transparent transition-colors duration-150">
               {item.icon}
             </div>
             <div className="min-w-0">
@@ -329,7 +329,7 @@ function LanguagePopupContent({
             key={code}
             onClick={() => onSwitch(code)}
             className={[
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer',
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 cursor-pointer',
               isActive
                 ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
                 : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-main)]',
@@ -498,7 +498,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 w-full z-50 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-card-border)] transition-all duration-300"
+        className="fixed top-0 w-full z-50 bg-[var(--color-bg)]/95 border-b border-[var(--color-card-border)] transition-transform duration-300"
         style={{ transform: theaterMode ? 'translateY(-100%)' : 'translateY(0)', pointerEvents: theaterMode ? 'none' : undefined }}
       >
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -582,7 +582,7 @@ export default function Navbar() {
                     setShowUnderConstruction(true);
                   }}
                   aria-label={t.nav.connectWallet as string}
-                  className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-all shrink-0 px-4 shadow-sm"
+                  className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
                 >
                   <RadixLogo
                     label={t.nav.connectWallet}
@@ -775,7 +775,7 @@ export default function Navbar() {
                       key={code}
                       onClick={() => { switchToLanguage(code); setMobileSheet(null); }}
                       className={[
-                        'w-full flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-all mb-1',
+                        'w-full flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-colors mb-1',
                         isActive
                           ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
                           : 'text-[var(--color-text-muted)] active:bg-[var(--color-surface)]',

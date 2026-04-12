@@ -42,8 +42,8 @@ export default function Footer() {
     <footer className="footer-premium pt-24 pb-12 border-t border-[var(--color-card-border)] relative overflow-hidden">
       {/* Dynamic background element */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)] to-transparent opacity-30" />
-      <div className="absolute -top-24 left-1/4 w-96 h-96 bg-[var(--color-primary)]/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-[var(--color-accent)]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute -top-24 left-1/4 w-96 h-96 bg-[var(--color-primary)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
+      <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-[var(--color-accent)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
 
       <div className="max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
@@ -69,7 +69,7 @@ export default function Footer() {
                   aria-label={link.icon}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-all duration-300 shadow-sm"
+                  className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
                 >
                   {iconMap[link.icon as keyof typeof iconMap]}
                 </a>
@@ -90,9 +90,9 @@ export default function Footer() {
                       <Link
                         href={localize(link.path)}
                         onClick={(e) => handleLinkClick(e, link.path)}
-                        className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] text-[14px] font-semibold transition-all duration-200 flex items-center group/link"
+                        className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] text-[14px] font-semibold transition-colors duration-200 flex items-center group/link"
                       >
-                        <span className="opacity-70 group-hover/link:opacity-100 transition-all">{section[link.key]}</span>
+                        <span className="opacity-70 group-hover/link:opacity-100 transition-opacity">{section[link.key]}</span>
                       </Link>
                     </li>
                   ))}

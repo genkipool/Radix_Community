@@ -35,9 +35,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-primary)]/30 relative" style={{ overflowX: 'clip' }}>
-      {/* Background depth layers */}
-      <div className="fixed inset-0 dot-grid opacity-40 pointer-events-none z-0" />
-      <div className="ambient-glow z-0" />
+      {/* Background depth layers — will-change-transform promotes to GPU compositor */}
+      <div className="fixed inset-0 dot-grid opacity-40 pointer-events-none z-0 will-change-transform" />
+      <div className="ambient-glow z-0 will-change-transform" />
 
       <div className="relative z-10">
         {/* Navbar no longer uses useSearchParams() so no Suspense boundary needed */}
