@@ -102,7 +102,7 @@ export default function InstitutionalPilotModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -113,7 +113,7 @@ export default function InstitutionalPilotModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.97 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[10001] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
               className="pointer-events-auto w-full max-w-2xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden"

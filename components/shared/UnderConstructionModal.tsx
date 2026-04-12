@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Construction, HardHat } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Button } from '@/components/ui/Button';
+import { Portal } from '@/components/ui/Portal';
 import type { Dictionary } from '@/types/i18n';
 
 interface UnderConstructionModalProps {
@@ -20,16 +21,17 @@ export function UnderConstructionModal({
   const c = t.under_construction;
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <ModalOverlay onClose={onClose} blur="sm" />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none"
-          >
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <ModalOverlay onClose={onClose} blur="sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none"
+            >
             <div
               className="w-full max-w-md bg-[var(--color-surface)]/95 backdrop-blur-2xl border border-[var(--color-card-border)] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] rounded-3xl overflow-hidden pointer-events-auto relative"
               onClick={(e) => e.stopPropagation()}
@@ -74,6 +76,7 @@ export function UnderConstructionModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }
