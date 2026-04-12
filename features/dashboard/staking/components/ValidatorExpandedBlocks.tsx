@@ -113,6 +113,11 @@ export const DelegationBlock = ({
 /* ─────────────────────────────────────────
    PerformanceBlock
 ───────────────────────────────────────── */
+const getUptimeColor = (p: number) => {
+    if (p >= 99) return '#16a34a'; // Green
+    if (p >= 98) return '#f59e0b'; // Amber
+    return '#dc2626';             // Red
+};
 export const PerformanceBlock = ({
     validator, dt, live, className = '',
 }: {
@@ -121,8 +126,8 @@ export const PerformanceBlock = ({
     live: LiveProposalsResult;
     className?: string;
 }) => {
-    const uRC = '#16a34a'; // Unified green
-    const uTC = '#16a34a'; // Unified green
+    const uRC = getUptimeColor(validator.recentUptime);
+    const uTC = getUptimeColor(validator.totalUptime);
 
     return (
         <div className={`veb-block veb-uptimes ${className}`}>

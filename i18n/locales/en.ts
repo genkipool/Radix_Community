@@ -2421,7 +2421,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
       performance_total_tooltip: 'Cumulative historical reliability and proposal fulfillment metrics since node registration.',
       uptime_recent: 'Recent Uptime (14 days)',
       uptime_total: 'Total Uptime',
-      uptime_tooltip: 'Availability and consensus participation percentage during the selected period.',
+      uptime_tooltip: 'Availability and consensus participation percentage. IMPORTANT: If the node finishes the Epoch with an uptime below 98%, neither the operator nor their delegators will receive any staking rewards for that period (the payout is 0 XRD).',
       proposals_made: 'Completed',
       proposals_made_tooltip: 'Number of block proposals successfully completed.',
       proposals_missed: 'Missed',

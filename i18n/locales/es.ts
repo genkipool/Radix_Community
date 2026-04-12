@@ -2427,7 +2427,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       performance_total_tooltip: 'Métricas históricas acumuladas de fiabilidad y cumplimiento de propuestas desde el registro del nodo.',
       uptime_recent: 'Uptime Reciente (14 días)',
       uptime_total: 'Uptime Total',
-      uptime_tooltip: 'Porcentaje de disponibilidad y participación en el consenso durante el periodo seleccionado.',
+      uptime_tooltip: 'Porcentaje de disponibilidad y participación en el consenso. IMPORTANTE: Si el nodo termina el Epoch con un uptime inferior al 98%, ni el operador ni sus delegadores recibirán ninguna recompensa por staking en ese periodo (el pago es 0 XRD).',
       proposals_made: 'Completadas',
       proposals_made_tooltip: 'Cantidad de propuestas de bloque completadas con éxito.',
       proposals_missed: 'Perdidas',
