@@ -234,7 +234,7 @@ export function ValidatorInlinePanel({
                                                     {validator?.delegatedStake != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.delegated_stake || 'Stake Delegado'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-primary)] font-mono">{formatXRD(validator.delegatedStake)} XRD</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{formatXRD(validator.delegatedStake)} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegators != null && (

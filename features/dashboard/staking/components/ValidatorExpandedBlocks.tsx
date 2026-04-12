@@ -100,7 +100,7 @@ export const DelegationBlock = ({
     <div className={`veb-block veb-delegation ${className}`}>
         <Label>{dt?.details?.delegation ?? 'Resumen de delegación'}</Label>
         <div className="veb-drows">
-            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'}   value={formatXRD(validator.delegatedStake)}      sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} hi="var(--color-primary)" />
+            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'}   value={formatXRD(validator.delegatedStake)}      sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
             <DR label={dt?.details?.delegators ?? 'Delegadores'}            value={validator.delegators.toLocaleString()} />
             <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatXRD(validator.ownerDelegation)} />
             <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} hi="#16a34a" />

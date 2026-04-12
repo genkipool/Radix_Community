@@ -168,16 +168,16 @@ export const VEB_STYLES = `
     .veb-dr:last-child { border-bottom: none; }
     .veb-dr-label { font-size: 12.5px; color: var(--color-text-muted); font-weight: 500; flex: 1; min-width: 0; line-height: 1.4; }
     .veb-dr-right { display: flex; flex-direction: column; align-items: flex-end; min-width: fit-content; flex-shrink: 0; text-align: right; }
-    .veb-dr-val { font-size: 13.5px; font-weight: 700; color: var(--color-text-main); white-space: nowrap; line-height: 1.2; }
+    .veb-dr-val { font-size: 13.5px; font-weight: 500; color: var(--color-text-main); white-space: nowrap; line-height: 1.2; }
     .veb-dr-sub { font-size: 10.5px; color: var(--color-text-muted); font-weight: 500; margin-top: 1px; }
 
     /* PERFORMANCE */
     .veb-uptimes { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
     .veb-perf-section { flex: 1; display: flex; flex-direction: column; }
     .veb-perf-section > .veb-drows { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-    .veb-u-pct { font-size: 14px; font-weight: 800; line-height: 1.2; display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
-    .veb-made   { color: #16a34a; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .veb-missed { color: #dc2626; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .veb-u-pct { font-size: 14px; font-weight: 500; line-height: 1.2; display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
+    .veb-made   { color: #16a34a; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .veb-missed { color: #dc2626; font-weight: 500; font-variant-numeric: tabular-nums; }
 
     /* EPOCHS TABLE */
     .veb-epochs-panel { background: var(--color-surface); }
@@ -193,8 +193,8 @@ export const VEB_STYLES = `
     .veb-epoch-live-cell { display: inline-flex; align-items: center; gap: 5px; }
     .veb-epoch-num { font-size: 12.5px; font-weight: 700; color: var(--color-text-main); font-variant-numeric: tabular-nums; }
     .veb-live-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-accent); }
-    .veb-num-made   { font-size: 13px; font-weight: 700; color: #16a34a; font-variant-numeric: tabular-nums; }
-    .veb-num-missed { font-size: 13px; font-weight: 700; color: #dc2626; font-variant-numeric: tabular-nums; }
+    .veb-num-made   { font-size: 13px; font-weight: 500; color: #16a34a; font-variant-numeric: tabular-nums; }
+    .veb-num-missed { font-size: 13px; font-weight: 500; color: #dc2626; font-variant-numeric: tabular-nums; }
     .veb-num-zero   { font-size: 13px; font-weight: 500; color: var(--color-text-muted); opacity: 0.3; font-variant-numeric: tabular-nums; }
 
     /* ADDRESSES */

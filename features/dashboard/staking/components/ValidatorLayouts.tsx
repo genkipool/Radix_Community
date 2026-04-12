@@ -40,7 +40,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
             <div className="flex">
                 {/* Sidebar: large photo + uptime */}
                 <div
-                    className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 sm:p-5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-default self-stretch"
+                    className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 sm:p-5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch"
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
@@ -73,7 +73,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
                                                                                 <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-primary)] font-semibold'}`}
+                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
                                             {formatXRD(validator.delegatedStake)}
@@ -163,7 +163,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
         <div className="flex flex-col h-full">
             <div className="flex flex-1">
                 <div
-                    className={`${columns === 3 ? 'w-24 sm:w-28' : 'w-36 sm:w-40'} shrink-0 flex flex-col items-center p-2 sm:p-3 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-default self-stretch`}
+                    className={`${columns === 3 ? 'w-24 sm:w-28' : 'w-36 sm:w-40'} shrink-0 flex flex-col items-center p-2 sm:p-3 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch`}
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
@@ -196,7 +196,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
                                                                                 <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-primary)] font-semibold'}`}
+                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
                                             {formatXRD(validator.delegatedStake)}
@@ -302,7 +302,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 border-y border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/30">
                 <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Stake Total'}</span>
-                    <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-primary)]'}`}>
+                    <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
                         {formatXRD(validator.delegatedStake)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
                     </span>
                 </div>
@@ -401,7 +401,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         ? `${formatXRD(validator.delegatedStake)} (${validator.delegatedStakePercent.toFixed(1)}%)`
                         : formatXRD(validator.delegatedStake)
                     }
-                    accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-primary)'}
+                    accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-text-main)'}
                     tooltip={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                     vertical={columns >= 8}
                 />
