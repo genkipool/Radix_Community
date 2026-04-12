@@ -4,11 +4,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ForumClientProps } from './types';
 import { ForumProvider, useForum } from './components/ForumContext';
-import { ForumHeader } from './components/ForumHeader';
 import { ForumToolbar } from './components/ForumToolbar';
 import { ForumPostCard } from './components/ForumPostCard';
 import { ForumReadingMode } from './components/ForumReadingMode';
 import { ForumPublishModal } from './components/ForumPublishModal';
+import { ForumHeroWidgets } from './components/hero/ForumHeroWidgets';
 import { ContentHero } from '@/components/layout/ContentHero';
 import '@/components/ui/RichTextEditor/RichTextEditor.css';
 
@@ -45,10 +45,10 @@ function ForumContent() {
                 </div>
             }
             badge={{ text: t.forum.header.badge_name }}
+            actions={<ForumHeroWidgets />}
         >
             <main className="min-h-screen bg-transparent pb-20 relative px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
-                    <ForumHeader />
                     <ForumToolbar />
 
                     <div className={`grid gap-6 transition-all duration-500 ${columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-[1500px] mx-auto'}`}>

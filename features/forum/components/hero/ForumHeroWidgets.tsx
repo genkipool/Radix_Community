@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { useForum } from './ForumContext';
-import { RANKS } from '../data/forumData';
-import { RankIcon } from './RankIcon';
+import { useForum } from '../ForumContext';
+import { RANKS } from '../../data/forumData';
+import { RankIcon } from '../RankIcon';
 
-export function ForumHeader() {
+export function ForumHeroWidgets() {
     const { t } = useForum();
     
     return (
-        <div className="max-w-5xl mx-auto mb-4">
+        <div className="w-full">
             {/* Points Header - Compact & Highlighted */}
             <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 py-3 px-6 mb-4 bg-[var(--color-surface)]/40 backdrop-blur-sm rounded-2xl border border-[var(--color-card-border)]/30 mx-auto w-fit shadow-inner">
                 <div className="flex items-center gap-1.5">
