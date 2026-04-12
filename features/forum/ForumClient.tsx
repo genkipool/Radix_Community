@@ -44,7 +44,6 @@ function ForumContent() {
                     </p>
                 </div>
             }
-            badge={{ text: t.forum.header.badge_name }}
             actions={<ForumHeroWidgets />}
         >
             <main className="min-h-screen bg-transparent pb-20 relative px-4 sm:px-6 lg:px-8">
