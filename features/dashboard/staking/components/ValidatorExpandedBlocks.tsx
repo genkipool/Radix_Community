@@ -103,7 +103,7 @@ export const DelegationBlock = ({
             <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'}   value={formatXRD(validator.delegatedStake)}      sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
             <DR label={dt?.details?.delegators ?? 'Delegadores'}            value={validator.delegators.toLocaleString()} />
             <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatXRD(validator.ownerDelegation)} />
-            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} hi="#16a34a" />
+            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} />
             <DR label={dt?.card?.fee ?? 'Comisión'}                         value={fp(validator.nominalFee)} sub={`${fp(validator.effectiveFee)} efectiva`} />
             <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'}      value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8)} XRD` : '—'} />
         </div>

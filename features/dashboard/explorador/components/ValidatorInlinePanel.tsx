@@ -252,7 +252,7 @@ export function ValidatorInlinePanel({
                                                     {validator?.apyProjection != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.apy_projection || 'APY Proyección'}</dt>
-                                                            <dd className="text-xs font-semibold text-[#16a34a]">{validator.apyProjection.toFixed(2)}%</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.apyProjection.toFixed(2)}%</dd>
                                                         </div>
                                                     )}
                                                     {validator?.lsu2xrdFactor != null && validator.lsu2xrdFactor !== 1 && (
