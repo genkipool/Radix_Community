@@ -71,7 +71,7 @@ contract MyToken is ERC20 {
                     className: 'bg-[var(--color-secondary)]/10 border-[var(--color-secondary)]/30 text-[var(--color-secondary)]',
                 }}
                 subtitle={
-                    <p className="text-xl md:text-2xl text-[var(--color-text-muted)] max-w-3xl mx-auto leading-8">
+                    <p className="text-[var(--color-text-muted)] max-w-3xl mx-auto mb-8">
                         {academy.hero.description}
                     </p>
                 }

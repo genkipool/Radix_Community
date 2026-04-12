@@ -24,12 +24,12 @@ function ForumContent() {
             heroPadding="pt-32 pb-16"
             subtitle={
                 <div className="flex flex-col gap-4">
-                    <p className="text-base md:text-lg leading-relaxed max-w-3xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
+                    <p className="max-w-3xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
                         {t.forum.header.description_p1}<br />{t.forum.header.description_p2}
                         <strong className="text-[var(--color-text-main)]"> {t.forum.header.badge_name}</strong>.
                         {' '}{t.forum.header.description_p3}
                     </p>
-                    <p className="text-sm md:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                    <p style={{ color: 'var(--color-text-muted)' }}>
                         <button
                             onClick={(e) => {
                                 e.preventDefault();

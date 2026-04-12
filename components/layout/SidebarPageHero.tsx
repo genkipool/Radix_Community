@@ -68,7 +68,7 @@ export function SidebarPageHero({
       subtitle={
         <div className="space-y-4">
           <p
-            className="text-base md:text-lg leading-relaxed"
+            className="leading-relaxed"
             style={{ color: 'var(--color-text-muted)' }}
           >
             {cta_connect_wallet && onConnectWallet && heroDescription.includes(cta_connect_wallet) ? (

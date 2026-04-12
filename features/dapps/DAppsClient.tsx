@@ -104,7 +104,7 @@ export default function DAppsClient({ t, initialDapps }: DAppsClientProps) {
       brandName={dt.header.brand}
       heroPadding="pt-32 pb-4"
       subtitle={
-        <div className="text-sm md:text-base text-[var(--color-text-muted)] max-w-4xl mx-auto leading-relaxed mb-6 text-center space-y-4">
+        <div className="text-[var(--color-text-muted)] max-w-4xl mx-auto leading-relaxed mb-8 text-center space-y-4">
           <p>
             <RichDescription
               text={dt.header.description}

@@ -95,7 +95,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
             heroPadding="pt-12 pb-16"
             subtitle={
                 <div className="space-y-4">
-                    <p className="text-base md:text-lg leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    <p className="" style={{ color: 'var(--color-text-muted)' }}>
                         {t.heroDescription}
                     </p>
                     <button

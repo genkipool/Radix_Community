@@ -240,7 +240,7 @@ export default function InfrastructureClient({
       gradient="from-[var(--color-primary)] to-[var(--color-accent)]"
       heroPadding="pt-32 pb-4"
       subtitle={
-        <p className="text-sm md:text-base text-[var(--color-text-muted)] max-w-3xl mx-auto leading-relaxed text-center mb-6">
+        <p className="text-[var(--color-text-muted)] max-w-3xl mx-auto leading-relaxed text-center mb-8">
           {pt.hero.description}
         </p>
       }
