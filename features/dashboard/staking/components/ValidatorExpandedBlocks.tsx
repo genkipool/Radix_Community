@@ -127,7 +127,7 @@ export const PerformanceBlock = ({
     return (
         <div className={`veb-block veb-uptimes ${className}`}>
             <div className="veb-perf-section">
-                <Label>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
+                <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} />
                     <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString()}</span>} />
@@ -135,7 +135,7 @@ export const PerformanceBlock = ({
                 </div>
             </div>
             <div className="veb-perf-section mt-4">
-                <Label>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
+                <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} />
                     <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.totalMade.toLocaleString()}</span>} />

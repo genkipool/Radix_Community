@@ -110,6 +110,7 @@ export interface LiveProposalsTextProps {
  */
 export interface LabelProps {
     children: React.ReactNode;
+    title?: string;
 }
 
 /**

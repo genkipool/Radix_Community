@@ -6,8 +6,8 @@ import type { LabelProps, DRProps, ARProps } from '../types/components.types';
 /* ─────────────────────────────────────────
    Label — section heading
 ───────────────────────────────────────── */
-export const Label = ({ children }: LabelProps) => (
-    <p className="veb-label">{children}</p>
+export const Label = ({ children, title }: LabelProps) => (
+    <p className="veb-label" title={title}>{children}</p>
 );
 
 /* ─────────────────────────────────────────
