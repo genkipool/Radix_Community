@@ -18,7 +18,7 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
 const BASE = 'inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-    primary:   'bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] text-white hover:brightness-110 shadow-sm hover:shadow-md',
+    primary:   'bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] text-white brightness-100 hover:brightness-110 hover:opacity-90 shadow-sm hover:shadow-md',
     secondary: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20',
     outline:   'border border-[var(--color-card-border)] text-[var(--color-text-main)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5',
     ghost:     'text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10',
