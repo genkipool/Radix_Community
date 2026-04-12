@@ -498,7 +498,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 w-full z-50 bg-[var(--color-bg)]/95 border-b border-[var(--color-card-border)] transition-transform duration-300"
+        className="fixed top-0 w-full z-50 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-card-border)] transition-transform duration-300"
         style={{ transform: theaterMode ? 'translateY(-100%)' : 'translateY(0)', pointerEvents: theaterMode ? 'none' : undefined }}
       >
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
