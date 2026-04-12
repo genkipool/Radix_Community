@@ -14,9 +14,9 @@ export const Label = ({ children, title }: LabelProps) => (
    DR — data row (label / value)
 ───────────────────────────────────────── */
 export const DR = ({
-    label, value, sub, hi, vertical,
+    label, value, sub, hi, vertical, tooltip,
 }: DRProps) => (
-    <div className={`veb-dr ${vertical ? 'veb-dr-v' : ''}`}>
+    <div className={`veb-dr ${vertical ? 'veb-dr-v' : ''}`} title={tooltip}>
         <span className="veb-dr-label">{label}</span>
         <div className="veb-dr-right">
             <span className="veb-dr-val" style={hi ? { color: hi } : undefined}>{value}</span>

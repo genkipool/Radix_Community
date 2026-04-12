@@ -123,6 +123,7 @@ export interface DRProps {
     sub?: React.ReactNode;
     hi?: string;
     vertical?: boolean;
+    tooltip?: string;
 }
 
 /**
