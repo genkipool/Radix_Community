@@ -511,7 +511,7 @@ const DelegateButton = ({
     return (
         <button
             title={title}
-            className={`rounded-xl font-black uppercase tracking-wider text-white whitespace-nowrap active:scale-95 transition-all ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
+            className={`rounded-xl font-black uppercase tracking-wider text-white whitespace-nowrap active:scale-95 transition-[background,transform,opacity,box-shadow] duration-300 ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
                 small ? 'px-4 py-1.5 text-[10px]' :
                     'px-5 py-1.5 text-[11px] shadow-lg'
                 }`}

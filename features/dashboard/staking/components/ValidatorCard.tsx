@@ -126,7 +126,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
                 onPointerEnter={() => prefetchValidator(validator.address, network)}
                 onPointerDown={() => setDownTime(Date.now())}
                 onClick={handleCardClick}
-                className={`p-0 overflow-hidden group cursor-pointer transition-all duration-300 ${isExpanded && !isModalMode ? 'border-[var(--color-primary)]/40 shadow-lg' : ''
+                className={`p-0 overflow-hidden group cursor-pointer transition-[border-color,box-shadow,transform] duration-300 ${isExpanded && !isModalMode ? 'border-[var(--color-primary)]/40 shadow-lg' : ''
                     }`}
             >
                 {columns === 1 && <Layout1Col {...sharedProps} columns={columns} />}
