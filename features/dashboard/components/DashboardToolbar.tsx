@@ -69,11 +69,7 @@ export const DashboardToolbar = ({
                     {/* View toggle */}
                     <button
                         onClick={() => onViewChange(activeView === 'staking' ? 'transactions' : 'staking')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border bg-transparent ${
-                            activeView === 'transactions'
-                                ? 'text-[var(--color-accent)] border-[var(--color-accent)] shadow-lg shadow-[var(--color-accent)]/10'
-                                : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:text-[var(--color-text-main)] hover:border-[var(--color-text-main)]/30'
-                        }`}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-[var(--color-card-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] w-[140px] shrink-0"
                     >
                         <svg width="18" height="18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                             <path d="M14,53 L25,53 L42,78 L66,20 L88,20" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
