@@ -21,8 +21,29 @@ function ForumContent() {
     return (
         <ContentHero
             title={t.forum.header.title.replace('Radix ', '')}
-            heroPadding="pt-32 pb-4"
-            subtitle={t.forum.modal.subtitle}
+            heroPadding="pt-12 pb-16"
+            subtitle={
+                <div className="flex flex-col gap-4">
+                    <p className="text-base md:text-lg leading-relaxed max-w-3xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
+                        {t.forum.header.description_p1}<br />{t.forum.header.description_p2}
+                        <strong className="text-[var(--color-text-main)]"> {t.forum.header.badge_name}</strong>.
+                        {' '}{t.forum.header.description_p3}
+                    </p>
+                    <p className="text-sm md:text-base" style={{ color: 'var(--color-text-muted)' }}>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowUnderConstruction(true);
+                            }}
+                            className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mr-1"
+                        >
+                            {t.forum.header.wallet_connect}
+                        </button>
+                        {t.forum.header.wallet_desc}
+                    </p>
+                </div>
+            }
             badge={{ text: t.forum.header.badge_name }}
         >
             <main className="min-h-screen bg-transparent pb-20 relative px-4 sm:px-6 lg:px-8">

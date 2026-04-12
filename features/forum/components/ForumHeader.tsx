@@ -6,16 +6,10 @@ import { RANKS } from '../data/forumData';
 import { RankIcon } from './RankIcon';
 
 export function ForumHeader() {
-    const { t, setShowUnderConstruction } = useForum();
+    const { t } = useForum();
     
     return (
-        <div className="text-sm md:text-base text-[var(--color-text-muted)] max-w-5xl mx-auto leading-relaxed mb-4 text-center">
-            <p className="mb-2">
-                {t.forum.header.description_p1}<br />{t.forum.header.description_p2}
-                <strong> {t.forum.header.badge_name}</strong>.
-                {' '}{t.forum.header.description_p3}
-            </p>
-
+        <div className="max-w-5xl mx-auto mb-4">
             {/* Points Header - Compact & Highlighted */}
             <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 py-3 px-6 mb-4 bg-[var(--color-surface)]/40 backdrop-blur-sm rounded-2xl border border-[var(--color-card-border)]/30 mx-auto w-fit shadow-inner">
                 <div className="flex items-center gap-1.5">
@@ -43,10 +37,6 @@ export function ForumHeader() {
                 </div>
             </div>
 
-            <p className="mb-6 text-sm md:text-base text-[var(--color-text-muted)]">
-                {t.forum.header.ranks_desc}
-            </p>
-
             {/* Ranks Grid - Responsive */}
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-3 gap-x-2 py-3 mb-4 w-full bg-[var(--color-bg)]/20 backdrop-blur-[2px] rounded-2xl border border-[var(--color-card-border)]/40 p-3 shadow-lg max-w-4xl mx-auto">
                 {RANKS.map((r) => (
@@ -59,16 +49,6 @@ export function ForumHeader() {
                     </div>
                 ))}
             </div>
-
-            <p>
-                <button
-                    onClick={() => setShowUnderConstruction(true)}
-                    className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all"
-                >
-                    {t.forum.header.wallet_connect}
-                </button>
-                {' '}{t.forum.header.wallet_desc}
-            </p>
         </div>
     );
 }
