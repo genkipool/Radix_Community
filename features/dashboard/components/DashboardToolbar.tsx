@@ -69,10 +69,10 @@ export const DashboardToolbar = ({
                     {/* View toggle */}
                     <button
                         onClick={() => onViewChange(activeView === 'staking' ? 'transactions' : 'staking')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border bg-transparent ${
                             activeView === 'transactions'
-                                ? 'bg-[var(--color-secondary)] text-white border-[var(--color-secondary)] shadow-lg shadow-[var(--color-secondary)]/20'
-                                : 'bg-[var(--color-card-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
+                                ? 'text-[var(--color-accent)] border-[var(--color-accent)] shadow-lg shadow-[var(--color-accent)]/10'
+                                : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:text-[var(--color-text-main)] hover:border-[var(--color-text-main)]/30'
                         }`}
                     >
                         <svg width="18" height="18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -91,9 +91,9 @@ export const DashboardToolbar = ({
                         <button
                             onClick={() => onNetworkChange('mainnet')}
                             onMouseEnter={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${
                                 network === 'mainnet'
-                                    ? 'bg-emerald-500 text-white shadow-md'
+                                    ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
                                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
                             }`}
                         >
@@ -102,9 +102,9 @@ export const DashboardToolbar = ({
                         <button
                             onClick={() => onNetworkChange('stokenet')}
                             onMouseEnter={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${
                                 network === 'stokenet'
-                                    ? 'bg-blue-500 text-white shadow-md'
+                                    ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
                                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
                             }`}
                         >

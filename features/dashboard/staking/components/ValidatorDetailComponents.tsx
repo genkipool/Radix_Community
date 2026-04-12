@@ -41,7 +41,7 @@ export const StatusLabel = ({ status, t, compact = false }: { status: Validator[
     const label = t?.dashboard?.status?.[status as keyof typeof t.dashboard.status] ?? status;
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full font-black uppercase tracking-wider bg-white/5 border backdrop-blur-md transition-all duration-300 align-middle box-border leading-none ${
+            className={`inline-flex items-center gap-1 rounded-full font-black tracking-wider bg-white/5 border backdrop-blur-md transition-all duration-300 align-middle box-border leading-none ${
                 compact ? 'p-1 text-[9px]' : 'px-2 py-1 text-[10px]'
             }`}
             style={{

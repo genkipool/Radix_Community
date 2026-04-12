@@ -126,7 +126,7 @@ export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Transla
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border font-black uppercase tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${
+            className={`inline-flex items-center gap-1 rounded-full border font-black tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${
                 compact ? 'p-1' : 'px-2 py-1 text-[9px]'
             }`}
             title={compact ? label : undefined}
