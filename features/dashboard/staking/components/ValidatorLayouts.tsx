@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe, ExternalLink, Server, AlertCircle, Stamp } from 'lucide-react';
-import { getStatusColor, getUptimeColor } from '@/utils/validators';
+import { getStatusColor } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
@@ -40,7 +40,6 @@ onCopy, copiedAddress, columns, network = 'mainnet',
             <div className="flex">
                 {/* Sidebar: large photo + uptime */}
                 <div
-                    onClick={e => e.stopPropagation()}
                     className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 sm:p-5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-default self-stretch"
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
@@ -74,7 +73,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
                                                                                 <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)]'}`}
+                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-primary)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
                                             {formatXRD(validator.delegatedStake)}
@@ -100,9 +99,9 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%`, accent: 'var(--color-accent)' },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%`, accent: '#16a34a' },
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: getUptimeColor(validator.recentUptime) },
+                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: '#16a34a' },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
 
@@ -164,7 +163,6 @@ onCopy, copiedAddress, columns, network = 'mainnet',
         <div className="flex flex-col h-full">
             <div className="flex flex-1">
                 <div
-                    onClick={e => e.stopPropagation()}
                     className={`${columns === 3 ? 'w-24 sm:w-28' : 'w-36 sm:w-40'} shrink-0 flex flex-col items-center p-2 sm:p-3 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-default self-stretch`}
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
@@ -198,7 +196,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
                                                                                 <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)]'}`}
+                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-primary)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
                                             {formatXRD(validator.delegatedStake)}
@@ -224,11 +222,11 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%`, accent: 'var(--color-accent)' },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%`, accent: '#16a34a' },
                         ]} />
                         <StatDivider items={[
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: getUptimeColor(validator.recentUptime) },
+                            { label: dt?.card?.uptime_14d ?? 'Uptime 14d', tooltip: dt?.card?.tooltips?.uptime, value: `${validator.recentUptime.toFixed(2)}%`, accent: '#16a34a' },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
                     </div>
@@ -304,7 +302,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 border-y border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/30">
                 <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Stake Total'}</span>
-                    <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
+                    <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-primary)]'}`}>
                         {formatXRD(validator.delegatedStake)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
                     </span>
                 </div>
@@ -317,7 +315,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.apy ?? 'APY'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-accent)] truncate">{formatNumber(validator.apyProjection, 2)}%</span>
+                    <span className="text-[12px] font-black text-[#16a34a] truncate">{formatNumber(validator.apyProjection, 2)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Com. Efectiva'}</span>
@@ -325,7 +323,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.uptime_14d ?? 'Uptime 14d'}</span>
-                    <span className="text-[12px] font-black" style={{ color: getUptimeColor(validator.recentUptime) }}>{validator.recentUptime.toFixed(1)}%</span>
+                    <span className="text-[12px] font-black" style={{ color: '#16a34a' }}>{validator.recentUptime.toFixed(1)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegadores'}</span>
@@ -403,14 +401,13 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         ? `${formatXRD(validator.delegatedStake)} (${validator.delegatedStakePercent.toFixed(1)}%)`
                         : formatXRD(validator.delegatedStake)
                     }
-                    accent={validator.delegatedStakePercent > 2 ? '#dc2626' : undefined}
+                    accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-primary)'}
                     tooltip={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                     vertical={columns >= 8}
                 />
-                <BizRow label={dt?.card?.fee ?? 'Fee'} value={`${formatNumber(validator.nominalFee, 1)}%`} vertical={columns >= 8} />
-                <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1)}%`} accent="var(--color-accent)" vertical={columns >= 8} />
+                <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1)}%`} accent="#16a34a" vertical={columns >= 8} />
                 <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1)}%`} vertical={columns >= 8} />
-                <BizRow label={dt?.card?.uptime_14d ?? 'Uptime'} value={`${validator.recentUptime.toFixed(1)}%`} accent={getUptimeColor(validator.recentUptime)} vertical={columns >= 8} />
+                <BizRow label={dt?.card?.uptime_14d ?? 'Uptime'} value={`${validator.recentUptime.toFixed(1)}%`} accent="#16a34a" vertical={columns >= 8} />
                 <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0)} vertical={columns >= 8} />
             </div>
 

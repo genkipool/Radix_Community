@@ -1,9 +1,7 @@
 'use client';
 import React from 'react';
 import { ExternalLink, Globe, Server } from 'lucide-react';
-import { type Validator } from '@/types/radix';
-import { getUptimeColor } from '@/utils/validators';
-import { type StakeHistoryEntry } from '@/types/radix';
+import { type Validator, type StakeHistoryEntry } from '@/types/radix';
 import { formatXRD, formatNumber } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { StatusLabel } from './ValidatorDetailComponents';
@@ -105,7 +103,7 @@ export const DelegationBlock = ({
             <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'}   value={formatXRD(validator.delegatedStake)}      sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} hi="var(--color-primary)" />
             <DR label={dt?.details?.delegators ?? 'Delegadores'}            value={validator.delegators.toLocaleString()} />
             <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatXRD(validator.ownerDelegation)} />
-            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} hi="var(--color-accent)" />
+            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} hi="#16a34a" />
             <DR label={dt?.card?.fee ?? 'Comisión'}                         value={fp(validator.nominalFee)} sub={`${fp(validator.effectiveFee)} efectiva`} />
             <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'}      value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8)} XRD` : '—'} />
         </div>
@@ -123,8 +121,8 @@ export const PerformanceBlock = ({
     live: LiveProposalsResult;
     className?: string;
 }) => {
-    const uRC = getUptimeColor(validator.recentUptime);
-    const uTC = getUptimeColor(validator.totalUptime);
+    const uRC = '#16a34a'; // Unified green
+    const uTC = '#16a34a'; // Unified green
 
     return (
         <div className={`veb-block veb-uptimes ${className}`}>
