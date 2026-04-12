@@ -21,7 +21,7 @@ function ForumContent() {
     return (
         <ContentHero
             title={t.forum.header.title.replace('Radix ', '')}
-            heroPadding="pt-12 pb-16"
+            heroPadding="pt-32 pb-16"
             subtitle={
                 <div className="flex flex-col gap-4">
                     <p className="text-base md:text-lg leading-relaxed max-w-3xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
