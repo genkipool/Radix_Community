@@ -15,7 +15,7 @@ import '@/components/ui/RichTextEditor/RichTextEditor.css';
 function ForumContent() {
     const { 
         t, filteredPosts, columns, 
-        showPublishModal
+        showPublishModal, setShowUnderConstruction
     } = useForum();
 
     return (
