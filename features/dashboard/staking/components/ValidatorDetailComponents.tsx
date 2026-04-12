@@ -4,7 +4,7 @@ import { Activity } from 'lucide-react';
 import { XPBar } from '@/components/ui/XPBar';
 import { Pill } from '@/components/ui/Pill';
 import { type Validator } from '@/types/radix';
-import { getStatusColor, getUptimeColor } from '@/utils/validators';
+import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { useLiveProposals } from './LiveProposals';
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
@@ -19,7 +19,7 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: TranslationsT }) => {
     const color = getUptimeColor(percent);
     const label = `${percent.toFixed(1)}%`;
-    const title = t?.dashboard?.details?.uptime_total ? `${t.dashboard.details.uptime_total}: ${label}` : label;
+    const title = getUptimeTooltipText(percent, true, t?.dashboard?.details);
     
     return (
         <XPBar

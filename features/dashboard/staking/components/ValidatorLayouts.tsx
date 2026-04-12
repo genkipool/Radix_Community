@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe, ExternalLink, Server, AlertCircle, Stamp } from 'lucide-react';
-import { getStatusColor, getUptimeColor } from '@/utils/validators';
+import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
@@ -103,7 +103,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
                             { 
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
-                                tooltip: dt?.details?.uptime_recent_tooltip, 
+                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details), 
                                 value: `${validator.recentUptime.toFixed(2)}%`, 
                                 accent: getUptimeColor(validator.recentUptime) 
                             },
@@ -233,7 +233,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
                             { 
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
-                                tooltip: dt?.details?.uptime_recent_tooltip, 
+                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details), 
                                 value: `${validator.recentUptime.toFixed(2)}%`, 
                                 accent: getUptimeColor(validator.recentUptime) 
                             },
@@ -421,7 +421,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                     label={dt?.card?.uptime_14d ?? 'Uptime'} 
                     value={`${validator.recentUptime.toFixed(1)}%`} 
                     accent={getUptimeColor(validator.recentUptime)} 
-                    tooltip={dt?.details?.uptime_recent_tooltip}
+                    tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)}
                     vertical={columns >= 8} 
                 />
                 <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0)} vertical={columns >= 8} />

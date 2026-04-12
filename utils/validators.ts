@@ -19,3 +19,23 @@ export function roundTo(val: number, decimals: number): number {
     const factor = Math.pow(10, decimals);
     return Math.round((val + Number.EPSILON) * factor) / factor;
 }
+
+export function getUptimeTooltipText(uptime: number, isRecent: boolean, dt: any): string {
+    if (!dt) return '';
+    
+    let status = dt.uptime_status_excellent;
+    let msg = dt.uptime_msg_excellent;
+    
+    if (uptime < 98) {
+        status = dt.uptime_status_critical;
+        msg = dt.uptime_msg_critical;
+    } else if (uptime < 99) {
+        status = dt.uptime_status_warning;
+        msg = dt.uptime_msg_warning;
+    }
+    
+    const period = isRecent ? dt.period_14d : dt.period_total;
+    
+    return `${status} (${period}). ${msg}`;
+}
+
