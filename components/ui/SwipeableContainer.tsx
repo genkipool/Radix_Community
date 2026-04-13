@@ -20,10 +20,10 @@ interface SwipeableContainerProps {
 /**
  * SwipeableContainer
  * 
- * Un componente genérico que envuelve contenido para permitir gestos de deslizamiento (swipe)
- * y animaciones de entrada/salida direccionales.
+ * A generic component that wraps content to allow swipe gestures
+ * and directional entrance/exit animations.
  * 
- * Debe usarse dentro de un componente AnimatePresence con mode="popLayout".
+ * Must be used inside an AnimatePresence component with mode="popLayout".
  */
 export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
     children,
