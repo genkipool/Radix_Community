@@ -347,7 +347,9 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
-                    <Globe className="w-3.5 h-3.5 shrink-0 cursor-default" title={sanitizeText(validator.country)} />
+                    <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
+                        <Globe className="w-3.5 h-3.5" />
+                    </span>
                     <CopyAddressButton
                         address={validator.address}
                         onCopy={onCopy}
@@ -438,7 +440,9 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
                         </a>
                     ) : (
-                        <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0 cursor-default" title={sanitizeText(validator.country)} />
+                        <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
+                            <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                        </span>
                     )}
                     <CopyStampIcon
                         address={validator.address}
