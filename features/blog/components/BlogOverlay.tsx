@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, User, Eye, Heart, Volume2, VolumeX } from 'lucide-react';
