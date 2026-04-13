@@ -23,33 +23,69 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     copiedAddress,
     copyAddress,
     network = 'mainnet',
+    direction: propDirection = 0,
+    setDirection,
 }) => {
     const { setShowUnderConstruction } = useLayout();
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
+    
+    // Internal state only as fallback if parent doesn't provide it
+    const [internalDirection, setInternalDirection] = React.useState(0);
+    const activeDirection = setDirection ? propDirection : internalDirection;
+    const updateDirection = setDirection || setInternalDirection;
+
+    // Variants for direction-aware sliding
+    const variants = {
+        initial: (d: number) => ({
+            x: d > 0 ? 300 : d < 0 ? -300 : 0,
+            opacity: 0,
+        }),
+        animate: {
+            x: 0,
+            opacity: 1,
+            zIndex: 1,
+        },
+        exit: (d: number) => ({
+            x: d > 0 ? -300 : d < 0 ? 300 : 0,
+            opacity: 0,
+            zIndex: 0,
+            position: 'absolute' as const, // Force absolute during exit for popLayout feel
+            top: 0,
+            left: 0,
+            right: 0,
+        }),
+    };
 
     return (
         <div
             className="relative w-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col"
             onClick={e => e.stopPropagation()}
         >
-            <AnimatePresence initial={false}>
+            <AnimatePresence mode="popLayout" initial={false} custom={activeDirection}>
                 <motion.div
-                    key={validator.address} // Use address as key for transitions
-                    initial={{ x: 30, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -30, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    key={validator.address}
+                    custom={activeDirection}
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ type: 'spring', stiffness: 450, damping: 40 }}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.6}
                     onDragEnd={(_e, info) => {
-                        const threshold = 100;
-                        if (info.offset.x > threshold && onPrev) onPrev();
-                        else if (info.offset.x < -threshold && onNext) onNext();
+                        const threshold = 60;
+                        if (info.offset.x > threshold && onPrev) {
+                            updateDirection(-1);
+                            onPrev();
+                        } else if (info.offset.x < -threshold && onNext) {
+                            updateDirection(1);
+                            onNext();
+                        }
                     }}
-                    className="flex-1 flex flex-col min-h-0 relative touch-none"
+                    className="flex-1 flex flex-col min-h-0 relative touch-none bg-[var(--color-surface)]"
                     onClick={e => e.stopPropagation()}
                 >
                     {/* ══════════════════════════════════════════

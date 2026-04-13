@@ -34,7 +34,10 @@ export const DashboardModals = ({
   copiedAddress,
   copyAddress,
   network,
-}: DashboardModalsProps) => (
+}: DashboardModalsProps) => {
+  const [direction, setDirection] = React.useState(0);
+
+  return (
   <>
     {/* ── Validator reading-mode modal ── */}
     {/* initial={false}: if the modal is already open when AnimatePresence first
@@ -61,6 +64,7 @@ export const DashboardModals = ({
                 className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-xl cursor-pointer transition-all hover:scale-110 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-0 disabled:pointer-events-none"
                 onClick={(e) => {
                   e.stopPropagation();
+                  setDirection(-1);
                   const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
                   if (idx > 0) setExpandedPosts(new Set([filteredValidators[idx - 1].id]));
                 }}
@@ -73,6 +77,7 @@ export const DashboardModals = ({
                 className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-xl cursor-pointer transition-all hover:scale-110 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-0 disabled:pointer-events-none"
                 onClick={(e) => {
                   e.stopPropagation();
+                  setDirection(1);
                   const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
                   if (idx < filteredValidators.length - 1) setExpandedPosts(new Set([filteredValidators[idx + 1].id]));
                 }}
@@ -87,15 +92,17 @@ export const DashboardModals = ({
               <ValidatorDetailView
                 validator={expandedPost}
                 onClose={closeExpanded}
+                direction={direction}
+                setDirection={setDirection}
                 onPrev={(() => {
                   const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
                   const prevPost = idx > 0 ? filteredValidators[idx - 1] : null;
-                  return prevPost ? () => setExpandedPosts(new Set([prevPost.id])) : undefined;
+                  return prevPost ? () => { setDirection(-1); setExpandedPosts(new Set([prevPost.id])); } : undefined;
                 })()}
                 onNext={(() => {
                   const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
                   const nextPost = idx < filteredValidators.length - 1 ? filteredValidators[idx + 1] : null;
-                  return nextPost ? () => setExpandedPosts(new Set([nextPost.id])) : undefined;
+                  return nextPost ? () => { setDirection(1); setExpandedPosts(new Set([nextPost.id])); } : undefined;
                 })()}
                 t={t}
                 dt={dt}
@@ -139,3 +146,4 @@ export const DashboardModals = ({
     </AnimatePresence>
   </>
 );
+}

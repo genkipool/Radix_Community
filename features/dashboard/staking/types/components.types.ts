@@ -77,6 +77,8 @@ export interface ValidatorDetailViewProps {
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network?: Network;
+    direction?: number;
+    setDirection?: (d: number) => void;
 }
 
 /**
