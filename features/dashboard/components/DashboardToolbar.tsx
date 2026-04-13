@@ -110,7 +110,7 @@ export const DashboardToolbar = ({
                     </div>
 
                     {/* Tag filter bar - Desktop */}
-                    <div className="hidden 2xl:block">
+                    <div className="hidden 2xl:block mx-auto">
                         {activeView === 'staking' ? (
                             <TagFilterBar
                                 tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
@@ -131,7 +131,7 @@ export const DashboardToolbar = ({
                     </div>
 
                     {/* Tag filter dropdown - Mobile / Tablet */}
-                    <div className="block 2xl:hidden">
+                    <div className="block 2xl:hidden mx-auto">
                         {activeView === 'staking' ? (
                             <SearchableTagFilter
                                 tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
