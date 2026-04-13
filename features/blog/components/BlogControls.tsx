@@ -59,9 +59,9 @@ export function BlogControls({
         <section className="pb-8">
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 space-y-4">
                 {/* Controls Bar */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full">
                     {/* LEFT — Sorting */}
-                    <div className="shrink-0 flex justify-start">
+                    <div className="shrink-0">
                         <ContentToolbar
                             sortMode={sortMode}
                             setSortMode={onSortChange}
@@ -83,15 +83,18 @@ export function BlogControls({
                         />
                     </div>
 
-                    {/* CENTER — Search & Tags */}
-                    <div className="flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 min-w-0 xl:px-8">
-                        <div className="flex-1 w-full max-w-3xl min-w-[200px]">
-                            <SearchBar
-                                value={searchQuery}
-                                onChange={onSearchChange}
-                                placeholder={blogT.controls.search_placeholder}
-                            />
-                        </div>
+                    {/* SEARCH (FLEX-1) */}
+                    <div className="flex-1 min-w-0 w-full xl:min-w-[400px]">
+                        <SearchBar
+                            value={searchQuery}
+                            onChange={onSearchChange}
+                            placeholder={blogT.controls.search_placeholder}
+                            className="!w-full max-w-none"
+                        />
+                    </div>
+
+                    {/* TAGS */}
+                    <div className="shrink-0">
                         <SearchableTagFilter
                             tags={allTags}
                             activeTag={activeTag}
@@ -103,7 +106,7 @@ export function BlogControls({
                     </div>
 
                     {/* RIGHT — Grid Toggle */}
-                    <div className="flex-1 flex justify-end">
+                    <div className="shrink-0 flex justify-end">
                         <GridToggle columns={columns} onChange={onColumnsChange} max={4} />
                     </div>
                 </div>
