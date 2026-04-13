@@ -1,6 +1,17 @@
 'use client';
 import React from 'react';
-import { Rows3, Grid2x2, Grid3x3, Columns4 } from 'lucide-react';
+import { Rows3, Grid2x2, Grid3x3 } from 'lucide-react';
+
+const Grid4x3Icon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect width="18" height="18" x="3" y="3" rx="2" />
+        <path d="M3 9h18" />
+        <path d="M3 15h18" />
+        <path d="M7.5 3v18" />
+        <path d="M12 3v18" />
+        <path d="M16.5 3v18" />
+    </svg>
+);
 
 interface GridToggleProps {
     columns: number;
@@ -31,8 +42,8 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
             case 1: return <Rows3 className="w-4 h-4" />;
             case 2: return <Grid2x2 className="w-4 h-4" />;
             case 3: return <Grid3x3 className="w-4 h-4" />;
-            case 4: return <Columns4 className="w-4 h-4" />;
-            default: return <Grid3x3 className="w-4 h-4" />;
+            case 4: return <Grid4x3Icon className="w-4 h-4" />;
+            default: return <Grid4x3Icon className="w-4 h-4" />;
         }
     };
 

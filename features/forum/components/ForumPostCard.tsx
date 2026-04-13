@@ -93,9 +93,9 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
         return (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }} className="overflow-hidden border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/30">
-                <div className="pl-8 sm:pl-32 py-4 pr-5 sm:pr-5">
+                <div className="pl-4 sm:pl-16 py-4 pr-5 sm:pr-5">
                     <div className="relative">
-                        <div className="absolute top-0 bottom-0 left-6 w-0.5 bg-[var(--color-card-border)]/50" />
+                        <div className="absolute top-0 bottom-0 -left-2 sm:-left-6 w-0.5 bg-[var(--color-card-border)]/50" />
                         <div className="space-y-4 relative z-10 w-full">
                             {filteredReplies.map((reply, idx) => (
                                 <div key={`${post.id}-${reply.id}-${idx}`} className="w-full">
