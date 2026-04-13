@@ -1,6 +1,7 @@
 import ForumClient from '@/features/forum/ForumClient';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import { forumPosts, users } from '@/features/forum/data/forumData';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -14,6 +15,7 @@ export async function generateMetadata({
   return {
     title: t.seo.forum.title,
     description: t.seo.forum.description,
+    alternates: buildAlternates(locale, '/forum'),
   };
 }
 

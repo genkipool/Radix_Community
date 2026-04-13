@@ -20,6 +20,7 @@ import { COOKIE_KEYS } from '@/constants/dashboard';
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -32,6 +33,7 @@ export async function generateMetadata({
   return {
     title: t.seo.dashboard.title,
     description: t.seo.dashboard.description,
+    alternates: buildAlternates(locale, '/dashboard'),
   };
 }
 

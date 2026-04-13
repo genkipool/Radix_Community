@@ -1,6 +1,7 @@
 import DAppsClient from '@/features/dapps/DAppsClient';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import { dapps } from '@/features/dapps/data/dappsData';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -14,6 +15,7 @@ export async function generateMetadata({
   return {
     title: t.seo.dapps.title,
     description: t.seo.dapps.description,
+    alternates: buildAlternates(locale, '/dapps'),
   };
 }
 

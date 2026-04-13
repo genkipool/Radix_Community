@@ -1,10 +1,10 @@
 // app/sitemap.ts
 import { MetadataRoute } from 'next'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://radix-community.genkipool.com'
-    const locales = ['en', 'es']
+const BASE_URL = 'https://radix-community.genkipool.com';
+const LOCALES = ['en', 'es'] as const;
 
+export default function sitemap(): MetadataRoute.Sitemap {
     // Base routes of the application (based on the [locale] folder structure)
     const paths = [
         '',
@@ -19,14 +19,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '/dashboard'
     ]
 
-    // We generate all the language + path combinations
+    // Generate all language + path combinations with hreflang alternates
     const fullSitemap = paths.flatMap((path) =>
-        locales.map((locale) => ({
-            url: `${baseUrl}/${locale}${path}`,
+        LOCALES.map((locale) => ({
+            url: `${BASE_URL}/${locale}${path}`,
             lastModified: new Date(),
-            // Priority and changeFrequency are optional
             changeFrequency: 'weekly' as const,
             priority: path === '' ? 1 : 0.8,
+            alternates: {
+                languages: Object.fromEntries(
+                    LOCALES.map((loc) => [loc, `${BASE_URL}/${loc}${path}`])
+                ),
+            },
         }))
     )
 

@@ -2,6 +2,7 @@ import BlogClient from '@/features/blog/BlogClient';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import type { BlogPost } from '@/features/blog/types';
 import { unstable_cache } from 'next/cache';
+import { buildAlternates } from '@/lib/seo';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -14,6 +15,7 @@ export async function generateMetadata({
   return {
     title: t.seo.blog.title,
     description: t.seo.blog.description,
+    alternates: buildAlternates(locale, '/blog'),
   };
 }
 

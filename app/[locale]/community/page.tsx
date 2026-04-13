@@ -1,5 +1,6 @@
 // ═══════ SSG — generateStaticParams ═══════
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -13,6 +14,7 @@ export async function generateMetadata({
   return {
     title: t.seo.community.title,
     description: t.seo.community.description,
+    alternates: buildAlternates(locale, '/community'),
   };
 }
 

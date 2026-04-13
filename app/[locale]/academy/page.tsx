@@ -1,5 +1,6 @@
 import AcademyClient from '@/features/academy/AcademyClient';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -13,6 +14,7 @@ export async function generateMetadata({
   return {
     title: t.seo.academy.title,
     description: t.seo.academy.description,
+    alternates: buildAlternates(locale, '/academy'),
   };
 }
 

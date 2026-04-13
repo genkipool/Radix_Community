@@ -1,5 +1,6 @@
 import InfrastructureClient from '@/features/infrastructure/InfrastructureClient';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -13,6 +14,7 @@ export async function generateMetadata({
   return {
     title: t.seo.infrastructure.title,
     description: t.seo.infrastructure.description,
+    alternates: buildAlternates(locale, '/infrastructure'),
   };
 }
 

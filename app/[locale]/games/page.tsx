@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 import GamesClient from '@/features/games/GamesClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
 
@@ -16,6 +17,7 @@ export async function generateMetadata({
   return {
     title: t.seo.games.title,
     description: t.seo.games.description,
+    alternates: buildAlternates(locale, '/games'),
   };
 }
 

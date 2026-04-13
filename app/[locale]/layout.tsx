@@ -5,6 +5,7 @@ import '@/app/globals.css'
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { getDictionary, Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import type { Theme } from '@/context/ThemeContext';
@@ -28,6 +29,7 @@ export async function generateMetadata({
     title: t.seo.root.title,
     description: t.seo.root.description,
     keywords: t.seo.root.keywords,
+    alternates: buildAlternates(locale, ''),
   };
 }
 

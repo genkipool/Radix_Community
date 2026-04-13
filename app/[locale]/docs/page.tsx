@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 import DocsClient from '@/features/docs/DocsClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
 import type { UserDocMeta } from '@/features/docs/types/components.types';
@@ -17,6 +18,7 @@ export async function generateMetadata({
   return {
     title: t.seo.docs.title,
     description: t.seo.docs.description,
+    alternates: buildAlternates(locale, '/docs'),
   };
 }
 

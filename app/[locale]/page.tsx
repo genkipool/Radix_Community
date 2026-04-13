@@ -20,6 +20,7 @@ import {
   CTAFinal,
 } from '@/features/home';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -34,6 +35,7 @@ export async function generateMetadata({
     title: t.seo.home.title,
     description: t.seo.home.description,
     keywords: t.seo.home.keywords,
+    alternates: buildAlternates(locale, ''),
   };
 }
 
