@@ -190,68 +190,160 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                     />
 
                     {/* Footer */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--color-card-border)] mt-auto">
-                        <div className={`flex min-w-0 ${columns === 1 ? 'flex-row items-center gap-4' : 'flex-col-reverse items-start gap-1.5'}`}>
-                            <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] opacity-80 shrink-0" title={t.forum.post.date}>
-                                <Clock className="w-3.5 h-3.5" />
-                                {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-medium shrink-0">
-                                <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="w-3.5 h-3.5" />{post.views}</span>
-                                <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="w-3.5 h-3.5" />{post.replies.length}</span>
-                                <StatButton
-                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLikePost(post.id); }}
-                                    title={t.forum.post.like}
-                                    icon={<Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
-                                    count={getPostLikes(post)}
-                                    isActive={likedPosts.has(post.id)}
-                                />
-                                <StatButton
-                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleDislikePost(post.id); }}
-                                    title={t.forum.post.dislike}
-                                    icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
-                                    count={getPostDislikes(post)}
-                                    isActive={dislikedPosts.has(post.id)}
-                                />
-                            </div>
-                        </div>
+                    <div className={`pt-4 border-t border-[var(--color-card-border)] mt-auto flex ${columns === 1 ? 'flex-wrap items-center justify-between gap-4' : 'flex-col gap-3'}`}>
+                        {columns === 1 ? (
+                            <>
+                                <div className="flex flex-row items-center gap-4 min-w-0">
+                                    <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] opacity-80 shrink-0" title={t.forum.post.date}>
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-medium shrink-0">
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="w-3.5 h-3.5" />{post.views}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="w-3.5 h-3.5" />{post.replies.length}</span>
+                                        <StatButton
+                                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLikePost(post.id); }}
+                                            title={t.forum.post.like}
+                                            icon={<Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            count={getPostLikes(post)}
+                                            isActive={likedPosts.has(post.id)}
+                                        />
+                                        <StatButton
+                                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleDislikePost(post.id); }}
+                                            title={t.forum.post.dislike}
+                                            icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            count={getPostDislikes(post)}
+                                            isActive={dislikedPosts.has(post.id)}
+                                        />
+                                    </div>
+                                </div>
 
-                         <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 ml-auto max-w-full">
-                            {isExpanded && post.replies.length > 0 && (
-                                <ReplyFilterWidget
-                                    authorId={post.authorId}
-                                    post={post}
-                                    uniqueFilterId={`root-${post.id}`}
-                                    specificReplies={specificReplies}
-                                    repliersToAuthor={repliersToAuthor}
-                                />
-                            )}
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                            </span>
+                                <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 ml-auto max-w-full">
+                                    {isExpanded && post.replies.length > 0 && (
+                                        <ReplyFilterWidget
+                                            authorId={post.authorId}
+                                            post={post}
+                                            uniqueFilterId={`root-${post.id}`}
+                                            specificReplies={specificReplies}
+                                            repliersToAuthor={repliersToAuthor}
+                                        />
+                                    )}
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
+                                        {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                    </span>
 
-                            <Button
-                                title={t.forum.post.reply}
-                                variant="secondary"
-                                size="sm"
-                                className="!text-[10px] !tracking-wider"
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    setReplyingToAuthorId(post.authorId); 
-                                    setReplyingToPost({ 
-                                        postId: post.id,
-                                        authorId: post.authorId, 
-                                        content: post.content || '', 
-                                        date: post.date, 
-                                        title: post.title,
-                                        messageId: post.id // Explicitly link to root post
-                                    });
-                                    setShowPublishModal(true); 
-                                }}
-                            >
-                                {t.forum.post.reply}
-                            </Button>
-                        </div>
+                                    <Button
+                                        title={t.forum.post.reply}
+                                        variant="secondary"
+                                        size="sm"
+                                        className="!text-[10px] !tracking-wider"
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            setReplyingToAuthorId(post.authorId); 
+                                            setReplyingToPost({ 
+                                                postId: post.id,
+                                                authorId: post.authorId, 
+                                                content: post.content || '', 
+                                                date: post.date, 
+                                                title: post.title,
+                                                messageId: post.id
+                                            });
+                                            setShowPublishModal(true); 
+                                        }}
+                                    >
+                                        {t.forum.post.reply}
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* GRID > 1: Grid Multi-Col Layout */}
+                                {/* ROW 1: Date & Time + Stats */}
+                                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                                    <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] opacity-80 shrink-0" title={t.forum.post.date}>
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-medium shrink-0">
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="w-3.5 h-3.5" />{post.views}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="w-3.5 h-3.5" />{post.replies.length}</span>
+                                        <StatButton
+                                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLikePost(post.id); }}
+                                            title={t.forum.post.like}
+                                            icon={<Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            count={getPostLikes(post)}
+                                            isActive={likedPosts.has(post.id)}
+                                        />
+                                        <StatButton
+                                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleDislikePost(post.id); }}
+                                            title={t.forum.post.dislike}
+                                            icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            count={getPostDislikes(post)}
+                                            isActive={dislikedPosts.has(post.id)}
+                                        />
+                                    </div>
+                                </div>
+
+                                {!isExpanded ? (
+                                    /* Colapsed: Next Row -> Tags & ReplyBtn */
+                                    <div className="flex items-center justify-between gap-4 mt-1">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
+                                            {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                        </span>
+                                        <Button
+                                            title={t.forum.post.reply}
+                                            variant="secondary"
+                                            size="sm"
+                                            className="!text-[10px] !tracking-wider block shrink-0 ml-auto"
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setReplyingToAuthorId(post.authorId); 
+                                                setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
+                                                setShowPublishModal(true); 
+                                            }}
+                                        >
+                                            {t.forum.post.reply}
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    /* Expanded: Next Row -> Tags | Another Row -> Filters & ReplyBtn */
+                                    <div className="flex flex-col gap-3 mt-1">
+                                        <div className="flex items-center">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
+                                                {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--color-card-border)]/50 pt-3">
+                                            <div className="w-full sm:w-auto overflow-hidden">
+                                                {post.replies.length > 0 && (
+                                                    <ReplyFilterWidget
+                                                        authorId={post.authorId}
+                                                        post={post}
+                                                        uniqueFilterId={`root-${post.id}`}
+                                                        specificReplies={specificReplies}
+                                                        repliersToAuthor={repliersToAuthor}
+                                                    />
+                                                )}
+                                            </div>
+                                            <Button
+                                                title={t.forum.post.reply}
+                                                variant="secondary"
+                                                size="sm"
+                                                className="!text-[10px] !tracking-wider w-full sm:w-auto shrink-0"
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setReplyingToAuthorId(post.authorId); 
+                                                    setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
+                                                    setShowPublishModal(true); 
+                                                }}
+                                            >
+                                                {t.forum.post.reply}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
