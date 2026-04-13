@@ -6,7 +6,7 @@ export const en = {
       keywords: ['tokenización de activos', 'RWA tokenization', 'blockchain banking solutions', 'tokenized deposits', 'CBDC integración', 'Institutional DeFi', 'cross-border payments tokenization', 'unified ledger', 'RegTech AI banking', 'stablecoins reguladas', 'Project Agorá', 'JPM Coin alternatives'],
     },
     home: {
-      title: 'Radix DLT and Tokenized Deposits for Banks | Regulated Blockchain Solutions',
+      title: 'Radix DLT | Tokenized Deposits for Banks | Regulated Blockchain Solutions',
       description: 'Discover how Radix Community powers institutional DeFi and RWA tokenization. Regulated blockchain solutions for banks, including tokenized deposits, cross-border payments, and unified ledger finance.',
       keywords: ['RWA tokenization', 'blockchain banking', 'tokenized deposits', 'cross-border payments', 'Institutional DeFi', 'unified ledger', 'RegTech'],
     },
