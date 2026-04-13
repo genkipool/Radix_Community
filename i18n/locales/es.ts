@@ -1386,6 +1386,8 @@ export const es = {
     stop: "Detener",
     author: "Autor",
     like: "Me gusta",
+    previous: "Artículo anterior",
+    next: "Siguiente artículo",
     calendar: {
       title: "Fecha",
       month: "Marzo",

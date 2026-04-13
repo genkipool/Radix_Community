@@ -1381,6 +1381,8 @@ export const en = {
     stop: "Stop",
     author: "Author",
     like: "Like",
+    previous: "Previous Article",
+    next: "Next Article",
     calendar: {
       title: "Date",
       month: "March",

@@ -8,6 +8,8 @@ export interface BlogDictionary {
     author: string;
     views: string;
     like: string;
+    previous?: string;
+    next?: string;
     listen: string;
     stop: string;
     controls: {

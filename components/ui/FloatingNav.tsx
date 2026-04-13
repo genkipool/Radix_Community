@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface FloatingNavProps {
   onPrev?: () => void;
@@ -36,10 +35,7 @@ export function FloatingNav({
 }: FloatingNavProps) {
   return (
     <div 
-      className={cn(
-        "fixed inset-0 pointer-events-none flex items-center justify-between px-4 sm:px-10",
-        className
-      )}
+      className={`fixed inset-0 pointer-events-none flex items-center justify-between px-4 sm:px-10 ${className || ''}`}
       style={{ zIndex }}
     >
       <AnimatePresence>
