@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { LayoutGrid, Grid2x2, Grid3x3, Rows3 } from 'lucide-react';
+import { Rows3, Grid2x2, Grid3x3, Columns4 } from 'lucide-react';
 
 interface GridToggleProps {
     columns: number;
@@ -30,7 +30,8 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
         switch (columns) {
             case 1: return <Rows3 className="w-4 h-4" />;
             case 2: return <Grid2x2 className="w-4 h-4" />;
-            case 3: return <LayoutGrid className="w-4 h-4" />;
+            case 3: return <Grid3x3 className="w-4 h-4" />;
+            case 4: return <Columns4 className="w-4 h-4" />;
             default: return <Grid3x3 className="w-4 h-4" />;
         }
     };
