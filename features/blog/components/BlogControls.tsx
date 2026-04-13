@@ -84,8 +84,8 @@ export function BlogControls({
                     </div>
 
                     {/* CENTER — Search & Tags */}
-                    <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-4 w-full xl:px-8">
-                        <div className="w-full md:flex-1 max-w-3xl">
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 w-full xl:px-8">
+                        <div className="w-full">
                             <SearchBar
                                 value={searchQuery}
                                 onChange={onSearchChange}
