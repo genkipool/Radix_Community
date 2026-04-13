@@ -20,6 +20,7 @@
   --color-accent: #b8972e;
   /* Richer Gold for accents */
   --color-surface: #ffffff;
+  --color-close-hover: #b45309; /* Warm Amber-Red for Gold theme */
 
   --color-card-bg: #ffffff;
   --color-card-border: #e8e6e1;
@@ -93,6 +94,7 @@
   --color-accent: #f2d570;
   /* Light gold */
   --color-surface: #141414;
+  --color-close-hover: #f87171; /* Semantic Red 400 */
 
   --color-card-bg: #141414;
   --color-card-border: #292825;

@@ -20,6 +20,7 @@
   --color-accent: #10b981;
   /* Emerald 500 */
   --color-surface: #f8fafc;
+  --color-close-hover: #dc2626; /* Semantic Red 600 */
 
   --color-card-bg: #ffffff;
   --color-card-border: #e2e8f0;
@@ -101,6 +102,7 @@
   --color-accent: #34d399;
   /* Emerald 400 */
   --color-surface: #18181b;
+  --color-close-hover: #f87171; /* Semantic Red 400 */
 
   --color-card-bg: #18181b;
   --color-card-border: #27272a;
