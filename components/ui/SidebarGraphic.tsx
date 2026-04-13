@@ -329,7 +329,7 @@ export const SidebarGraphic = ({
             {/* ── RIGHT-SIDE GRAPHIC ── */}
             {variant === 'games' && (
                 /* Energy Sphere with DNA helices and orbits — from RadixGames.svg */
-                <g transform="translate(910, 280) scale(0.48) translate(-600, -400)">
+                <g transform="translate(850, 280) scale(0.42) translate(-600, -400)">
                     {/* Back orbits */}
                     <g transform="rotate(12 600 400)" opacity="0.6">
                         <ellipse cx="600" cy="400" rx="580" ry="260" fill="none" stroke="var(--sidebar-secondary)" strokeWidth="2" filter={`url(#glowSoft-${id})`} />
@@ -416,7 +416,7 @@ export const SidebarGraphic = ({
 
             {variant === 'community' && (
                 /* Full RadixCommunity.svg — connecting lines, small icons, 3D layer stack */
-                <g transform="translate(990, 280) scale(0.55) translate(-620, -450)">
+                <g transform="translate(900, 280) scale(0.48) translate(-620, -450)">
                     <defs>
                         {/* Layer gradients */}
                         <linearGradient id={`l1f-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -679,7 +679,7 @@ export const SidebarGraphic = ({
 
             {(variant === 'default' || variant === 'docs' || variant === 'infrastructure' || variant === 'developers' || variant === 'academy' || variant === 'roadmap') && (
                 /* Original 3D checkmark card */
-                <g transform="translate(970, 270) rotate(14) skewX(-12) scale(1, 0.95)">
+                <g transform="translate(890, 270) rotate(14) skewX(-12) scale(0.85, 0.81)">
                     <rect x="-115" y="-120" width="290" height="290" rx="55" fill={`url(#cardShadow-${id})`} />
                     <rect x="-137" y="-132" width="290" height="290" rx="55" fill="var(--sidebar-card-base)" opacity="0.6" />
                     <rect x="-140" y="-145" width="290" height="290" rx="55" fill={`url(#cardFront-${id})`} />
