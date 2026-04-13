@@ -14,6 +14,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ValidatorDetailView } from '../staking';
 import { TransactionDetailModal } from '../explorador';
 
@@ -53,19 +54,35 @@ export const DashboardModals = ({
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto"
             onClick={closeExpanded}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.7}
-            onDragEnd={(_e, info) => {
-              const swipeThreshold = 100;
-              const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
-              if (info.offset.x > swipeThreshold && idx > 0) {
-                setExpandedPosts(new Set([filteredValidators[idx - 1].id]));
-              } else if (info.offset.x < -swipeThreshold && idx < filteredValidators.length - 1) {
-                setExpandedPosts(new Set([filteredValidators[idx + 1].id]));
-              }
-            }}
           >
+            {/* Floating Navigation Buttons (Desktop Only) */}
+            <div className="fixed inset-0 pointer-events-none hidden sm:flex items-center justify-between px-4 sm:px-10">
+              <button
+                className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-xl cursor-pointer transition-all hover:scale-110 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-0 disabled:pointer-events-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
+                  if (idx > 0) setExpandedPosts(new Set([filteredValidators[idx - 1].id]));
+                }}
+                disabled={filteredValidators.findIndex(v => v.id === expandedPost.id) <= 0}
+                aria-label="Validador anterior"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-xl cursor-pointer transition-all hover:scale-110 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-0 disabled:pointer-events-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
+                  if (idx < filteredValidators.length - 1) setExpandedPosts(new Set([filteredValidators[idx + 1].id]));
+                }}
+                disabled={filteredValidators.findIndex(v => v.id === expandedPost.id) >= filteredValidators.length - 1}
+                aria-label="Validador siguiente"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+
             <div className="w-full max-w-[1600px] mx-auto pointer-events-auto">
               <ValidatorDetailView
                 validator={expandedPost}
