@@ -147,7 +147,7 @@ export function BlogOverlay({
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </motion.div>
         </AnimatePresence>
     );
