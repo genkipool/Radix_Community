@@ -1,5 +1,6 @@
 'use client';
 import Image from 'next/image';
+import { motion } from 'motion/react';
 import { Calendar, User, Eye, Heart } from 'lucide-react';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { Card } from '@/components/ui/Card';
@@ -46,34 +47,32 @@ export function BlogPostCard({
 
     return (
         <Card
-            layout={true}
-            layoutId={readingMode ? `post-${post.id}` : undefined}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            animate={{ zIndex: isExpanded ? 40 : 1 }}
             viewport={{ once: true, margin: '0px' }}
-            transition={{ 
-                delay: Math.min(index * 0.02, 0.2), 
-                duration: 0.3,
-                layout: { duration: 0.4, ease: 'easeInOut' },
-                zIndex: { delay: isExpanded ? 0 : 0.4 }
-            }}
+            transition={{ delay: Math.min(index * 0.02, 0.2), duration: 0.3 }}
             onClick={() => onExpand(post.id)}
             className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full"
             innerClassName="h-full flex flex-col"
-            style={{ ...spanStyle }}
+            style={{ ...spanStyle, zIndex: isExpanded ? 40 : 1 }}
         >
             {/* Image */}
             <div
                 className={`relative w-full overflow-hidden bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 flex-shrink-0 ${index === 0 ? 'h-56 md:h-72' : isRowSpan ? 'min-h-[12rem]' : 'h-48'}`}
             >
-                <Image 
-                    src={post.image} 
-                    alt={post.title} 
-                    fill 
-                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                    sizes="(max-width: 768px) 100vw, 50vw" 
-                />
+                <motion.div
+                    className="absolute inset-0 z-10"
+                    layoutId={readingMode ? `post-image-${post.id}` : undefined}
+                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                >
+                    <Image 
+                        src={post.image} 
+                        alt={post.title} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                        sizes="(max-width: 768px) 100vw, 50vw" 
+                    />
+                </motion.div>
             </div>
 
             {/* Content Wrapper */}
@@ -82,7 +81,12 @@ export function BlogPostCard({
                     <HighlightText text={post.title} query={searchQuery} />
                 </h3>
 
-                <div className="overflow-hidden">
+                <motion.div 
+                    initial={false}
+                    animate={{ height: isExpanded ? 'auto' : 88, opacity: isExpanded ? 1 : 0.9 }}
+                    transition={{ duration: 0.4, ease: [0.33, 1, 0.68, 1] }}
+                    className="overflow-hidden"
+                >
                     <div className={`text-[15px] text-[var(--color-text-muted)] leading-relaxed mb-4 ${isExpanded ? '' : 'line-clamp-3'}`}>
                         {isExpanded ? (
                             <PostContent content={post.content} query={searchQuery} />
@@ -90,7 +94,7 @@ export function BlogPostCard({
                             <PostContent content={post.summary} query={searchQuery} isSummary={true} />
                         )}
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Footer */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-card-border)] mt-auto">
