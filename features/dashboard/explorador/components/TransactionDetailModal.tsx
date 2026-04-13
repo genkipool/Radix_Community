@@ -80,18 +80,26 @@ export function TransactionDetailModal({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                            {/* Intent hash — Full width */}
-                            <button
-                                className="flex items-center gap-2 group text-left mb-2"
-                                onClick={() => copyAddress(tx.intentHash)}
-                            >
-                                <h2 className="text-base sm:text-lg font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors break-all">
-                                    {tx.intentHash}
-                                </h2>
-                                <span className={`shrink-0 transition-colors ${copiedAddress === tx.intentHash ? 'text-green-500' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)]'}`}>
-                                    {copiedAddress === tx.intentHash ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                </span>
-                            </button>
+                            <div className="flex items-start justify-between gap-4 mb-2">
+                                <button
+                                    className="flex items-center gap-2 group text-left"
+                                    onClick={() => copyAddress(tx.intentHash)}
+                                >
+                                    <h2 className="text-base sm:text-lg font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors break-all">
+                                        {tx.intentHash}
+                                    </h2>
+                                    <span className={`shrink-0 transition-colors ${copiedAddress === tx.intentHash ? 'text-green-500' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)]'}`}>
+                                        {copiedAddress === tx.intentHash ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    </span>
+                                </button>
+
+                                <button
+                                    onClick={onClose}
+                                    className="p-1.5 hover:bg-[var(--color-surface-hover)] hover:text-red-400 rounded-lg transition-colors bg-[var(--color-surface)] border border-[var(--color-card-border)] shrink-0 group shadow-sm sm:-mt-1"
+                                >
+                                    <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                                </button>
+                            </div>
 
                             {/* Reordered Stats Row: Date, Fee, Ep/Rnd, Accounts, Components + Tags */}
                             <div className="flex items-center gap-y-2 gap-x-3 text-xs sm:text-sm text-[var(--color-text-muted)] flex-wrap">
@@ -162,12 +170,6 @@ export function TransactionDetailModal({
                         </div>
                     </div>
 
-                    <button
-                        onClick={onClose}
-                        className="p-2.5 hover:bg-[var(--color-surface-hover)] hover:text-red-400 rounded-xl transition-colors bg-[var(--color-surface)] border border-[var(--color-card-border)] shrink-0 group shadow-md"
-                    >
-                        <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                    </button>
                 </div>
 
                 {/* ── Content: TransactionTabs directly ── */}
@@ -195,12 +197,6 @@ export function TransactionDetailModal({
                     )}
                 </div>
 
-                {/* ── Footer ── */}
-                <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md px-4 sm:px-6 py-3 rounded-b-2xl shrink-0 flex justify-end items-center gap-3">
-                    <Button variant="outline" onClick={onClose} className="text-sm">
-                        <X className="w-3.5 h-3.5 mr-1.5" /> {dt?.reading?.close || 'Close'}
-                    </Button>
-                </div>
             </div>
         </motion.div>
     );
