@@ -86,7 +86,7 @@ export function TransactionDetailModal({
 
             {/* Card shell — fixed frame, does NOT move with swipe */}
             <div
-                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto relative"
+                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto relative overflow-hidden"
                 onClick={e => e.stopPropagation()}
                 style={{ maxHeight: 'calc(100dvh - 2rem)' }}
             >
