@@ -22,6 +22,16 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [replyingToAuthorId, setReplyingToAuthorId] = useState<string | null>(null);
+
+    // Mobile detection: force 1 column on small screens
+    useEffect(() => {
+        const checkMobile = () => {
+            if (typeof window !== 'undefined' && window.innerWidth < 640) setColumns(1);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
     const [replyingToPost, setReplyingToPost] = useState<{
         postId: number;
         authorId: string;
@@ -76,9 +86,9 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
                 initialUsers[p.authorId]?.name.toLowerCase().includes(q);
         })
         .sort((a, b) => {
-            if (sortMode === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
-            if (sortMode === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
-            return 0; // For 'date' or 'random' or other modes, keep original order or implement specific logic
+            if (sortMode === 'newest') return new Date(b.date.replace(/-/g, '/')).getTime() - new Date(a.date.replace(/-/g, '/')).getTime();
+            if (sortMode === 'oldest') return new Date(a.date.replace(/-/g, '/')).getTime() - new Date(b.date.replace(/-/g, '/')).getTime();
+            return 0; // For 'date' or 'random' or other modes, keep original order
         });
 
     const expandedPostId = expandedPosts.size > 0 ? Array.from(expandedPosts)[expandedPosts.size - 1] : null;

@@ -72,12 +72,14 @@ export function ForumToolbar() {
                     >
                         {t.forum.controls.publish}
                     </Button>
-                    <GridToggle
-                        columns={columns}
-                        onChange={setColumns}
-                        label={t.forum.controls.columns}
-                        max={2}
-                    />
+                    <div className="hidden sm:block">
+                        <GridToggle
+                            columns={columns}
+                            onChange={setColumns}
+                            label={t.forum.controls.columns}
+                            max={2}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

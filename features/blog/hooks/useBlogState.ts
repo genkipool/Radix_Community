@@ -22,6 +22,16 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
+
+    // Mobile detection: force 1 column on small screens
+    useEffect(() => {
+        const checkMobile = () => {
+            if (window.innerWidth < 640) setColumns(1);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
     
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
