@@ -2385,6 +2385,8 @@ Download the update today from the iOS App Store or Google Play Store to experie
       close: 'Close',
       previous_post: 'Previous Node',
       next_post: 'Next Node',
+      previous_transaction: 'Previous Transaction',
+      next_transaction: 'Next Transaction',
     },
     details: {
       profile: 'Staking Profile',

@@ -2391,6 +2391,8 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       close: 'Cerrar',
       previous_post: 'Nodo Anterior',
       next_post: 'Siguiente Nodo',
+      previous_transaction: 'Transacción anterior',
+      next_transaction: 'Siguiente transacción',
     },
     details: {
       profile: 'Perfil de Staking',

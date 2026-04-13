@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Check, Copy, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
+import { X, Check, Copy, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { TransactionTabs } from './TransactionTabs';
@@ -10,6 +10,7 @@ import type { TransactionDetails, TranslationsT } from '@/features/dashboard/typ
 import { formatEntity } from '../../utils/entityUtils';
 import { Button } from '@/components/ui/Button';
 import { Pill } from '@/components/ui/Pill';
+import { FloatingNav } from '@/components/ui/FloatingNav';
 
 import { TransactionDetailModalProps } from '../types';
 
@@ -40,8 +41,17 @@ export function TransactionDetailModal({
             className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-2 sm:px-4 overflow-y-auto"
             onClick={onClose}
         >
+            <FloatingNav 
+                hasPrev={!!onPrev} 
+                hasNext={!!onNext} 
+                onPrev={onPrev} 
+                onNext={onNext} 
+                prevLabel={t?.dashboard?.reading?.previous_transaction || 'Anterior'} 
+                nextLabel={t?.dashboard?.reading?.next_transaction || 'Siguiente'}
+                className="hidden sm:flex"
+            />
             <div
-                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto"
+                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto relative"
                 onClick={e => e.stopPropagation()}
                 style={{ maxHeight: 'calc(100dvh - 2rem)' }}
             >
@@ -186,18 +196,10 @@ export function TransactionDetailModal({
                 </div>
 
                 {/* ── Footer ── */}
-                <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md px-4 sm:px-6 py-3 rounded-b-2xl shrink-0 flex justify-between items-center gap-3">
+                <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md px-4 sm:px-6 py-3 rounded-b-2xl shrink-0 flex justify-end items-center gap-3">
                     <Button variant="outline" onClick={onClose} className="text-sm">
                         <X className="w-3.5 h-3.5 mr-1.5" /> {dt?.reading?.close || 'Close'}
                     </Button>
-                    <div className="flex gap-2">
-                        <Button variant="soft" disabled={!onPrev} onClick={onPrev} className="px-3">
-                            <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button variant="soft" disabled={!onNext} onClick={onNext} className="px-3">
-                            <ChevronRight className="w-4 h-4" />
-                        </Button>
-                    </div>
                 </div>
             </div>
         </motion.div>

@@ -1,8 +1,9 @@
 'use client';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { X, Calendar, User, Eye, Heart, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Calendar, User, Eye, Heart, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { FloatingNav } from '@/components/ui/FloatingNav';
 import { PostContent } from '../PostContent';
 import { tagColor, defaultTagColor } from '@/constants/tagColors';
 import { BlogPost, BlogDictionary } from '../types';
@@ -52,6 +53,16 @@ export function BlogOverlay({
                 onClick={onClose}
                 className="fixed inset-0 bg-black/70 z-50"
                 style={{ backdropFilter: 'blur(4px)' }}
+            />
+
+            <FloatingNav
+                hasPrev={!!prevPost}
+                hasNext={!!nextPost}
+                onPrev={onGoToPrev}
+                onNext={onGoToNext}
+                prevLabel={blogT.previous || 'Anterior'}
+                nextLabel={blogT.next || 'Siguiente'}
+                className="hidden sm:flex"
             />
 
             {/* Scroll container — no animation on this, just positioning */}
@@ -121,19 +132,9 @@ export function BlogOverlay({
                             <PostContent content={post.content} query={searchQuery} />
                         </div>
 
-                        {/* Footer: prev | author · date · like · tags | next */}
+                        {/* Footer: author · date · like · tags */}
                         <div className="mt-10 pt-6 border-t border-[var(--color-card-border)]">
-                            <div className="flex items-center justify-between gap-4">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={onGoToPrev}
-                                    disabled={!prevPost}
-                                    title={prevPost ? prevPost.title : ''}
-                                    className={`shrink-0 ${prevPost ? '!text-[var(--color-primary)] opacity-100' : 'opacity-20 cursor-default'}`}
-                                >
-                                    <ChevronLeft className="w-5 h-5" />
-                                </Button>
+                            <div className="flex items-center justify-center gap-4">
                                 <div className="flex flex-wrap items-center justify-center gap-3 flex-1 min-w-0">
                                     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.author}><User className="w-3 h-3" />{post.author}</span>
                                     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.calendar.title}><Calendar className="w-3 h-3" />{new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -146,16 +147,6 @@ export function BlogOverlay({
                                         </span>
                                     ))}
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={onGoToNext}
-                                    disabled={!nextPost}
-                                    title={nextPost ? nextPost.title : ''}
-                                    className={`shrink-0 ${nextPost ? '!text-[var(--color-primary)] opacity-100' : 'opacity-20 cursor-default'}`}
-                                >
-                                    <ChevronRight className="w-5 h-5" />
-                                </Button>
                             </div>
                         </div>
                     </motion.div>

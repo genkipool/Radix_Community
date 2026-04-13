@@ -3,13 +3,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-    X, ChevronLeft, ChevronRight, Calendar, Eye, MessageSquare 
+    X, Calendar, Eye, MessageSquare 
 } from 'lucide-react';
 import { useForum } from './ForumContext';
 import { ForumMessage } from './ForumMessage';
 import { getReplyChildrenMap } from '../utils/replyTree';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
-import { Button } from '@/components/ui/Button';
+import { FloatingNav } from '@/components/ui/FloatingNav';
 import { tagColor } from '@/constants/tagColors';
 
 export function ForumReadingMode() {
@@ -42,6 +42,16 @@ export function ForumReadingMode() {
                 className="fixed inset-0 z-[120] flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto" 
                 onClick={closeExpanded}
             >
+                <FloatingNav
+                    hasPrev={!!prevPost}
+                    hasNext={!!nextPost}
+                    onPrev={() => prevPost && handleExpandPost(prevPost.id)}
+                    onNext={() => nextPost && handleExpandPost(nextPost.id)}
+                    prevLabel={t.forum.reading.previous_post || 'Anterior'}
+                    nextLabel={t.forum.reading.next_post || 'Siguiente'}
+                    className="hidden sm:flex"
+                    zIndex={130}
+                />
                 <div 
                     className="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl my-auto flex flex-col relative overflow-hidden" 
                     onClick={e => e.stopPropagation()}
@@ -55,26 +65,7 @@ export function ForumReadingMode() {
                             <div className="flex items-center justify-between gap-4 flex-wrap">
                                 <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                                     <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => prevPost && handleExpandPost(prevPost.id)}
-                                            disabled={!prevPost}
-                                            className={`w-8 h-8 rounded-full transition-all ${prevPost ? 'text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10' : 'opacity-20'}`}
-                                            title={t.forum.reading.previous_post}
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => nextPost && handleExpandPost(nextPost.id)}
-                                            disabled={!nextPost}
-                                            className={`w-8 h-8 rounded-full transition-all ${nextPost ? 'text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10' : 'opacity-20'}`}
-                                            title={t.forum.reading.next_post}
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
+                                        {/* Standardized navigation handled by FloatingNav */}
                                     </div>
                                     <span className="flex items-center gap-1.5" title={t.forum.post.date}>
                                         <Calendar className="w-3.5 h-3.5" />
