@@ -1,15 +1,14 @@
 'use client';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { X, Calendar, User, Eye, Heart, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Button } from '@/components/ui/Button';
 import { PostContent } from '../PostContent';
 import { tagColor, defaultTagColor } from '@/constants/tagColors';
 import { BlogPost, BlogDictionary } from '../types';
 
 interface BlogOverlayProps {
-    post: BlogPost | null;
+    post: BlogPost;
     onClose: () => void;
     prevPost: BlogPost | null;
     nextPost: BlogPost | null;
@@ -41,24 +40,33 @@ export function BlogOverlay({
     blogT,
     searchQuery
 }: BlogOverlayProps) {
-    if (!post) return null;
-
     return (
-        <AnimatePresence>
-            <ModalOverlay key="blog-overlay-bg" onClose={onClose} blur="sm" />
+        <>
+            {/* Dark backdrop */}
             <motion.div
-                key="blog-overlay-bg"
-                exit={{ opacity: 1, transition: { duration: 0.4 } }}
-                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto"
+                key="blog-overlay-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 onClick={onClose}
+                className="fixed inset-0 bg-black/70 z-50"
+                style={{ backdropFilter: 'blur(4px)' }}
+            />
+
+            {/* Scroll container — no animation on this, just positioning */}
+            <div
+                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto pointer-events-none"
             >
-                <motion.div 
+                {/* Card shell — layoutId drives the shared element transition */}
+                <motion.div
                     layoutId={`post-${post.id}`}
-                    className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto" 
+                    className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto pointer-events-auto"
                     onClick={e => e.stopPropagation()}
+                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
                 >
                     {/* Header image */}
-                    <div className="relative w-full h-48 md:h-64 overflow-hidden z-20">
+                    <div className="relative w-full h-48 md:h-64 overflow-hidden">
                         <Image src={post.image} alt={post.title} fill className="object-cover" sizes="100vw" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)] via-transparent to-transparent" />
                         <Button
@@ -71,12 +79,12 @@ export function BlogOverlay({
                         </Button>
                     </div>
 
-                    <motion.div 
+                    <motion.div
                         className="p-8 md:p-10"
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.4, delay: 0.2, ease: 'easeOut' }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3, delay: 0.15 }}
                     >
                         {/* Meta row */}
                         <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -152,7 +160,7 @@ export function BlogOverlay({
                         </div>
                     </motion.div>
                 </motion.div>
-            </motion.div>
-        </AnimatePresence>
+            </div>
+        </>
     );
 }

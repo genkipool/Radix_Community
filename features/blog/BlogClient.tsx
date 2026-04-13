@@ -1,6 +1,7 @@
 'use client';
 import { useLanguage } from '@/context/LanguageContext';
 import { ContentHero } from '@/components/layout/ContentHero';
+import { AnimatePresence } from 'motion/react';
 
 import type { BlogClientProps, BlogDictionary } from './types';
 import { useBlogState } from './hooks/useBlogState';
@@ -107,6 +108,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
         expandedPosts={expandedPosts}
         likedPosts={likedPosts}
         readingMode={readingMode}
+        selectedPostId={selectedPost?.id ?? null}
         language={language}
         blogT={blogT}
         onExpand={handleExpandPost}
@@ -116,22 +118,27 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
         sentinelRef={sentinelRef}
       />
 
-      <BlogOverlay
-        post={selectedPost}
-        onClose={handleClose}
-        prevPost={prevPost}
-        nextPost={nextPost}
-        onGoToPrev={goToPrev}
-        onGoToNext={goToNext}
-        onToggleLike={toggleLike}
-        likedPosts={likedPosts}
-        getLikes={getLikes}
-        isSpeaking={isSpeaking}
-        onToggleSpeech={toggleSpeech}
-        language={language}
-        blogT={blogT}
-        searchQuery={searchQuery}
-      />
+      <AnimatePresence>
+        {selectedPost && (
+          <BlogOverlay
+            key={selectedPost.id}
+            post={selectedPost}
+            onClose={handleClose}
+            prevPost={prevPost}
+            nextPost={nextPost}
+            onGoToPrev={goToPrev}
+            onGoToNext={goToNext}
+            onToggleLike={toggleLike}
+            likedPosts={likedPosts}
+            getLikes={getLikes}
+            isSpeaking={isSpeaking}
+            onToggleSpeech={toggleSpeech}
+            language={language}
+            blogT={blogT}
+            searchQuery={searchQuery}
+          />
+        )}
+      </AnimatePresence>
     </ContentHero>
   );
 }

@@ -18,6 +18,7 @@ interface BlogPostCardProps {
     expandedPosts: Set<number>;
     likedPosts: Set<number>;
     readingMode: boolean;
+    selectedPostId: number | null;
     language: string;
     blogT: BlogDictionary;
     onExpand: (id: number) => void;
@@ -34,6 +35,7 @@ export function BlogPostCard({
     expandedPosts,
     likedPosts,
     readingMode,
+    selectedPostId,
     language,
     blogT,
     onExpand,
@@ -44,6 +46,7 @@ export function BlogPostCard({
     const spanStyle = getPostSpanStyle(index, post, columns);
     const isRowSpan = !!spanStyle.gridRow;
     const isExpanded = expandedPosts.has(post.id);
+    const isSelected = selectedPostId === post.id;
 
     return (
         <Card
@@ -55,7 +58,7 @@ export function BlogPostCard({
             onClick={() => onExpand(post.id)}
             className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full"
             innerClassName="h-full flex flex-col"
-            style={{ ...spanStyle, zIndex: isExpanded ? 40 : 1 }}
+            style={{ ...spanStyle, position: 'relative' as const, zIndex: isSelected ? 50 : isExpanded ? 40 : 1 }}
         >
             {/* Image */}
             <div

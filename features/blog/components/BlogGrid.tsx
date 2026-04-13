@@ -11,6 +11,7 @@ interface BlogGridProps {
     expandedPosts: Set<number>;
     likedPosts: Set<number>;
     readingMode: boolean;
+    selectedPostId: number | null;
     language: string;
     blogT: BlogDictionary;
     onExpand: (id: number) => void;
@@ -28,6 +29,7 @@ export function BlogGrid({
     expandedPosts,
     likedPosts,
     readingMode,
+    selectedPostId,
     language,
     blogT,
     onExpand,
@@ -60,6 +62,7 @@ export function BlogGrid({
                             expandedPosts={expandedPosts}
                             likedPosts={likedPosts}
                             readingMode={readingMode}
+                            selectedPostId={selectedPostId}
                             language={language}
                             blogT={blogT}
                             onExpand={onExpand}
