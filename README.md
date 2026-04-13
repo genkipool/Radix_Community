@@ -1,159 +1,159 @@
 # Radix DLT - Web Portal (Community Proposal)
 
-> **Nota de la Comunidad:** Este proyecto ha sido desarrollado e impulsado por la comunidad de Radix. El objetivo central de este repositorio es proponer, iterar y refinar este portal web para presentarlo como candidato a convertirse en la **página web oficial de Radix DLT**. 
+> **Community Note:** This project has been developed and driven by the Radix community. The central goal of this repository is to propose, iterate, and refine this web portal to present it as a candidate for the **official Radix DLT website**.
 
-Un portal moderno, ultrarrápido y altamente interactivo construido con el ecosistema de **Next.js (App Router)**. Diseñado para centralizar todo el conocimiento, herramientas, aplicaciones y discusiones de la red Radix DLT en un único ecosistema fluido.
+A modern, ultra-fast, and highly interactive portal built with the **Next.js (App Router)** ecosystem. Designed to centralize all knowledge, tools, applications, and discussions of the Radix DLT network into a single, fluid ecosystem.
 
 ---
 
-## 🚀 Características Principales (Features)
+## 🚀 Key Features
 
-El proyecto está dividido en varios módulos o "features" verticales, cada uno enfocado en una necesidad específica del ecosistema Radix:
+The project is divided into several vertical modules or "features", each focused on a specific need of the Radix ecosystem:
 
-### 🏠 Home (Página Principal)
-- **Hero & Auto-play Carousel:** Presentación interactiva con métricas en tiempo real.
-- **Secciones de Ecosistema:** Muestra la interoperabilidad, billeteras (Wallet), seguridad (Cerberus) y el problema que Radix resuelve.
-- **Animaciones fluidas:** Amplio uso de `framer-motion` para Scroll Reveals y transiciones de diseño (Shared Layouts).
+### 🏠 Home (Main Page)
+- **Hero & Auto-play Carousel:** Interactive presentation with real-time metrics.
+- **Ecosystem Sections:** Showcases interoperability, wallets, security (Cerberus), and the problem Radix solves.
+- **Fluid Animations:** Extensive use of `framer-motion` for Scroll Reveals and layout transitions (Shared Layouts).
 
 ### 📊 Dashboard & Explorer
-- **Explorador de la Red:** Integración directa con `@radixdlt/babylon-gateway-api-sdk` para obtener datos on-chain en tiempo real.
-- **Métricas on-chain:** Transacciones, estado de la red e historial de staking.
-- **Staking y Validadores:** Interfaz dedicada para buscar, filtrar y analizar Nodos Validadores con métricas de rendimiento y comisiones (Fee).
+- **Network Explorer:** Direct integration with `@radixdlt/babylon-gateway-api-sdk` to fetch on-chain data in real-time.
+- **On-chain Metrics:** Transactions, network status, and staking history.
+- **Staking & Validators:** Dedicated interface to search, filter, and analyze Validator Nodes with performance metrics and fees.
 
 ### 📰 Blog
-- **Grid Dinámico:** Diseño de tarjetas de mampostería (Masonry) para artículos.
-- **Modo Lectura (Reading Mode):** Transición estilo "Medium" utilizando `layoutId` para expandir la tarjeta a pantalla completa de forma inmersiva y sin saltos.
-- **Filtros Avanzados:** Búsqueda por texto, tags y ordenación temporal (más recientes, más antiguos).
+- **Dynamic Grid:** Masonry card layout for articles.
+- **Reading Mode:** "Medium-style" transition using `layoutId` to expand the card to full screen immersively and without layout shifts.
+- **Advanced Filters:** Search by text, tags, and temporal sorting (newest, oldest).
 
-### 💬 Forum (Foro de la Comunidad)
-- **Discusiones Anidadas:** Soporte para hilos y respuestas en formato árbol o lineal.
-- **Filtros de Conversación Avanzados:**
-  - *Protagonist:* Filtra y resalta mensajes de un usuario específico dentro de un hilo extenso.
-  - *All Deep:* Despliega cadenas de respuestas anidadas completas.
-- **Editor Markdown Enriquecido:** Creador de posts con soporte para formateo, tablas y código.
+### 💬 Forum (Community Discussions)
+- **Nested Discussions:** Support for threads and replies in tree or linear format.
+- **Advanced Conversation Filters:**
+  - *Protagonist:* Filters and highlights messages from a specific user within a long thread.
+  - *All Deep:* Unfolds complete nested reply chains.
+- **Rich Markdown Editor:** Post creator with support for formatting, tables, and code blocks.
 
 ### 📚 Docs & Academy
-- **Lector de Documentación:** Sistema optimizado de lectura de documentos técnicos con navegación lateral (Sidebar) y resaltador de sintaxis (`shiki`).
-- **Validación Estricta:** Uso estricto de `zod` para mantener la consistencia en metadatos y títulos (límite de caracteres, reglas formativas).
-- **Academy:** Zona orientada a la educación interactiva sobre Scrypto y los conceptos de la red Radix.
+- **Documentation Reader:** Optimized technical document reading system with lateral navigation (Sidebar) and syntax highlighting (`shiki`).
+- **Strict Validation:** Strict use of `zod` to maintain consistency in metadata and titles (character limits, formatting rules).
+- **Academy:** Area oriented towards interactive education on Scrypto and Radix network concepts.
 
 ### 🌍 DApps & Games Directory
-- Directorios indexados y categorizados de proyectos construidos sobre Radix (Finanzas Descentralizadas, Exchanges, Juegos Web3).
+- Indexed and categorized directories of projects built on Radix (Decentralized Finance, Exchanges, Web3 Games).
 
 ---
 
-## 🛠 Stack Tecnológico
+## 🛠 Tech Stack
 
-Este proyecto aplica pautas de arquitectura estricta y código limpio:
+This project strictly applies clean code and architecture guidelines:
 
-- **Core:** Next.js 15+ (App Router Exclusivamente), React 19, TypeScript (Strict Mode).
-- **Estilos & UI:** Tailwind CSS, Shadcn UI (Componentes Accesibles), CSS Variables (Soporte Multi-Tema: Claro, Oscuro, Oro), Lucide React (Íconos).
-- **Estado y Mutaciones:** Server Components (RSC), Server Actions, React Query, `unstable_cache`.
-- **Formularios & Validación:** React Hook Form + Zod.
-- **Animaciones:** Motion (Framer Motion).
-- **Internacionalización (i18n):** Sistema de Diccionarios Locales (JSON) con Middleware (`proxy.ts`) para detección automática de idioma (es/en).
-- **Observabilidad:** `pino` logger (JSON logs estructurados, cero `console.log` en producción).
+- **Core:** Next.js 15+ (App Router Exclusively), React 19, TypeScript (Strict Mode).
+- **Styles & UI:** Tailwind CSS, Shadcn UI (Accessible Components), CSS Variables (Multi-Theme Support: Light, Dark, Gold), Lucide React (Icons).
+- **State & Mutations:** Server Components (RSC), Server Actions, React Query, `unstable_cache`.
+- **Forms & Validation:** React Hook Form + Zod.
+- **Animations:** Motion (Framer Motion).
+- **Internationalization (i18n):** Local Dictionary System (JSON) with Middleware (`proxy.ts`) for automatic language detection (es/en).
+- **Observability:** `pino` logger (Structured JSON logs, zero `console.log` in production).
 
 ---
 
 ## 🧪 Testing
 
-La suite de pruebas garantiza la fiabilidad de los flujos críticos de la aplicación.
+The testing suite ensures the reliability of the application's critical flows.
 
-- **Pruebas Unitarias y de Integración:** `vitest` + `@testing-library/react`.
-- **Ejecución de Pruebas:**
+- **Unit and Integration Testing:** `vitest` + `@testing-library/react`.
+- **Running tests:**
   ```bash
-  npm run test        # Modo interactivo (watch)
-  npm run test:run    # Ejecución de CI
-  npm run test:coverage # Generar reporte de cobertura
+  npm run test        # Interactive mode (watch)
+  npm run test:run    # CI execution mode
+  npm run test:coverage # Generate coverage report
   ```
 
 ---
 
-## ⚙️ Instalación y Configuración Local
+## ⚙️ Local Installation & Setup
 
-1. **Clonar el repositorio:**
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/genkipool/Radix_Community.git
    cd Radix_Community
    ```
 
-2. **Instalar dependencias:**
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Variables de Entorno:**
-   Copia el archivo de ejemplo para configurar tus claves locales.
+3. **Environment Variables:**
+   Copy the example file to configure your local keys.
    ```bash
    cp .env.local.example .env.local
    ```
-   *(Añade tus tokens, ejemplo: `RESEND_API_KEY`, etc.)*
+   *(Add your tokens, e.g., `RESEND_API_KEY`, etc.)*
 
-4. **Ejecutar servidor de desarrollo:**
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
-   Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🤝 Guía de Contribución (Gitflow Workflow)
+## 🤝 Contribution Guide (Gitflow Workflow)
 
-Para colaborar en este proyecto y mantener el repositorio estable para futuros despliegues o la revisión oficial por parte del equipo central de Radix, utilizamos un flujo de trabajo basado en **Gitflow**.
+To collaborate on this project and keep the repository stable for future deployments or an official review by the Radix core team, we use a workflow based on **Gitflow**.
 
-### Arquitectura de Ramas
-- **`main`**: Rama de producción. El código aquí siempre es estable y es el que se despliega directamente a Vercel en el entorno final. Nunca se debe comitear directamente a `main`.
-- **`develop`**: Rama principal de desarrollo (Integration Branch). Las nuevas funcionalidades terminadas se integran aquí. 
+### Branch Architecture
+- **`main`**: Production branch. Code here is always stable and is the one directly deployed to Vercel in the final environment. You should never commit directly to `main`.
+- **`develop`**: Main development branch (Integration Branch). Finished new features are integrated here.
 
-### Flujo de Trabajo Paso a Paso
+### Step-by-Step Workflow
 
-1. **Actualiza tu entorno local:**
-   Antes de empezar cualquier tarea, asegúrate de estar sincronizado con la última versión de desarrollo.
+1. **Update your local environment:**
+   Before starting any task, make sure you are in sync with the latest development version.
    ```bash
    git checkout develop
    git pull origin develop
    ```
 
-2. **Crea una rama de Feature / Bugfix:**
-   Crea una rama descriptiva partiendo siempre de `develop`. Tipos comunes: `feature/`, `bugfix/`, `hotfix/` (esta última si proviene de `main`).
+2. **Create a Feature / Bugfix branch:**
+   Create a descriptive branch always starting from `develop`. Common types: `feature/`, `bugfix/`, `hotfix/` (the latter if it comes from `main`).
    ```bash
-   git checkout -b feature/nombre-de-la-funcionalidad
-   # o
-   git checkout -b bugfix/nombre-del-error
+   git checkout -b feature/feature-name
+   # or
+   git checkout -b bugfix/bug-name
    ```
 
-3. **Desarrolla siguiendo las Reglas Globales (User Rules):**
-   - Usa componentes de servidor (RSC) por defecto.
-   - Aplica validación estricta (Zod).
-   - Asegura la accesibilidad WCAG en los contrastes de colores.
-   - Pasa todos los linterns e inspeciones visuales (`npm run lint`).
-   - Escribe Unit Tests de tu componente en la carpeta `__tests__/`.
+3. **Develop following the Global Rules (User Rules):**
+   - Use Server Components (RSC) by default.
+   - Apply strict validation (Zod).
+   - Ensure WCAG accessibility in color contrasts.
+   - Pass all linters and visual inspections (`npm run lint`).
+   - Write Unit Tests for your component in the `__tests__/` folder.
 
-4. **Haz Commit de tus cambios:**
-   Haz commits atómicos, descriptivos y preferiblemente en inglés.
+4. **Commit your changes:**
+   Make atomic, descriptive commits, preferably in English.
    ```bash
    git add .
    git commit -m "Feat: Add new staking calculator component"
    ```
 
-5. **Prueba tu código antes de subir:**
-   Verifica que los tests sigan en verde.
+5. **Test your code before pushing:**
+   Verify that tests are still green.
    ```bash
    npm run test:run
    ```
 
-6. **Sube tu rama y abre un Pull Request (PR):**
+6. **Push your branch and open a Pull Request (PR):**
    ```bash
-   git push origin feature/nombre-de-la-funcionalidad
+   git push origin feature/feature-name
    ```
-   - Abre un Pull Request en GitHub comparando tu rama contra **`develop`**.
-   - Solicita revisión.
-   - Una vez aprobado, se realizará el Merge a `develop`.
+   - Open a Pull Request on GitHub comparing your branch against **`develop`**.
+   - Request a review.
+   - Once approved, it will be merged into `develop`.
 
-7. **Releases (Administradores):**
-   Cuando `develop` acumula suficientes características estables, se integra hacia `main` mediante un Pull Request de Release, disparando el despliegue automático en Vercel para producción.
+7. **Releases (Administrators):**
+   When `develop` accumulates enough stable features, it is integrated into `main` via a Release Pull Request, triggering the automatic deployment to Vercel for production.
 
 ---
 
-*Desarrollado con ❤️ por la comunidad de Radix.*
+*Developed with ❤️ by the Radix community.*
