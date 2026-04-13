@@ -47,16 +47,18 @@ export function BlogOverlay({
         <AnimatePresence>
             <ModalOverlay key="blog-overlay-bg" onClose={onClose} blur="sm" />
             <motion.div
-                key="blog-overlay-card"
-                layoutId={`post-${post.id}`}
-                initial={{ opacity: 0, scale: 0.85, y: 40 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.85, y: 40 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                key="blog-overlay-bg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto"
                 onClick={onClose}
             >
-                <div className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto" onClick={e => e.stopPropagation()}>
+                <motion.div 
+                    layoutId={`post-${post.id}`}
+                    className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto" 
+                    onClick={e => e.stopPropagation()}
+                >
                     {/* Header image */}
                     <div className="relative w-full h-48 overflow-hidden">
                         <Image src={post.image} alt={post.title} fill className="object-cover" sizes="100vw" />

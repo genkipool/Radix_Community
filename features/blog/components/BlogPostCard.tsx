@@ -1,6 +1,5 @@
 'use client';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, User, Eye, Heart } from 'lucide-react';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { Card } from '@/components/ui/Card';
@@ -47,6 +46,7 @@ export function BlogPostCard({
 
     return (
         <Card
+            layout={readingMode ? true : false}
             layoutId={readingMode ? `post-${post.id}` : undefined}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -76,24 +76,17 @@ export function BlogPostCard({
                     <HighlightText text={post.title} query={searchQuery} />
                 </h3>
 
-                <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                        key={isExpanded ? 'expanded' : 'collapsed'}
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.4, ease: [0.33, 1, 0.68, 1] }}
-                        className="overflow-hidden"
-                    >
-                        <div className={`text-[15px] text-[var(--color-text-muted)] leading-relaxed mb-4 ${isExpanded ? '' : 'line-clamp-3'}`}>
-                            {isExpanded ? (
-                                <PostContent content={post.content} query={searchQuery} />
-                            ) : (
-                                <PostContent content={post.summary} query={searchQuery} isSummary={true} />
-                            )}
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
+                <div 
+                    className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-[88px] opacity-90'}`}
+                >
+                    <div className={`text-[15px] text-[var(--color-text-muted)] leading-relaxed mb-4 ${isExpanded ? '' : 'line-clamp-3'}`}>
+                        {isExpanded ? (
+                            <PostContent content={post.content} query={searchQuery} />
+                        ) : (
+                            <PostContent content={post.summary} query={searchQuery} isSummary={true} />
+                        )}
+                    </div>
+                </div>
 
                 {/* Footer */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-card-border)] mt-auto">
