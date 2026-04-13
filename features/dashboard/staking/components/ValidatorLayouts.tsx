@@ -533,15 +533,15 @@ const CopyAddressButton = ({
     const displayText = truncate ? truncateAddress(address, start, end) : address;
     return (
         <div
-            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono leading-none ${small ? 'text-[10px]' : 'text-[11px]'}`}
+            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'}`}
             onClick={() => onCopy(address)}
             title={address}
         >
             <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
-            <span className={`${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
+            <span className={`block translate-y-[0.5px] ${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
                 {sanitizeText(displayText)}
             </span>
-            <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0" />
+            <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0 translate-y-[-0.5px]" />
         </div>
     );
 };
