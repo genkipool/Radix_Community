@@ -34,7 +34,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
             className="relative w-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col"
             onClick={e => e.stopPropagation()}
         >
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence initial={false}>
                 <motion.div
                     key={validator.address} // Use address as key for transitions
                     initial={{ x: 30, opacity: 0 }}
@@ -73,7 +73,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
 
                         {/* Col 2 — Identity + Close */}
                         <div className="relative z-10 min-w-0 flex flex-col gap-2 row-start-1 col-start-2">
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center justify-between gap-4">
                                 <h2 className="font-black text-[var(--color-text-main)] tracking-tight leading-[1.1] whitespace-nowrap overflow-hidden text-ellipsis text-[16px] sm:text-[clamp(18px,2.5vw,28px)] flex-1">
                                     {safeName}
                                 </h2>
