@@ -123,7 +123,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
       <AnimatePresence>
         {selectedPost && (
           <BlogOverlay
-            key={selectedPost.id}
+            key="blog-overlay"
             post={selectedPost}
             onClose={handleClose}
             prevPost={prevPost}
