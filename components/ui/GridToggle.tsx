@@ -47,27 +47,51 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
         }
     };
 
+    // Derived states for mobile
+    const isMobileGrid1 = columns < 4;
+    const mobileToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onChange(isMobileGrid1 ? 4 : 3);
+    };
+
     return (
-        <div 
-            className="flex items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] shadow-sm hover:border-[var(--color-primary)]/40 transition-all overflow-hidden group/grid"
-            title={`${columns} ${label || 'columns'}`}
-        >
+        <>
+            {/* Desktop variant */}
             <div 
-                onClick={decrement}
-                role="button"
-                aria-label="Previous grid layout"
-                className="pl-3 pr-1.5 py-2 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
+                className="hidden sm:flex items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] shadow-sm hover:border-[var(--color-primary)]/40 transition-all overflow-hidden group/grid"
+                title={`${columns} ${label || 'columns'}`}
             >
-                <Icon />
+                <div 
+                    onClick={decrement}
+                    role="button"
+                    aria-label="Previous grid layout"
+                    className="pl-3 pr-1.5 py-2 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
+                >
+                    <Icon />
+                </div>
+                <div 
+                    onClick={increment}
+                    role="button"
+                    aria-label="Next grid layout"
+                    className="pl-1.5 pr-3 py-2 cursor-pointer border-l border-[var(--color-card-border)]/30 hover:text-[var(--color-primary)] transition-colors"
+                >
+                    <span className="text-xs font-black w-3 text-center block">{columns}</span>
+                </div>
             </div>
+
+            {/* Mobile variant */}
             <div 
-                onClick={increment}
-                role="button"
-                aria-label="Next grid layout"
-                className="pl-1.5 pr-3 py-2 cursor-pointer border-l border-[var(--color-card-border)]/30 hover:text-[var(--color-primary)] transition-colors"
+                className="flex sm:hidden items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] shadow-sm hover:border-[var(--color-primary)]/40 transition-all overflow-hidden cursor-pointer"
+                onClick={mobileToggle}
+                title={`Mobile Grid ${isMobileGrid1 ? 1 : 2}`}
             >
-                <span className="text-xs font-black w-3 text-center block">{columns}</span>
+                <div className="pl-3 pr-1.5 py-2">
+                    {isMobileGrid1 ? <Rows3 className="w-4 h-4" /> : <Grid2x2 className="w-4 h-4" />}
+                </div>
+                <div className="pl-1.5 pr-3 py-2 border-l border-[var(--color-card-border)]/30">
+                    <span className="text-xs font-black w-3 text-center block">{isMobileGrid1 ? 1 : 2}</span>
+                </div>
             </div>
-        </div>
+        </>
     );
 }
