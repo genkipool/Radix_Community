@@ -41,8 +41,8 @@ export function CloseButton({
         w-10 h-10 sm:w-[38px] sm:h-[38px] 
         rounded-full transition-all duration-200 
         bg-[var(--color-surface)] border border-[var(--color-card-border)] 
-        text-[var(--color-text-muted)] hover:text-[var(--color-close-hover, #ef4444)] 
-        hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-close-hover, #ef4444)]/30 
+        text-[var(--color-text-muted)] hover:text-(--color-close-hover) 
+        hover:bg-[var(--color-surface-hover)] hover:border-(--color-close-hover) 
         hover:shadow-md active:scale-95 shrink-0 
         ${className}
       `}
