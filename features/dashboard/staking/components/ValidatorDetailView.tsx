@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { getStatusColor } from '@/utils/validators';
 import { Button } from '@/components/ui/Button';
 import { CloseButton } from '@/components/ui/CloseButton';
@@ -13,6 +13,7 @@ import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useLayout } from '@/context/LayoutContext';
 import { type ValidatorDetailViewProps } from '../types';
+import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     validator,
@@ -32,32 +33,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
     
-    // Internal state only as fallback if parent doesn't provide it
-    const [internalDirection, setInternalDirection] = React.useState(0);
-    const activeDirection = setDirection ? propDirection : internalDirection;
-    const updateDirection = setDirection || setInternalDirection;
-
-    // Variants for direction-aware sliding
-    const variants = {
-        initial: (d: number) => ({
-            x: d > 0 ? 300 : d < 0 ? -300 : 0,
-            opacity: 0,
-        }),
-        animate: {
-            x: 0,
-            opacity: 1,
-            zIndex: 1,
-        },
-        exit: (d: number) => ({
-            x: d > 0 ? -300 : d < 0 ? 300 : 0,
-            opacity: 0,
-            zIndex: 0,
-            position: 'absolute' as const, // Force absolute during exit for popLayout feel
-            top: 0,
-            left: 0,
-            right: 0,
-        }),
-    };
+    const activeDirection = propDirection;
 
     return (
         <div
@@ -65,29 +41,14 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
             onClick={e => e.stopPropagation()}
         >
             <AnimatePresence mode="popLayout" initial={false} custom={activeDirection}>
-                <motion.div
+                <SwipeableContainer
                     key={validator.address}
-                    custom={activeDirection}
-                    variants={variants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={{ type: 'spring', stiffness: 450, damping: 40 }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.6}
-                    onDragEnd={(_e, info) => {
-                        const threshold = 60;
-                        if (info.offset.x > threshold && onPrev) {
-                            updateDirection(-1);
-                            onPrev();
-                        } else if (info.offset.x < -threshold && onNext) {
-                            updateDirection(1);
-                            onNext();
-                        }
-                    }}
+                    itemKey={validator.address}
+                    direction={activeDirection}
+                    setDirection={setDirection || (() => {})}
+                    onPrev={onPrev}
+                    onNext={onNext}
                     className="flex-1 flex flex-col min-h-0 relative touch-none bg-[var(--color-surface)]"
-                    onClick={e => e.stopPropagation()}
                 >
                     {/* ══════════════════════════════════════════
                         ROW 1 — HEADER
@@ -222,7 +183,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             {dt?.card?.stake_button ?? 'Stake'}
                         </Button>
                     </div>
-                </motion.div>
+                </SwipeableContainer>
             </AnimatePresence>
         </div>
     );

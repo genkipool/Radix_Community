@@ -32,11 +32,13 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
     filtered,
     displayedPosts,
     hasMore,
-    prevPost,
     nextPost,
+    prevPost,
     toggleLike,
     toggleAllPosts,
-    setSelectedPostId
+    setSelectedPostId,
+    direction,
+    setDirection,
   } = useBlogState(initialPosts, blogT?.posts || []);
 
   const { isSpeaking, stopSpeech, toggleSpeech } = useBlogSpeech(es);
@@ -64,8 +66,8 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
 
   const getLikes = (post: { likes: number; id: number }) => post.likes + (likedPosts.has(post.id) ? 1 : 0);
 
-  const goToPrev = () => { if (prevPost) { stopSpeech(); setSelectedPostId(prevPost.id.toString()); } };
-  const goToNext = () => { if (nextPost) { stopSpeech(); setSelectedPostId(nextPost.id.toString()); } };
+  const goToPrev = () => { if (prevPost) { setDirection(-1); stopSpeech(); setSelectedPostId(prevPost.id.toString()); } };
+  const goToNext = () => { if (nextPost) { setDirection(1); stopSpeech(); setSelectedPostId(nextPost.id.toString()); } };
 
   // All unique tags for the filter
   const allTags = Array.from(new Set((blogT?.posts || []).flatMap(p => p.tags)));
@@ -136,6 +138,8 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
             language={language}
             blogT={blogT}
             searchQuery={searchQuery}
+            direction={direction}
+            setDirection={setDirection}
           />
         )}
       </AnimatePresence>

@@ -12,6 +12,7 @@ import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { tagColor } from '@/constants/tagColors';
+import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 export function ForumReadingMode() {
     const { 
@@ -22,7 +23,8 @@ export function ForumReadingMode() {
         likedReplies, dislikedReplies,
         getPostLikes, getPostDislikes,
         getReplyLikes, getReplyDislikes,
-        replyFilterUser, replyFilterPivotId, users
+        replyFilterUser, replyFilterPivotId, users,
+        direction, setDirection
     } = useForum();
 
     if (!readingMode || !expandedPost) return null;
@@ -46,16 +48,30 @@ export function ForumReadingMode() {
                 <FloatingNav
                     hasPrev={!!prevPost}
                     hasNext={!!nextPost}
-                    onPrev={() => prevPost && handleExpandPost(prevPost.id)}
-                    onNext={() => nextPost && handleExpandPost(nextPost.id)}
+                    onPrev={() => {
+                        if (prevPost) {
+                            setDirection(-1);
+                            handleExpandPost(prevPost.id);
+                        }
+                    }}
+                    onNext={() => {
+                        if (nextPost) {
+                            setDirection(1);
+                            handleExpandPost(nextPost.id);
+                        }
+                    }}
                     prevLabel={t.forum.reading.previous_post || 'Anterior'}
                     nextLabel={t.forum.reading.next_post || 'Siguiente'}
                     className="hidden sm:flex"
                     zIndex={130}
                 />
-                <div 
-                    className="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl my-auto flex flex-col relative overflow-hidden" 
-                    onClick={e => e.stopPropagation()}
+                <SwipeableContainer
+                    itemKey={expandedPost.id}
+                    direction={direction}
+                    setDirection={setDirection}
+                    onPrev={prevPost ? () => { setDirection(-1); handleExpandPost(prevPost.id); } : undefined}
+                    onNext={nextPost ? () => { setDirection(1); handleExpandPost(nextPost.id); } : undefined}
+                    className="w-full max-w-4xl rounded-3xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl my-auto flex flex-col relative overflow-hidden"
                 >
                     {/* Header */}
                     <div className="flex items-start gap-6 p-8 pb-6 border-b border-[var(--color-card-border)] bg-[var(--color-surface)]">
@@ -233,7 +249,7 @@ export function ForumReadingMode() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </SwipeableContainer>
             </motion.div>
         </AnimatePresence>
     );

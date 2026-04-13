@@ -34,8 +34,9 @@ export const DashboardModals = ({
   copiedAddress,
   copyAddress,
   network,
+  direction,
+  setDirection,
 }: DashboardModalsProps) => {
-  const [direction, setDirection] = React.useState(0);
 
   return (
   <>
@@ -128,6 +129,8 @@ export const DashboardModals = ({
             copiedAddress={copiedAddress}
             copyAddress={copyAddress}
             network={network}
+            direction={direction}
+            setDirection={setDirection}
           />
         </React.Fragment>
       )}

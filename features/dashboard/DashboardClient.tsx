@@ -93,6 +93,7 @@ export default function DashboardClient({
   /* Date Range Filter */
   const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [direction, setDirection] = useState(0);
 
   /* ── Cookie-persisted preferences ───────────────────────── */
   const prefs = useDashboardPreferences({
@@ -402,6 +403,8 @@ export default function DashboardClient({
         copiedAddress={copiedAddress}
         copyAddress={copyAddress}
         network={deferredNetwork}
+        direction={direction}
+        setDirection={setDirection}
       />
     </main>
   );

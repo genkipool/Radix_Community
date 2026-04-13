@@ -22,6 +22,7 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [replyingToAuthorId, setReplyingToAuthorId] = useState<string | null>(null);
+    const [direction, setDirection] = useState(0);
 
     // Mobile detection: force 1 column on small screens
     useEffect(() => {
@@ -234,6 +235,8 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
         replyToFilter, setReplyToFilter,
         expandedPost,
         filteredPosts,
+        direction,
+        setDirection,
 
         toggleLikePost,
         toggleDislikePost,

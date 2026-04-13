@@ -84,6 +84,8 @@ export interface TransactionDetailModalProps {
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;
+    direction: number;
+    setDirection: (direction: number) => void;
 }
 
 export interface TransactionTabsProps {

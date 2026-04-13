@@ -30,6 +30,7 @@ export interface ForumCtxValue {
     replyToFilter: string;
     expandedPost: ForumPost | null;
     filteredPosts: ForumPost[];
+    direction: number;
 
     // Handlers
     setActiveTag: (tag: string) => void;
@@ -47,6 +48,7 @@ export interface ForumCtxValue {
     setReplyFilterUser: (id: string) => void;
     setReplyFilterPivotId: (id: string | null) => void;
     setReplyToFilter: (id: string) => void;
+    setDirection: (direction: number) => void;
 
     toggleLikePost: (id: number) => void;
     toggleDislikePost: (id: number) => void;

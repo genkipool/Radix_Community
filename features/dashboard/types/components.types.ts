@@ -92,6 +92,8 @@ export interface DashboardModalsProps {
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;
+    direction: number;
+    setDirection: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export interface DetailRowProps {

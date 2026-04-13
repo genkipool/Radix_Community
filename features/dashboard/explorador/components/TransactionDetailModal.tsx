@@ -11,12 +11,14 @@ import { formatEntity } from '../../utils/entityUtils';
 import { Pill } from '@/components/ui/Pill';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { CloseButton } from '@/components/ui/CloseButton';
+import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 import { TransactionDetailModalProps } from '../types';
 
 export function TransactionDetailModal({
     tx, onClose, onPrev, onNext,
     t, dt, copiedAddress, copyAddress, network,
+    direction, setDirection
 }: TransactionDetailModalProps) {
     const tt = (dt?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
@@ -44,16 +46,31 @@ export function TransactionDetailModal({
             <FloatingNav 
                 hasPrev={!!onPrev} 
                 hasNext={!!onNext} 
-                onPrev={onPrev} 
-                onNext={onNext} 
+                onPrev={() => {
+                    if (onPrev) {
+                        setDirection(-1);
+                        onPrev();
+                    }
+                }} 
+                onNext={() => {
+                    if (onNext) {
+                        setDirection(1);
+                        onNext();
+                    }
+                }} 
                 prevLabel={t?.dashboard?.reading?.previous_transaction || 'Anterior'} 
                 nextLabel={t?.dashboard?.reading?.next_transaction || 'Siguiente'}
                 className="hidden sm:flex"
             />
-            <div
-                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto relative"
+            <SwipeableContainer
+                itemKey={tx.intentHash}
+                direction={direction}
+                setDirection={setDirection}
+                onPrev={onPrev}
+                onNext={onNext}
                 onClick={e => e.stopPropagation()}
                 style={{ maxHeight: 'calc(100dvh - 2rem)' }}
+                className="w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto relative"
             >
                 {/* Decorative top glow */}
                 <div className="absolute top-0 inset-x-0 h-24 rounded-t-2xl pointer-events-none opacity-30"
@@ -196,7 +213,7 @@ export function TransactionDetailModal({
                     )}
                 </div>
 
-            </div>
+            </SwipeableContainer>
         </motion.div>
     );
 }

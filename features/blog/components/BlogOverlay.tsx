@@ -8,6 +8,7 @@ import { FloatingNav } from '@/components/ui/FloatingNav';
 import { PostContent } from '../PostContent';
 import { tagColor, defaultTagColor } from '@/constants/tagColors';
 import { BlogPost, BlogDictionary } from '../types';
+import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 interface BlogOverlayProps {
     post: BlogPost;
@@ -24,6 +25,8 @@ interface BlogOverlayProps {
     language: string;
     blogT: BlogDictionary;
     searchQuery: string;
+    direction: number;
+    setDirection: (d: number) => void;
 }
 
 export function BlogOverlay({
@@ -40,7 +43,9 @@ export function BlogOverlay({
     onToggleSpeech,
     language,
     blogT,
-    searchQuery
+    searchQuery,
+    direction,
+    setDirection,
 }: BlogOverlayProps) {
     return (
         <>
@@ -70,12 +75,14 @@ export function BlogOverlay({
             <div
                 className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto pointer-events-none"
             >
-                {/* Card shell — layoutId drives the shared element transition */}
-                <motion.div
-                    layoutId={`post-${post.id}`}
+                {/* Card shell — Swipeable navigation */}
+                <SwipeableContainer
+                    itemKey={post.id}
+                    direction={direction}
+                    setDirection={setDirection}
+                    onPrev={prevPost ? onGoToPrev : undefined}
+                    onNext={nextPost ? onGoToNext : undefined}
                     className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto pointer-events-auto"
-                    onClick={e => e.stopPropagation()}
-                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
                 >
                     {/* Header image */}
                     <div className="relative w-full h-48 md:h-64 overflow-hidden">
@@ -149,7 +156,7 @@ export function BlogOverlay({
                             </div>
                         </div>
                     </motion.div>
-                </motion.div>
+                </SwipeableContainer>
             </div>
         </>
     );

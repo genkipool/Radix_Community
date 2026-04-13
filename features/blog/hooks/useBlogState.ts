@@ -22,6 +22,7 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
+    const [direction, setDirection] = useState(0);
 
     // Mobile detection: force 1 column on small screens
     useEffect(() => {
@@ -96,6 +97,8 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
         prevPost,
         nextPost,
         currentIndex,
+        direction,
+        setDirection,
         toggleLike,
         toggleAllPosts
     };
