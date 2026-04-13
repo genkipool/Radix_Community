@@ -118,7 +118,6 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                 <CloseButton
                                     onClose={onClose}
                                     title="Cerrar"
-                                    className="!w-[34px] !h-[34px] sm:!w-[38px] sm:!h-[38px] !rounded-[10px]"
                                     iconSize={20}
                                 />
                             </div>
