@@ -53,8 +53,20 @@ export const DashboardModals = ({
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto"
             onClick={closeExpanded}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.7}
+            onDragEnd={(_e, info) => {
+              const swipeThreshold = 100;
+              const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
+              if (info.offset.x > swipeThreshold && idx > 0) {
+                setExpandedPosts(new Set([filteredValidators[idx - 1].id]));
+              } else if (info.offset.x < -swipeThreshold && idx < filteredValidators.length - 1) {
+                setExpandedPosts(new Set([filteredValidators[idx + 1].id]));
+              }
+            }}
           >
-            <div className="w-full max-w-[1600px] mx-auto">
+            <div className="w-full max-w-[1600px] mx-auto pointer-events-auto">
               <ValidatorDetailView
                 validator={expandedPost}
                 onClose={closeExpanded}

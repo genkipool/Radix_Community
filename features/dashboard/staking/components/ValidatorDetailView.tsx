@@ -99,8 +99,9 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr"
                             onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
                         >
-                            <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] whitespace-nowrap overflow-hidden text-ellipsis transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
-                                {validator.address}
+                            <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
+                                <span className="hidden sm:inline">{validator.address}</span>
+                                <span className="inline sm:hidden">{validator.address.slice(0, 8)}...{validator.address.slice(-8)}</span>
                             </code>
                             <CopyButton
                                 value={validator.address}
@@ -123,8 +124,8 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     </div>
                 </div>
 
-                {/* Col 3 — Prev / Next navigation */}
-                <div className="relative z-10 flex flex-row sm:flex-col gap-1.5 p-0 sm:px-3 sm:border-x sm:border-[var(--color-card-border)] self-auto sm:self-stretch justify-end sm:justify-center row-start-1 col-start-3">
+                {/* Col 3 — Prev / Next navigation (Desktop Only) */}
+                <div className="relative z-10 hidden sm:flex flex-row sm:flex-col gap-1.5 p-0 sm:px-3 sm:border-x sm:border-[var(--color-card-border)] self-auto sm:self-stretch justify-end sm:justify-center row-start-1 col-start-3">
                     <button
                         className="flex items-center justify-center w-9 h-9 rounded-[10px] border border-[var(--color-card-border)] bg-[var(--color-bg)] text-[var(--color-text-muted)] cursor-pointer transition-all hover:not-disabled:border-[var(--color-primary)] hover:not-disabled:text-[var(--color-primary)] hover:not-disabled:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] disabled:opacity-30 disabled:cursor-not-allowed"
                         onClick={onPrev}
@@ -144,7 +145,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                 </div>
 
                 {/* Col 4 — Close */}
-                <div className="relative z-10 hidden sm:flex items-center justify-center pl-3 self-stretch row-start-1 col-start-4">
+                <div className="relative z-10 flex items-center justify-center pl-3 self-stretch row-start-1 col-start-4">
                     <button 
                         className="flex items-center justify-center w-[38px] h-[38px] rounded-[10px] border border-[color-mix(in_srgb,#dc2626_30%,transparent)] bg-[color-mix(in_srgb,#dc2626_8%,transparent)] text-[#dc2626] cursor-pointer transition-all shrink-0 hover:bg-[color-mix(in_srgb,#dc2626_18%,transparent)] hover:border-[#dc2626] hover:scale-105 active:scale-[0.95]" 
                         onClick={onClose} 
