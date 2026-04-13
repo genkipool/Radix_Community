@@ -48,9 +48,7 @@ export function BlogOverlay({
             <ModalOverlay key="blog-overlay-bg" onClose={onClose} blur="sm" />
             <motion.div
                 key="blog-overlay-bg"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                exit={{ opacity: 1, transition: { duration: 0.4 } }}
                 className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto"
                 onClick={onClose}
             >

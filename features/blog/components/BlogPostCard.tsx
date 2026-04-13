@@ -46,16 +46,22 @@ export function BlogPostCard({
 
     return (
         <Card
-            layout={readingMode ? true : false}
+            layout={true}
             layoutId={readingMode ? `post-${post.id}` : undefined}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            animate={{ zIndex: isExpanded ? 40 : 1 }}
             viewport={{ once: true, margin: '0px' }}
-            transition={{ delay: Math.min(index * 0.02, 0.2), duration: 0.3 }}
+            transition={{ 
+                delay: Math.min(index * 0.02, 0.2), 
+                duration: 0.3,
+                layout: { duration: 0.4, ease: 'easeInOut' },
+                zIndex: { delay: isExpanded ? 0 : 0.4 }
+            }}
             onClick={() => onExpand(post.id)}
             className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full"
             innerClassName="h-full flex flex-col"
-            style={spanStyle}
+            style={{ ...spanStyle }}
         >
             {/* Image */}
             <div
@@ -76,9 +82,7 @@ export function BlogPostCard({
                     <HighlightText text={post.title} query={searchQuery} />
                 </h3>
 
-                <div 
-                    className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-[88px] opacity-90'}`}
-                >
+                <div className="overflow-hidden">
                     <div className={`text-[15px] text-[var(--color-text-muted)] leading-relaxed mb-4 ${isExpanded ? '' : 'line-clamp-3'}`}>
                         {isExpanded ? (
                             <PostContent content={post.content} query={searchQuery} />
