@@ -86,6 +86,8 @@ export interface TransactionDetailModalProps {
     network: Network;
     direction: number;
     setDirection: (direction: number) => void;
+    prevTxHash?: string;
+    nextTxHash?: string;
 }
 
 export interface TransactionTabsProps {

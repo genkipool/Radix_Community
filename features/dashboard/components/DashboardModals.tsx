@@ -117,12 +117,20 @@ export const DashboardModals = ({
             onPrev={(() => {
               const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
               const prevTx = idx > 0 ? filteredTxs[idx - 1] : null;
-              return prevTx ? () => setExpandedPosts(new Set([prevTx.intentHash])) : undefined;
+              return prevTx ? () => { setDirection(-1); setExpandedPosts(new Set([prevTx.intentHash])); } : undefined;
             })()}
             onNext={(() => {
               const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
               const nextTx = idx < filteredTxs.length - 1 ? filteredTxs[idx + 1] : null;
-              return nextTx ? () => setExpandedPosts(new Set([nextTx.intentHash])) : undefined;
+              return nextTx ? () => { setDirection(1); setExpandedPosts(new Set([nextTx.intentHash])); } : undefined;
+            })()}
+            prevTxHash={(() => {
+              const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
+              return idx > 0 ? filteredTxs[idx - 1].intentHash : undefined;
+            })()}
+            nextTxHash={(() => {
+              const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
+              return idx < filteredTxs.length - 1 ? filteredTxs[idx + 1].intentHash : undefined;
             })()}
             t={t}
             dt={dt}

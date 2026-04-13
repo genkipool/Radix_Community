@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Copy, Activity } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { TransactionTabs } from './TransactionTabs';
 import type { TransactionDetails, TranslationsT } from '@/features/dashboard/types';
@@ -18,12 +18,15 @@ import { TransactionDetailModalProps } from '../types';
 export function TransactionDetailModal({
     tx, onClose, onPrev, onNext,
     t, dt, copiedAddress, copyAddress, network,
-    direction, setDirection
+    direction, setDirection,
+    prevTxHash,
+    nextTxHash,
 }: TransactionDetailModalProps) {
     const tt = (dt?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
     const statusColor = isSuccess ? '#22c55e' : '#ef4444';
     const statusLabel = isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed');
+    const queryClient = useQueryClient();
 
     /* Fetch details directly in the modal — uses the same queryKey as the
        prefetch triggered on hover, so if the user hovered before clicking
@@ -33,6 +36,24 @@ export function TransactionDetailModal({
         queryFn: () => apiFetchTransactionDetails(tx.intentHash, network),
         staleTime: 30_000,
     });
+
+    // Prefetch adjacent transactions for instant navigation
+    React.useEffect(() => {
+        if (prevTxHash) {
+            queryClient.prefetchQuery({
+                queryKey: ['tx-details', prevTxHash, network],
+                queryFn: () => apiFetchTransactionDetails(prevTxHash, network),
+                staleTime: 30_000,
+            });
+        }
+        if (nextTxHash) {
+            queryClient.prefetchQuery({
+                queryKey: ['tx-details', nextTxHash, network],
+                queryFn: () => apiFetchTransactionDetails(nextTxHash, network),
+                staleTime: 30_000,
+            });
+        }
+    }, [prevTxHash, nextTxHash, network, queryClient]);
 
     return (
         <motion.div
@@ -69,6 +90,10 @@ export function TransactionDetailModal({
                 onClick={e => e.stopPropagation()}
                 style={{ maxHeight: 'calc(100dvh - 2rem)' }}
             >
+                {/* Decorative top glow */}
+                <div className="absolute top-0 inset-x-0 h-24 rounded-t-2xl pointer-events-none opacity-30 z-10"
+                    style={{ background: `radial-gradient(ellipse at top, ${statusColor}30, transparent)` }} />
+
                 {/* Inner content — swipeable, only THIS slides on next/prev */}
                 <AnimatePresence mode="popLayout" initial={false} custom={direction}>
                     <SwipeableContainer
@@ -78,12 +103,8 @@ export function TransactionDetailModal({
                         setDirection={setDirection}
                         onPrev={onPrev}
                         onNext={onNext}
-                        className="flex flex-col min-h-0 bg-[var(--color-bg)]"
+                        className="flex flex-col min-h-0 bg-[var(--color-bg)] rounded-2xl"
                     >
-                        {/* Decorative top glow */}
-                        <div className="absolute top-0 inset-x-0 h-24 rounded-t-2xl pointer-events-none opacity-30"
-                            style={{ background: `radial-gradient(ellipse at top, ${statusColor}30, transparent)` }} />
-
                         {/* ── Header ── */}
                         <div className="relative flex items-center justify-between gap-4 px-5 sm:px-8 pt-6 pb-5 shrink-0">
                             <div className="flex items-center gap-5 min-w-0 flex-1">

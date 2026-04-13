@@ -71,20 +71,16 @@ export function BlogOverlay({
                 className="hidden sm:flex"
             />
 
-            {/* Scroll container — keeps the original zoom animation intact */}
-            <motion.div
-                key="blog-overlay-card"
-                initial={{ opacity: 0, scale: 0.95, y: 40 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 40 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto"
-                onClick={onClose}
+            {/* Scroll container — no animation on this, just positioning */}
+            <div
+                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto pointer-events-none"
             >
-                {/* Card shell — fixed frame, does NOT move with swipe */}
-                <div
-                    className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto relative"
+                {/* Card shell — layoutId drives the shared element transition (original animation) */}
+                <motion.div
+                    layoutId={`post-${post.id}`}
+                    className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto pointer-events-auto"
                     onClick={e => e.stopPropagation()}
+                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
                 >
                     {/* Inner content — swipeable, only THIS slides on next/prev */}
                     <AnimatePresence mode="popLayout" initial={false} custom={direction}>
@@ -109,7 +105,13 @@ export function BlogOverlay({
                                 />
                             </div>
 
-                            <div className="p-8 md:p-10">
+                            <motion.div
+                                className="p-8 md:p-10"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.3, delay: 0.15 }}
+                            >
                                 {/* Meta row */}
                                 <div className="flex flex-wrap items-center gap-3 mb-4">
                                     <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.calendar.title}>
@@ -162,11 +164,11 @@ export function BlogOverlay({
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         </SwipeableContainer>
                     </AnimatePresence>
-                </div>
-            </motion.div>
+                </motion.div>
+            </div>
         </>
     );
 }
