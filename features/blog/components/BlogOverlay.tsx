@@ -47,6 +47,10 @@ export function BlogOverlay({
     direction,
     setDirection,
 }: BlogOverlayProps) {
+    // Freeze layoutId to the initial post so the morph only happens on open/close,
+    // not during next/prev navigation (which would animate from the grid card position).
+    const morphPostIdRef = React.useRef(post.id);
+
     return (
         <>
             {/* Dark backdrop */}
@@ -77,7 +81,7 @@ export function BlogOverlay({
             >
                 {/* Card shell — layoutId drives the shared element transition (original animation) */}
                 <motion.div
-                    layoutId={`post-${post.id}`}
+                    layoutId={`post-${morphPostIdRef.current}`}
                     className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto pointer-events-auto"
                     onClick={e => e.stopPropagation()}
                     transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
