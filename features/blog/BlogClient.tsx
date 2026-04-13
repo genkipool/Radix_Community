@@ -106,6 +106,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
         searchQuery={searchQuery}
         expandedPosts={expandedPosts}
         likedPosts={likedPosts}
+        readingMode={readingMode}
         language={language}
         blogT={blogT}
         onExpand={handleExpandPost}

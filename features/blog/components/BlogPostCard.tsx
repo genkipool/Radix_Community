@@ -17,6 +17,7 @@ interface BlogPostCardProps {
     searchQuery: string;
     expandedPosts: Set<number>;
     likedPosts: Set<number>;
+    readingMode: boolean;
     language: string;
     blogT: BlogDictionary;
     onExpand: (id: number) => void;
@@ -32,6 +33,7 @@ export function BlogPostCard({
     searchQuery,
     expandedPosts,
     likedPosts,
+    readingMode,
     language,
     blogT,
     onExpand,
@@ -45,7 +47,7 @@ export function BlogPostCard({
 
     return (
         <Card
-            layoutId={`post-${post.id}`}
+            layoutId={readingMode ? `post-${post.id}` : undefined}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '0px' }}
