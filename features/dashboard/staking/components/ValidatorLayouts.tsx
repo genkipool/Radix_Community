@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, ExternalLink, Server, AlertCircle, Stamp } from 'lucide-react';
+import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
@@ -122,16 +122,16 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-text-muted)] min-w-0">
                             {validator.website && isValidUrl(validator.website) && (
                                 <a href={validator.website} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors truncate max-w-[200px]">
+                                    className="flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors truncate max-w-[200px] cursor-pointer">
                                     <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate">{sanitizeText(validator.website)}</span>
+                                    <span className="truncate" title={sanitizeText(validator.website)}>{sanitizeText(validator.website)}</span>
                                 </a>
                             )}
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.provider)} (${validator.providerPercent}%)`}>
                                 <Server className="w-3.5 h-3.5 shrink-0" />
                                 {sanitizeText(validator.provider)} ({validator.providerPercent}%)
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.country)} (${validator.countryPercent}%)`}>
                                 <Globe className="w-3.5 h-3.5 shrink-0" />
                                 {sanitizeText(validator.country)} ({validator.countryPercent}%)
                             </span>
@@ -246,7 +246,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
-                            <span className="flex items-center gap-1 shrink-0">
+                            <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
                                 <Globe className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{sanitizeText(validator.country)}</span>
                             </span>
@@ -347,7 +347,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
-                    <Globe className="w-3.5 h-3.5 shrink-0" />
+                    <Globe className="w-3.5 h-3.5 shrink-0 cursor-default" title={sanitizeText(validator.country)} />
                     <CopyAddressButton
                         address={validator.address}
                         onCopy={onCopy}
@@ -433,19 +433,24 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
-                    <div
-                        className="p-1 hover:bg-[var(--color-primary)]/10 rounded-md transition-colors cursor-pointer shrink-0"
-                        onClick={() => onCopy(validator.address)}
-                    >
-                        <Stamp className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    </div>
+                    {validator.website && isValidUrl(validator.website) ? (
+                        <a href={validator.website} target="_blank" rel="noopener noreferrer" title={sanitizeText(validator.website)}>
+                            <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
+                        </a>
+                    ) : (
+                        <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] shrink-0 cursor-default" title={sanitizeText(validator.country)} />
+                    )}
+                    <CopyStampIcon
+                        address={validator.address}
+                        onCopy={onCopy}
+                        copiedAddress={copiedAddress}
+                    />
                 </div>
-                                <DelegateButton
-                                label={dt?.card?.stake_button ?? 'Delegar'}
-                                small
-                                title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
-                            />
+                <DelegateButton
+                    label={dt?.card?.stake_button ?? 'Delegar'}
+                    small
+                    title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
+                />
             </div>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
@@ -481,6 +486,40 @@ const ExpandPanel = ({
     </AnimatePresence>
 );
 
+/** Stamp icon with Check feedback for compact layouts (grid 6+) */
+const CopyStampIcon = ({
+    address, onCopy, copiedAddress,
+}: { address: string; onCopy: (a: string) => void; copiedAddress: string | null }) => {
+    const [localCopied, setLocalCopied] = useState(false);
+    const isCopied = localCopied || (!!copiedAddress && copiedAddress === address);
+
+    const handleClick = () => {
+        onCopy(address);
+        setLocalCopied(true);
+        setTimeout(() => setLocalCopied(false), 2000);
+    };
+
+    return (
+        <div
+            className="p-1 hover:bg-[var(--color-primary)]/10 rounded-md transition-colors cursor-pointer shrink-0"
+            onClick={handleClick}
+            title={address}
+        >
+            <AnimatePresence mode="wait" initial={false}>
+                {isCopied ? (
+                    <motion.div key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                    </motion.div>
+                ) : (
+                    <motion.div key="stamp" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: 0.2 }}>
+                        <Stamp className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 /** Copy address button with feedback */
 const CopyAddressButton = ({
     address, onCopy, copiedAddress, small = false, truncate = false, noTruncate = false,
@@ -490,8 +529,9 @@ const CopyAddressButton = ({
     const displayText = truncate ? truncateAddress(address, start, end) : address;
     return (
         <div
-            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px]' : 'text-[11px]'}`}
+            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono leading-none ${small ? 'text-[10px]' : 'text-[11px]'}`}
             onClick={() => onCopy(address)}
+            title={address}
         >
             <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
             <span className={`${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
