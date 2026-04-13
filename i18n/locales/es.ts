@@ -1388,6 +1388,7 @@ export const es = {
     like: "Me gusta",
     previous: "Artículo anterior",
     next: "Siguiente artículo",
+    close: "Cerrar",
     calendar: {
       title: "Fecha",
       month: "Marzo",

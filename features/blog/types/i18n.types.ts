@@ -12,6 +12,7 @@ export interface BlogDictionary {
     next?: string;
     listen: string;
     stop: string;
+    close?: string;
     controls: {
         search_placeholder: string;
         newest?: string;

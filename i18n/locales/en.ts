@@ -1383,6 +1383,7 @@ export const en = {
     like: "Like",
     previous: "Previous Article",
     next: "Next Article",
+    close: "Close",
     calendar: {
       title: "Date",
       month: "March",
