@@ -1,7 +1,7 @@
 'use client';
 
 import { useTheme, Theme } from '@/context/ThemeContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 
 function getHtmlTheme(): Theme {
     if (typeof document === 'undefined') return 'radix-dark';
@@ -37,8 +37,8 @@ export const SidebarGraphic = ({
     useEffect(() => {
         setSafeTheme(ctxTheme ?? getHtmlTheme());
     }, [ctxTheme]);
-
-    const id = `${idPrefix}-${safeTheme}`;
+    const reactId = useId().replace(/:/g, ''); // SVG IDs shouldn't have colons just in case
+    const id = `${idPrefix}-${safeTheme}-${reactId}`;
 
     return (
         <svg
@@ -49,24 +49,6 @@ export const SidebarGraphic = ({
             style={{ display: 'block' }}
             aria-hidden="true"
         >
-            <style>{`
-                @media (max-width: 768px) {
-                    /* Fix for Mobile Safari/WebKit: prevent paths from skipping render due to heavy filters */
-                    [filter*="glowSoft"],
-                    [filter*="glowIntense"],
-                    [filter*="layerShadow"],
-                    [filter*="blurExtreme"],
-                    [filter*="blurFar"] {
-                        filter: none !important;
-                    }
-                    /* Ensure subpixel lines don't vanish on high-DPI mobile screens when scaled down */
-                    [stroke-width="0.8"], [stroke-width=".8"] { stroke-width: 1.5px !important; }
-                    [stroke-width="1"] { stroke-width: 2px !important; }
-                    [stroke-width="1.5"] { stroke-width: 2.5px !important; }
-                    [stroke-width="1.8"], [stroke-width="2"] { stroke-width: 3px !important; }
-                    [stroke-width="2.2"] { stroke-width: 3.5px !important; }
-                }
-            `}</style>
             <defs>
                 {/* Background radial glows */}
                 <radialGradient id={`bgA-${id}`} cx="10%" cy="10%" r="70%">
