@@ -106,7 +106,7 @@ export function BlogControls({
                     </div>
 
                     {/* RIGHT — Grid Toggle */}
-                    <div className="shrink-0 flex justify-end">
+                    <div className="shrink-0 hidden sm:flex justify-end">
                         <GridToggle columns={columns} onChange={onColumnsChange} max={4} />
                     </div>
                 </div>
