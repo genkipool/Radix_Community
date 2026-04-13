@@ -4,6 +4,7 @@ import React from 'react';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { TagFilterBar } from '@/components/ui/TagFilterBar';
+import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 import { GridToggle } from '@/components/ui/GridToggle';
 import { DASHBOARD_TAGS } from '@/constants/dashboard';
 import { TRANSACTION_TAGS } from '../explorador/constants';
@@ -108,24 +109,49 @@ export const DashboardToolbar = ({
                         </button>
                     </div>
 
-                    {/* Tag filter bar */}
-                    {activeView === 'staking' ? (
-                        <TagFilterBar
-                            tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                            activeTag={activeTags.includes('All') ? null : activeTags}
-                            onSelect={tag => onActiveTagChange(tag || 'All')}
-                            allLabel={dt?.tags?.['All'] || 'All'}
-                            tagLabels={dt?.tags}
-                        />
-                    ) : (
-                        <TagFilterBar
-                            tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                            activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                            onSelect={tag => onTransactionTagChange(tag || 'All')}
-                            allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                            tagLabels={dt?.transaction_tags}
-                        />
-                    )}
+                    {/* Tag filter bar - Desktop */}
+                    <div className="hidden xl:block">
+                        {activeView === 'staking' ? (
+                            <TagFilterBar
+                                tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                activeTag={activeTags.includes('All') ? null : activeTags}
+                                onSelect={tag => onActiveTagChange(tag || 'All')}
+                                allLabel={dt?.tags?.['All'] || 'All'}
+                                tagLabels={dt?.tags}
+                            />
+                        ) : (
+                            <TagFilterBar
+                                tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
+                                onSelect={tag => onTransactionTagChange(tag || 'All')}
+                                allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                tagLabels={dt?.transaction_tags}
+                            />
+                        )}
+                    </div>
+
+                    {/* Tag filter dropdown - Mobile / Tablet */}
+                    <div className="block xl:hidden">
+                        {activeView === 'staking' ? (
+                            <SearchableTagFilter
+                                tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
+                                onSelect={tag => onActiveTagChange(tag || 'All')}
+                                allLabel={dt?.tags?.['All'] || 'All'}
+                                tagLabels={dt?.tags}
+                                placeholder={dt?.search?.placeholder || 'Search tags...'}
+                            />
+                        ) : (
+                            <SearchableTagFilter
+                                tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
+                                onSelect={tag => onTransactionTagChange(tag || 'All')}
+                                allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                tagLabels={dt?.transaction_tags}
+                                placeholder={dt?.search?.placeholder || 'Search tags...'}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
