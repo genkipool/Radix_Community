@@ -58,19 +58,10 @@ export function BlogControls({
     return (
         <section className="pb-8">
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 space-y-4">
-                {/* Search bar */}
-                <div className="mb-6">
-                    <SearchBar
-                        value={searchQuery}
-                        onChange={onSearchChange}
-                        placeholder={blogT.controls.search_placeholder}
-                    />
-                </div>
-
                 {/* Controls Bar */}
-                <div className="flex items-center justify-between gap-4">
-                    {/* LEFT — Sorting */}
-                    <div className="flex-1 flex justify-start">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    {/* LEFT — Sorting & Search */}
+                    <div className="flex-1 flex justify-start items-center gap-3 min-w-0">
                         <ContentToolbar
                             sortMode={sortMode}
                             setSortMode={onSortChange}
@@ -90,6 +81,13 @@ export function BlogControls({
                             calendarT={blogT.calendar}
                             columns={columns}
                         />
+                        <div className="flex-1 max-w-[300px] min-w-[150px]">
+                            <SearchBar
+                                value={searchQuery}
+                                onChange={onSearchChange}
+                                placeholder={blogT.controls.search_placeholder}
+                            />
+                        </div>
                     </div>
 
                     {/* CENTER — Tags */}
