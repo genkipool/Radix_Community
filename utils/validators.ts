@@ -20,7 +20,7 @@ export function roundTo(val: number, decimals: number): number {
     return Math.round((val + Number.EPSILON) * factor) / factor;
 }
 
-export function getUptimeTooltipText(uptime: number, isRecent: boolean, dt: any): string {
+export function getUptimeTooltipText(uptime: number, isRecent: boolean, dt: Record<string, string>): string {
     if (!dt) return '';
     
     let status = dt.uptime_status_excellent;

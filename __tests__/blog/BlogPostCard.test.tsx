@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../helpers/renderWithProviders';
 import { BlogPostCard } from '@/features/blog/components/BlogPostCard';
@@ -42,7 +42,6 @@ vi.mock('motion/react', () => ({
 vi.mock('next/image', () => ({
     default: (props: Record<string, unknown>) => {
         const { fill: _fill, ...rest } = props;
-        // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
         return React.createElement('img', rest);
     },
 }));
