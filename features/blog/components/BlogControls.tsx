@@ -59,9 +59,9 @@ export function BlogControls({
         <section className="pb-8">
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 space-y-4">
                 {/* Controls Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    {/* LEFT — Sorting & Search */}
-                    <div className="flex-1 flex justify-start items-center gap-3 min-w-0">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                    {/* LEFT — Sorting */}
+                    <div className="shrink-0 flex justify-start">
                         <ContentToolbar
                             sortMode={sortMode}
                             setSortMode={onSortChange}
@@ -81,24 +81,26 @@ export function BlogControls({
                             calendarT={blogT.calendar}
                             columns={columns}
                         />
-                        <div className="flex-1 max-w-[300px] min-w-[150px]">
+                    </div>
+
+                    {/* CENTER — Search & Tags */}
+                    <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-4 w-full xl:px-8">
+                        <div className="w-full md:flex-1 max-w-3xl">
                             <SearchBar
                                 value={searchQuery}
                                 onChange={onSearchChange}
                                 placeholder={blogT.controls.search_placeholder}
                             />
                         </div>
+                        <SearchableTagFilter
+                            tags={allTags}
+                            activeTag={activeTag}
+                            onSelect={onTagSelect}
+                            allLabel={blogT.all}
+                            tagLabels={blogT.tags}
+                            placeholder={blogT.controls.search_placeholder}
+                        />
                     </div>
-
-                    {/* CENTER — Tags */}
-                    <SearchableTagFilter
-                        tags={allTags}
-                        activeTag={activeTag}
-                        onSelect={onTagSelect}
-                        allLabel={blogT.all}
-                        tagLabels={blogT.tags}
-                        placeholder={blogT.controls.search_placeholder}
-                    />
 
                     {/* RIGHT — Grid Toggle */}
                     <div className="flex-1 flex justify-end">
