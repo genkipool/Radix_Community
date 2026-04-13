@@ -53,19 +53,12 @@ export function BlogOverlay({
                 onClick={onClose}
             >
                 <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
+                    layoutId={`post-${post.id}`}
                     className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto" 
                     onClick={e => e.stopPropagation()}
                 >
-                    {/* Header image (layoutId anclado para Zoom) */}
-                    <motion.div 
-                        className="relative w-full h-48 md:h-64 overflow-hidden z-20"
-                        layoutId={`post-image-${post.id}`}
-                        transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-                    >
+                    {/* Header image */}
+                    <div className="relative w-full h-48 md:h-64 overflow-hidden z-20">
                         <Image src={post.image} alt={post.title} fill className="object-cover" sizes="100vw" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)] via-transparent to-transparent" />
                         <Button
@@ -76,7 +69,7 @@ export function BlogOverlay({
                         >
                             <X className="w-5 h-5" />
                         </Button>
-                    </motion.div>
+                    </div>
 
                     <motion.div 
                         className="p-8 md:p-10"
