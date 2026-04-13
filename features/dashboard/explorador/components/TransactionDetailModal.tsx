@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Check, Copy, Activity } from 'lucide-react';
+import { Check, Copy, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { TransactionTabs } from './TransactionTabs';
 import type { TransactionDetails, TranslationsT } from '@/features/dashboard/types';
 import { formatEntity } from '../../utils/entityUtils';
-import { Button } from '@/components/ui/Button';
 import { Pill } from '@/components/ui/Pill';
 import { FloatingNav } from '@/components/ui/FloatingNav';
+import { CloseButton } from '@/components/ui/CloseButton';
 
 import { TransactionDetailModalProps } from '../types';
 
@@ -93,12 +93,11 @@ export function TransactionDetailModal({
                                     </span>
                                 </button>
 
-                                <button
-                                    onClick={onClose}
-                                    className="p-1.5 hover:bg-[var(--color-surface-hover)] hover:text-red-400 rounded-lg transition-colors bg-[var(--color-surface)] border border-[var(--color-card-border)] shrink-0 group shadow-sm sm:-mt-1"
-                                >
-                                    <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
+                                <CloseButton
+                                    onClose={onClose}
+                                    className="sm:-mt-1"
+                                    iconSize={18}
+                                />
                             </div>
 
                             {/* Reordered Stats Row: Date, Fee, Ep/Rnd, Accounts, Components + Tags */}

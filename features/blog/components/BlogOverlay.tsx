@@ -1,8 +1,9 @@
 'use client';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { X, Calendar, User, Eye, Heart, Volume2, VolumeX } from 'lucide-react';
+import { Calendar, User, Eye, Heart, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { CloseButton } from '@/components/ui/CloseButton';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { PostContent } from '../PostContent';
 import { tagColor, defaultTagColor } from '@/constants/tagColors';
@@ -80,14 +81,12 @@ export function BlogOverlay({
                     <div className="relative w-full h-48 md:h-64 overflow-hidden">
                         <Image src={post.image} alt={post.title} fill className="object-cover" sizes="100vw" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface)] via-transparent to-transparent" />
-                        <Button
-                            onClick={onClose}
-                            variant="outline"
-                            size="icon"
-                            className="absolute top-4 right-4 !bg-black/40 hover:!bg-[var(--color-primary)] !text-white/70 hover:!text-white hover:scale-110"
-                        >
-                            <X className="w-5 h-5" />
-                        </Button>
+                        <CloseButton
+                            onClose={onClose}
+                            title={blogT.close || 'Cerrar'}
+                            className="absolute top-4 right-4 z-10 !bg-black/40 hover:!bg-black/60 !border-white/10"
+                            iconSize={20}
+                        />
                     </div>
 
                     <motion.div

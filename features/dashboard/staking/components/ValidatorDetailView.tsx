@@ -1,9 +1,10 @@
 'use client';
 import React from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getStatusColor } from '@/utils/validators';
 import { Button } from '@/components/ui/Button';
+import { CloseButton } from '@/components/ui/CloseButton';
 import { isValidUrl, sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
@@ -114,14 +115,12 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     {safeName}
                                 </h2>
                                 
-                                {/* Close Button integrated in Identity row */}
-                                <button 
-                                    className="flex items-center justify-center w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] rounded-[10px] border border-[color-mix(in_srgb,#dc2626_30%,transparent)] bg-[color-mix(in_srgb,#dc2626_8%,transparent)] text-[#dc2626] cursor-pointer transition-all shrink-0 hover:bg-[color-mix(in_srgb,#dc2626_18%,transparent)] hover:border-[#dc2626] hover:scale-105 active:scale-[0.95]" 
-                                    onClick={(e) => { e.stopPropagation(); onClose(); }} 
-                                    aria-label="Cerrar"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <CloseButton
+                                    onClose={onClose}
+                                    title="Cerrar"
+                                    className="!w-[34px] !h-[34px] sm:!w-[38px] sm:!h-[38px] !rounded-[10px]"
+                                    iconSize={20}
+                                />
                             </div>
 
                             {/* Tags row */}

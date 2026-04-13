@@ -3,13 +3,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-    X, Calendar, Eye, MessageSquare 
+    Calendar, Eye, MessageSquare 
 } from 'lucide-react';
 import { useForum } from './ForumContext';
 import { ForumMessage } from './ForumMessage';
 import { getReplyChildrenMap } from '../utils/replyTree';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
+import { CloseButton } from '@/components/ui/CloseButton';
 import { tagColor } from '@/constants/tagColors';
 
 export function ForumReadingMode() {
@@ -89,13 +90,12 @@ export function ForumReadingMode() {
                                 </div>
                             </div>
                         </div>
-                        <button 
-                            onClick={closeExpanded}
-                            className="w-10 h-10 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-red-500 transition-all border border-transparent hover:border-red-500/20"
+                        <CloseButton 
+                            onClose={closeExpanded}
                             title={t.forum.reading.close}
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                            className="bg-[var(--color-bg)]/50 sm:w-12 sm:h-12"
+                            iconSize={24}
+                        />
                     </div>
 
                     {/* Messages Body */}
