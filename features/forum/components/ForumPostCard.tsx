@@ -216,7 +216,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                             </div>
                         </div>
 
-                         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 ml-auto">
+                         <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 ml-auto max-w-full">
                             {isExpanded && post.replies.length > 0 && (
                                 <ReplyFilterWidget
                                     authorId={post.authorId}

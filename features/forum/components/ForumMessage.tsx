@@ -104,7 +104,7 @@ export function ForumMessage({
                 />
             </div>
             {/* Footer */}
-            <div className="px-4 py-2 border-t border-[var(--color-card-border)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 bg-[var(--color-surface)]/50 rounded-b-xl">
+            <div className="px-4 py-2 border-t border-[var(--color-card-border)] flex flex-wrap items-center justify-between gap-3 bg-[var(--color-surface)]/50 rounded-b-xl">
                 <div className="flex flex-wrap-reverse items-center gap-x-4 gap-y-2 text-[10px] text-[var(--color-text-muted)]">
                     <span className="flex items-center gap-1.5 opacity-80" title={t.forum.post.date}><Clock className="w-3.5 h-3.5 opacity-60" />
                         {new Date(date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
