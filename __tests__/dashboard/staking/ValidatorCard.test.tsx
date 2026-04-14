@@ -35,6 +35,7 @@ vi.mock('lucide-react', () => ({
   Building: () => <div data-testid="building" />,
   Tag: () => <div data-testid="tag" />,
   AlertCircle: () => <div data-testid="alert-circle" />,
+  Cable: () => <div data-testid="cable" />,
 }));
 
 // Mock custom hooks and context
