@@ -96,13 +96,13 @@ export default function Community({ t }: BaseSectionProps) {
                             className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
                             onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_1.webp", alt: t.community.danFounderAlt || "Dan Hughes" })}
                         >
-                            <Image 
-                                src="/images/Dan_Hughes_1.webp" 
-                                alt={t.community.danFounderAlt || "Dan Hughes"} 
-                                fill 
-                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px" 
-                                style={{ objectFit: 'cover' }} 
-                                className="grayscale group-hover/image:grayscale-0 group-hover/image:scale-110 transition-all duration-700" 
+                            <Image
+                                src="/images/Dan_Hughes_1.webp"
+                                alt={t.community.danFounderAlt || "Dan Hughes"}
+                                fill
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px"
+                                style={{ objectFit: 'cover' }}
+                                className="grayscale group-hover/image:grayscale-0 group-hover/image:scale-110 transition-all duration-700"
                             />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -139,13 +139,13 @@ export default function Community({ t }: BaseSectionProps) {
                             className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
                             onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_2.webp", alt: t.community.danWorkingAlt || "Dan Hughes working" })}
                         >
-                            <Image 
-                                src="/images/Dan_Hughes_2.webp" 
-                                alt={t.community.danWorkingAlt || "Dan Hughes working"} 
-                                fill 
-                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px" 
-                                style={{ objectFit: 'cover' }} 
-                                className="opacity-60 group-hover/image:opacity-100 group-hover/image:scale-110 transition-all duration-700" 
+                            <Image
+                                src="/images/Dan_Hughes_2.webp"
+                                alt={t.community.danWorkingAlt || "Dan Hughes working"}
+                                fill
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px"
+                                style={{ objectFit: 'cover' }}
+                                className="opacity-60 group-hover/image:opacity-100 group-hover/image:scale-110 transition-all duration-700"
                             />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -222,53 +222,60 @@ export default function Community({ t }: BaseSectionProps) {
 
 
                 {/* ═══════ CTA BUTTONS: all in one line ═══════ */}
-                <FadeIn delay={0.15} className="mt-12 pt-10 border-t border-[var(--color-card-border)]">
-                    <div className="flex flex-wrap justify-center items-center gap-4">
-                        <Link 
-                            href="#donate" 
+                <FadeIn delay={0.15} className="mt-12 pt-10 border-t border-[var(--color-card-border)] overflow-x-auto pb-4 sm:pb-0 sm:overflow-x-visible">
+                    <div className="flex flex-nowrap lg:flex-wrap xl:flex-nowrap justify-start lg:justify-center items-center gap-3 min-w-max sm:min-w-0">
+                        <Link
+                            href="#donate"
                             onClick={handleUnderConstruction}
-                            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white font-bold text-sm hover:scale-[1.03] transition-all overflow-hidden shadow-[0_0_30px_rgba(56,189,248,0.3)]"
+                            className="group relative inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white font-bold text-[13px] transition-all overflow-hidden shadow-[0_0_20px_rgba(56,189,248,0.2)]"
                         >
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                            <HeartHandshake size={18} className="relative z-10" />
-                            <span className="relative z-10">{t.community.donate}</span>
+                            <HeartHandshake size={16} className="relative z-10" />
+                            <span className="relative z-10 whitespace-nowrap">{t.community.donate}</span>
                         </Link>
-                        <Link 
-                            href="#crowdfunding" 
+                        <Link
+                            href="#crowdfunding"
                             onClick={handleUnderConstruction}
-                            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[var(--color-primary)] transition-all border border-[var(--color-card-border)] shadow"
+                            className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap"
                         >
-                            <Users size={18} />
+                            <Users size={16} />
                             {t.community.crowdfund}
                         </Link>
-                        <Link href="/blog" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[var(--color-secondary)] transition-all border border-[var(--color-card-border)] shadow">
-                            <BookOpen size={18} />
+                        <Link href="/blog" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <BookOpen size={16} />
                             {t.community.blog}
                         </Link>
-                        <Link href="/forum" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[var(--color-primary)] transition-all border border-[var(--color-card-border)] shadow">
-                            <MessageCircle size={18} />
+                        <Link href="/forum" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <MessageCircle size={16} />
                             {t.community.forum}
                         </Link>
-                        <a href="https://t.me/radix_dlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[#229ED9] transition-all border border-[var(--color-card-border)] shadow">
-                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M23.112 4.494c.318-1.55-1.205-2.837-2.68-2.267L2.342 9.216c-1.647.637-1.72 2.941-.117 3.682l3.94 1.818 1.873 6.559a1 1 0 0 0 1.67.432l2.886-2.887 4.044 3.033a2 2 0 0 0 3.159-1.198zM3.063 11.082l18.09-6.99-3.315 16.161L13.1 16.7a1 1 0 0 0-1.307.093l-1.236 1.236.371-2.043 7.28-7.279a1 1 0 0 0-1.204-1.575L6.95 12.876zm5.114 3.397.606 2.123.233-1.281a1 1 0 0 1 .277-.528l2.22-2.22z" fill="currentColor" />
+                        <a href="https://t.me/radix_dlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                                <path fillRule="evenodd" clipRule="evenodd" d="M23.112 4.494c.318-1.55-1.205-2.837-2.68-2.267L2.342 9.216c-1.647.637-1.72 2.941-.117 3.682l3.94 1.818 1.873 6.559a1 1 0 0 0 1.67.432l2.886-2.887 4.044 3.033a2 2 0 0 0 3.159-1.198zM3.063 11.082l18.09-6.99-3.315 16.161L13.1 16.7a1 1 0 0 0-1.307.093l-1.236 1.236.371-2.043 7.28-7.279a1 1 0 0 0-1.204-1.575L6.95 12.876zm5.114 3.397.606 2.123.233-1.281a1 1 0 0 1 .277-.528l2.22-2.22z" fill="currentColor" />
                             </svg>
                             {t.community.telegram}
                         </a>
-                        <a href="https://discord.gg/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[#5865F2] transition-all border border-[var(--color-card-border)] shadow">
-                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
-                              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M 8 17.929 l -1.143 2.286 c -1.456 -0.607 -2.963 -1.213 -4.566 -2.257 c -0.559 -0.364 -0.898 -0.983 -0.911 -1.65 c -0.07 -3.423 0.733 -6.865 2.767 -10.504 c 0.266 -0.476 0.71 -0.825 1.224 -1.008 C 6.598 4.36 7.431 4.023 8.857 3.786 l 0.857 1.571 s 0.857 -0.286 2.286 -0.286 s 2.286 0.286 2.286 0.286 l 0.857 -1.571 c 1.426 0.238 2.259 0.574 3.486 1.01 c 0.514 0.183 0.958 0.532 1.224 1.008 c 2.034 3.639 2.837 7.081 2.767 10.504 c -0.014 0.667 -0.352 1.286 -0.911 1.65 c -1.603 1.044 -3.11 1.651 -4.566 2.257 l -1.143 -2.286 m -9.714 -1.143 s 2.857 1.429 5.714 1.429 s 5.714 -1.429 5.714 -1.429" />
-                              <ellipse cx="8.429" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
-                              <ellipse cx="15.571" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
+                        <a href="https://discord.gg/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" d="M 8 17.929 l -1.143 2.286 c -1.456 -0.607 -2.963 -1.213 -4.566 -2.257 c -0.559 -0.364 -0.898 -0.983 -0.911 -1.65 c -0.07 -3.423 0.733 -6.865 2.767 -10.504 c 0.266 -0.476 0.71 -0.825 1.224 -1.008 C 6.598 4.36 7.431 4.023 8.857 3.786 l 0.857 1.571 s 0.857 -0.286 2.286 -0.286 s 2.286 0.286 2.286 0.286 l 0.857 -1.571 c 1.426 0.238 2.259 0.574 3.486 1.01 c 0.514 0.183 0.958 0.532 1.224 1.008 c 2.034 3.639 2.837 7.081 2.767 10.504 c -0.014 0.667 -0.352 1.286 -0.911 1.65 c -1.603 1.044 -3.11 1.651 -4.566 2.257 l -1.143 -2.286 m -9.714 -1.143 s 2.857 1.429 5.714 1.429 s 5.714 -1.429 5.714 -1.429" />
+                                <ellipse cx="8.429" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
+                                <ellipse cx="15.571" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
                             </svg>
-                            Discord
+                            {t.community.discord}
                         </a>
-                        <a href="https://github.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[var(--color-text-main)] transition-all border border-[var(--color-card-border)] shadow">
-                            <Github size={18} />
+                        <a href="https://www.youtube.com/c/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                                <rect x="1" y="3" width="22" height="18" rx="3.5" stroke="currentColor" strokeWidth="1.7" />
+                                <polygon points="10,8.5 15.5,12 10,15.5" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                            </svg>
+                            {t.community.youtube}
+                        </a>
+                        <a href="https://github.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <Github size={16} />
                             {t.community.github}
                         </a>
-                        <a href="https://x.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-sm hover:text-[var(--color-text-main)] transition-all border border-[var(--color-card-border)] shadow">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        <a href="https://x.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
                             @radixdlt
                         </a>
                     </div>

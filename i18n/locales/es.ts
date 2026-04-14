@@ -875,11 +875,13 @@ export const es = {
     dev_p: "Si eres desarrollador y te interesa construir sobre la tecnología más avanzada en DLT, únete a la comunidad. Puedes ponerte en contacto directamente a través de Telegram y comenzar a contribuir al código abierto.",
 
     // CTA Buttons
-    donate: "Donar (Radix Wallet)",
+    donate: "Donar (Billetera)",
     crowdfund: "Crowdfunding",
     blog: "Blog",
     forum: "Foro",
     telegram: "Telegram",
+    discord: "Discord",
+    youtube: "YouTube",
     github: "GitHub",
     twitter: "X",
     danFounderAlt: "Dan Hughes",

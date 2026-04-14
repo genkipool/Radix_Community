@@ -47,11 +47,35 @@ export default function Footer() {
     </svg>
   );
 
+  const YoutubeIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      {/* Contorno exterior (Pantalla) transparente por dentro */}
+      <rect
+        x="1"
+        y="3"
+        width="22"
+        height="18"
+        rx="3.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+
+      {/* Triángulo de Play transparente por dentro */}
+      <polygon
+        points="10,8.5 15.5,12 10,15.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   const iconMap = {
     X: <XIcon className="w-5 h-5" />,
     Github: <Github className="w-5 h-5" />,
     Discord: <DiscordIcon className="w-5 h-5" />,
     Telegram: <TelegramIcon className="w-5 h-5" />,
+    Youtube: <YoutubeIcon className="w-5 h-5" />,
   };
 
   const handleLinkClick = (e: React.MouseEvent, path: string) => {

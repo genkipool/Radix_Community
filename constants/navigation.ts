@@ -66,4 +66,5 @@ export const SOCIAL_LINKS = [
   { icon: 'Github', href: 'https://github.com/radixdlt' },
   { icon: 'Discord', href: 'https://discord.gg/radixdlt' },
   { icon: 'Telegram', href: 'https://t.me/radix_dlt' },
+  { icon: 'Youtube', href: 'https://www.youtube.com/c/radixdlt' },
 ];
