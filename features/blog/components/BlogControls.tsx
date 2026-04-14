@@ -72,6 +72,7 @@ export function BlogControls({
                             onToggleAll={onToggleAll}
                             autoCollapse={autoCollapse}
                             setAutoCollapse={onAutoCollapseChange}
+                            isReadingModeManual={true}
                             toolbarT={blogT.controls}
                             calendarOpen={calendarOpen}
                             setCalendarOpen={onCalendarOpenChange}

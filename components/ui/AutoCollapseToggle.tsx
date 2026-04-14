@@ -10,6 +10,8 @@ interface AutoCollapseToggleProps {
     inactiveTitle?: string;
     className?: string;
     size?: 'sm' | 'md';
+    disabled?: boolean;
+    disabledTitle?: string;
 }
 
 export function AutoCollapseToggle({
@@ -19,6 +21,8 @@ export function AutoCollapseToggle({
     inactiveTitle = 'Auto-collapse off',
     className = '',
     size = 'md',
+    disabled = false,
+    disabledTitle,
 }: AutoCollapseToggleProps) {
     const isMd = size === 'md';
     
@@ -32,20 +36,22 @@ export function AutoCollapseToggle({
         background: autoCollapse ? 'var(--color-primary)' : 'var(--color-surface)',
         border: `1px solid ${autoCollapse ? 'var(--color-primary)' : 'var(--color-card-border)'}`,
         color: autoCollapse ? 'var(--color-bg)' : 'var(--color-text-muted)',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         flexShrink: 0,
         transition: 'all 0.15s ease',
+        opacity: disabled ? 0.4 : 1,
     };
 
     return (
         <button
-            onClick={(e) => {
+            onClick={disabled ? undefined : (e) => {
                 e.stopPropagation();
                 onToggle(!autoCollapse);
             }}
+            disabled={disabled}
             style={style}
             className={className}
-            title={autoCollapse ? activeTitle : inactiveTitle}
+            title={disabled ? (disabledTitle || (autoCollapse ? activeTitle : inactiveTitle)) : (autoCollapse ? activeTitle : inactiveTitle)}
             aria-pressed={autoCollapse}
         >
             <Magnet className={isMd ? "w-4 h-4" : "w-3.5 h-3.5"} />

@@ -34,6 +34,7 @@ export const DashboardToolbar = ({
     dateRange, onSelectRange, onResetRange,
     calendarT,
     columns, onColumnsChange,
+    isReadingModeManual,
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
@@ -161,6 +162,7 @@ export const DashboardToolbar = ({
                         setSortMode={onSortModeChange}
                         readingMode={readingMode}
                         setReadingMode={onReadingModeChange}
+                        isReadingModeManual={isReadingModeManual}
                         expandedCount={expandedCount}
                         filteredCount={filteredCount}
                         onToggleAll={onToggleAll}

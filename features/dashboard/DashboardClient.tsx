@@ -77,9 +77,9 @@ export default function DashboardClient({
   initialSearchQuery = '',
   randomSeed = 0,
 }: DashboardInitialProps) {
-  const { t }           = useLanguage();
+  const { t } = useLanguage();
   const { setShowFooter } = useLayout();
-  const dt              = t.dashboard ?? {};
+  const dt = t.dashboard ?? {};
 
   /* View / Network / Search (URL Sync) */
   const {
@@ -97,27 +97,27 @@ export default function DashboardClient({
 
   /* ── Cookie-persisted preferences ───────────────────────── */
   const prefs = useDashboardPreferences({
-    initialValSortMode,   initialTxSortMode,
-    initialValColumns,    initialTxColumns,
+    initialValSortMode, initialTxSortMode,
+    initialValColumns, initialTxColumns,
     initialValReadingMode, initialTxReadingMode,
     initialValAutoCollapse, initialTxAutoCollapse,
-    initialActiveTag,     initialTransactionActiveTag,
+    initialActiveTag, initialTransactionActiveTag,
   });
 
   // ── View-local derived values (validators vs transactions) ──
-  const sortMode    = activeView === 'staking' ? prefs.valSortMode    : prefs.txSortMode;
-  const columns     = activeView === 'staking' ? prefs.valColumns     : prefs.txColumns;
+  const sortMode = activeView === 'staking' ? prefs.valSortMode : prefs.txSortMode;
+  const columns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
   const deferredColumns = useDeferredValue(columns);
   const readingMode = activeView === 'staking' ? prefs.valReadingMode : prefs.txReadingMode;
   const autoCollapse = activeView === 'staking' ? prefs.valAutoCollapse : prefs.txAutoCollapse;
 
   const [wasValReadingModeManual, setWasValReadingModeManual] = useState(initialValReadingMode);
-  const [wasTxReadingModeManual, setWasTxReadingModeManual]   = useState(initialTxReadingMode);
+  const [wasTxReadingModeManual, setWasTxReadingModeManual] = useState(initialTxReadingMode);
 
-  const setSortMode    = (m: typeof sortMode) =>
-    activeView === 'staking' ? prefs.setValSortMode(m)    : prefs.setTxSortMode(m);
-  const setColumns     = (c: number) =>
-    activeView === 'staking' ? prefs.setValColumns(c)     : prefs.setTxColumns(c);
+  const setSortMode = (m: typeof sortMode) =>
+    activeView === 'staking' ? prefs.setValSortMode(m) : prefs.setTxSortMode(m);
+  const setColumns = (c: number) =>
+    activeView === 'staking' ? prefs.setValColumns(c) : prefs.setTxColumns(c);
 
   const setReadingMode = (v: boolean) => {
     if (activeView === 'staking') {
@@ -140,7 +140,7 @@ export default function DashboardClient({
     initialExpandedValidators,
     initialExpandedTxs,
     valColumns: prefs.valColumns,
-    txColumns:  prefs.txColumns,
+    txColumns: prefs.txColumns,
     activeView,
     readingMode,
     autoCollapse,
@@ -152,7 +152,7 @@ export default function DashboardClient({
   /* ══ React Query — Validators ══════════════════════════════ */
   const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(deferredNetwork);
   const realValidators = validatorsData?.validators ?? [];
-  const networkStats   = validatorsData?.networkStats ?? null;
+  const networkStats = validatorsData?.networkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
   const {
@@ -175,20 +175,20 @@ export default function DashboardClient({
     enabled: activeView === 'transactions',
   });
 
-  const txs            = flattenTransactionPages(txPages?.pages);
+  const txs = flattenTransactionPages(txPages?.pages);
   const txsInitialized = txs.length > 0 || txStatus === 'success';
   // Use isLoading (status === 'pending', i.e. no data at all) rather than
   // isFetching (true even during background refetches) so the skeleton only
   // appears when there is genuinely no data — not when hydrated data exists.
-  const loadingTxs     = isTxLoading && txs.length === 0;
+  const loadingTxs = isTxLoading && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
-    validators:  realValidators,
-    activeTags:   deferredActiveTag,
+    validators: realValidators,
+    activeTags: deferredActiveTag,
     searchQuery: deferredSearch,
     sortMode: prefs.valSortMode,
-    network:     deferredNetwork,
+    network: deferredNetwork,
     activeView: 'staking',
     randomSeed,
   });
@@ -200,14 +200,14 @@ export default function DashboardClient({
   /* ── Derived network stats (fallback) ────────────────────── */
   const stats: NetworkStats = (() => {
     if (networkStats) return networkStats;
-    const active      = realValidators.filter(v => v.status === 'active');
+    const active = realValidators.filter(v => v.status === 'active');
     const totalStaked = realValidators.reduce((s, v) => s + v.totalStakeXRD, 0);
     return {
       totalStaked,
       activeValidators: active.length,
-      totalValidators:  realValidators.length,
-      avgApy:     active.length > 0 ? active.reduce((s, v) => s + v.apy, 0)           / active.length : 0,
-      avgUptime:  active.length > 0 ? active.reduce((s, v) => s + v.uptimePercent, 0) / active.length : 0,
+      totalValidators: realValidators.length,
+      avgApy: active.length > 0 ? active.reduce((s, v) => s + v.apy, 0) / active.length : 0,
+      avgUptime: active.length > 0 ? active.reduce((s, v) => s + v.uptimePercent, 0) / active.length : 0,
       epoch: 0,
     };
   })();
@@ -218,28 +218,29 @@ export default function DashboardClient({
   });
 
   /* ── Reading-mode: resolve the currently open card ──────── */
-  const expandedPostId  = expanded.expandedPosts.size > 0
+  const expandedPostId = expanded.expandedPosts.size > 0
     ? Array.from(expanded.expandedPosts)[expanded.expandedPosts.size - 1]
     : null;
   const expandedPost = expandedPostId ? realValidators.find(v => v.id === expandedPostId) ?? null : null;
-  const expandedTx   = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
+  const expandedTx = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
     searchQuery, activeView, network, setExpandedTxs: expanded.setExpandedTxs
   });
 
-  // Auto Reading Mode for high columns (Grid 3+), but respect manual toggle
+  // Forced Reading Mode for high columns (Grid 3+)
   useEffect(() => {
+    const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
+
     if (columns >= VALIDATOR_MODAL_THRESHOLD) {
-      if (!readingMode && (activeView === 'staking' ? !wasValReadingModeManual : !wasTxReadingModeManual)) {
-        // Only auto-enable if not already in reading mode and NO manual preference was set to disable it
+      if (!readingMode) {
+        // Auto-enable but don't set manual flag
         if (activeView === 'staking') prefs.setValReadingMode(true);
         else prefs.setTxReadingMode(true);
       }
     } else {
-      // If we go back to Grid 1/2, we only auto-disable if it was auto-enabled (non-manual)
-      const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
+      // Deactivate if it was auto-enabled and we are back to Grid 1/2
       if (readingMode && !isManual) {
         if (activeView === 'staking') prefs.setValReadingMode(false);
         else prefs.setTxReadingMode(false);
@@ -281,7 +282,7 @@ export default function DashboardClient({
               className="h-full w-1/2"
               style={{
                 background: 'linear-gradient(to right, transparent, var(--color-primary), var(--color-accent), transparent)',
-                animation:  'loading-bar 1.4s ease-in-out infinite',
+                animation: 'loading-bar 1.4s ease-in-out infinite',
               }}
             />
           </motion.div>
@@ -312,7 +313,7 @@ export default function DashboardClient({
           onActiveTagChange={(tag) => {
             setSearchQuery('');
             const currentTags = prefs.activeTag;
-            
+
             // 1. If "All" is clicked (tag === null from TagFilterBar or explicitly 'All')
             if (tag === 'All' || tag === null) {
               prefs.setActiveTag(['All']);
@@ -346,6 +347,7 @@ export default function DashboardClient({
           onSortModeChange={setSortMode}
           readingMode={readingMode}
           onReadingModeChange={setReadingMode}
+          isReadingModeManual={activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual}
           autoCollapse={autoCollapse}
           onAutoCollapseChange={setAutoCollapse}
           expandedCount={expanded.expandedPosts.size}

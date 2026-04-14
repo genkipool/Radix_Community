@@ -123,6 +123,13 @@ summary {
   cursor: pointer;
 }
 
+button:disabled,
+button[disabled],
+[aria-disabled="true"],
+.disabled {
+  cursor: default !important;
+}
+
 /* Transaction loading bar */
 @keyframes loading-bar {
   0% { transform: translateX(-100%); }

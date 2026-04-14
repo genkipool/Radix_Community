@@ -43,6 +43,7 @@ export function ForumToolbar() {
                     onToggleAll={toggleAllPosts}
                     autoCollapse={autoCollapse}
                     setAutoCollapse={setAutoCollapse}
+                    isReadingModeManual={true}
                     toolbarT={t.forum.controls}
                     calendarOpen={calendarOpen}
                     setCalendarOpen={setCalendarOpen}

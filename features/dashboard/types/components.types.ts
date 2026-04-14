@@ -41,6 +41,7 @@ export interface DashboardToolbarProps {
     onSortModeChange: (mode: 'newest' | 'oldest' | 'date' | 'random') => void;
     readingMode: boolean;
     onReadingModeChange: (v: boolean) => void;
+    isReadingModeManual?: boolean;
     autoCollapse: boolean;
     onAutoCollapseChange: (v: boolean) => void;
     expandedCount: number;

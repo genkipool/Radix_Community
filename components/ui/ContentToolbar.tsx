@@ -18,6 +18,8 @@ interface ContentToolbarTranslations {
     expand_all?: string;
     collapse_all?: string;
     auto_collapse?: string;
+    disabled_reading_mode?: string;
+    disabled_grid_density?: string;
 }
 
 export interface ContentToolbarProps {
@@ -40,11 +42,12 @@ export interface ContentToolbarProps {
     onResetRange?: () => void;
     calendarT?: CalendarTranslations;
     columns: number;
+    isReadingModeManual?: boolean;
 }
 
 // Shared button styles
 
-const btnBase   = 'p-2 rounded-full border transition-all';
+const btnBase = 'p-2 rounded-full border transition-all';
 const btnActive = 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]';
 const btnInactive =
     'border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]/40';
@@ -69,10 +72,14 @@ export function ContentToolbar({
     onSelectRange,
     onResetRange,
     calendarT,
-    _columns,
+    columns,
+    isReadingModeManual,
 }: ContentToolbarProps) {
+    const isCollapseDisabled = columns >= 5 || readingMode;
+    const isReadingModeDisabled = columns >= 5;
+
     const containerRef = useRef<HTMLDivElement>(null);
-    const buttonRef    = useRef<HTMLButtonElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
     const [mounted, setMounted] = React.useState(false);
 
@@ -170,18 +177,23 @@ export function ContentToolbar({
 
             {/* Reading mode */}
             <button
-                onClick={() => setReadingMode(!readingMode)}
+                onClick={isReadingModeDisabled ? undefined : () => setReadingMode(!readingMode)}
                 title={toolbarT?.reading_mode || 'Reading Mode'}
-                className={`${btnBase} ${readingMode ? btnActive : btnInactive}`}
+                disabled={isReadingModeDisabled}
+                className={`${btnBase} ${readingMode ? btnActive : btnInactive} ${isReadingModeDisabled ? (readingMode ? 'cursor-default' : 'cursor-default opacity-80') : ''}`}
             >
                 <BookOpen className="w-4 h-4" />
             </button>
 
             {/* Expand / Collapse all */}
             <button
-                onClick={onToggleAll}
-                title={expandedCount > 0 ? (toolbarT?.collapse_all || 'Collapse All') : (toolbarT?.expand_all || 'Expand All')}
-                className={`${btnBase} ${expandedCount === filteredCount && filteredCount > 0 ? btnActive : btnInactive}`}
+                onClick={isCollapseDisabled ? undefined : onToggleAll}
+                title={isCollapseDisabled 
+                    ? (isReadingModeManual && readingMode ? toolbarT?.disabled_reading_mode : toolbarT?.disabled_grid_density)
+                    : (expandedCount > 0 ? (toolbarT?.collapse_all || 'Collapse All') : (toolbarT?.expand_all || 'Expand All'))
+                }
+                disabled={isCollapseDisabled}
+                className={`${btnBase} ${expandedCount === filteredCount && filteredCount > 0 ? btnActive : btnInactive} ${isCollapseDisabled ? 'opacity-30 cursor-default border-dashed' : ''}`}
             >
                 {expandedCount > 0
                     ? <FoldVertical className="w-4 h-4" />
@@ -193,7 +205,9 @@ export function ContentToolbar({
                 onToggle={setAutoCollapse}
                 activeTitle={toolbarT?.auto_collapse}
                 inactiveTitle={toolbarT?.auto_collapse}
+                disabledTitle={isReadingModeManual && readingMode ? toolbarT?.disabled_reading_mode : toolbarT?.disabled_grid_density}
                 size="md"
+                disabled={isCollapseDisabled}
             />
         </div>
     );

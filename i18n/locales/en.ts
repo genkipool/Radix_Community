@@ -1129,6 +1129,7 @@ export const en = {
       collapse_all: "Collapse all",
       expand_all: "Expand all",
       columns: "column(s)",
+      disabled_reading_mode: "Disabled by enabling reading mode",
     },
     calendar: {
       month: "March",
@@ -1366,6 +1367,7 @@ export const en = {
       expand_all: "Expand all",
       columns: "columns",
       column: "column",
+      disabled_reading_mode: "Disabled by enabling reading mode",
     },
     tags: {
       "Radix Labs": "Radix Labs",
@@ -2367,6 +2369,8 @@ Download the update today from the iOS App Store or Google Play Store to experie
       expand_all: 'Expand All',
       collapse_all: 'Collapse All',
       auto_collapse: 'Auto Collapse',
+      disabled_reading_mode: 'Disabled by enabling reading mode',
+      disabled_grid_density: 'Disabled by having more than 2 columns',
     },
     explorer: {
       ledger_txs: 'Total Transactions',

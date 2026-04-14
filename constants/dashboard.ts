@@ -29,7 +29,7 @@ export const getGridClass = (cols: number): string =>
   GRID_CLASS_MAP[cols] ?? GRID_CLASS_MAP[8];
 
 /* ── Threshold: grid density above which cards open in a modal ─ */
-export const VALIDATOR_MODAL_THRESHOLD = 2;
+export const VALIDATOR_MODAL_THRESHOLD = 3;
 
 /* ── Progressive rendering page size for validators ────────── */
 export const VALIDATOR_PAGE_SIZE = 24;
