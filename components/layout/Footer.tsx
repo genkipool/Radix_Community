@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLayout } from "@/context/LayoutContext";
-import { Github } from "lucide-react";
+import { Github, HeartHandshake } from "lucide-react";
 import { FOOTER_LINKS, SOCIAL_LINKS } from "@/constants/navigation";
 import { RadixLogo } from "@/components/shared/RadixLogo";
 
@@ -117,6 +117,7 @@ export default function Footer() {
                   key={index}
                   href={link.href}
                   aria-label={link.icon}
+                  title={link.icon}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
@@ -124,6 +125,15 @@ export default function Footer() {
                   {iconMap[link.icon as keyof typeof iconMap]}
                 </a>
               ))}
+              <Link
+                href="#donate"
+                aria-label={t.community.donate}
+                title={t.community.donate}
+                onClick={(e) => handleLinkClick(e, '#under-construction')}
+                className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
+              >
+                <HeartHandshake size={20} />
+              </Link>
             </div>
           </div>
 
