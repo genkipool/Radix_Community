@@ -62,8 +62,8 @@ export const FOOTER_LINKS = {
 };
 
 export const SOCIAL_LINKS = [
-  { icon: 'Twitter', href: 'https://twitter.com/radixdlt' },
+  { icon: 'X', href: 'https://twitter.com/radixdlt' },
   { icon: 'Github', href: 'https://github.com/radixdlt' },
-  { icon: 'Linkedin', href: 'https://www.linkedin.com/company/radix-dlt/' },
-  { icon: 'MessageCircle', href: 'https://t.me/radix_dlt' },
+  { icon: 'Discord', href: 'https://discord.gg/radixdlt' },
+  { icon: 'Telegram', href: 'https://t.me/radix_dlt' },
 ];
