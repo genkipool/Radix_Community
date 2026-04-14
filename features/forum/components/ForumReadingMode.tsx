@@ -124,7 +124,7 @@ export function ForumReadingMode() {
                             </div>
 
                             {/* Messages Body */}
-                            <div className="p-8 pt-0 space-y-6 overflow-y-auto custom-scrollbar">
+                            <div className="p-8 pt-0 space-y-6 overflow-y-auto touch-pan-y custom-scrollbar">
                                 <div className="py-8">
                                     <ForumMessage
                                         authorId={expandedPost.authorId}

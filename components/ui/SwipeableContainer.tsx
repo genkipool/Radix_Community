@@ -83,9 +83,9 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
                     onNext();
                 }
             }}
-            className={`flex-1 flex flex-col min-h-0 relative touch-none ${className}`}
+            className={`flex-1 flex flex-col min-h-0 relative touch-pan-y ${className}`}
             onClick={onClick || (e => e.stopPropagation())}
-            style={style}
+            style={{ ...style, touchAction: 'pan-y' }}
         >
             {children}
         </motion.div>

@@ -77,9 +77,15 @@ export function ContentToolbar({
     const containerRef = useRef<HTMLDivElement>(null);
     const buttonRef    = useRef<HTMLButtonElement>(null);
 
+    const [mounted, setMounted] = React.useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     // ── Alignment: open left or right depending on available space ───────────
     const getCalendarAlign = (): 'left' | 'right' => {
-        if (!buttonRef.current) return 'left';
+        if (!buttonRef.current || !mounted || typeof window === 'undefined') return 'left';
         const { left } = buttonRef.current.getBoundingClientRect();
         // 280 px = calendar width; if not enough space to the right → open left
         return left + 280 > window.innerWidth ? 'right' : 'left';

@@ -56,7 +56,7 @@ import { DashboardCardGrid } from './components/DashboardCardGrid';
 import { DashboardModals } from './components/DashboardModals';
 
 /* Helpers */
-import { getGridClass } from '@/constants/dashboard';
+import { getGridClass, VALIDATOR_MODAL_THRESHOLD } from '@/constants/dashboard';
 
 
 export default function DashboardClient({
@@ -233,7 +233,7 @@ export default function DashboardClient({
   useEffect(() => {
     const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
 
-    if (columns >= 3) {
+    if (columns >= VALIDATOR_MODAL_THRESHOLD) {
       if (!readingMode) {
         // Auto-enable but don't set manual flag
         if (activeView === 'staking') prefs.setValReadingMode(true);

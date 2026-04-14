@@ -8,7 +8,7 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { isValidUrl, sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
-import { OnlineBadge, ConnectBadge, VoteBadge } from './ValidatorBadges';
+import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useLayout } from '@/context/LayoutContext';
@@ -32,7 +32,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
-    
+
     const activeDirection = propDirection;
 
     return (
@@ -45,7 +45,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     key={validator.address}
                     itemKey={validator.address}
                     direction={activeDirection}
-                    setDirection={setDirection || (() => {})}
+                    setDirection={setDirection || (() => { })}
                     onPrev={onPrev}
                     onNext={onNext}
                     className="flex-1 flex flex-col min-h-0 relative touch-none bg-[var(--color-surface)]"
@@ -75,7 +75,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                 <h2 className="font-black text-[var(--color-text-main)] tracking-tight leading-[1.1] whitespace-nowrap overflow-hidden text-ellipsis text-[16px] sm:text-[clamp(18px,2.5vw,28px)] flex-1">
                                     {safeName}
                                 </h2>
-                                
+
                                 <CloseButton
                                     onClose={onClose}
                                     title="Cerrar"
@@ -153,7 +153,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     {/* ══════════════════════════════════════════
                         ROWS 2 + 3 — Body
                     ══════════════════════════════════════════ */}
-                    <div className="overflow-y-visible flex-1 custom-scrollbar [&>.veb]:!border-t-0">
+                    <div className="overflow-y-visible flex-1 touch-pan-y custom-scrollbar [&>.veb]:!border-t-0">
                         <ValidatorExpandedBody
                             validator={validator}
                             t={t}
@@ -168,20 +168,23 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     {/* ══════════════════════════════════════════
                         FOOTER — CTA
                     ══════════════════════════════════════════ */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[10px] sm:gap-5 p-[14px] sm:px-6 sm:py-[14px] border-t border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0 items-stretch">
-                        <p className="text-[13px] text-[var(--color-text-muted)] font-medium leading-[1.4] m-0 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[15px] p-[14px] sm:px-6 sm:py-[18px] border-t border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0 items-stretch sm:items-center">
+                        <p className="text-[13px] text-[var(--color-text-muted)] font-medium leading-[1.4] m-0 flex-1 hidden sm:block">
                             {dt?.card?.stake_hint ?? 'Delegate your XRD to this validator and start earning rewards.'}
                         </p>
-                        <Button
-                            variant="primary"
-                            className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
-                            onClick={e => {
-                                e.stopPropagation();
-                                setShowUnderConstruction(true);
-                            }}
-                        >
-                            {dt?.card?.stake_button ?? 'Stake'}
-                        </Button>
+                        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                            <EntityTagsGrid tags={validator.tags} t={t} />
+                            <Button
+                                variant="primary"
+                                className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    setShowUnderConstruction(true);
+                                }}
+                            >
+                                {dt?.card?.stake_button ?? 'Stake'}
+                            </Button>
+                        </div>
                     </div>
                 </SwipeableContainer>
             </AnimatePresence>

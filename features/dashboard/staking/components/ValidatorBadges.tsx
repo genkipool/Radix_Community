@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Shield, Users, ShieldCheck, ShieldAlert, ShieldX, Globe, Building, Tag,
+    Shield, Users, ShieldCheck, Globe, Building, Tag, type LucideIcon,
 } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT } from '@/features/dashboard/types';
@@ -29,11 +29,9 @@ export const OnlineBadge = ({
         <span
             className={baseCls(compact)}
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
+            title={sanitizeText(online ? labelOn : labelOff)}
         >
-            {online
-                ? <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-                : <ShieldAlert className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-            }
+            <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
             {!compact && <span className="mt-[1px]">{sanitizeText(online ? labelOn : labelOff)}</span>}
         </span>
     );
@@ -43,20 +41,18 @@ export const OnlineBadge = ({
    ConnectBadge
 ───────────────────────────────────────── */
 export const ConnectBadge = ({
-    accepts, labelYes, labelNo, compact = false,
+    accepts, labelYes, labelNo, compact = false, icon: Icon = Users,
 }: {
-    accepts: boolean; labelYes: string; labelNo: string; compact?: boolean;
+    accepts: boolean; labelYes: string; labelNo: string; compact?: boolean; icon?: LucideIcon;
 }) => {
     const color = accepts ? '#16a34a' : '#d97706';
     return (
         <span
             className={baseCls(compact)}
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
+            title={sanitizeText(accepts ? labelYes : labelNo)}
         >
-            {accepts
-                ? <Users className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-                : <ShieldX className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-            }
+            <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
             {!compact && <span className="mt-[1px]">{sanitizeText(accepts ? labelYes : labelNo)}</span>}
         </span>
     );
@@ -126,12 +122,12 @@ export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Transla
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border font-black tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${
+            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${
                 compact ? 'p-1' : 'px-2 py-1 text-[9px]'
             }`}
-            title={compact ? label : undefined}
+            title={label}
         >
-            <Icon size={compact ? 12 : 10} className="shrink-0" />
+            <Icon size={compact ? 10 : 12} className="shrink-0" />
             {!compact && <span className="mt-[1px]">{label}</span>}
         </span>
     );

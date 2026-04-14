@@ -41,18 +41,17 @@ export const StatusLabel = ({ status, t, compact = false }: { status: Validator[
     const label = t?.dashboard?.status?.[status as keyof typeof t.dashboard.status] ?? status;
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full font-black tracking-wider bg-white/5 border backdrop-blur-md transition-all duration-300 align-middle box-border leading-none ${
-                compact ? 'p-1 text-[9px]' : 'px-2 py-1 text-[10px]'
+            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-all duration-300 align-middle box-border leading-none ${
+                compact ? 'px-1.5 py-1 text-[9px]' : 'px-2 py-1 text-[10px]'
             }`}
             style={{
                 color,
-                borderColor: `${color}60`,
-                boxShadow: `0 0 12px ${color}35, inset 0 0 4px ${color}25`,
-                textShadow: `0 0 8px ${color}50`,
+                borderColor: `${color}45`,
+                backgroundColor: `${color}15`,
             }}
-            title={compact ? label : undefined}
+            title={label}
         >
-            <Activity size={compact ? 12 : 10} className="shrink-0" />
+            <Activity size={compact ? 10 : 12} className="shrink-0" />
             {!compact && <span className="mt-[1px]">{sanitizeText(label)}</span>}
         </span>
     );

@@ -218,7 +218,7 @@ export function TransactionDetailModal({
                         </div>
 
                         {/* ── Content: TransactionTabs directly ── */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                        <div className="flex-1 overflow-y-auto touch-pan-y custom-scrollbar min-h-0">
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--color-text-muted)]">
                                     <Activity className="w-7 h-7 animate-spin text-[var(--color-primary)]" />

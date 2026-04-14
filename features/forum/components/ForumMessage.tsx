@@ -56,9 +56,21 @@ export function ForumMessage({
     return (
         <div className={`rounded-xl border border-[var(--color-card-border)] bg-[var(--color-bg)] hover:border-[var(--color-primary)]/20 transition-colors cursor-pointer ${isReply ? 'mt-2' : ''}`}>
             {/* Header */}
-            <div className={`px-4 bg-[var(--color-surface)] border-b border-[var(--color-card-border)] rounded-t-xl ${isReply ? 'py-4 sm:py-5' : 'py-2.5'}`}>
-                <UserHeader authorId={authorId} hideBadge={true} right={
-                    post && repliersToAuthor.length > 0 ? (
+            <div className={`px-4 bg-[var(--color-surface)] border-b border-[var(--color-card-border)] rounded-t-xl ${isReply ? 'py-4 sm:py-5' : 'py-2.5'} flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <UserHeader authorId={authorId} hideBadge={true} />
+                    {tags && (
+                        <div className="flex gap-1.5 flex-wrap">
+                            {tags.map(tag => (
+                                <span key={tag} className="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-[var(--color-card-border)] shadow-sm">
+                                    {t.forum.tags[tag as keyof typeof t.forum.tags] || tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                {post && repliersToAuthor.length > 0 && (
+                    <div className="flex justify-end sm:justify-start shrink-0">
                         <ReplyFilterWidget
                             authorId={authorId}
                             post={post}
@@ -66,8 +78,8 @@ export function ForumMessage({
                             specificReplies={specificReplies}
                             repliersToAuthor={repliersToAuthor}
                         />
-                    ) : undefined
-                } />
+                    </div>
+                )}
             </div>
             {/* Body */}
             <div className={`${isReply ? 'px-5 py-4 sm:py-5' : 'px-4 py-3'}`}>

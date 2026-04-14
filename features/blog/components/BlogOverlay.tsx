@@ -111,7 +111,7 @@ export function BlogOverlay({
                             </div>
 
                             <motion.div
-                                className="p-8 md:p-10"
+                                className="p-8 md:p-10 touch-pan-y"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}

@@ -219,6 +219,9 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 ml-auto max-w-full">
+                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
+                                        {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                    </span>
                                     {isExpanded && post.replies.length > 0 && (
                                         <ReplyFilterWidget
                                             authorId={post.authorId}
@@ -228,9 +231,6 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                             repliersToAuthor={repliersToAuthor}
                                         />
                                     )}
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                        {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                                    </span>
 
                                     <Button
                                         title={t.forum.post.reply}
@@ -313,8 +313,11 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                                 {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
                                             </span>
                                         </div>
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--color-card-border)]/50 pt-3">
-                                            <div className="w-full sm:w-auto overflow-hidden">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--color-card-border)]/50 pt-3 flex-wrap">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
+                                                    {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                                </span>
                                                 {post.replies.length > 0 && (
                                                     <ReplyFilterWidget
                                                         authorId={post.authorId}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check } from 'lucide-react';
+import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
@@ -17,7 +17,7 @@ import { useLayout } from '@/context/LayoutContext';
 
 /* ─── Shared expand animation config ─────────── */
 const EXPAND_TRANSITION = { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const };
-import { 
+import {
     type LayoutProps,
     type ExpandPanelProps,
     type CopyAddressButtonProps,
@@ -29,7 +29,7 @@ import {
 ═════════════════════════════════════════ */
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -61,8 +61,8 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             </h3>
                             <StatusLabel status={validator.status} t={t} />
                             <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} />
-                            <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} />
-                            <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} />
+                            <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} icon={Users} />
+                            <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} icon={Cable} />
                             <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
                         </div>
 
@@ -72,7 +72,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 tooltip: dt?.card?.tooltips?.stake,
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
-                                                                                <span
+                                        <span
                                             className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
@@ -101,11 +101,11 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             },
                             { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%` },
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { 
-                                label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
-                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details), 
-                                value: `${validator.recentUptime.toFixed(2)}%`, 
-                                accent: getUptimeColor(validator.recentUptime) 
+                            {
+                                label: dt?.card?.uptime_14d ?? 'Uptime 14d',
+                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
+                                value: `${validator.recentUptime.toFixed(2)}%`,
+                                accent: getUptimeColor(validator.recentUptime)
                             },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
@@ -158,7 +158,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
 ═════════════════════════════════════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -189,8 +189,8 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                             <div className={`flex items-center gap-1.5 shrink-0 ${columns === 2 ? 'flex-wrap' : ''}`}>
                                 <StatusLabel status={validator.status} t={t} compact={columns === 3} />
                                 <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} compact={columns === 3} />
-                                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} compact={columns === 3} />
-                                <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} compact={columns === 3} />
+                                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} compact={columns === 3} icon={Users} />
+                                <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} compact={columns === 3} icon={Cable} />
                                 <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} />
                             </div>
                         </div>
@@ -200,7 +200,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                                 tooltip: dt?.card?.tooltips?.stake,
                                 value: (
                                     <div className="flex items-baseline gap-1.5">
-                                                                                <span
+                                        <span
                                             className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
@@ -231,11 +231,11 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         ]} />
                         <StatDivider items={[
                             { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
-                            { 
-                                label: dt?.card?.uptime_14d ?? 'Uptime 14d', 
-                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details), 
-                                value: `${validator.recentUptime.toFixed(2)}%`, 
-                                accent: getUptimeColor(validator.recentUptime) 
+                            {
+                                label: dt?.card?.uptime_14d ?? 'Uptime 14d',
+                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
+                                value: `${validator.recentUptime.toFixed(2)}%`,
+                                accent: getUptimeColor(validator.recentUptime)
                             },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
                         ]} />
@@ -281,7 +281,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
 ═════════════════════════════════════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -301,8 +301,8 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                     <div className="flex items-center gap-1 flex-wrap mt-0.5">
                         <StatusLabel status={validator.status} t={t} compact />
                         <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
-                        <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact />
-                        <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact />
+                        <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
+                        <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
                         <VoteBadge vote={validator.protocolUpdateVote} label="" compact />
                     </div>
                 </div>
@@ -360,11 +360,14 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         end={columns === 5 ? 6 : 6}
                     />
                 </div>
-                <DelegateButton
-                    label={dt?.card?.stake_button ?? 'Delegar'}
-                    small
-                    title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
-                />
+                <div className="flex items-center gap-2 shrink-0">
+                    <EntityTagsGrid tags={validator.tags} t={t} compact />
+                    <DelegateButton
+                        label={dt?.card?.stake_button ?? 'Delegar'}
+                        small
+                        title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
+                    />
+                </div>
             </div>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
@@ -378,7 +381,7 @@ onCopy, copiedAddress, columns, network = 'mainnet',
 ═════════════════════════════════════════ */
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -400,8 +403,8 @@ onCopy, copiedAddress, columns, network = 'mainnet',
             <div className="flex items-center gap-1 px-2 pb-2 flex-wrap">
                 <StatusLabel status={validator.status} t={t} compact />
                 <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
-                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact />
-                <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact />
+                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
+                <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
                 <VoteBadge vote={validator.protocolUpdateVote} label="" compact />
             </div>
 
@@ -419,12 +422,12 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                 />
                 <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1)}%`} vertical={columns >= 8} />
                 <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1)}%`} vertical={columns >= 8} />
-                <BizRow 
-                    label={dt?.card?.uptime_14d ?? 'Uptime'} 
-                    value={`${validator.recentUptime.toFixed(1)}%`} 
-                    accent={getUptimeColor(validator.recentUptime)} 
+                <BizRow
+                    label={dt?.card?.uptime_14d ?? 'Uptime'}
+                    value={`${validator.recentUptime.toFixed(1)}%`}
+                    accent={getUptimeColor(validator.recentUptime)}
                     tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)}
-                    vertical={columns >= 8} 
+                    vertical={columns >= 8}
                 />
                 <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0)} vertical={columns >= 8} />
             </div>
@@ -450,11 +453,14 @@ onCopy, copiedAddress, columns, network = 'mainnet',
                         copiedAddress={copiedAddress}
                     />
                 </div>
-                <DelegateButton
-                    label={dt?.card?.stake_button ?? 'Delegar'}
-                    small
-                    title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
-                />
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <EntityTagsGrid tags={validator.tags} t={t} compact />
+                    <DelegateButton
+                        label={dt?.card?.stake_button ?? 'Delegar'}
+                        small
+                        title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
+                    />
+                </div>
             </div>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
