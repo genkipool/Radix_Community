@@ -229,18 +229,17 @@ export default function DashboardClient({
     searchQuery, activeView, network, setExpandedTxs: expanded.setExpandedTxs
   });
 
-  // Forced Reading Mode for high columns (Grid 3+)
+  // Auto Reading Mode for high columns (Grid 3+), but respect manual toggle
   useEffect(() => {
-    const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
-
     if (columns >= VALIDATOR_MODAL_THRESHOLD) {
-      if (!readingMode) {
-        // Auto-enable but don't set manual flag
+      if (!readingMode && (activeView === 'staking' ? !wasValReadingModeManual : !wasTxReadingModeManual)) {
+        // Only auto-enable if not already in reading mode and NO manual preference was set to disable it
         if (activeView === 'staking') prefs.setValReadingMode(true);
         else prefs.setTxReadingMode(true);
       }
     } else {
-      // Deactivate if it was auto-enabled and we are back to Grid 1/2
+      // If we go back to Grid 1/2, we only auto-disable if it was auto-enabled (non-manual)
+      const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
       if (readingMode && !isManual) {
         if (activeView === 'staking') prefs.setValReadingMode(false);
         else prefs.setTxReadingMode(false);

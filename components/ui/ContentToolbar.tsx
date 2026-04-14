@@ -69,11 +69,8 @@ export function ContentToolbar({
     onSelectRange,
     onResetRange,
     calendarT,
-    columns,
+    _columns,
 }: ContentToolbarProps) {
-    const isCollapseDisabled    = columns >= 5;
-    const isReadingModeDisabled = columns >= 5;
-
     const containerRef = useRef<HTMLDivElement>(null);
     const buttonRef    = useRef<HTMLButtonElement>(null);
 
@@ -173,20 +170,18 @@ export function ContentToolbar({
 
             {/* Reading mode */}
             <button
-                onClick={isReadingModeDisabled ? undefined : () => setReadingMode(!readingMode)}
+                onClick={() => setReadingMode(!readingMode)}
                 title={toolbarT?.reading_mode || 'Reading Mode'}
-                disabled={isReadingModeDisabled}
-                className={`${btnBase} ${readingMode ? btnActive : btnInactive} ${isReadingModeDisabled ? 'cursor-not-allowed opacity-80' : ''}`}
+                className={`${btnBase} ${readingMode ? btnActive : btnInactive}`}
             >
                 <BookOpen className="w-4 h-4" />
             </button>
 
             {/* Expand / Collapse all */}
             <button
-                onClick={isCollapseDisabled ? undefined : onToggleAll}
-                title={isCollapseDisabled ? undefined : (expandedCount > 0 ? (toolbarT?.collapse_all || 'Collapse All') : (toolbarT?.expand_all || 'Expand All'))}
-                disabled={isCollapseDisabled}
-                className={`${btnBase} ${expandedCount === filteredCount && filteredCount > 0 ? btnActive : btnInactive} ${isCollapseDisabled ? 'opacity-30 cursor-not-allowed border-dashed' : ''}`}
+                onClick={onToggleAll}
+                title={expandedCount > 0 ? (toolbarT?.collapse_all || 'Collapse All') : (toolbarT?.expand_all || 'Expand All')}
+                className={`${btnBase} ${expandedCount === filteredCount && filteredCount > 0 ? btnActive : btnInactive}`}
             >
                 {expandedCount > 0
                     ? <FoldVertical className="w-4 h-4" />
