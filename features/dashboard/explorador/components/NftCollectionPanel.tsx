@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
@@ -11,7 +12,6 @@ import {
     PanelConfigurationTab,
     PanelRawTab,
 } from './EntityPanelShared';
-import { SafeImage } from '@/components/ui/SafeImage';
 
 import { NftCollectionPanelProps } from '../types';
 
@@ -122,16 +122,8 @@ export function NftCollectionPanel({
                                             onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
                                         >
                                             <div className="w-10 h-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
-                                                {imageUrl ? (
-                                                    <SafeImage
-                                                        src={imageUrl}
-                                                        alt={shortId}
-                                                        fallbackName={shortId}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <Box className="w-4 h-4 text-[var(--color-text-muted)] opacity-40" />
-                                                )}
+                                                {imageUrl ? <img src={imageUrl} alt={shortId} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                                    : <Box className="w-4 h-4 text-[var(--color-text-muted)] opacity-40" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -214,12 +206,7 @@ export function NftCollectionPanel({
                                                         )}
                                                         {imageUrl && (
                                                             <div className="rounded-xl overflow-hidden border border-[var(--color-card-border)] max-w-[140px]">
-                                                                <SafeImage
-                                                                    src={imageUrl}
-                                                                    alt={shortId}
-                                                                    fallbackName={shortId}
-                                                                    className="w-full object-cover"
-                                                                />
+                                                                <img src={imageUrl} alt={shortId} className="w-full object-cover" onError={e => { const p = e.currentTarget.parentElement; if (p) (p as HTMLElement).style.display = 'none'; }} />
                                                             </div>
                                                         )}
                                                         {fields.length > 0 && (
@@ -257,18 +244,8 @@ export function NftCollectionPanel({
                 {activeTab === 'summary' && (
                     <div>
                         <div className="flex items-center gap-3 mb-4">
-                            {iconUrl ? (
-                                <SafeImage
-                                    src={iconUrl}
-                                    alt={name}
-                                    fallbackName={name}
-                                    className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]"
-                                />
-                            ) : (
-                                <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0">
-                                    <Box className="w-4 h-4" />
-                                </div>
-                            )}
+                            {iconUrl ? <img src={iconUrl} alt={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0"><Box className="w-4 h-4" /></div>}
                             <div className="min-w-0 flex-1">
                                 <p className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</p>
                                 {symbol && <p className="text-[10px] text-[var(--color-primary)] font-mono truncate">{symbol}</p>}

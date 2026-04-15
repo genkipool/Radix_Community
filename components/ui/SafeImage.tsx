@@ -14,18 +14,8 @@ interface SafeImageProps {
     loading?: 'lazy' | 'eager';
 }
 
-/** Returns src only if it is a non-empty string, otherwise the fallback. 
- * External URLs are routed through our image proxy for caching.
- */
 function resolveSrc(src: string | undefined, fallback: string): string {
-    if (!src || !src.trim()) return fallback;
-
-    // Use our internal image proxy for external URLs to enable Vercel Edge caching
-    if (src.startsWith('http') && !src.includes('/api/image-proxy')) {
-        return `/api/image-proxy?url=${encodeURIComponent(src)}`;
-    }
-
-    return src;
+    return src && src.trim() ? src : fallback;
 }
 
 export function SafeImage({
