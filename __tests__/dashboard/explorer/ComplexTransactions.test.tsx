@@ -6,6 +6,7 @@ import { type TransactionInfo } from '@/types/radix';
 import { type TransactionCardProps } from '@/features/dashboard/explorador/types/components.types';
 import { type TranslationsT } from '@/features/dashboard/types/core.types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { LanguageProvider } from '@/context/LanguageContext';
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
@@ -69,13 +70,16 @@ describe('Complex Transactions UI', () => {
         columns: 1,
         t,
         network: 'mainnet',
+        timezone: 'UTC',
     };
 
     it('identifies and displays a Staking transaction', () => {
         const tx = mockTx('tx_stake', ['ValidatorStake']);
         render(
             <QueryClientProvider client={queryClient}>
-                <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                <LanguageProvider language="en" dictionary={t}>
+                    <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                </LanguageProvider>
             </QueryClientProvider>
         );
         expect(screen.getByText('Stake')).toBeInTheDocument();
@@ -85,7 +89,9 @@ describe('Complex Transactions UI', () => {
         const tx = mockTx('tx_unstake', ['ValidatorUnstake']);
         render(
             <QueryClientProvider client={queryClient}>
-                <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                <LanguageProvider language="en" dictionary={t}>
+                    <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                </LanguageProvider>
             </QueryClientProvider>
         );
         expect(screen.getByText('Unstake')).toBeInTheDocument();
@@ -95,7 +101,9 @@ describe('Complex Transactions UI', () => {
         const tx = mockTx('tx_claim', ['ValidatorClaim']);
         render(
             <QueryClientProvider client={queryClient}>
-                <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                <LanguageProvider language="en" dictionary={t}>
+                    <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
+                </LanguageProvider>
             </QueryClientProvider>
         );
         expect(screen.getByText('Claim')).toBeInTheDocument();

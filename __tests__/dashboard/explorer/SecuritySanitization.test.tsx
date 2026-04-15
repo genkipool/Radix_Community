@@ -23,6 +23,7 @@ vi.mock('lucide-react', () => ({
 }));
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { LanguageProvider } from '@/context/LanguageContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ describe('Security & Sanitization', () => {
     network: 'mainnet',
     index: 0,
     columns: 1,
+    timezone: 'UTC',
     t: {
         dashboard: {
             transactions: {}
@@ -68,7 +70,9 @@ describe('Security & Sanitization', () => {
   it('renders malicious messages as literal text and does not execute scripts', () => {
     render(
       <QueryClientProvider client={queryClient}>
-        <TransactionCard {...baseProps} />
+        <LanguageProvider language="en" dictionary={baseProps.t}>
+          <TransactionCard {...baseProps} />
+        </LanguageProvider>
       </QueryClientProvider>
     );
     
