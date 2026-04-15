@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { dehydrate } from '@tanstack/react-query';
 import { ReactQueryHydrate } from '@/components/layout/ReactQueryHydrate';
 import {
@@ -117,7 +117,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // Read all persisted UI state from cookies
   const cookieStore = await cookies();
+  const headerStore = await headers();
   const c = makeCookieReader(cookieStore);
+
+  // Timezone resolution: Cookie > Geo Fallback > UTC
+  const clientTz = c.decoded('client-tz');
+  const country = headerStore.get('cf-ipcountry') || headerStore.get('x-vercel-ip-country');
+  const timezone = clientTz || (country === 'ES' ? 'Europe/Madrid' : 'UTC');
+
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const randomSeed = Math.floor(startOfDay / (1000 * 60 * 60)); // Stable for the entire day
@@ -236,6 +243,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   return (
     <ReactQueryHydrate state={dehydrate(serverQueryClient)}>
       <DashboardClient
+        timezone={timezone}
         initialView={initialView as DashboardView}
         initialNetwork={network}
         initialActiveTag={c.ids(COOKIE_KEYS.activeTag).length > 0 ? c.ids(COOKIE_KEYS.activeTag) : ['All']}

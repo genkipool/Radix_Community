@@ -71,6 +71,7 @@ export interface TransactionCardProps {
     copiedAddress: string | null;
     t?: TranslationsT;
     readingMode?: boolean;
+    timezone: string;
     network?: Network;
 }
 

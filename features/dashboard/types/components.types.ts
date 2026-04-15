@@ -73,6 +73,7 @@ export interface DashboardCardGridProps {
     copiedAddress: string | null;
     searchQuery: string;
     network: Network;
+    timezone: string;
     t?: TranslationsT;
     dt?: TranslationsT['dashboard'];
     onExpand: (id: string) => void;

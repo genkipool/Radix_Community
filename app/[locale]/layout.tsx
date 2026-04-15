@@ -87,6 +87,12 @@ export default async function RootLayout({
             __html: `(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`,
           }}
         />
+        <Script
+          id="tz-strategy"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;var c=document.cookie.match(/(^|;\\s*)client-tz=([^;]+)/);if(!c||decodeURIComponent(c[2])!==z){document.cookie='client-tz='+encodeURIComponent(z)+';path=/;max-age=31536000';}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         <Providers locale={locale} dictionary={dictionary} theme={theme}>

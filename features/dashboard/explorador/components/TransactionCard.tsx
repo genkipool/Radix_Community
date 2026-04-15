@@ -15,9 +15,14 @@ import { resolveTransactionType } from '../utils/transactionUtils';
 /* ═══════ TRANSACTION CARD ═══════ */
 import { formatEntity } from '../../utils/entityUtils';
 
+import { useLanguage } from '@/context/LanguageContext';
 import { TransactionCardProps } from '../types';
 
-const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet' }: TransactionCardProps) => {
+const TransactionCard = ({ 
+    tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode,
+    timezone, network = 'mainnet' 
+}: TransactionCardProps) => {
+    const { language } = useLanguage();
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isVertical = columns >= 3;
     const isCompact = columns >= 5;
@@ -169,11 +174,11 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                             } gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
-                                {/* AQUÍ ESTÁ EL CAMBIO: suppressHydrationWarning añadido al div */}
-                                <div suppressHydrationWarning className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
-                                    {new Date(tx.confirmedAt).toLocaleString(undefined, {
+                                <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
+                                    {new Date(tx.confirmedAt).toLocaleString(language, {
                                         year: 'numeric', month: 'short', day: 'numeric',
-                                        hour: '2-digit', minute: '2-digit'
+                                        hour: '2-digit', minute: '2-digit',
+                                        timeZone: timezone
                                     })}
                                 </div>
                             </div>

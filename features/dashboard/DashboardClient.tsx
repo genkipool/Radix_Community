@@ -60,6 +60,7 @@ import { getGridClass, VALIDATOR_MODAL_THRESHOLD } from '@/constants/dashboard';
 
 
 export default function DashboardClient({
+  timezone,
   initialView = 'staking',
   initialNetwork,
   initialActiveTag = ['All'],
@@ -386,6 +387,7 @@ export default function DashboardClient({
           dt={dt}
           onExpand={expanded.handleExpandPost}
           onCopy={copyAddress}
+          timezone={timezone}
         />
       </div>
 
