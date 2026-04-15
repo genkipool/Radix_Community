@@ -544,6 +544,10 @@ export async function fetchFilteredTransactions(options: {
 
     const finalTxs = results.slice(0, limit);
     
+    if (finalTxs.length === 0) {
+        logger.warn({ tag, address, pagesConsulted: pageCount }, '[TransactionsService] NO TRANSACTIONS FOUND AFTER FILTERING');
+    }
+
     logger.info({ 
         tag, 
         limit, 

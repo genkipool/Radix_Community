@@ -143,8 +143,8 @@ async function fetchLocationData(ipOrHost: string): Promise<GeoData | null> {
             geoCache.set(ipOrHost, data);
             return data;
         }
-    } catch (_e) {
-        // Fallback or log
+    } catch (err) {
+        logger.warn({ ipOrHost, err }, '[fetchLocationData] Geolocation fetch failed');
     }
     return null;
 }
@@ -334,6 +334,10 @@ async function _doFetchValidators(network: "mainnet" | "stokenet" = "mainnet"): 
         rawCount: validatorsList.length,
         epoch: currentStatus.ledger_state.epoch 
     }, '[ValidatorsService] Raw validators fetched from REST API');
+
+    if (validatorsList.length === 0) {
+        logger.warn({ network, epoch: currentStatus.ledger_state.epoch }, '[ValidatorsService] EMPTY VALIDATOR LIST RETURNED BY GATEWAY');
+    }
 
     const currentEpoch = currentStatus.ledger_state.epoch;
     const validatorAddresses = validatorsList.map(v => v.address);

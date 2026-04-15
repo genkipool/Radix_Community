@@ -45,6 +45,10 @@ export async function GET(request: NextRequest) {
             result = await fetchRecentTransactions(cursor, limit, network);
         }
 
+        if (result.transactions.length === 0) {
+            logger.warn({ network, tag, address, cursor: !!cursor }, 'SERVED EMPTY TRANSACTIONS');
+        }
+
         logger.info({ 
             network, 
             count: result.transactions.length,

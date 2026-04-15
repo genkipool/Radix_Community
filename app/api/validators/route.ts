@@ -31,6 +31,10 @@ export async function GET(request: Request) {
     try {
         const { validators, networkStats } = await fetchCachedValidators(network);
         
+        if (validators.length === 0) {
+            logger.warn({ network }, 'SERVED EMPTY VALIDATORS');
+        }
+
         logger.info({ 
             network, 
             count: validators.length,
