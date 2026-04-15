@@ -50,11 +50,12 @@ const nextConfig: NextConfig = {
             // 'unsafe-inline' covers inline scripts/styles used for theme init.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.cloudflareinsights.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.cloudflareinsights.com https://vercel.live",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https:",
-              "connect-src 'self' https: https://cloudflareinsights.com",
+              "img-src 'self' data: https: https://vercel.com",
+              "connect-src 'self' https: https://cloudflareinsights.com https://vercel.live",
+              "frame-src https://vercel.live",
               "frame-ancestors 'none'",
             ].join('; '),
           },
