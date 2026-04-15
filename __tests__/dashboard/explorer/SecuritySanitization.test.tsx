@@ -59,7 +59,6 @@ describe('Security & Sanitization', () => {
     network: 'mainnet',
     index: 0,
     columns: 1,
-    timezone: 'UTC',
     t: en,
   };
 

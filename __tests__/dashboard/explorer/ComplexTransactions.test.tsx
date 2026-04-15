@@ -50,7 +50,6 @@ describe('Complex Transactions UI', () => {
         columns: 1,
         t: en,
         network: 'mainnet',
-        timezone: 'UTC',
     };
 
     it('identifies and displays a Staking transaction', () => {
