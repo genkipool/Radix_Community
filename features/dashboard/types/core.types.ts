@@ -15,6 +15,7 @@ export type TranslationsT = Dictionary;
 
 /** All cookie-persisted initial values read by dashboard pages */
 export interface DashboardInitialProps {
+  timezone: string;
   initialView?: DashboardView;
   initialNetwork: Network;
   initialActiveTag?: string[];
