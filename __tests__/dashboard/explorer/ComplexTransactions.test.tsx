@@ -4,24 +4,24 @@ import { describe, it, expect, vi } from 'vitest';
 import { TransactionCard } from '@/features/dashboard/explorador/components/TransactionCard';
 import { type TransactionInfo } from '@/types/radix';
 import { type TransactionCardProps } from '@/features/dashboard/explorador/types/components.types';
-import { type TranslationsT } from '@/features/dashboard/types/core.types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { en } from '@/i18n/locales/en';
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
-  ArrowRight: () => <div data-testid="arrow-right" />,
-  ChevronDown: () => <div data-testid="chevron-down" />,
-  Clock: () => <div data-testid="clock" />,
-  Hash: () => <div data-testid="hash" />,
-  ExternalLink: () => <div data-testid="external-link" />,
-  AlertCircle: () => <div data-testid="alert-circle" />,
-  Copy: () => <div data-testid="copy" />,
-  Coins: () => <div data-testid="coins" />,
-  Box: () => <div data-testid="box" />,
-  Users: () => <div data-testid="users" />,
-  Mail: () => <div data-testid="mail" />,
-  Check: () => <div data-testid="check" />,
+    ArrowRight: () => <div data-testid="arrow-right" />,
+    ChevronDown: () => <div data-testid="chevron-down" />,
+    Clock: () => <div data-testid="clock" />,
+    Hash: () => <div data-testid="hash" />,
+    ExternalLink: () => <div data-testid="external-link" />,
+    AlertCircle: () => <div data-testid="alert-circle" />,
+    Copy: () => <div data-testid="copy" />,
+    Coins: () => <div data-testid="coins" />,
+    Box: () => <div data-testid="box" />,
+    Users: () => <div data-testid="users" />,
+    Mail: () => <div data-testid="mail" />,
+    Check: () => <div data-testid="check" />,
 }));
 
 const queryClient = new QueryClient({
@@ -42,33 +42,13 @@ describe('Complex Transactions UI', () => {
         manifestClasses,
     });
 
-    const t = {
-        dashboard: {
-            transactions: {
-                success: 'Success',
-                validator_stake: 'Stake',
-                validator_unstake: 'Unstake',
-                claim_xrd: 'Claim',
-                transfer: 'Transfer',
-                access_controller: 'Access',
-                account_update: 'Update',
-                other: 'Other',
-                accounts: 'Accounts',
-                components: 'Components',
-                date_time: 'Date',
-                epoch_round: 'Epoch',
-                fee_paid: 'Fee'
-            }
-        }
-    } as any as TranslationsT;
-
     const baseProps: Partial<TransactionCardProps> = {
         isExpanded: false,
         onExpand: vi.fn(),
         onCopy: vi.fn(),
         copiedAddress: null,
         columns: 1,
-        t,
+        t: en,
         network: 'mainnet',
         timezone: 'UTC',
     };
@@ -77,7 +57,7 @@ describe('Complex Transactions UI', () => {
         const tx = mockTx('tx_stake', ['ValidatorStake']);
         render(
             <QueryClientProvider client={queryClient}>
-                <LanguageProvider language="en" dictionary={t}>
+                <LanguageProvider language="en" dictionary={en}>
                     <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
                 </LanguageProvider>
             </QueryClientProvider>
@@ -89,7 +69,7 @@ describe('Complex Transactions UI', () => {
         const tx = mockTx('tx_unstake', ['ValidatorUnstake']);
         render(
             <QueryClientProvider client={queryClient}>
-                <LanguageProvider language="en" dictionary={t}>
+                <LanguageProvider language="en" dictionary={en}>
                     <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
                 </LanguageProvider>
             </QueryClientProvider>
@@ -101,7 +81,7 @@ describe('Complex Transactions UI', () => {
         const tx = mockTx('tx_claim', ['ValidatorClaim']);
         render(
             <QueryClientProvider client={queryClient}>
-                <LanguageProvider language="en" dictionary={t}>
+                <LanguageProvider language="en" dictionary={en}>
                     <TransactionCard {...(baseProps as TransactionCardProps)} tx={tx} />
                 </LanguageProvider>
             </QueryClientProvider>

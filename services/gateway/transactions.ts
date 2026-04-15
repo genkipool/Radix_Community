@@ -342,10 +342,18 @@ export async function fetchRecentTransactions(
             }),
         );
 
+        const transactions = (res.items || []).map(item => parseTransactionItem(item as unknown as GatewayItem, undefined, network));
+        
+        logger.info({ 
+            network, 
+            count: transactions.length, 
+            hasMore: !!res.next_cursor 
+        }, '[TransactionsService] Recent transactions fetched');
+
         return {
-        transactions: (res.items || []).map(item => parseTransactionItem(item as unknown as GatewayItem, undefined, network)),
-        nextCursor:   res.next_cursor || undefined,
-    };
+            transactions,
+            nextCursor:   res.next_cursor || undefined,
+        };
     } catch (error) {
         logger.error(
             { err: error },
@@ -456,6 +464,13 @@ export async function searchTransactionsByAddress(
         const transactions = (res.items || []).map((item) =>
             parseTransactionItem(item as unknown as GatewayItem, isValidator ? address : undefined, network),
         );
+
+        logger.info({ 
+            network, 
+            address: address.slice(0, 16) + '...', 
+            count: transactions.length 
+        }, '[TransactionsService] Transactions by address fetched');
+
         return { transactions, nextCursor: res.next_cursor || undefined };
     } catch (error) {
         logger.error(
@@ -527,8 +542,17 @@ export async function fetchFilteredTransactions(options: {
         currentCursor = page.nextCursor;
     }
 
+    const finalTxs = results.slice(0, limit);
+    
+    logger.info({ 
+        tag, 
+        limit, 
+        actualCount: finalTxs.length, 
+        pagesConsulted: pageCount 
+    }, '[TransactionsService] Filtered transactions final result');
+
     return {
-        transactions: results.slice(0, limit),
+        transactions: finalTxs,
         nextCursor:
             results.length >= limit
                 ? currentCursor

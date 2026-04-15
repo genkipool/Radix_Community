@@ -21,7 +21,7 @@ const fetchCachedValidators = (network: 'mainnet' | 'stokenet') =>
             };
         },
         [`validators-${network}`],
-        { revalidate: 60, tags: ['validators', `validators-${network}`] },
+        { revalidate: 3600, tags: ['validators', `validators-${network}`] },
     )();
 
 export async function GET(request: Request) {
@@ -30,6 +30,13 @@ export async function GET(request: Request) {
 
     try {
         const { validators, networkStats } = await fetchCachedValidators(network);
+        
+        logger.info({ 
+            network, 
+            count: validators.length,
+            epoch: networkStats?.epoch 
+        }, 'Serving validators data');
+
         return NextResponse.json(
             { validators, networkStats },
             {

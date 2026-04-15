@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TransactionCard } from '@/features/dashboard/explorador/components/TransactionCard';
 import { type TransactionCardProps } from '@/features/dashboard/explorador/types/components.types';
-import { type TranslationsT } from '@/features/dashboard/types/core.types';
 import { type TransactionInfo } from '@/types/radix';
 
 // Mock Lucide icons
@@ -24,6 +23,7 @@ vi.mock('lucide-react', () => ({
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { en } from '@/i18n/locales/en';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
 
 describe('Security & Sanitization', () => {
   const maliciousInput = '<script>alert("xss")</script><img src=x onerror=alert(1)>';
-  
+
   const mockTx: TransactionInfo = {
     intentHash: 'tx_security_test',
     status: 'Confirmed',
@@ -60,22 +60,18 @@ describe('Security & Sanitization', () => {
     index: 0,
     columns: 1,
     timezone: 'UTC',
-    t: {
-        dashboard: {
-            transactions: {}
-        }
-    } as any as TranslationsT,
+    t: en,
   };
 
   it('renders malicious messages as literal text and does not execute scripts', () => {
     render(
       <QueryClientProvider client={queryClient}>
-        <LanguageProvider language="en" dictionary={baseProps.t}>
+        <LanguageProvider language="en" dictionary={en}>
           <TransactionCard {...baseProps} />
         </LanguageProvider>
       </QueryClientProvider>
     );
-    
+
     // The text should be rendered literally, meaning the tags are escaped by React
     const messageElement = screen.getByText(maliciousInput);
     expect(messageElement).toBeInTheDocument();

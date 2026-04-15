@@ -19,6 +19,10 @@ export async function GET(request: NextRequest) {
     const end              = searchParams.get('end')   || undefined;
     const tzOffsetMinutes  = parseInt(searchParams.get('tz') || '0', 10);
 
+    logger.info({ 
+        network, tag, address: address || 'All', cursor: !!cursor 
+    }, 'Incoming transaction request');
+
     try {
         let result;
 
@@ -40,6 +44,12 @@ export async function GET(request: NextRequest) {
         } else {
             result = await fetchRecentTransactions(cursor, limit, network);
         }
+
+        logger.info({ 
+            network, 
+            count: result.transactions.length,
+            hasMore: !!result.nextCursor 
+        }, 'Serving transaction data');
 
         return NextResponse.json(result, {
             headers: {

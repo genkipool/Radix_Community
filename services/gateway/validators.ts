@@ -233,10 +233,16 @@ export async function fetchValidatorsWithLedger(
     const entry = _validatorsPayloadCache.get(network);
 
     // 1. Serve cached result if still fresh
-    if (entry?.result && entry.expiry > now) return entry.result;
+    if (entry?.result && entry.expiry > now) {
+        logger.info({ network, count: entry.result.validators.length }, '[ValidatorsService] Serving from in-memory cache');
+        return entry.result;
+    }
 
     // 2. Deduplicate: if another request started the fetch, wait for it
-    if (entry?.inflight) return entry.inflight;
+    if (entry?.inflight) {
+        logger.info({ network }, '[ValidatorsService] Piggybacking on in-flight request');
+        return entry.inflight;
+    }
 
     // 3. Start a new upstream fetch and share its Promise
     const inflight: Promise<ValidatorsFetchResult> = _doFetchValidators(network)
@@ -322,6 +328,12 @@ async function _doFetchValidators(network: "mainnet" | "stokenet" = "mainnet"): 
         fetchAllValidatorsRest(),
         withRetry(() => gateway.status.getCurrent()),
     ]);
+
+    logger.info({ 
+        network, 
+        rawCount: validatorsList.length,
+        epoch: currentStatus.ledger_state.epoch 
+    }, '[ValidatorsService] Raw validators fetched from REST API');
 
     const currentEpoch = currentStatus.ledger_state.epoch;
     const validatorAddresses = validatorsList.map(v => v.address);
@@ -414,6 +426,12 @@ async function _doFetchValidators(network: "mainnet" | "stokenet" = "mainnet"): 
         const map = buildUptimeMap(snapshotResults[idx]);
         snapshotMaps.set(epoch, map);
     });
+
+    logger.info({ 
+        network, 
+        snapshotsCount: allSnapshots.length,
+        uptimeMapsCreated: snapshotMaps.size 
+    }, '[ValidatorsService] Uptime snapshots processed');
 
     // Latest Uptime (Total) is effectively the "now" snapshot
     const nowUptimeMap = snapshotMaps.get(null)!;
