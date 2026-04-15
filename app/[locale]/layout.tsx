@@ -101,10 +101,10 @@ export default async function RootLayout({
         <Analytics />
         <SpeedInsights />
         {/* Cloudflare Web Analytics */}
-        <Script 
-          defer 
-          src="https://static.cloudflareinsights.com/beacon.min.js" 
-          data-cf-beacon='{"token": "9cbce8ab0aa640c7ace5d004c13b8d06"}' 
+        <Script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "9cbce8ab0aa640c7ace5d004c13b8d06"}'
         />
       </body>
     </html>

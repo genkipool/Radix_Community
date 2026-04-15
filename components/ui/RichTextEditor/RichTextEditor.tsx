@@ -12,7 +12,7 @@ import {
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
 
 /* ─── Styles ─── */
-import './RichTextEditor.css';
+import './styles/RichTextEditor.css';
 
 export function RichTextEditor({
     value,

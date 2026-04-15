@@ -71,7 +71,6 @@ export interface TransactionCardProps {
     copiedAddress: string | null;
     t?: TranslationsT;
     readingMode?: boolean;
-    timezone: string;
     network?: Network;
 }
 
@@ -85,10 +84,6 @@ export interface TransactionDetailModalProps {
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;
-    direction: number;
-    setDirection: (direction: number) => void;
-    prevTxHash?: string;
-    nextTxHash?: string;
 }
 
 export interface TransactionTabsProps {

@@ -10,7 +10,7 @@ import { ForumReadingMode } from './components/ForumReadingMode';
 import { ForumPublishModal } from './components/ForumPublishModal';
 import { ForumHeroWidgets } from './components/hero/ForumHeroWidgets';
 import { ContentHero } from '@/components/layout/ContentHero';
-import '@/components/ui/RichTextEditor/RichTextEditor.css';
+import '@/components/ui/RichTextEditor/styles/RichTextEditor.css';
 
 function ForumContent() {
     const { 

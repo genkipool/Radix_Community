@@ -15,14 +15,9 @@ import { resolveTransactionType } from '../utils/transactionUtils';
 /* ═══════ TRANSACTION CARD ═══════ */
 import { formatEntity } from '../../utils/entityUtils';
 
-import { useLanguage } from '@/context/LanguageContext';
 import { TransactionCardProps } from '../types';
 
-const TransactionCard = ({ 
-    tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode,
-    timezone, network = 'mainnet' 
-}: TransactionCardProps) => {
-    const { language } = useLanguage();
+const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet' }: TransactionCardProps) => {
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isVertical = columns >= 3;
     const isCompact = columns >= 5;
@@ -46,19 +41,16 @@ const TransactionCard = ({
     // Middle truncation for hashes (Grid 2+)
     const truncateHash = (hash: string) => {
         if (!hash || columns <= 1) return hash;
-        if (columns >= 2 && columns <= 3) {
+        if (columns >= 2 && columns <= 5) {
             // Less truncation for lower-density grids
             return `${hash.slice(0, 10)}...${hash.slice(-10)}`;
-        }
-        if (columns === 4) {
-            // Further truncation for columns=4 since it becomes 2-columns on mobile (very tight)
-            return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
         }
         if (columns === 8) {
             // More truncation for the highest-density grid
             return `${hash.slice(0, 4)}...${hash.slice(-4)}`;
         }
-        // Default truncation for intermediate grids (5-7)
+        // Default truncation for intermediate grids (6-7)
+        if (hash.length <= 12) return hash;
         return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
     };
 
@@ -167,18 +159,13 @@ const TransactionCard = ({
                         </div>
 
                         {/* Stats Grid */}
-                        <div className={`grid ${columns >= 5 ? 'grid-cols-1' :
-                                columns === 4 ? 'grid-cols-1 sm:grid-cols-2' :
-                                    (columns === 2 || columns === 3) ? 'grid-cols-2' :
-                                        'grid-cols-2 sm:grid-cols-5'
-                            } gap-2 sm:gap-4 text-sm mt-3 items-center`}>
+                        <div className={`grid ${isCompact ? 'grid-cols-1' : (columns === 2 || isVertical) ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
-                                    {new Date(tx.confirmedAt).toLocaleString(language, {
+                                    {new Date(tx.confirmedAt).toLocaleString(undefined, {
                                         year: 'numeric', month: 'short', day: 'numeric',
-                                        hour: '2-digit', minute: '2-digit',
-                                        timeZone: timezone
+                                        hour: '2-digit', minute: '2-digit'
                                     })}
                                 </div>
                             </div>
@@ -192,19 +179,19 @@ const TransactionCard = ({
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Coins className="w-3 h-3" /> {tt.fee_paid || 'Fee Paid'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-base sm:text-lg'} font-bold text-[var(--color-text-main)] truncate`}>{tx.feePaid.toString()} XRD</div>
                             </div>
-                            <div className="flex flex-col justify-start gap-1 text-left mt-2 sm:mt-0">
-                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-start gap-1">
-                                    <Users className="w-3 h-3 shrink-0" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
+                            <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0">
+                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
+                                    <Users className="w-3 h-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
                                 </div>
-                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-start gap-1">
-                                    <Box className="w-3 h-3 shrink-0" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
+                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
+                                    <Box className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
                                 </div>
                             </div>
                         </div>
 
                         {/* Labels Footer (Grid 2+) */}
                         {columns >= 2 && (
-                            <div className={`flex ${columns >= 7 ? 'flex-col items-start' : 'flex-wrap items-center'} gap-2 mt-4 pt-3 border-t border-[var(--color-card-border)]/50`}>
+                            <div className={`flex ${columns >= 7 ? 'flex-col items-start' : 'items-center'} gap-2 mt-4 pt-3 border-t border-[var(--color-card-border)]/50`}>
                                 <StatusTypeLabels />
                             </div>
                         )}

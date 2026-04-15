@@ -22,18 +22,18 @@ import type { TranslationsT } from '@/features/dashboard/types';
 export function parseManifest(manifest: string | undefined): ParsedManifest {
   const empty: ParsedManifest = {
     lockFeeAmount: null, lockFeeAccount: null,
-    mainAction: null,    nftId: null,
+    mainAction: null, nftId: null,
     badgeResource: null, badgeAmount: null, badgeOrigin: null,
-    oracleUpdates: [],   candiesMatch: null,
+    oracleUpdates: [], candiesMatch: null,
   };
   if (!manifest) return empty;
 
-  const lockFeeMatch        = manifest.match(/\"lock_fee\"[\s\S]*?Decimal\("([\d.]+)"\)/i);
+  const lockFeeMatch = manifest.match(/\"lock_fee\"[\s\S]*?Decimal\("([\d.]+)"\)/i);
   const lockFeeAccountMatch = manifest.match(/Address\("(account_[a-z0-9]+)"\)[\s\S]*?"lock_fee"/i);
-  const methodCallMatch     = manifest.match(/CallMethod[\s\S]*?"((?!lock_fee|deposit_batch|deposit)[a-z_]+)"\s*\)/i);
-  const nftIdMatch          = manifest.match(/NonFungibleLocalId\("#(\d+)#"\)/i);
-  const proofMatch          = manifest.match(/"create_proof_of_amount"[\s\S]*?Address\("(resource_[a-z0-9]+)"\)[\s\S]*?Decimal\("([\d.]+)"\)/i);
-  const badgeOriginMatch    = manifest.match(/Address\("([a-z0-9_]+)"\)[\s\S]*?"create_proof_of_amount"/i);
+  const methodCallMatch = manifest.match(/CallMethod[\s\S]*?"((?!lock_fee|deposit_batch|deposit)[a-z_]+)"\s*\)/i);
+  const nftIdMatch = manifest.match(/NonFungibleLocalId\("#(\d+)#"\)/i);
+  const proofMatch = manifest.match(/"create_proof_of_amount"[\s\S]*?Address\("(resource_[a-z0-9]+)"\)[\s\S]*?Decimal\("([\d.]+)"\)/i);
+  const badgeOriginMatch = manifest.match(/Address\("([a-z0-9_]+)"\)[\s\S]*?"create_proof_of_amount"/i);
 
   // ── Oracle: set_price_batch ──────────────────────────────
   const oracleUpdates: OracleUpdate[] = [];
@@ -54,13 +54,13 @@ export function parseManifest(manifest: string | undefined): ParsedManifest {
   );
 
   return {
-    lockFeeAmount:  lockFeeMatch?.[1]        ?? null,
-    lockFeeAccount: lockFeeAccountMatch?.[1]  ?? null,
-    mainAction:     methodCallMatch?.[1]      ?? null,
-    nftId:          nftIdMatch?.[1]           ?? null,
-    badgeResource:  proofMatch?.[1]           ?? null,
-    badgeAmount:    proofMatch?.[2]           ?? null,
-    badgeOrigin:    badgeOriginMatch?.[1]     ?? null,
+    lockFeeAmount: lockFeeMatch?.[1] ?? null,
+    lockFeeAccount: lockFeeAccountMatch?.[1] ?? null,
+    mainAction: methodCallMatch?.[1] ?? null,
+    nftId: nftIdMatch?.[1] ?? null,
+    badgeResource: proofMatch?.[1] ?? null,
+    badgeAmount: proofMatch?.[2] ?? null,
+    badgeOrigin: badgeOriginMatch?.[1] ?? null,
     oracleUpdates,
     candiesMatch,
   };
@@ -83,10 +83,10 @@ export function resolveAirdropData(
   );
   return {
     component: candiesMatch[1],
-    eventId:   candiesMatch[2],
-    account:   candiesMatch[3],
-    amount:    candiesMatch[4],
-    resource:  deposit?.resource_address ?? null,
+    eventId: candiesMatch[2],
+    account: candiesMatch[3],
+    amount: candiesMatch[4],
+    resource: deposit?.resource_address ?? null,
   };
 }
 
@@ -102,11 +102,11 @@ export function classifySource(
   tt?: TranslationsT['dashboard']['transactions'],
 ): SourceStyle {
   const dict = tt || ({} as TranslationsT['dashboard']['transactions']);
-  const hasCM           = senders.some(s => isConsensusManager(s.entity_address));
+  const hasCM = senders.some(s => isConsensusManager(s.entity_address));
   const allUserAccounts = senders.length > 0 && senders.every(s => sanitizeText(s.entity_address).startsWith('account_'));
 
-  if (senders.length === 0) return { method: String(dict.method_minted         || 'Minted / Generated'),    title: String(dict.method_minted_title          || ''), color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30' };
-  if (hasCM)                return { method: String(dict.method_network        || 'Network / Protocol'),    title: String(dict.method_network_title         || ''), color: 'text-blue-700 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30' };
-  if (allUserAccounts)      return { method: String(dict.method_user           || 'User Transfer'),         title: String(dict.method_user_title            || ''), color: 'text-amber-700 dark:text-amber-400',   bg: 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30' };
-  return                           { method: String(dict.method_smart_contract || 'Smart Contract / Pool'), title: String(dict.method_smart_contract_title  || ''), color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' };
+  if (senders.length === 0) return { method: String(dict.method_minted || 'Minted / Generated'), title: String(dict.method_minted_title || ''), color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30' };
+  if (hasCM) return { method: String(dict.method_network || 'Network / Protocol'), title: String(dict.method_network_title || ''), color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30' };
+  if (allUserAccounts) return { method: String(dict.method_user || 'User Transfer'), title: String(dict.method_user_title || ''), color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30' };
+  return { method: String(dict.method_smart_contract || 'Smart Contract / Pool'), title: String(dict.method_smart_contract_title || ''), color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' };
 }
