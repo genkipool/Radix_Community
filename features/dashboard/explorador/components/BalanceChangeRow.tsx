@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
@@ -9,6 +8,7 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { TokenBadge } from '@/components/ui/TokenBadge';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { getMetaValue } from '../utils/metadataUtils';
 import {
     PanelTabBar,
@@ -67,10 +67,18 @@ function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress,
                         {activeTab === 'summary' && (
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
-                                    {iconUrl
-                                        ? <img src={iconUrl} alt={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                                        : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-xs border border-[var(--color-primary)]/20 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
-                                    }
+                                    {iconUrl ? (
+                                        <SafeImage
+                                            src={iconUrl}
+                                            alt={name}
+                                            fallbackName={symbol || name}
+                                            className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]"
+                                        />
+                                    ) : (
+                                        <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-xs border border-[var(--color-primary)]/20 shrink-0">
+                                            {(symbol || name).slice(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</span>
@@ -184,10 +192,18 @@ const BalanceChangeRow = ({
                 title={titleStr} onClick={handleCardClick}
             >
                 <div className="flex items-center gap-3 min-w-0">
-                    {iconUrl
-                        ? <img src={iconUrl} alt={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                        : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
-                    }
+                    {iconUrl ? (
+                        <SafeImage
+                            src={iconUrl}
+                            alt={symbol || name}
+                            fallbackName={symbol || name}
+                            className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">
+                            {(symbol || name).slice(0, 2).toUpperCase()}
+                        </div>
+                    )}
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
                             <div className={`font-bold text-sm sm:text-base text-[var(--color-text-main)] ${!isFee ? 'group-hover:text-[var(--color-primary)]' : ''} transition-colors truncate min-w-0`}>{name}</div>

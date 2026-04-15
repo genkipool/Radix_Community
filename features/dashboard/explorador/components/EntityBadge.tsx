@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useState } from 'react';
@@ -12,6 +11,7 @@ import {
     getEntityType,
 } from '@/features/dashboard/hooks/useEntityData';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
+import { SafeImage } from '@/components/ui/SafeImage';
 
 /* ─────────────────────────────────────────
    ConsensusManagerInfoCard
@@ -82,7 +82,12 @@ export function AddressDisplay({
             </span>
             <div className="flex items-center gap-2">
                 {isValidator && entityIcon && (
-                    <img src={entityIcon} alt={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    <SafeImage
+                        src={entityIcon}
+                        alt={entityName || address}
+                        fallbackName={entityName || address}
+                        className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover"
+                    />
                 )}
                 {isValidator && !entityIcon && entityName && (
                     <div className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-[var(--color-primary)]/10 flex items-center justify-center text-[8px] font-bold text-[var(--color-primary)]">
@@ -152,11 +157,11 @@ export function EntityBadge({
         >
             <div className="flex items-center gap-2 min-w-0">
                 {iconUrl && (
-                    <img
+                    <SafeImage
                         src={iconUrl}
                         alt={entityName || 'Token'}
+                        fallbackName={entityName || clean}
                         className="w-6 h-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
-                        onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                 )}
                 <span className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border ${bg} ${color} shrink-0`}>
