@@ -64,7 +64,7 @@ describe('Security & Sanitization', () => {
         dashboard: {
             transactions: {}
         }
-    } as unknown as TranslationsT,
+    } as any as TranslationsT,
   };
 
   it('renders malicious messages as literal text and does not execute scripts', () => {

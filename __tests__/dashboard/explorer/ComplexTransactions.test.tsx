@@ -60,7 +60,7 @@ describe('Complex Transactions UI', () => {
                 fee_paid: 'Fee'
             }
         }
-    } as unknown as TranslationsT;
+    } as any as TranslationsT;
 
     const baseProps: Partial<TransactionCardProps> = {
         isExpanded: false,
