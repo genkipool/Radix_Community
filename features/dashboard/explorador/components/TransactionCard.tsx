@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Clock, Copy, Coins, Box, Users, Mail, Check
@@ -67,7 +67,13 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     // Show immediately even before expand
     const immediateTypeFallback = resolveTransactionType(immediateClasses, [], tt);
     const immediateType = (isExpanded ? transactionType : immediateTypeFallback) || resolveTransactionType(immediateClasses, [], tt);
+
     const [downTime, setDownTime] = useState(0);
+
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Common Label Styles to ensure Status & Type match
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
@@ -162,19 +168,18 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         </div>
 
                         {/* Stats Grid */}
-                        <div className={`grid ${
-                            columns >= 5 ? 'grid-cols-1' : 
-                            columns === 4 ? 'grid-cols-1 sm:grid-cols-2' : 
-                            (columns === 2 || columns === 3) ? 'grid-cols-2' : 
-                            'grid-cols-2 sm:grid-cols-5'
-                        } gap-2 sm:gap-4 text-sm mt-3 items-center`}>
+                        <div className={`grid ${columns >= 5 ? 'grid-cols-1' :
+                            columns === 4 ? 'grid-cols-1 sm:grid-cols-2' :
+                                (columns === 2 || columns === 3) ? 'grid-cols-2' :
+                                    'grid-cols-2 sm:grid-cols-5'
+                            } gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
-                                    {new Date(tx.confirmedAt).toLocaleString(undefined, {
+                                    {isMounted ? new Date(tx.confirmedAt).toLocaleString(undefined, {
                                         year: 'numeric', month: 'short', day: 'numeric',
                                         hour: '2-digit', minute: '2-digit'
-                                    })}
+                                    }) : '...'}
                                 </div>
                             </div>
                             <div>
