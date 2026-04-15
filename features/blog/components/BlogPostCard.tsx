@@ -65,12 +65,12 @@ export function BlogPostCard({
                 className={`relative w-full overflow-hidden bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 flex-shrink-0 ${index === 0 ? 'h-56 md:h-72' : isRowSpan ? 'min-h-[12rem]' : 'h-48'}`}
             >
                 <div className="absolute inset-0 z-10">
-                    <Image 
-                        src={post.image} 
-                        alt={post.title} 
-                        fill 
-                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                        sizes="(max-width: 768px) 100vw, 50vw" 
+                    <Image
+                        src={post.image}
+                        alt={post.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                 </div>
             </div>
@@ -81,7 +81,7 @@ export function BlogPostCard({
                     <HighlightText text={post.title} query={searchQuery} />
                 </h3>
 
-                <motion.div 
+                <motion.div
                     initial={false}
                     animate={{ height: isExpanded ? 'auto' : 88, opacity: isExpanded ? 1 : 0.9 }}
                     transition={{ duration: 0.4, ease: 'easeOut', type: 'tween' }}

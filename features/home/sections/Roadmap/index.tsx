@@ -69,7 +69,7 @@ export default function Roadmap({ t }: BaseSectionProps) {
                       const isDone = meta.milestoneDone[i];
                       return (
                         <div key={i} className="relative flex items-start">
-                          <div className="absolute -left-6 h-5 flex items-center justify-center">
+                          <div className="absolute -left-6 w-4 h-5 flex items-center justify-center bg-[var(--color-bg)] z-10">
                             {isDone ? (
                               <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                             ) : (

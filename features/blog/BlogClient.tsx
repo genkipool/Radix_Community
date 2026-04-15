@@ -45,7 +45,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
 
   // Handlers
   const handleClose = () => { stopSpeech(); setSelectedPostId(null); };
-  
+
   const handleExpandPost = (postId: number) => {
     if (readingMode) {
       setSelectedPostId(postId.toString());
