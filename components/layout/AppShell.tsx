@@ -5,9 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import dynamic from 'next/dynamic';
-import { ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { subscribeToEpochChange } from '@/services/liveDataStore';
+import { ReactNode } from 'react';
 import { useScrollRestoration } from '@/hooks/useScrollRestoration';
 
 const UnderConstructionModal = dynamic(() => import('@/components/shared/UnderConstructionModal').then(mod => mod.UnderConstructionModal), { ssr: false });
@@ -23,7 +21,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     setShowInstitutionalPilot
   } = useLayout();
   const { t, language } = useLanguage();
-  const router = useRouter();
 
   useScrollRestoration();
 
