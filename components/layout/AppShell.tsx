@@ -27,11 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useScrollRestoration();
 
-  useEffect(() => {
-    return subscribeToEpochChange(() => {
-      router.refresh();
-    });
-  }, [router]);
+
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-primary)]/30 relative" style={{ overflowX: 'clip' }}>
