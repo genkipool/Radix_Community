@@ -164,10 +164,8 @@ async function init(): Promise<void> {
     if (initializing || initialized) return;
     initializing = true;
 
-    const MAX_INIT_RETRIES = 5;
     let attempt = 0;
-
-    while (attempt < MAX_INIT_RETRIES && !initialized) {
+    while (!initialized) {
         try {
             const status = await gPost('/status/gateway-status', {}) as { ledger_state: { epoch: number; state_version: number } };
             const currentEpoch: number = status.ledger_state.epoch;
@@ -214,16 +212,25 @@ async function init(): Promise<void> {
             lastStateVersion = currentStateVersion;
             initialized = true;
             subscribers.forEach(s => s());
-            break; // success — exit retry loop
+            break; // success — exit loop
 
         } catch (error) {
             attempt++;
             const message = error instanceof Error ? error.message : String(error);
-            logger.error({ err: error, attempt, maxRetries: MAX_INIT_RETRIES }, '[LiveStore] init error (attempt %d/%d): %s', attempt, MAX_INIT_RETRIES, message);
-            if (attempt < MAX_INIT_RETRIES) {
-                // Wait before retry: 2s, 4s, 8s, 16s
-                await new Promise(r => setTimeout(r, Math.min(2_000 * 2 ** (attempt - 1), 16_000)));
+            
+            // Log as error for the first 5, then as warning to reduce noise but stay active
+            if (attempt <= 5) {
+                logger.error({ err: error, attempt }, '[LiveStore] init error (attempt %d/5): %s', attempt, message);
+            } else {
+                console.warn(`[LiveStore] Persistent init failure (attempt ${attempt}). Retrying in 60s...`, message);
             }
+
+            // Exponential backoff: 2s, 4s, 8s, 16s, 32s, 60s... (capped at 60s)
+            const delay = attempt <= 5 
+                ? Math.min(2_000 * 2 ** (attempt - 1), 60_000)
+                : 60_000;
+            
+            await new Promise(r => setTimeout(r, delay));
         }
     }
 
