@@ -81,7 +81,7 @@ export const DashboardCardGrid = ({
             ))
             : filteredTxs.map((tx, i) => (
               <TransactionCard
-                key={tx.intentHash + i}
+                key={tx.intentHash}
                 tx={tx}
                 index={i}
                 isExpanded={expandedPosts.has(tx.intentHash) && !readingMode}

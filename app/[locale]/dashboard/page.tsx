@@ -11,7 +11,8 @@ import {
 import type { TransactionDetails } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
 import DashboardClient from '@/features/dashboard/DashboardClient';
-import { entityKeys, extractEntityMeta } from '@/features/dashboard/hooks/useEntityData';
+import { entityKeys, extractEntityMeta } from '@/features/dashboard/utils/entityCache';
+import { getNetworkCookieKey } from '@/features/dashboard/utils/cookieUtils';
 import { makeQueryClient } from '@/lib/queryClient';
 import logger from '@/lib/logger';
 import { validateTxHash } from '@/utils/apiValidation';
@@ -52,8 +53,9 @@ function makeCookieReader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
     return isNaN(n) ? fb : n;
   };
   const bool = (name: string) => get(name) === 'true';
-  const ids = (name: string) => {
-    const raw = decoded(name);
+  const ids = (name: string, network?: string) => {
+    const key = network ? getNetworkCookieKey(name, network) : name;
+    const raw = decoded(key);
     return raw ? raw.split(',').filter(Boolean) : [];
   };
   const sort = (name: string): SortMode => {
@@ -110,9 +112,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // If a validator modal is open (restored from cookie), prefetch its stake
   // history so SSR and first client render have identical data — no hydration
   // mismatch and no spinner flash on reload.
-  const openValidatorId = c.ids(COOKIE_KEYS.expandedValidators)[0] ?? null;
+  const openValidatorId = c.ids(COOKIE_KEYS.expandedValidators, network)[0] ?? null;
   const txid = params.tx ? validateTxHash(params.tx) : null;
-  const initialExpandedTxs = txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs);
+  const initialExpandedTxs = txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network);
 
   try {
     await Promise.all([
@@ -226,8 +228,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialTxReadingMode={c.bool(COOKIE_KEYS.txReadingMode)}
         initialValAutoCollapse={c.bool(COOKIE_KEYS.valAutoCollapse)}
         initialTxAutoCollapse={c.bool(COOKIE_KEYS.txAutoCollapse)}
-        initialExpandedValidators={c.ids(COOKIE_KEYS.expandedValidators)}
-        initialExpandedTxs={txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs)}
+        initialExpandedValidators={c.ids(COOKIE_KEYS.expandedValidators, network)}
+        initialExpandedTxs={txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network)}
         initialSearchQuery={txid ?? ''}
         randomSeed={randomSeed}
       />

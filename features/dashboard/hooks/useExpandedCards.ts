@@ -17,6 +17,7 @@ import type { Validator } from '@/types/radix';
 import type { TransactionInfo } from '@/types/radix';
 import { COOKIE_KEYS } from '@/constants/dashboard';
 import { setCookie } from '@/utils/cookies';
+import { getNetworkCookieKey } from '../utils/cookieUtils';
 
 const EXPANDED_CARDS_MAX_AGE = 604800; // 7 days
 
@@ -28,6 +29,7 @@ import { type UseExpandedCardsOptions } from '../types';
  * and shared state for reading mode.
  */
 export function useExpandedCards({
+  network,
   initialExpandedValidators,
   initialExpandedTxs,
   valColumns,
@@ -41,12 +43,14 @@ export function useExpandedCards({
 
   // ── Cookie sync ──────────────────────────────────────────────────
   useEffect(() => {
-    setCookie(COOKIE_KEYS.expandedValidators, Array.from(expandedValidators).join(','), EXPANDED_CARDS_MAX_AGE);
-  }, [expandedValidators]);
+    const key = getNetworkCookieKey(COOKIE_KEYS.expandedValidators, network);
+    setCookie(key, Array.from(expandedValidators).join(','), EXPANDED_CARDS_MAX_AGE);
+  }, [expandedValidators, network]);
 
   useEffect(() => {
-    setCookie(COOKIE_KEYS.expandedTxs, Array.from(expandedTxs).join(','), EXPANDED_CARDS_MAX_AGE);
-  }, [expandedTxs]);
+    const key = getNetworkCookieKey(COOKIE_KEYS.expandedTxs, network);
+    setCookie(key, Array.from(expandedTxs).join(','), EXPANDED_CARDS_MAX_AGE);
+  }, [expandedTxs, network]);
 
   // ── Auto-collapse on dense grid ──────────────────────────────────
   useEffect(() => {

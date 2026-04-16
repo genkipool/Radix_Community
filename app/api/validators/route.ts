@@ -36,9 +36,9 @@ export async function GET(request: Request) {
         const message = error instanceof Error ? error.message : String(error);
         logger.error({ err: error }, 'Validators API error: %s', message);
         return NextResponse.json(
-            { validators: [], networkStats: null, error: message },
+            { error: message },
             { 
-                status: 200, // Return 200 to avoid breaking UI, but NO CACHE
+                status: 500,
                 headers: { 'Cache-Control': 'no-store, max-age=0' } 
             },
         );

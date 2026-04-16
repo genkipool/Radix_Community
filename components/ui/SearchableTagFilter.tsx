@@ -106,6 +106,8 @@ export function SearchableTagFilter({
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
                                 <input
+                                    id="tag-filter-input"
+                                    name="tag-filter"
                                     type="text"
                                     autoFocus
                                     placeholder={placeholder}

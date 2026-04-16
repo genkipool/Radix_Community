@@ -189,6 +189,8 @@ export default function InstitutionalPilotModal({
                       </span>
                     </label>
                     <input
+                      id="pilot-email"
+                      name="email"
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
@@ -211,6 +213,8 @@ export default function InstitutionalPilotModal({
                     </label>
                     <textarea
                       ref={textareaRef}
+                      id="pilot-message"
+                      name="message"
                       value={message}
                       onChange={e => {
                         if (e.target.value.length <= MAX + 20) setMessage(e.target.value);

@@ -139,6 +139,7 @@ export default function DashboardClient({
 
   /* ── Expanded cards ──────────────────────────────────────── */
   const expanded = useExpandedCards({
+    network: deferredNetwork,
     initialExpandedValidators,
     initialExpandedTxs,
     valColumns: prefs.valColumns,
@@ -373,6 +374,7 @@ export default function DashboardClient({
           dt={dt}
         />
 
+        <div className="w-full flex-1 min-w-0 min-h-screen">
         {/* ── Card grid + empty states ── */}
         <DashboardCardGrid
           activeView={activeView}
@@ -397,8 +399,9 @@ export default function DashboardClient({
           locale={language}
         />
       </div>
+    </div>
 
-      {/* ── Modals (reading-mode) ── */}
+    {/* ── Modals (reading-mode) ── */}
       <DashboardModals
         activeView={activeView}
         readingMode={readingMode}

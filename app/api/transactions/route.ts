@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
         const message = error instanceof Error ? error.message : String(error);
         logger.error({ err: error }, 'Transaction API error: %s', message);
         return NextResponse.json(
-            { transactions: [], nextCursor: undefined, error: message },
+            { error: message },
             { 
-                status: 200, // Return 200 for UI stability but with no-store
+                status: 500,
                 headers: { 'Cache-Control': 'no-store, max-age=0' } 
             },
         );

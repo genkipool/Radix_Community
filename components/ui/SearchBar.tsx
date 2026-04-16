@@ -13,6 +13,7 @@ interface SearchBarProps {
      */
     variant?: 'default' | 'sidebar';
     className?: string;
+    id?: string;
 }
 
 export function SearchBar({
@@ -22,6 +23,7 @@ export function SearchBar({
     debounceMs = 150,
     variant = 'default',
     className = '',
+    id = 'global-search',
 }: SearchBarProps) {
     const [localValue, setLocalValue] = useState(value);
     const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -51,6 +53,8 @@ export function SearchBar({
                     style={{ color: 'var(--color-text-muted)' }}
                 />
                 <input
+                    id={id}
+                    name="search"
                     type="text"
                     className="w-full pl-10 pr-9 py-2.5 rounded-xl text-sm focus:outline-none transition-all font-medium"
                     style={{
@@ -84,6 +88,8 @@ export function SearchBar({
                 <div className="relative flex items-center px-6 bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-card-border)] rounded-2xl shadow-sm transition-all duration-300">
                     <Search className="w-5 h-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
                     <input
+                        id={id}
+                        name="search"
                         type="text"
                         value={localValue}
                         onChange={e => handleChange(e.target.value)}

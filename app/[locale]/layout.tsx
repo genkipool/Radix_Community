@@ -2,11 +2,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/app/globals.css';
-import '@/app/_themes/tokens.css';
-import '@/app/_themes/theme-radix.css';
-import '@/app/_themes/theme-oro.css';
-import '@/app/_themes/theme-radix-original.css';
-import '@/app/_themes/utilities.css';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { getDictionary, Locale } from '@/i18n/dictionaries';

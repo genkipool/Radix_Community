@@ -1,10 +1,17 @@
-@import "tailwindcss";
+/* ════════════════════════════════════════════════════════════════════════
+   GLOBAL STYLE MANIFEST
+   ════════════════════════════════════════════════════════════════════════
+   Standard CSS specifies that @import rules MUST appear at the absolute 
+   top of the document. We place local themes and utility manifests FIRST
+   to ensure they are registered before Tailwind's expansion, avoiding 
+   browser "ignored @import" warnings.
+   ──────────────────────────────────────────────────────────────────────── */
+
 @import "./_themes/tokens.css";
 @import "./_themes/theme-radix.css";
 @import "./_themes/theme-oro.css";
 @import "./_themes/theme-radix-original.css";
 @import "./_themes/utilities.css";
 
-html {
-  scrollbar-gutter: stable;
-}
+/* Tailwind core engine must come after local standard imports */
+@import "tailwindcss";

@@ -1,9 +1,10 @@
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text-main);
-  /* Reserve scrollbar space at all times so opening/closing a modal
-     (which toggles overflow:hidden) never shifts the page width */
-  scrollbar-gutter: stable;
 }
 
 /* Global Scrollbar - thin & elegant */

@@ -28,7 +28,7 @@ export function useScrollRestoration() {
     if (typeof window === 'undefined' || !pathname) return;
 
     const currentCorePath = getCorePath(pathname);
-    
+
     if (currentCorePath !== prevCorePathRef.current) {
       if (!window.location.hash) {
         window.scrollTo(0, 0); // Instant scroll, but perfectly hidden because it happens pre-paint
