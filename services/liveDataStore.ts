@@ -26,9 +26,39 @@ const logger = {
 let currentGateway = 'https://mainnet.radixdlt.com';
 
 export function setLiveNetwork(network: 'mainnet' | 'stokenet' = 'mainnet') {
-    currentGateway = network === 'stokenet'
+    const nextGateway = network === 'stokenet'
         ? 'https://stokenet.radixdlt.com'
         : 'https://mainnet.radixdlt.com';
+
+    if (nextGateway === currentGateway) return;
+
+    // 1. Update Target
+    currentGateway = nextGateway;
+
+    // 2. Clear Existing Interval
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+
+    // 3. Reset State & Flags
+    initialized = false;
+    initializing = false;
+    state = {
+        epochProposals: new Map(),
+        finalizedEpochs: [],
+        currentEpoch: null,
+    };
+    epochValidatorSet = [];
+    lastStateVersion = 0;
+
+    // 4. Notify subscribers of the "clean slate"
+    subscribers.forEach(s => s());
+    epochSubscribers.forEach(s => s());
+
+    // 5. If we have addresses being watched, re-initiate
+    // Note: in this app, init() will be triggered again by 
+    // registerAddressForPolling in ValidatorDetailComponents / LiveProposals.
 }
 
 async function gPost(path: string, body: object): Promise<unknown> {

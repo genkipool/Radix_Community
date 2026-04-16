@@ -28,6 +28,7 @@ import type { NetworkStats } from '@/types/radix';
 import type { DashboardInitialProps } from '@/features/dashboard/types';
 
 /* React Query hooks */
+import { setLiveNetwork } from '@/services/liveDataStore';
 import { useValidatorsQuery, useValidatorFilters } from './staking';
 import {
   useTransactionsQuery,
@@ -255,6 +256,11 @@ export default function DashboardClient({
     setShowFooter(true);
     return () => setShowFooter(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Synchronize LiveStore network targeting
+  useEffect(() => {
+    setLiveNetwork(deferredNetwork as 'mainnet' | 'stokenet');
+  }, [deferredNetwork]);
 
   /* ══════════════════════════ RENDER ════════════════════════ */
   return (
