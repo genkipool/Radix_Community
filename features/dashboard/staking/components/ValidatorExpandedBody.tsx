@@ -27,7 +27,7 @@ export const ValidatorExpandedBody = ({
 }: ValidatorExpandedBodyProps) => {
     const { language } = useLanguage();
     const { setShowUnderConstruction } = useLayout();
-    const dt   = t?.dashboard;
+    const dt = t?.dashboard;
     const live = useLiveProposals(validator);
 
 
@@ -75,12 +75,12 @@ export const ValidatorExpandedBody = ({
     const thirtyDayHistory = stakeHistory.length > 0 ? stakeHistory.slice(-30) : [];
 
     /* ── Shared block props ──────────────────── */
-    const profileProps    = { validator, dt, t, onCopy, copiedAddress };
+    const profileProps = { validator, dt, t, onCopy, copiedAddress };
     const delegationProps = { validator, dt };
-    const perfProps       = { validator, dt, live };
-    const evolutionProps  = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
-    const activityProps   = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
-    const historyProps    = { live, dt };
+    const perfProps = { validator, dt, live };
+    const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
+    const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
+    const historyProps = { live, dt };
 
     /* ── Layouts ─────────────────────────────── */
     const grid1 = (

@@ -56,8 +56,9 @@ export const AR = ({
 ───────────────────────────────────────── */
 export const VEB_STYLES = `
     /* LAYOUT */
-    .veb { background: var(--color-bg); border-top: 1px solid var(--color-card-border); }
-    .veb-main-grid { display: grid; grid-template-columns: 1fr; }
+    .veb { background: var(--color-bg); border-top: 1px solid var(--color-card-border); display: flex; flex-direction: column; min-height: 100%; height: 100%; }
+    .veb-main-grid { display: grid; grid-template-columns: 1fr; flex: 1; }
+    .veb-classic-grid { flex: 1; display: flex; flex-direction: column; }
     .veb-block { border-bottom: 1px solid var(--color-card-border); }
 
     /* GRID 1: Classic 3-column */

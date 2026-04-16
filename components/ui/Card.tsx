@@ -16,7 +16,8 @@ export function Card({ children, className = '', innerClassName = '', hoverEffec
             {...props}
         >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,var(--color-primary)_0%,transparent_100%)] opacity-[0.03] pointer-events-none" />
-            <div className={`relative z-10 ${innerClassName}`}>{children}</div>
+            <div className={`relative z-10 w-full h-full ${innerClassName}`}>{children}</div>
+
         </motion.div>
     );
 }

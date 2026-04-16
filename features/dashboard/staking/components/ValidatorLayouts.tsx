@@ -36,7 +36,7 @@ export const Layout1Col = ({
     const safeName = sanitizeText(validator.name);
 
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col h-full">
             <div className="flex">
                 {/* Sidebar: large photo + uptime */}
                 <div
@@ -116,7 +116,7 @@ export const Layout1Col = ({
                     </div>
 
                     <div
-                        className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-[var(--color-card-border)]"
+                        className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-[var(--color-card-border)] mt-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-text-muted)] min-w-0">
@@ -165,14 +165,14 @@ export const Layout2Col = ({
     const safeName = sanitizeText(validator.name);
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex flex-1">
+        <div className={`flex flex-col h-full ${!isExpanded ? 'min-h-[200px]' : ''}`}>
+            <div className={`flex ${!isExpanded ? 'flex-1' : ''}`}>
                 <div
                     className={`${columns === 3 ? 'w-24 sm:w-28' : 'w-36 sm:w-40'} shrink-0 flex flex-col items-center p-2 sm:p-3 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch`}
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
-                    <div className="relative z-10 flex-1 flex items-center">
+                    <div className="relative z-10 py-4 sm:py-6">
                         <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
                             className={`${columns === 3 ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-24 h-24 sm:w-28 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
@@ -181,7 +181,7 @@ export const Layout2Col = ({
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
-                    <div className={`flex-1 flex flex-col gap-1.5 ${columns === 3 ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'}`}>
+                    <div className={`flex flex-col gap-1.5 ${columns === 3 ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'} ${!isExpanded ? 'flex-1' : ''}`}>
                         <div className={`flex gap-1.5 min-w-0 ${columns === 2 ? 'flex-col items-start' : 'items-center flex-nowrap'}`}>
                             <h3 className="text-sm font-black text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0 flex-1">
                                 <HighlightText text={safeName} query={searchQuery} />
@@ -242,7 +242,7 @@ export const Layout2Col = ({
                     </div>
 
                     <div
-                        className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)]"
+                        className={`flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''}`}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
@@ -288,7 +288,7 @@ export const Layout4Col = ({
     const safeName = sanitizeText(validator.name);
 
     return (
-        <div className="flex flex-col h-full bg-[var(--color-surface)]">
+        <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
             {/* Fila 1: Imagen y Nombre con Etiquetas */}
             <div className="flex gap-2.5 p-3 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
@@ -343,7 +343,7 @@ export const Layout4Col = ({
 
             {/* Fila 3: Footer */}
             <div
-                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 mt-auto"
+                className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''}`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
@@ -388,7 +388,7 @@ export const Layout6Col = ({
     const safeName = sanitizeText(validator.name);
 
     return (
-        <div className="flex flex-col h-full bg-[var(--color-surface)]">
+        <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
             {/* Fila 1: Foto y Nombre (2 columnas) */}
             <div className="flex gap-2 p-2 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
@@ -409,7 +409,7 @@ export const Layout6Col = ({
             </div>
 
             {/* Row 3: Single-column info */}
-            <div className="flex-1 px-2 py-1 border-t border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/20">
+            <div className={`px-2 py-1 border-t border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/20 ${!isExpanded ? 'flex-1' : ''}`}>
                 <BizRow
                     label={dt?.card?.stake ?? 'Stake'}
                     value={validator.delegatedStakePercent > 2
@@ -434,7 +434,7 @@ export const Layout6Col = ({
 
             {/* Row 4: Footer — SVG Web, SVG Address, Button */}
             <div
-                className="flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)]"
+                className={`flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)] ${!isExpanded ? 'mt-auto' : ''}`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-2">
@@ -477,11 +477,11 @@ const ExpandPanel = ({
     <AnimatePresence initial={false}>
         {isExpanded && (
             <motion.div
+                className="flex-1 flex flex-col overflow-hidden w-full"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={EXPAND_TRANSITION}
-                className="overflow-hidden"
             >
                 <ValidatorExpandedBody
                     validator={validator}
