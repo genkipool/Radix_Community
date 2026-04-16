@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchRoundProposer } from '@/services/radixApi';
-import { unstable_cache } from 'next/cache';
+import { getRoundProposerCached } from '@/services/radixApi';
 import logger from '@/lib/logger';
 import { validateNetwork } from '@/utils/apiValidation';
-
-/**
- * A committed round's proposer is immutable — cache for 24 h.
- * The cache key includes epoch, round, stateVersion and network.
- */
-const fetchCachedRoundProposer = (
-    epoch: number,
-    round: number,
-    stateVersion: number,
-    network: 'mainnet' | 'stokenet',
-) =>
-    unstable_cache(
-        async () => {
-            const proposer = await fetchRoundProposer(epoch, round, stateVersion, network);
-            if (!proposer) {
-                throw new Error(`Round proposer not available for ${epoch}:${round}`);
-            }
-            return proposer;
-        },
-        [`round-proposer-${network}-${epoch}-${round}-${stateVersion}`],
-        { revalidate: 86400, tags: ['round-proposer'] },
-    )();
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
@@ -38,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const proposer = await fetchCachedRoundProposer(epoch, round, stateVersion, network);
+        const proposer = await getRoundProposerCached(epoch, round, stateVersion, network);
         
         if (!proposer) {
              return NextResponse.json(null, {

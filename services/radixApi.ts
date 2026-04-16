@@ -33,10 +33,12 @@ export {
 
 export {
   fetchRecentTransactions,
+  getRecentTransactionsCached,
   fetchFilteredTransactions,
   searchTransactionsByAddress,
   fetchTransactionDetails,
   fetchRoundProposer,
+  getRoundProposerCached,
   fetchStakeHistoryCached,
 } from './gateway/transactions';
 
@@ -44,5 +46,6 @@ export {
   fetchValidatorsWithLedger,
   fetchValidators,
   computeNetworkStats,
+  getValidatorsCached,
 } from './gateway/validators';
 export type { ValidatorsFetchResult } from './gateway/validators';

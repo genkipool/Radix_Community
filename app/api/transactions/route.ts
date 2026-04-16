@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import logger from '@/lib/logger';
 import { validateAddress, validateNetwork, validateCursor, validateLimit } from '@/utils/apiValidation';
 import {
-    fetchRecentTransactions,
+    getRecentTransactionsCached,
     searchTransactionsByAddress,
     fetchFilteredTransactions,
 } from '@/services/radixApi';
@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
         } else if (address) {
             result = await searchTransactionsByAddress(address, cursor, limit, network);
         } else {
-            result = await fetchRecentTransactions(cursor, limit, network);
+            // Use centralized Data Cache for the transaction tip (limit 15/30)
+            result = await getRecentTransactionsCached(cursor, limit, network);
         }
 
         if (result.transactions.length === 0) {

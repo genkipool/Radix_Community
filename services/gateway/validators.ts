@@ -6,12 +6,13 @@
  * Used by: app/api/validators, app/[locale]/dashboard/page.tsx.
  */
 
-import { getGateway, withRetry, runWithLimit, runInBatches, CONCURRENCY } from './client';
+import { getGateway, withRetry, runWithLimit, runInBatches, CONCURRENCY, type Network } from './client';
 import logger from '@/lib/logger';
 import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
 import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
 import type { Validator, NetworkStats } from '@/types/radix';
+import { unstable_cache } from 'next/cache';
 
 
 // ── Opaque Gateway response type aliases ─────────────────────────────────────
@@ -815,3 +816,35 @@ export function computeNetworkStats(
         timestamp
     };
 }
+
+// ── Centralized Cache Wrapper ──────────────────────────────────────────────
+/**
+ * Cached validator data with Anti-Garbage protection.
+ * Throws if the validator list is empty to prevent Vercel from caching 
+ * a logically broken state (e.g. during Gateway sync lag).
+ */
+export const getValidatorsCached = (network: Network = 'mainnet') =>
+    unstable_cache(
+        async () => {
+            const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
+            
+            // SECURITY: Anti-Garbage protection.
+            // If the Gateway returns 0 validators on a live network, throw to bypass cache.
+            if (validators.length === 0) {
+                throw new Error(`Gateway returned empty validator set for ${network}`);
+            }
+
+            return {
+                validators,
+                networkStats: computeNetworkStats(
+                    validators,
+                    ledgerState.epoch,
+                    ledgerState.state_version,
+                    ledgerState.round,
+                    ledgerState.proposer_round_timestamp,
+                ),
+            };
+        },
+        [`validators-${network}`],
+        { revalidate: 300, tags: ['validators', `validators-${network}`] },
+    )();

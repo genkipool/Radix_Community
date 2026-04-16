@@ -685,3 +685,48 @@ export async function fetchRoundProposer(
         return null;
     }
 }
+
+// ── Centralized Cache Wrappers ──────────────────────────────────────────────
+
+/**
+ * Cached version of fetchRecentTransactions (Data Cache).
+ * Shares the same entry between API routes and Server Components.
+ */
+export const getRecentTransactionsCached = (
+    cursor?: string,
+    limit = 15,
+    network: Network = 'mainnet'
+) =>
+    unstable_cache(
+        async () => {
+            const result = await fetchRecentTransactions(cursor, limit, network);
+            if (result.transactions.length === 0 && !cursor) {
+                throw new Error(`Gateway returned 0 recent transactions for ${network}`);
+            }
+            return result;
+        },
+        [`recent-transactions-${network}-${cursor || 'tip'}-${limit}`],
+        { revalidate: 30, tags: ['transactions', `transactions-${network}`] },
+    )();
+
+/**
+ * Cached version of fetchRoundProposer (Data Cache).
+ * A committed round's proposer is immutable — cache for 24 h.
+ */
+export const getRoundProposerCached = (
+    epoch: number,
+    round: number,
+    stateVersion: number,
+    network: Network = 'mainnet'
+) =>
+    unstable_cache(
+        async () => {
+            const proposer = await fetchRoundProposer(epoch, round, stateVersion, network);
+            if (!proposer) {
+                throw new Error(`Round proposer not available for ${epoch}:${round} on ${network}`);
+            }
+            return proposer;
+        },
+        [`round-proposer-${network}-${epoch}-${round}-${stateVersion}`],
+        { revalidate: 86400, tags: ['round-proposer'] },
+    )();

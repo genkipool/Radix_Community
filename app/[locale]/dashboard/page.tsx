@@ -1,10 +1,10 @@
-import { unstable_cache } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { dehydrate } from '@tanstack/react-query';
 import { ReactQueryHydrate } from '@/components/layout/ReactQueryHydrate';
 import {
-  fetchValidatorsWithLedger, computeNetworkStats,
-  fetchRecentTransactions, fetchStakeHistoryCached,
+  getValidatorsCached,
+  getRecentTransactionsCached,
+  fetchStakeHistoryCached,
   searchTransactionsByAddress, fetchTransactionDetails, fetchEntityDetails,
   type Validator, type NetworkStats,
 } from '@/services/radixApi';
@@ -37,38 +37,8 @@ export async function generateMetadata({
   };
 }
 
-// ── Dynamic Rendering ──────────────────────────────────────────
-// The dashboard relies heavily on user-specific UI cookies (e.g. 
-// expanded transactions). It MUST be rendered dynamically per request 
-// so the hydration payload accurately matches the user's local state.
-// All heavy data fetches are cached globally via `unstable_cache`.
+// All heavy data fetches are cached globally via centralized service wrappers.
 export const dynamic = 'force-dynamic';
-
-// ── Cached data fetchers ───────────────────────────────────────
-// unstable_cache deduplicates concurrent requests so only ONE call goes to
-// the Radix Gateway API, regardless of how many users hit the page at once.
-
-const getCachedValidators = unstable_cache(
-  async (network: Network) => {
-    const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
-    const networkStats = computeNetworkStats(
-      validators,
-      ledgerState.epoch,
-      ledgerState.state_version,
-      ledgerState.round,
-      ledgerState.proposer_round_timestamp,
-    );
-    return { validators, networkStats };
-  },
-  ['dashboard-validators'],
-  { revalidate: 300, tags: ['validators'] },
-);
-
-const getCachedTransactions = unstable_cache(
-  async (network: Network) => fetchRecentTransactions(undefined, 100, network),
-  ['dashboard-transactions'],
-  { revalidate: 30, tags: ['transactions'] },
-);
 
 // ── Cookie helpers (server-side) ───────────────────────────────
 function makeCookieReader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
@@ -149,7 +119,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       serverQueryClient.prefetchQuery({
         queryKey: ['validators', network],
         queryFn: async () => {
-          const data = await getCachedValidators(network);
+          const data = await getValidatorsCached(network);
           return {
             validators: data?.validators ?? [] as Validator[],
             networkStats: data?.networkStats ?? emptyNetworkStats,
@@ -170,7 +140,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               nextCursor: data.nextCursor,
             };
           }
-          const data = await getCachedTransactions(network);
+          const data = await getRecentTransactionsCached(undefined, 100, network);
           return {
             transactions: (data?.transactions ?? []) as TransactionInfo[],
             nextCursor: data?.nextCursor ?? undefined,

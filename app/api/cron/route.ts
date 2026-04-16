@@ -22,11 +22,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Purge the cache globally across Vercel
+    // Purge the cache globally across Vercel using background revalidation (Next.js 15+ standard)
     revalidateTag('validators', 'max');
     revalidateTag('transactions', 'max');
     revalidateTag('entities', 'max');
     revalidateTag('stake-history', 'max');
+    revalidateTag('round-proposer', 'max');
 
     return NextResponse.json({ 
       success: true, 
