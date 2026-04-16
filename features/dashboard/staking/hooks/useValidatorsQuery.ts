@@ -21,8 +21,8 @@ export function useValidatorsQuery(network: Network) {
   return useQuery<ValidatorsData>({
     queryKey:    ['validators', network],
     queryFn:     () => apiFetchValidators(network as 'mainnet' | 'stokenet'),
-    staleTime:               60_000,
-    refetchInterval:         60_000,
+    staleTime:               300_000,
+    refetchInterval:         300_000,
     refetchIntervalInBackground: false,
     placeholderData:         (prev) => prev,
   });

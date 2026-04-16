@@ -44,7 +44,7 @@ export const DashboardToolbar = ({
         queryClient.prefetchQuery({
             queryKey: ['validators', net],
             queryFn:  () => apiFetchValidators(net),
-            staleTime: 60_000,
+            staleTime: 300_000,
         });
 
         // Prefetch first page of transactions
@@ -53,7 +53,7 @@ export const DashboardToolbar = ({
                 queryKey: ['transactions', net, undefined],
             queryFn:  () => apiFetchTransactions({ cursor: undefined, limit: 15, address: undefined, network: net }),
                 initialPageParam: undefined,
-                staleTime: 10_000,
+                staleTime: 30_000,
             });
         }
     };

@@ -28,7 +28,7 @@ export function usePrefetchDashboard() {
         queryClient.prefetchQuery({
             queryKey: ['validators', network],
             queryFn:  () => apiFetchValidators(network),
-            staleTime: 60_000,
+            staleTime: 300_000,
         });
     };
 

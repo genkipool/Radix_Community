@@ -155,7 +155,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             networkStats: data?.networkStats ?? emptyNetworkStats,
           };
         },
-        staleTime: 60_000,
+        staleTime: 300_000,
       }),
       serverQueryClient.prefetchInfiniteQuery({
         // Key must exactly match useTransactionsQuery's queryKey:
@@ -177,7 +177,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           };
         },
         initialPageParam: undefined,
-        staleTime: 10_000,
+        staleTime: 30_000,
       }),
       ...(openValidatorId ? [
         serverQueryClient.prefetchQuery({

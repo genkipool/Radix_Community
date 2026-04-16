@@ -64,7 +64,7 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, ena
     placeholderData:      keepPreviousData,
     enabled:              true,
     refetchOnMount:       enabled,
-    staleTime:            10_000,
+    staleTime:            30_000,
     refetchOnWindowFocus: false,
   });
 }
