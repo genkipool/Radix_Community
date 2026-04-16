@@ -89,6 +89,7 @@ export interface TransactionDetailModalProps {
     nextTxHash?: string;
     direction?: number;
     setDirection?: React.Dispatch<React.SetStateAction<number>>;
+    timezone: string;
 }
 
 export interface TransactionTabsProps {
@@ -102,6 +103,7 @@ export interface TransactionTabsProps {
     readingMode?: boolean;
     network: Network;
     columns: number;
+    timezone: string;
 }
 
 export interface ValidatorInlinePanelProps {
@@ -173,6 +175,7 @@ export interface TransactionDetailsTabProps {
     copiedAddress: string | null;
     formatEntity: (e: string) => string;
     network: Network;
+    timezone: string;
 }
 
 export interface FeesDistributionSectionProps {

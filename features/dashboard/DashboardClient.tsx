@@ -414,6 +414,7 @@ export default function DashboardClient({
         network={deferredNetwork}
         direction={direction}
         setDirection={setDirection}
+        timezone={timezone}
       />
     </main>
   );

@@ -15,7 +15,7 @@ import { TransactionDetailModalProps } from '../types';
 
 export function TransactionDetailModal({
     tx, onClose, onPrev, onNext,
-    t, dt, copiedAddress, copyAddress, network,
+    t, dt, copiedAddress, copyAddress, network, timezone
 }: TransactionDetailModalProps) {
     const tt = (dt?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
@@ -87,7 +87,7 @@ export function TransactionDetailModal({
                             <div className="flex items-center gap-y-2 gap-x-3 text-xs sm:text-sm text-[var(--color-text-muted)] flex-wrap">
                                 {/* 1. Date & Time */}
                                 <span className="font-semibold text-[var(--color-text-main)] shrink-0">
-                                    {new Date(tx.confirmedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(tx.confirmedAt).toLocaleString(undefined, { timeZone: timezone, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 
                                 <span className="opacity-40 shrink-0">·</span>
@@ -180,6 +180,7 @@ export function TransactionDetailModal({
                                 readingMode={true}
                                 network={network}
                                 columns={1}
+                                timezone={timezone}
                             />
                         </div>
                     )}

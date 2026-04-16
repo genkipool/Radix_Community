@@ -96,6 +96,7 @@ export interface DashboardModalsProps {
     network: Network;
     direction: number;
     setDirection: React.Dispatch<React.SetStateAction<number>>;
+    timezone: string;
 }
 
 export interface DetailRowProps {

@@ -36,6 +36,7 @@ export const DashboardModals = ({
   network,
   direction,
   setDirection,
+  timezone,
 }: DashboardModalsProps) => {
 
   return (
@@ -139,6 +140,7 @@ export const DashboardModals = ({
             network={network}
             direction={direction}
             setDirection={setDirection}
+            timezone={timezone}
           />
         </React.Fragment>
       )}

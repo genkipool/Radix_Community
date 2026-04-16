@@ -37,7 +37,7 @@ function EventRow({ label, children }: { label: string; children: React.ReactNod
  * instructions display are also exclusive to this tab.
  */
 export function TransactionDetailsTab({
-    details, tx, tt, te, onCopy, copiedAddress, formatEntity, network
+    details, tx, tt, te, onCopy, copiedAddress, formatEntity, network, timezone
 }: TransactionDetailsTabProps) {
     const [showRawEvents, setShowRawEvents] = React.useState(false);
     const qc = useQueryClient();
@@ -381,7 +381,7 @@ export function TransactionDetailsTab({
             } />
             <DetailRow label={tt.state_version_label || 'State Version'} value={details.state_version} />
             <DetailRow label={tt.epoch_round || 'Epoch & Round'} value={`${details.epoch} / ${details.round}`} />
-            <DetailRow label={tt.confirm_time || 'Confirm time'} value={new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} />
+            <DetailRow label={tt.confirm_time || 'Confirm time'} value={new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(undefined, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} />
             <DetailRow label={tt.fee || 'Fee Paid'} value={`${sanitizeText(String(tx.feePaid))} XRD`} />
             {tx.message && <DetailRow label={tt.message_payload as string || 'Message'} value={`"${sanitizeText(String(tx.message))}"`} />}
 
