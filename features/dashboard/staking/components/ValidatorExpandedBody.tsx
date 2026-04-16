@@ -34,7 +34,7 @@ export const ValidatorExpandedBody = ({
     /* ── Data fetching ───────────────────────── */
     const cacheKey = `stake-history-${network}-${validator.address}`;
 
-    const { data: stakeHistory = [], isLoading: loadingStakes } = useQuery({
+    const { data, isLoading: loadingStakes } = useQuery({
         queryKey: ['stake-history', network, validator.address],
         queryFn: async () => {
             const data = await apiFetchStakeHistory(validator.address, network);
@@ -46,10 +46,6 @@ export const ValidatorExpandedBody = ({
         },
         staleTime: 5 * 60_000,
         refetchOnWindowFocus: false,
-        // placeholderData: used while the background fetch completes.
-        // SSR pre-populates the React Query cache for the open validator,
-        // so this usually resolves instantly from cache.
-        // Falls back to localStorage for validators opened after initial load.
         placeholderData: (prev: unknown) => {
             if (prev) return prev;
             if (typeof window === 'undefined') return undefined;
@@ -59,19 +55,24 @@ export const ValidatorExpandedBody = ({
         },
     });
 
+    // CRITICAL: Robust fallback to empty array to prevent .slice() TypeError
+    const stakeHistory: StakeHistoryEntry[] = Array.isArray(data) ? data : [];
+
     const threeMonthEvolution = (() => {
-        if (!stakeHistory.length) return [];
+        if (!stakeHistory || stakeHistory.length === 0) return [];
         let total = validator.totalStakeXRD || 0;
         const result = [];
+        // Walk backwards through history
         for (let i = stakeHistory.length - 1; i >= 0; i--) {
             const day = stakeHistory[i];
+            if (!day) continue;
             result.unshift({ date: day.date, totalStake: total });
-            total = Math.max(0, total - (day.stake - day.unstake));
+            total = Math.max(0, total - ((day.stake || 0) - (day.unstake || 0)));
         }
         return result;
     })();
 
-    const thirtyDayHistory = stakeHistory.slice(-30);
+    const thirtyDayHistory = stakeHistory.length > 0 ? stakeHistory.slice(-30) : [];
 
     /* ── Shared block props ──────────────────── */
     const profileProps    = { validator, dt, t, onCopy, copiedAddress };

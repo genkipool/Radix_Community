@@ -177,6 +177,8 @@ export const DashboardToolbar = ({
                         onResetRange={onResetRange}
                         calendarT={calendarT}
                         columns={columns}
+                        showCalendar={activeView === 'transactions'}
+                        calendarButtonTitle={dt?.toolbar?.search_by_date}
                     />
                     <GridToggle columns={columns} onChange={onColumnsChange} max={8} />
                 </div>

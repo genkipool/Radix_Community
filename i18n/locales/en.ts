@@ -2364,7 +2364,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
     toolbar: {
       newest: 'Highest Stake',
       oldest: 'Lowest Stake',
-      by_date: 'By APY',
+      search_by_date: 'Search transactions by date',
       reading_mode: 'Reading Mode',
       expand_all: 'Expand All',
       collapse_all: 'Collapse All',
@@ -3422,7 +3422,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
     stake: "Stake",
     unstake: "Unstake",
     claim: "Claim",
-    evolution_title: "Evolution",
+    evolution_title: "Evolution of Stake",
     no_activity: "No stake activity in this period",
     amount: "Amount",
     date: "Date"

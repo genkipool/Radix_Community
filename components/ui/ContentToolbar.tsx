@@ -43,6 +43,8 @@ export interface ContentToolbarProps {
     calendarT?: CalendarTranslations;
     columns: number;
     isReadingModeManual?: boolean;
+    showCalendar?: boolean;
+    calendarButtonTitle?: string;
 }
 
 // Shared button styles
@@ -74,6 +76,8 @@ export function ContentToolbar({
     calendarT,
     columns,
     isReadingModeManual,
+    showCalendar = true,
+    calendarButtonTitle,
 }: ContentToolbarProps) {
     const isCollapseDisabled = columns >= 5 || readingMode;
     const isReadingModeDisabled = columns >= 5;
@@ -144,12 +148,12 @@ export function ContentToolbar({
             )}
 
             {/* Calendar filter */}
-            {setCalendarOpen && calendarT && (
+            {showCalendar && setCalendarOpen && calendarT && (
                 <div className="relative calendar-dropdown-container" ref={containerRef}>
                     <button
                         ref={buttonRef}
                         onClick={handleToggleCalendar}
-                        title={toolbarT?.by_date || 'By Date'}
+                        title={calendarButtonTitle || toolbarT?.by_date || 'By Date'}
                         className={`${btnBase} ${calendarOpen || hasDateFilter ? btnActive : btnInactive}`}
                     >
                         <Calendar className="w-4 h-4" />

@@ -2370,7 +2370,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
     toolbar: {
       newest: 'Mayor Stake',
       oldest: 'Menor Stake',
-      by_date: 'Por APY',
+      search_by_date: 'Buscar transacciones por fecha',
       reading_mode: 'Modo Lectura',
       expand_all: 'Expandir Todo',
       collapse_all: 'Colapsar Todo',
@@ -3441,7 +3441,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
     stake: "Stake",
     unstake: "Unstake",
     claim: "Claim",
-    evolution_title: "Evolución",
+    evolution_title: "Evolución de Stake",
     no_activity: "Sin actividad de stake en este periodo",
     amount: "Cantidad",
     date: "Fecha"

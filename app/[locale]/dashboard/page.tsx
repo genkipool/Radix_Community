@@ -112,9 +112,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // If a validator modal is open (restored from cookie), prefetch its stake
   // history so SSR and first client render have identical data — no hydration
   // mismatch and no spinner flash on reload.
-  const openValidatorId = c.ids(COOKIE_KEYS.expandedValidators, network)[0] ?? null;
   const txid = params.tx ? validateTxHash(params.tx) : null;
   const initialExpandedTxs = txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network);
+  const expandedValidatorIds = c.ids(COOKIE_KEYS.expandedValidators, network);
 
   try {
     await Promise.all([
@@ -130,17 +130,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         staleTime: 300_000,
       }),
       serverQueryClient.prefetchInfiniteQuery({
-        // Key must exactly match useTransactionsQuery's queryKey:
-        // ['transactions', network, serverSideAddr, tag, dateRange]
-        // Default state: no address filter, tag='All', no date range.
         queryKey: ['transactions', network, txid ?? undefined, 'All', { start: null, end: null }],
         queryFn: async () => {
           if (txid) {
             const data = await searchTransactionsByAddress(txid, undefined, 15, network);
-            return {
-              transactions: data.transactions,
-              nextCursor: data.nextCursor,
-            };
+            return { transactions: data.transactions, nextCursor: data.nextCursor };
           }
           const data = await getRecentTransactionsCached(undefined, 100, network);
           return {
@@ -151,15 +145,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialPageParam: undefined,
         staleTime: 30_000,
       }),
-      ...(openValidatorId ? [
+      // Prefetch stake history for ALL expanded validators
+      ...expandedValidatorIds.map((vid) =>
         serverQueryClient.prefetchQuery({
-          queryKey: ['stake-history', network, openValidatorId],
-          queryFn: () => fetchStakeHistoryCached(openValidatorId, network),
+          queryKey: ['stake-history', network, vid],
+          queryFn: () => fetchStakeHistoryCached(vid, network),
           staleTime: 5 * 60_000,
-        }),
-      ] : []),
-      // DEEP PREFETCHING: Prefetch transaction details AND all associated entity metadata 
-      // for any expanded cards to avoid the "metadata flash" on reload.
+        })
+      ),
+      // DEEP PREFETCHING for expanded transactions
       ...initialExpandedTxs.map(async (txHash: string) => {
         const rawDetails = await fetchTransactionDetails(txHash, network);
         if (!rawDetails) return;

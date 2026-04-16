@@ -86,7 +86,7 @@ export function AddressDisplay({
                 )}
                 {isValidator && !entityIcon && entityName && (
                     <div className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-[var(--color-primary)]/10 flex items-center justify-center text-[8px] font-bold text-[var(--color-primary)]">
-                        {entityName.slice(0, 2).toUpperCase()}
+                        {String(entityName).slice(0, 2).toUpperCase()}
                     </div>
                 )}
                 <div className="flex flex-col min-w-0">
@@ -206,7 +206,9 @@ export function ValidatorNameLabel({
 }) {
     const meta = useEntityData(address, network);
     const name = meta?.name;
-    const short = address.length > 20 ? `${address.slice(0, 12)}...${address.slice(-6)}` : address;
+    const short = (address && typeof address === 'string')
+        ? (address.length > 20 ? `${address.slice(0, 12)}...${address.slice(-6)}` : address)
+        : (address || '...');
     return (
         <span className="font-mono text-xs truncate" title={address}>
             {name

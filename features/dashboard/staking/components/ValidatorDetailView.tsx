@@ -125,8 +125,12 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
                                 >
                                     <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
-                                        <span className="hidden sm:inline">{validator.address}</span>
-                                        <span className="inline sm:hidden">{validator.address.slice(0, 8)}...{validator.address.slice(-8)}</span>
+                                        <span className="hidden sm:inline">{validator.address || '...'}</span>
+                                        <span className="inline sm:hidden">
+                                            {validator.address ? (
+                                                `${validator.address.slice(0, 8)}...${validator.address.slice(-8)}`
+                                            ) : '...'}
+                                        </span>
                                     </code>
                                     <CopyButton
                                         value={validator.address}
