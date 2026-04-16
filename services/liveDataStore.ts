@@ -92,6 +92,54 @@ export type LiveStoreSnapshot = {
 };
 
 /* ──────────────────────────────────────────
+   PERSISTENCE
+ ────────────────────────────────────────── */
+const STORAGE_PREFIX = 'radix_live_v2_';
+
+function getStorageKey() {
+    return STORAGE_PREFIX + (currentGateway.includes('stokenet') ? 'stokenet' : 'mainnet');
+}
+
+function saveState() {
+    if (typeof window === 'undefined') return;
+    try {
+        const serialized = {
+            currentEpoch: state.currentEpoch,
+            finalizedEpochs: state.finalizedEpochs.map(fe => ({
+                epoch: fe.epoch,
+                data: Object.fromEntries(fe.data)
+            }))
+        };
+        localStorage.setItem(getStorageKey(), JSON.stringify(serialized));
+    } catch (e) {
+        console.warn('[LiveStore] Failed to save state', e);
+    }
+}
+
+function loadState() {
+    if (typeof window === 'undefined') return;
+    try {
+        const stored = localStorage.getItem(getStorageKey());
+        if (!stored) return;
+        const parsed = JSON.parse(stored) as { 
+            currentEpoch: number | null; 
+            finalizedEpochs: Array<{ epoch: number; data: Record<string, EpochProposals> }> 
+        };
+        
+        state = {
+            epochProposals: new Map(), // Always start fresh for live
+            currentEpoch: parsed.currentEpoch,
+            finalizedEpochs: parsed.finalizedEpochs.map(fe => ({
+                epoch: fe.epoch,
+                data: new Map(Object.entries(fe.data))
+            }))
+        };
+    } catch (e) {
+        console.warn('[LiveStore] Failed to load state', e);
+    }
+}
+
+/* ──────────────────────────────────────────
    STATE
 ────────────────────────────────────────── */
 let state: LiveStoreSnapshot = {
@@ -211,6 +259,8 @@ function applyProposalStats(value: { completed?: number[]; made?: number[]; miss
 async function init(): Promise<void> {
     if (initializing || initialized) return;
     initializing = true;
+
+    loadState(); // Try to restore from localStorage first
 
     let attempt = 0;
     while (!initialized) {
@@ -345,6 +395,7 @@ async function poll(): Promise<void> {
                         finalizedEpochs: newFinalized,
                         currentEpoch: newEpoch,
                     };
+                    saveState();
                     hasEpochChange = true;
                 }
             }

@@ -60,7 +60,7 @@ export function useLiveProposals(validator: Validator) {
     });
 
     const unifiedRows = (() => {
-        // 1. Current Live Row
+        // 1. Live Row
         const liveRow = {
             epoch:              liveEpoch ?? 0,
             completedProposals: epochMade,
@@ -68,36 +68,40 @@ export function useLiveProposals(validator: Validator) {
             isLive:             true
         };
 
-        // 2. Combine all sources
-        // We prioritize Bridged data over Server data for recent epochs to avoid cache gaps
+        // 2. Combine with client-side history (bridged)
+        // 3. Optional: Fallback to server data ONLY if we have very few rows in client memory
+        const serverRows = validator.epochPerformance
+            .filter(e => !e.isLive)
+            .map(e => ({ ...e, isLive: false }));
+
         const combined = [
             liveRow,
             ...bridgedEpochs,
-            ...validator.epochPerformance.map(e => ({ ...e, isLive: false }))
+            ...serverRows
         ];
 
-        // 3. De-duplicate by epoch and sort desc. 
-        // Logic: if an epoch has multiple sources, prioritize the one with actual data (made > 0 or missed > 0).
+        // 4. De-duplicate and Sanitize (Remove non-live 0/0 rows)
         const unique = Array.from(
             combined.reduce((map, row) => {
                 const existing = map.get(row.epoch);
                 const hasData = row.completedProposals > 0 || row.missedProposals > 0;
                 
                 if (!existing) {
-                    map.set(row.epoch, row);
+                    if (row.isLive || hasData) map.set(row.epoch, row);
                 } else {
                     const existingHasData = existing.completedProposals > 0 || existing.missedProposals > 0;
-                    // If existing is empty but current has data, replace it.
                     if (!existingHasData && hasData) {
                         map.set(row.epoch, row);
                     }
                 }
                 return map;
             }, new Map<number, typeof liveRow>()).values()
-        ).sort((a, b) => b.epoch - a.epoch);
+        );
 
-        // 4. Return exactly first 6
-        return unique.slice(0, 6);
+        // 5. Sort and Slice
+        return unique
+            .sort((a, b) => b.epoch - a.epoch)
+            .slice(0, 6);
     })();
 
     return {
