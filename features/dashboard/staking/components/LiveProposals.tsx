@@ -47,6 +47,47 @@ export function useLiveProposals(validator: Validator) {
 
     // Final counts are now tracked in bridgedEpochs buffer
 
+    const liveEpoch = isNewEpoch ? snap.currentEpoch : serverLiveEpoch;
+
+    const bridgedEpochs = snap.finalizedEpochs.map(fe => {
+        const stats = fe.data.get(validator.address);
+        return {
+            epoch:              fe.epoch,
+            completedProposals: stats?.made   ?? 0,
+            missedProposals:    stats?.missed ?? 0,
+            isLive:             false
+        };
+    });
+
+    const unifiedRows = (() => {
+        // 1. Current Live Row
+        const liveRow = {
+            epoch:              liveEpoch ?? 0,
+            completedProposals: epochMade,
+            missedProposals:    epochMissed,
+            isLive:             true
+        };
+
+        // 2. Combine all sources
+        // We prioritize Bridged data over Server data for recent epochs to avoid cache gaps
+        const combined = [
+            liveRow,
+            ...bridgedEpochs,
+            ...validator.epochPerformance.map(e => ({ ...e, isLive: false }))
+        ];
+
+        // 3. De-duplicate by epoch and sort desc
+        const unique = Array.from(
+            combined.reduce((map, row) => {
+                if (!map.has(row.epoch)) map.set(row.epoch, row);
+                return map;
+            }, new Map<number, typeof liveRow>()).values()
+        ).sort((a, b) => b.epoch - a.epoch);
+
+        // 4. Return exactly first 6
+        return unique.slice(0, 6);
+    })();
+
     return {
         epochMade,
         epochMissed,
@@ -54,17 +95,9 @@ export function useLiveProposals(validator: Validator) {
         recentMissed:  validator.recentProposalsMissed - validator.serverLiveProposalsMissed + epochMissed,
         totalMade:     validator.totalProposalsMade    - validator.serverLiveProposalsMade   + epochMade,
         totalMissed:   validator.totalProposalsMissed  - validator.serverLiveProposalsMissed + epochMissed,
-        liveEpoch:     isNewEpoch ? snap.currentEpoch : serverLiveEpoch,
+        liveEpoch,
         isNewEpoch,
-        bridgedEpochs: snap.finalizedEpochs.map(fe => {
-            const stats = fe.data.get(validator.address);
-            return {
-                epoch:              fe.epoch,
-                completedProposals: stats?.made   ?? 0,
-                missedProposals:    stats?.missed ?? 0,
-                isLive:             false
-            };
-        })
+        unifiedRows
     };
 }
 

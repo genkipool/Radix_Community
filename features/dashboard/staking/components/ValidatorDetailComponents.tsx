@@ -174,25 +174,7 @@ export const EpochPerformanceTable = ({
     validator: Validator;
     dt?: DashboardDict;
 }) => {
-    const { liveEpoch, epochMade, epochMissed, bridgedEpochs } = useLiveProposals(validator);
-
-    const rows = (() => {
-        // 1. Current Live Row
-        const liveRow = liveEpoch ? [{ epoch: liveEpoch, completedProposals: epochMade, missedProposals: epochMissed, isLive: true }] : [];
-        
-        // 2. Filter server history to remove duplicates
-        const history = validator.epochPerformance.filter(e => 
-            e.epoch !== liveEpoch && 
-            !bridgedEpochs.some(be => be.epoch === e.epoch)
-        ).map(e => ({ ...e, isLive: false }));
-
-        // 3. Bridged rows that aren't in server history yet
-        const bridge = bridgedEpochs.filter(be => 
-            !validator.epochPerformance.some(e => e.epoch === be.epoch)
-        );
-
-        return [...liveRow, ...bridge, ...history];
-    })();
+    const { unifiedRows } = useLiveProposals(validator);
 
     return (
         <div className="rounded-xl border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)] w-full">
@@ -214,32 +196,28 @@ export const EpochPerformanceTable = ({
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-card-border)]">
-                    {rows.map((epoch) => (
+                    {unifiedRows.map((ep, i) => (
                         <tr
-                            key={`${epoch.epoch}-${epoch.isLive ? 'live' : 'final'}`}
-                            className={`transition-colors ${epoch.isLive
+                            key={ep.epoch}
+                            className={`transition-colors ${ep.isLive
                                 ? 'bg-green-600/5 hover:bg-green-600/10'
                                 : 'hover:bg-[var(--color-surface-hover)]/50'
                                 }`}
                         >
                             <td className="px-3 py-2 font-mono font-bold">
-                                {epoch.epoch}
+                                {ep.epoch}
                             </td>
 
                             <td className="px-3 py-2 font-bold text-green-700 dark:text-green-400 tabular-nums">
-                                {epoch.isLive
-                                    ? epochMade.toLocaleString()
-                                    : epoch.completedProposals.toLocaleString()}
+                                {ep.completedProposals.toLocaleString()}
                             </td>
 
                             <td className="px-3 py-2 font-bold text-red-700 dark:text-red-400 tabular-nums">
-                                {epoch.isLive
-                                    ? epochMissed.toLocaleString()
-                                    : epoch.missedProposals.toLocaleString()}
+                                {ep.missedProposals.toLocaleString()}
                             </td>
 
                             <td className="px-3 py-2 text-right">
-                                {epoch.isLive ? (
+                                {ep.isLive ? (
                                     <Pill color="green">
                                         {dt?.details?.live_label ?? 'LIVE'}
                                     </Pill>
