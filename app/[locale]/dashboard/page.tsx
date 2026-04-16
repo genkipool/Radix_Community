@@ -61,7 +61,7 @@ const getCachedValidators = unstable_cache(
     return { validators, networkStats };
   },
   ['dashboard-validators'],
-  { revalidate: 60, tags: ['validators'] },
+  { revalidate: 300, tags: ['validators'] },
 );
 
 const getCachedTransactions = unstable_cache(

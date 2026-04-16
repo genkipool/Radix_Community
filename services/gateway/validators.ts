@@ -194,12 +194,6 @@ function fetchUptimeBatched(
     );
 }
 
-// ── Validators payload cache ──────────────────────────────────────────────────
-// Prevents multiple concurrent HTTP requests to /api/validators (or server-side
-// prefetch calls) from each independently triggering hundreds of Gateway calls.
-// TTL = 60 s (matches route revalidate). Includes request deduplication: if a
-// fetch is already in-flight, subsequent callers piggyback on the same Promise.
-
 export interface ValidatorsFetchResult {
     validators: Validator[];
     ledgerState: {
@@ -210,75 +204,15 @@ export interface ValidatorsFetchResult {
     };
 }
 
-const _validatorsPayloadCache = new Map<'mainnet' | 'stokenet', {
-    result:   ValidatorsFetchResult | null;
-    expiry:   number;
-    inflight: Promise<ValidatorsFetchResult> | null;
-}>();
-const VALIDATORS_PAYLOAD_TTL = 60_000; // 60 s
 
-/**
- * fetchValidatorsWithLedger
- *
- * Primary entry-point for fetching validators + ledger state together.
- * Returns both from a single upstream fetch. Results are cached server-side
- * for VALIDATORS_PAYLOAD_TTL ms; concurrent calls share a single in-flight
- * Promise so the Gateway is only called once per TTL window regardless of
- * how many simultaneous requests arrive.
- */
-export async function fetchValidatorsWithLedger(
-    network: 'mainnet' | 'stokenet' = 'mainnet',
-): Promise<ValidatorsFetchResult> {
-    const now   = Date.now();
-    const entry = _validatorsPayloadCache.get(network);
-
-    // 1. Serve cached result if still fresh
-    if (entry?.result && entry.expiry > now) {
-        logger.info({ network, count: entry.result.validators.length }, '[ValidatorsService] Serving from in-memory cache');
-        return entry.result;
-    }
-
-    // 2. Deduplicate: if another request started the fetch, wait for it
-    if (entry?.inflight) {
-        logger.info({ network }, '[ValidatorsService] Piggybacking on in-flight request');
-        return entry.inflight;
-    }
-
-    // 3. Start a new upstream fetch and share its Promise
-    const inflight: Promise<ValidatorsFetchResult> = _doFetchValidators(network)
-        .then(result => {
-            _validatorsPayloadCache.set(network, {
-                result,
-                expiry:   Date.now() + VALIDATORS_PAYLOAD_TTL,
-                inflight: null,
-            });
-            return result;
-        })
-        .catch(err => {
-            // Clear inflight on error so the next request can try again
-            const e = _validatorsPayloadCache.get(network);
-            if (e) _validatorsPayloadCache.set(network, { ...e, inflight: null });
-            throw err;
-        });
-
-    _validatorsPayloadCache.set(network, {
-        result:   entry?.result ?? null,
-        expiry:   entry?.expiry ?? 0,
-        inflight,
-    });
-    return inflight;
-}
-
-/**
- * fetchValidators — backward-compatible wrapper.
- * Prefer fetchValidatorsWithLedger to avoid a duplicate getCurrent() call.
- */
 export async function fetchValidators(network: "mainnet" | "stokenet" = "mainnet"): Promise<Validator[]> {
     const { validators } = await fetchValidatorsWithLedger(network);
     return validators;
 }
 
-async function _doFetchValidators(network: "mainnet" | "stokenet" = "mainnet"): Promise<ValidatorsFetchResult> {
+export async function fetchValidatorsWithLedger(
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<ValidatorsFetchResult> {
     const gateway = getGateway(network);
     const restBase = network === 'stokenet'
         ? 'https://stokenet.radixdlt.com'

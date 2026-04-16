@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache';
 import logger from '@/lib/logger';
 import { validateNetwork } from '@/utils/apiValidation';
 
-// Cache validator data — revalidates every 60 s
+// Cache validator data — revalidates every 300 s
 const fetchCachedValidators = (network: 'mainnet' | 'stokenet') =>
     unstable_cache(
         async () => {
@@ -21,7 +21,7 @@ const fetchCachedValidators = (network: 'mainnet' | 'stokenet') =>
             };
         },
         [`validators-${network}`],
-        { revalidate: 3600, tags: ['validators', `validators-${network}`] },
+        { revalidate: 300, tags: ['validators', `validators-${network}`] },
     )();
 
 export async function GET(request: Request) {
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
             { validators, networkStats },
             {
                 headers: {
-                    'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300',
                 },
             },
         );
