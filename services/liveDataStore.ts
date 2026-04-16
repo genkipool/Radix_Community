@@ -204,28 +204,33 @@ async function fetchEpochValidatorSet(epoch: number): Promise<string[]> {
                 order: 'Desc',
             });
             const tx = (data as { items?: Array<{ fee_paid: string; receipt?: { next_epoch?: { validators: Array<{ address: string }> } } }> })?.items?.[0];
-            if (!tx || tx.fee_paid !== '0') return [];
-            const validators = tx.receipt?.next_epoch?.validators ?? [];
+            
+            // If the Gateway returned data but it's missing the expected structure, 
+            // we should still throw to retry, as this is likely a sync lag.
+            if (!tx || tx.receipt?.next_epoch?.validators === undefined) {
+                 throw new Error(`Validator set not available yet in epoch ${epoch} (Gateway lag)`);
+            }
+            
+            const validators = tx.receipt.next_epoch.validators;
             return validators.map(v => v.address);
+
         } catch (error) {
             attempt++;
             const message = error instanceof Error ? error.message : String(error);
 
             // If it's a 400 error about "beyond the end of known ledger", it's a transient sync issue.
-            // We retry until the Gateway catches up.
-            const isTransient = message.includes('beyond the end of the known ledger') || message.includes('400');
-
-            if (isTransient && attempt < maxRetries) {
+            // We retry every 2s for 5 times before falling back to the 60s global cycle.
+            if (attempt < maxRetries) {
                 console.warn(`[LiveStore] fetchEpochValidatorSet lag detected for epoch ${epoch} (attempt ${attempt}/${maxRetries}). Retrying in 2s...`);
                 await new Promise(r => setTimeout(r, 2000));
                 continue;
             }
 
-            logger.error({ err: error, attempt }, '[LiveStore] fetchEpochValidatorSet error: %s', message);
-            return [];
+            // After 5 attempts, throw to trigger the global retry logic (Exponential Backoff up to 60s)
+            throw new Error(`Failed to fetch validator set for epoch ${epoch} after ${maxRetries} attempts: ${message}`);
         }
     }
-    return [];
+    throw new Error(`Max retries exceeded for validator set in epoch ${epoch}`);
 }
 
 /* ──────────────────────────────────────────
