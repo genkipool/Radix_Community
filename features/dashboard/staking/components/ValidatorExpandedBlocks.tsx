@@ -213,10 +213,9 @@ export const ActivityBlock = ({
    HistoryBlock
 ───────────────────────────────────────── */
 export const HistoryBlock = ({
-    live, epochRows, dt, className = '',
+    live, dt, className = '',
 }: {
     live: LiveProposalsResult;
-    epochRows: Validator['epochPerformance'];
     dt?: DashboardDict;
     className?: string;
 }) => (
@@ -236,7 +235,7 @@ export const HistoryBlock = ({
                 </thead>
                 <tbody>
                     {/* 1. The Unified 6-Row History (Managed by client to avoid gaps) */}
-                    {live.unifiedRows.map((ep, i) => (
+                    {live.unifiedRows.map((ep) => (
                         <tr key={ep.epoch} className={`veb-tr ${ep.isLive ? 'veb-tr-live' : ''}`}>
                             <td className="veb-td">
                                 <span className={ep.isLive ? "veb-epoch-live-cell" : ""}>

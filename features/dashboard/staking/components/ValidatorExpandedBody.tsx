@@ -72,7 +72,6 @@ export const ValidatorExpandedBody = ({
     })();
 
     const thirtyDayHistory = stakeHistory.slice(-30);
-    const epochRows        = validator.epochPerformance?.filter(e => !e.isLive).slice(0, 12) ?? [];
 
     /* ── Shared block props ──────────────────── */
     const profileProps    = { validator, dt, t, onCopy, copiedAddress };
@@ -80,7 +79,7 @@ export const ValidatorExpandedBody = ({
     const perfProps       = { validator, dt, live };
     const evolutionProps  = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
     const activityProps   = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
-    const historyProps    = { live, epochRows, dt };
+    const historyProps    = { live, dt };
 
     /* ── Layouts ─────────────────────────────── */
     const grid1 = (

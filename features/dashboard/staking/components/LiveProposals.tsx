@@ -76,10 +76,22 @@ export function useLiveProposals(validator: Validator) {
             ...validator.epochPerformance.map(e => ({ ...e, isLive: false }))
         ];
 
-        // 3. De-duplicate by epoch and sort desc
+        // 3. De-duplicate by epoch and sort desc. 
+        // Logic: if an epoch has multiple sources, prioritize the one with actual data (made > 0 or missed > 0).
         const unique = Array.from(
             combined.reduce((map, row) => {
-                if (!map.has(row.epoch)) map.set(row.epoch, row);
+                const existing = map.get(row.epoch);
+                const hasData = row.completedProposals > 0 || row.missedProposals > 0;
+                
+                if (!existing) {
+                    map.set(row.epoch, row);
+                } else {
+                    const existingHasData = existing.completedProposals > 0 || existing.missedProposals > 0;
+                    // If existing is empty but current has data, replace it.
+                    if (!existingHasData && hasData) {
+                        map.set(row.epoch, row);
+                    }
+                }
                 return map;
             }, new Map<number, typeof liveRow>()).values()
         ).sort((a, b) => b.epoch - a.epoch);

@@ -196,7 +196,7 @@ export const EpochPerformanceTable = ({
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-card-border)]">
-                    {unifiedRows.map((ep, i) => (
+                    {unifiedRows.map((ep) => (
                         <tr
                             key={ep.epoch}
                             className={`transition-colors ${ep.isLive
