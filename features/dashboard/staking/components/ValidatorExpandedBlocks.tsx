@@ -249,18 +249,20 @@ export const HistoryBlock = ({
                         </tr>
                     )}
 
-                    {/* 2. The Bridge: If the previous epoch just finished but isn't in epochRows yet */}
-                    {live.prevEpochFinal && !epochRows.some(r => r.epoch === live.prevEpochFinal?.epoch) && (
-                        <tr className="veb-tr">
-                            <td className="veb-td"><span className="veb-epoch-num">{live.prevEpochFinal.epoch}</span></td>
-                            <td className="veb-td text-center"><span className="veb-num-made">{live.prevEpochFinal.completedProposals.toLocaleString()}</span></td>
-                            <td className="veb-td text-center"><span className="veb-num-missed">{live.prevEpochFinal.missedProposals.toLocaleString()}</span></td>
-                        </tr>
-                    )}
+                    {/* 2. The Bridge: Recent epochs from the browser buffer that aren't in server history yet */}
+                    {live.bridgedEpochs
+                        .filter(be => !epochRows.some(r => r.epoch === be.epoch))
+                        .map(be => (
+                            <tr key={be.epoch} className="veb-tr">
+                                <td className="veb-td"><span className="veb-epoch-num">{be.epoch}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-made">{be.completedProposals.toLocaleString()}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-missed">{be.missedProposals.toLocaleString()}</span></td>
+                            </tr>
+                        ))}
 
-                    {/* 3. The Server History (filtered to avoid showing the live epoch twice) */}
+                    {/* 3. The Server History (filtered to avoid showing the live or bridged epochs twice) */}
                     {epochRows
-                        .filter(ep => ep.epoch !== live.liveEpoch && ep.epoch !== live.prevEpochFinal?.epoch)
+                        .filter(ep => ep.epoch !== live.liveEpoch && !live.bridgedEpochs.some(be => be.epoch === ep.epoch))
                         .map((ep, i) => (
                             <tr key={i} className="veb-tr">
                                 <td className="veb-td"><span className="veb-epoch-num">{ep.epoch}</span></td>

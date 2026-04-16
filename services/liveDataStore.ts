@@ -57,8 +57,7 @@ export type EpochProposals = { made: number; missed: number };
 
 export type LiveStoreSnapshot = {
     epochProposals: Map<string, EpochProposals>;
-    prevEpochFinal: Map<string, EpochProposals>;
-    prevEpochNumber: number | null;
+    finalizedEpochs: Array<{ epoch: number; data: Map<string, EpochProposals> }>;
     currentEpoch: number | null;
 };
 
@@ -67,8 +66,7 @@ export type LiveStoreSnapshot = {
 ────────────────────────────────────────── */
 let state: LiveStoreSnapshot = {
     epochProposals: new Map(),
-    prevEpochFinal: new Map(),
-    prevEpochNumber: null,
+    finalizedEpochs: [],
     currentEpoch: null,
 };
 
@@ -281,10 +279,15 @@ async function poll(): Promise<void> {
                     const final = new Map(state.epochProposals);
                     const nextValidators: Array<{ address: string }> = tx.receipt.next_epoch.validators ?? [];
                     epochValidatorSet = nextValidators.map(v => v.address);
+                    
+                    const newFinalized = [
+                        { epoch: state.currentEpoch as number, data: final },
+                        ...state.finalizedEpochs
+                    ].slice(0, 10); // Keep last 10
+
                     state = {
                         epochProposals: new Map(),
-                        prevEpochFinal: final,
-                        prevEpochNumber: state.currentEpoch,
+                        finalizedEpochs: newFinalized,
                         currentEpoch: newEpoch,
                     };
                     hasEpochChange = true;

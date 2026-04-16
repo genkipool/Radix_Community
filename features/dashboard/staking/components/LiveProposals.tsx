@@ -45,8 +45,7 @@ export function useLiveProposals(validator: Validator) {
         serverLiveEpoch !== null &&
         snap.currentEpoch > serverLiveEpoch;
 
-    // Final counts saved the moment the previous epoch ended
-    const prev = snap.prevEpochFinal.get(validator.address);
+    // Final counts are now tracked in bridgedEpochs buffer
 
     return {
         epochMade,
@@ -57,12 +56,15 @@ export function useLiveProposals(validator: Validator) {
         totalMissed:   validator.totalProposalsMissed  - validator.serverLiveProposalsMissed + epochMissed,
         liveEpoch:     isNewEpoch ? snap.currentEpoch : serverLiveEpoch,
         isNewEpoch,
-        prevEpochFinal: prev ? { 
-            epoch:              snap.prevEpochNumber,
-            completedProposals: prev.made, 
-            missedProposals:    prev.missed,
-            isLive:             false
-        } : null,
+        bridgedEpochs: snap.finalizedEpochs.map(fe => {
+            const stats = fe.data.get(validator.address);
+            return {
+                epoch:              fe.epoch,
+                completedProposals: stats?.made   ?? 0,
+                missedProposals:    stats?.missed ?? 0,
+                isLive:             false
+            };
+        })
     };
 }
 

@@ -174,35 +174,24 @@ export const EpochPerformanceTable = ({
     validator: Validator;
     dt?: DashboardDict;
 }) => {
-    const { liveEpoch, isNewEpoch, epochMade, epochMissed, prevEpochFinal } = useLiveProposals(validator);
+    const { liveEpoch, epochMade, epochMissed, bridgedEpochs } = useLiveProposals(validator);
 
     const rows = (() => {
-        if (isNewEpoch && liveEpoch !== null) {
-            // 1. New live row
-            const liveRow = { epoch: liveEpoch, completedProposals: 0, missedProposals: 0, isLive: true };
-            
-            // 2. Patched server rows + Bridge logic
-            const history = validator.epochPerformance.map(e => {
-                if (e.isLive && prevEpochFinal) {
-                    return {
-                        ...e,
-                        isLive: false,
-                        completedProposals: prevEpochFinal.completedProposals,
-                        missedProposals: prevEpochFinal.missedProposals,
-                    };
-                }
-                return { ...e, isLive: false };
-            });
+        // 1. Current Live Row
+        const liveRow = liveEpoch ? [{ epoch: liveEpoch, completedProposals: epochMade, missedProposals: epochMissed, isLive: true }] : [];
+        
+        // 2. Filter server history to remove duplicates
+        const history = validator.epochPerformance.filter(e => 
+            e.epoch !== liveEpoch && 
+            !bridgedEpochs.some(be => be.epoch === e.epoch)
+        ).map(e => ({ ...e, isLive: false }));
 
-            // If prevEpochFinal exists but isn't the one we just patched (i.e. it's fresh data from the store), 
-            // ensure it's in the list.
-            const hasPrev = history.some(h => h.epoch === prevEpochFinal?.epoch);
-            if (prevEpochFinal && !hasPrev) {
-                return [liveRow, prevEpochFinal, ...history];
-            }
-            return [liveRow, ...history];
-        }
-        return validator.epochPerformance;
+        // 3. Bridged rows that aren't in server history yet
+        const bridge = bridgedEpochs.filter(be => 
+            !validator.epochPerformance.some(e => e.epoch === be.epoch)
+        );
+
+        return [...liveRow, ...bridge, ...history];
     })();
 
     return (
