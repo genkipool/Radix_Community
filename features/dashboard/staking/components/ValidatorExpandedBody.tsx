@@ -20,6 +20,7 @@ import {
 
 
 import { type ValidatorExpandedBodyProps } from '../types';
+import type { StakeHistoryEntry } from '@/types/radix';
 
 export const ValidatorExpandedBody = ({
     validator, t, onCopy, copiedAddress,
