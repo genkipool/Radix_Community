@@ -144,22 +144,40 @@ function restartPollingWithCurrentInterval() {
    EPOCH VALIDATOR SET
 ────────────────────────────────────────── */
 async function fetchEpochValidatorSet(epoch: number): Promise<string[]> {
-    try {
-        const data = await gPost('/stream/transactions', {
-            limit_per_page: 1,
-            kind_filter: 'EpochChange',
-            at_ledger_state: { epoch },
-            order: 'Desc',
-        });
-        const tx = (data as { items?: Array<{ fee_paid: string; receipt?: { next_epoch?: { validators: Array<{ address: string }> } } }> })?.items?.[0];
-        if (!tx || tx.fee_paid !== '0') return [];
-        const validators = tx.receipt?.next_epoch?.validators ?? [];
-        return validators.map(v => v.address);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logger.error({ err: error }, '[LiveStore] fetchEpochValidatorSet error: %s', message);
-        return [];
+    let attempt = 0;
+    const maxRetries = 5;
+
+    while (attempt < maxRetries) {
+        try {
+            const data = await gPost('/stream/transactions', {
+                limit_per_page: 1,
+                kind_filter: 'EpochChange',
+                at_ledger_state: { epoch },
+                order: 'Desc',
+            });
+            const tx = (data as { items?: Array<{ fee_paid: string; receipt?: { next_epoch?: { validators: Array<{ address: string }> } } }> })?.items?.[0];
+            if (!tx || tx.fee_paid !== '0') return [];
+            const validators = tx.receipt?.next_epoch?.validators ?? [];
+            return validators.map(v => v.address);
+        } catch (error) {
+            attempt++;
+            const message = error instanceof Error ? error.message : String(error);
+
+            // If it's a 400 error about "beyond the end of known ledger", it's a transient sync issue.
+            // We retry until the Gateway catches up.
+            const isTransient = message.includes('beyond the end of the known ledger') || message.includes('400');
+
+            if (isTransient && attempt < maxRetries) {
+                console.warn(`[LiveStore] fetchEpochValidatorSet lag detected for epoch ${epoch} (attempt ${attempt}/${maxRetries}). Retrying in 2s...`);
+                await new Promise(r => setTimeout(r, 2000));
+                continue;
+            }
+
+            logger.error({ err: error, attempt }, '[LiveStore] fetchEpochValidatorSet error: %s', message);
+            return [];
+        }
     }
+    return [];
 }
 
 /* ──────────────────────────────────────────
