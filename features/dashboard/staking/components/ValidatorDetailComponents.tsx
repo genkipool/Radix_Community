@@ -178,25 +178,29 @@ export const EpochPerformanceTable = ({
 
     const rows = (() => {
         if (isNewEpoch && liveEpoch !== null) {
-            // The epoch that just ended is the SSR live epoch.
-            // Replace its completedProposals/missedProposals with the final
-            // delta captured at transition time (prevEpochFinal).
-            return [
-                // New live row
-                { epoch: liveEpoch, completedProposals: 0, missedProposals: 0, isLive: true },
-                // Previous rows: patch the old live row with prevEpochFinal if available
-                ...validator.epochPerformance.map(e => {
-                    if (e.isLive && prevEpochFinal) {
-                        return {
-                            ...e,
-                            isLive: false,
-                            completedProposals: prevEpochFinal.proposals_made,
-                            missedProposals: prevEpochFinal.proposals_missed,
-                        };
-                    }
-                    return { ...e, isLive: false };
-                }),
-            ];
+            // 1. New live row
+            const liveRow = { epoch: liveEpoch, completedProposals: 0, missedProposals: 0, isLive: true };
+            
+            // 2. Patched server rows + Bridge logic
+            const history = validator.epochPerformance.map(e => {
+                if (e.isLive && prevEpochFinal) {
+                    return {
+                        ...e,
+                        isLive: false,
+                        completedProposals: prevEpochFinal.completedProposals,
+                        missedProposals: prevEpochFinal.missedProposals,
+                    };
+                }
+                return { ...e, isLive: false };
+            });
+
+            // If prevEpochFinal exists but isn't the one we just patched (i.e. it's fresh data from the store), 
+            // ensure it's in the list.
+            const hasPrev = history.some(h => h.epoch === prevEpochFinal?.epoch);
+            if (prevEpochFinal && !hasPrev) {
+                return [liveRow, prevEpochFinal, ...history];
+            }
+            return [liveRow, ...history];
         }
         return validator.epochPerformance;
     })();

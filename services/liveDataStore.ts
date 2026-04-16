@@ -58,6 +58,7 @@ export type EpochProposals = { made: number; missed: number };
 export type LiveStoreSnapshot = {
     epochProposals: Map<string, EpochProposals>;
     prevEpochFinal: Map<string, EpochProposals>;
+    prevEpochNumber: number | null;
     currentEpoch: number | null;
 };
 
@@ -67,6 +68,7 @@ export type LiveStoreSnapshot = {
 let state: LiveStoreSnapshot = {
     epochProposals: new Map(),
     prevEpochFinal: new Map(),
+    prevEpochNumber: null,
     currentEpoch: null,
 };
 
@@ -282,6 +284,7 @@ async function poll(): Promise<void> {
                     state = {
                         epochProposals: new Map(),
                         prevEpochFinal: final,
+                        prevEpochNumber: state.currentEpoch,
                         currentEpoch: newEpoch,
                     };
                     hasEpochChange = true;

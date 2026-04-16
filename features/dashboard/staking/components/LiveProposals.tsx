@@ -57,7 +57,12 @@ export function useLiveProposals(validator: Validator) {
         totalMissed:   validator.totalProposalsMissed  - validator.serverLiveProposalsMissed + epochMissed,
         liveEpoch:     isNewEpoch ? snap.currentEpoch : serverLiveEpoch,
         isNewEpoch,
-        prevEpochFinal: prev ? { proposals_made: prev.made, proposals_missed: prev.missed } : null,
+        prevEpochFinal: prev ? { 
+            epoch:              snap.prevEpochNumber,
+            completedProposals: prev.made, 
+            missedProposals:    prev.missed,
+            isLive:             false
+        } : null,
     };
 }
 

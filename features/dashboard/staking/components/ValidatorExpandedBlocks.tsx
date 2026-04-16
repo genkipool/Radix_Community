@@ -235,6 +235,7 @@ export const HistoryBlock = ({
                     </tr>
                 </thead>
                 <tbody>
+                    {/* 1. The Active (LIVE) Row */}
                     {live.liveEpoch && (
                         <tr className="veb-tr-live">
                             <td className="veb-td">
@@ -247,13 +248,26 @@ export const HistoryBlock = ({
                             <td className="veb-td text-center"><span className="veb-num-missed">{live.epochMissed.toLocaleString()}</span></td>
                         </tr>
                     )}
-                    {epochRows.map((ep, i) => (
-                        <tr key={i} className="veb-tr">
-                            <td className="veb-td"><span className="veb-epoch-num">{ep.epoch}</span></td>
-                            <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString()}</span></td>
-                            <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString()}</span></td>
+
+                    {/* 2. The Bridge: If the previous epoch just finished but isn't in epochRows yet */}
+                    {live.prevEpochFinal && !epochRows.some(r => r.epoch === live.prevEpochFinal?.epoch) && (
+                        <tr className="veb-tr">
+                            <td className="veb-td"><span className="veb-epoch-num">{live.prevEpochFinal.epoch}</span></td>
+                            <td className="veb-td text-center"><span className="veb-num-made">{live.prevEpochFinal.completedProposals.toLocaleString()}</span></td>
+                            <td className="veb-td text-center"><span className="veb-num-missed">{live.prevEpochFinal.missedProposals.toLocaleString()}</span></td>
                         </tr>
-                    ))}
+                    )}
+
+                    {/* 3. The Server History (filtered to avoid showing the live epoch twice) */}
+                    {epochRows
+                        .filter(ep => ep.epoch !== live.liveEpoch && ep.epoch !== live.prevEpochFinal?.epoch)
+                        .map((ep, i) => (
+                            <tr key={i} className="veb-tr">
+                                <td className="veb-td"><span className="veb-epoch-num">{ep.epoch}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString()}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString()}</span></td>
+                            </tr>
+                        ))}
                 </tbody>
             </table>
         </div>
