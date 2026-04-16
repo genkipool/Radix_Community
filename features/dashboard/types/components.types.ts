@@ -74,6 +74,7 @@ export interface DashboardCardGridProps {
     searchQuery: string;
     network: Network;
     timezone: string;
+    locale: string;
     t?: TranslationsT;
     dt?: TranslationsT['dashboard'];
     onExpand: (id: string) => void;
@@ -97,6 +98,7 @@ export interface DashboardModalsProps {
     direction: number;
     setDirection: React.Dispatch<React.SetStateAction<number>>;
     timezone: string;
+    locale: string;
 }
 
 export interface DetailRowProps {

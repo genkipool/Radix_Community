@@ -17,7 +17,7 @@ import { formatEntity } from '../../utils/entityUtils';
 
 import { TransactionCardProps } from '../types';
 
-const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone }: TransactionCardProps) => {
+const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale }: TransactionCardProps) => {
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isVertical = columns >= 3;
     const isCompact = columns >= 5;
@@ -163,7 +163,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
-                                    {new Date(tx.confirmedAt).toLocaleString(undefined, {
+                                    {new Date(tx.confirmedAt).toLocaleString(locale, {
                                         timeZone: timezone,
                                         year: 'numeric', month: 'short', day: 'numeric',
                                         hour: '2-digit', minute: '2-digit'
@@ -211,7 +211,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             <AnimatePresence initial={false}>
                 {isExpanded && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden bg-[var(--color-bg)]">
-                        <TransactionTabs details={details} tx={tx} t={t} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} readingMode={readingMode} network={network} columns={columns} timezone={timezone} />
+                        <TransactionTabs details={details} tx={tx} t={t} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} readingMode={readingMode} network={network} columns={columns} timezone={timezone} locale={locale} />
                     </motion.div>
                 )}
             </AnimatePresence>

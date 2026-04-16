@@ -47,7 +47,7 @@ function TransactionDetailsSkeleton({ tt }: { tt: TranslationsT['dashboard']['tr
    Updated to filter out protocol internal fee movements (Consensus Manager).
 ══════════════════════════════════════════ */
 const TransactionTabs = ({
-    details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone,
+    details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale,
 }: TransactionTabsProps) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'details' | 'raw'>('summary');
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
@@ -256,7 +256,7 @@ const TransactionTabs = ({
 
                 {/* ══ DETAILS ══ */}
                 {activeTab === 'details' && (
-                    <TransactionDetailsTab details={details} tx={tx} tt={tt} te={t?.events ?? {} as Dictionary['events']} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} network={network} timezone={timezone} />
+                    <TransactionDetailsTab details={details} tx={tx} tt={tt} te={t?.events ?? {} as Dictionary['events']} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} network={network} timezone={timezone} locale={locale} />
                 )}
 
                 {/* ══ RAW ══ */}

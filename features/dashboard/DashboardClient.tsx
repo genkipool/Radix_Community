@@ -79,7 +79,7 @@ export default function DashboardClient({
   initialSearchQuery = '',
   randomSeed = 0,
 }: DashboardInitialProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { setShowFooter } = useLayout();
   const dt = t.dashboard ?? {};
 
@@ -394,6 +394,7 @@ export default function DashboardClient({
           onExpand={expanded.handleExpandPost}
           onCopy={copyAddress}
           timezone={timezone}
+          locale={language}
         />
       </div>
 
@@ -415,6 +416,7 @@ export default function DashboardClient({
         direction={direction}
         setDirection={setDirection}
         timezone={timezone}
+        locale={language}
       />
     </main>
   );

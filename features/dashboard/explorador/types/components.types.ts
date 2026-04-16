@@ -73,6 +73,7 @@ export interface TransactionCardProps {
     readingMode?: boolean;
     network?: Network;
     timezone: string;
+    locale: string;
 }
 
 export interface TransactionDetailModalProps {
@@ -90,6 +91,7 @@ export interface TransactionDetailModalProps {
     direction?: number;
     setDirection?: React.Dispatch<React.SetStateAction<number>>;
     timezone: string;
+    locale: string;
 }
 
 export interface TransactionTabsProps {
@@ -104,6 +106,7 @@ export interface TransactionTabsProps {
     network: Network;
     columns: number;
     timezone: string;
+    locale: string;
 }
 
 export interface ValidatorInlinePanelProps {
@@ -176,6 +179,7 @@ export interface TransactionDetailsTabProps {
     formatEntity: (e: string) => string;
     network: Network;
     timezone: string;
+    locale: string;
 }
 
 export interface FeesDistributionSectionProps {

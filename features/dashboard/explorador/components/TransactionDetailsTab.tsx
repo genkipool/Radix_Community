@@ -37,7 +37,7 @@ function EventRow({ label, children }: { label: string; children: React.ReactNod
  * instructions display are also exclusive to this tab.
  */
 export function TransactionDetailsTab({
-    details, tx, tt, te, onCopy, copiedAddress, formatEntity, network, timezone
+    details, tx, tt, te, onCopy, copiedAddress, formatEntity, network, timezone, locale
 }: TransactionDetailsTabProps) {
     const [showRawEvents, setShowRawEvents] = React.useState(false);
     const qc = useQueryClient();
@@ -381,7 +381,17 @@ export function TransactionDetailsTab({
             } />
             <DetailRow label={tt.state_version_label || 'State Version'} value={details.state_version} />
             <DetailRow label={tt.epoch_round || 'Epoch & Round'} value={`${details.epoch} / ${details.round}`} />
-            <DetailRow label={tt.confirm_time || 'Confirm time'} value={new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(undefined, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} />
+            <DetailRow
+                label={tt.confirm_time || 'Confirm time'}
+                value={(
+                    <>
+                        {new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        <span className="text-[10px] opacity-80 ml-2">
+                            ({new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC)
+                        </span>
+                    </>
+                )}
+            />
             <DetailRow label={tt.fee || 'Fee Paid'} value={`${sanitizeText(String(tx.feePaid))} XRD`} />
             {tx.message && <DetailRow label={tt.message_payload as string || 'Message'} value={`"${sanitizeText(String(tx.message))}"`} />}
 
@@ -414,14 +424,14 @@ export function TransactionDetailsTab({
                             </button>
                         </div>
                     </h3>
- 
-                     {showRawEvents && (
-                         <div className="mb-6">
-                             <div className="p-4 sm:p-5 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-xs sm:text-sm font-mono text-green-400/90 break-words custom-scrollbar overflow-x-auto whitespace-pre max-h-[500px] overflow-y-auto shadow-inner leading-relaxed">
-                                 {JSON.stringify(receipt.events, null, 2)}
-                             </div>
-                         </div>
-                     )}
+
+                    {showRawEvents && (
+                        <div className="mb-6">
+                            <div className="p-4 sm:p-5 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-xs sm:text-sm font-mono text-green-400/90 break-words custom-scrollbar overflow-x-auto whitespace-pre max-h-[500px] overflow-y-auto shadow-inner leading-relaxed">
+                                {JSON.stringify(receipt.events, null, 2)}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-3">
                         {receipt.events.map((ev, i: number) => {

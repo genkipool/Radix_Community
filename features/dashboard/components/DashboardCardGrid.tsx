@@ -32,6 +32,7 @@ export const DashboardCardGrid = ({
   searchQuery,
   network,
   timezone,
+  locale,
   t,
   dt,
   onExpand,
@@ -92,6 +93,7 @@ export const DashboardCardGrid = ({
                 readingMode={readingMode}
                 network={network}
                 timezone={timezone}
+                locale={locale}
               />
             ))}
         </>
