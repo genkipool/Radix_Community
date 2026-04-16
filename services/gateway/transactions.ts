@@ -355,12 +355,13 @@ export async function fetchRecentTransactions(
             nextCursor:   res.next_cursor || undefined,
         };
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         logger.error(
             { err: error },
             'Error fetching recent txs: %s',
-            error instanceof Error ? error.message : String(error),
+            message,
         );
-        return { transactions: [], nextCursor: undefined };
+        throw new Error(`Failed to fetch recent transactions: ${message}`);
     }
 }
 
@@ -401,12 +402,13 @@ const getCachedTransactionDetails = unstable_cache(
             });
             return res?.transaction ?? null;
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             logger.error(
                 { err: error },
                 'fetchTransactionDetails error: %s',
-                error instanceof Error ? error.message : String(error),
+                message,
             );
-            return null;
+            throw new Error(`Failed to fetch transaction details: ${message}`);
         }
     },
     ['tx-details-base'],
@@ -473,12 +475,13 @@ export async function searchTransactionsByAddress(
 
         return { transactions, nextCursor: res.next_cursor || undefined };
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         logger.error(
             { err: error },
             'Error fetching txs by address: %s',
-            error instanceof Error ? error.message : String(error),
+            message,
         );
-        return { transactions: [], nextCursor: undefined };
+        throw new Error(`Failed to fetch transactions for address ${address}: ${message}`);
     }
 }
 
@@ -619,6 +622,12 @@ const getCachedStakeHistory = unstable_cache(
 
             if (!page.nextCursor) done = true;
             else cursor = page.nextCursor;
+        }
+
+        // If we reached the page limit without finishing, it's an incomplete history.
+        // Throw to avoid caching a partial state.
+        if (pageCount >= MAX_PAGES) {
+            throw new Error(`Failed to fetch full history for ${validatorAddress} (max pages reached)`);
         }
 
         return Array.from(dailyMap.entries())

@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
 
         if (result.transactions.length === 0) {
             logger.warn({ network, tag, address, cursor: !!cursor }, 'SERVED EMPTY TRANSACTIONS');
+            return NextResponse.json(result, {
+                headers: { 'Cache-Control': 'no-store, max-age=0' },
+            });
         }
 
         logger.info({ 
@@ -66,7 +69,10 @@ export async function GET(request: NextRequest) {
         logger.error({ err: error }, 'Transaction API error: %s', message);
         return NextResponse.json(
             { transactions: [], nextCursor: undefined, error: message },
-            { status: 500 },
+            { 
+                status: 200, // Return 200 for UI stability but with no-store
+                headers: { 'Cache-Control': 'no-store, max-age=0' } 
+            },
         );
     }
 }

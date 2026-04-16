@@ -9,6 +9,13 @@ const fetchCachedValidators = (network: 'mainnet' | 'stokenet') =>
     unstable_cache(
         async () => {
             const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
+            
+            // SECURITY: If the Gateway returns 0 validators on a live network, 
+            // it's likely a sync issue. Throw to prevent caching this state.
+            if (validators.length === 0) {
+                throw new Error('Gateway returned empty validator set');
+            }
+
             return {
                 validators,
                 networkStats: computeNetworkStats(
@@ -33,6 +40,10 @@ export async function GET(request: Request) {
         
         if (validators.length === 0) {
             logger.warn({ network }, 'SERVED EMPTY VALIDATORS');
+            return NextResponse.json(
+                { validators: [], networkStats: null },
+                { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+            );
         }
 
         logger.info({ 
@@ -54,7 +65,10 @@ export async function GET(request: Request) {
         logger.error({ err: error }, 'Validators API error: %s', message);
         return NextResponse.json(
             { validators: [], networkStats: null, error: message },
-            { status: 500 },
+            { 
+                status: 200, // Return 200 to avoid breaking UI, but NO CACHE
+                headers: { 'Cache-Control': 'no-store, max-age=0' } 
+            },
         );
     }
 }

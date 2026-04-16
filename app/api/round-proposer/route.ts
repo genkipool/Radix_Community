@@ -15,7 +15,13 @@ const fetchCachedRoundProposer = (
     network: 'mainnet' | 'stokenet',
 ) =>
     unstable_cache(
-        async () => fetchRoundProposer(epoch, round, stateVersion, network),
+        async () => {
+            const proposer = await fetchRoundProposer(epoch, round, stateVersion, network);
+            if (!proposer) {
+                throw new Error(`Round proposer not available for ${epoch}:${round}`);
+            }
+            return proposer;
+        },
         [`round-proposer-${network}-${epoch}-${round}-${stateVersion}`],
         { revalidate: 86400, tags: ['round-proposer'] },
     )();
@@ -33,12 +39,22 @@ export async function GET(request: NextRequest) {
 
     try {
         const proposer = await fetchCachedRoundProposer(epoch, round, stateVersion, network);
+        
+        if (!proposer) {
+             return NextResponse.json(null, {
+                headers: { 'Cache-Control': 'no-store, max-age=0' },
+            });
+        }
+
         return NextResponse.json(proposer, {
             headers: { 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400' },
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         logger.error({ err: error }, 'Round proposer API error: %s', message);
-        return NextResponse.json(null, { status: 500 });
+        return NextResponse.json(null, { 
+            status: 200, 
+            headers: { 'Cache-Control': 'no-store, max-age=0' }
+        });
     }
 }

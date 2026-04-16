@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
         logger.error({ err: error }, 'Stake history API error: %s', message);
         return NextResponse.json(
             { error: message || 'Internal server error' },
-            { status: 500 }
+            { 
+                status: 200, // Stay on 200 for UI but NO CACHE
+                headers: { 'Cache-Control': 'no-store, max-age=0' }
+            }
         );
     }
 }
