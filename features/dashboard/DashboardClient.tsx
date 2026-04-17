@@ -265,7 +265,7 @@ export default function DashboardClient({
 
   /* ══════════════════════════ RENDER ════════════════════════ */
   return (
-    <main className="pb-20">
+    <div className="pb-20">
       {/* ── Hero ── */}
       <ContentHero
         brandName="Radix"
@@ -374,7 +374,7 @@ export default function DashboardClient({
           dt={dt}
         />
 
-        <div className="w-full flex-1 min-w-0 min-h-screen">
+        <div className="w-full min-w-0">
         {/* ── Card grid + empty states ── */}
         <DashboardCardGrid
           activeView={activeView}
@@ -421,6 +421,6 @@ export default function DashboardClient({
         timezone={timezone}
         locale={language}
       />
-    </main>
+    </div>
   );
 }
