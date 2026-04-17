@@ -37,6 +37,7 @@ export interface BlogDictionary {
         publish_btn: string;
         reward_title: string;
         reward_desc: string;
+        beta_disclaimer: string;
     };
     calendar: {
         title: string;

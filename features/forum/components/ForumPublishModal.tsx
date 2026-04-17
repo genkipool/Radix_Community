@@ -92,6 +92,7 @@ export function ForumPublishModal() {
             isPublishing={false}
             canPublish={canPublish}
             publishLabel={isReply ? (t.forum.modal.send || 'Enviar') : t.forum.modal.publish}
+            disclaimer={t.forum.modal.beta_disclaimer}
             footerExtra={
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-accent)]/5 border border-[var(--color-primary)]/20 shadow-inner">
                     <div className="flex items-start gap-5">
@@ -154,18 +155,18 @@ export function ForumPublishModal() {
                                 <FileText className="w-4 h-4 text-[var(--color-primary)]" />
                                 {t.forum.modal.title_label}
                             </label>
-                            <span className={`text-[10px] font-bold ${title.length > 80 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
-                                {title.length} / 85
+                            <span className={`text-[10px] font-bold ${title.length > 60 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
+                                {title.length} / 70
                             </span>
                         </div>
                         <input
                             type="text"
                             autoFocus
-                            maxLength={85}
+                            maxLength={70}
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             placeholder={t.forum.modal.title_placeholder}
-                            className="w-full px-6 py-4 rounded-2xl border-2 border-[var(--color-card-border)] bg-[var(--color-bg)]/50 text-[var(--color-text-main)] text-base focus:outline-none focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--color-text-muted)]/40 shadow-inner" 
+                            className="w-full px-6 py-4 rounded-2xl border-2 border-[var(--color-card-border)] bg-[var(--color-bg)]/50 text-[var(--color-text-main)] text-base focus:outline-none focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--color-text-muted)]/40 shadow-inner"
                         />
                     </div>
                 )}
@@ -219,7 +220,7 @@ export function ForumPublishModal() {
                                 );
                             })}
                             {/* Custom Tag Pill */}
-                            <div 
+                            <div
                                 className="relative flex shrink-0"
                                 onMouseDown={publishTag === 'Custom' ? startLongPress : undefined}
                                 onMouseUp={clearLongPress}

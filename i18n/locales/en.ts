@@ -1164,6 +1164,7 @@ export const en = {
       hide_original: "Hide original message",
       reward_title: "Active Reward System",
       reward_desc: "When publishing, your ranking Badge NFT will update automatically.",
+      beta_disclaimer: "Notice: As this is a beta version, posts are fictional, not saved in a database, and will be deleted upon page reload.",
       discard: "Discard",
       publish: "Publish",
       send: "Send",
@@ -1381,6 +1382,7 @@ export const en = {
       publish_btn: "Publish",
       reward_title: "Ecosystem Reputation",
       reward_desc: "By publishing quality content on the blog, you increase your visibility and reputation within the Radix ecosystem.",
+      beta_disclaimer: "Notice: As this is a beta version, posts are fictional, not saved in a database, and will be deleted upon page reload.",
     },
     tags: {
       "Radix Labs": "Radix Labs",

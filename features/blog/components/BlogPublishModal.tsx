@@ -54,10 +54,10 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
 
     const handleSubmit = () => {
         if (!title.trim() || !message.trim()) return;
-        
+
         // Strip HTML tags to produce a clean plain-text summary
         const plainText = message.trim().replace(/<[^>]*>/g, '');
-        
+
         // Add the post to the local state
         addPost({
             title: title.trim(),
@@ -86,6 +86,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
             isPublishing={false}
             canPublish={canPublish}
             publishLabel={t.blog.modal.publish_btn}
+            disclaimer={t.blog.modal.beta_disclaimer}
             footerExtra={
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-accent)]/5 border border-[var(--color-primary)]/20 shadow-inner">
                     <div className="flex items-start gap-5">
@@ -112,18 +113,18 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                             <FileText className="w-4 h-4 text-[var(--color-primary)]" />
                             {t.blog.modal.title_label}
                         </label>
-                        <span className={`text-[10px] font-bold ${title.length > 90 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
-                            {title.length} / 100
+                        <span className={`text-[10px] font-bold ${title.length > 60 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
+                            {title.length} / 70
                         </span>
                     </div>
                     <input
                         type="text"
                         autoFocus
-                        maxLength={100}
+                        maxLength={70}
                         value={title}
                         onChange={e => setTitle(e.target.value)}
                         placeholder={t.blog.modal.title_placeholder}
-                        className="w-full px-6 py-4 rounded-2xl border-2 border-[var(--color-card-border)] bg-[var(--color-bg)]/50 text-[var(--color-text-main)] text-base focus:outline-none focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--color-text-muted)]/40 shadow-inner" 
+                        className="w-full px-6 py-4 rounded-2xl border-2 border-[var(--color-card-border)] bg-[var(--color-bg)]/50 text-[var(--color-text-main)] text-base focus:outline-none focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--color-text-muted)]/40 shadow-inner"
                     />
                 </div>
 
@@ -177,7 +178,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                             );
                         })}
                         {/* Custom Tag Pill */}
-                        <div 
+                        <div
                             className="relative flex shrink-0"
                             onMouseDown={selectedTag === 'Custom' ? startLongPress : undefined}
                             onMouseUp={clearLongPress}

@@ -1154,7 +1154,7 @@ export const es = {
     modal: {
       new_post_title: "Nueva Publicación",
       reply_title: "Responder a {{name}}",
-      subtitle: "Radix DLT Forum",
+      subtitle: "Radix DLT Foro",
       title_label: "Título del tema",
       title_placeholder: "Escribe un título que genere conversación...",
       message_label: "Mensaje",
@@ -1164,6 +1164,7 @@ export const es = {
       hide_original: "Ocultar mensaje original",
       reward_title: "Sistema de Recompensa Activo",
       reward_desc: "Al publicar, tu Badge NFT de ranking se actualizará automáticamente.",
+      beta_disclaimer: "Aviso: Al ser una versión beta, las publicaciones son ficticias, no se guardan en una base de datos y se eliminarán al recargar la web.",
       discard: "Descartar",
       publish: "Publicar",
       send: "Enviar",
@@ -1386,6 +1387,7 @@ export const es = {
       publish_btn: "Publicar",
       reward_title: "Reputación del Ecosistema",
       reward_desc: "Al publicar contenido de calidad en el blog, aumentas tu visibilidad y reputación dentro del ecosistema Radix.",
+      beta_disclaimer: "Aviso: Al ser una versión beta, las publicaciones son ficticias, no se guardan en una base de datos y se eliminarán al recargar la web.",
     },
     tags: {
       "Radix Labs": "Radix Labs",

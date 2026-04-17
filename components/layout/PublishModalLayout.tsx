@@ -19,6 +19,7 @@ interface PublishModalLayoutProps {
     cancelLabel?: string;
     children: React.ReactNode;
     footerExtra?: React.ReactNode;
+    disclaimer?: string;
     maxWidth?: string;
 }
 
@@ -46,6 +47,7 @@ export function PublishModalLayout({
     cancelLabel,
     children,
     footerExtra,
+    disclaimer,
     maxWidth = 'max-w-5xl'
 }: PublishModalLayoutProps) {
     if (!isOpen) return null;
@@ -103,7 +105,16 @@ export function PublishModalLayout({
                             </div>
                         )}
                         
-                        <div className="flex items-center gap-4 w-full justify-end">
+                        <div className="flex items-center gap-6 w-full justify-between">
+                            <div className="flex-1 min-w-0">
+                                {disclaimer && (
+                                    <p className="text-xs font-bold text-red-500 select-text leading-tight">
+                                        {disclaimer}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-4 shrink-0">
                             {cancelLabel && (
                                 <Button 
                                     variant="ghost" 
@@ -126,7 +137,8 @@ export function PublishModalLayout({
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </div>
+        </motion.div>
         </>
     );
 }
