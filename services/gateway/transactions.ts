@@ -21,6 +21,7 @@ import logger from '@/lib/logger';
 import { unstable_cache } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
+import { Redis } from '@upstash/redis';
 
 
 // ── Opaque Gateway response types ────────────────────────────────────────────
@@ -688,9 +689,28 @@ export async function fetchRoundProposer(
 
 // ── Centralized Cache Wrappers ──────────────────────────────────────────────
 
+const getRedisClient = () => {
+    try {
+        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+            const client = new Redis({
+                url: process.env.KV_REST_API_URL,
+                token: process.env.KV_REST_API_TOKEN,
+            });
+            logger.info('[TransactionsService] Upstash Redis client initialized successfully');
+            return client;
+        } else {
+            logger.warn('[TransactionsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
+        }
+    } catch (e) {
+        logger.error({ err: e }, '[TransactionsService] Failed to initialize Upstash Redis');
+    }
+    return null;
+};
+
 /**
  * Cached version of fetchRecentTransactions (Data Cache).
  * Shares the same entry between API routes and Server Components.
+ * Uses Upstash Redis as a resilient fallback exclusively for the initial tip load (!cursor).
  */
 export const getRecentTransactionsCached = (
     cursor?: string,
@@ -699,11 +719,45 @@ export const getRecentTransactionsCached = (
 ) =>
     unstable_cache(
         async () => {
-            const result = await fetchRecentTransactions(cursor, limit, network);
-            if (result.transactions.length === 0 && !cursor) {
-                throw new Error(`Gateway returned 0 recent transactions for ${network}`);
+            const isTip = !cursor;
+            const redis = isTip ? getRedisClient() : null;
+            const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+
+            try {
+                const result = await fetchRecentTransactions(cursor, limit, network);
+                // SECURITY: Anti-Garbage protection for the initial load
+                if (result.transactions.length === 0 && isTip) {
+                    throw new Error(`Gateway returned 0 recent transactions for ${network}`);
+                }
+                
+                // Backup to Storage ONLY if it is the initial load (tip)
+                if (redis && isTip) {
+                    redis.set(backupKey, result)
+                        .then(() => logger.info({ network }, `[TransactionsService] Successfully saved tx backup under key: ${backupKey}`))
+                        .catch(e => logger.error({ err: e }, `[TransactionsService] Failed to update Redis backup for ${network} txs`));
+                }
+
+                return result;
+            } catch (error) {
+                if (isTip && redis) {
+                    logger.warn({ network, error: String(error) }, '[TransactionsService] API query failed. Attempting Redis fallback for transactions tip.');
+                    try {
+                        const fallbackData = await redis.get<{ transactions: TransactionInfo[], nextCursor: string | undefined }>(backupKey);
+                        if (fallbackData && fallbackData.transactions && fallbackData.transactions.length > 0) {
+                            logger.info({ network }, '[TransactionsService] Successfully retrieved valid fallback data from Redis');
+                            return fallbackData;
+                        }
+                    } catch (redisError) {
+                        logger.error({ err: redisError }, '[TransactionsService] Redis fallback failed');
+                    }
+                    
+                    logger.error({ network }, '[TransactionsService] All fallback strategies failed for tip. Returning empty system.');
+                    return { transactions: [], nextCursor: undefined };
+                }
+                
+                // If it's a paginated query (!isTip), let Next.js handle the cache bust inherently
+                throw error;
             }
-            return result;
         },
         [`recent-transactions-${network}-${cursor || 'tip'}-${limit}`],
         { revalidate: 30, tags: ['transactions', `transactions-${network}`] },
