@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { PostContent } from '../PostContent';
-import { tagColor, defaultTagColor } from '@/constants/tagColors';
+import { LabelBadge } from '@/components/ui/LabelBadge';
 import { BlogPost, BlogDictionary } from '../types';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
@@ -148,9 +148,10 @@ export function BlogOverlay({
                                             {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                         </span>
                                         {post.tags.map(tag => (
-                                            <span key={tag} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${tagColor[tag] || defaultTagColor}`}>
-                                                {blogT.tags[tag as keyof typeof blogT.tags] || tag}
-                                            </span>
+                                            <LabelBadge
+                                                key={tag}
+                                                value={blogT.tags[tag as keyof typeof blogT.tags] || tag}
+                                            />
                                         ))}
                                         <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.author}>
                                             <User className="w-3 h-3" />{post.author}
@@ -186,9 +187,10 @@ export function BlogOverlay({
                                                     <Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-400' : ''}`} />{getLikes(post)}
                                                 </button>
                                                 {post.tags.map(tag => (
-                                                    <span key={tag} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${tagColor[tag] || defaultTagColor}`}>
-                                                        {blogT.tags[tag as keyof typeof blogT.tags] || tag}
-                                                    </span>
+                                                    <LabelBadge
+                                                        key={tag}
+                                                        value={blogT.tags[tag as keyof typeof blogT.tags] || tag}
+                                                    />
                                                 ))}
                                             </div>
                                         </div>

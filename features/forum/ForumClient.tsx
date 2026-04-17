@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { ForumClientProps } from './types';
 import { ForumProvider, useForum } from './components/ForumContext';
 import { ForumToolbar } from './components/ForumToolbar';
@@ -59,11 +59,11 @@ function ForumContent() {
                     </div>
 
                     {filteredPosts.length === 0 && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 bg-[var(--color-surface)]/20 rounded-3xl border border-dashed border-[var(--color-card-border)] max-w-2xl mx-auto">
+                        <div className="text-center py-20 bg-[var(--color-surface)]/20 rounded-3xl border border-dashed border-[var(--color-card-border)] max-w-2xl mx-auto">
                             <p className="text-[var(--color-text-muted)] text-lg font-medium italic">
                                 {t.forum.post.no_posts || "No matching posts found."}
                             </p>
-                        </motion.div>
+                        </div>
                     )}
                 </div>
 

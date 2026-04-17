@@ -57,7 +57,7 @@ export const ValidatorExpandedBody = ({
     });
 
     // CRITICAL: Robust fallback to empty array to prevent .slice() TypeError
-    const stakeHistory: StakeHistoryEntry[] = Array.isArray(data) ? data : [];
+    const stakeHistory: StakeHistoryEntry[] = (Array.isArray(data) ? data : []) as StakeHistoryEntry[];
 
     const threeMonthEvolution = (() => {
         if (!stakeHistory || stakeHistory.length === 0) return [];

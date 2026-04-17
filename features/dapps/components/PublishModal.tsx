@@ -8,7 +8,6 @@ import React, { useState, useId } from 'react';
 import { X, FileText, Layers, ImageIcon, Globe, Tag, Wallet, Sparkles, CheckCircle } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Button } from '@/components/ui/Button';
-import { dappTagColor } from '@/constants/tagColors';
 import { DAPP_TAGS } from '../data/dappsData';
 import { type PublishModalProps } from '../types/components.types';
 import { MAX_TAGS, MAX_DESC_CHARS } from '../constants';
@@ -202,20 +201,23 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                     </span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-2xl bg-[var(--color-bg)]/60 border border-[var(--color-card-border)]">
-                    {DAPP_TAGS.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
-                          selectedTags.includes(tag)
-                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                            : `${dappTagColor[tag] ?? ''} opacity-70 hover:opacity-100`
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
+                    {DAPP_TAGS.map(tag => {
+                      const isSelected = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
+                            isSelected
+                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                              : 'text-[var(--color-text-main)] bg-[var(--color-bg-alt)] border-[var(--color-border)] opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
                   </div>
                   {errors.tags && <p className="text-xs text-red-400">{errors.tags}</p>}
                 </div>

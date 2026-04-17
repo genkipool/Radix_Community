@@ -7,8 +7,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { TagFilterBar } from '@/components/ui/TagFilterBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { GridToggle } from '@/components/ui/GridToggle';
-import { Button } from '@/components/ui/Button';
-import { Plus } from 'lucide-react';
+import { ForumActionButton } from './ForumActionButton';
 
 export function ForumToolbar() {
     const { 
@@ -63,16 +62,12 @@ export function ForumToolbar() {
                 />
 
                 <div className="flex items-center gap-2 shrink-0">
-                    <Button
+                    <ForumActionButton
                         onClick={() => { setReplyingToAuthorId(null); setShowPublishModal(true); }}
+                        label={t.forum.controls.publish}
                         title={t.forum.controls.publish}
-                        variant="primary"
-                        size="sm"
-                        className="!rounded-xl"
-                        leftIcon={<Plus className="w-4 h-4" />}
-                    >
-                        {t.forum.controls.publish}
-                    </Button>
+                        icon="plus"
+                    />
                     <div className="hidden sm:block">
                         <GridToggle
                             columns={columns}

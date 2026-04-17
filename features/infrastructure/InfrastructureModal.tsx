@@ -80,7 +80,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
               role="dialog"
               aria-modal="true"
               aria-label={pt?.hero?.title ?? 'Infrastructure'}
-              className="fixed inset-x-0 bottom-0 sm:inset-x-4 sm:bottom-4 sm:top-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:top-6 md:bottom-6 md:w-full md:max-w-2xl z-[1000] flex flex-col"
+              className="fixed inset-x-0 top-4 bottom-0 sm:inset-x-4 sm:bottom-4 sm:top-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:top-6 md:bottom-6 md:w-full md:max-w-2xl z-[1000] flex flex-col"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex flex-col h-full rounded-t-3xl sm:rounded-3xl bg-[var(--color-bg)] border border-[var(--color-card-border)] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.55)] overflow-hidden">
@@ -208,13 +208,6 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
 
                 {/* ══ Footer ═══════════════════════════════════════════════════ */}
                 <div className="shrink-0 border-t border-[var(--color-card-border)] px-6 py-4 flex items-center justify-end gap-2 bg-[var(--color-surface)]/60">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-5 py-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-bg)] text-sm font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:border-[var(--color-primary)]/40 transition-all"
-                  >
-                    {(t as unknown as { dapps_page?: { modal?: { cancel?: string } } }).dapps_page?.modal?.cancel ?? 'Cerrar'}
-                  </button>
                   <Link
                     href="/infrastructure"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-sm font-bold shadow-sm hover:opacity-90 transition-opacity"

@@ -11,7 +11,7 @@ import { getReplyChildrenMap } from '../utils/replyTree';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { CloseButton } from '@/components/ui/CloseButton';
-import { tagColor } from '@/constants/tagColors';
+import { LabelBadge } from '@/components/ui/LabelBadge';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 export function ForumReadingMode() {
@@ -108,9 +108,11 @@ export function ForumReadingMode() {
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {expandedPost.tags.map(tag => (
-                                                <span key={tag} className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${(tagColor as Record<string, string>)[tag] || (tagColor as Record<string, string>)['General']} bg-[var(--color-surface)] shadow-sm`}>
-                                                    {(t.forum.tags as Record<string, string>)[tag] || tag}
-                                                </span>
+                                                <LabelBadge
+                                                    key={tag}
+                                                    value={(t.forum.tags as Record<string, string>)[tag] || tag}
+                                                    title={tag}
+                                                />
                                             ))}
                                         </div>
                                     </div>

@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { useForum } from './ForumContext';
 import { FORUM_TAGS } from '../data/forumData';
-import { tagColor } from '@/constants/tagColors';
 import { Button } from '@/components/ui/Button';
 import { RichTextEditor } from '@/components/ui/RichTextEditor/RichTextEditor';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
+import { LabelBadge } from '@/components/ui/LabelBadge';
 
 export function ForumPublishModal() {
     const {
@@ -209,17 +209,22 @@ export function ForumPublishModal() {
                                         <Filter className="w-4 h-4 text-[var(--color-primary)]" />
                                         {t.forum.modal.tag_label}
                                     </label>
-                                    <div className="p-1 rounded-2xl bg-[var(--color-bg)]/80 border border-[var(--color-card-border)] shadow-inner">
-                                        <div className="flex w-full items-center justify-between gap-1 overflow-hidden">
-                                            {FORUM_TAGS.map(tag => (
-                                                <button key={tag} type="button" onClick={() => setPublishTag(tag)}
-                                                    className={`flex-1 min-w-0 px-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-tighter border transition-all active:scale-95 text-center ${publishTag === tag
-                                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                                                        : `hover:border-[var(--color-primary)]/30 ${(tagColor as Record<string, string>)[tag] || (tagColor as Record<string, string>)['General']} bg-[var(--color-surface)] shadow-sm`}`}>
-                                                    {(t.forum.tags as Record<string, string>)[tag] || tag}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <div className="flex w-full items-center justify-between gap-1 overflow-hidden">
+                                        {FORUM_TAGS.map(tag => {
+                                            const isSelected = publishTag === tag;
+                                            return (
+                                                <LabelBadge
+                                                    key={tag}
+                                                    value={(t.forum.tags as Record<string, string>)[tag] || tag}
+                                                    onClick={() => setPublishTag(tag)}
+                                                    bgClass={isSelected
+                                                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                                                        : 'bg-[var(--color-bg-alt)] border-[var(--color-border)] shadow-sm'}
+                                                    colorClass={isSelected ? 'text-white' : 'text-[var(--color-text-main)]'}
+                                                    className="flex-1 justify-center !py-2.5"
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -242,14 +247,6 @@ export function ForumPublishModal() {
                         </div>
 
                         <div className="p-8 pt-0 flex flex-col sm:flex-row justify-end gap-4 shrink-0 mt-auto relative z-10 border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/50 pt-8">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={onClose}
-                                className="font-black uppercase tracking-widest text-[11px]"
-                            >
-                                {t.forum.modal.discard}
-                            </Button>
                             <Button
                                 type="submit"
                                 variant="primary"

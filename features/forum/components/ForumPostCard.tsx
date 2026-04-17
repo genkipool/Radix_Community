@@ -16,8 +16,8 @@ import { XPBar } from '@/components/ui/XPBar';
 import { UserStats } from '@/components/ui/UserStats';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { StatButton } from '@/components/ui/StatButton';
-import { Button } from '@/components/ui/Button';
-import { tagColor } from '@/constants/tagColors';
+import { ForumActionButton } from './ForumActionButton';
+import { LabelBadge } from '@/components/ui/LabelBadge';
 import Image from 'next/image';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
@@ -219,9 +219,10 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 ml-auto max-w-full">
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                        {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                                    </span>
+                                    <LabelBadge
+                                        value={(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                        title={displayTag}
+                                    />
                                     {isExpanded && post.replies.length > 0 && (
                                         <ReplyFilterWidget
                                             authorId={post.authorId}
@@ -232,11 +233,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                         />
                                     )}
 
-                                    <Button
-                                        title={t.forum.post.reply}
-                                        variant="secondary"
-                                        size="sm"
-                                        className="!text-[10px] !tracking-wider"
+                                    <ForumActionButton
                                         onClick={(e) => { 
                                             e.stopPropagation(); 
                                             setReplyingToAuthorId(post.authorId); 
@@ -250,9 +247,10 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                             });
                                             setShowPublishModal(true); 
                                         }}
-                                    >
-                                        {t.forum.post.reply}
-                                    </Button>
+                                        label={t.forum.post.reply}
+                                        title={t.forum.post.reply}
+                                        icon={undefined}
+                                    />
                                 </div>
                             </>
                         ) : (
@@ -287,37 +285,38 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                 {!isExpanded ? (
                                     /* Colapsed: Next Row -> Tags & ReplyBtn */
                                     <div className="flex items-center justify-between gap-4 mt-1">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                            {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                                        </span>
-                                        <Button
-                                            title={t.forum.post.reply}
-                                            variant="secondary"
-                                            size="sm"
-                                            className="!text-[10px] !tracking-wider block shrink-0 ml-auto"
+                                        <LabelBadge
+                                            value={(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                            title={displayTag}
+                                        />
+                                        <ForumActionButton
                                             onClick={(e) => { 
                                                 e.stopPropagation(); 
                                                 setReplyingToAuthorId(post.authorId); 
                                                 setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
                                                 setShowPublishModal(true); 
                                             }}
-                                        >
-                                            {t.forum.post.reply}
-                                        </Button>
+                                            label={t.forum.post.reply}
+                                            title={t.forum.post.reply}
+                                            icon={undefined}
+                                            className="block shrink-0 ml-auto"
+                                        />
                                     </div>
                                 ) : (
                                     /* Expanded: Next Row -> Tags | Another Row -> Filters & ReplyBtn */
                                     <div className="flex flex-col gap-3 mt-1">
                                         <div className="flex items-center">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                                {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                                            </span>
+                                            <LabelBadge
+                                                value={(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                                title={displayTag}
+                                            />
                                         </div>
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--color-card-border)]/50 pt-3 flex-wrap">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border whitespace-nowrap transition-all duration-200 ${tagColor[displayTag] || tagColor['General']}`} title={displayTag}>
-                                                    {(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
-                                                </span>
+                                                <LabelBadge
+                                                    value={(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
+                                                    title={displayTag}
+                                                />
                                                 {post.replies.length > 0 && (
                                                     <ReplyFilterWidget
                                                         authorId={post.authorId}
@@ -328,20 +327,18 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                                     />
                                                 )}
                                             </div>
-                                            <Button
-                                                title={t.forum.post.reply}
-                                                variant="secondary"
-                                                size="sm"
-                                                className="!text-[10px] !tracking-wider w-full sm:w-auto shrink-0"
+                                            <ForumActionButton
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
                                                     setReplyingToAuthorId(post.authorId); 
                                                     setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
                                                     setShowPublishModal(true); 
                                                 }}
-                                            >
-                                                {t.forum.post.reply}
-                                            </Button>
+                                                label={t.forum.post.reply}
+                                                title={t.forum.post.reply}
+                                                icon={undefined}
+                                                className="w-full sm:w-auto shrink-0"
+                                            />
                                         </div>
                                     </div>
                                 )}

@@ -5,7 +5,7 @@ import { Calendar, User, Eye, Heart } from 'lucide-react';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { Card } from '@/components/ui/Card';
 import { PostContent } from '../PostContent';
-import { tagColor, defaultTagColor } from '@/constants/tagColors';
+import { LabelBadge } from '@/components/ui/LabelBadge';
 import { BlogPost, BlogDictionary } from '../types';
 import { getPostSpanStyle, getPostDisplayTag } from '../utils/blogUtils';
 
@@ -51,10 +51,6 @@ export function BlogPostCard({
     return (
         <Card
             layoutId={readingMode ? `post-${post.id}` : undefined}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '0px' }}
-            transition={{ delay: Math.min(index * 0.02, 0.2), duration: 0.3 }}
             onClick={() => onExpand(post.id)}
             className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full"
             innerClassName="h-full flex flex-col"
@@ -120,9 +116,10 @@ export function BlogPostCard({
                             {getLikes(post)}
                         </button>
                     </div>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-200 group-hover:brightness-110 ${tagColor[displayTag] || defaultTagColor}`}>
-                        {blogT.tags[displayTag as keyof typeof blogT.tags] || displayTag}
-                    </span>
+                    <LabelBadge
+                        value={blogT.tags[displayTag as keyof typeof blogT.tags] || displayTag}
+                        className="group-hover:brightness-110"
+                    />
                 </div>
             </div>
         </Card>
