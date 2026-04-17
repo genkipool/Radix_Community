@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { motion, PanInfo } from 'motion/react';
+import React, { useRef, useEffect } from 'react';
+import { motion } from 'motion/react';
 
 interface SwipeableContainerProps {
     children: React.ReactNode;
@@ -19,10 +19,13 @@ interface SwipeableContainerProps {
 
 /**
  * SwipeableContainer
- * 
- * A generic component that wraps content to allow swipe gestures
- * and directional entrance/exit animations.
- * 
+ *
+ * Wraps content to allow horizontal swipe navigation between items
+ * while preserving native text selection.
+ *
+ * Uses manual pointer tracking instead of Framer Motion's drag="x"
+ * so that the browser's text selection mechanism is never blocked.
+ *
  * Must be used inside an AnimatePresence component with mode="popLayout".
  */
 export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
@@ -33,12 +36,15 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
     setDirection,
     itemKey,
     className = '',
-    threshold = 60,
+    threshold = 80,
     disabled = false,
     onClick,
     style,
 }) => {
-    // Variantes para animaciones de deslizamiento conscientes de la dirección
+    const startPos = useRef<{ x: number; y: number } | null>(null);
+    const didSwipe = useRef(false);
+
+    // Direction-aware slide animation variants
     const variants = {
         initial: (d: number) => ({
             x: d > 0 ? 300 : d < 0 ? -300 : 0,
@@ -60,6 +66,71 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
         }),
     };
 
+    // Keyboard navigation: ArrowLeft / ArrowRight
+    useEffect(() => {
+        if (disabled) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft' && onPrev) {
+                e.preventDefault();
+                setDirection(-1);
+                onPrev();
+            } else if (e.key === 'ArrowRight' && onNext) {
+                e.preventDefault();
+                setDirection(1);
+                onNext();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [disabled, onPrev, onNext, setDirection]);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        // Only track touch gestures — mouse users navigate via buttons/keyboard
+        if (disabled || e.pointerType === 'mouse') return;
+        startPos.current = { x: e.clientX, y: e.clientY };
+        didSwipe.current = false;
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        if (disabled || e.pointerType === 'mouse' || !startPos.current) return;
+
+        const dx = e.clientX - startPos.current.x;
+        const dy = e.clientY - startPos.current.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        // Only trigger swipe if horizontal movement is dominant and exceeds threshold
+        if (absDx > threshold && absDx > absDy * 1.5) {
+            if (dx > 0 && onPrev) {
+                didSwipe.current = true;
+                setDirection(-1);
+                onPrev();
+            } else if (dx < 0 && onNext) {
+                didSwipe.current = true;
+                setDirection(1);
+                onNext();
+            }
+        }
+
+        startPos.current = null;
+    };
+
+    const handleClick = (e: React.MouseEvent) => {
+        // If a swipe just happened, suppress the click
+        if (didSwipe.current) {
+            didSwipe.current = false;
+            e.stopPropagation();
+            return;
+        }
+        if (onClick) {
+            onClick(e);
+        } else {
+            e.stopPropagation();
+        }
+    };
+
     return (
         <motion.div
             key={itemKey}
@@ -69,22 +140,10 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
             animate="animate"
             exit="exit"
             transition={{ type: 'spring', stiffness: 450, damping: 40 }}
-            drag={disabled ? false : "x"}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.6}
-            onDragEnd={(_e, info: PanInfo) => {
-                if (disabled) return;
-                
-                if (info.offset.x > threshold && onPrev) {
-                    setDirection(-1);
-                    onPrev();
-                } else if (info.offset.x < -threshold && onNext) {
-                    setDirection(1);
-                    onNext();
-                }
-            }}
-            className={`flex-1 flex flex-col min-h-0 relative touch-pan-y ${className}`}
-            onClick={onClick || (e => e.stopPropagation())}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            className={`flex-1 flex flex-col min-h-0 relative select-text ${className}`}
+            onClick={handleClick}
             style={{ ...style, touchAction: 'pan-y' }}
         >
             {children}
