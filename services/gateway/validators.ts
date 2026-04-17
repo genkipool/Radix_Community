@@ -822,7 +822,11 @@ export function computeNetworkStats(
 const getRedisClient = () => {
     try {
         if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-            return Redis.fromEnv();
+            const client = Redis.fromEnv();
+            logger.info('[ValidatorsService] Upstash Redis client initialized successfully');
+            return client;
+        } else {
+            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN)');
         }
     } catch (e) {
         logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
@@ -863,9 +867,9 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
 
                 // Step 4: Backup to Storage
                 if (redis) {
-                    redis.set(backupKey, result).catch(e => 
-                        logger.error({ err: e }, `[ValidatorsService] Failed to update Redis backup for ${network}`)
-                    );
+                    redis.set(backupKey, result)
+                        .then(() => logger.info({ network }, `[ValidatorsService] Successfully saved validator backup to Upstash Redis under key: ${backupKey}`))
+                        .catch(e => logger.error({ err: e }, `[ValidatorsService] Failed to update Redis backup for ${network}`));
                 }
 
                 return result;
