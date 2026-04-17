@@ -1,11 +1,24 @@
-import { BarChart3, Sparkles } from 'lucide-react';
+import React, { Fragment } from 'react';
+import { BarChart3 } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import type { BaseSectionProps } from '../../types';
 
+type ComparisonRow = {
+  feature: string;
+  swift: string;
+  evm: string;
+  bce: string;
+  radix: string;
+};
+
+type ComparisonCategory = {
+  title: string;
+  rows: ComparisonRow[];
+};
+
 export default function Comparison({ t }: BaseSectionProps) {
-  const rows: { feature: string; swift: string; evm: string; bce: string; radix: string }[] =
-    t.comparativa.rows;
+  const categories: ComparisonCategory[] = t.comparativa.categories || [];
 
   const competitors = [
     { key: 'swift', label: 'SWIFT', className: 'text-red-400' },
@@ -21,6 +34,7 @@ export default function Comparison({ t }: BaseSectionProps) {
           badge={t.comparativa.label}
           title={t.comparativa.h2a}
           titleAccent={t.comparativa.h2b}
+          subtitle={t.comparativa.description}
         />
 
         {/* ── Desktop table (md+) ── */}
@@ -32,55 +46,76 @@ export default function Comparison({ t }: BaseSectionProps) {
                 {competitors.map((c) => (
                   <th key={c.key} className={`p-4 font-bold ${c.className}`}>{c.label}</th>
                 ))}
-                <th className="p-4 font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10">
-                  <div className="flex items-center gap-2"><Sparkles className="w-4 h-4" /> Radix</div>
+                <th className="p-4 font-bold text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 text-center">
+                  Radix DLT
                 </th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr key={i} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)] transition-colors">
-                  <td className="p-4 text-[var(--color-text-main)] font-medium">{row.feature}</td>
-                  {competitors.map((c) => (
-                    <td key={c.key} className="p-4 text-[var(--color-text-muted)] text-sm">{row[c.key]}</td>
+              {categories.map((cat, catIdx) => (
+                <Fragment key={catIdx}>
+                  {/* Category separator row */}
+                  <tr className="bg-[var(--color-bg)]/50 border-b border-[var(--color-card-border)]">
+                    <td colSpan={5} className="px-4 py-2 text-[var(--color-text-muted)] font-bold text-xs tracking-wider uppercase bg-[var(--color-bg)]/30 text-center">
+                      {cat.title}
+                    </td>
+                  </tr>
+                  {cat.rows.map((row, i) => (
+                    <tr key={i} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)] transition-colors">
+                      <td className="p-4 text-[var(--color-text-main)] font-medium">{row.feature}</td>
+                      {competitors.map((c) => (
+                        <td key={c.key} className="p-4 text-[var(--color-text-muted)] text-sm">{row[c.key as keyof ComparisonRow]}</td>
+                      ))}
+                      <td className="p-4 text-[var(--color-accent)] font-bold text-sm bg-[var(--color-secondary)]/5">{row.radix}</td>
+                    </tr>
                   ))}
-                  <td className="p-4 text-[var(--color-accent)] font-bold text-sm bg-[var(--color-secondary)]/5">{row.radix}</td>
-                </tr>
+                </Fragment>
               ))}
             </tbody>
           </table>
         </FadeIn>
 
         {/* ── Mobile cards (< md) ── */}
-        <div className="md:hidden space-y-4">
-          {rows.map((row, i) => (
-            <FadeIn
-              key={i}
-              className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-lg overflow-hidden"
-            >
-              {/* Feature header */}
-              <div className="px-4 py-3 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
-                <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
+        <div className="md:hidden space-y-10">
+          {categories.map((cat, catIdx) => (
+            <div key={catIdx} className="space-y-4">
+              {/* Mobile category heading */}
+              <div className="px-2 text-center">
+                <h3 className="text-sm font-bold text-[var(--color-text-muted)] tracking-widest uppercase pb-2">
+                  {cat.title}
+                </h3>
               </div>
 
-              {/* Competitor rows */}
-              <div className="divide-y divide-[var(--color-card-border)]">
-                {competitors.map((c) => (
-                  <div key={c.key} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                    <span className={`text-xs font-bold shrink-0 w-28 ${c.className}`}>{c.label}</span>
-                    <span className="text-xs text-[var(--color-text-muted)] text-right">{row[c.key]}</span>
+              {cat.rows.map((row, i) => (
+                <FadeIn
+                  key={i}
+                  className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-lg overflow-hidden"
+                >
+                  {/* Feature header */}
+                  <div className="px-4 py-3 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
+                    <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
                   </div>
-                ))}
 
-                {/* Radix highlight row */}
-                <div className="flex items-start justify-between gap-3 px-4 py-3 bg-[var(--color-secondary)]/5">
-                  <span className="text-xs font-bold text-[var(--color-secondary)] shrink-0 w-28 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Radix
-                  </span>
-                  <span className="text-xs font-bold text-[var(--color-accent)] text-right">{row.radix}</span>
-                </div>
-              </div>
-            </FadeIn>
+                  {/* Competitor rows */}
+                  <div className="divide-y divide-[var(--color-card-border)]">
+                    {competitors.map((c) => (
+                      <div key={c.key} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                        <span className={`text-xs font-bold shrink-0 w-28 ${c.className}`}>{c.label}</span>
+                        <span className="text-xs text-[var(--color-text-muted)] text-right">{row[c.key as keyof ComparisonRow]}</span>
+                      </div>
+                    ))}
+
+                    {/* Radix highlight row */}
+                    <div className="flex items-start justify-between gap-3 px-4 py-3 bg-[var(--color-secondary)]/5">
+                      <span className="text-xs font-bold text-[var(--color-secondary)] shrink-0 w-28">
+                        Radix DLT
+                      </span>
+                      <span className="text-xs font-bold text-[var(--color-accent)] text-right">{row.radix}</span>
+                    </div>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
           ))}
         </div>
       </div>

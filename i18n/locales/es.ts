@@ -239,7 +239,7 @@ export const es = {
     h2b: "rotas en tres niveles.",
     sub: "SWIFT, Ethereum y la banca tradicional comparten el mismo problema raíz: arquitecturas que no fueron diseñadas para el dinero digital del siglo XXI.",
     card1_title: "SWIFT: Liquidación en T+2",
-    card1_p: "Los bancos siguen usando mensajería de los años 70. La liquidación de activos tarda 2 días, genera reconciliación manual masiva y expone a las instituciones a riesgo de quiebra de contraparte. En 2024, esto es inaceptable.",
+    card1_p: "Los bancos siguen usando mensajería de los años 70. La liquidación de activos tarda 2 días, genera reconciliación manual masiva y expone a las instituciones a riesgo de quiebra de contraparte. En 2026, esto es inaceptable.",
     card2_title: "EVM: Código Ciego y Hackeable",
     card2_p: "Ethereum trata los tokens como variables en un contrato. Un solo error en el código puede drenar miles de millones. Los bancos no pueden exigir 'Blind Signing' a sus directivos. Más de $3.8B robados en hacks DeFi en 2022.",
     card3_title: "Cumplimiento: Sin Trazabilidad Nativa",
@@ -254,8 +254,8 @@ export const es = {
   },
   instituciones: {
     label: "Para Instituciones y Directivos",
-    h2a: "Infraestructura financiera que",
-    h2b: "habla el idioma del riesgo.",
+    h2a: "Infraestructura financiera que transforma el",
+    h2b: "riesgo en certeza matemática.",
     sub: "Cada decisión de arquitectura en Radix fue tomada pensando en las necesidades reales de tesorerías institucionales, reguladores y equipos de cumplimiento normativo.",
     features: [
       { title: "DvP Atómico (Delivery vs Payment)", desc: "Intercambie Bonos, CBDCs y RWAs en una única transacción atómica. Si cualquier leg falla, todo revierte. Riesgo de contraparte matemáticamente igual a cero. Adiós al T+2 de SWIFT." },
@@ -272,20 +272,41 @@ export const es = {
   },
   comparativa: {
     label: "Comparativa Técnica",
-    h2a: "Radix vs la competencia.",
-    h2b: "Sin ambigüedades.",
+    h2a: "Infraestructura Financiera de Nueva Generación.",
+    h2b: "De SWIFT a Radix.",
+    description: "Un análisis técnico y objetivo de Radix frente a los sistemas tradicionales (SWIFT), las redes descentralizadas (EVM) y las iniciativas gubernamentales (BCE).",
     thFeature: "Característica",
-    rows: [
-      { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (DvP en dinero del banco central)", radix: "~3 seg DvP Atómico" },
-      { feature: "Riesgo de hackeo DeFi", swift: "N/A (centralizado)", evm: "Alto (Reentrancy, ERC-20 bugs)", bce: "N/A (Red privada permisionada)", radix: "0% by design (ROA/FSM)" },
-      { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware de terceros", bce: "100% Institucional (Solo entidades reguladas)", radix: "Auth Zones + idOS nativo" },
-      { feature: "Legibilidad de transacciones", swift: "Mensajes SWIFT opacos", evm: "Blind Signing (código hex)", bce: "Estándares TradFi (Opaco al público)", radix: "Manifiestos en lenguaje natural" },
-      { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista (Consenso centralizado)", radix: "Millones TPS (Cerberus Sharding)" },
-      { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa costosa", bce: "Exento por Ley (Dinero de Banco Central)", radix: "Nativo en capa base" },
-      { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (inseguro)", bce: "Múltiple (Bring-your-own-DLT)", radix: "Scrypto (Rust + Asset-Oriented)" },
-      { feature: "Wallet / UX usuario final", swift: "App bancaria centralizada", evm: "MetaMask (seed phrases)", bce: "B2B Exclusivo (Cuentas TARGET2)", radix: "Smart Wallet (biometría + social recovery)" },
-      { feature: "Costes y Previsibilidad", swift: "Altos y opacos", evm: "Alta volatilidad (Gas spikes)", bce: "Coste por uso fijado por el BCE", radix: "Bajos y predecibles por diseño" },
-      { feature: "Fragmentación de Liquidez", swift: "Silos bancarios aislados", evm: "Alta (Fragmentada en múltiples L2s)", bce: "Alta (Conecta DLTs privadas distintas)", radix: "Cero (Red global unificada)" }
+    categories: [
+      {
+        title: "RENDIMIENTO Y ARQUITECTURA",
+        rows: [
+          { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (DvP en dinero del banco central)", radix: "T+0 DvP Atómico ~3 seg" },
+          { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista (Consenso centralizado)", radix: "Millones TPS (Cerberus Sharding)" },
+          { feature: "Fragmentación de Liquidez", swift: "Silos bancarios aislados", evm: "Alta (Fragmentada en múltiples L2s)", bce: "Alta (Conecta DLTs privadas distintas)", radix: "Cero (Red global unificada)" }
+        ]
+      },
+      {
+        title: "SEGURIDAD Y UX",
+        rows: [
+          { feature: "Riesgo de hackeo DeFi", swift: "N/A (centralizado)", evm: "Alto (Reentrancy, ERC-20 bugs)", bce: "N/A (Red privada permisionada)", radix: "0% por diseño (ROA/FSM)" },
+          { feature: "Wallet / UX usuario final", swift: "App bancaria centralizada", evm: "MetaMask (seed phrases)", bce: "B2B Exclusivo (Cuentas TARGET2)", radix: "Smart Wallet (biometría + social recovery)" },
+          { feature: "Legibilidad de transacciones", swift: "Mensajes SWIFT opacos", evm: "Blind Signing (código hex)", bce: "Estándares TradFi (Opaco al público)", radix: "Manifiestos en lenguaje natural" }
+        ]
+      },
+      {
+        title: "REGULACIÓN Y NEGOCIO",
+        rows: [
+          { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa costosa", bce: "Exento por Ley (Dinero de Banco Central)", radix: "Nativo en capa base" },
+          { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware de terceros", bce: "100% Institucional (Solo entidades reguladas)", radix: "Auth Zones + idOS nativo" },
+          { feature: "Previsibilidad de costes", swift: "Altos y opacos", evm: "Alta volatilidad (Gas spikes)", bce: "Coste por uso fijado por el BCE", radix: "Bajos y predecibles por diseño" }
+        ]
+      },
+      {
+        title: "DESARROLLO",
+        rows: [
+          { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (inseguro)", bce: "Múltiple (Bring-your-own-DLT)", radix: "Scrypto (Rust + Asset-Oriented)" }
+        ]
+      }
     ]
   },
   devs: {
@@ -528,7 +549,7 @@ export const es = {
     label: "Radix Smart Wallet",
     h2a: "La primera wallet que no",
     h2b: "te puede arruinar.",
-    sub: "Despídete de frases semilla complejas y transacciones opacas. La Radix Wallet está integrada nativamente en la red, ofreciendo una experiencia segura, legible y verdaderamente tuya.",
+    sub: "Despídete de frases semilla complejas y transacciones opacas. Radix Wallet está integrada nativamente en la red, ofreciendo una experiencia segura, legible y sin firma a ciegas.",
     features: [
       { title: "Sin Frases Semilla", desc: "Autenticación biométrica y recuperación social nativa. Tu cuenta es un Smart Contract en la capa base, no un par de claves." },
       { title: "Radix Connect (P2P)", desc: "Enlaza tu móvil al navegador de PC de forma segura. Sin extensiones hackeables. Las dApps se comunican directo con tu teléfono." },
@@ -604,7 +625,7 @@ export const es = {
   userExperience: {
     title: "Una experiencia en la que",
     titleHighlight: "la gente realmente confía.",
-    subtitle: "La Radix Wallet está diseñada para que usuarios no técnicos interactúen con Web3 con la misma confianza que tienen con su app bancaria. Sin seed phrases, sin blind signing, sin extensiones.",
+    subtitle: "Radix Wallet está diseñada para que usuarios no técnicos interactúen con Web3 con la misma confianza que tienen con su app bancaria. Sin seed phrases, sin blind signing, sin extensiones.",
     features: {
       wallet: { title: "Smart Wallet", desc: "Smart Account nativa con autenticación biométrica y recuperación social. Sin frases de 24 palabras." },
       manifest: { title: "Transaction Manifests", desc: "Ve exactamente qué entra y sale de tu cuenta antes de firmar. El fin del blind signing." },
@@ -613,11 +634,11 @@ export const es = {
     },
     blindSigning: {
       title: "Sin Blind Signing",
-      desc: "A diferencia de MetaMask y otras wallets, la Radix Wallet te muestra un resumen legible de cada transacción antes de aprobarla. Siempre sabes exactamente qué estás firmando."
+      desc: "A diferencia de MetaMask y otras wallets, Radix Wallet te muestra un resumen legible de cada transacción antes de aprobarla. Siempre sabes exactamente qué estás firmando."
     },
     seedPhrases: {
       title: "Sin Seed Phrases",
-      desc: "La Radix Wallet usa autenticación biométrica y recuperación social nativa. Si pierdes tu teléfono, recuperas acceso mediante preguntas de seguridad o contactos de confianza — igual que la banca tradicional."
+      desc: "Radix Wallet usa autenticación biométrica y recuperación social nativa. Si pierdes tu teléfono, recuperas acceso mediante preguntas de seguridad o contactos de confianza — igual que la banca tradicional."
     },
     manifestLabel: "Transaction Manifest",
     verified: "Verificado",
@@ -3114,7 +3135,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       task_gov_voting_desc: 'Implementación de un sistema de votación descentralizado usando Scrypto para decisiones comunitarias.',
       task_gov_rfp_desc: 'Marco metodológico para evaluar y seleccionar qué proyectos comunitarios reciben financiación.',
       task_sec_audit_v2_desc: 'Revisión técnica profunda del Radix Engine v2 para asegurar la resistencia ante exploits conocidos.',
-      task_sec_mfa_desc: 'Soporte para múltiples factores de autenticación nativos dentro de la Radix Wallet para usuarios institucionales.',
+      task_sec_mfa_desc: 'Soporte para múltiples factores de autenticación nativos dentro de Radix Wallet para usuarios institucionales.',
       task_sec_bounty_desc: 'Fondo de recompensas para el descubrimiento de vulnerabilidades críticas en la red principal.',
     },
     task_deliverables: {
@@ -3153,7 +3174,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       s1_rtjl_sub: 'Radix Tokens (Jersey) Limited (RTJL)',
       s1_rtjl_body: 'Es una filial de la Fundación encargada de gestionar la tesorería de tokens XRD. Su objetivo principal es asegurar la financiación para el desarrollo de la red, la seguridad, los incentivos para desarrolladores y el marketing.',
       s1_role_sub: 'El cambio de rol (2025–2026)',
-      s1_role_body: 'Históricamente, la Fundación actuaba como supervisora y delegaba el desarrollo del código a empresas externas. Tras una importante reestructuración en 2025, la Fundación tuvo que absorber a parte del equipo técnico y crear un grupo de desarrollo interno para mantener los sistemas clave como la Radix Wallet y los servicios de Gateway.',
+      s1_role_body: 'Históricamente, la Fundación actuaba como supervisora y delegaba el desarrollo del código a empresas externas. Tras una importante reestructuración en 2025, la Fundación tuvo que absorber a parte del equipo técnico y crear un grupo de desarrollo interno para mantener los sistemas clave como Radix Wallet y los servicios de Gateway.',
       s1_strategy_sub: 'Estrategia a futuro',
       s1_strategy_body: 'El año 2025 fue extremadamente duro para el proyecto, marcado por fuertes caídas del mercado y la trágica pérdida de su fundador, Dan Hughes. La estrategia de la Fundación para 2026 es centrarse en la eficiencia operativa, con el objetivo a largo plazo de volverse "innecesaria", transfiriendo el poder a la comunidad mediante procesos RFP descentralizados.',
       s2_title: 'RDX Works (anteriormente Radix DLT Ltd)',
