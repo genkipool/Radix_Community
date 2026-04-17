@@ -13,6 +13,7 @@ import { roundTo } from '@/utils/validators';
 import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
 import type { Validator, NetworkStats } from '@/types/radix';
 import { unstable_cache } from 'next/cache';
+import { Redis } from '@upstash/redis';
 
 
 // ── Opaque Gateway response type aliases ─────────────────────────────────────
@@ -818,32 +819,76 @@ export function computeNetworkStats(
 }
 
 // ── Centralized Cache Wrapper ──────────────────────────────────────────────
+const getRedisClient = () => {
+    try {
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            return Redis.fromEnv();
+        }
+    } catch (e) {
+        logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
+    }
+    return null;
+};
+
 /**
  * Cached validator data with Anti-Garbage protection.
- * Throws if the validator list is empty to prevent Vercel from caching 
- * a logically broken state (e.g. during Gateway sync lag).
+ * Uses unstable_cache as primary caching layer and Upstash Redis as an absolute fallback
+ * when the Radix API fails or returns an empty validator list.
  */
 export const getValidatorsCached = (network: Network = 'mainnet') =>
     unstable_cache(
         async () => {
-            const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
-            
-            // SECURITY: Anti-Garbage protection.
-            // If the Gateway returns 0 validators on a live network, throw to bypass cache.
-            if (validators.length === 0) {
-                throw new Error(`Gateway returned empty validator set for ${network}`);
-            }
+            const redis = getRedisClient();
+            const backupKey = `radix_validators_${network}_backup`;
 
-            return {
-                validators,
-                networkStats: computeNetworkStats(
+            try {
+                // Step 2 & 3: Consult API and validate
+                const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
+                
+                // SECURITY: Anti-Garbage protection.
+                if (!validators || validators.length === 0) {
+                    throw new Error(`Gateway returned empty validator set for ${network}`);
+                }
+
+                const result = {
                     validators,
-                    ledgerState.epoch,
-                    ledgerState.state_version,
-                    ledgerState.round,
-                    ledgerState.proposer_round_timestamp,
-                ),
-            };
+                    networkStats: computeNetworkStats(
+                        validators,
+                        ledgerState.epoch,
+                        ledgerState.state_version,
+                        ledgerState.round,
+                        ledgerState.proposer_round_timestamp,
+                    ),
+                };
+
+                // Step 4: Backup to Storage
+                if (redis) {
+                    redis.set(backupKey, result).catch(e => 
+                        logger.error({ err: e }, `[ValidatorsService] Failed to update Redis backup for ${network}`)
+                    );
+                }
+
+                return result;
+            } catch (error) {
+                // Step 5: Fallback to Storage
+                logger.warn({ network, error: String(error) }, '[ValidatorsService] API query failed. Attempting Redis fallback.');
+                
+                if (redis) {
+                    try {
+                        const fallbackData = await redis.get<{ validators: Validator[], networkStats: NetworkStats | null }>(backupKey);
+                        if (fallbackData && fallbackData.validators && fallbackData.validators.length > 0) {
+                            logger.info({ network }, '[ValidatorsService] Successfully retrieved valid fallback data from Redis');
+                            return fallbackData;
+                        }
+                    } catch (redisError) {
+                        logger.error({ err: redisError }, '[ValidatorsService] Redis fallback failed');
+                    }
+                }
+                
+                // Fallback absolutely empty to avoid UI crash
+                logger.error({ network }, '[ValidatorsService] All fallback strategies failed. Returning empty system.');
+                return { validators: [], networkStats: null };
+            }
         },
         [`validators-${network}`],
         { revalidate: 300, tags: ['validators', `validators-${network}`] },
