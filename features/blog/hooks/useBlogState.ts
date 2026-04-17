@@ -8,9 +8,7 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
     const [activeTag, setActiveTag] = useSpeedSyncURL<string>('tag');
     const [selectedPostId, setSelectedPostId] = useSpeedSyncURL<string>('post');
 
-    const selectedPost = selectedPostId 
-        ? localizedPosts.find(p => p.id.toString() === selectedPostId) ?? null 
-        : null;
+    // Deferred: selectedPost is computed after allPosts is assembled (see below)
 
     const [columns, setColumns] = useState(3);
     const [visibleCount, setVisibleCount] = useState(9);
@@ -23,6 +21,8 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
     const [direction, setDirection] = useState(0);
+    const [customTagValue, setCustomTagValue] = useState('');
+    const [publishedPosts, setPublishedPosts] = useState<BlogPost[]>([]);
 
     // Mobile detection: force 1 column on small screens
     useEffect(() => {
@@ -50,7 +50,14 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
 
     useEffect(() => { setVisibleCount(9); }, [activeTag]);
 
-    const filtered = filterPosts(localizedPosts, activeTag, searchQuery, dateRange, sortMode);
+    const allPosts = [...publishedPosts, ...localizedPosts];
+
+    // Search allPosts so locally published articles can also be opened in reading mode
+    const selectedPost = selectedPostId
+        ? allPosts.find(p => p.id.toString() === selectedPostId) ?? null
+        : null;
+
+    const filtered = filterPosts(allPosts, activeTag, searchQuery, dateRange, sortMode);
 
     const displayedPosts = filtered.slice(0, visibleCount);
     const hasMore = visibleCount < filtered.length;
@@ -74,6 +81,15 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
         } else {
             setExpandedPosts(new Set());
         }
+    };
+
+    const addPost = (post: Omit<BlogPost, 'id' | 'date'>) => {
+        const newPost: BlogPost = {
+            ...post,
+            id: Math.max(0, ...allPosts.map(p => p.id)) + 1,
+            date: new Date().toISOString()
+        };
+        setPublishedPosts(prev => [newPost, ...prev]);
     };
 
     return {
@@ -100,6 +116,10 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
         direction,
         setDirection,
         toggleLike,
-        toggleAllPosts
+        toggleAllPosts,
+        customTagValue,
+        setCustomTagValue,
+        addPost,
+        allPosts
     };
 }

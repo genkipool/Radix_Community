@@ -1,5 +1,6 @@
 'use client';
 import { useLanguage } from '@/context/LanguageContext';
+import { useState } from 'react';
 import { ContentHero } from '@/components/layout/ContentHero';
 import { AnimatePresence } from 'motion/react';
 
@@ -9,9 +10,11 @@ import { useBlogSpeech } from './hooks/useBlogSpeech';
 import { BlogControls } from './components/BlogControls';
 import { BlogGrid } from './components/BlogGrid';
 import { BlogOverlay } from './components/BlogOverlay';
+import { BlogPublishModal } from './components/BlogPublishModal';
 
 export default function Blog({ initialPosts = [] }: BlogClientProps) {
   const { language, t: dict } = useLanguage();
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const blogT = dict.blog as BlogDictionary;
   const es = language === 'es';
 
@@ -39,7 +42,12 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
     setSelectedPostId,
     direction,
     setDirection,
+    customTagValue,
+    setCustomTagValue,
+    allPosts,
+    addPost
   } = useBlogState(initialPosts, blogT?.posts || []);
+
 
   const { isSpeaking, stopSpeech, toggleSpeech } = useBlogSpeech(es);
 
@@ -70,7 +78,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
   const goToNext = () => { if (nextPost) { setDirection(1); stopSpeech(); setSelectedPostId(nextPost.id.toString()); } };
 
   // All unique tags for the filter
-  const allTags = Array.from(new Set((blogT?.posts || []).flatMap(p => p.tags)));
+  const allTags = Array.from(new Set((allPosts || []).flatMap(p => p.tags)));
 
   return (
     <ContentHero
@@ -100,6 +108,7 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
         columns={columns}
         onColumnsChange={setColumns}
         blogT={blogT}
+        onPublishClick={() => setShowPublishModal(true)}
       />
 
       <BlogGrid
@@ -142,6 +151,15 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
             setDirection={setDirection}
           />
         )}
+
+        <BlogPublishModal
+          isOpen={showPublishModal}
+          onClose={() => setShowPublishModal(false)}
+          t={dict}
+          customTagValue={customTagValue}
+          setCustomTagValue={setCustomTagValue}
+          addPost={addPost}
+        />
       </AnimatePresence>
     </ContentHero>
   );

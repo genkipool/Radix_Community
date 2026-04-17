@@ -93,6 +93,16 @@ const mockBlogT: BlogDictionary = {
         collapse_all: 'Collapse all',
         auto_collapse: 'Auto collapse',
     },
+    modal: {
+        title_label: 'Title',
+        title_placeholder: 'Title...',
+        message_label: 'Message',
+        message_placeholder: 'Message...',
+        tag_label: 'Tag',
+        publish_btn: 'Publish',
+        reward_title: 'Reward',
+        reward_desc: 'Desc',
+    },
     calendar: {
         title: 'Calendar',
         month: 'Month',

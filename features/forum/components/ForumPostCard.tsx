@@ -16,7 +16,7 @@ import { XPBar } from '@/components/ui/XPBar';
 import { UserStats } from '@/components/ui/UserStats';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { StatButton } from '@/components/ui/StatButton';
-import { ForumActionButton } from './ForumActionButton';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { LabelBadge } from '@/components/ui/LabelBadge';
 import Image from 'next/image';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
@@ -233,7 +233,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                         />
                                     )}
 
-                                    <ForumActionButton
+                                    <ActionButton
                                         onClick={(e) => { 
                                             e.stopPropagation(); 
                                             setReplyingToAuthorId(post.authorId); 
@@ -289,7 +289,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                             value={(t.forum.tags as Record<string, string>)[displayTag] || displayTag}
                                             title={displayTag}
                                         />
-                                        <ForumActionButton
+                                        <ActionButton
                                             onClick={(e) => { 
                                                 e.stopPropagation(); 
                                                 setReplyingToAuthorId(post.authorId); 
@@ -327,7 +327,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                                     />
                                                 )}
                                             </div>
-                                            <ForumActionButton
+                                            <ActionButton
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
                                                     setReplyingToAuthorId(post.authorId); 

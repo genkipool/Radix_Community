@@ -26,6 +26,18 @@ export interface BlogDictionary {
         descending?: string;
         [key: string]: string | unknown;
     };
+    modal: {
+        new_post_title: string;
+        subtitle: string;
+        title_label: string;
+        title_placeholder: string;
+        message_label: string;
+        message_placeholder: string;
+        tag_label: string;
+        publish_btn: string;
+        reward_title: string;
+        reward_desc: string;
+    };
     calendar: {
         title: string;
         month: string;

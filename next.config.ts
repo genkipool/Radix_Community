@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
       '@tanstack/react-query',
     ],
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+      },
+    ],
+  },
 
   // Explicitly set the workspace root to this project's directory,
   // preventing Next.js from picking up stray lockfiles (e.g. from Trash).

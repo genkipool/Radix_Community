@@ -163,7 +163,7 @@ export function BlogOverlay({
                                         <Button
                                             variant="primary"
                                             size="sm"
-                                            className="ml-auto"
+                                            className="ml-auto w-[110px] justify-center"
                                             onClick={() => onToggleSpeech(`${post.title}. ${post.content}`)}
                                             title={isSpeaking ? blogT.stop : blogT.listen}
                                             leftIcon={isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}

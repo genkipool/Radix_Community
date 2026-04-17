@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Calendar, User, Eye, Heart } from 'lucide-react';
@@ -48,11 +49,40 @@ export function BlogPostCard({
     const isExpanded = expandedPosts.has(post.id);
     const isSelected = selectedPostId === post.id;
 
+    // Prevent card toggle when user is selecting text
+    const mouseDownPos = React.useRef<{ x: number; y: number } | null>(null);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        mouseDownPos.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleClick = (e: React.MouseEvent) => {
+        // If there is an active text selection, ignore the click
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) {
+            e.stopPropagation();
+            return;
+        }
+
+        // If mouse moved significantly, treat as drag/select, not click
+        if (mouseDownPos.current) {
+            const dx = Math.abs(e.clientX - mouseDownPos.current.x);
+            const dy = Math.abs(e.clientY - mouseDownPos.current.y);
+            if (dx > 5 || dy > 5) {
+                mouseDownPos.current = null;
+                return;
+            }
+        }
+        mouseDownPos.current = null;
+        onExpand(post.id);
+    };
+
     return (
         <Card
             layoutId={readingMode ? `post-${post.id}` : undefined}
-            onClick={() => onExpand(post.id)}
-            className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full"
+            onMouseDown={handleMouseDown}
+            onClick={handleClick}
+            className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full select-text"
             innerClassName="h-full flex flex-col"
             style={{ ...spanStyle, position: 'relative' as const, zIndex: isSelected ? 50 : isExpanded ? 40 : 1 }}
         >

@@ -4,7 +4,7 @@ import React from 'react';
 import { Plus, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-interface ForumActionButtonProps {
+interface ActionButtonProps {
     /** The text to display on the button. */
     label: string;
     /** The click handler. */
@@ -24,12 +24,12 @@ interface ForumActionButtonProps {
 }
 
 /**
- * ForumActionButton
+ * ActionButton
  * 
- * A standardized action button for the forum (Publish, Reply, etc.)
+ * A standardized action button (Publish, Reply, etc.)
  * that ensures a consistent premium look with specific rounding and tracking.
  */
-export function ForumActionButton({
+export function ActionButton({
     label,
     onClick,
     title,
@@ -38,7 +38,7 @@ export function ForumActionButton({
     loading = false,
     disabled = false,
     variant = 'primary'
-}: ForumActionButtonProps) {
+}: ActionButtonProps) {
     let finalIcon = icon;
     
     if (icon === 'plus') {

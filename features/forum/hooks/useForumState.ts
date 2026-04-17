@@ -23,6 +23,7 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [replyingToAuthorId, setReplyingToAuthorId] = useState<string | null>(null);
     const [direction, setDirection] = useState(0);
+    const [customTagValue, setCustomTagValue] = useState('');
 
     // Mobile detection: force 1 column on small screens
     useEffect(() => {
@@ -250,6 +251,8 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
         getReplyLikes,
         getReplyDislikes,
         addPost,
-        addReply
+        addReply,
+        customTagValue,
+        setCustomTagValue
     };
 }

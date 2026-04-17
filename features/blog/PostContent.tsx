@@ -36,6 +36,18 @@ function renderFormattedLine(text: string, query: string) {
 export function PostContent({ content, query, isSummary = false }: PostContentProps) {
   if (isSummary) return <HighlightText text={content} query={query} />;
 
+  // Detect HTML content (from RichTextEditor) — render it natively
+  const isHtml = /<[a-z][\s\S]*>/i.test(content);
+  if (isHtml) {
+    return (
+      <div
+        className="rich-text-content space-y-3 leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  // Plain text fallback — existing bullet / bold rendering
   const lines = content.split('\n');
   return (
     <div className="space-y-3">

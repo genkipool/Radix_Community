@@ -4,6 +4,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 import { GridToggle } from '@/components/ui/GridToggle';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { BlogDictionary } from '../types';
 
 interface BlogControlsProps {
@@ -28,6 +29,7 @@ interface BlogControlsProps {
     onTagSelect: (tag: string | null) => void;
     columns: number;
     onColumnsChange: (cols: number) => void;
+    onPublishClick: () => void;
     blogT: BlogDictionary;
 }
 
@@ -53,6 +55,7 @@ export function BlogControls({
     onTagSelect,
     columns,
     onColumnsChange,
+    onPublishClick,
     blogT
 }: BlogControlsProps) {
     return (
@@ -106,8 +109,14 @@ export function BlogControls({
                         />
                     </div>
 
-                    {/* RIGHT — Grid Toggle */}
-                    <div className="shrink-0 hidden sm:flex justify-end">
+                    {/* RIGHT — Actions */}
+                    <div className="shrink-0 hidden sm:flex items-center gap-3 justify-end">
+                        <ActionButton
+                            onClick={onPublishClick}
+                            label={blogT.modal.publish_btn}
+                            title={blogT.modal.publish_btn}
+                            icon="plus"
+                        />
                         <GridToggle columns={columns} onChange={onColumnsChange} max={4} />
                     </div>
                 </div>

@@ -7,7 +7,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { TagFilterBar } from '@/components/ui/TagFilterBar';
 import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { GridToggle } from '@/components/ui/GridToggle';
-import { ForumActionButton } from './ForumActionButton';
+import { ActionButton } from '@/components/ui/ActionButton';
 
 export function ForumToolbar() {
     const { 
@@ -62,7 +62,7 @@ export function ForumToolbar() {
                 />
 
                 <div className="flex items-center gap-2 shrink-0">
-                    <ForumActionButton
+                    <ActionButton
                         onClick={() => { setReplyingToAuthorId(null); setShowPublishModal(true); }}
                         label={t.forum.controls.publish}
                         title={t.forum.controls.publish}
