@@ -276,14 +276,16 @@ export const en = {
     h2b: "No ambiguities.",
     thFeature: "Feature",
     rows: [
-      { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", solana: "~0.4 sec (no atomicity)", radix: "~3 sec Atomic DvP" },
-      { feature: "DeFi hack risk", swift: "N/A (centralized)", evm: "High (Reentrancy, ERC-20 bugs)", solana: "High (compromised keys)", radix: "0% by design (ROA/FSM)" },
-      { feature: "Native KYC/AML", swift: "External manual", evm: "Third-party middleware", solana: "Third-party middleware", radix: "Auth Zones + native idOS" },
-      { feature: "Transaction readability", swift: "Opaque SWIFT messages", evm: "Blind Signing (hex code)", solana: "Blind Signing", radix: "Natural language Manifests" },
-      { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", solana: "~65k TPS (no sharding)", radix: "Millions TPS (Cerberus Sharding)" },
-      { feature: "MiCA Compliance", swift: "N/A", evm: "Costly external adaptation", solana: "Costly external adaptation", radix: "Native at base layer" },
-      { feature: "Programming language", swift: "Proprietary", evm: "Solidity (unsafe)", solana: "Rust (complex)", radix: "Scrypto (Rust + Asset-Oriented)" },
-      { feature: "Wallet / End-user UX", swift: "Centralized banking app", evm: "MetaMask (seed phrases)", solana: "Phantom (seed phrases)", radix: "Smart Wallet (biometrics + social recovery)" }
+      { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", bce: "T+0 (DvP in central bank money)", radix: "~3 sec Atomic DvP" },
+      { feature: "DeFi hack risk", swift: "N/A (centralized)", evm: "High (Reentrancy, ERC-20 bugs)", bce: "N/A (Permissioned private network)", radix: "0% by design (ROA/FSM)" },
+      { feature: "Native KYC / AML", swift: "External manual", evm: "Third-party middleware", bce: "100% Institutional (Regulated entities only)", radix: "Auth Zones + native idOS" },
+      { feature: "Transaction readability", swift: "Opaque SWIFT messages", evm: "Blind Signing (hex code)", bce: "TradFi standards (Opaque to public)", radix: "Natural language Manifests" },
+      { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", bce: "Wholesale volume (Centralized consensus)", radix: "Millions TPS (Cerberus Sharding)" },
+      { feature: "MiCA Compliance", swift: "N/A", evm: "Costly external adaptation", bce: "Exempt by Law (Central Bank Money)", radix: "Native at base layer" },
+      { feature: "Programming language", swift: "Proprietary", evm: "Solidity (unsafe)", bce: "Multiple (Bring-your-own-DLT)", radix: "Scrypto (Rust + Asset-Oriented)" },
+      { feature: "Wallet / End-user UX", swift: "Centralized banking app", evm: "MetaMask (seed phrases)", bce: "B2B Exclusive (TARGET2 accounts)", radix: "Smart Wallet (biometrics + social recovery)" },
+      { feature: "Costs and Predictability", swift: "High and opaque", evm: "High volatility (Gas spikes)", bce: "Usage cost fixed by ECB", radix: "Low and predictable by design" },
+      { feature: "Liquidity Fragmentation", swift: "Isolated banking silos", evm: "High (Fragmented in multiple L2s)", bce: "High (Connects different private DLTs)", radix: "Zero (Unified global network)" }
     ]
   },
   devs: {

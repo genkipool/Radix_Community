@@ -4,13 +4,13 @@ import { FadeIn } from '@/components/ui/FadeIn';
 import type { BaseSectionProps } from '../../types';
 
 export default function Comparison({ t }: BaseSectionProps) {
-  const rows: { feature: string; swift: string; evm: string; solana: string; radix: string }[] =
+  const rows: { feature: string; swift: string; evm: string; bce: string; radix: string }[] =
     t.comparativa.rows;
 
   const competitors = [
     { key: 'swift', label: 'SWIFT', className: 'text-red-400' },
     { key: 'evm', label: 'Ethereum (EVM)', className: 'text-red-400' },
-    { key: 'solana', label: 'Solana', className: 'text-red-400' },
+    { key: 'bce', label: 'Appia / Pontes (BCE)', className: 'text-red-400' },
   ] as const;
 
   return (
