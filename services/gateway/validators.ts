@@ -17,7 +17,7 @@ import { Redis } from '@upstash/redis';
 
 
 // ── Opaque Gateway response type aliases ─────────────────────────────────────
-type GatewayMetadata   = {
+type GatewayMetadata = {
     items: Array<{
         key: string;
         value: {
@@ -29,9 +29,9 @@ type GatewayMetadata   = {
         };
     }>;
 };
-type GatewayValidator  = { 
-    address: string; 
-    metadata?: GatewayMetadata; 
+type GatewayValidator = {
+    address: string;
+    metadata?: GatewayMetadata;
     state?: {
         is_registered?: boolean;
         accepts_delegated_stake?: boolean;
@@ -39,29 +39,29 @@ type GatewayValidator  = {
         public_key?: { key_hex: string };
         consensus_public_key?: { key_hex: string };
         owner_role?: unknown;
-    }; 
-    active_in_epoch?: { stake: string }; 
+    };
+    active_in_epoch?: { stake: string };
     stake_vault?: { balance: string };
     stake_unit_resource_address?: string;
     locked_owner_stake_unit_vault?: { balance: string };
-    details?: { 
-        total_supply?: string; 
-        total_minted?: string; 
+    details?: {
+        total_supply?: string;
+        total_minted?: string;
         public_key?: { key_hex: string };
     };
-    effective_fee_factor?: { 
-        current?: { fee_factor?: number }; 
-        pending?: { fee_factor?: number }; 
+    effective_fee_factor?: {
+        current?: { fee_factor?: number };
+        pending?: { fee_factor?: number };
     };
 };
-type GatewayUptimeItem = { 
-    address: string; 
-    proposals_made?: number; 
-    proposals_missed?: number; 
+type GatewayUptimeItem = {
+    address: string;
+    proposals_made?: number;
+    proposals_missed?: number;
 };
-type GatewayResponse   = { 
-    items?: GatewayValidator[]; 
-    validators?: { items?: GatewayValidator[]; next_cursor?: string } | GatewayValidator[]; 
+type GatewayResponse = {
+    items?: GatewayValidator[];
+    validators?: { items?: GatewayValidator[]; next_cursor?: string } | GatewayValidator[];
 };
 
 const protocolVotesCache = protocolVotesCacheRaw as Record<string, string>;
@@ -118,9 +118,9 @@ function chunkArray<T>(array: T[], size: number): T[][] {
     return chunks;
 }
 
-const BATCH_SIZE      = 150;
-const LSU_CHUNK_SIZE  = 20;  // /state/entity/details allows max 20 addresses per request
-const EPOCH_HISTORY   = 5;    // 6 per-epoch entries — enough for last 6 epochs as requested
+const BATCH_SIZE = 150;
+const LSU_CHUNK_SIZE = 20;  // /state/entity/details allows max 20 addresses per request
+const EPOCH_HISTORY = 5;    // 6 per-epoch entries — enough for last 6 epochs as requested
 
 /* ═══════ GEOLOCATION HELPERS ═══════ */
 interface GeoData {
@@ -175,9 +175,9 @@ function buildUptimeMap(responses: GatewayResponse[] | unknown[]): Map<string, G
 
 function fetchUptimeBatched(
     gateway: ReturnType<typeof import('./client').getGateway>,
-    chunks:  string[][],
-    from?:   number,
-    at?:     number | null,
+    chunks: string[][],
+    from?: number,
+    at?: number | null,
 ): Promise<GatewayResponse[]> {
     // runWithLimit caps simultaneous requests; withRetry handles 429s per chunk.
     return runWithLimit(
@@ -187,7 +187,7 @@ function fetchUptimeBatched(
                     validatorsUptimeRequest: {
                         validator_addresses: chunk,
                         ...(from !== undefined ? { from_ledger_state: { epoch: from } } : {}),
-                        ...(at  !== undefined && at !== null ? { at_ledger_state: { epoch: at } } : {}),
+                        ...(at !== undefined && at !== null ? { at_ledger_state: { epoch: at } } : {}),
                     },
                 }) as Promise<unknown> as Promise<GatewayResponse>
             ),
@@ -244,7 +244,7 @@ export async function fetchValidatorsWithLedger(
             });
             if (!res.ok) break;
             try {
-                const data = await res.json() as { 
+                const data = await res.json() as {
                     validators?: { items?: GatewayValidator[]; next_cursor?: string };
                     items?: GatewayValidator[];
                     next_cursor?: string;
@@ -254,7 +254,7 @@ export async function fetchValidatorsWithLedger(
                 cursor = data?.validators?.next_cursor ?? data?.next_cursor ?? undefined;
             } catch (err) {
                 logger.error({ err }, '[fetchAllValidatorsRest] JSON parse failed');
-                break; 
+                break;
             }
         } while (cursor);
         return items;
@@ -265,10 +265,10 @@ export async function fetchValidatorsWithLedger(
         withRetry(() => gateway.status.getCurrent()),
     ]);
 
-    logger.info({ 
-        network, 
+    logger.info({
+        network,
         rawCount: validatorsList.length,
-        epoch: currentStatus.ledger_state.epoch 
+        epoch: currentStatus.ledger_state.epoch
     }, '[ValidatorsService] Raw validators fetched from REST API');
 
     if (validatorsList.length === 0) {
@@ -301,7 +301,7 @@ export async function fetchValidatorsWithLedger(
         .map((v: GatewayValidator) => {
             const s = (v?.state as Record<string, unknown>) ?? {};
             return s?.stake_unit_resource_address ||
-                   v?.stake_unit_resource_address || '';
+                v?.stake_unit_resource_address || '';
         })
         .filter(Boolean) as string[];
     const lsuChunks = chunkArray([...new Set(lsuAddresses)], LSU_CHUNK_SIZE);
@@ -367,10 +367,10 @@ export async function fetchValidatorsWithLedger(
         snapshotMaps.set(epoch, map);
     });
 
-    logger.info({ 
-        network, 
+    logger.info({
+        network,
         snapshotsCount: allSnapshots.length,
-        uptimeMapsCreated: snapshotMaps.size 
+        uptimeMapsCreated: snapshotMaps.size
     }, '[ValidatorsService] Uptime snapshots processed');
 
     // Latest Uptime (Total) is effectively the "now" snapshot
@@ -443,9 +443,9 @@ export async function fetchValidatorsWithLedger(
             addr =>
                 withRetry(async () => {
                     const res = await fetch(`${gatewayBaseUrl}/extensions/resource-holders/page`, {
-                        method:  'POST',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify({ resource_address: addr, limit_per_page: 100 }),
+                        body: JSON.stringify({ resource_address: addr, limit_per_page: 100 }),
                     });
                     // Surface HTTP 429 so withRetry can catch and back off
                     if (res.status === 429) {
@@ -570,10 +570,10 @@ export async function fetchValidatorsWithLedger(
         // ── Fee & APY ──
         const effectiveFeeFactorData = v.effective_fee_factor as { current?: { fee_factor?: number }; pending?: { fee_factor?: number } } | undefined;
         const feeFactor = Number(effectiveFeeFactorData?.current?.fee_factor || 0);
-        const upcomingFeeFactor = effectiveFeeFactorData?.pending?.fee_factor !== undefined 
-            ? Number(effectiveFeeFactorData.pending.fee_factor) 
+        const upcomingFeeFactor = effectiveFeeFactorData?.pending?.fee_factor !== undefined
+            ? Number(effectiveFeeFactorData.pending.fee_factor)
             : undefined;
-        
+
         const hasPendingFeeChange = upcomingFeeFactor !== undefined && upcomingFeeFactor !== feeFactor;
         const upcomingFee = upcomingFeeFactor !== undefined ? roundTo(upcomingFeeFactor * 100, 2) : undefined;
 
@@ -613,7 +613,7 @@ export async function fetchValidatorsWithLedger(
         // Try multiple locations for the public key
         const publicKey = (state?.public_key as Record<string, string>)?.key_hex ||
             (state?.consensus_public_key as Record<string, string>)?.key_hex ||
-            (v.details as Record<string,Record<string,Record<string,string>>>)?.public_key?.key_hex || '';
+            (v.details as Record<string, Record<string, Record<string, string>>>)?.public_key?.key_hex || '';
 
         const rawProtocolVote = protocolVotesCache[v.address] || '';
         const protocolVote = PROTOCOL_SIGNALS[rawProtocolVote] || sanitizeText(rawProtocolVote) || 'None';
@@ -630,7 +630,7 @@ export async function fetchValidatorsWithLedger(
         const countryCode = getMetadataValue(v.metadata, 'country_code') || geo?.countryCode || '';
 
         // Owner address derived from state only (no NFT location lookup)
-        const ownerRole = state?.owner_role as { 
+        const ownerRole = state?.owner_role as {
             updater?: { updater?: { non_fungible?: { local_id?: { value?: string } } } },
             updaters?: Array<{ non_fungible?: { local_id?: { value?: string } } }>
         } | undefined;
@@ -639,15 +639,15 @@ export async function fetchValidatorsWithLedger(
             ownerRole?.updaters?.[0]?.non_fungible?.local_id?.value || '';
 
         // ── Stake & LSU factor ────────────────────────────────────────────
-        const finalXrdStake   = delegatedStake;
-        const finalLsuFactor  = lsu2xrdFactor; // already computed above
+        const finalXrdStake = delegatedStake;
+        const finalLsuFactor = lsu2xrdFactor; // already computed above
         const delegatorsCount = holdersMap.get(lsuResource as string) || 0;
 
         // ── Technical Metadata (from validator's own metadata only) ───────
-        const versionFinal  = getMetadataValue(v.metadata, METADATA_KEYS.VERSION);
-        const commitFinal   = getMetadataValue(v.metadata, METADATA_KEYS.COMMIT);
+        const versionFinal = getMetadataValue(v.metadata, METADATA_KEYS.VERSION);
+        const commitFinal = getMetadataValue(v.metadata, METADATA_KEYS.COMMIT);
         const providerFinal = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || geo?.org || geo?.isp || '';
-        const countryFinal  = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY)  || geo?.country || '';
+        const countryFinal = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || geo?.country || '';
 
         return {
             id: v.address,
@@ -777,10 +777,10 @@ export async function fetchValidatorsWithLedger(
     return {
         validators,
         ledgerState: {
-            epoch:                      currentStatus.ledger_state.epoch,
-            state_version:              currentStatus.ledger_state.state_version,
-            round:                      (currentStatus.ledger_state as unknown as { round?: number }).round,
-            proposer_round_timestamp:   (currentStatus.ledger_state as unknown as { proposer_round_timestamp?: string }).proposer_round_timestamp,
+            epoch: currentStatus.ledger_state.epoch,
+            state_version: currentStatus.ledger_state.state_version,
+            round: (currentStatus.ledger_state as unknown as { round?: number }).round,
+            proposer_round_timestamp: (currentStatus.ledger_state as unknown as { proposer_round_timestamp?: string }).proposer_round_timestamp,
         },
     };
 }
@@ -821,12 +821,15 @@ export function computeNetworkStats(
 // ── Centralized Cache Wrapper ──────────────────────────────────────────────
 const getRedisClient = () => {
     try {
-        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-            const client = Redis.fromEnv();
+        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+            const client = new Redis({
+                url: process.env.KV_REST_API_URL,
+                token: process.env.KV_REST_API_TOKEN,
+            });
             logger.info('[ValidatorsService] Upstash Redis client initialized successfully');
             return client;
         } else {
-            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN)');
+            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
         }
     } catch (e) {
         logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
@@ -848,7 +851,7 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
             try {
                 // Step 2 & 3: Consult API and validate
                 const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
-                
+
                 // SECURITY: Anti-Garbage protection.
                 if (!validators || validators.length === 0) {
                     throw new Error(`Gateway returned empty validator set for ${network}`);
@@ -876,7 +879,7 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
             } catch (error) {
                 // Step 5: Fallback to Storage
                 logger.warn({ network, error: String(error) }, '[ValidatorsService] API query failed. Attempting Redis fallback.');
-                
+
                 if (redis) {
                     try {
                         const fallbackData = await redis.get<{ validators: Validator[], networkStats: NetworkStats | null }>(backupKey);
@@ -888,7 +891,7 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
                         logger.error({ err: redisError }, '[ValidatorsService] Redis fallback failed');
                     }
                 }
-                
+
                 // Fallback absolutely empty to avoid UI crash
                 logger.error({ network }, '[ValidatorsService] All fallback strategies failed. Returning empty system.');
                 return { validators: [], networkStats: null };
