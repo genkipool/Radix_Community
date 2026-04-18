@@ -740,95 +740,108 @@ const getRedisClient = () => {
  * Paginated queries (cursor != null) always go to the API directly
  * since they cannot be meaningfully cached in Storage.
  */
-export const getRecentTransactionsCached = (
-    cursor?: string,
-    limit = 15,
-    network: Network = 'mainnet'
+const getRecentTransactionsFromDataCache = (
+    cursor: string | undefined,
+    limit: number,
+    network: Network
 ) =>
     unstable_cache(
         async () => {
             const isTip = !cursor;
-            const redis = isTip ? getRedisClient() : null;
-            const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+            const result = await fetchRecentTransactions(cursor, limit, network);
 
-            // ── Step 1: Try Storage for instant return (tip only) ──────────
-            if (redis && isTip) {
-                try {
-                    const staleData = await redis.get<{
-                        transactions: TransactionInfo[];
-                        nextCursor: string | undefined;
-                    }>(backupKey);
-
-                    if (staleData?.transactions && staleData.transactions.length > 0) {
-                        logger.info(
-                            { network, count: staleData.transactions.length },
-                            '[TransactionsService] Serving stale transactions tip from Redis for rapid response',
-                        );
-
-                        // ── Step 2: Background refresh ─────────────────────
-                        after(async () => {
-                            try {
-                                logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
-                                const freshResult = await fetchRecentTransactions(cursor, limit, network);
-
-                                if (!freshResult.transactions || freshResult.transactions.length === 0) {
-                                    logger.warn({ network }, '[TransactionsService] Background fetch returned empty — keeping existing Storage');
-                                    return;
-                                }
-
-                                await redis.set(backupKey, freshResult);
-                                revalidateTag(`transactions-${network}`, 'max');
-                                logger.info(
-                                    { network, count: freshResult.transactions.length },
-                                    '[TransactionsService] Background revalidation complete — Storage and Cache updated',
-                                );
-                            } catch (bgError) {
-                                logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
-                            }
-                        });
-
-                        return staleData;
-                    }
-                } catch (redisReadError) {
-                    logger.error({ err: redisReadError, network }, '[TransactionsService] Redis read failed — falling through to API');
-                }
-            }
-
-            // ── Step 3: Cold Start / Paginated query — blocking API call ───
-            try {
-                if (isTip) logger.info({ network }, '[TransactionsService] Cold start: fetching transactions tip from API');
-                const result = await fetchRecentTransactions(cursor, limit, network);
-
-                // Anti-Garbage protection for the initial load
-                if (result.transactions.length === 0 && isTip) {
-                    throw new Error(`Gateway returned 0 recent transactions for ${network}`);
-                }
-
-                // Seed Storage for future requests (tip only)
-                if (redis && isTip) {
-                    redis.set(backupKey, result)
-                        .then(() => logger.info({ network }, '[TransactionsService] Cold-start data saved to Redis'))
-                        .catch(e => logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cold start'));
-                }
-
-                return result;
-            } catch (error) {
-                if (isTip) {
-                    // ── Step 4: Absolute Fallback — empty state ─────────────
-                    logger.error(
-                        { network, error: String(error) },
-                        '[TransactionsService] All data sources exhausted. Returning empty state to prevent UI crash.',
+            // Seed Storage for future requests (tip only)
+            if (isTip) {
+                const redis = getRedisClient();
+                if (redis) {
+                    const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+                    redis.set(backupKey, result).catch((e) =>
+                        logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
                     );
-                    return { transactions: [] as TransactionInfo[], nextCursor: undefined };
                 }
-
-                // Paginated queries: propagate error so React Query can retry
-                throw error;
             }
+
+            return result;
         },
         [`recent-transactions-${network}-${cursor || 'tip'}-${limit}`],
         { revalidate: 10, tags: ['transactions', `transactions-${network}`] },
     )();
+
+/**
+ * Cached version of fetchRecentTransactions (Data Cache).
+ *
+ * SWR (Stale-While-Revalidate) pattern for the initial tip load:
+ *   1. Upstash Redis (Storage) — fast return of stale data, then
+ *      background API refresh via after() outside the cache boundary.
+ *   2. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   3. Radix Gateway API (blocking cold-start) — first ever load.
+ *   4. Absolute Fallback — returns empty state to prevent UI crash.
+ */
+export async function getRecentTransactionsCached(
+    cursor?: string,
+    limit = 15,
+    network: Network = 'mainnet'
+) {
+    const isTip = !cursor;
+    const redis = isTip ? getRedisClient() : null;
+    const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+
+    // ── Step 1: Try Storage for instant SWR return (tip only) ──────────────
+    if (redis && isTip) {
+        try {
+            const staleData = await redis.get<{
+                transactions: TransactionInfo[];
+                nextCursor: string | undefined;
+            }>(backupKey);
+
+            if (staleData?.transactions && staleData.transactions.length > 0) {
+                logger.info(
+                    { network, count: staleData.transactions.length },
+                    '[TransactionsService] Serving stale transactions tip from Redis for rapid response',
+                );
+
+                // ── Step 2: Background revalidation ────────────────────────
+                // This call is OUTSIDE unstable_cache, so it can safely call revalidateTag.
+                after(async () => {
+                    try {
+                        logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
+                        const freshResult = await fetchRecentTransactions(cursor, limit, network);
+
+                        // Update Redis + Invalidate Data Cache
+                        await redis.set(backupKey, freshResult);
+
+                        // revalidateTag is safe here because we're in a standard server action/route/after context
+                        revalidateTag(`transactions-${network}`, 'max');
+
+                        logger.info({ network }, '[TransactionsService] Background revalidation complete');
+                    } catch (bgError) {
+                        logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
+                    }
+                });
+
+                return staleData;
+            }
+        } catch (redisReadError) {
+            logger.error({ err: redisReadError, network }, '[TransactionsService] Redis read failed — falling through to Data Cache');
+        }
+    }
+
+    // ── Step 3: Use Next.js Data Cache (with blocking fetch on miss) ───────
+    try {
+        return await getRecentTransactionsFromDataCache(cursor, limit, network);
+    } catch (error) {
+        if (isTip) {
+            logger.error(
+                { network, error: String(error) },
+                '[TransactionsService] All data sources exhausted for tip. Returning empty state.',
+            );
+            return { transactions: [] as TransactionInfo[], nextCursor: undefined };
+        }
+        // Paginated queries: propagate error so React Query can retry
+        throw error;
+    }
+}
+
 
 /**
  * Cached version of fetchRoundProposer (Data Cache).
