@@ -36,7 +36,7 @@ export default function Comparison({ t }: BaseSectionProps) {
       <div className="flex items-center justify-center md:justify-start gap-2">
         <span className="leading-tight">{content}</span>
         {isWinner && row.expKey && (
-          <InfoTooltip content={t.comparativa.explanations[row.expKey]}>
+          <InfoTooltip content={t.comparativa.explanations[row.expKey as keyof typeof t.comparativa.explanations]}>
             <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 cursor-help" />
           </InfoTooltip>
         )}
