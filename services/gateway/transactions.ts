@@ -572,79 +572,98 @@ export async function fetchFilteredTransactions(options: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// fetchStakeHistoryRaw
+//
+// Aggregates 90 days of stake/unstake/claim activity for a validator directly
+// from the Gateway API. This is a heavy operation (up to 20 API pages).
+// Used exclusively by the background Cron worker.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchStakeHistoryRaw(
+    validatorAddress: string,
+    network: Network = 'mainnet',
+): Promise<StakeHistoryEntry[]> {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    ninetyDaysAgo.setHours(0, 0, 0, 0);
+
+    // Pre-fill every day so days with no activity still appear in the chart
+    const dailyMap = new Map<string, { stake: number; unstake: number; claim: number }>();
+    for (let i = 0; i < 90; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dailyMap.set(d.toISOString().split('T')[0], { stake: 0, unstake: 0, claim: 0 });
+    }
+
+    const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+    let cursor: string | undefined;
+    let done = false;
+    let pageCount = 0;
+    const MAX_PAGES = 20;
+
+    while (!done && pageCount < MAX_PAGES) {
+        const page = await searchTransactionsByAddress(
+            validatorAddress,
+            cursor,
+            100,
+            network,
+            { start: startDate },
+        );
+        pageCount++;
+
+        for (const tx of page.transactions) {
+            const confirmedAt =
+                tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
+            if (confirmedAt < ninetyDaysAgo) { done = true; break; }
+
+            const dateStr = confirmedAt.toISOString().split('T')[0];
+            const day = dailyMap.get(dateStr);
+            if (!day) continue;
+
+            if (tx.stakeXrd) day.stake += tx.stakeXrd;
+            if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
+            if (tx.claimXrd) day.claim += tx.claimXrd;
+        }
+
+        if (!page.nextCursor) done = true;
+        else cursor = page.nextCursor;
+    }
+
+    // If we reached the page limit without finishing, it's an incomplete history.
+    // Throw to avoid caching a partial state.
+    if (pageCount >= MAX_PAGES) {
+        throw new Error(`Failed to fetch full history for ${validatorAddress} (max pages reached)`);
+    }
+
+    return Array.from(dailyMap.entries())
+        .map(([date, vals]) => ({ date, ...vals }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // fetchStakeHistoryCached
 //
-// Aggregates 90 days of stake/unstake/claim activity for a validator.
-// Results are memory-cached for 5 minutes. Uses native date filtering so the
-// Gateway only returns transactions from the last 90 days.
+// Reads the 90-day stake history directly from Upstash Redis, yielding an
+// instant sub-20ms response time. Used by the Frontend UI.
 // ─────────────────────────────────────────────────────────────────────────────
-const getCachedStakeHistory = unstable_cache(
-    async (validatorAddress: string, network: Network): Promise<StakeHistoryEntry[]> => {
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-        ninetyDaysAgo.setHours(0, 0, 0, 0);
-
-        // Pre-fill every day so days with no activity still appear in the chart
-        const dailyMap = new Map<string, { stake: number; unstake: number; claim: number }>();
-        for (let i = 0; i < 90; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            dailyMap.set(d.toISOString().split('T')[0], { stake: 0, unstake: 0, claim: 0 });
-        }
-
-        const startDate = ninetyDaysAgo.toISOString().split('T')[0];
-        let cursor: string | undefined;
-        let done = false;
-        let pageCount = 0;
-        const MAX_PAGES = 20;
-
-        while (!done && pageCount < MAX_PAGES) {
-            const page = await searchTransactionsByAddress(
-                validatorAddress,
-                cursor,
-                100,
-                network,
-                { start: startDate },
-            );
-            pageCount++;
-
-            for (const tx of page.transactions) {
-                const confirmedAt =
-                    tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
-                if (confirmedAt < ninetyDaysAgo) { done = true; break; }
-
-                const dateStr = confirmedAt.toISOString().split('T')[0];
-                const day = dailyMap.get(dateStr);
-                if (!day) continue;
-
-                if (tx.stakeXrd) day.stake += tx.stakeXrd;
-                if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
-                if (tx.claimXrd) day.claim += tx.claimXrd;
-            }
-
-            if (!page.nextCursor) done = true;
-            else cursor = page.nextCursor;
-        }
-
-        // If we reached the page limit without finishing, it's an incomplete history.
-        // Throw to avoid caching a partial state.
-        if (pageCount >= MAX_PAGES) {
-            throw new Error(`Failed to fetch full history for ${validatorAddress} (max pages reached)`);
-        }
-
-        return Array.from(dailyMap.entries())
-            .map(([date, vals]) => ({ date, ...vals }))
-            .sort((a, b) => a.date.localeCompare(b.date));
-    },
-    ['stake-history-base'],
-    { revalidate: 300, tags: ['stake-history'] }
-);
-
 export async function fetchStakeHistoryCached(
     validatorAddress: string,
     network: Network = 'mainnet',
 ): Promise<StakeHistoryEntry[]> {
-    return getCachedStakeHistory(validatorAddress, network);
+    try {
+        const redis = getRedisClient();
+        if (redis) {
+            const cachedStr = await redis.hget<string>('stake_history_map', validatorAddress);
+            if (cachedStr) {
+                return typeof cachedStr === 'string' ? JSON.parse(cachedStr) : cachedStr;
+            }
+        }
+    } catch (e) {
+        logger.error({ err: e, validatorAddress }, '[TransactionsService] Failed to read stake history from Redis');
+    }
+    
+    // Fallback: Calculate synchronously if missing from Redis
+    logger.warn({ validatorAddress }, '[TransactionsService] Stake history missing in Redis. Falling back to heavy Gateway fetch.');
+    return fetchStakeHistoryRaw(validatorAddress, network);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

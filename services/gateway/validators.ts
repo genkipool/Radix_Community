@@ -67,10 +67,28 @@ type GatewayResponse = {
 
 const protocolVotesCache = protocolVotesCacheRaw as Record<string, string>;
 // ── Server-side holders cache ─────────────────────────────────────────────────
-// Caches LSU holder counts per resource address (slow-changing data).
-const holdersCache = new Map<string, { count: number; expiry: number }>();
-const HOLDERS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// LSU Holder counts are now completely decoupled from this synchronous flow.
+// A specialized background cron job (/api/cron/sync-holders) throttles requests
+// to the Gateway API (to respect 160rq/min global limit) and places the fresh
+// counts directly into Upstash Redis.
 
+const getRedisClient = () => {
+    try {
+        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+            const client = new Redis({
+                url: process.env.KV_REST_API_URL,
+                token: process.env.KV_REST_API_TOKEN,
+            });
+            logger.info('[ValidatorsService] Upstash Redis client initialized successfully');
+            return client;
+        } else {
+            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
+        }
+    } catch (e) {
+        logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
+    }
+    return null;
+};
 
 const METADATA_KEYS = {
     NAME: 'name',
@@ -416,68 +434,31 @@ export async function fetchValidatorsWithLedger(
        Removed ~250 API calls per fetchValidators invocation.
     ── */
 
-    // ── Phase 5: LSU holder counts (REST, ≤ CONCURRENCY.HOLDERS) ─────
-    // This endpoint lives on the same Cloudflare origin but under a
-    // different path — still rate-limited. Results are cached for 5 min
-    // (holdersCache) so the ~300 REST calls are only made once per TTL
-    // window regardless of how many concurrent requests arrive.
-    const gatewayBaseUrl = network === 'stokenet'
-        ? 'https://stokenet.radixdlt.com'
-        : 'https://mainnet.radixdlt.com';
-
+    // ── Phase 5: LSU holder counts (INSTANT REDIS) ───────────────────
+    // Carga Masiva de Delegadores (Holders)
+    // El sincronizador se realiza en segundo plano vía Uptime Cron para evitar
+    // superar los límites hiperestrictos 160req/min de Cloudflare Radix.
     const holdersMap = new Map<string, number>();
-    const nowHolders = Date.now();
-
-    // Separate cached vs stale addresses so we only hit the API for stale ones
-    const staleLsuAddresses = lsuAddresses.filter(addr => {
-        const cached = holdersCache.get(addr);
-        if (cached && cached.expiry > nowHolders) {
-            holdersMap.set(addr, cached.count);
-            return false; // already fresh
-        }
-        return true; // needs refresh
-    });
-
-    if (staleLsuAddresses.length > 0) {
-        const holderEntries = await runInBatches(
-            staleLsuAddresses,
-            addr =>
-                withRetry(async () => {
-                    const res = await fetch(`${gatewayBaseUrl}/extensions/resource-holders/page`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ resource_address: addr, limit_per_page: 100 }),
+    
+    if (lsuAddresses.length > 0) {
+        try {
+            const redis = getRedisClient();
+            if (redis) {
+                // Recuperar las cuentas masivamente desde el diccionario subido por el cron
+                const allHolders = await redis.hgetall<Record<string, number>>('lsu_holders');
+                if (allHolders) {
+                    lsuAddresses.forEach(addr => {
+                        // El cron podría no haber llegado a él todavía.
+                        const val = allHolders[addr] ?? 0;
+                        holdersMap.set(addr, val);
                     });
-                    // Surface HTTP 429 so withRetry can catch and back off
-                    if (res.status === 429) {
-                        const err = Object.assign(new Error('429'), { status: 429 });
-                        // Attach a synthetic fetchResponse so _getRetryAfterMs can read the header
-                        (err as Error & { fetchResponse?: Response }).fetchResponse = res;
-                        throw err;
-                    }
-                    const data = await res.json().catch(() => ({})) as Record<string, unknown>;
-                    const totalCount = (data.total_count as number) || 0;
-
-                    // Subtract non-account entities (pools, components) from the count.
-                    const items = data.items || [];
-                    const nonAccountHoldersCount = (items as Record<string, string>[]).filter(
-                        (h) => h.address && !h.address.startsWith('account_')
-                    ).length;
-
-                    return { addr, count: Math.max(0, totalCount - nonAccountHoldersCount) };
-                }).catch(() => ({ addr: addr as unknown as string, count: 0 })),
-            CONCURRENCY.HOLDERS,
-        );
-
-        holderEntries.forEach(h => {
-            holdersMap.set(h.addr as string, h.count);
-            holdersCache.set(h.addr as string, { count: h.count, expiry: nowHolders + HOLDERS_CACHE_TTL });
-        });
-
-        // Prune oversized holders cache (>600 entries)
-        if (holdersCache.size > 600) {
-            const oldest = holdersCache.keys().next().value;
-            if (oldest) holdersCache.delete(oldest);
+                    logger.info({ network, fetchedCount: Object.keys(allHolders).length }, '[ValidatorsService] Loaded LSU holder counts from Upstash Redis');
+                }
+            } else {
+                logger.warn('[ValidatorsService] Redis unavailable, skipping LSU holder counts phase');
+            }
+        } catch (e) {
+            logger.error({ err: e }, '[ValidatorsService] Redis Hash Read Failed for LSU Holders');
         }
     }
 
@@ -819,24 +800,7 @@ export function computeNetworkStats(
     };
 }
 
-// ── Centralized Cache Wrapper ──────────────────────────────────────────────
-const getRedisClient = () => {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            const client = new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-            logger.info('[ValidatorsService] Upstash Redis client initialized successfully');
-            return client;
-        } else {
-            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
-    }
-    return null;
-};
+
 
 /**
  * Cached validator data with SWR (Stale-While-Revalidate) pattern.
