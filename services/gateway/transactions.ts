@@ -23,6 +23,12 @@ import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/ra
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
+import crypto from 'crypto';
+
+
+/**
+ * Helper to initialize Upstash Redis client.
+ */
 
 
 // ── Opaque Gateway response types ────────────────────────────────────────────
@@ -498,26 +504,23 @@ export async function searchTransactionsByAddress(
 // (With Message, With NFTs). For 'All' we need just one page; for tag-filtered
 // queries we may need a few more pages to fill the requested limit.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function fetchFilteredTransactions(options: {
-    tag?: string;
-    start?: string | null;
-    end?: string | null;
-    cursor?: string;
-    limit?: number;
-    address?: string;
-    network?: Network;
-    tzOffsetMinutes?: number;
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchFilteredTransactionsRaw
+//
+// The core logic for filtered transaction queries. Date ranges are pushed down to
+// the Gateway natively. Multi-page scanning is used for tags with no Gateway equivalent.
+// ─────────────────────────────────────────────────────────────────────────────
+async function fetchFilteredTransactionsRaw(options: {
+    tag: string;
+    start: string | null;
+    end: string | null;
+    cursor: string | undefined;
+    limit: number;
+    address: string | undefined;
+    network: Network;
+    tzOffsetMinutes: number;
 }): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
-    const {
-        tag = 'All',
-        start = null,
-        end = null,
-        cursor: initialCursor,
-        limit = 15,
-        address,
-        network = 'mainnet',
-        tzOffsetMinutes = 0,
-    } = options;
+    const { tag, start, end, cursor: initialCursor, limit, address, network, tzOffsetMinutes } = options;
 
     const dateRange = { start, end, tzOffsetMinutes };
     const results: TransactionInfo[] = [];
@@ -549,17 +552,6 @@ export async function fetchFilteredTransactions(options: {
 
     const finalTxs = results.slice(0, limit);
 
-    if (finalTxs.length === 0) {
-        logger.warn({ tag, address, pagesConsulted: pageCount }, '[TransactionsService] NO TRANSACTIONS FOUND AFTER FILTERING');
-    }
-
-    logger.info({
-        tag,
-        limit,
-        actualCount: finalTxs.length,
-        pagesConsulted: pageCount
-    }, '[TransactionsService] Filtered transactions final result');
-
     return {
         transactions: finalTxs,
         nextCursor:
@@ -570,6 +562,110 @@ export async function fetchFilteredTransactions(options: {
                     : undefined,
     };
 }
+
+/**
+ * Next.js Data Cache wrapper for filtered transactions.
+ */
+const getFilteredTransactionsFromDataCache = (
+    options: {
+        tag: string;
+        start: string | null;
+        end: string | null;
+        cursor: string | undefined;
+        limit: number;
+        address: string | undefined;
+        network: Network;
+        tzOffsetMinutes: number;
+    },
+    backupKey: string
+) =>
+    unstable_cache(
+        async () => {
+            logger.info({ tag: options.tag, address: options.address }, '[TransactionsService] Data Cache miss - fetching from API');
+            const result = await fetchFilteredTransactionsRaw(options);
+
+            // Seed Redis for SWR
+            const redis = getRedisClient();
+            if (redis) {
+                redis.set(backupKey, result).catch(e =>
+                    logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
+                );
+            }
+
+            return result;
+        },
+        [`filtered-txs-${options.network}-${options.tag}-${options.address || 'global'}-${options.cursor || 'tip'}-${options.limit}`],
+        { revalidate: 30, tags: ['transactions', `transactions-${options.network}`] }
+    )();
+
+/**
+ * Entry point for filtered transaction queries.
+ *
+ * Implements SWR (Stale-While-Revalidate) with Redis Persistence:
+ * 1. Redis Check: Fast hit for popular filtered views.
+ * 2. Background After: Refreshes Redis and Data Cache if stale.
+ * 3. Data Cache: Standard Next.js multi-node cache.
+ * 4. API Fallback: Gateway scanning (max 5 pages).
+ */
+export async function fetchFilteredTransactions(options: {
+    tag?: string;
+    start?: string | null;
+    end?: string | null;
+    cursor?: string;
+    limit?: number;
+    address?: string;
+    network?: Network;
+    tzOffsetMinutes?: number;
+}): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
+    const {
+        tag = 'All',
+        start = null,
+        end = null,
+        cursor,
+        limit = 15,
+        address,
+        network = 'mainnet',
+        tzOffsetMinutes = 0,
+    } = options;
+
+    const opParams = { tag, start, end, cursor, limit, address, network, tzOffsetMinutes };
+
+    // Generate a unique key based on all filter parameters to isolate versions in Redis
+    const paramHash = crypto.createHash('md5').update(JSON.stringify(opParams)).digest('hex').slice(0, 16);
+    const backupKey = `radix_txs_filtered_${network}_${paramHash}`;
+
+    const redis = getRedisClient();
+
+    // ── Step 1: Redis Fast Hit ───────────────────────────────────────────────
+    if (redis) {
+        try {
+            const stale = await redis.get<{ transactions: TransactionInfo[]; nextCursor: string }>(backupKey);
+            if (stale?.transactions && stale.transactions.length > 0) {
+                logger.info({ tag, address, count: stale.transactions.length }, '[TransactionsService] Serving filtered transactions from Redis');
+
+                // ── Step 2: Background Revalidation ──────────────────────────
+                after(async () => {
+                    try {
+                        const fresh = await fetchFilteredTransactionsRaw(opParams);
+                        await redis.set(backupKey, fresh);
+                        revalidateTag(`transactions-${network}`, 'max');
+                        logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
+                    } catch (bgErr) {
+                        logger.error({ err: bgErr, tag }, '[TransactionsService] Background filter revalidation failed');
+                    }
+                });
+
+                return stale;
+            }
+        } catch (e) {
+            logger.error({ err: e }, '[TransactionsService] Redis filter read failed');
+        }
+    }
+
+    // ── Step 3: Data Cache / API Scanning ────────────────────────────────────
+    return getFilteredTransactionsFromDataCache(opParams, backupKey);
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchStakeHistoryRaw
