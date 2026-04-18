@@ -18,35 +18,36 @@
 import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, revalidateTag } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
+import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
 
 
 // ── Opaque Gateway response types ────────────────────────────────────────────
-type GatewayField   = { 
-    value?: string; 
-    name?: string; 
-    kind?: string; 
+type GatewayField = {
+    value?: string;
+    name?: string;
+    kind?: string;
     field_name?: string;
     fields?: Array<{ kind: string; value: string; field_name: string }>;
 };
-type GatewayEvent   = {
+type GatewayEvent = {
     name?: string;
     emitter?: { entity?: { entity_address?: string } };
     emitter_address?: string;
-    data?: { 
+    data?: {
         fields?: GatewayField[];
         programmatic_json?: { fields: GatewayField[] };
     };
 };
-type GatewayItem    = {
+type GatewayItem = {
     fee_paid?: string;
     affected_global_entities?: string[];
     receipt?: { status?: string; events?: GatewayEvent[]; state_updates?: { updated_substates?: unknown[] } };
-    balance_changes?: { 
-        fungible_balance_changes?: Array<{ resource_address: string; entity_address: string; balance_change: string }>; 
+    balance_changes?: {
+        fungible_balance_changes?: Array<{ resource_address: string; entity_address: string; balance_change: string }>;
         non_fungible_balance_changes?: unknown[];
     };
     intent_hash?: string;
@@ -60,7 +61,7 @@ type GatewayItem    = {
     manifest_classes?: string[];
     round_update_transaction?: unknown;
 };
-type BalanceChange  = { resource_address: string; entity_address: string; balance_change: string };
+type BalanceChange = { resource_address: string; entity_address: string; balance_change: string };
 
 // ── Global stake-history caching is now handled by Next.js Data Cache ────────
 
@@ -184,7 +185,7 @@ function parseValidatorOpsFromEvents(events: GatewayEvent[]): ValidatorOp[] | un
             };
 
             const back = Array.from({ length: 10 }, (_, k) => ei - k - 1).filter(k => k >= 0);
-            const fwd  = Array.from({ length: 10 }, (_, k) => ei + k + 1).filter(
+            const fwd = Array.from({ length: 10 }, (_, k) => ei + k + 1).filter(
                 k => k < events.length,
             );
             if (!findXrdDeposit(back)) findXrdDeposit(fwd);
@@ -251,9 +252,9 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
         }
 
         if (stakeFromEvents > 0 || unstakeFromEvents > 0 || claimFromEvents > 0) {
-            stakeXrd   = stakeFromEvents   || undefined;
+            stakeXrd = stakeFromEvents || undefined;
             unstakeXrd = unstakeFromEvents || undefined;
-            claimXrd   = claimFromEvents   || undefined;
+            claimXrd = claimFromEvents || undefined;
         } else {
             // Fallback: derive amounts from fungible balance changes
             const changes: BalanceChange[] = ((item.balance_changes as Record<string, unknown>)?.fungible_balance_changes as BalanceChange[]) || [];
@@ -265,11 +266,11 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
                     c.entity_address === validatorAddress
                 ) {
                     const delta = Number(c.balance_change);
-                    if (delta > 0) stakeBC   += delta;
-                    else           outflowBC += Math.abs(delta);
+                    if (delta > 0) stakeBC += delta;
+                    else outflowBC += Math.abs(delta);
                 }
             }
-            if (stakeBC > 0)   stakeXrd = stakeBC;
+            if (stakeBC > 0) stakeXrd = stakeBC;
             if (outflowBC > 0) claimXrd = outflowBC;
         }
     }
@@ -293,17 +294,17 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
             item.transaction_hash ||
             item.state_version?.toString() ||
             '',
-        status:      item.receipt?.status || 'Committed',
-        feePaid:     Number(feeString),
+        status: item.receipt?.status || 'Committed',
+        feePaid: Number(feeString),
         confirmedAt:
             item.confirmed_at || item.round_timestamp
                 ? new Date((item.confirmed_at || item.round_timestamp) as string)
                 : new Date(),
-        message:          item.message?.content?.value || undefined,
-        epoch:            item.epoch  || 0,
-        round:            item.round  || 0,
-        accountsCount:    entities.filter((e: string) => e.startsWith('account_')).length,
-        componentsCount:  entities.filter((e: string) => e.startsWith('component_')).length,
+        message: item.message?.content?.value || undefined,
+        epoch: item.epoch || 0,
+        round: item.round || 0,
+        accountsCount: entities.filter((e: string) => e.startsWith('account_')).length,
+        componentsCount: entities.filter((e: string) => e.startsWith('component_')).length,
         hasNfts:
             (item.balance_changes?.non_fungible_balance_changes?.length ?? 0) > 0 ||
             entities.some((e: string) => e.startsWith('resource_') && e.includes(':')),
@@ -328,7 +329,7 @@ export async function fetchRecentTransactions(
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; tzOffsetMinutes?: number },
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
-    const gateway    = getGateway(network);
+    const gateway = getGateway(network);
     const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.tzOffsetMinutes);
 
     try {
@@ -344,16 +345,16 @@ export async function fetchRecentTransactions(
         );
 
         const transactions = (res.items || []).map(item => parseTransactionItem(item as unknown as GatewayItem, undefined, network));
-        
-        logger.info({ 
-            network, 
-            count: transactions.length, 
-            hasMore: !!res.next_cursor 
+
+        logger.info({
+            network,
+            count: transactions.length,
+            hasMore: !!res.next_cursor
         }, '[TransactionsService] Recent transactions fetched');
 
         return {
             transactions,
-            nextCursor:   res.next_cursor || undefined,
+            nextCursor: res.next_cursor || undefined,
         };
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -387,13 +388,13 @@ const getCachedTransactionDetails = unstable_cache(
                     body: JSON.stringify({
                         intent_hash: hash,
                         opt_ins: {
-                            receipt_events:           true,
+                            receipt_events: true,
                             affected_global_entities: true,
-                            balance_changes:          true,
-                            receipt_fee_summary:      true,
-                            receipt_fee_destination:  true,
-                            manifest_instructions:    true,
-                            confirmed_at:             true,
+                            balance_changes: true,
+                            receipt_fee_summary: true,
+                            receipt_fee_destination: true,
+                            manifest_instructions: true,
+                            confirmed_at: true,
                         },
                     }),
                 });
@@ -442,14 +443,14 @@ export async function searchTransactionsByAddress(
         const item = await fetchTransactionDetails(address, network);
         if (!item) return { transactions: [], nextCursor: undefined };
         return {
-        transactions: [parseTransactionItem(item as unknown as GatewayItem, undefined, network)],
-        nextCursor:   undefined,
-    };
+            transactions: [parseTransactionItem(item as unknown as GatewayItem, undefined, network)],
+            nextCursor: undefined,
+        };
     }
 
-    const gateway     = getGateway(network);
+    const gateway = getGateway(network);
     const isValidator = address.startsWith('validator_');
-    const dateParams  = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.tzOffsetMinutes);
+    const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.tzOffsetMinutes);
 
     try {
         const res = await withRetry(() =>
@@ -468,10 +469,10 @@ export async function searchTransactionsByAddress(
             parseTransactionItem(item as unknown as GatewayItem, isValidator ? address : undefined, network),
         );
 
-        logger.info({ 
-            network, 
-            address: address.slice(0, 16) + '...', 
-            count: transactions.length 
+        logger.info({
+            network,
+            address: address.slice(0, 16) + '...',
+            count: transactions.length
         }, '[TransactionsService] Transactions by address fetched');
 
         return { transactions, nextCursor: res.next_cursor || undefined };
@@ -510,9 +511,9 @@ export async function fetchFilteredTransactions(options: {
     const {
         tag = 'All',
         start = null,
-        end   = null,
+        end = null,
         cursor: initialCursor,
-        limit   = 15,
+        limit = 15,
         address,
         network = 'mainnet',
         tzOffsetMinutes = 0,
@@ -547,16 +548,16 @@ export async function fetchFilteredTransactions(options: {
     }
 
     const finalTxs = results.slice(0, limit);
-    
+
     if (finalTxs.length === 0) {
         logger.warn({ tag, address, pagesConsulted: pageCount }, '[TransactionsService] NO TRANSACTIONS FOUND AFTER FILTERING');
     }
 
-    logger.info({ 
-        tag, 
-        limit, 
-        actualCount: finalTxs.length, 
-        pagesConsulted: pageCount 
+    logger.info({
+        tag,
+        limit,
+        actualCount: finalTxs.length,
+        pagesConsulted: pageCount
     }, '[TransactionsService] Filtered transactions final result');
 
     return {
@@ -565,8 +566,8 @@ export async function fetchFilteredTransactions(options: {
             results.length >= limit
                 ? currentCursor
                 : pageCount < MAX_PAGES
-                  ? currentCursor
-                  : undefined,
+                    ? currentCursor
+                    : undefined,
     };
 }
 
@@ -613,12 +614,12 @@ const getCachedStakeHistory = unstable_cache(
                 if (confirmedAt < ninetyDaysAgo) { done = true; break; }
 
                 const dateStr = confirmedAt.toISOString().split('T')[0];
-                const day     = dailyMap.get(dateStr);
+                const day = dailyMap.get(dateStr);
                 if (!day) continue;
 
-                if (tx.stakeXrd)   day.stake   += tx.stakeXrd;
+                if (tx.stakeXrd) day.stake += tx.stakeXrd;
                 if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
-                if (tx.claimXrd)   day.claim   += tx.claimXrd;
+                if (tx.claimXrd) day.claim += tx.claimXrd;
             }
 
             if (!page.nextCursor) done = true;
@@ -652,19 +653,19 @@ export async function fetchStakeHistoryCached(
 // Looks up the validator that proposed a specific epoch/round combination.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchRoundProposer(
-    epoch:        number,
-    round:        number,
+    epoch: number,
+    round: number,
     stateVersion: number,
-    network:      Network = 'mainnet',
+    network: Network = 'mainnet',
 ): Promise<string | null> {
     const gateway = getGateway(network);
     try {
         const res = await gateway.stream.innerClient.streamTransactions({
             streamTransactionsRequest: {
                 at_ledger_state: { state_version: stateVersion },
-                limit_per_page:  30,
-                order:           'Desc',
-                opt_ins:         { receipt_events: true } as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
+                limit_per_page: 30,
+                order: 'Desc',
+                opt_ins: { receipt_events: true } as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
             },
         });
 
@@ -709,8 +710,16 @@ const getRedisClient = () => {
 
 /**
  * Cached version of fetchRecentTransactions (Data Cache).
- * Shares the same entry between API routes and Server Components.
- * Uses Upstash Redis as a resilient fallback exclusively for the initial tip load (!cursor).
+ *
+ * SWR (Stale-While-Revalidate) pattern for the initial tip load:
+ *   1. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   2. Upstash Redis (Storage) — fast return of stale data, then
+ *      background API refresh via after().
+ *   3. Radix Gateway API (blocking cold-start) — first ever load.
+ *   4. Absolute Fallback — returns empty state to prevent UI crash.
+ *
+ * Paginated queries (cursor != null) always go to the API directly
+ * since they cannot be meaningfully cached in Storage.
  */
 export const getRecentTransactionsCached = (
     cursor?: string,
@@ -723,44 +732,83 @@ export const getRecentTransactionsCached = (
             const redis = isTip ? getRedisClient() : null;
             const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
 
+            // ── Step 1: Try Storage for instant return (tip only) ──────────
+            if (redis && isTip) {
+                try {
+                    const staleData = await redis.get<{
+                        transactions: TransactionInfo[];
+                        nextCursor: string | undefined;
+                    }>(backupKey);
+
+                    if (staleData?.transactions && staleData.transactions.length > 0) {
+                        logger.info(
+                            { network, count: staleData.transactions.length },
+                            '[TransactionsService] Serving stale transactions tip from Redis for rapid response',
+                        );
+
+                        // ── Step 2: Background refresh ─────────────────────
+                        after(async () => {
+                            try {
+                                logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
+                                const freshResult = await fetchRecentTransactions(cursor, limit, network);
+
+                                if (!freshResult.transactions || freshResult.transactions.length === 0) {
+                                    logger.warn({ network }, '[TransactionsService] Background fetch returned empty — keeping existing Storage');
+                                    return;
+                                }
+
+                                await redis.set(backupKey, freshResult);
+                                revalidateTag(`transactions-${network}`, 'max');
+                                logger.info(
+                                    { network, count: freshResult.transactions.length },
+                                    '[TransactionsService] Background revalidation complete — Storage and Cache updated',
+                                );
+                            } catch (bgError) {
+                                logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
+                            }
+                        });
+
+                        return staleData;
+                    }
+                } catch (redisReadError) {
+                    logger.error({ err: redisReadError, network }, '[TransactionsService] Redis read failed — falling through to API');
+                }
+            }
+
+            // ── Step 3: Cold Start / Paginated query — blocking API call ───
             try {
+                if (isTip) logger.info({ network }, '[TransactionsService] Cold start: fetching transactions tip from API');
                 const result = await fetchRecentTransactions(cursor, limit, network);
-                // SECURITY: Anti-Garbage protection for the initial load
+
+                // Anti-Garbage protection for the initial load
                 if (result.transactions.length === 0 && isTip) {
                     throw new Error(`Gateway returned 0 recent transactions for ${network}`);
                 }
-                
-                // Backup to Storage ONLY if it is the initial load (tip)
+
+                // Seed Storage for future requests (tip only)
                 if (redis && isTip) {
                     redis.set(backupKey, result)
-                        .then(() => logger.info({ network }, `[TransactionsService] Successfully saved tx backup under key: ${backupKey}`))
-                        .catch(e => logger.error({ err: e }, `[TransactionsService] Failed to update Redis backup for ${network} txs`));
+                        .then(() => logger.info({ network }, '[TransactionsService] Cold-start data saved to Redis'))
+                        .catch(e => logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cold start'));
                 }
 
                 return result;
             } catch (error) {
-                if (isTip && redis) {
-                    logger.warn({ network, error: String(error) }, '[TransactionsService] API query failed. Attempting Redis fallback for transactions tip.');
-                    try {
-                        const fallbackData = await redis.get<{ transactions: TransactionInfo[], nextCursor: string | undefined }>(backupKey);
-                        if (fallbackData && fallbackData.transactions && fallbackData.transactions.length > 0) {
-                            logger.info({ network }, '[TransactionsService] Successfully retrieved valid fallback data from Redis');
-                            return fallbackData;
-                        }
-                    } catch (redisError) {
-                        logger.error({ err: redisError }, '[TransactionsService] Redis fallback failed');
-                    }
-                    
-                    logger.error({ network }, '[TransactionsService] All fallback strategies failed for tip. Returning empty system.');
-                    return { transactions: [], nextCursor: undefined };
+                if (isTip) {
+                    // ── Step 4: Absolute Fallback — empty state ─────────────
+                    logger.error(
+                        { network, error: String(error) },
+                        '[TransactionsService] All data sources exhausted. Returning empty state to prevent UI crash.',
+                    );
+                    return { transactions: [] as TransactionInfo[], nextCursor: undefined };
                 }
-                
-                // If it's a paginated query (!isTip), let Next.js handle the cache bust inherently
+
+                // Paginated queries: propagate error so React Query can retry
                 throw error;
             }
         },
         [`recent-transactions-${network}-${cursor || 'tip'}-${limit}`],
-        { revalidate: 30, tags: ['transactions', `transactions-${network}`] },
+        { revalidate: 10, tags: ['transactions', `transactions-${network}`] },
     )();
 
 /**

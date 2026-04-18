@@ -12,7 +12,8 @@ import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
 import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
 import type { Validator, NetworkStats } from '@/types/radix';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, revalidateTag } from 'next/cache';
+import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
 
 
@@ -838,9 +839,18 @@ const getRedisClient = () => {
 };
 
 /**
- * Cached validator data with Anti-Garbage protection.
- * Uses unstable_cache as primary caching layer and Upstash Redis as an absolute fallback
- * when the Radix API fails or returns an empty validator list.
+ * Cached validator data with SWR (Stale-While-Revalidate) pattern.
+ *
+ * Priority order:
+ *   1. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   2. Upstash Redis (Storage) — fast (~50-100 ms). Returns stale data
+ *      immediately and triggers a background API refresh via after().
+ *   3. Radix Gateway API (blocking cold-start) — only on first ever load
+ *      or when Redis is empty.
+ *   4. Absolute Fallback — returns empty state ([]) to prevent UI crash.
+ *
+ * The background refresh (step 2) updates both Redis and the Vercel cache
+ * tag so the *next* request hits step 1 with fresh data.
  */
 export const getValidatorsCached = (network: Network = 'mainnet') =>
     unstable_cache(
@@ -848,11 +858,66 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
             const redis = getRedisClient();
             const backupKey = `radix_validators_${network}_backup`;
 
+            // ── Step 1: Try Storage for instant return ─────────────────────
+            if (redis) {
+                try {
+                    const staleData = await redis.get<{
+                        validators: Validator[];
+                        networkStats: NetworkStats | null;
+                    }>(backupKey);
+
+                    if (staleData?.validators && staleData.validators.length > 0) {
+                        logger.info(
+                            { network, count: staleData.validators.length },
+                            '[ValidatorsService] Serving stale data from Redis for rapid response',
+                        );
+
+                        // ── Step 2: Background refresh ─────────────────────
+                        after(async () => {
+                            try {
+                                logger.info({ network }, '[ValidatorsService] Background revalidation started');
+                                const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
+
+                                if (!validators || validators.length === 0) {
+                                    logger.warn({ network }, '[ValidatorsService] Background fetch returned empty — keeping existing Storage');
+                                    return;
+                                }
+
+                                const freshResult = {
+                                    validators,
+                                    networkStats: computeNetworkStats(
+                                        validators,
+                                        ledgerState.epoch,
+                                        ledgerState.state_version,
+                                        ledgerState.round,
+                                        ledgerState.proposer_round_timestamp,
+                                    ),
+                                };
+
+                                // Update Storage + invalidate Vercel cache
+                                await redis.set(backupKey, freshResult);
+                                revalidateTag(`validators-${network}`, 'max');
+                                logger.info(
+                                    { network, epoch: ledgerState.epoch },
+                                    '[ValidatorsService] Background revalidation complete — Storage and Cache updated',
+                                );
+                            } catch (bgError) {
+                                logger.error({ err: bgError, network }, '[ValidatorsService] Background revalidation failed');
+                            }
+                        });
+
+                        return staleData;
+                    }
+                } catch (redisReadError) {
+                    logger.error({ err: redisReadError, network }, '[ValidatorsService] Redis read failed — falling through to API');
+                }
+            }
+
+            // ── Step 3: Cold Start — blocking API call ─────────────────────
             try {
-                // Step 2 & 3: Consult API and validate
+                logger.info({ network }, '[ValidatorsService] Cold start: fetching validators from API');
                 const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
 
-                // SECURITY: Anti-Garbage protection.
                 if (!validators || validators.length === 0) {
                     throw new Error(`Gateway returned empty validator set for ${network}`);
                 }
@@ -868,32 +933,20 @@ export const getValidatorsCached = (network: Network = 'mainnet') =>
                     ),
                 };
 
-                // Step 4: Backup to Storage
+                // Seed Storage for future requests
                 if (redis) {
                     redis.set(backupKey, result)
-                        .then(() => logger.info({ network }, `[ValidatorsService] Successfully saved validator backup to Upstash Redis under key: ${backupKey}`))
-                        .catch(e => logger.error({ err: e }, `[ValidatorsService] Failed to update Redis backup for ${network}`));
+                        .then(() => logger.info({ network }, '[ValidatorsService] Cold-start data saved to Redis'))
+                        .catch(e => logger.error({ err: e, network }, '[ValidatorsService] Failed to seed Redis on cold start'));
                 }
 
                 return result;
-            } catch (error) {
-                // Step 5: Fallback to Storage
-                logger.warn({ network, error: String(error) }, '[ValidatorsService] API query failed. Attempting Redis fallback.');
-
-                if (redis) {
-                    try {
-                        const fallbackData = await redis.get<{ validators: Validator[], networkStats: NetworkStats | null }>(backupKey);
-                        if (fallbackData && fallbackData.validators && fallbackData.validators.length > 0) {
-                            logger.info({ network }, '[ValidatorsService] Successfully retrieved valid fallback data from Redis');
-                            return fallbackData;
-                        }
-                    } catch (redisError) {
-                        logger.error({ err: redisError }, '[ValidatorsService] Redis fallback failed');
-                    }
-                }
-
-                // Fallback absolutely empty to avoid UI crash
-                logger.error({ network }, '[ValidatorsService] All fallback strategies failed. Returning empty system.');
+            } catch (apiError) {
+                // ── Step 4: Absolute Fallback — empty state ────────────────
+                logger.error(
+                    { network, error: String(apiError) },
+                    '[ValidatorsService] All data sources exhausted. Returning empty state to prevent UI crash.',
+                );
                 return { validators: [], networkStats: null };
             }
         },

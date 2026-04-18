@@ -276,35 +276,47 @@ export const en = {
     h2b: "From SWIFT to Radix.",
     description: "A technical and objective analysis of Radix against traditional systems (SWIFT), decentralized networks (EVM), and government initiatives (ECB).",
     thFeature: "Feature",
+    explanations: {
+      atomic: "<strong>Optimal choice: Radix DLT (~3 sec Atomic DvP)</strong><br/><br/><strong>Why:</strong> SWIFT takes days (T+2) due to correspondent banks. Ethereum takes ~15s, but sometimes suffers from block reorganizations. On the other hand, Appia/Pontes (ECB) achieves very robust same-day settlement (T+0) using central bank money (DvP), but its main limitation is operating in a closed, private infrastructure (only for authorized wholesale entities) and subject to banking hours and European borders. Radix settlement is the optimal choice because it offers an \"Atomic\" DvP in just ~3 seconds in a public, borderless environment, operational 24/7/365. This means highly complex financial transactions settle instantly whether it's Sunday or late night: either the assets change hands simultaneously, or the transaction fails and nothing happens, eliminating 100% of counterparty risk without depending on clearing houses or central bank permission.",
+      sharding: "<strong>Optimal choice: Radix DLT (Millions TPS - Cerberus Sharding)</strong><br/><br/><strong>Why:</strong> Cerberus allows <strong>infinite linear scalability</strong> without breaking atomicity. Unlike L2s or sharding in other networks, Radix scales its entire network in a <strong>global and coherent way</strong>. It is the only public network designed to support the volume of the entire global financial system simultaneously.",
+      fragmentation: "<strong>Optimal choice: Radix DLT (Zero - Unified global network)</strong><br/><br/><strong>Why:</strong> Radix eliminates liquidity silos. While other networks fragment into multiple layers and chains, Radix <strong>unifies all liquidity into a single global base layer</strong> allowing cross-shard atomic composability.",
+      security: "<strong>Optimal choice: Radix DLT (0% by design - ROA/FSM)</strong><br/><br/><strong>Why:</strong> 80% of DeFi hacks occur due to logic errors in complex contracts. Radix uses <strong>ROA (Resource-Oriented Architecture)</strong>. Tokens are physical resources governed by finite state machines (FSM). Mathematically, a token <strong>cannot be duplicated or disappear</strong>.",
+      wallet: "<strong>Optimal choice: Radix DLT (Smart Wallet - Biometrics + Social Recovery)</strong><br/><br/><strong>Why:</strong> The main barrier to entry for Web3 is the fear of losing the seed phrase. Radix Wallet uses <strong>native 'Smart Accounts'</strong>, allowing account recovery with physical factors, trusted mobile devices or biometrics <strong>without surrendering control of the money</strong>.",
+      readability: "<strong>Optimal choice: Radix DLT (Human-readable Manifests)</strong><br/><br/><strong>Why:</strong> On Ethereum, you sign incomprehensible hexadecimal code (Blind Signing). Radix uses <strong>'Transaction Manifests'</strong>: the network reads the transaction and shows you on screen, in simple language, <strong>exactly what will leave your wallet and what will enter before you accept</strong>. It's the biggest advance in current Web3 security.",
+      regulation: "<strong>Optimal choice: Appia/Pontes (ECB) by regulatory authority and Radix DLT by technological innovation.</strong><br/><br/><strong>Why:</strong> The ECB is the regulatory authority for institutional money. However, in decentralized networks, Radix incorporates <strong>authorization zones and the idOS system at the base layer</strong>, allowing native compliance with the European MiCA Law without giving up DeFi.",
+      kyc: "<strong>Optimal choice: Radix DLT (MiCA Compliance + idOS)</strong><br/><br/><strong>Why:</strong> Radix incorporates <strong>authorization zones at its base layer</strong>, allowing the creation of 'liquidity pools' where only wallets with <strong>verified KYC</strong> can enter, complying with the European MiCA Law natively and integrated, overcoming the limitations of external middleware in networks like Ethereum.",
+      costs: "<strong>Optimal choice: Radix DLT (Low and predictable by design)</strong><br/><br/><strong>Why:</strong> In other networks, fees are volatile and can skyrocket during moments of congestion. Radix architecture maintains <strong>low and constant fees</strong>, allowing companies to plan their business model with <strong>real predictability</strong>.",
+      language: "<strong>Optimal choice: Radix DLT (Scrypto - Rust based)</strong><br/><br/><strong>Why:</strong> Solidity is hard to secure and consumes a lot of time in audits. Scrypto, based on Rust, is <strong>asset-oriented</strong>. What takes hundreds of lines of complex code in Solidity is a <strong>single native 1-line function in Scrypto</strong>."
+    },
     categories: [
       {
         title: "PERFORMANCE AND ARCHITECTURE",
         rows: [
-          { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", bce: "T+0 (DvP in central bank money)", radix: "T+0 Atomic DvP ~3 sec" },
-          { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", bce: "Wholesale volume (Centralized consensus)", radix: "Millions TPS (Cerberus Sharding)" },
-          { feature: "Liquidity Fragmentation", swift: "Isolated banking silos", evm: "High (Fragmented in multiple L2s)", bce: "High (Connects different private DLTs)", radix: "Zero (Unified global network)" }
+          { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", bce: "T+0 (Central Bank money)", radix: "T+0 Atomic DvP ~3 sec", winner: "radix", expKey: "atomic" },
+          { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", bce: "Wholesale volume", radix: "Millions TPS (Cerberus)", winner: "radix", expKey: "sharding" },
+          { feature: "Liquidity Fragmentation", swift: "Isolated banking silos", evm: "High (Multiple L2s)", bce: "High (Closed DLTs)", radix: "Zero (Unified)", winner: "radix", expKey: "fragmentation" }
         ]
       },
       {
         title: "SECURITY AND UX",
         rows: [
-          { feature: "DeFi hack risk", swift: "N/A (centralized)", evm: "High (Reentrancy, ERC-20 bugs)", bce: "N/A (Permissioned private network)", radix: "0% by design (ROA/FSM)" },
-          { feature: "Wallet / End-user UX", swift: "Centralized banking app", evm: "MetaMask (seed phrases)", bce: "B2B Exclusive (TARGET2 accounts)", radix: "Smart Wallet (biometrics + social recovery)" },
-          { feature: "Transaction readability", swift: "Opaque SWIFT messages", evm: "Blind Signing (hex code)", bce: "TradFi standards (Opaque to public)", radix: "Natural language Manifests" }
+          { feature: "DeFi hack risk", swift: "N/A", evm: "High (Logic bugs)", bce: "N/A (Private network)", radix: "0% by design (ROA/FSM)", winner: "radix", expKey: "security" },
+          { feature: "Wallet / End-user UX", swift: "Banking app", evm: "MetaMask (Seeds)", bce: "B2B Exclusive", radix: "Smart Wallet (Biometrics)", winner: "radix", expKey: "wallet" },
+          { feature: "Transaction readability", swift: "Opaque (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaque (TradFi Standard)", radix: "Readable Manifests", winner: "radix", expKey: "readability" }
         ]
       },
       {
         title: "REGULATION AND BUSINESS",
         rows: [
-          { feature: "MiCA Compliance", swift: "N/A", evm: "Costly external adaptation", bce: "Exempt by Law (Central Bank Money)", radix: "Native at base layer" },
-          { feature: "Native KYC / AML", swift: "External manual", evm: "Third-party middleware", bce: "100% Institutional (Regulated entities only)", radix: "Auth Zones + native idOS" },
-          { feature: "Cost Predictability", swift: "High and opaque", evm: "High volatility (Gas spikes)", bce: "Usage cost fixed by ECB", radix: "Low and predictable by design" }
+          { feature: "MiCA Compliance", swift: "N/A", evm: "External adaptation", bce: "Exempt by Law", radix: "Native Compliance", winner: "shared", expKey: "regulation" },
+          { feature: "Native KYC / AML", swift: "External manual", evm: "Third-party middleware", bce: "100% Institutional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc" },
+          { feature: "Cost Predictability", swift: "High and opaque", evm: "High volatility", bce: "Usage cost fixed by ECB", radix: "Low and Predictable", winner: "radix", expKey: "costs" }
         ]
       },
       {
         title: "DEVELOPMENT",
         rows: [
-          { feature: "Programming language", swift: "Proprietary", evm: "Solidity (unsafe)", bce: "Múltiple (Bring-your-own-DLT)", radix: "Scrypto (Rust + Asset-Oriented)" }
+          { feature: "Programming language", swift: "Proprietary", evm: "Solidity (Unsafe)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language" }
         ]
       }
     ]
@@ -1057,7 +1069,7 @@ export const en = {
   about: {
     title: "About",
     subtitle: "Radix",
-    description: "We are building the radically better user and developer experience needed for everyone to confidently use Web3 & DeFi.",
+    description: "We are redefining the standard for Web3 and DeFi. A more secure infrastructure where developers and institutions can operate without friction and without assuming unnecessary risks.",
     mission: {
       title: "Our Mission",
       description: "To make Web3 and DeFi accessible, secure, and intuitive for everyone, from everyday users to professional developers.",

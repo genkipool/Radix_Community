@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(result, {
             headers: {
                 // Short CDN cache — transactions change frequently.
-                'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+                'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
             },
         });
     } catch (error) {

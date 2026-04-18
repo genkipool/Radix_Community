@@ -276,35 +276,47 @@ export const es = {
     h2b: "De SWIFT a Radix.",
     description: "Un análisis técnico y objetivo de Radix frente a los sistemas tradicionales (SWIFT), las redes descentralizadas (EVM) y las iniciativas gubernamentales (BCE).",
     thFeature: "Característica",
+    explanations: {
+      atomic: "<strong>Opción Optima: Radix DLT (~3 seg DvP Atómico)</strong><br/><br/><strong>Por qué:</strong> SWIFT tarda días (T+2) debido a los bancos corresponsales. Ethereum tarda ~15s, pero a veces sufre de reorganizaciones de bloques. Por su parte, Appia/Pontes (BCE) logra una liquidación en el mismo día (T+0) muy robusta al usar dinero del banco central (DvP), pero su gran limitación es que opera en una infraestructura privada, cerrada (solo para entidades mayoristas autorizadas) y sujeta a horarios bancarios y fronteras europeas. La liquidación de Radix es la ganadora porque ofrece un DvP (Entrega contra Pago) \"Atómico\" en apenas ~3 segundos en un entorno público, sin fronteras y operativo 24/7/365. Esto significa que transacciones financieras hipercomplejas se liquidan al instante sin importar si es domingo o madrugada: o los activos cambian de manos simultáneamente, o la transacción falla y no ocurre nada, eliminando el 100% del riesgo de contraparte sin depender de cámaras de compensación ni de los permisos de un banco central.",
+      sharding: "<strong>Opción Optima: Radix DLT (Millones TPS - Cerberus Sharding)</strong><br/><br/><strong>Por qué:</strong> Ethereum está ahogado en su Capa 1 (~30 TPS) y depende de Capas 2 (Rollups). SWIFT y BCE son redes centralizadas que pueden escalar añadiendo servidores, pero no son Web3. El algoritmo de consenso de Radix (Cerberus) tiene una <strong>arquitectura de sharding (fragmentación) teóricamente infinita</strong>. Es la única red pública diseñada para soportar el <strong>volumen del sistema financiero mundial entero simultáneamente</strong>.",
+      fragmentation: "<strong>Opción Optima: Radix DLT (Cero - Red global unificada)</strong><br/><br/><strong>Por qué:</strong> Este es el gran talón de Aquiles de Ethereum hoy en día. Al usar Layer-2s (Arbitrum, Optimism, Base), la liquidez se divide en \"silos\", haciendo que el capital sea ineficiente. Radix permite <strong>componibilidad atómica \"cross-shard\"</strong> (entre fragmentos de la red). Es decir, todas las aplicaciones y toda la liquidez interactúan <strong>como si estuvieran en el mismo lugar, sin fricciones</strong>.",
+      security: "<strong>Opción Optima: Radix DLT (0% por diseño - ROA/FSM)</strong><br/><br/><strong>Por qué:</strong> Ethereum utiliza contratos inteligentes que son básicamente hojas de cálculo donde se anotan saldos, propensos a \"bugs\" catastróficos (como los ataques de reentrada que han robado miles de millones). Radix usa <strong>ROA (Arquitectura Orientada a Recursos)</strong>. Los tokens son \"recursos físicos\" regidos por máquinas de estado finito (FSM) de la propia red. Matemáticamente, un token <strong>no puede ser duplicado ni desaparecer</strong>.",
+      wallet: "<strong>Opción Optima: Radix DLT (Smart Wallet - Biometría + Social Recovery)</strong><br/><br/><strong>Por qué:</strong> La principal barrera de entrada a Web3 es el miedo a perder la frase semilla (12/24 palabras). MetaMask es un infierno de usabilidad para un novato. Las apps bancarias son fáciles, pero no tienes la custodia real del dinero. La Radix Wallet usa <strong>\"Smart Accounts\" nativas en la red</strong>, permitiendo recuperar cuentas con <strong>factores físicos, móviles de confianza o biometría, sin ceder el control</strong>.",
+      readability: "<strong>Opción Optima: Radix DLT (Manifiestos en lenguaje natural)</strong><br/><br/><strong>Por qué:</strong> En Ethereum firmas un código hexadecimal incomprensible (Blind Signing), cruzando los dedos para que no sea un contrato malicioso. SWIFT y BCE usan códigos opacos para el usuario. Radix usa <strong>\"Transaction Manifests\"</strong>: la red lee la transacción y te muestra en la pantalla, en español/inglés simple, <strong>exactamente qué va a salir de tu wallet y qué va a entrar antes de que des a Aceptar</strong>. Es el mayor avance en seguridad Web3 actual.",
+      regulation: "<strong>Opción Optima: Appia/Pontes (BCE) por autoridad regulatoria y Radix DLT por innovación tecnológica.</strong><br/><br/><strong>Por qué:</strong> Lógicamente, el BCE es el regulador, por lo que su sistema institucional tiene el cumplimiento garantizado. Sin embargo, en el mundo de las redes públicas descentralizadas, <strong>Radix es el claro ganador</strong>. En Ethereum, el KYC se debe hacer con parches externos. Radix incorpora <strong>zonas de autorización y un sistema de identidad (iDOS) en la capa base</strong>. Esto permite a los bancos crear \"piscinas de liquidez\" donde solo pueden entrar carteras que hayan pasado un KYC, <strong>cumpliendo con la Ley MiCA europea sin renunciar a DeFi</strong>.",
+      kyc: "<strong>Opción Optima: Radix DLT (Cumplimiento MiCA + idOS)</strong><br/><br/><strong>Por qué:</strong> Radix incorpora <strong>zonas de autorización en su capa base</strong>, permitiendo crear \"piscinas de liquidez\" donde solo pueden entrar carteras con <strong>KYC verificado</strong>, cumpliendo con la Ley MiCA europea de forma nativa e integrada, superando las limitaciones de middleware externo de redes como Ethereum.",
+      costs: "<strong>Opción Optima: Radix DLT (Bajos y predecibles por diseño)</strong><br/><br/><strong>Por qué:</strong> Quien haya usado Ethereum en un mercado alcista sabe que una transacción puede costar $2 un día y $150 al día siguiente por culpa del Gas. <strong>Ninguna empresa tradicional puede planificar un modelo de negocio con esos costes variables</strong>. La arquitectura de Radix mantiene las <strong>comisiones bajas y constantes</strong> sin importar cuánta congestión haya, lo que la hace <strong>\"Enterprise-ready\" (lista para empresas)</strong>.",
+      language: "<strong>Opción Optima: Radix DLT (Scrypto - Basado en Rust)</strong><br/><br/><strong>Por qué:</strong> Solidity (Ethereum) es un lenguaje muy difícil de asegurar; el 80% del tiempo de desarrollo se gasta intentando que no te hackeen. Scrypto, basado en Rust (el lenguaje más amado por los programadores convencionales hoy en día), está <strong>orientado a activos</strong>. Cosas que en Solidity toman cientos de líneas de código complejo, en Scrypto son <strong>funciones nativas de 1 sola línea</strong>. Reduce los tiempos y costes de desarrollo brutalmente."
+    },
     categories: [
       {
         title: "RENDIMIENTO Y ARQUITECTURA",
         rows: [
-          { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (DvP en dinero del banco central)", radix: "T+0 DvP Atómico ~3 seg" },
-          { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista (Consenso centralizado)", radix: "Millones TPS (Cerberus Sharding)" },
-          { feature: "Fragmentación de Liquidez", swift: "Silos bancarios aislados", evm: "Alta (Fragmentada en múltiples L2s)", bce: "Alta (Conecta DLTs privadas distintas)", radix: "Cero (Red global unificada)" }
+          { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (Dinero central)", radix: "T+0 DvP Atómico ~3 seg", winner: "radix", expKey: "atomic" },
+          { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista", radix: "Millones TPS (Cerberus)", winner: "radix", expKey: "sharding" },
+          { feature: "Fragmentación de Liquidez", swift: "Silos aislados", evm: "Alta (Múltiples L2s)", bce: "Alta (DLTs cerradas)", radix: "Cero (Unificada)", winner: "radix", expKey: "fragmentation" }
         ]
       },
       {
         title: "SEGURIDAD Y UX",
         rows: [
-          { feature: "Riesgo de hackeo DeFi", swift: "N/A (centralizado)", evm: "Alto (Reentrancy, ERC-20 bugs)", bce: "N/A (Red privada permisionada)", radix: "0% por diseño (ROA/FSM)" },
-          { feature: "Wallet / UX usuario final", swift: "App bancaria centralizada", evm: "MetaMask (seed phrases)", bce: "B2B Exclusivo (Cuentas TARGET2)", radix: "Smart Wallet (biometría + social recovery)" },
-          { feature: "Legibilidad de transacciones", swift: "Mensajes SWIFT opacos", evm: "Blind Signing (código hex)", bce: "Estándares TradFi (Opaco al público)", radix: "Manifiestos en lenguaje natural" }
+          { feature: "Riesgo de hackeo DeFi", swift: "N/A", evm: "Alto (Bugs de lógica)", bce: "N/A (Red privada)", radix: "0% por diseño (ROA/FSM)", winner: "radix", expKey: "security" },
+          { feature: "Wallet / UX usuario final", swift: "App bancaria", evm: "MetaMask (Seeds)", bce: "B2B Exclusivo", radix: "Smart Wallet (Biometría)", winner: "radix", expKey: "wallet" },
+          { feature: "Legibilidad de transacciones", swift: "Opaco (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaco (TradFi Standard)", radix: "Manifiestos Legibles", winner: "radix", expKey: "readability" }
         ]
       },
       {
         title: "REGULACIÓN Y NEGOCIO",
         rows: [
-          { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa costosa", bce: "Exento por Ley (Dinero de Banco Central)", radix: "Nativo en capa base" },
-          { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware de terceros", bce: "100% Institucional (Solo entidades reguladas)", radix: "Auth Zones + idOS nativo" },
-          { feature: "Previsibilidad de costes", swift: "Altos y opacos", evm: "Alta volatilidad (Gas spikes)", bce: "Coste por uso fijado por el BCE", radix: "Bajos y predecibles por diseño" }
+          { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa", bce: "Exento por Ley", radix: "Cumplimiento Nativo", winner: "shared", expKey: "regulation" },
+          { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware terceros", bce: "100% Institucional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc" },
+          { feature: "Previsibilidad de costes", swift: "Altos y opacos", evm: "Alta volatilidad", bce: "Fijado por el BCE", radix: "Bajos y Predecibles", winner: "radix", expKey: "costs" }
         ]
       },
       {
         title: "DESARROLLO",
         rows: [
-          { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (inseguro)", bce: "Múltiple (Bring-your-own-DLT)", radix: "Scrypto (Rust + Asset-Oriented)" }
+          { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (Inseguro)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language" }
         ]
       }
     ]
@@ -1057,7 +1069,7 @@ export const es = {
   about: {
     title: "Nosotros",
     subtitle: "Radix",
-    description: "Estamos construyendo la experiencia de usuario y desarrollador radicalmente mejor que todos necesitan para usar Web3 y DeFi con confianza.",
+    description: "Estamos redefiniendo el estándar de Web3 y DeFi. Una infraestructura radicalmente más segura donde desarrolladores e instituciones pueden operar sin fricciones y sin asumir riesgos innecesarios.",
     mission: {
       title: "Nuestra Misión",
       description: "Hacer que Web3 y DeFi sean accesibles, seguros e intuitivos para todos, desde usuarios cotidianos hasta desarrolladores profesionales.",
