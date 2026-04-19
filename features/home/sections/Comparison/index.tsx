@@ -80,7 +80,7 @@ export default function Comparison({ t }: BaseSectionProps) {
                   </tr>
                   {cat.rows.map((row, i) => (
                     <tr key={i} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)]/50 transition-colors">
-                      <td className="p-5 font-semibold text-sm">
+                      <td className="px-5 py-3.5 font-semibold text-sm">
                         <div className="flex items-center gap-2">
                           <span>{row.feature}</span>
                           {row.featKey && (
@@ -91,11 +91,11 @@ export default function Comparison({ t }: BaseSectionProps) {
                         </div>
                       </td>
                       {competitors.map((c) => (
-                        <td key={c.key} className="p-5 text-sm">
+                        <td key={c.key} className="px-5 py-3.5 text-sm">
                           {renderWinnerCell(row[c.key as keyof ComparisonRow] as string, c.key, row)}
                         </td>
                       ))}
-                      <td className="p-5 font-bold text-sm bg-[var(--color-secondary)]/5">
+                      <td className="px-5 py-3.5 font-bold text-sm bg-[var(--color-secondary)]/5">
                         {renderWinnerCell(row.radix, 'radix', row)}
                       </td>
                     </tr>
@@ -121,7 +121,7 @@ export default function Comparison({ t }: BaseSectionProps) {
                   key={i}
                   className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-xl overflow-hidden"
                 >
-                  <div className="px-5 py-4 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
+                  <div className="px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
                       {row.featKey && (
