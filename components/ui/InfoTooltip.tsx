@@ -15,6 +15,8 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, shiftX: 0 });
   const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const calculateAndSetCoords = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -38,7 +40,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
       // we mathematically guarantee the safest placement by putting it wherever there is MORE screen space.
       const spaceAbove = rect.top;
       const spaceBelow = viewportHeight - rect.bottom;
-      
+
       const currentPlacement = spaceAbove > spaceBelow ? 'top' : 'bottom';
 
       setPlacement(currentPlacement);
@@ -52,10 +54,17 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   };
 
   const handleOpen = () => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     if (!isOpen) {
       calculateAndSetCoords();
       setIsOpen(true);
     }
+  };
+
+  const handleClose = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 100); // Small delay to allow moving from trigger to tooltip
   };
 
   const handleToggle = () => {
@@ -65,6 +74,12 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
       handleOpen();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,9 +127,9 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   return (
     <div
       ref={triggerRef}
-      className="inline-block"
+      className="block w-full h-full"
       onMouseEnter={handleOpen}
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseLeave={handleClose}
       onClick={handleToggle}
     >
       {children}
@@ -126,7 +141,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
               initial={{ opacity: 0, scale: 0.95, x: '-50%', y: isTop ? '-90%' : '10%' }}
               animate={{ opacity: 1, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
               exit={{ opacity: 0, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
-              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
               className="fixed z-[9999] pointer-events-none"
               style={{
                 top: isTop ? `${coords.top - 12}px` : `${coords.bottom + 12}px`,
@@ -136,6 +151,8 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
             >
               <div
                 className="relative"
+                onMouseEnter={handleOpen}
+                onMouseLeave={handleClose}
                 style={{ transform: `translateX(${coords.shiftX}px)` }}
               >
                 <div
@@ -148,8 +165,8 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                   {/* Arrow */}
                   <div
                     className={`absolute w-4 h-4 bg-[var(--color-surface)] border-[var(--color-card-border)] ${isTop
-                        ? '-bottom-[9px] border-r border-b'
-                        : '-top-[9px] border-l border-t'
+                      ? '-bottom-[9px] border-r border-b'
+                      : '-top-[9px] border-l border-t'
                       }`}
                     style={{
                       left: `calc(50% - ${coords.shiftX}px)`,

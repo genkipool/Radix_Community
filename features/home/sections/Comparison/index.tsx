@@ -31,7 +31,7 @@ export default function Comparison({ t }: BaseSectionProps) {
 
   const renderWinnerCell = (content: string, colKey: string, row: ComparisonRow) => {
     const isWinner = row.winner === colKey || (row.winner === 'shared' && (colKey === 'radix' || colKey === 'bce'));
-    
+
     return (
       <div className="flex items-center justify-end md:justify-start gap-2">
         <span className="leading-tight">{content}</span>
