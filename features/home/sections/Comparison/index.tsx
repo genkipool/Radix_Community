@@ -26,7 +26,7 @@ export default function Comparison({ t }: BaseSectionProps) {
 
   const competitors = [
     { key: 'swift', label: 'SWIFT' },
-    { key: 'evm', label: 'Ethereum (EVM)' },
+    { key: 'evm', label: 'Ethereum / EVM' },
     { key: 'bce', label: 'Appia / Pontes (BCE)' },
   ] as const;
 

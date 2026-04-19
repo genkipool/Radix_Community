@@ -65,7 +65,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
-    }, 800); // Generous delay for selection and right-click copying
+    }, 250);
   };
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -133,7 +133,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
       onMouseEnter={handleOpen}
       onMouseLeave={handleClose}
     >
-      <div 
+      <div
         onClick={handleToggle}
         className="cursor-pointer"
       >
