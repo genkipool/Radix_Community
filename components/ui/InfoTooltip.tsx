@@ -12,6 +12,7 @@ interface InfoTooltipProps {
 export function InfoTooltip({ content, children }: InfoTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, shiftX: 0 });
   const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
@@ -33,9 +34,14 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
         shiftX = margin - (left - halfWidth);
       }
 
-      // Check space above. If we don't have roughly 150px above, put it below the trigger.
+      // Check real height of the tooltip, fallback to 150 if not measured yet
+      const tooltipHeight = tooltipRef.current ? tooltipRef.current.offsetHeight : 150;
+      
+      // Calculate taking into account the 12px gap + tooltip height
       const spaceAbove = rect.top;
-      const currentPlacement = spaceAbove < 150 ? 'bottom' : 'top';
+      const spaceNeeded = tooltipHeight + 20; // 20px safety margin
+      
+      const currentPlacement = spaceAbove < spaceNeeded ? 'bottom' : 'top';
       
       setPlacement(currentPlacement);
       setCoords({
@@ -50,7 +56,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   useEffect(() => {
     if (isOpen) {
       updateCoords();
-      // Use requestAnimationFrame for smoother initial positioning
+      // Re-trigger calculation once it mounts to ensure real height is caught
       const handle = requestAnimationFrame(updateCoords);
       window.addEventListener('resize', updateCoords);
       window.addEventListener('scroll', updateCoords, true);
@@ -93,6 +99,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                 style={{ transform: `translateX(${coords.shiftX}px)` }}
               >
                 <div
+                  ref={tooltipRef}
                   className="bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl rounded-xl p-4 w-[min(320px,calc(100vw-32px))] relative pointer-events-auto"
                 >
                   <div
