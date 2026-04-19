@@ -126,7 +126,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
               initial={{ opacity: 0, scale: 0.95, x: '-50%', y: isTop ? '-90%' : '10%' }}
               animate={{ opacity: 1, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
               exit={{ opacity: 0, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
-              transition={{ duration: 0.1, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
               className="fixed z-[9999] pointer-events-none"
               style={{
                 top: isTop ? `${coords.top - 12}px` : `${coords.bottom + 12}px`,
