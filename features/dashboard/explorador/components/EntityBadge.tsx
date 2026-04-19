@@ -8,7 +8,6 @@ import { sanitizeText } from '@/utils/sanitize';
 import {
     useEntityData,
     isConsensusManager,
-    formatEntityAddress,
     getEntityType,
 } from '@/features/dashboard/hooks/useEntityData';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
@@ -81,13 +80,15 @@ export function AddressDisplay({
     const entityName = meta?.name;
     const entityIcon = meta?.iconUrl;
     const isValidator = sanitizeText(address).startsWith('validator_');
-    const displayText = formatEntityAddress(address, tt, entityName ?? null);
+    const displayText = isCM 
+        ? (tt.consensus_manager_label || 'Consensus Manager (Protocol Action)')
+        : address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address;
     const copyableAddr = String(isCM ? (tt.consensus_manager_address || address) : address);
 
     return (
         <div className="flex flex-col gap-0.5">
             <span
-                className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help border-b border-dotted border-[var(--color-text-muted)]/40' : ''}`}
+                className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help' : ''}`}
                 title={wellKnownTip ?? undefined}
             >
                 {label}:
@@ -102,8 +103,8 @@ export function AddressDisplay({
                     </div>
                 )}
                 <div className="flex flex-col min-w-0">
-                    {isValidator && entityName && (
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-[200px]">{entityName}</span>
+                    {entityName && (
+                        <span className="text-[11px] font-semibold text-[var(--color-text-main)] truncate max-w-[200px]">{entityName}</span>
                     )}
                     <div className="flex items-center gap-1.5">
                         <span
