@@ -3528,6 +3528,8 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
     lock_fee_title: "Maxima tarifa que el usuario esta dispuesto a pagar en esta transacción",
     vault_creation: "Creación de Bóveda",
     vault_creation_title: "Se ha creado una bóveda (vault) de almacenamiento interno para custodiar activos de forma segura.",
+    name: "Nombre",
+    resource: "Recurso",
     vault_id: "ID de Bóveda",
     bet_vote: "Voto / Predicción",
     bet_vote_title: "Representa la asignación de tokens hacia una opción o voto en un componente.",

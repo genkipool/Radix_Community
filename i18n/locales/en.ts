@@ -3509,6 +3509,8 @@ Download the update today from the iOS App Store or Google Play Store to experie
     lock_fee_title: "Maximum fee the user is willing to pay in this transaction",
     vault_creation: "Vault Creation",
     vault_creation_title: "An internal vault has been created to securely store physical assets.",
+    name: "Name",
+    resource: "Resource",
     vault_id: "Vault ID",
     bet_vote: "Vote / Prediction",
     bet_vote_title: "Represents the allocation of tokens towards an option or vote in a component.",

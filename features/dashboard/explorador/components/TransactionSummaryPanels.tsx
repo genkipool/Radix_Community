@@ -358,16 +358,16 @@ function VaultCreationCard({
                     )}
                     <div className="min-w-0 flex flex-col">
                         <div className="flex items-center gap-2">
-                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0">
-                                {tt.entity_type_resource || 'Resource'}
-                            </span>
                             {meta?.name && (
                                 <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic">
                                     {meta.name}
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0">
+                                {te.resource || 'Resource'}
+                            </span>
                             <span
                                 className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''}`}
                                 title={clean}
@@ -432,7 +432,7 @@ function VaultCreationCard({
 }
 
 export function BetVoteSection({
-    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+    events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network,
 }: {
     events: GatewayEvent[];
     tt: TranslationsT['dashboard']['transactions'];
@@ -539,14 +539,14 @@ function BetVoteCard({
                         <span className="text-[9px] uppercase font-black tracking-wider text-blue-800/60 dark:text-blue-400/60 self-start">
                             {label}
                         </span>
-                        {meta?.name && (
+                        {option && option !== resourceAddress && (
                             <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic">
-                                {meta.name}
+                                {option}
                             </span>
                         )}
-                        {option && option !== resourceAddress && (
-                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic opacity-80">
-                                {option}
+                        {meta?.name && (
+                            <span className="text-[10px] font-bold truncate text-blue-900/60 dark:text-blue-100/60 italic">
+                                {meta.name}
                             </span>
                         )}
                         {resourceAddress && (

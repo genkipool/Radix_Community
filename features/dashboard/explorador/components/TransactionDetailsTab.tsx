@@ -7,9 +7,21 @@ import { sanitizeText } from '@/utils/sanitize';
 import { getXrdAddress } from '../constants';
 import { DetailRow } from '../../components/DetailRow';
 import { getMetaValue } from '../utils/metadataUtils';
+import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 
 import { TransactionDetailsTabProps } from '../types';
 import type { GatewayEvent, GatewayField } from '@/features/dashboard/types/shared.types';
+
+/* ── Asset Name Resolver Component (for async metadata) ── */
+function ResourceName({ address, network }: { address: string; network: string }) {
+    const meta = useEntityData(address, network);
+    if (!address) return null;
+    return (
+        <span className="font-bold italic text-[var(--color-primary)]">
+            {meta?.name || address.slice(0, 12) + '...'}
+        </span>
+    );
+}
 
 /* ── Reusable row inside an event card ── */
 function EventRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -125,6 +137,17 @@ export function TransactionDetailsTab({
         );
     };
 
+    const fAmountSimple = (amt: string, addr: string) => {
+        if (!amt) return null;
+        const parsed = parseFloat(amt);
+        const displayAmt = isNaN(parsed) ? amt : Math.abs(parsed).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        return (
+            <span className="font-bold text-[var(--color-text-main)] inline-flex items-center gap-1.5">
+                {displayAmt} <ResourceName address={addr} network={network || 'mainnet'} />
+            </span>
+        );
+    };
+
     const fAddress = (addr: string) => {
         if (!addr) return null;
         let resolvedName = lookupEntityName(addr);
@@ -227,6 +250,16 @@ export function TransactionDetailsTab({
             }
 
             resource = resField ? sanitizeText(String(resField.value || '')) : '';
+
+            // Fallback for resource address in fields (essential for VaultCreation etc)
+            if (!resource) {
+                const anyResValue = fields.find((f: GatewayField) =>
+                    typeof f.value === 'string' && f.value.startsWith('resource_')
+                );
+                if (anyResValue) {
+                    resource = sanitizeText(String(anyResValue.value));
+                }
+            }
         }
 
         // For Burn/Mint events from a GlobalResource emitter, use the emitter as the resource
@@ -315,7 +348,15 @@ export function TransactionDetailsTab({
         // Mint
         if (name.includes('Mint')) {
             const titleText = tStr(te.mint, 'Mint');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.at, 'at'), emitter) };
+            return {
+                titleText,
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <EventRow label={titleText}>{fAmountSimple(amount, resource || emitter)}</EventRow>
+                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                    </div>
+                )
+            };
         }
 
         // Valuation
@@ -362,6 +403,11 @@ export function TransactionDetailsTab({
                                 {fResource(betOption)}
                             </span>
                         </EventRow>
+                        {resource && (
+                            <EventRow label={tStr(te.name, 'Name')}>
+                                <ResourceName address={resource} network={network || 'mainnet'} />
+                            </EventRow>
+                        )}
                         <EventRow label={tStr(te.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>
                     </div>
                 )
@@ -376,6 +422,38 @@ export function TransactionDetailsTab({
                 tooltip: tStr(te.vault_creation_title, 'An internal vault has been created to securely store physical assets.'),
                 description: (
                     <div className="flex flex-col gap-2">
+                        {resource && (
+                            <>
+                                <EventRow label={tStr(te.name, 'Name')}>
+                                    <ResourceName address={resource} network={network || 'mainnet'} />
+                                </EventRow>
+                                <EventRow label={tStr(te.resource, 'Resource')}>
+                                    <span className="inline-flex items-center gap-1.5 align-middle">
+                                        <span
+                                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
+                                            title={resource}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onCopy(resource);
+                                            }}
+                                        >
+                                            {resource.length > 25 ? `${resource.slice(0, 12)}...${resource.slice(-12)}` : resource}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onCopy(resource);
+                                            }}
+                                            className={`shrink-0 p-0.5 rounded transition-colors ${copiedAddress === resource ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                            title="Copiar"
+                                        >
+                                            {copiedAddress === resource ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        </button>
+                                    </span>
+                                </EventRow>
+                            </>
+                        )}
                         <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
                         <EventRow label={tStr(te.vault_id, 'Vault ID')}>
                             <div className="flex items-center gap-2">
