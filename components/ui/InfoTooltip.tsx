@@ -15,6 +15,8 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, shiftX: 0 });
   const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const calculateAndSetCoords = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -62,7 +64,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   const handleClose = () => {
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
-    }, 200); // Small delay to allow moving from trigger to tooltip
+    }, 250); // Premium delay to allow moving from trigger to tooltip
   };
 
   const handleToggle = () => {
@@ -155,7 +157,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
               >
                 {/* Invisible bridge to maintain hover while cursor moves through empty space */}
                 <div
-                  className={`absolute left-0 right-0 h-4 pointer-events-auto ${isTop ? '-bottom-4' : '-top-4'}`}
+                  className={`absolute left-0 right-0 h-8 pointer-events-auto ${isTop ? '-bottom-8' : '-top-8'}`}
                 />
                 <div
                   className="bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl rounded-xl p-4 w-[min(320px,calc(100vw-32px))] relative pointer-events-auto"
