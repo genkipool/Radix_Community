@@ -15,7 +15,7 @@ import { EntitiesSectionProps } from '../types';
  * AffectedEntitiesSection. Switch behaviour via the `variant` prop.
  */
 export function EntitiesSection({
-    variant, details, tt, onCopy, copiedAddress, onResourceClick, network,
+    variant, details, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: EntitiesSectionProps) {
     const isCreated = variant === 'created';
 
@@ -66,6 +66,7 @@ export function EntitiesSection({
                                 copiedAddress={copiedAddress}
                                 onResourceClick={onResourceClick}
                                 network={network}
+                                locale={locale}
                             />
                         ))}
                     </div>

@@ -167,6 +167,7 @@ export interface EntitiesSectionProps {
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }
 
 export interface TransactionDetailsTabProps {

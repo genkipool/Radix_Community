@@ -77,7 +77,7 @@ const TransactionTabs = ({
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
 
     // Shared props passed to most child panels
-    const shared = { tt, te, onCopy, copiedAddress, onResourceClick, network, columns };
+    const shared = { tt, te, onCopy, copiedAddress, onResourceClick, network, columns, locale };
 
     return (
         <div

@@ -11,6 +11,7 @@ import {
     formatEntityAddress,
     getEntityType,
 } from '@/features/dashboard/hooks/useEntityData';
+import { getWellKnownKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 
 /* ─────────────────────────────────────────
@@ -57,7 +58,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt: TranslationsT['dashboard'
    Label + truncated address + copy button
 ───────────────────────────────────────── */
 export function AddressDisplay({
-    label, address, tt, onCopy, copiedAddress, showConsensusInfo = false, network,
+    label, address, tt, onCopy, copiedAddress, showConsensusInfo = false, network, locale: _locale = 'en',
 }: {
     label: string;
     address: string;
@@ -66,7 +67,10 @@ export function AddressDisplay({
     copiedAddress: string | null;
     showConsensusInfo?: boolean;
     network: Network;
+    locale?: string;
 }) {
+    const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
+    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
     const isCM = isConsensusManager(address);
     const meta = useEntityData(address, network);
     const entityName = meta?.name;
@@ -77,7 +81,10 @@ export function AddressDisplay({
 
     return (
         <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider">
+            <span
+                className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help border-b border-dotted border-[var(--color-text-muted)]/40' : ''}`}
+                title={wellKnownTip ?? undefined}
+            >
                 {label}:
             </span>
             <div className="flex items-center gap-2">
@@ -123,7 +130,7 @@ export function AddressDisplay({
    Full address card with type label, icon, name, copy button
 ───────────────────────────────────────── */
 export function EntityBadge({
-    address, tt, onCopy, copiedAddress, onResourceClick, network,
+    address, tt, onCopy, copiedAddress, onResourceClick, network, locale: _locale = 'en',
 }: {
     address: string;
     tt: TranslationsT['dashboard']['transactions'];
@@ -131,9 +138,13 @@ export function EntityBadge({
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }) {
     const clean = sanitizeText(address);
     const { label, color, bg } = getEntityType(clean, tt);
+    // Resolve well-known address tooltips via i18n
+    const wellKnownKey = getWellKnownKey(clean, network);
+    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
     const meta = useEntityData(clean, network);
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;
@@ -159,7 +170,10 @@ export function EntityBadge({
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                 )}
-                <span className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border ${bg} ${color} shrink-0`}>
+                <span
+                    className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
+                    title={wellKnownTip ?? undefined}
+                >
                     {label}
                 </span>
                 <div className="min-w-0 flex-1 flex flex-col">

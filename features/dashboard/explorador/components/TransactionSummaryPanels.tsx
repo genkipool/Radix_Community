@@ -9,6 +9,7 @@ import { EntityBadge } from './EntityBadge';
 import type { OracleUpdate, AirdropData } from '@/features/dashboard/explorador/types';
 import type { Network, TranslationsT, GatewayEvent, GatewayField } from '@/features/dashboard/types';
 import { sanitizeText } from '@/utils/sanitize';
+import { getWellKnownKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 
 const findEventAmount = (events: GatewayEvent[], resourceAddress: string): string | null => {
     if (!resourceAddress) return null;
@@ -66,14 +67,15 @@ const extractResourceAddress = (ev: GatewayEvent): string => {
 /* OraclePriceUpdateCard */
 
 export function OraclePriceUpdateCard({
-    update, tt, onCopy, copiedAddress, onResourceClick, network,
+    update, tt, onCopy, copiedAddress, onResourceClick, network, locale = 'en',
 }: {
     update: OracleUpdate;
     tt: TranslationsT['dashboard']['transactions'];
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
-    network: Network
+    network: Network;
+    locale?: string
 }) {
     const meta = useEntityData(update.quoteToken, network);
     const symbol = meta?.symbol ?? '';
@@ -88,6 +90,7 @@ export function OraclePriceUpdateCard({
                     copiedAddress={copiedAddress}
                     onResourceClick={onResourceClick}
                     network={network}
+                    locale={locale}
                 />
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-[var(--color-card-border)]">
@@ -118,14 +121,15 @@ export function OraclePriceUpdateCard({
 /* OracleUpdateSection
    Section wrapper + grid of OraclePriceUpdateCards */
 export function OracleUpdateSection({
-    updates, tt, onCopy, copiedAddress, onResourceClick, network,
+    updates, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     updates: OracleUpdate[];
     tt: TranslationsT['dashboard']['transactions'];
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
-    network: Network
+    network: Network;
+    locale?: string
 }) {
     if (updates.length === 0) return null;
     return (
@@ -155,6 +159,7 @@ export function OracleUpdateSection({
                             copiedAddress={copiedAddress}
                             onResourceClick={onResourceClick}
                             network={network}
+                            locale={locale}
                         />
                     ))}
                 </div>
@@ -166,14 +171,15 @@ export function OracleUpdateSection({
 /* AirdropRewardCard + AirdropSection */
 
 function AirdropRewardCard({
-    airdropData, tt, onCopy, copiedAddress, onResourceClick, network,
+    airdropData, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     airdropData: AirdropData;
     tt: TranslationsT['dashboard']['transactions'];
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
-    network: Network
+    network: Network;
+    locale?: string
 }) {
     const meta = useEntityData(airdropData.resource || '', network);
     const symbol = meta?.symbol ?? '';
@@ -185,7 +191,7 @@ function AirdropRewardCard({
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
                     {tt.airdrop_winner || 'Winner Account'}
                 </span>
-                <EntityBadge address={airdropData.account} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                <EntityBadge address={airdropData.account} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
             <div className="pt-2 flex items-center justify-between">
                 <div className="flex flex-col">
@@ -217,7 +223,7 @@ function AirdropRewardCard({
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
                     {tt.airdrop_contract || 'Smart Contract'}
                 </span>
-                <EntityBadge address={airdropData.component} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                <EntityBadge address={airdropData.component} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
             <div className="pt-2 mt-1 flex items-center justify-between">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">
@@ -232,14 +238,15 @@ function AirdropRewardCard({
 }
 
 export function AirdropSection({
-    airdropData, tt, onCopy, copiedAddress, onResourceClick, network,
+    airdropData, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     airdropData: AirdropData | null;
     tt: TranslationsT['dashboard']['transactions'];
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
-    network: Network
+    network: Network;
+    locale?: string
 }) {
     if (!airdropData) return null;
     return (
@@ -261,6 +268,7 @@ export function AirdropSection({
                     copiedAddress={copiedAddress}
                     onResourceClick={onResourceClick}
                     network={network}
+                    locale={locale}
                 />
             </div>
         </div>
@@ -272,7 +280,7 @@ export function AirdropSection({
    ───────────────────────────────────────── */
 
 export function VaultCreationSection({
-    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+    events, tt, te, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
     tt: TranslationsT['dashboard']['transactions'];
@@ -281,6 +289,7 @@ export function VaultCreationSection({
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }) {
     const vaultEvents = events.filter(e => e.name === 'VaultCreationEvent');
     if (vaultEvents.length === 0) return null;
@@ -315,6 +324,7 @@ export function VaultCreationSection({
                             copiedAddress={copiedAddress}
                             _onResourceClick={onResourceClick}
                             network={network}
+                            locale={locale}
                         />
                     );
                 })}
@@ -324,7 +334,7 @@ export function VaultCreationSection({
 }
 
 function VaultCreationCard({
-    resource, vaultId, amount, tt, te, onCopy, copiedAddress, _onResourceClick, network
+    resource, vaultId, amount, tt, te, onCopy, copiedAddress, _onResourceClick, network, locale: _locale = 'en'
 }: {
     resource: string;
     vaultId: string;
@@ -335,7 +345,10 @@ function VaultCreationCard({
     copiedAddress: string | null;
     _onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }) {
+    const wellKnownKey = getWellKnownKey(sanitizeText(resource), network);
+    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
     const meta = useEntityData(resource, network);
     const symbol = meta?.symbol || '';
     const clean = sanitizeText(resource);
@@ -365,7 +378,10 @@ function VaultCreationCard({
                             )}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0">
+                            <span
+                                className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
+                                title={wellKnownTip ?? undefined}
+                            >
                                 {te.resource || 'Resource'}
                             </span>
                             <span
@@ -432,7 +448,7 @@ function VaultCreationCard({
 }
 
 export function BetVoteSection({
-    events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network,
+    events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
     tt: TranslationsT['dashboard']['transactions'];
@@ -441,6 +457,7 @@ export function BetVoteSection({
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }) {
     const voteEvents = events.filter(e => e.name === 'BetVoteEvent' || e.name === 'BetCreatedEvent');
     if (voteEvents.length === 0) return null;
@@ -480,6 +497,7 @@ export function BetVoteSection({
                             onCopy={onCopy}
                             copiedAddress={copiedAddress}
                             network={network}
+                            locale={locale}
                         />
                     );
                 })}
@@ -489,7 +507,7 @@ export function BetVoteSection({
 }
 
 function BetVoteCard({
-    option, emitter, entityType, amount, resourceAddress, eventName, tt, te, onCopy, copiedAddress, network
+    option, emitter, entityType, amount, resourceAddress, eventName, tt, te, onCopy, copiedAddress, network, locale: _locale = 'en'
 }: {
     option: string;
     emitter: string;
@@ -502,7 +520,13 @@ function BetVoteCard({
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     network: Network;
+    locale?: string;
 }) {
+    const wellKnownKey = resourceAddress ? getWellKnownKey(resourceAddress, network) : null;
+    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
+
+    const emitterKey = getWellKnownKey(emitter, network);
+    const emitterTip = emitterKey ? tt.well_known_tooltips?.[emitterKey as keyof typeof tt.well_known_tooltips] : null;
     const meta = useEntityData(resourceAddress || '', network);
     const symbol = meta?.symbol || '';
     const isBet = eventName === 'BetCreatedEvent';
@@ -551,7 +575,7 @@ function BetVoteCard({
                         )}
                         {resourceAddress && (
                             <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-xs font-mono truncate text-[var(--color-text-main)] select-all" title={resourceAddress}>
+                                <span className={`text-xs font-mono truncate text-[var(--color-text-main)] select-all ${wellKnownTip ? 'cursor-help' : ''}`} title={wellKnownTip ?? resourceAddress}>
                                     {resourceAddress.length > 20 ? `${resourceAddress.slice(0, 12)}...${resourceAddress.slice(-6)}` : resourceAddress}
                                 </span>
                                 <button
@@ -593,7 +617,10 @@ function BetVoteCard({
                             {te.at || 'at'}
                         </span>
                         {typeLabel && (
-                            <span className="text-[8px] uppercase font-bold tracking-tight px-1 py-0.5 leading-none rounded border border-blue-500/40 text-blue-800 dark:text-blue-400 bg-blue-500/10 shrink-0">
+                            <span
+                                className={`text-[8px] uppercase font-bold tracking-tight px-1 py-0.5 leading-none rounded border border-blue-500/40 text-blue-800 dark:text-blue-400 bg-blue-500/10 shrink-0 ${emitterTip ? 'cursor-help' : ''}`}
+                                title={emitterTip ?? undefined}
+                            >
                                 {typeLabel}
                             </span>
                         )}
@@ -616,7 +643,7 @@ function BetVoteCard({
 }
 
 export function RatesChangedSection({
-    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+    events, tt, te, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
     tt: TranslationsT['dashboard']['transactions'];
@@ -625,6 +652,7 @@ export function RatesChangedSection({
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
+    locale?: string;
 }) {
     const rateEvents = events.filter(e => e.name === 'RatesChangedEvent');
     if (rateEvents.length === 0) return null;
@@ -650,7 +678,7 @@ export function RatesChangedSection({
 
                     return (
                         <div key={`rate-${idx}`} className="p-3 bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl shadow-sm flex flex-col gap-3">
-                            <EntityBadge address={emitter} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                            <EntityBadge address={emitter} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                             <div className="flex items-center justify-between gap-4 py-1.5 px-2 bg-teal-500/5 rounded-lg border border-teal-500/20">
                                 <span className="text-[10px] font-bold text-teal-500 uppercase tracking-wide">{rateType}</span>
                                 <div className="flex items-center gap-3">
