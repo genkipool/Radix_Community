@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import React, { useState, useRef, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Portal } from './Portal';
 
@@ -10,58 +10,64 @@ interface InfoTooltipProps {
 }
 
 export function InfoTooltip({ content, children }: InfoTooltipProps) {
-  const [state, setState] = useState<'closed' | 'measuring' | 'open'>('closed');
+  const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const measuringRef = useRef<HTMLDivElement>(null);
-  
   const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, shiftX: 0 });
   const [placement, setPlacement] = useState<'top' | 'bottom'>('top');
 
-  // Step 1: Measure height precisely before triggering Framer Motion
-  useLayoutEffect(() => {
-    if (state === 'measuring') {
-      if (triggerRef.current && measuringRef.current) {
-        const rect = triggerRef.current.getBoundingClientRect();
-        const left = rect.left + rect.width / 2;
+  const calculateAndSetCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const left = rect.left + rect.width / 2;
 
-        let shiftX = 0;
-        const viewportWidth = window.innerWidth;
-        const margin = 16;
-        
-        const tooltipWidth = Math.min(320, viewportWidth - margin * 2);
-        const halfWidth = tooltipWidth / 2;
+      let shiftX = 0;
+      const viewportWidth = window.innerWidth;
+      const margin = 16;
 
-        if (left + halfWidth > viewportWidth - margin) {
-          shiftX = viewportWidth - margin - (left + halfWidth);
-        } else if (left - halfWidth < margin) {
-          shiftX = margin - (left - halfWidth);
-        }
+      const tooltipWidth = Math.min(320, viewportWidth - margin * 2);
+      const halfWidth = tooltipWidth / 2;
 
-        const tooltipHeight = measuringRef.current.offsetHeight;
-        const spaceAbove = rect.top;
-        // 30px extra margin ensures we don't collide with fixed headers
-        const spaceNeeded = tooltipHeight + 30; 
-        
-        const currentPlacement = spaceAbove < spaceNeeded ? 'bottom' : 'top';
-        
-        setPlacement(currentPlacement);
-        setCoords({
-          top: rect.top,
-          bottom: rect.bottom,
-          left,
-          shiftX
-        });
-        
-        // Open with exact coordinates
-        setState('open');
+      if (left + halfWidth > viewportWidth - margin) {
+        shiftX = viewportWidth - margin - (left + halfWidth);
+      } else if (left - halfWidth < margin) {
+        shiftX = margin - (left - halfWidth);
       }
-    }
-  }, [state]);
 
-  // Step 2: Keep coordinates updated on scroll/resize while open
+      // Check space above based on a safe maximum height for the tooltip content.
+      // On mobile, text wraps causing the balloon to be taller (up to ~200-250px).
+      const spaceAbove = rect.top;
+      const currentPlacement = spaceAbove < 280 ? 'bottom' : 'top';
+
+      setPlacement(currentPlacement);
+      setCoords({
+        top: rect.top,
+        bottom: rect.bottom,
+        left,
+        shiftX
+      });
+    }
+  };
+
+  const handleOpen = () => {
+    if (!isOpen) {
+      calculateAndSetCoords();
+      setIsOpen(true);
+    }
+  };
+
+  const handleToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+    } else {
+      handleOpen();
+    }
+  };
+
   useEffect(() => {
-    if (state === 'open') {
-      const updateCoords = () => {
+    if (isOpen) {
+      // While open, keep coordinates updated on scroll/resize but DO NOT change placement
+      // to avoid jumping animations during scrolling.
+      const updateOnScroll = () => {
         if (triggerRef.current) {
           const rect = triggerRef.current.getBoundingClientRect();
           const left = rect.left + rect.width / 2;
@@ -79,8 +85,6 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
             shiftX = margin - (left - halfWidth);
           }
 
-          // Update position tracking, but DO NOT flip top/bottom placement during scroll 
-          // to prevent abrupt mid-animation jumping
           setCoords(prev => ({
             ...prev,
             top: rect.top,
@@ -91,65 +95,29 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
         }
       };
 
-      const handle = requestAnimationFrame(updateCoords);
-      window.addEventListener('resize', updateCoords);
-      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateOnScroll);
+      window.addEventListener('scroll', updateOnScroll, true);
       return () => {
-        cancelAnimationFrame(handle);
-        window.removeEventListener('resize', updateCoords);
-        window.removeEventListener('scroll', updateCoords, true);
+        window.removeEventListener('resize', updateOnScroll);
+        window.removeEventListener('scroll', updateOnScroll, true);
       };
     }
-  }, [state]);
+  }, [isOpen]);
 
   const isTop = placement === 'top';
-
-  const handleOpen = () => {
-    if (state === 'closed') setState('measuring');
-  };
-
-  const handleClose = () => {
-    setState('closed');
-  };
-
-  const handleToggle = () => {
-    if (state === 'closed') setState('measuring');
-    else setState('closed');
-  };
 
   return (
     <div
       ref={triggerRef}
       className="inline-block"
       onMouseEnter={handleOpen}
-      onMouseLeave={handleClose}
+      onMouseLeave={() => setIsOpen(false)}
       onClick={handleToggle}
     >
       {children}
 
-      {/* Invisible Measuring Phase: Guaranteed to wrap identically to the real element */}
-      {state === 'measuring' && (
-        <Portal>
-          <div
-            className="fixed z-[9999] opacity-0 pointer-events-none"
-            style={{ top: -9999, left: 0, width: 'max-content' }}
-          >
-             <div 
-               ref={measuringRef} 
-               className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 w-[min(320px,calc(100vw-32px))]"
-              >
-                <div
-                  className="text-[11px] leading-relaxed font-medium space-y-2 [&>strong]:text-[var(--color-text-strong)]"
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
-             </div>
-          </div>
-        </Portal>
-      )}
-
-      {/* Visible Animate Phase */}
       <AnimatePresence>
-        {state === 'open' && (
+        {isOpen && (
           <Portal>
             <motion.div
               initial={{ opacity: 0, scale: 0.95, x: '-50%', y: isTop ? '-90%' : '10%' }}
@@ -175,11 +143,10 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                   />
                   {/* Arrow */}
                   <div
-                    className={`absolute w-4 h-4 bg-[var(--color-surface)] border-[var(--color-card-border)] ${
-                      isTop
+                    className={`absolute w-4 h-4 bg-[var(--color-surface)] border-[var(--color-card-border)] ${isTop
                         ? '-bottom-[9px] border-r border-b'
                         : '-top-[9px] border-l border-t'
-                    }`}
+                      }`}
                     style={{
                       left: `calc(50% - ${coords.shiftX}px)`,
                       transform: 'translateX(-50%) rotate(45deg)'
