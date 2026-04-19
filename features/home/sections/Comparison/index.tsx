@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { BarChart3, CheckCircle2 } from 'lucide-react';
+import { BarChart3, CheckCircle2, Info } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
@@ -13,6 +13,7 @@ type ComparisonRow = {
   radix: string;
   winner?: string;
   expKey?: string;
+  featKey?: string;
 };
 
 type ComparisonCategory = {
@@ -79,7 +80,16 @@ export default function Comparison({ t }: BaseSectionProps) {
                   </tr>
                   {cat.rows.map((row, i) => (
                     <tr key={i} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)]/50 transition-colors">
-                      <td className="p-5 font-semibold text-sm">{row.feature}</td>
+                      <td className="p-5 font-semibold text-sm">
+                        <div className="flex items-center gap-2">
+                          <span>{row.feature}</span>
+                          {row.featKey && (
+                            <InfoTooltip content={t.comparativa.featureDefinitions[row.featKey as keyof typeof t.comparativa.featureDefinitions]}>
+                              <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                            </InfoTooltip>
+                          )}
+                        </div>
+                      </td>
                       {competitors.map((c) => (
                         <td key={c.key} className="p-5 text-sm">
                           {renderWinnerCell(row[c.key as keyof ComparisonRow] as string, c.key, row)}
@@ -112,7 +122,14 @@ export default function Comparison({ t }: BaseSectionProps) {
                   className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-xl overflow-hidden"
                 >
                   <div className="px-5 py-4 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
-                    <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
+                      {row.featKey && (
+                        <InfoTooltip content={t.comparativa.featureDefinitions[row.featKey as keyof typeof t.comparativa.featureDefinitions]}>
+                          <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                        </InfoTooltip>
+                      )}
+                    </div>
                   </div>
 
                   <div className="divide-y divide-[var(--color-card-border)] text-[var(--color-text-main)]">

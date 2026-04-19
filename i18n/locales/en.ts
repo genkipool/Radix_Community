@@ -288,35 +288,47 @@ export const en = {
       costs: "<strong>Optimal choice: Radix DLT (Low and predictable by design)</strong><br/><br/><strong>Why:</strong> In other networks, fees are volatile and can skyrocket during moments of congestion. Radix architecture maintains <strong>low and constant fees</strong>, allowing companies to plan their business model with <strong>real predictability</strong>.",
       language: "<strong>Optimal choice: Radix DLT (Scrypto - Rust based)</strong><br/><br/><strong>Why:</strong> Solidity is hard to secure and consumes a lot of time in audits. Scrypto, based on Rust, is <strong>asset-oriented</strong>. What takes hundreds of lines of complex code in Solidity is a <strong>single native 1-line function in Scrypto</strong>."
     },
+    featureDefinitions: {
+      atomic: "This refers to the time it takes for a transfer to become final and irreversible. Atomic settlement is a technological guarantee where the exchange is \"all or nothing\": either the assets from both parties change hands simultaneously and instantly, or the transaction fails and nothing happens. This eliminates counterparty risk (the risk of one party delivering the asset while the other fails to pay).",
+      scalability: "The network's capacity to process a massive volume of Transactions Per Second (TPS). A scalable network allows thousands of users and companies to operate simultaneously without the system slowing down or crashing.",
+      liquidity: "This refers to whether capital and assets are held in a single \"place\" (unified network) or split across different isolated layers or silos. Unified liquidity is far more efficient because it allows capital to move seamlessly without the need for complex bridges or wrappers.",
+      hackRisk: "Measures how vulnerable the network is to logic errors in smart contracts. \"Secure-by-design\" networks have mathematical rules that prevent tokens from being duplicated or stolen due to common coding flaws.",
+      walletUX: "The experience of using the digital \"wallet.\" It evaluates whether it is user-friendly (like a banking app with biometrics) or difficult and risky (such as having to manually manage 24-word seed phrases).",
+      legibility: "The network's ability to explain exactly what you are about to sign. Instead of displaying cryptic hexadecimal code, the system tells you in plain text: \"You are sending $100 and receiving 1 Apple share.\"",
+      mica: "Indicates if the technology is legally adapted to comply with the European Union's new Markets in Crypto-Assets regulation, allowing companies to operate with full legal certainty.",
+      kycAml: "The ability to perform identity verification (Know Your Customer) and anti-money laundering checks directly within the network, ensuring only authorized users can participate in specific financial operations.",
+      costPredictability: "Refers to whether network fees are stable and affordable, or if they fluctuate wildly based on network congestion, which makes it difficult for businesses to plan their operational expenses.",
+      programming: "The \"language\" developers use to build applications. A modern, asset-oriented language allows for the creation of financial tools faster, with fewer errors, and significantly lower development costs."
+    },
     categories: [
       {
         title: "PERFORMANCE AND ARCHITECTURE",
         rows: [
-          { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", bce: "T+0 (Central Bank money)", radix: "T+0 Atomic DvP ~3 sec", winner: "radix", expKey: "atomic" },
-          { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", bce: "Wholesale volume", radix: "Millions TPS (Cerberus)", winner: "radix", expKey: "sharding" },
-          { feature: "Liquidity Fragmentation", swift: "Isolated banking silos", evm: "High (Multiple L2s)", bce: "High (Closed DLTs)", radix: "Zero (Unified)", winner: "radix", expKey: "fragmentation" }
+          { feature: "Asset settlement", swift: "T+2 days", evm: "~15 sec (partial T+0)", bce: "T+0 (Central Bank money)", radix: "T+0 Atomic DvP ~3 sec", winner: "radix", expKey: "atomic", featKey: "atomic" },
+          { feature: "Scalability", swift: "Centralized", evm: "~30 TPS (L1)", bce: "Wholesale volume", radix: "Millions TPS (Cerberus)", winner: "radix", expKey: "sharding", featKey: "scalability" },
+          { feature: "Liquidity Fragmentation", swift: "Isolated banking silos", evm: "High (Multiple L2s)", bce: "High (Closed DLTs)", radix: "Zero (Unified)", winner: "radix", expKey: "fragmentation", featKey: "liquidity" }
         ]
       },
       {
         title: "SECURITY AND UX",
         rows: [
-          { feature: "DeFi hack risk", swift: "N/A", evm: "High (Logic bugs)", bce: "N/A (Private network)", radix: "0% by design (ROA/FSM)", winner: "radix", expKey: "security" },
-          { feature: "Wallet / End-user UX", swift: "Banking app", evm: "MetaMask (Seeds)", bce: "B2B Exclusive", radix: "Smart Wallet (Biometrics)", winner: "radix", expKey: "wallet" },
-          { feature: "Transaction readability", swift: "Opaque (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaque (TradFi Standard)", radix: "Readable Manifests", winner: "radix", expKey: "readability" }
+          { feature: "DeFi hack risk", swift: "N/A", evm: "High (Logic bugs)", bce: "N/A (Private network)", radix: "0% by design (ROA/FSM)", winner: "radix", expKey: "security", featKey: "hackRisk" },
+          { feature: "Wallet / End-user UX", swift: "Banking app", evm: "MetaMask (Seeds)", bce: "B2B Exclusive", radix: "Smart Wallet (Biometrics)", winner: "radix", expKey: "wallet", featKey: "walletUX" },
+          { feature: "Transaction readability", swift: "Opaque (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaque (TradFi Standard)", radix: "Readable Manifests", winner: "radix", expKey: "readability", featKey: "legibility" }
         ]
       },
       {
         title: "REGULATION AND BUSINESS",
         rows: [
-          { feature: "MiCA Compliance", swift: "N/A", evm: "External adaptation", bce: "Exempt by Law", radix: "Native Compliance", winner: "shared", expKey: "regulation" },
-          { feature: "Native KYC / AML", swift: "External manual", evm: "Third-party middleware", bce: "100% Institutional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc" },
-          { feature: "Cost Predictability", swift: "High and opaque", evm: "High volatility", bce: "Usage cost fixed by ECB", radix: "Low and Predictable", winner: "radix", expKey: "costs" }
+          { feature: "MiCA Compliance", swift: "N/A", evm: "External adaptation", bce: "Exempt by Law", radix: "Native Compliance", winner: "shared", expKey: "regulation", featKey: "mica" },
+          { feature: "Native KYC / AML", swift: "External manual", evm: "Third-party middleware", bce: "100% Institutional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc", featKey: "kycAml" },
+          { feature: "Cost Predictability", swift: "High and opaque", evm: "High volatility", bce: "Usage cost fixed by ECB", radix: "Low and Predictable", winner: "radix", expKey: "costs", featKey: "costPredictability" }
         ]
       },
       {
         title: "DEVELOPMENT",
         rows: [
-          { feature: "Programming language", swift: "Proprietary", evm: "Solidity (Unsafe)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language" }
+          { feature: "Programming language", swift: "Proprietary", evm: "Solidity (Unsafe)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language", featKey: "programming" }
         ]
       }
     ]

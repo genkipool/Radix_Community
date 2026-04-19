@@ -277,7 +277,7 @@ export const es = {
     description: "Un análisis técnico y objetivo de Radix frente a los sistemas tradicionales (SWIFT), las redes descentralizadas (EVM) y las iniciativas gubernamentales (BCE).",
     thFeature: "Característica",
     explanations: {
-      atomic: "<strong>Opción Optima: Radix DLT (~3 seg DvP Atómico)</strong><br/><br/><strong>Por qué:</strong> SWIFT tarda días (<strong>T+2</strong>) debido a los bancos corresponsales. Ethereum tarda ~15s, pero a veces sufre de reorganizaciones de bloques. Por su parte, Appia/Pontes (BCE) logra una liquidación en el mismo día (<strong>T+0</strong>) muy robusta al usar dinero del banco central (DvP), pero su gran limitación es que opera en una <strong>infraestructura privada, cerrada</strong> (solo para entidades mayoristas autorizadas) y sujeta a horarios bancarios y fronteras europeas. La liquidación de Radix es la ganadora porque ofrece un DvP (Entrega contra Pago) \"Atómico\" en apenas <strong>~3 segundos</strong> en un entorno público, <strong>sin fronteras y operativo 24/7/365</strong>. Esto significa que transacciones financieras hipercomplejas se liquidan al instante sin importar si es domingo o madrugada: o los activos cambian de manos simultáneamente, o la transacción falla y no ocurre nada, <strong>eliminando el 100% del riesgo de contraparte</strong> sin depender de cámaras de compensación ni de los permisos de un banco central.",
+      atomic: "<strong>Opción Optima: Radix DLT (~3 seg DvP Atómico)</strong><br/><br/><strong>Por qué:</strong> SWIFT tarda días (<strong>T+2</strong>) debido a los bancos corresponsales. Ethereum tarda ~15s, pero a veces sufre de reorganizaciones de bloques. Por su parte, Appia/Pontes (BCE) logra una liquidación en el mismo día (<strong>T+0</strong>) muy robusta al usar dinero del banco central (DvP), pero su gran limitación es que opera en una <strong>infraestructura privada, cerrada</strong> (solo para entidades mayoristas autorizadas) y sujeta a horarios bancarios y fronteras europeas. La liquidación de Radix es la ganadora porque ofrece un DvP (Entrega contra Pago) \"Atómico\" en apenas <strong>~3 segundos</strong> en un entorno público, <strong>sin fronteras y operativo 24/7/365</strong>. Esto significa que transacciones financieras altamente complejas se liquidan al instante sin importar si es domingo o madrugada: o los activos cambian de manos simultáneamente, o la transacción falla y no ocurre nada, <strong>eliminando el 100% del riesgo de contraparte</strong> sin depender de cámaras de compensación ni de los permisos de un banco central.",
       sharding: "<strong>Opción Optima: Radix DLT (Millones TPS - Cerberus Sharding)</strong><br/><br/><strong>Por qué:</strong> Ethereum está ahogado en su Capa 1 (~30 TPS) y depende de Capas 2 (Rollups). SWIFT y BCE son redes centralizadas que pueden escalar añadiendo servidores, pero no son Web3. El algoritmo de consenso de Radix (Cerberus) tiene una <strong>arquitectura de sharding (fragmentación) teóricamente infinita</strong>. Es la única red pública diseñada para soportar el <strong>volumen del sistema financiero mundial entero simultáneamente</strong>.",
       fragmentation: "<strong>Opción Optima: Radix DLT (Cero - Red global unificada)</strong><br/><br/><strong>Por qué:</strong> Este es el gran talón de Aquiles de Ethereum hoy en día. Al usar Layer-2s (Arbitrum, Optimism, Base), la liquidez se divide en \"silos\", haciendo que el capital sea ineficiente. Radix permite <strong>componibilidad atómica \"cross-shard\"</strong> (entre fragmentos de la red). Es decir, todas las aplicaciones y toda la liquidez interactúan <strong>como si estuvieran en el mismo lugar, sin fricciones</strong>.",
       security: "<strong>Opción Optima: Radix DLT (0% por diseño - ROA/FSM)</strong><br/><br/><strong>Por qué:</strong> Ethereum utiliza contratos inteligentes que son básicamente hojas de cálculo donde se anotan saldos, propensos a \"bugs\" catastróficos (como los ataques de reentrada que han robado miles de millones). Radix usa <strong>ROA (Arquitectura Orientada a Recursos)</strong>. Los tokens son \"recursos físicos\" regidos por máquinas de estado finito (FSM) de la propia red. Matemáticamente, un token <strong>no puede ser duplicado ni desaparecer</strong>.",
@@ -288,35 +288,47 @@ export const es = {
       costs: "<strong>Opción Optima: Radix DLT (Bajos y predecibles por diseño)</strong><br/><br/><strong>Por qué:</strong> Quien haya usado Ethereum en un mercado alcista sabe que una transacción puede costar $2 un día y $150 al día siguiente por culpa del Gas. <strong>Ninguna empresa tradicional puede planificar un modelo de negocio con esos costes variables</strong>. La arquitectura de Radix mantiene las <strong>comisiones bajas y constantes</strong> sin importar cuánta congestión haya, lo que la hace <strong>\"Enterprise-ready\" (lista para empresas)</strong>.",
       language: "<strong>Opción Optima: Radix DLT (Scrypto - Basado en Rust)</strong><br/><br/><strong>Por qué:</strong> Solidity (Ethereum) es un lenguaje muy difícil de asegurar; el 80% del tiempo de desarrollo se gasta intentando que no te hackeen. Scrypto, basado en Rust (el lenguaje más amado por los programadores convencionales hoy en día), está <strong>orientado a activos</strong>. Cosas que en Solidity toman cientos de líneas de código complejo, en Scrypto son <strong>funciones nativas de 1 sola línea</strong>. Reduce los tiempos y costes de desarrollo brutalmente."
     },
+    featureDefinitions: {
+      atomic: "Es el tiempo que tarda una transferencia en ser definitiva e irreversible. La liquidación atómica es una garantía tecnológica donde el intercambio de activos es \"todo o nada\": o los activos de ambas partes cambian de manos simultáneamente al instante, o la transacción falla y nadie pierde nada. Esto elimina el riesgo de que una parte entregue el activo y la otra no pague (riesgo de contraparte).",
+      scalability: "Es la capacidad de la red para procesar un volumen masivo de transacciones por segundo (TPS). Una red scalables permite que miles de personas y empresas operen al mismo tiempo sin que el sistema se ralentice o se bloquee.",
+      liquidity: "Se refiere a si el dinero y los activos están todos en el mismo \"sitio\" (red unificada) o si están repartidos en diferentes capas o silos aislados. La liquidez unificada es mucho más eficiente porque permite mover el capital sin trabas ni puentes complejos.",
+      hackRisk: "Mide qué tan vulnerable es la red a errores de lógica en los contratos inteligentes. Las redes seguras por diseño tienen reglas matemáticas que impiden que los tokens sean duplicados o robados por fallos de código comunes.",
+      walletUX: "Es la experiencia de uso de la \"cartera\" digital. Evalúa si es fácil de usar (como una app bancaria con biometría) o si es difícil y arriesgada (tener que guardar 24 palabras en un papel para no perder tu dinero).",
+      legibility: "Es la capacidad de la red de explicarte qué vas a firmar. En lugar de mostrar códigos extraños, el sistema te dice en texto claro: \"Vas a enviar 100€ y vas a recibir 1 acción de Apple\".",
+      mica: "Indica si la tecnología está adaptada legalmente para cumplir con la nueva normativa de la Unión Europea para criptoactivos, permitiendo que las empresas operen con seguridad jurídica.",
+      kycAml: "Es la capacidad de verificar la identidad (Know Your Customer) y prevenir el blanqueo de capitales directamente dentro de la red, permitiendo que solo usuarios autorizados participen en ciertas operaciones financieras.",
+      costPredictability: "Se refiere a si las comisiones por usar la red son estables y baratas, o si cambian bruscamente según la hora del día, lo cual dificulta a las empresas planificar sus gastos.",
+      programming: "Es el \"idioma\" que usan los desarrolladores para crear aplicaciones. Un lenguaje moderno y orientado a activos permite crear herramientas financieras más rápido, con menos errores y con costes de desarrollo mucho más bajos."
+    },
     categories: [
       {
         title: "RENDIMIENTO Y ARQUITECTURA",
         rows: [
-          { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (Dinero central)", radix: "T+0 DvP Atómico ~3 seg", winner: "radix", expKey: "atomic" },
-          { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista", radix: "Millones TPS (Cerberus)", winner: "radix", expKey: "sharding" },
-          { feature: "Fragmentación de Liquidez", swift: "Silos aislados", evm: "Alta (Múltiples L2s)", bce: "Alta (DLTs cerradas)", radix: "Cero (Unificada)", winner: "radix", expKey: "fragmentation" }
+          { feature: "Liquidación de activos", swift: "T+2 días", evm: "~15 seg (T+0 parcial)", bce: "T+0 (Dinero central)", radix: "T+0 DvP Atómico ~3 seg", winner: "radix", expKey: "atomic", featKey: "atomic" },
+          { feature: "Escalabilidad", swift: "Centralizada", evm: "~30 TPS (L1)", bce: "Volumen mayorista", radix: "Millones TPS (Cerberus)", winner: "radix", expKey: "sharding", featKey: "scalability" },
+          { feature: "Fragmentación de Liquidez", swift: "Silos aislados", evm: "Alta (Múltiples L2s)", bce: "Alta (DLTs cerradas)", radix: "Cero (Unificada)", winner: "radix", expKey: "fragmentation", featKey: "liquidity" }
         ]
       },
       {
         title: "SEGURIDAD Y UX",
         rows: [
-          { feature: "Riesgo de hackeo DeFi", swift: "N/A", evm: "Alto (Bugs de lógica)", bce: "N/A (Red privada)", radix: "0% por diseño (ROA/FSM)", winner: "radix", expKey: "security" },
-          { feature: "Wallet / UX usuario final", swift: "App bancaria", evm: "MetaMask (Seeds)", bce: "B2B Exclusivo", radix: "Smart Wallet (Biometría)", winner: "radix", expKey: "wallet" },
-          { feature: "Legibilidad de transacciones", swift: "Opaco (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaco (TradFi Standard)", radix: "Manifiestos Legibles", winner: "radix", expKey: "readability" }
+          { feature: "Riesgo de hackeo DeFi", swift: "N/A", evm: "Alto (Bugs de lógica)", bce: "N/A (Red privada)", radix: "0% por diseño (ROA/FSM)", winner: "radix", expKey: "security", featKey: "hackRisk" },
+          { feature: "Wallet / UX usuario final", swift: "App bancaria", evm: "MetaMask (Seeds)", bce: "B2B Exclusivo", radix: "Smart Wallet (Biometría)", winner: "radix", expKey: "wallet", featKey: "walletUX" },
+          { feature: "Legibilidad de transacciones", swift: "Opaco (Swift Msg)", evm: "Blind Signing (Hex)", bce: "Opaco (TradFi Standard)", radix: "Manifiestos Legibles", winner: "radix", expKey: "readability", featKey: "legibility" }
         ]
       },
       {
         title: "REGULACIÓN Y NEGOCIO",
         rows: [
-          { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa", bce: "Exento por Ley", radix: "Cumplimiento Nativo", winner: "shared", expKey: "regulation" },
-          { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware terceros", bce: "100% Institucional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc" },
-          { feature: "Previsibilidad de costes", swift: "Altos y opacos", evm: "Alta volatilidad", bce: "Fijado por el BCE", radix: "Bajos y Predecibles", winner: "radix", expKey: "costs" }
+          { feature: "Cumplimiento MiCA", swift: "No aplica", evm: "Adaptación externa", bce: "Exento por Ley", radix: "Cumplimiento Nativo", winner: "shared", expKey: "regulation", featKey: "mica" },
+          { feature: "KYC / AML nativo", swift: "Manual externo", evm: "Middleware terceros", bce: "100% Institucional", radix: "Auth Zones + idOS", winner: "shared", expKey: "kyc", featKey: "kycAml" },
+          { feature: "Previsibilidad de costes", swift: "Altos y opacos", evm: "Alta volatilidad", bce: "Fijado por el BCE", radix: "Bajos y Predecibles", winner: "radix", expKey: "costs", featKey: "costPredictability" }
         ]
       },
       {
         title: "DESARROLLO",
         rows: [
-          { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (Inseguro)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language" }
+          { feature: "Lenguaje de programación", swift: "Propietario", evm: "Solidity (Inseguro)", bce: "Múltiple (BYO-DLT)", radix: "Scrypto (Asset-Oriented)", winner: "radix", expKey: "language", featKey: "programming" }
         ]
       }
     ]
