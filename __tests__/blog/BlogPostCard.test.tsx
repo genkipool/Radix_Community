@@ -94,6 +94,8 @@ const mockBlogT: BlogDictionary = {
         auto_collapse: 'Auto collapse',
     },
     modal: {
+        new_post_title: 'New Post',
+        subtitle: 'Compose your thoughts',
         title_label: 'Title',
         title_placeholder: 'Title...',
         message_label: 'Message',
@@ -102,6 +104,7 @@ const mockBlogT: BlogDictionary = {
         publish_btn: 'Publish',
         reward_title: 'Reward',
         reward_desc: 'Desc',
+        beta_disclaimer: 'Beta disclaimer',
     },
     calendar: {
         title: 'Calendar',

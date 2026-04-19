@@ -177,3 +177,38 @@ button[disabled],
 .section-contained {
   contain: layout style;
 }
+
+/* ── Hero Carousel Native Animations ──────────────────────────────────────
+   Replaces Framer Motion for core LCP elements (h1, p).
+   Ensures the browser can render the first slide immediately from static HTML
+   without waiting for JS hydration.
+   ─────────────────────────────────────────────────────────────────────── */
+@keyframes hero-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.animate-hero-in {
+  animation: hero-slide-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-hero-out {
+  animation: hero-slide-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

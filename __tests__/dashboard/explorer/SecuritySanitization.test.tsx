@@ -60,6 +60,8 @@ describe('Security & Sanitization', () => {
     index: 0,
     columns: 1,
     t: en,
+    timezone: 'UTC',
+    locale: 'en',
   };
 
   it('renders malicious messages as literal text and does not execute scripts', () => {

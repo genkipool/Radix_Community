@@ -33,7 +33,7 @@ export default function Comparison({ t }: BaseSectionProps) {
     const isWinner = row.winner === colKey || (row.winner === 'shared' && (colKey === 'radix' || colKey === 'bce'));
     
     return (
-      <div className="flex items-center justify-center md:justify-start gap-2">
+      <div className="flex items-center justify-end md:justify-start gap-2">
         <span className="leading-tight">{content}</span>
         {isWinner && row.expKey && (
           <InfoTooltip content={t.comparativa.explanations[row.expKey as keyof typeof t.comparativa.explanations]}>
@@ -101,7 +101,7 @@ export default function Comparison({ t }: BaseSectionProps) {
           {categories.map((cat, catIdx) => (
             <div key={catIdx} className="space-y-6">
               <div className="px-2 text-center">
-                <h3 className="text-[10px] font-bold text-[var(--color-text-muted)] tracking-[0.3em] uppercase pb-4">
+                <h3 className="text-[12px] font-bold text-[var(--color-text-muted)] tracking-[0.3em] uppercase pb-4">
                   {cat.title}
                 </h3>
               </div>
@@ -117,16 +117,16 @@ export default function Comparison({ t }: BaseSectionProps) {
 
                   <div className="divide-y divide-[var(--color-card-border)] text-[var(--color-text-main)]">
                     {competitors.map((c) => (
-                      <div key={c.key} className="flex flex-col gap-1 px-5 py-3.5">
-                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{c.label}</span>
+                      <div key={c.key} className="flex items-center justify-between gap-4 px-5 py-3.5">
+                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">{c.label}</span>
                         <div className="text-sm">
                           {renderWinnerCell(row[c.key as keyof ComparisonRow] as string, c.key, row)}
                         </div>
                       </div>
                     ))}
 
-                    <div className="flex flex-col gap-1 px-5 py-4 bg-[var(--color-secondary)]/5">
-                      <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase tracking-wider">Radix DLT</span>
+                    <div className="flex items-center justify-between gap-4 px-5 py-4 bg-[var(--color-secondary)]/5">
+                      <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase tracking-wider shrink-0">Radix DLT</span>
                       <div className="text-sm font-bold">
                         {renderWinnerCell(row.radix, 'radix', row)}
                       </div>
