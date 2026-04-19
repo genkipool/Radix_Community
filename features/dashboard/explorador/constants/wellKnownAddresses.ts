@@ -95,3 +95,18 @@ export function getWellKnownKey(
   const map = network === 'stokenet' ? STOKENET_ADDRESSES : MAINNET_ADDRESSES;
   return map[address] || null;
 }
+
+/**
+ * Returns a generic translation key based on the address prefix
+ * (e.g., 'account_', 'resource_'), or `null` if the prefix is unrecognized.
+ */
+export function getGenericTooltipKey(address: string): string | null {
+  if (!address) return null;
+  if (address.startsWith('account_')) return 'account';
+  if (address.startsWith('resource_')) return 'resource';
+  if (address.startsWith('component_')) return 'component';
+  if (address.startsWith('package_')) return 'package';
+  if (address.startsWith('validator_')) return 'validator';
+  if (address.startsWith('identity_')) return 'identity';
+  return null;
+}

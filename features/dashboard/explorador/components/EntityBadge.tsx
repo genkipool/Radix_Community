@@ -11,7 +11,7 @@ import {
     formatEntityAddress,
     getEntityType,
 } from '@/features/dashboard/hooks/useEntityData';
-import { getWellKnownKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
+import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 
 /* ─────────────────────────────────────────
@@ -70,7 +70,12 @@ export function AddressDisplay({
     locale?: string;
 }) {
     const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
-    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
+    const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(address)) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
     const isCM = isConsensusManager(address);
     const meta = useEntityData(address, network);
     const entityName = meta?.name;
@@ -142,9 +147,14 @@ export function EntityBadge({
 }) {
     const clean = sanitizeText(address);
     const { label, color, bg } = getEntityType(clean, tt);
-    // Resolve well-known address tooltips via i18n
+    // Resolve tooltips via i18n (well-known first, then generic type)
     const wellKnownKey = getWellKnownKey(clean, network);
-    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
+    const genericKey = !wellKnownKey ? getGenericTooltipKey(clean) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
     const meta = useEntityData(clean, network);
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;

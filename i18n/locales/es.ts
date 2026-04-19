@@ -2130,6 +2130,14 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
         faucet: 'Componente dispensador (Faucet). La entidad que entrega tokens. Aunque la dirección existe en Mainnet, en redes reales su uso está deshabilitado para evitar la creación de dinero falso.',
         transaction_tracker: 'Rastreador de transacciones. Entidad global operativa usada internamente por el nodo Radix para mantener la integridad de los registros, evitando ataques de doble gasto o repetición (replay attacks).',
       },
+      type_tooltips: {
+        account: 'Dirección de Cuenta (Account). Actúa como una billetera (wallet) que almacena tokens, NFTs y otros recursos de un usuario. Está protegida por reglas de acceso y firmas criptográficas.',
+        resource: 'Dirección de Recurso (Resource). Representa la definición de un activo en la red. Puede ser un token fungible (criptomoneda), un NFT (activo único) o una insignia de permisos (badge).',
+        component: 'Dirección de Componente (Component). Un contrato inteligente activo (\'vivo\') en la red. Contiene la lógica de una dApp y tiene su propio estado local para almacenar datos o fondos en su interior.',
+        package: 'Dirección de Paquete (Package). Contiene el código fuente (Blueprints) subido por un desarrollador. No almacena fondos ni datos de usuarios; sirve como el \'molde\' o plantilla para crear Componentes.',
+        validator: 'Dirección de Validador (Validator). Nodo de la red encargado de procesar transacciones y asegurar el consenso. Los usuarios pueden delegar (hacer staking) sus XRD en este validador.',
+        identity: 'Dirección de Identidad (Persona). Representa el perfil digital de un usuario en la Web3, usado para iniciar sesión en dApps sin contraseña de forma segura.',
+      },
       all: 'Todas',
       button: 'Explorador',
       tx_types: {

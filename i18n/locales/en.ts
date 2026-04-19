@@ -2134,6 +2134,14 @@ Download the update today from the iOS App Store or Google Play Store to experie
         faucet: 'Faucet component. The entity that dispenses tokens. Although the address exists on Mainnet, its usage is disabled on live networks to prevent the creation of fake money.',
         transaction_tracker: 'Transaction tracker component. Live global entity used internally by the Radix node to maintain record integrity, preventing double-spending or replay attacks.',
       },
+      type_tooltips: {
+        account: 'Account Address. Acts as a user wallet that holds tokens, NFTs, and other resources. It is protected by access rules and cryptographic signatures.',
+        resource: 'Resource Address. Represents the definition of an asset on the network. It can be a fungible token (cryptocurrency), an NFT (unique asset), or a permission badge.',
+        component: 'Component Address. An active (\'live\') smart contract on the network. It contains dApp logic and has its own local state to store data or funds inside it.',
+        package: 'Package Address. Contains the source code (Blueprints) uploaded by a developer. It does not hold funds or user data; it serves as a template to instantiate Components.',
+        validator: 'Validator Address. A network node in charge of processing transactions and securing consensus. Users can stake their XRD on this validator.',
+        identity: 'Identity Address (Persona). Represents a user\'s digital profile in Web3, used for secure passwordless login to dApps.',
+      },
       button: 'Explorer',
       all: 'All',
       tx_types: {

@@ -9,7 +9,7 @@ import { EntityBadge } from './EntityBadge';
 import type { OracleUpdate, AirdropData } from '@/features/dashboard/explorador/types';
 import type { Network, TranslationsT, GatewayEvent, GatewayField } from '@/features/dashboard/types';
 import { sanitizeText } from '@/utils/sanitize';
-import { getWellKnownKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
+import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 
 const findEventAmount = (events: GatewayEvent[], resourceAddress: string): string | null => {
     if (!resourceAddress) return null;
@@ -348,7 +348,12 @@ function VaultCreationCard({
     locale?: string;
 }) {
     const wellKnownKey = getWellKnownKey(sanitizeText(resource), network);
-    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
+    const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(resource)) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
     const meta = useEntityData(resource, network);
     const symbol = meta?.symbol || '';
     const clean = sanitizeText(resource);
@@ -523,10 +528,20 @@ function BetVoteCard({
     locale?: string;
 }) {
     const wellKnownKey = resourceAddress ? getWellKnownKey(resourceAddress, network) : null;
-    const wellKnownTip = wellKnownKey ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips] : null;
+    const genericKey = (!wellKnownKey && resourceAddress) ? getGenericTooltipKey(resourceAddress) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
 
     const emitterKey = getWellKnownKey(emitter, network);
-    const emitterTip = emitterKey ? tt.well_known_tooltips?.[emitterKey as keyof typeof tt.well_known_tooltips] : null;
+    const genericEmitterKey = !emitterKey ? getGenericTooltipKey(emitter) : null;
+    const emitterTip = emitterKey
+        ? tt.well_known_tooltips?.[emitterKey as keyof typeof tt.well_known_tooltips]
+        : genericEmitterKey
+            ? tt.type_tooltips?.[genericEmitterKey as keyof typeof tt.type_tooltips]
+            : null;
     const meta = useEntityData(resourceAddress || '', network);
     const symbol = meta?.symbol || '';
     const isBet = eventName === 'BetCreatedEvent';
