@@ -22,6 +22,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
 
       let shiftX = 0;
       const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       const margin = 16;
 
       const tooltipWidth = Math.min(320, viewportWidth - margin * 2);
@@ -33,10 +34,12 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
         shiftX = margin - (left - halfWidth);
       }
 
-      // Check space above based on a safe maximum height for the tooltip content.
-      // On mobile, text wraps causing the balloon to be taller (up to ~200-250px).
+      // Instead of guessing the tooltip's exact height (which varies wildly on mobile),
+      // we mathematically guarantee the safest placement by putting it wherever there is MORE screen space.
       const spaceAbove = rect.top;
-      const currentPlacement = spaceAbove < 280 ? 'bottom' : 'top';
+      const spaceBelow = viewportHeight - rect.bottom;
+      
+      const currentPlacement = spaceAbove > spaceBelow ? 'top' : 'bottom';
 
       setPlacement(currentPlacement);
       setCoords({
@@ -138,7 +141,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                   className="bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl rounded-xl p-4 w-[min(320px,calc(100vw-32px))] relative pointer-events-auto"
                 >
                   <div
-                    className="text-[11px] leading-relaxed text-[var(--color-text-main)] font-medium space-y-2 [&>strong]:text-[var(--color-text-strong,var(--color-text-main))]"
+                    className="text-[11px] leading-relaxed text-[var(--color-text-main)] font-medium space-y-2 [&>strong]:text-[var(--color-text-strong,var(--color-text-main))] max-h-[60vh] overflow-y-auto overscroll-contain pr-1 custom-scrollbar"
                     dangerouslySetInnerHTML={{ __html: content }}
                   />
                   {/* Arrow */}
