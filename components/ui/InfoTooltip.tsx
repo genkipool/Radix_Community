@@ -164,3 +164,4 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
     </div>
   );
 }
+// Sync verified: dom 19 abr 2026 02:30:04 CEST
