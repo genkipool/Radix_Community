@@ -10,13 +10,15 @@ import { ForumReadingMode } from './components/ForumReadingMode';
 import { ForumPublishModal } from './components/ForumPublishModal';
 import { ForumHeroWidgets } from './components/hero/ForumHeroWidgets';
 import { ContentHero } from '@/components/layout/ContentHero';
+import { useLayout } from '@/context/LayoutContext';
 import '@/components/ui/RichTextEditor/styles/RichTextEditor.css';
 
 function ForumContent() {
     const { 
         t, filteredPosts, columns, 
-        showPublishModal, setShowUnderConstruction
+        showPublishModal
     } = useForum();
+    const { setShowUnderConstruction } = useLayout();
 
     return (
         <ContentHero

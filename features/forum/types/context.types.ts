@@ -20,7 +20,6 @@ export interface ForumCtxValue {
     autoCollapse: boolean;
     showPublishModal: boolean;
     sortMode: 'newest' | 'oldest' | 'date' | 'random';
-    showUnderConstruction: boolean;
     calendarOpen: boolean;
     dateRange: { start: string | null; end: string | null };
     replyingToAuthorId: string | null;
@@ -41,7 +40,6 @@ export interface ForumCtxValue {
     setAutoCollapse: (mode: boolean) => void;
     setShowPublishModal: (show: boolean) => void;
     setSortMode: (mode: 'newest' | 'oldest' | 'date' | 'random') => void;
-    setShowUnderConstruction: (show: boolean) => void;
     setCalendarOpen: (open: boolean) => void;
     setDateRange: (range: { start: string | null; end: string | null }) => void;
     setReplyingToAuthorId: (id: string | null) => void;

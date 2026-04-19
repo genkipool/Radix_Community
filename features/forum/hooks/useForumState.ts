@@ -18,7 +18,6 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [readingMode, setReadingMode] = useState(false);
     const [autoCollapse, setAutoCollapse] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
-    const [showUnderConstruction, setShowUnderConstruction] = useState(false);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
     const [replyingToAuthorId, setReplyingToAuthorId] = useState<string | null>(null);
@@ -226,7 +225,6 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
         readingMode, setReadingMode,
         autoCollapse, setAutoCollapse,
         showPublishModal, setShowPublishModal,
-        showUnderConstruction, setShowUnderConstruction,
         calendarOpen, setCalendarOpen,
         dateRange, setDateRange,
         replyingToAuthorId, setReplyingToAuthorId,
