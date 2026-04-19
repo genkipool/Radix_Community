@@ -2,26 +2,80 @@
 'use client';
 
 import React from 'react';
-import { Activity, Gift } from 'lucide-react';
+import { Activity, Gift, Box, Vote, TrendingUp, ArrowRight, Check, Copy } from 'lucide-react';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
 import type { OracleUpdate, AirdropData } from '@/features/dashboard/explorador/types';
-import type { Network, TranslationsT } from '@/features/dashboard/types';
+import type { Network, TranslationsT, GatewayEvent, GatewayField } from '@/features/dashboard/types';
+import { sanitizeText } from '@/utils/sanitize';
+
+const findEventAmount = (events: GatewayEvent[], resourceAddress: string): string | null => {
+    if (!resourceAddress) return null;
+    const cleanResource = sanitizeText(resourceAddress);
+
+    // Look for Mint or Deposit events for this resource
+    const match = events.find(e => {
+        const emitter = sanitizeText(e.emitter?.entity?.entity_address || '');
+        if (emitter === cleanResource && (e.name === 'MintFungibleResourceEvent' || e.name === 'MintNonFungibleResourceEvent')) {
+            return true;
+        }
+
+        // Also check data fields for Deposit/Withdraw if emitter is the account but data mentions resource
+        if (e.name === 'DepositEvent' || e.name === 'WithdrawEvent') {
+            const fields = e.data?.fields || [];
+            const resField = fields.find((f: GatewayField) => f.type_name === 'ResourceAddress' && sanitizeText(String(f.value)) === cleanResource);
+            if (resField) return true;
+        }
+        return false;
+    });
+
+    if (!match) return null;
+
+    const fields = match.data?.fields || [];
+    const amountField = fields.find((f: GatewayField) => f.field_name === 'amount' || f.kind === 'Decimal');
+    return amountField ? sanitizeText(String(amountField.value)) : null;
+};
+
+const extractResourceAddress = (ev: GatewayEvent): string => {
+    const emitterAddr = sanitizeText(ev.emitter?.entity?.entity_address || '');
+    if (emitterAddr.startsWith('resource_')) return emitterAddr;
+
+    const fields = ev.data?.fields || [];
+    // 1. Prioritize known field names
+    const priorityField = fields.find((f: GatewayField) =>
+        f.field_name === 'resource_address' ||
+        f.field_name === 'resource' ||
+        f.field_name === 'token_address' ||
+        f.field_name === 'input_resource' ||
+        f.field_name === 'bet_resource' ||
+        f.field_name === 'input_address'
+    );
+    if (priorityField && typeof priorityField.value === 'string' && priorityField.value.startsWith('resource_')) {
+        return sanitizeText(priorityField.value);
+    }
+
+    // 2. Fallback: Search for any value starting with "resource_" in the fields
+    const anyResource = fields.find((f: GatewayField) =>
+        typeof f.value === 'string' && f.value.startsWith('resource_')
+    );
+    return anyResource ? sanitizeText(String(anyResource.value)) : '';
+};
+
 
 /* OraclePriceUpdateCard */
 
 export function OraclePriceUpdateCard({
     update, tt, onCopy, copiedAddress, onResourceClick, network,
-}: { 
-    update: OracleUpdate; 
-    tt: TranslationsT['dashboard']['transactions']; 
-    onCopy: (addr: string) => void; 
-    copiedAddress: string | null; 
-    onResourceClick?: (addr: string) => void; 
-    network: Network 
+}: {
+    update: OracleUpdate;
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network
 }) {
-    const meta   = useEntityData(update.quoteToken, network);
+    const meta = useEntityData(update.quoteToken, network);
     const symbol = meta?.symbol ?? '';
 
     return (
@@ -65,13 +119,13 @@ export function OraclePriceUpdateCard({
    Section wrapper + grid of OraclePriceUpdateCards */
 export function OracleUpdateSection({
     updates, tt, onCopy, copiedAddress, onResourceClick, network,
-}: { 
-    updates: OracleUpdate[]; 
-    tt: TranslationsT['dashboard']['transactions']; 
-    onCopy: (addr: string) => void; 
-    copiedAddress: string | null; 
-    onResourceClick?: (addr: string) => void; 
-    network: Network 
+}: {
+    updates: OracleUpdate[];
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network
 }) {
     if (updates.length === 0) return null;
     return (
@@ -113,15 +167,15 @@ export function OracleUpdateSection({
 
 function AirdropRewardCard({
     airdropData, tt, onCopy, copiedAddress, onResourceClick, network,
-}: { 
-    airdropData: AirdropData; 
-    tt: TranslationsT['dashboard']['transactions']; 
-    onCopy: (addr: string) => void; 
-    copiedAddress: string | null; 
-    onResourceClick?: (addr: string) => void; 
-    network: Network 
+}: {
+    airdropData: AirdropData;
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network
 }) {
-    const meta   = useEntityData(airdropData.resource || '', network);
+    const meta = useEntityData(airdropData.resource || '', network);
     const symbol = meta?.symbol ?? '';
     const iconUrl = meta?.iconUrl;
 
@@ -179,13 +233,13 @@ function AirdropRewardCard({
 
 export function AirdropSection({
     airdropData, tt, onCopy, copiedAddress, onResourceClick, network,
-}: { 
-    airdropData: AirdropData | null; 
-    tt: TranslationsT['dashboard']['transactions']; 
-    onCopy: (addr: string) => void; 
-    copiedAddress: string | null; 
-    onResourceClick?: (addr: string) => void; 
-    network: Network 
+}: {
+    airdropData: AirdropData | null;
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network
 }) {
     if (!airdropData) return null;
     return (
@@ -208,6 +262,406 @@ export function AirdropSection({
                     onResourceClick={onResourceClick}
                     network={network}
                 />
+            </div>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────
+   New Protocol Event Sections
+   ───────────────────────────────────────── */
+
+export function VaultCreationSection({
+    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+}: {
+    events: GatewayEvent[];
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network;
+}) {
+    const vaultEvents = events.filter(e => e.name === 'VaultCreationEvent');
+    if (vaultEvents.length === 0) return null;
+
+    const extractField = (ev: GatewayEvent, key: string): string => {
+        const fields = ev.data?.fields || [];
+        const field = fields.find((f: GatewayField) => f.field_name === key);
+        return sanitizeText(String(field?.value || field?.hex || ''));
+    };
+
+    return (
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-amber-500/30 overflow-hidden mt-4">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-amber-500/20 bg-[var(--color-surface)] flex items-center gap-2">
+                <Box className="w-3.5 h-3.5 text-amber-400" />
+                {te.vault_creation || 'Vault Creation'}
+            </h3>
+            <div className="p-3 space-y-2">
+                {vaultEvents.map((ev, idx) => {
+                    const resourceAddress = extractResourceAddress(ev);
+                    const vaultId = extractField(ev, 'vault_id');
+                    const amount = findEventAmount(events, resourceAddress);
+
+                    return (
+                        <VaultCreationCard
+                            key={`vault-${idx}`}
+                            resource={resourceAddress}
+                            vaultId={vaultId}
+                            amount={amount}
+                            tt={tt}
+                            te={te}
+                            onCopy={onCopy}
+                            copiedAddress={copiedAddress}
+                            _onResourceClick={onResourceClick}
+                            network={network}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function VaultCreationCard({
+    resource, vaultId, amount, tt, te, onCopy, copiedAddress, _onResourceClick, network
+}: {
+    resource: string;
+    vaultId: string;
+    amount: string | null;
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    _onResourceClick?: (addr: string) => void;
+    network: Network;
+}) {
+    const meta = useEntityData(resource, network);
+    const symbol = meta?.symbol || '';
+    const clean = sanitizeText(resource);
+    const short = clean.length > 20 ? `${clean.slice(0, 12)}...${clean.slice(-6)}` : clean;
+    const isResource = clean.startsWith('resource_');
+    const isClickable = !!_onResourceClick && isResource;
+
+    return (
+        <div className="bg-amber-500/10 border border-amber-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5">
+            {/* Top Row: Resource Identity & Amount */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    {meta?.iconUrl && (
+                        <img
+                            src={meta.iconUrl}
+                            alt={meta.name || 'Token'}
+                            className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-amber-500/20 shrink-0 object-cover"
+                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    )}
+                    <div className="min-w-0 flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0">
+                                {tt.entity_type_resource || 'Resource'}
+                            </span>
+                            {meta?.name && (
+                                <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic">
+                                    {meta.name}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span
+                                className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''}`}
+                                title={clean}
+                                onClick={() => isClickable && _onResourceClick?.(clean)}
+                            >
+                                {short}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
+                                className="p-1 hover:bg-amber-500/20 rounded transition-colors shrink-0"
+                                title={tt.copy_raw || 'Copy'}
+                            >
+                                {copiedAddress === clean ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-amber-800/40 dark:text-amber-400/40" />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Simplified Amount Section */}
+                {amount && (
+                    <div className="flex flex-col items-end shrink-0 ml-auto">
+                        <span className="text-[8px] uppercase font-bold text-amber-800/50 dark:text-amber-400/50 tracking-widest leading-none mb-1">
+                            {te.amount || 'Amount'}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-mono font-black text-amber-700 dark:text-amber-300">{amount}</span>
+                            {symbol && (
+                                <span className="text-[10px] font-bold text-amber-900 dark:text-amber-100 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                    {symbol}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Row: Vault ID Section */}
+            <div className="pt-3 border-t border-amber-500/20">
+                <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                        <Box className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
+                        <span className="text-[9px] uppercase font-black text-amber-800/60 dark:text-amber-400/60 tracking-wider">
+                            {te.vault_id || 'Vault ID'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0 px-0.5">
+                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all">{vaultId}</span>
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onCopy(vaultId); }}
+                            className="hover:text-amber-600 transition-colors shrink-0 p-1"
+                            title={tt.copy_raw || 'Copy'}
+                        >
+                            {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-amber-800/30 dark:text-amber-400/30" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function BetVoteSection({
+    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+}: {
+    events: GatewayEvent[];
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network;
+}) {
+    const voteEvents = events.filter(e => e.name === 'BetVoteEvent' || e.name === 'BetCreatedEvent');
+    if (voteEvents.length === 0) return null;
+
+    const extractField = (ev: GatewayEvent, key: string): string => {
+        const fields = ev.data?.fields || [];
+        const field = fields.find((f: GatewayField) => f.field_name === key);
+        return sanitizeText(String(field?.value || field?.hex || ''));
+    };
+
+    return (
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-blue-500/30 overflow-hidden mt-4">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center gap-2">
+                <Vote className="w-3.5 h-3.5 text-blue-400" />
+                {te.bet_vote || 'Vote / Prediction'}
+            </h3>
+            <div className="p-3 space-y-2">
+                {voteEvents.map((ev, idx) => {
+                    const emitterData = ev.emitter as { entity?: { entity_address: string; entity_type: string }, package_address?: string };
+                    const emitter = sanitizeText(emitterData?.entity?.entity_address || emitterData?.package_address || '');
+                    const entityType = emitterData?.entity?.entity_type || (emitterData?.package_address ? 'Package' : '');
+                    const amount = extractField(ev, 'amount');
+                    const option = extractField(ev, 'option') || extractField(ev, 'name');
+                    const resourceAddress = extractResourceAddress(ev);
+
+                    return (
+                        <BetVoteCard
+                            key={`vote-${idx}`}
+                            option={option}
+                            emitter={emitter}
+                            entityType={entityType}
+                            amount={amount}
+                            resourceAddress={resourceAddress}
+                            eventName={ev.name || ''}
+                            tt={tt}
+                            te={te}
+                            onCopy={onCopy}
+                            copiedAddress={copiedAddress}
+                            network={network}
+                        />
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function BetVoteCard({
+    option, emitter, entityType, amount, resourceAddress, eventName, tt, te, onCopy, copiedAddress, network
+}: {
+    option: string;
+    emitter: string;
+    entityType: string;
+    amount: string | null;
+    resourceAddress?: string;
+    eventName: string;
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    network: Network;
+}) {
+    const meta = useEntityData(resourceAddress || '', network);
+    const symbol = meta?.symbol || '';
+    const isBet = eventName === 'BetCreatedEvent';
+    const label = isBet ? (te.bet_name || 'Bet Name') : (te.option || 'Option');
+
+    // Mapeo dinámico a traducciones existentes
+    const getEntityTypeLabel = (type: string) => {
+        const t = type.toLowerCase();
+        if (t.includes('package')) return tt.entity_type_package || 'Package';
+        if (t.includes('component')) return tt.entity_type_component || 'Component';
+        if (t.includes('account')) return tt.entity_type_account || 'Account';
+        if (t.includes('identity')) return tt.entity_type_identity || 'Identity';
+        if (t.includes('resource')) return tt.entity_type_resource || 'Resource';
+        if (t.includes('validator')) return tt.entity_type_validator || 'Validator';
+        return tt.entity_type_unknown || 'Entity';
+    };
+
+    const typeLabel = entityType ? getEntityTypeLabel(entityType) : '';
+
+    return (
+        <div className="bg-blue-500/10 border border-blue-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5">
+            {/* Top Row: Option & Amount */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    {meta?.iconUrl && (
+                        <img
+                            src={meta.iconUrl}
+                            alt={meta.name || 'Token'}
+                            className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-blue-500/20 shrink-0 object-cover"
+                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    )}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-[9px] uppercase font-black tracking-wider text-blue-800/60 dark:text-blue-400/60 self-start">
+                            {label}
+                        </span>
+                        {meta?.name && (
+                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic">
+                                {meta.name}
+                            </span>
+                        )}
+                        {option && option !== resourceAddress && (
+                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic opacity-80">
+                                {option}
+                            </span>
+                        )}
+                        {resourceAddress && (
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-xs font-mono truncate text-[var(--color-text-main)] select-all" title={resourceAddress}>
+                                    {resourceAddress.length > 20 ? `${resourceAddress.slice(0, 12)}...${resourceAddress.slice(-6)}` : resourceAddress}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onCopy(resourceAddress); }}
+                                    className="p-1 hover:bg-blue-500/20 rounded transition-colors shrink-0"
+                                    title={tt.copy_raw || 'Copy'}
+                                >
+                                    {copiedAddress === resourceAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-blue-800/40 dark:text-blue-400/40" />}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Amount Highlight */}
+                {amount && amount !== '0' && (
+                    <div className="flex flex-col items-end shrink-0 ml-auto">
+                        <span className="text-[8px] uppercase font-bold text-blue-800/50 dark:text-blue-400/50 tracking-widest leading-none mb-1">
+                            {te.amount || 'Amount'}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-mono font-black text-blue-700 dark:text-blue-300">{amount}</span>
+                            {symbol && (
+                                <span className="text-[10px] font-bold text-blue-900 dark:text-blue-100 bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
+                                    {symbol}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Row: Emitter (at) */}
+            <div className="pt-3 border-t border-blue-500/20">
+                <div className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] uppercase font-black text-blue-800/60 dark:text-blue-400/60 tracking-wider">
+                            {te.at || 'at'}
+                        </span>
+                        {typeLabel && (
+                            <span className="text-[8px] uppercase font-bold tracking-tight px-1 py-0.5 leading-none rounded border border-blue-500/40 text-blue-800 dark:text-blue-400 bg-blue-500/10 shrink-0">
+                                {typeLabel}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0 px-0.5">
+                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all">{emitter}</span>
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
+                            className="hover:text-blue-600 transition-colors shrink-0 p-1"
+                            title={tt.copy_raw || 'Copy'}
+                        >
+                            {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function RatesChangedSection({
+    events, tt, te, onCopy, copiedAddress, onResourceClick, network,
+}: {
+    events: GatewayEvent[];
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network;
+}) {
+    const rateEvents = events.filter(e => e.name === 'RatesChangedEvent');
+    if (rateEvents.length === 0) return null;
+
+    const extractField = (ev: GatewayEvent, key: string): string => {
+        const fields = ev.data?.fields || [];
+        const field = fields.find((f: GatewayField) => f.field_name === key);
+        return sanitizeText(String(field?.value || field?.hex || ''));
+    };
+
+    return (
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-teal-500/30 overflow-hidden mt-4">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-teal-500/20 bg-[var(--color-surface)] flex items-center gap-2">
+                <TrendingUp className="w-3.5 h-3.5 text-teal-400" />
+                {te.rates_changed || 'Rates Update'}
+            </h3>
+            <div className="p-3 space-y-2">
+                {rateEvents.map((ev, idx) => {
+                    const emitter = sanitizeText(ev.emitter?.entity?.entity_address || '');
+                    const rateType = extractField(ev, 'rate_type');
+                    const prev = extractField(ev, 'previous');
+                    const curr = extractField(ev, 'current');
+
+                    return (
+                        <div key={`rate-${idx}`} className="p-3 bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl shadow-sm flex flex-col gap-3">
+                            <EntityBadge address={emitter} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                            <div className="flex items-center justify-between gap-4 py-1.5 px-2 bg-teal-500/5 rounded-lg border border-teal-500/20">
+                                <span className="text-[10px] font-bold text-teal-500 uppercase tracking-wide">{rateType}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-mono font-bold text-[var(--color-text-muted)]">{prev}%</span>
+                                    <ArrowRight className="w-3 h-3 text-teal-500 opacity-50" />
+                                    <span className="text-sm font-mono font-black text-teal-400">{curr}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

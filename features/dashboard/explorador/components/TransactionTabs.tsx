@@ -11,7 +11,7 @@ import { TransactionDetailsTab } from './TransactionDetailsTab';
 import { EntitiesSection } from './EntitiesSection';
 import { FeesDistributionSection } from './FeesDistributionSection';
 import { ProtocolVoteCard } from './ProtocolVoteCard';
-import { OracleUpdateSection, AirdropSection } from './TransactionSummaryPanels';
+import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection } from './TransactionSummaryPanels';
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 
@@ -51,6 +51,7 @@ const TransactionTabs = ({
 }: TransactionTabsProps) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'details' | 'raw'>('summary');
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
+    const te = (t?.events ?? {}) as TranslationsT['events'];
     const dt = (t?.dashboard ?? {}) as TranslationsT['dashboard'];
 
     if (!details) {
@@ -76,7 +77,7 @@ const TransactionTabs = ({
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
 
     // Shared props passed to most child panels
-    const shared = { tt, onCopy, copiedAddress, onResourceClick, network, columns };
+    const shared = { tt, te, onCopy, copiedAddress, onResourceClick, network, columns };
 
     return (
         <div
@@ -246,6 +247,14 @@ const TransactionTabs = ({
                                 manifestInstructions={manifest_instructions ?? ''}
                                 {...shared}
                             />
+                        )}
+
+                        {receipt?.events !== undefined && (receipt.events?.length ?? 0) > 0 && (
+                            <>
+                                <VaultCreationSection events={receipt.events ?? []} {...shared} />
+                                <BetVoteSection events={receipt.events ?? []} {...shared} />
+                                <RatesChangedSection events={receipt.events ?? []} {...shared} />
+                            </>
                         )}
 
                         <FeesDistributionSection details={details} tx={tx} readingMode={readingMode} {...shared} />

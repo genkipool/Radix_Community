@@ -261,7 +261,7 @@ export function TransactionDetailsTab({
         const getField = (key: string, idx: number) => {
             if (isEnum) return sanitizeText(String(fields[idx]?.value || ''));
             const field = fields.find((f: GatewayField) => f.field_name === key);
-            return sanitizeText(String(field?.value || ''));
+            return sanitizeText(String(field?.value || field?.hex || ''));
         };
 
         const tStr = (val: unknown, fallback: string) => String(val || fallback);
@@ -346,6 +346,83 @@ export function TransactionDetailsTab({
         if (name.includes('Claim')) {
             const titleText = tStr(te.claim, 'Claim');
             return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.from, 'from'), emitter) };
+        }
+
+        // BetVoteEvent
+        if (name === 'BetVoteEvent') {
+            const betOption = getField('option', 1);
+            return {
+                titleText: tStr(te.bet_vote, 'Vote / Prediction'),
+                tooltip: tStr(te.bet_vote_title, 'Represents the allocation of tokens towards an option or vote in a component.'),
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te.option, 'Option')}>
+                            <span className="font-bold text-pink-500">
+                                {fResource(betOption)}
+                            </span>
+                        </EventRow>
+                        <EventRow label={tStr(te.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>
+                    </div>
+                )
+            };
+        }
+
+        // VaultCreationEvent
+        if (name === 'VaultCreationEvent') {
+            const vaultId = getField('vault_id', 0);
+            return {
+                titleText: tStr(te.vault_creation, 'Vault Creation'),
+                tooltip: tStr(te.vault_creation_title, 'An internal vault has been created to securely store physical assets.'),
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te.vault_id, 'Vault ID')}>
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-[var(--color-text-main)] break-all">
+                                    {vaultId || '-'}
+                                </span>
+                                {vaultId && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); onCopy(vaultId); }}
+                                        className="p-1 hover:bg-[var(--color-surface-hover)] rounded transition-colors shrink-0"
+                                        title={tt.copy_raw || 'Copy'}
+                                    >
+                                        {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                                    </button>
+                                )}
+                            </div>
+                        </EventRow>
+                    </div>
+                )
+            };
+        }
+
+        // RatesChangedEvent
+        if (name === 'RatesChangedEvent') {
+            const rateType = getField('rate_type', 0);
+            const prev = getField('previous', 1);
+            const curr = getField('current', 2);
+            return {
+                titleText: tStr(te.rates_changed, 'Rates Update'),
+                tooltip: tStr(te.rates_changed_title, 'The protocol has updated interest rates as a result of the current market state.'),
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te.rate_type, 'Rate Type')}>
+                            <span className="font-bold text-[var(--color-primary)]">{rateType}</span>
+                        </EventRow>
+                        <EventRow label={tStr(te.change, 'Change')}>
+                            <span className="inline-flex items-center gap-2 font-bold text-teal-400">
+                                <span>{prev}%</span>
+                                <span>➔</span>
+                                <span>{curr}%</span>
+                            </span>
+                        </EventRow>
+                    </div>
+                )
+            };
         }
 
         // Generic fallback
