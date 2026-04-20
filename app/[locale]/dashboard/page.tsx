@@ -11,7 +11,7 @@ import {
 import type { TransactionDetails } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
 import DashboardClient from '@/features/dashboard/DashboardClient';
-import { entityKeys, extractEntityMeta } from '@/features/dashboard/utils/entityCache';
+import { entityKeys, extractEntityMeta, normalizeAddress, needsFetch } from '@/features/dashboard/utils/entityCache';
 import { getNetworkCookieKey } from '@/features/dashboard/utils/cookieUtils';
 import { makeQueryClient } from '@/lib/queryClient';
 import logger from '@/lib/logger';
