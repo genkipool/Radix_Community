@@ -109,7 +109,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Timezone resolution: Cookie > Geo Fallback > UTC
   const clientTz = c.decoded('client-tz');
   const country = headerStore.get('cf-ipcountry') || headerStore.get('x-vercel-ip-country');
-  const timezone = clientTz || (country === 'ES' ? 'Europe/Madrid' : 'UTC');
+  const timezone = clientTz || (country === 'ES' ? 'Europe/Madrid' : Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
