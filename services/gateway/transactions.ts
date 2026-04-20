@@ -1014,7 +1014,7 @@ const getRecentTransactionsFromDataCache = (
                                 await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
                             }
                         })
-                    ).catch(() => {});
+                    ).catch(() => { });
                 }
             }
 
