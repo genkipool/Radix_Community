@@ -5,6 +5,7 @@ import {
   getValidatorsCached,
   getRecentTransactionsCached,
   fetchStakeHistoryCached,
+  fetchFilteredTransactions,
   searchTransactionsByAddress, fetchTransactionDetails, fetchEntityDetails,
   type Validator, type NetworkStats,
 } from '@/services/radixApi';
@@ -140,7 +141,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         const data = await searchTransactionsByAddress(txid, undefined, 15, network);
         return { transactions: data.transactions, nextCursor: data.nextCursor };
       }
-      
+
       // Priority 2: Custom date range (Calendar)
       if (initialDateRange.start || initialDateRange.end) {
         const data = await fetchFilteredTransactions({
@@ -187,7 +188,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       // and pre-resolve their metadata so symbols show up instantly.
       (async () => {
         const discoveredAddresses = new Set<string>();
-        txData.transactions.forEach((tx) => {
+        txData.transactions.forEach((tx: TransactionInfo) => {
           // Main displayed resource (token symbol)
           if (tx.displayResource && tx.displayResource !== 'XRD') {
             discoveredAddresses.add(tx.displayResource);

@@ -59,10 +59,13 @@ export async function GET(request: NextRequest) {
             hasMore: !!result.nextCursor
         }, 'Serving transaction data');
 
+        const isFiltered = tag !== 'All' || start || end || address;
+
         return NextResponse.json(result, {
             headers: {
-                // Short CDN cache — transactions change frequently.
-                'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
+                'Cache-Control': isFiltered
+                    ? 'no-store, max-age=0'
+                    : 'public, s-maxage=10, stale-while-revalidate=30',
             },
         });
     } catch (error) {

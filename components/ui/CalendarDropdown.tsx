@@ -57,32 +57,27 @@ export function CalendarDropdown({
 }: CalendarDropdownProps) {
     // Initialize viewDate to the start date if provided, otherwise today
     const [viewDate, setViewDate] = useState(() => {
-        if (dateRange.start) {
+        if (dateRange?.start) {
             const [y, m, d] = dateRange.start.split('-');
-            return new Date(Number(y), Number(m) - 1, Number(d));
+            if (y && m && d) return new Date(Number(y), Number(m) - 1, Number(d));
         }
         return new Date();
     });
 
-    // Reset to today whenever opened without a selection, OR update to URL selection
+    // Reset to today whenever opened without a selection
     useEffect(() => {
-        if (open) {
-            if (dateRange.start) {
-                const [y, m, d] = dateRange.start.split('-');
-                setViewDate(new Date(Number(y), Number(m) - 1, Number(d)));
-            } else {
-                setViewDate(new Date());
-            }
+        if (open && !dateRange.start) {
+            setViewDate(new Date());
         }
     }, [open, dateRange.start]);
 
     const currentMonth = viewDate.getMonth();
-    const currentYear  = viewDate.getFullYear();
+    const currentYear = viewDate.getFullYear();
 
-    const monthName    = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(viewDate);
-    const daysInMonth  = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(viewDate);
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     // Sunday=0 → shift so Monday=0 for a Mon-first grid
-    const rawFirstDay  = new Date(currentYear, currentMonth, 1).getDay();
+    const rawFirstDay = new Date(currentYear, currentMonth, 1).getDay();
     const firstDayOfMonth = (rawFirstDay + 6) % 7; // Mon-first offset
 
     const handlePrevMonth = () => setViewDate(new Date(currentYear, currentMonth - 1, 1));
@@ -118,9 +113,9 @@ export function CalendarDropdown({
     const isToday = (day: number): boolean => {
         const today = new Date();
         return (
-            currentYear  === today.getFullYear() &&
+            currentYear === today.getFullYear() &&
             currentMonth === today.getMonth() &&
-            day          === today.getDate()
+            day === today.getDate()
         );
     };
 
@@ -128,7 +123,7 @@ export function CalendarDropdown({
     // translations provide Sun-first [Su,Mo,Tu,We,Th,Fr,Sa]
     const weekdaysSunFirst = calendarT.weekdays.length === 7
         ? calendarT.weekdays
-        : ['Su','Mo','Tu','We','Th','Fr','Sa'];
+        : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     const weekdaysMonFirst = [...weekdaysSunFirst.slice(1), weekdaysSunFirst[0]];
 
     const positionClass = align === 'right' ? 'right-0' : 'left-0';
@@ -177,10 +172,10 @@ export function CalendarDropdown({
                         ))}
 
                         {Array.from({ length: daysInMonth }).map((_, i) => {
-                            const day      = i + 1;
+                            const day = i + 1;
                             const selected = isStartOrEnd(day);
-                            const inRange  = isInRange(day);
-                            const today    = isToday(day);
+                            const inRange = isInRange(day);
+                            const today = isToday(day);
 
                             return (
                                 <button

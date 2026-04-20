@@ -23,7 +23,6 @@ import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/ra
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
-import crypto from 'crypto';
 
 
 /**
@@ -674,7 +673,7 @@ const getFilteredTransactionsFromDataCache = (
 
             // Seed Redis for SWR
             const redis = getRedisClient();
-            if (redis) {
+            if (backupKey && redis && result.transactions && result.transactions.length > 0) {
                 redis.set(backupKey, result).catch(e =>
                     logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
                 );
@@ -682,7 +681,7 @@ const getFilteredTransactionsFromDataCache = (
 
             return result;
         },
-        [`filtered-txs-${options.network}-${options.tag}-${options.address || 'global'}-${options.cursor || 'tip'}-${options.limit}`],
+        [`filtered-txs-${options.network}-${options.tag.replace(/\s+/g, '_').toLowerCase()}-${options.address || 'global'}-${options.cursor || 'tip'}-${options.limit}`],
         { revalidate: 30, tags: ['transactions', `transactions-${options.network}`] }
     )();
 
@@ -718,17 +717,16 @@ export async function fetchFilteredTransactions(options: {
 
     const opParams = { tag, start, end, cursor, limit, address, network, tzOffsetMinutes };
 
-    if (start || end) {
-        // BYPASS ALL CACHES FOR DATE RANGE FILTERING
-        // Calendar filters are unique and should hit the API directly
-        logger.info({ network, tag, address }, '[TransactionsService] Bypassing cache for calendar filter');
-        return fetchFilteredTransactionsRaw(opParams);
+    const isGlobalTip = !start && !end && !cursor && !address;
+
+    if (!isGlobalTip) {
+        // BYPASS REDIS FOR DEEP PAGINATION OR CUSTOM SEARCHES
+        logger.info({ network, tag, address, cursor: !!cursor }, '[TransactionsService] Bypassing Redis cache for deep/custom query');
+        return getFilteredTransactionsFromDataCache(opParams, '');
     }
 
-    // Generate a unique key based on all filter parameters to isolate versions in Redis
-    const paramHash = crypto.createHash('md5').update(JSON.stringify(opParams)).digest('hex').slice(0, 16);
-
-    const backupKey = `radix_txs_filtered_${network}_${paramHash}`;
+    const tagSlug = tag.replace(/\s+/g, '_').toLowerCase();
+    const backupKey = `radix_txs_filtered_${network}_${tagSlug}`;
 
     const redis = getRedisClient();
 
@@ -743,9 +741,11 @@ export async function fetchFilteredTransactions(options: {
                 after(async () => {
                     try {
                         const fresh = await fetchFilteredTransactionsRaw(opParams);
-                        await redis.set(backupKey, fresh);
-                        revalidateTag(`transactions-${network}`, 'max');
-                        logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
+                        if (fresh.transactions && fresh.transactions.length > 0) {
+                            await redis.set(backupKey, fresh);
+                            revalidateTag(`transactions-${network}`, 'max');
+                            logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
+                        }
                     } catch (bgErr) {
                         logger.error({ err: bgErr, tag }, '[TransactionsService] Background filter revalidation failed');
                     }
@@ -945,11 +945,24 @@ const getRecentTransactionsFromDataCache = (
             // Seed Storage for future requests (tip only)
             if (isTip) {
                 const redis = getRedisClient();
-                if (redis) {
+                if (redis && result.transactions && result.transactions.length > 0) {
                     const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
                     redis.set(backupKey, result).catch((e) =>
                         logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
                     );
+
+                    // Pre-warm the filtered views to keep them mathematically in sync
+                    const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
+                    Promise.allSettled(
+                        prefetchTags.map(async (t) => {
+                            const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, tzOffsetMinutes: 0 };
+                            const tagRes = await fetchFilteredTransactionsRaw(opParams);
+                            if (tagRes.transactions && tagRes.transactions.length > 0) {
+                                const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
+                                await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
+                            }
+                        })
+                    ).catch(() => {});
                 }
             }
 
@@ -999,13 +1012,28 @@ export async function getRecentTransactionsCached(
                         logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
                         const freshResult = await fetchRecentTransactions(cursor, limit, network);
 
-                        // Update Redis + Invalidate Data Cache
-                        await redis.set(backupKey, freshResult);
+                        if (freshResult.transactions && freshResult.transactions.length > 0) {
+                            // Update Redis + Invalidate Data Cache
+                            await redis.set(backupKey, freshResult);
 
-                        // revalidateTag is safe here because we're in a standard server action/route/after context
-                        revalidateTag(`transactions-${network}`, 'max');
+                            // Pre-warm the filtered views to keep them mathematically in sync
+                            const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
+                            await Promise.allSettled(
+                                prefetchTags.map(async (t) => {
+                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, tzOffsetMinutes: 0 };
+                                    const tagRes = await fetchFilteredTransactionsRaw(opParams);
+                                    if (tagRes.transactions && tagRes.transactions.length > 0) {
+                                        const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
+                                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
+                                    }
+                                })
+                            );
 
-                        logger.info({ network }, '[TransactionsService] Background revalidation complete');
+                            // revalidateTag is safe here because we're in a standard server action/route/after context
+                            revalidateTag(`transactions-${network}`, 'max');
+                        }
+
+                        logger.info({ network }, '[TransactionsService] Background revalidation complete with pre-warmed tags');
                     } catch (bgError) {
                         logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
                     }
