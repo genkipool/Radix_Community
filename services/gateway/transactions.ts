@@ -297,7 +297,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
     // ── Calculate dominant asset transfer for summary ──
     const fungibleChanges: BalanceChange[] = ((item.balance_changes as Record<string, unknown>)?.fungible_balance_changes as BalanceChange[]) || [];
     const resourceTotals: Record<string, number> = {};
-    
+
     // Group positive changes (inflows) by resource to find total volume moved
     fungibleChanges.forEach(c => {
         const amount = Number(c.balance_change);
@@ -321,8 +321,8 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
         displayIsMint = false;
     } else {
         // ── 2. Analyze events for specialized types (Minting) ──
-        const mintEvent = events.find(e => 
-            e.name === 'MintFungibleResourceEvent' || 
+        const mintEvent = events.find(e =>
+            e.name === 'MintFungibleResourceEvent' ||
             e.name === 'MintNonFungibleResourceEvent' ||
             e.name?.includes('MintResource')
         );

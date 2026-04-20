@@ -69,9 +69,9 @@ function makeCookieReader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
 
 // ── Page ───────────────────────────────────────────────────────
 interface DashboardPageProps {
-  searchParams: Promise<{ 
-    view?: string; 
-    network?: string; 
+  searchParams: Promise<{
+    view?: string;
+    network?: string;
     tx?: string;
     start?: string;
     end?: string;
@@ -135,10 +135,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   try {
     // 1. Fetch the first page of transactions explicitly so we can scan it for resources
     const txData = await (async () => {
+      // Priority 1: Direct transaction ID lookup (Search)
       if (txid) {
         const data = await searchTransactionsByAddress(txid, undefined, 15, network);
         return { transactions: data.transactions, nextCursor: data.nextCursor };
       }
+      
+      // Priority 2: Custom date range (Calendar)
+      if (initialDateRange.start || initialDateRange.end) {
+        const data = await fetchFilteredTransactions({
+          tag: activeTxTag,
+          start: initialDateRange.start,
+          end: initialDateRange.end,
+          limit: 15,
+          network,
+        });
+        return { transactions: data.transactions, nextCursor: data.nextCursor };
+      }
+
+      // Priority 3: Default "All" view (Redis cached tip)
       const data = await getRecentTransactionsCached(undefined, 100, network);
       return {
         transactions: (data?.transactions ?? []) as TransactionInfo[],

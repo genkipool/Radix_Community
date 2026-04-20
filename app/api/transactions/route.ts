@@ -9,18 +9,18 @@ import {
 
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
-    const cursor           = validateCursor(searchParams.get('cursor'));
-    const limit            = validateLimit(searchParams.get('limit'));
-    const rawAddress       = searchParams.get('address') || '';
-    const address          = rawAddress ? (validateAddress(rawAddress) ?? '') : '';
-    const network          = validateNetwork(searchParams.get('network'));
-    const tag              = searchParams.get('tag')   || 'All';
-    const start            = searchParams.get('start') || undefined;
-    const end              = searchParams.get('end')   || undefined;
-    const tzOffsetMinutes  = parseInt(searchParams.get('tz') || '0', 10);
+    const cursor = validateCursor(searchParams.get('cursor'));
+    const limit = validateLimit(searchParams.get('limit'));
+    const rawAddress = searchParams.get('address') || '';
+    const address = rawAddress ? (validateAddress(rawAddress) ?? '') : '';
+    const network = validateNetwork(searchParams.get('network'));
+    const tag = searchParams.get('tag') || 'All';
+    const start = searchParams.get('start') || undefined;
+    const end = searchParams.get('end') || undefined;
+    const tzOffsetMinutes = parseInt(searchParams.get('tz') || '0', 10);
 
-    logger.info({ 
-        network, tag, address: address || 'All', cursor: !!cursor 
+    logger.info({
+        network, tag, address: address || 'All', cursor: !!cursor
     }, 'Incoming transaction request');
 
     try {
@@ -53,10 +53,10 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        logger.info({ 
-            network, 
+        logger.info({
+            network,
             count: result.transactions.length,
-            hasMore: !!result.nextCursor 
+            hasMore: !!result.nextCursor
         }, 'Serving transaction data');
 
         return NextResponse.json(result, {
@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
         logger.error({ err: error }, 'Transaction API error: %s', message);
         return NextResponse.json(
             { error: message },
-            { 
+            {
                 status: 500,
-                headers: { 'Cache-Control': 'no-store, max-age=0' } 
+                headers: { 'Cache-Control': 'no-store, max-age=0' }
             },
         );
     }

@@ -55,12 +55,24 @@ export function CalendarDropdown({
     onSelectRange,
     onReset,
 }: CalendarDropdownProps) {
-    const [viewDate, setViewDate] = useState(new Date());
+    // Initialize viewDate to the start date if provided, otherwise today
+    const [viewDate, setViewDate] = useState(() => {
+        if (dateRange.start) {
+            const [y, m, d] = dateRange.start.split('-');
+            return new Date(Number(y), Number(m) - 1, Number(d));
+        }
+        return new Date();
+    });
 
-    // Reset to today whenever opened without a selection
+    // Reset to today whenever opened without a selection, OR update to URL selection
     useEffect(() => {
-        if (open && !dateRange.start) {
-            setViewDate(new Date());
+        if (open) {
+            if (dateRange.start) {
+                const [y, m, d] = dateRange.start.split('-');
+                setViewDate(new Date(Number(y), Number(m) - 1, Number(d)));
+            } else {
+                setViewDate(new Date());
+            }
         }
     }, [open, dateRange.start]);
 
