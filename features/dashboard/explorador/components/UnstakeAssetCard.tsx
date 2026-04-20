@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Wallet, ChevronDown } from 'lucide-react';
+import { Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { BalanceChangeRow } from './BalanceChangeRow';
 import { NftTransferCard } from './NftTransferCard';
 import { AddressDisplay } from './EntityBadge';
@@ -26,13 +26,13 @@ export function UnstakeAssetCard({
                 {/* ── ORIGIN ── */}
                 <div className="flex-1 p-3 bg-red-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-red-600 dark:text-red-400 mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronDown className="w-3 h-3 rotate-90" />
+                        <ChevronUp className="w-3 h-3" />
                         {tt.from_address || 'Origin (Sent)'}
                     </h5>
                     <div className="space-y-3">
                         {senderAddr && (
                             <div>
-                                <AddressDisplay label={tt.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} />
+                                <AddressDisplay label={tt.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                 <div className="space-y-1 mt-2">
                                     {allLsuChanges.map((change, i: number) => (
                                         <BalanceChangeRow key={i} change={change} tt={tt} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" />

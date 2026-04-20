@@ -57,7 +57,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt: TranslationsT['dashboard'
    Label + truncated address + copy button
 ───────────────────────────────────────── */
 export function AddressDisplay({
-    label, address, tt, onCopy, copiedAddress, showConsensusInfo = false, network, locale: _locale = 'en',
+    label, address, tt, onCopy, copiedAddress, showConsensusInfo = false, network, locale: _locale = 'en', hideLabel = false,
 }: {
     label: string;
     address: string;
@@ -67,6 +67,7 @@ export function AddressDisplay({
     showConsensusInfo?: boolean;
     network: Network;
     locale?: string;
+    hideLabel?: boolean;
 }) {
     const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(address)) : null;
@@ -87,12 +88,14 @@ export function AddressDisplay({
 
     return (
         <div className="flex flex-col gap-0.5">
-            <span
-                className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help' : ''}`}
-                title={wellKnownTip ?? undefined}
-            >
-                {label}:
-            </span>
+            {!hideLabel && (
+                <span
+                    className={`text-[10px] font-bold text-[var(--color-text-muted)] tracking-wider ${wellKnownTip ? 'cursor-help' : ''}`}
+                    title={wellKnownTip ?? undefined}
+                >
+                    {label}:
+                </span>
+            )}
             <div className="flex items-center gap-2">
                 {isValidator && entityIcon && (
                     <img src={entityIcon} alt={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
