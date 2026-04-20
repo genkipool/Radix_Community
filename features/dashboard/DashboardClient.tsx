@@ -396,11 +396,11 @@ export default function DashboardClient({
           onCalendarToggle={handleCalendarToggle}
           dateRange={tempDateRange}
           onSelectRange={setTempDateRange}
-          onResetRange={() => { 
+          onResetRange={() => {
             const empty = { start: null, end: null };
-            setTempDateRange(empty); 
+            setTempDateRange(empty);
             handleDateRangeChange(empty); // Reset commits immediately
-            setCalendarOpen(false); 
+            setCalendarOpen(false);
           }}
           calendarT={dt.calendar}
 

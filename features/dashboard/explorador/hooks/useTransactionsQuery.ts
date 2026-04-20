@@ -44,6 +44,7 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, ena
   const trimmedQuery   = searchQuery.trim();
   const isAddress      = isRadixAddress(trimmedQuery);
   const serverSideAddr = isAddress ? trimmedQuery : undefined;
+  const hasDateFilter  = !!(dateRange.start || dateRange.end);
 
   return useInfiniteQuery<TransactionsPage>({
     queryKey:             ['transactions', network, serverSideAddr, tag, dateRange],
@@ -63,8 +64,12 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, ena
     // It is strictly required to prevent the UI from flashing skeletons when the user reloads the list or changes filters.
     placeholderData:      keepPreviousData,
     enabled:              true,
-    refetchOnMount:       enabled,
-    staleTime:            10_000,
+    // When a date filter is active, force a client-side refetch because the
+    // server prefetch may have used a fallback timezone (UTC). The client
+    // always sends the correct IANA timezone via Intl.DateTimeFormat, so
+    // the refetch guarantees correct local-time day boundaries.
+    refetchOnMount:       hasDateFilter ? 'always' : enabled,
+    staleTime:            hasDateFilter ? 0 : 10_000,
     refetchOnWindowFocus: false,
   });
 }

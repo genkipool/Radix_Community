@@ -150,6 +150,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           end: initialDateRange.end,
           limit: 15,
           network,
+          timezone,
         });
         return { transactions: data.transactions, nextCursor: data.nextCursor };
       }

@@ -82,22 +82,68 @@ const STREAM_OPT_INS = {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// localToUTC
+//
+// Converts a local date/time in a given IANA timezone to a UTC Date.
+// Uses Intl.DateTimeFormat to resolve the real offset for the specific
+// date, automatically handling DST (e.g. Europe/Madrid is UTC+1 in
+// winter and UTC+2 in summer).
+// ─────────────────────────────────────────────────────────────────────────────
+function localToUTC(
+    dateStr: string,
+    hours: number,
+    minutes: number,
+    seconds: number,
+    ms: number,
+    timezone: string,
+): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+
+    // Treat the desired local time as if it were UTC (our "guess")
+    const guessEpoch = Date.UTC(year, month - 1, day, hours, minutes, seconds);
+    const guess = new Date(guessEpoch);
+
+    // Format this UTC instant in the target timezone to see what
+    // local time it actually maps to
+    const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+    });
+
+    const p: Record<string, string> = {};
+    for (const { type, value } of fmt.formatToParts(guess)) p[type] = value;
+
+    const actualLocalEpoch = Date.UTC(
+        Number(p.year), Number(p.month) - 1, Number(p.day),
+        Number(p.hour === '24' ? '0' : p.hour), Number(p.minute), Number(p.second),
+    );
+
+    // offsetMs = how far ahead local time is from UTC at this instant.
+    // For UTC+2: guess 00:00Z → local 02:00 → offset = +2h.
+    const offsetMs = actualLocalEpoch - guessEpoch;
+
+    // UTC for "desired local time" = desiredLocalAsUTC − offset.
+    // Add ms separately (Intl has only second-level precision).
+    return new Date(guessEpoch + ms - offsetMs);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // buildLedgerDateParams
 //
-// Translates YYYY-MM-DD strings into the Gateway's ledger state selectors,
-// accounting for the caller's UTC offset so that "April 6" always means
-// midnight-to-midnight in the user's local timezone.
+// Translates YYYY-MM-DD strings into the Gateway's ledger state selectors.
+// Each boundary is converted independently to UTC using the IANA timezone,
+// so DST transitions are correctly handled even when start and end fall
+// on different sides of a clock change.
 //
-// tzOffsetMinutes: value of `new Date().getTimezoneOffset()` on the client
-//   (negative for UTC+, positive for UTC-). 0 means UTC.
-//
-// - `from_ledger_state.timestamp` = start of the start day in local time → UTC
-// - `at_ledger_state.timestamp`   = end of the end day in local time → UTC
+// - `from_ledger_state.timestamp` = start of the start day (00:00:00.000 local → UTC)
+// - `at_ledger_state.timestamp`   = end of the end day   (23:59:59.999 local → UTC)
 // ─────────────────────────────────────────────────────────────────────────────
 function buildLedgerDateParams(
     start?: string | null,
     end?: string | null,
-    tzOffsetMinutes = 0,
+    timezone = 'UTC',
 ): {
     from_ledger_state?: { timestamp: Date };
     at_ledger_state?: { timestamp: Date };
@@ -108,17 +154,15 @@ function buildLedgerDateParams(
     } = {};
 
     if (start) {
-        // "start of day" in local time = 00:00:00 local = 00:00 + tzOffset in UTC
-        const fromLocal = new Date(`${start}T00:00:00.000Z`);
-        fromLocal.setUTCMinutes(fromLocal.getUTCMinutes() + tzOffsetMinutes);
-        params.from_ledger_state = { timestamp: fromLocal };
+        params.from_ledger_state = {
+            timestamp: localToUTC(start, 0, 0, 0, 0, timezone),
+        };
     }
 
     if (end) {
-        // "end of day" in local time = 23:59:59.999 local = 23:59:59.999 + tzOffset in UTC
-        const atLocal = new Date(`${end}T23:59:59.999Z`);
-        atLocal.setUTCMinutes(atLocal.getUTCMinutes() + tzOffsetMinutes);
-        params.at_ledger_state = { timestamp: atLocal };
+        params.at_ledger_state = {
+            timestamp: localToUTC(end, 23, 59, 59, 999, timezone),
+        };
     }
 
     return params;
@@ -414,10 +458,10 @@ export async function fetchRecentTransactions(
     cursor?: string,
     limit = 15,
     network: Network = 'mainnet',
-    dateRange?: { start?: string | null; end?: string | null; tzOffsetMinutes?: number },
+    dateRange?: { start?: string | null; end?: string | null; timezone?: string },
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     const gateway = getGateway(network);
-    const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.tzOffsetMinutes);
+    const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
 
     try {
         const res = await withRetry(() =>
@@ -529,7 +573,7 @@ export async function searchTransactionsByAddress(
     cursor?: string,
     limit = 15,
     network: Network = 'mainnet',
-    dateRange?: { start?: string | null; end?: string | null; tzOffsetMinutes?: number },
+    dateRange?: { start?: string | null; end?: string | null; timezone?: string },
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     // Fast path: a txid_ is a direct detail lookup, not a stream query
     if (address.startsWith('txid_')) {
@@ -543,7 +587,7 @@ export async function searchTransactionsByAddress(
 
     const gateway = getGateway(network);
     const isValidator = address.startsWith('validator_');
-    const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.tzOffsetMinutes);
+    const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
 
     try {
         const res = await withRetry(() =>
@@ -605,11 +649,11 @@ async function fetchFilteredTransactionsRaw(options: {
     limit: number;
     address: string | undefined;
     network: Network;
-    tzOffsetMinutes: number;
+    timezone: string;
 }): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
-    const { tag, start, end, cursor: initialCursor, limit, address, network, tzOffsetMinutes } = options;
+    const { tag, start, end, cursor: initialCursor, limit, address, network, timezone } = options;
 
-    const dateRange = { start, end, tzOffsetMinutes };
+    const dateRange = { start, end, timezone };
     const results: TransactionInfo[] = [];
     let currentCursor = initialCursor;
     let pageCount = 0;
@@ -662,7 +706,7 @@ const getFilteredTransactionsFromDataCache = (
         limit: number;
         address: string | undefined;
         network: Network;
-        tzOffsetMinutes: number;
+        timezone: string;
     },
     backupKey: string
 ) =>
@@ -702,7 +746,7 @@ export async function fetchFilteredTransactions(options: {
     limit?: number;
     address?: string;
     network?: Network;
-    tzOffsetMinutes?: number;
+    timezone?: string;
 }): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     const {
         tag = 'All',
@@ -712,15 +756,23 @@ export async function fetchFilteredTransactions(options: {
         limit = 15,
         address,
         network = 'mainnet',
-        tzOffsetMinutes = 0,
+        timezone = 'UTC',
     } = options;
 
-    const opParams = { tag, start, end, cursor, limit, address, network, tzOffsetMinutes };
+    const opParams = { tag, start, end, cursor, limit, address, network, timezone };
 
     const isGlobalTip = !start && !end && !cursor && !address;
+    const hasDateFilter = !!(start || end);
+
+    if (hasDateFilter) {
+        // BYPASS ALL CACHES FOR DATE RANGE FILTERING
+        // Each date combination is unique — caching would serve stale results
+        logger.info({ network, tag, start, end }, '[TransactionsService] Bypassing all caches for calendar filter');
+        return fetchFilteredTransactionsRaw(opParams);
+    }
 
     if (!isGlobalTip) {
-        // BYPASS REDIS FOR DEEP PAGINATION OR CUSTOM SEARCHES
+        // Deep pagination or address search — Data Cache only, no Redis
         logger.info({ network, tag, address, cursor: !!cursor }, '[TransactionsService] Bypassing Redis cache for deep/custom query');
         return getFilteredTransactionsFromDataCache(opParams, '');
     }
@@ -955,7 +1007,7 @@ const getRecentTransactionsFromDataCache = (
                     const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
                     Promise.allSettled(
                         prefetchTags.map(async (t) => {
-                            const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, tzOffsetMinutes: 0 };
+                            const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
                             const tagRes = await fetchFilteredTransactionsRaw(opParams);
                             if (tagRes.transactions && tagRes.transactions.length > 0) {
                                 const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
@@ -1020,7 +1072,7 @@ export async function getRecentTransactionsCached(
                             const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
                             await Promise.allSettled(
                                 prefetchTags.map(async (t) => {
-                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, tzOffsetMinutes: 0 };
+                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
                                     const tagRes = await fetchFilteredTransactionsRaw(opParams);
                                     if (tagRes.transactions && tagRes.transactions.length > 0) {
                                         const tagSlug = t.replace(/\s+/g, '_').toLowerCase();

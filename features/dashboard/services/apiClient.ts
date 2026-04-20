@@ -23,8 +23,9 @@ export async function apiFetchTransactions(
     if (tag !== 'All') params.set('tag', tag);
     if (start) params.set('start', start);
     if (end) params.set('end', end);
-    // Send the client's UTC offset so the server can compute correct day boundaries
-    params.set('tz', String(new Date().getTimezoneOffset()));
+    // Send the client's IANA timezone so the server computes correct day
+    // boundaries for each specific date (handles DST automatically)
+    params.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
     
     const res = await fetch(`/api/transactions?${params.toString()}`);
     if (!res.ok) throw new Error(`API error: ${res.status}`);

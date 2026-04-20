@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get('tag') || 'All';
     const start = searchParams.get('start') || undefined;
     const end = searchParams.get('end') || undefined;
-    const tzOffsetMinutes = parseInt(searchParams.get('tz') || '0', 10);
+    const timezone = searchParams.get('tz') || 'UTC';
 
     logger.info({
         network, tag, address: address || 'All', cursor: !!cursor
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
                 limit,
                 address: address || undefined,
                 network,
-                tzOffsetMinutes,
+                timezone,
             });
         } else if (address) {
             result = await searchTransactionsByAddress(address, cursor, limit, network);
