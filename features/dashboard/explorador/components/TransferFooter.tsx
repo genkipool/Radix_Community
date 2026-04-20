@@ -17,14 +17,23 @@ export function TransferFooter({
 }: TransferFooterProps) {
     const fmt = (v: string) => Math.abs(parseFloat(v || '0')).toFixed(4).replace(/\.?0+$/, '');
 
-    // Read symbol from React Query cache — populated by BalanceChangeRow renders above.
-    // LSU resources have no symbol metadata, so we fall back to 'LSU'.
+    // Read metadata from React Query cache — populated by BalanceChangeRow renders above.
     const qc = useQueryClient();
     const entityData = resourceAddress && network
         ? qc.getQueryData<GatewayEntityDetails>(entityKeys.full(resourceAddress, network))
         : null;
-    const symbol = entityData?.metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.value?.typed?.value
-        || (resourceAddress ? 'LSU' : 'XRD');
+
+    const rawSymbol = entityData?.metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.value?.typed?.value;
+    const rawName = entityData?.metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value;
+
+    let symbol = '';
+    if (!resourceAddress) {
+        symbol = 'XRD';
+    } else if (rawSymbol) {
+        symbol = rawSymbol;
+    } else if (rawName && /liquid.?stake|lsu/i.test(rawName)) {
+        symbol = 'LSU';
+    }
 
     const greenCls = 'text-[#16a34a]';
 
