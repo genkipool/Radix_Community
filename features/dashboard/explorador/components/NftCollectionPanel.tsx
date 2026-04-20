@@ -20,6 +20,7 @@ export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | '
 export function NftCollectionPanel({
     resourceAddress: _resourceAddress, meta, nftData, nftLoading, ids, type,
     onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, unstakeXrdExpected, network: _network,
+    locale,
 }: NftCollectionPanelProps) {
     const [activeTab, setActiveTab] = useState<NftPanelTab>('items');
     const [expandedNfts, setExpandedNfts] = useState<Set<string>>(new Set());
@@ -37,7 +38,7 @@ export function NftCollectionPanel({
     const ra = meta?.details?.role_assignments;
     const behaviors = deriveBehaviors(ra, tt);
     const configEntries = getConfigEntries(ra, tt);
-    const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString();
+    const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString(locale);
 
     // Detect if this collection is a Stake Claim resource
     const isStakeClaim = isStakeClaimOverride || /stake.?claim/i.test(name) || /stake.?claim/i.test(getMetaValue(metadataItems, 'description') || '');
@@ -144,7 +145,7 @@ export function NftCollectionPanel({
                                                         </span>
                                                         {claimXrd != null && (
                                                             <span className="text-[9px] font-bold font-mono text-[var(--color-primary)]">
-                                                                ~{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} XRD
+                                                                ~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD
                                                             </span>
                                                         )}
                                                     </div>
@@ -155,7 +156,7 @@ export function NftCollectionPanel({
                                                     <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className="font-mono font-bold text-base tabular-nums text-red-600 dark:text-red-400">−1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -164,7 +165,7 @@ export function NftCollectionPanel({
                                                     <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className="font-mono font-bold text-base tabular-nums text-green-700 dark:text-green-400">+1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -173,7 +174,7 @@ export function NftCollectionPanel({
                                                     <div className="text-right" title={tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_amount || 'XRD Reclamables'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">~{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -200,7 +201,7 @@ export function NftCollectionPanel({
                                                                     </p>
                                                                 </div>
                                                                 <span className="text-base font-black font-mono text-amber-600 shrink-0 tabular-nums">
-                                                                    {isClaim ? '' : '~'}{parseFloat(String(claimXrd ?? claimXrdTotal ?? unstakeXrdExpected)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs font-semibold opacity-70">XRD</span>
+                                                                    {isClaim ? '' : '~'}{parseFloat(String(claimXrd ?? claimXrdTotal ?? unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span>
                                                                 </span>
                                                             </div>
                                                         )}

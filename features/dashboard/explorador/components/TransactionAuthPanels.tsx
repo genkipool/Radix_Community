@@ -80,7 +80,7 @@ export function LockFeePanel({
 ───────────────────────────────────────── */
 export function AuthBadgePanel({
     badgeResource, badgeAmount, badgeOrigin,
-    tt, t, onCopy, copiedAddress, onResourceClick, readingMode, network = 'mainnet',
+    tt, t, onCopy, copiedAddress, onResourceClick, readingMode, network = 'mainnet', locale,
 }: {
     badgeResource:  string;
     badgeAmount:    string;
@@ -92,6 +92,7 @@ export function AuthBadgePanel({
     onResourceClick?: (addr: string) => void;
     readingMode?:   boolean;
     network?:       Network;
+    locale:         string;
 }) {
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-primary)]/30 overflow-hidden mt-4">
@@ -128,6 +129,7 @@ export function AuthBadgePanel({
                     onResourceClick={onResourceClick}
                     readingMode={readingMode}
                     network={network}
+                    locale={locale}
                 />
             </div>
         </div>

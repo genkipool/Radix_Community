@@ -13,9 +13,9 @@ import { IconFlame, IconMedal, IconBolt } from './TransactionIcons';
  * Displays a summary of total assets sent, received, and fees paid.
  */
 export function TransferFooter({
-    senders, receivers, actualFeePaid, tt, resourceAddress, network,
+    senders, receivers, actualFeePaid, tt, resourceAddress, network, locale,
 }: TransferFooterProps) {
-    const fmt = (v: string) => Math.abs(parseFloat(v || '0')).toFixed(4).replace(/\.?0+$/, '');
+    const fmt = (v: string) => Math.abs(parseFloat(v || '0')).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 
     // Read metadata from React Query cache — populated by BalanceChangeRow renders above.
     const qc = useQueryClient();
@@ -44,7 +44,9 @@ export function TransferFooter({
                     <span className="flex items-center gap-2">
                         <IconFlame className="text-red-500 w-3.5 h-3.5" />
                         {tt.sent_label || 'SENT'}
-                        <span className="text-red-500 font-black">{senders.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toFixed(4).replace(/\.?0+$/, '')} {symbol}</span>
+                        <span className="text-red-500 font-black">
+                            {senders.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                        </span>
                     </span>
                     <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                     <span className="flex items-center gap-2 text-[var(--color-text-main)]">
@@ -56,13 +58,15 @@ export function TransferFooter({
                     <span className="flex items-center gap-2">
                         <IconMedal className={`${greenCls} w-3.5 h-3.5`} />
                         {tt.received_label || 'RECEIVED'}
-                        <span className={`${greenCls} font-black`}>{receivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toFixed(4).replace(/\.?0+$/, '')} {symbol}</span>
+                        <span className={`${greenCls} font-black`}>
+                            {receivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                        </span>
                     </span>
                     <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                     <span className="flex items-center gap-2">
                         <Shield className="text-amber-500 w-3.5 h-3.5" />
                         {tt.fee_label?.toUpperCase() || 'FEE'}
-                        <span className="text-amber-600 font-black">{actualFeePaid} XRD</span>
+                        <span className="text-amber-600 font-black">{parseFloat(actualFeePaid).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</span>
                     </span>
                 </div>
             ) : senders.length > 0 ? (
@@ -74,7 +78,7 @@ export function TransferFooter({
             ) : receivers.length > 0 ? (
                 <div className="flex items-center justify-center gap-2 py-1">
                     <IconMedal className={`${greenCls} w-4 h-4`} />
-                    <span className={`${greenCls} font-black`}>{receivers[0]?.balance_change} {symbol}</span>
+                    <span className={`${greenCls} font-black`}>{parseFloat(receivers[0]?.balance_change).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}</span>
                     <span className="opacity-80">{tt.validator_emissions_subtitle || 'generated or minted by system.'}</span>
                 </div>
             ) : null}

@@ -50,7 +50,7 @@ import { FeesDistributionSectionProps } from '../types';
    Right → Burn · Proposer · Validator Set · Royalties · Tips
 ═════════════════════════════════════════ */
 export function FeesDistributionSection({
-    details, tx, tt, onCopy, copiedAddress, onResourceClick, readingMode, network, columns,
+    details, tx, tt, onCopy, copiedAddress, onResourceClick, readingMode, network, columns, locale,
 }: FeesDistributionSectionProps) {
     const allFeeChanges = details.balance_changes?.fungible_fee_balance_changes ?? [];
 
@@ -194,6 +194,7 @@ export function FeesDistributionSection({
                                                 copiedAddress={copiedAddress}
                                                 readingMode={readingMode}
                                                 network={network}
+                                                locale={locale}
                                             />
                                         </div>
                                     </div>

@@ -148,6 +148,7 @@ const TransactionTabs = ({
                                             onCopy={onCopy}
                                             copiedAddress={copiedAddress}
                                             network={network}
+                                            locale={locale}
                                         />
                                     ))}
                                 </div>
@@ -165,7 +166,7 @@ const TransactionTabs = ({
                                 const nftAdded: NonFungibleChange[] = (balanceChanges?.non_fungible_balance_changes ?? []).filter((n) => (n?.added ?? []).length > 0);
                                 const senderAddr = allLsuChanges[0]?.entity_address;
                                 const totalLsu = allLsuChanges.reduce((sum: number, c) => sum + Math.abs(parseFloat(c.balance_change || '0')), 0);
-                                const fmtNum = (n: number) => parseFloat(n.toFixed(4)).toLocaleString(undefined, { maximumFractionDigits: 4 });
+                                const fmtNum = (n: number) => parseFloat(n.toFixed(4)).toLocaleString(locale, { maximumFractionDigits: 4 });
 
                                 return (
                                     <UnstakeAssetCard
@@ -184,6 +185,7 @@ const TransactionTabs = ({
                                         readingMode={readingMode}
                                         network={network}
                                         columns={columns}
+                                        locale={locale}
                                     />
                                 );
                             }

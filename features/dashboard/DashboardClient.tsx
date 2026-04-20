@@ -307,6 +307,7 @@ export default function DashboardClient({
             ? isValFetching && !validatorsData
             : isTxLoading && txs.length === 0}
           dt={dt}
+          locale={language}
         />
 
         {/* ── Search / Filters / Grid controls ── */}

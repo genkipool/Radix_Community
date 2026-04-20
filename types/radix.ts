@@ -103,6 +103,12 @@ export interface TransactionInfo {
     manifestClasses?: string[];
     /** All validator addresses involved in stake/unstake/claim (one per validator) */
     validatorOps?: ValidatorOp[];
+    /** Custom fields for summary cards: dominant asset moved */
+    displayAmount?: number;
+    displayResource?: string;
+    displayIsXrd?: boolean;
+    displayIsMint?: boolean;
+    displayResourceName?: string;
     /** @deprecated use validatorOps */
     validatorAddress?: string;
     /** @deprecated use validatorOps */
@@ -111,6 +117,8 @@ export interface TransactionInfo {
     unstakeXrd?: number;
     /** @deprecated use validatorOps */
     claimXrd?: number;
+    /** Full balance changes if available in the summary */
+    balanceChanges?: Record<string, unknown>;
 }
 
 export interface ValidatorOp {

@@ -14,8 +14,8 @@ export interface StatCardProps {
 }
 
 export interface ExplorerStats {
-    maxFee: number;
-    maxFeeHash: string;
+    maxSending: number;
+    maxSendingHash: string;
 }
 
 export interface DashboardStatsRowProps {
@@ -24,6 +24,7 @@ export interface DashboardStatsRowProps {
     explorerStats: ExplorerStats | null;
     isLoading?: boolean;
     dt?: TranslationsT['dashboard'];
+    locale: string;
 }
 
 export interface DashboardToolbarProps {

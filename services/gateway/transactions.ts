@@ -294,6 +294,83 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
             ? ['ProtocolVote', ...rawClasses]
             : rawClasses;
 
+    // ── Calculate dominant asset transfer for summary ──
+    const fungibleChanges: BalanceChange[] = ((item.balance_changes as Record<string, unknown>)?.fungible_balance_changes as BalanceChange[]) || [];
+    const resourceTotals: Record<string, number> = {};
+    
+    // Group positive changes (inflows) by resource to find total volume moved
+    fungibleChanges.forEach(c => {
+        const amount = Number(c.balance_change);
+        if (amount > 0) {
+            resourceTotals[c.resource_address] = (resourceTotals[c.resource_address] || 0) + amount;
+        }
+    });
+
+    const xrdAddress = getXrdAddress(network);
+    let displayAmount: number | undefined;
+    let displayResource: string | undefined;
+    let displayIsXrd = false;
+    let displayIsMint = false;
+    let displayResourceName: string | undefined;
+
+    // ── 1. XRD Priority ──
+    if (resourceTotals[xrdAddress]) {
+        displayAmount = resourceTotals[xrdAddress];
+        displayResource = 'XRD';
+        displayIsXrd = true;
+        displayIsMint = false;
+    } else {
+        // ── 2. Analyze events for specialized types (Minting) ──
+        const mintEvent = events.find(e => 
+            e.name === 'MintFungibleResourceEvent' || 
+            e.name === 'MintNonFungibleResourceEvent' ||
+            e.name?.includes('MintResource')
+        );
+
+        if (mintEvent) {
+            displayIsMint = true;
+            // Resource address comes from the event emitter (the resource being minted)
+            const mintEmitter = mintEvent.emitter?.entity?.entity_address || mintEvent.emitter_address || '';
+            if (mintEmitter && mintEmitter.startsWith('resource_')) {
+                displayResource = mintEmitter;
+                displayIsXrd = displayResource === xrdAddress;
+                displayResourceName = displayIsXrd ? 'XRD' : undefined;
+            }
+            // Amount: Gateway MintFungibleResourceEvent data is a Decimal value
+            const data = mintEvent.data?.programmatic_json || mintEvent.data;
+            if (data) {
+                // Direct Decimal kind (most common)
+                const rawData = data as unknown as { kind?: string; value?: string; fields?: GatewayField[] };
+                if (rawData.kind === 'Decimal' && rawData.value) {
+                    displayAmount = Number(rawData.value);
+                } else if (rawData.fields) {
+                    // Fallback: structured with fields
+                    const amountField = rawData.fields.find(f => f.kind === 'Decimal' || f.field_name === 'amount');
+                    if (amountField?.value) {
+                        displayAmount = Number(amountField.value);
+                    }
+                }
+            }
+        }
+
+        // ── 3. Fallback to highest volume token ──
+        if (!displayIsMint) {
+            let maxToken: string | undefined;
+            let maxVal = 0;
+            for (const [res, total] of Object.entries(resourceTotals)) {
+                if (total > maxVal) {
+                    maxVal = total;
+                    maxToken = res;
+                }
+            }
+            if (maxToken) {
+                displayAmount = maxVal;
+                displayResource = maxToken;
+                displayIsXrd = false;
+            }
+        }
+    }
+
     return {
         intentHash:
             item.intent_hash ||
@@ -319,6 +396,11 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
             entities.find((e: string) => typeof e === 'string' && e.startsWith('validator_')) ??
             undefined,
         validatorOps,
+        displayAmount,
+        displayResource,
+        displayIsXrd,
+        displayIsMint,
+        displayResourceName,
         ...(validatorAddress && { stakeXrd, unstakeXrd, claimXrd }),
     };
 }

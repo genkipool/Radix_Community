@@ -8,7 +8,7 @@ import { StatCard } from './StatCard';
 import type { DashboardStatsRowProps } from '../types';
 
 export const DashboardStatsRow = ({
-    activeView, stats, explorerStats, isLoading = false, dt,
+    activeView, stats, explorerStats, isLoading = false, dt, locale,
 }: DashboardStatsRowProps) => {
     if (activeView === 'staking') {
         return (
@@ -16,7 +16,7 @@ export const DashboardStatsRow = ({
                 <StatCard
                     icon={<Coins className="w-5 h-5" />}
                     label={dt?.network?.total_staked ?? ''}
-                    value={`${formatXRD(stats.totalStaked)} ${dt?.network?.xrd ?? 'XRD'}`}
+                    value={`${formatXRD(stats.totalStaked, locale)} ${dt?.network?.xrd ?? 'XRD'}`}
                     accent
                     isLoading={isLoading}
                 />
@@ -29,14 +29,14 @@ export const DashboardStatsRow = ({
                 <StatCard
                     icon={<TrendingUp className="w-5 h-5" />}
                     label={dt?.network?.avg_apy ?? ''}
-                    value={`${formatNumber(stats.avgApy)}%`}
+                    value={`${formatNumber(stats.avgApy, 2, locale)}%`}
                     accent
                     isLoading={isLoading}
                 />
                 <StatCard
                     icon={<Activity className="w-5 h-5" />}
                     label={dt?.network?.avg_uptime ?? ''}
-                    value={`${formatNumber(stats.avgUptime)}%`}
+                    value={`${formatNumber(stats.avgUptime, 2, locale)}%`}
                     isLoading={isLoading}
                 />
             </div>
@@ -48,7 +48,7 @@ export const DashboardStatsRow = ({
             <StatCard
                 icon={<Activity className="w-5 h-5" />}
                 label={dt?.explorer?.ledger_txs || 'Total Transactions'}
-                value={stats.stateVersion ? stats.stateVersion.toLocaleString() : '---'}
+                value={stats.stateVersion ? stats.stateVersion.toLocaleString(locale) : '---'}
                 accent
                 description={dt?.explorer?.desc_txs}
                 isLoading={isLoading}
@@ -56,14 +56,14 @@ export const DashboardStatsRow = ({
             <StatCard
                 icon={<Coins className="w-5 h-5" />}
                 label={dt?.explorer?.ledger_epoch || 'Current Epoch'}
-                value={stats.epoch ? stats.epoch.toLocaleString() : '---'}
+                value={stats.epoch ? stats.epoch.toLocaleString(locale) : '---'}
                 description={dt?.explorer?.desc_epoch}
                 isLoading={isLoading}
             />
             <StatCard
                 icon={<Shield className="w-5 h-5" />}
                 label={dt?.explorer?.ledger_round || 'Current Round'}
-                value={stats.round ? stats.round.toLocaleString() : '---'}
+                value={stats.round ? stats.round.toLocaleString(locale) : '---'}
                 accent
                 description={dt?.explorer?.desc_round}
                 isLoading={isLoading}
@@ -72,12 +72,12 @@ export const DashboardStatsRow = ({
                 icon={<TrendingUp className="w-5 h-5" />}
                 label={dt?.explorer?.largest_purchase || 'Largest Purchase'}
                 value={
-                    explorerStats && explorerStats.maxFee > 0
-                        ? `${formatXRD(explorerStats.maxFee)} XRD (Fee)`
+                    explorerStats && explorerStats.maxSending > 0
+                        ? `${formatXRD(explorerStats.maxSending, locale)} XRD`
                         : '---'
                 }
                 description={dt?.explorer?.desc_purchase}
-                copyText={explorerStats?.maxFeeHash || undefined}
+                copyText={explorerStats?.maxSendingHash || undefined}
                 isLoading={isLoading}
             />
         </div>

@@ -11,8 +11,8 @@ import { TransferFooter } from './TransferFooter';
 import { UnstakeAssetCardProps } from '../types';
 
 export function UnstakeAssetCard({
-    senderAddr, allLsuChanges, totalLsu, fmtNum, nftAdded, validatorOps,
-    actualFeePaid, tt, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns,
+    senderAddr, allLsuChanges, totalLsu, fmtNum: _fmtNum, nftAdded, validatorOps,
+    actualFeePaid, tt, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, locale,
 }: UnstakeAssetCardProps) {
     return (
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mb-4 last:mb-0">
@@ -35,7 +35,7 @@ export function UnstakeAssetCard({
                                 <AddressDisplay label={tt.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                 <div className="space-y-1 mt-2">
                                     {allLsuChanges.map((change, i: number) => (
-                                        <BalanceChangeRow key={i} change={change} tt={tt} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" />
+                                        <BalanceChangeRow key={i} change={change} tt={tt} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
                                     ))}
                                 </div>
                             </div>
@@ -54,7 +54,7 @@ export function UnstakeAssetCard({
                         <div className="px-3 py-2 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)] italic flex items-center justify-between gap-4">
                             <span>{tt.system_burn_lsu || 'Quema de token del sistema/red vía Componente'}</span>
                             <span className="font-mono font-bold text-red-500 whitespace-nowrap">
-                                −{fmtNum(totalLsu)} <span className="text-[10px] opacity-70">LSU</span>
+                                −{parseFloat(String(totalLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-[10px] opacity-70">LSU</span>
                             </span>
                         </div>
 
@@ -75,6 +75,7 @@ export function UnstakeAssetCard({
                                         onCopy={onCopy}
                                         copiedAddress={copiedAddress}
                                         network={network}
+                                        locale={locale}
                                         rightLabel={tt.nft_delivered_label || 'NFT Entregado'}
                                         rightContent={<span className="font-mono font-bold text-base tabular-nums text-red-500">−1 <span className="text-xs font-semibold opacity-70">NFT</span></span>}
                                     />
@@ -96,6 +97,7 @@ export function UnstakeAssetCard({
                                                 isStakeClaim={true}
                                                 unstakeXrdExpected={op.unstakeXrdExpected}
                                                 nftReceivedLabel={tt.nft_claim_label || 'NFT de Reclamo'}
+                                                locale={locale}
                                             />
                                         </div>
                                     )}
@@ -118,6 +120,7 @@ export function UnstakeAssetCard({
                 tt={tt}
                 resourceAddress={allLsuChanges[0]?.resource_address}
                 network={network}
+                locale={locale}
             />
         </div>
     );

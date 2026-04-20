@@ -31,7 +31,7 @@ type ValidatorTab = 'summary' | 'metadata' | 'configuration' | 'raw';
 export function ValidatorInlinePanel({
     validatorAddress, isStake, isUnstake, isClaim,
     stakeXrd, unstakeLsu, unstakeXrdExpected, unstakeXrd, claimXrd,
-    tt, dt, onCopy, copiedAddress, network,
+    tt, dt, onCopy, copiedAddress, network, locale,
     rightLabel, rightContent,
 }: ValidatorInlinePanelProps) {
     const [expanded, setExpanded] = useState(false);
@@ -65,13 +65,13 @@ export function ValidatorInlinePanel({
     const amountColor = isStake ? 'text-green-700 dark:text-green-400' : isUnstake ? 'text-amber-700 dark:text-amber-400' : 'text-[var(--color-primary)]';
     const amountSign = isStake ? '+' : '−';
     const numericAmount = primaryAmount != null && primaryAmount > 0
-        ? `${amountSign}${parseFloat(String(primaryAmount)).toFixed(4).replace(/\.?0+$/, '')}` : null;
+        ? `${amountSign}${parseFloat(String(primaryAmount)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}` : null;
 
     const headerMessage = (() => {
         if (!numericAmount) return null;
         if (isUnstake) {
             const xrdStr = unstakeXrdExpected != null && unstakeXrdExpected > 0
-                ? parseFloat(String(unstakeXrdExpected)).toFixed(4).replace(/\.?0+$/, '') : null;
+                ? parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 }) : null;
             const tpl = tt?.validator_info_unstake || 'Has iniciado el retiro de {lsu} LSU {xrd} de este validador. Los tokens estarán disponibles tras el período de desvinculación.';
             return tpl.replace('{lsu}', numericAmount ?? '').replace('{xrd}', xrdStr ? `(~${xrdStr} XRD)` : '');
         }
@@ -155,7 +155,7 @@ export function ValidatorInlinePanel({
                                 </span>
                                 {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
                                     <div className="font-mono font-semibold text-[var(--color-primary)] tabular-nums mt-0.5">
-                                        ~{parseFloat(String(unstakeXrdExpected)).toFixed(4).replace(/\.?0+$/, '')} <span className="text-xs opacity-70">XRD</span>
+                                        ~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs opacity-70">XRD</span>
                                     </div>
                                 )}
                             </>
@@ -210,55 +210,55 @@ export function ValidatorInlinePanel({
                                                     {isStake && stakeXrd != null && stakeXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_stake_amount || 'XRD Delegado'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-green-700 dark:text-green-400">+{parseFloat(String(stakeXrd)).toFixed(4).replace(/\.?0+$/, '')} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-green-700 dark:text-green-400">+{parseFloat(String(stakeXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isUnstake && (unstakeLsu ?? 0) > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-1 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_lsu_burned || 'LSU Quemados'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-amber-600">−{parseFloat(String(unstakeLsu)).toFixed(4).replace(/\.?0+$/, '')} LSU</dd>
+                                                            <dd className="text-sm font-bold font-mono text-amber-600">−{parseFloat(String(unstakeLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} LSU</dd>
                                                         </div>
                                                     )}
                                                     {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_xrd_expected || 'XRD a Reclamar'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">~{parseFloat(String(unstakeXrdExpected)).toFixed(4).replace(/\.?0+$/, '')} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isClaim && claimXrd != null && claimXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_claim_amount || 'XRD Reclamados'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">+{parseFloat(String(claimXrd)).toFixed(4).replace(/\.?0+$/, '')} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">+{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegatedStake != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.delegated_stake || 'Stake Delegado'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{formatXRD(validator.delegatedStake)} XRD</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{formatXRD(validator.delegatedStake, locale)} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegators != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{cd.delegators || 'Delegadores'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.delegators.toLocaleString()}</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.delegators.toLocaleString(locale)}</dd>
                                                         </div>
                                                     )}
                                                     {validator?.nominalFee != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.nominal_fee || 'Comisión'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.nominalFee.toFixed(2)}%</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.nominalFee.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</dd>
                                                         </div>
                                                     )}
                                                     {validator?.apyProjection != null && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.apy_projection || 'APY Proyección'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.apyProjection.toFixed(2)}%</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.apyProjection.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</dd>
                                                         </div>
                                                     )}
                                                     {validator?.lsu2xrdFactor != null && validator.lsu2xrdFactor !== 1 && (
                                                         <div className="flex items-center justify-between gap-4">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.lsu_factor || 'Factor LSU → XRD'}</dt>
-                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">1 LSU = {formatNumber(validator.lsu2xrdFactor, 8)} XRD</dd>
+                                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">1 LSU = {formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD</dd>
                                                         </div>
                                                     )}
                                                 </dl>

@@ -20,6 +20,7 @@ export function AssetTransferGroup({
     actualFeePaid, tt: _tt, t,
     onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network,
     isClaim, isUnstake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
+    locale,
 }: AssetTransferGroupProps) {
     const tt = _tt || ({} as TranslationsT['dashboard']['transactions']);
     const senders = group.filter(c => {
@@ -99,14 +100,14 @@ export function AssetTransferGroup({
                                             <AddressDisplay label={tt.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
                                         </div>
                                         <div className="space-y-1">
-                                            <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" />
+                                            <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
                                             {matchingFee && !change.is_fee && (
                                                 <div className="pl-4 border-l-2 border-[var(--color-card-border)] opacity-80 scale-95 origin-left">
-                                                    <BalanceChangeRow change={{ ...matchingFee, resource_address: matchingFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" />
+                                                    <BalanceChangeRow change={{ ...matchingFee, resource_address: matchingFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
                                                 </div>
                                             )}
                                             {nftWithdrawals.map((nft, ni: number) => (
-                                                <NftTransferCard key={'nft-s-' + ni} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" />
+                                                <NftTransferCard key={'nft-s-' + ni} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} />
                                             ))}
                                             {/* Claim NFT — address + nested card with left border, +1 NFT (origin side) */}
                                             {pairedClaimNft && (
@@ -129,6 +130,7 @@ export function AssetTransferGroup({
                                                                 isClaim={true}
                                                                 nftReceivedLabel={tt?.nft_presented_label || 'NFT Presentado'}
                                                                 claimXrdTotal={pairedOp?.claimXrd as number}
+                                                                locale={locale}
                                                             />
                                                         </div>
                                                     </div>
@@ -168,6 +170,7 @@ export function AssetTransferGroup({
                                                 side="sender"
                                                 isClaim={isClaim}
                                                 claimXrdTotal={matchedOp?.claimXrd as number}
+                                                locale={locale}
                                             />
                                         </div>
                                     </div>
@@ -200,14 +203,14 @@ export function AssetTransferGroup({
                                             <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
                                         </div>
                                         <div className="space-y-1">
-                                            <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" />
+                                            <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" locale={locale} />
                                             {recipientFee && !change.is_fee && (
                                                 <div className="pl-4 border-l-2 border-amber-500/30 opacity-90 scale-95 origin-left">
-                                                    <BalanceChangeRow change={{ ...recipientFee, resource_address: recipientFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" />
+                                                    <BalanceChangeRow change={{ ...recipientFee, resource_address: recipientFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" locale={locale} />
                                                 </div>
                                             )}
                                             {nftDeposits.map((nft, ni: number) => (
-                                                <NftTransferCard key={'nft-r-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" />
+                                                <NftTransferCard key={'nft-r-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} />
                                             ))}
                                             {/* Claim txs: show each removed claim NFT nested below XRD row — NFT Presentado / -1 NFT / XRD in elements */}
                                             {isClaim && (balanceChanges.non_fungible_balance_changes ?? [])
@@ -231,6 +234,7 @@ export function AssetTransferGroup({
                                                                 isClaim={true}
                                                                 claimXrdTotal={matchedOp?.claimXrd}
                                                                 nftReceivedLabel={tt.nft_presented_label || 'NFT Presentado'}
+                                                                locale={locale}
                                                             />
                                                         </div>
                                                     );
@@ -256,6 +260,7 @@ export function AssetTransferGroup({
                                             onCopy={onCopy}
                                             copiedAddress={copiedAddress}
                                             network={network}
+                                            locale={locale}
                                         />
                                         {pairedNftChange && (
                                             <div className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left">
@@ -273,6 +278,7 @@ export function AssetTransferGroup({
                                                     side="receiver"
                                                     isStakeClaim={true}
                                                     unstakeXrdExpected={pairedValidatorOp.unstakeXrdExpected}
+                                                    locale={locale}
                                                 />
                                             </div>
                                         )}
@@ -293,7 +299,7 @@ export function AssetTransferGroup({
                                             </div>
                                             <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
                                         </div>
-                                        <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" /></div>
+                                        <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} /></div>
                                     </div>
                                 ));
                         })()}
@@ -302,7 +308,7 @@ export function AssetTransferGroup({
             </div>
 
             {/* ── Footer summary ── */}
-            <TransferFooter senders={senders} receivers={receivers} actualFeePaid={actualFeePaid} tt={tt} resourceAddress={group[0]?.resource_address} network={network} />
+            <TransferFooter senders={senders} receivers={receivers} actualFeePaid={actualFeePaid} tt={tt} resourceAddress={group[0]?.resource_address} network={network} locale={locale} />
         </div>
     );
 }

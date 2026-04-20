@@ -50,6 +50,7 @@ export interface AssetTransferGroupProps {
     /** For unstake: the NFT change (added) paired with this LSU group */
     pairedNftChange?: NonFungibleChange;
     columns: number;
+    locale: string;
 }
 
 export interface TransferFooterProps {
@@ -59,6 +60,7 @@ export interface TransferFooterProps {
     tt: TranslationsT['dashboard']['transactions'];
     resourceAddress?: string;
     network?: Network;
+    locale: string;
 }
 
 export interface TransactionCardProps {
@@ -127,6 +129,7 @@ export interface ValidatorInlinePanelProps {
     network: Network;
     rightLabel?: string;
     rightContent?: React.ReactNode;
+    locale: string;
 }
 
 export interface UnstakeAssetCardProps {
@@ -145,6 +148,7 @@ export interface UnstakeAssetCardProps {
     readingMode?: boolean;
     network: Network;
     columns: number;
+    locale: string;
 }
 
 export interface ProtocolVoteCardProps {
@@ -193,6 +197,7 @@ export interface FeesDistributionSectionProps {
     onResourceClick?: (addr: string) => void;
     network: Network;
     columns: number;
+    locale: string;
 }
 
 export interface BalanceChangeRowProps {
@@ -205,6 +210,7 @@ export interface BalanceChangeRowProps {
     readingMode?: boolean;
     network?: Network;
     side?: 'sender' | 'receiver';
+    locale: string;
 }
 
 export interface ResourceInlinePanelProps {
@@ -214,6 +220,7 @@ export interface ResourceInlinePanelProps {
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     tt: TranslationsT['dashboard']['transactions'];
+    locale: string;
 }
 
 export interface NftTransferCardProps {
@@ -238,6 +245,7 @@ export interface NftTransferCardProps {
     isStakeClaim?: boolean;
     unstakeXrdExpected?: number;
     nftReceivedLabel?: string;
+    locale: string;
 }
 
 export interface NftCollectionPanelProps {
@@ -255,4 +263,5 @@ export interface NftCollectionPanelProps {
     isStakeClaimOverride?: boolean;
     unstakeXrdExpected?: number;
     network: Network;
+    locale: string;
 }

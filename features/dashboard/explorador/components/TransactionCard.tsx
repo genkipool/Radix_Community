@@ -11,6 +11,31 @@ import { TransactionTabs } from './TransactionTabs';
 import { Card } from '@/components/ui/Card';
 import type { TranslationsT, TransactionDetails } from '@/features/dashboard/types';
 import { resolveTransactionType } from '../utils/transactionUtils';
+import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
+
+/* ─────────────────────────────────────────
+   formatAmount
+   Locale-aware number formatting (same hydration as time display)
+───────────────────────────────────────── */
+const formatAmount = (n: number, loc: string): string => {
+    if (n === 0) return '0';
+    return Number(n.toFixed(8)).toLocaleString(loc, { maximumFractionDigits: 8 });
+};
+
+/* ─────────────────────────────────────────
+   RenderSymbol
+   Resolves and displays token symbol/name asynchronously
+───────────────────────────────────────── */
+const RenderSymbol = ({ address, fallback, network }: { address: string; fallback?: string; network: string }) => {
+    const meta = useEntityData(address, network);
+    if (!address) return null;
+    if (address === 'XRD') return 'XRD';
+    return (
+        <span title={address}>
+            {meta?.symbol || meta?.name || fallback || formatEntity(address)}
+        </span>
+    );
+};
 
 /* ═══════ TRANSACTION CARD ═══════ */
 import { formatEntity } from '../../utils/entityUtils';
@@ -177,8 +202,41 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
                             </div>
                             <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Coins className="w-3 h-3" /> {tt.fee_paid || 'Fee Paid'}</div>
-                                <div className={`${isVertical ? 'text-[11px]' : 'text-base sm:text-lg'} font-bold text-[var(--color-text-main)] truncate`}>{tx.feePaid.toString()} XRD</div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    {tx.displayIsMint ? (
+                                        <div className="flex items-center gap-1">
+                                            <Box className="w-3 h-3" />
+                                            {tt.minting || 'Minting'}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Coins className="w-3 h-3" />
+                                            {tx.displayAmount !== undefined 
+                                                ? (tt.amount || 'Amount') 
+                                                : (tt.fee_paid || 'Fee Paid')}
+                                        </>
+                                    )}
+                                </div>
+                                <div className={`${isVertical ? 'text-[11px]' : 'text-base sm:text-lg'} font-bold text-[var(--color-text-main)] truncate`}>
+                                    {tx.displayAmount !== undefined ? (
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span>{formatAmount(tx.displayAmount, locale)}</span>
+                                            <span className="uppercase">
+                                                {tx.displayIsXrd || tx.displayResource === 'XRD' ? (
+                                                    'XRD'
+                                                ) : (
+                                                    <RenderSymbol 
+                                                        address={tx.displayResource || ''} 
+                                                        fallback={tx.displayResourceName} 
+                                                        network={network} 
+                                                    />
+                                                )}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        `${formatAmount(tx.feePaid, locale)} XRD`
+                                    )}
+                                </div>
                             </div>
                             <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0">
                                 <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">

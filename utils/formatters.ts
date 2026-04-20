@@ -1,22 +1,21 @@
-export function formatNumber(n: number, decimals: number = 8): string {
-    return Number(n.toFixed(decimals)).toLocaleString(undefined, {
+export function formatNumber(n: number, decimals: number = 8, locale: string = 'en'): string {
+    return Number(n.toFixed(decimals)).toLocaleString(locale, {
         maximumFractionDigits: decimals
     });
 }
 
-export function formatXRD(n: number): string {
-    if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-    // Limit decimals to ensure total digits don't get crazy, but keep 8 max as per user request
-    return formatNumber(n, 8);
+export function formatXRD(n: number, locale: string = 'en'): string {
+    if (n >= 1_000_000_000) return (n / 1_000_000_000).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'B';
+    if (n >= 1_000_000) return (n / 1_000_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+    if (n >= 1_000) return (n / 1_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'K';
+    return formatNumber(n, 8, locale);
 }
 
-export function formatShortXRD(n: number): string {
+export function formatShortXRD(n: number, locale: string = 'en'): string {
     if (n === 0) return '0';
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-    return Number(n.toFixed(2)).toLocaleString();
+    if (n >= 1_000_000) return (n / 1_000_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+    if (n >= 1_000) return (n / 1_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'K';
+    return Number(n.toFixed(2)).toLocaleString(locale);
 }
 
 export function truncateAddress(address: string, start: number = 12, end: number = 6): string {

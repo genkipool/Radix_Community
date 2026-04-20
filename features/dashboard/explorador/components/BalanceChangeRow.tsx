@@ -27,7 +27,7 @@ import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/featur
 const RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
 type ResourceTab = typeof RESOURCE_TABS[number];
 
-function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt }: ResourceInlinePanelProps) {
+function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
 
     const metadataItems = details?.metadata?.items || [];
@@ -44,7 +44,7 @@ function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress,
     const ra = details?.details?.role_assignments;
     const behaviors = deriveBehaviors(ra, tt);
     const configEntries = getConfigEntries(ra, tt);
-    const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString();
+    const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString(locale);
 
     const tabs = RESOURCE_TABS.map(key => ({
         key,
@@ -125,7 +125,7 @@ function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress,
 
 /* ═══════ BALANCE CHANGE ROW ═══════ */
 const BalanceChangeRow = ({
-    change, t, tt: ttProp, onResourceClick: _onResourceClick, onCopy, copiedAddress, readingMode: _readingMode, network = 'mainnet', side: _side,
+    change, t, tt: ttProp, onResourceClick: _onResourceClick, onCopy, copiedAddress, readingMode: _readingMode, network = 'mainnet', side: _side, locale,
 }: BalanceChangeRowProps) => {
     const tt = ttProp ?? (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const [expanded, setExpanded] = useState(false);
@@ -207,7 +207,7 @@ const BalanceChangeRow = ({
                         {isRoyalty ? 'Royalties' : isFee ? (tt?.fee_label || 'Fees') : (tt?.amount_label || 'Amount')}
                     </div>
                     <div className="flex items-baseline gap-1.5 justify-end">
-                        <span>{sign}{change.balance_change}</span>
+                        <span>{sign}{parseFloat(change.balance_change).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 18 })}</span>
                         {isRoyalty && <span className="text-[10px] text-green-600 font-black ml-1">100%</span>}
                         {symbol && <span className="text-xs font-semibold opacity-70">{symbol}</span>}
                     </div>
@@ -216,7 +216,7 @@ const BalanceChangeRow = ({
             <AnimatePresence>
                 {!isFee && expanded && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                        <ResourceInlinePanel address={change.resource_address} details={metadata || null} loading={isLoading} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} />
+                        <ResourceInlinePanel address={change.resource_address} details={metadata || null} loading={isLoading} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} locale={locale} />
                     </motion.div>
                 )}
             </AnimatePresence>

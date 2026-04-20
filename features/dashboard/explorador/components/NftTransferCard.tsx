@@ -26,6 +26,7 @@ const NftTransferCard = ({
     sourceTitle: _sourceTitle, methodLabel: _methodLabel, readingMode: _readingMode,
     tt, network = 'mainnet', side: _side,
     claimXrdTotal, isClaim, isStakeClaim: isStakeClaimProp, unstakeXrdExpected, nftReceivedLabel,
+    locale,
 }: NftTransferCardProps) => {
     const [expanded, setExpanded] = useState(false);
 
@@ -106,6 +107,7 @@ const NftTransferCard = ({
                             isStakeClaimOverride={isStakeClaimProp}
                             unstakeXrdExpected={unstakeXrdExpected}
                             network={network}
+                            locale={locale}
                         />
                     </motion.div>
                 )}
