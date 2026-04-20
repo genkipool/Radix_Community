@@ -139,7 +139,7 @@ export function AddressDisplay({
    Full address card with type label, icon, name, copy button
 ───────────────────────────────────────── */
 export function EntityBadge({
-    address, tt, onCopy, copiedAddress, onResourceClick, network, locale: _locale = 'en',
+    address, tt, onCopy, copiedAddress, onResourceClick, network, locale: _locale = 'en', hideLabel = false,
 }: {
     address: string;
     tt: TranslationsT['dashboard']['transactions'];
@@ -148,6 +148,7 @@ export function EntityBadge({
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string;
+    hideLabel?: boolean;
 }) {
     const clean = sanitizeText(address);
     const { label, color, bg } = getEntityType(clean, tt);
@@ -184,12 +185,14 @@ export function EntityBadge({
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                 )}
-                <span
-                    className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
-                    title={wellKnownTip ?? undefined}
-                >
-                    {label}
-                </span>
+                {!hideLabel && (
+                    <span
+                        className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
+                        title={wellKnownTip ?? undefined}
+                    >
+                        {label}
+                    </span>
+                )}
                 <div className="min-w-0 flex-1 flex flex-col">
                     {entityName && (
                         <span className={`text-[11px] font-semibold truncate ${color}`}>

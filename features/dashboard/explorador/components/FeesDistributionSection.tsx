@@ -2,7 +2,7 @@
 import { parseFloatSafe } from '../../utils/resourceUtils';
 
 import React from 'react';
-import { Check, Copy, ChevronDown, ChevronUp, ExternalLink, Coins } from 'lucide-react';
+import { Check, Copy, ChevronDown, ChevronUp, Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { apiFetchRoundProposer } from '@/features/dashboard/services/apiClient';

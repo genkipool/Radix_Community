@@ -11,7 +11,7 @@ import { TransactionDetailsTab } from './TransactionDetailsTab';
 import { EntitiesSection } from './EntitiesSection';
 import { FeesDistributionSection } from './FeesDistributionSection';
 import { ProtocolVoteCard } from './ProtocolVoteCard';
-import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection } from './TransactionSummaryPanels';
+import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection, MetadataUpdatesSection } from './TransactionSummaryPanels';
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 
@@ -254,6 +254,7 @@ const TransactionTabs = ({
                                 <VaultCreationSection events={receipt.events ?? []} {...shared} />
                                 <BetVoteSection events={receipt.events ?? []} {...shared} />
                                 <RatesChangedSection events={receipt.events ?? []} {...shared} />
+                                <MetadataUpdatesSection events={receipt.events ?? []} {...shared} />
                             </>
                         )}
 

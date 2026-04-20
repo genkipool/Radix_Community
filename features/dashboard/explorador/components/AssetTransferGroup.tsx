@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { AssetTransferGroupProps } from '@/features/dashboard/explorador/types';
-import { ChevronDown, ChevronUp, ExternalLink, Wallet } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 import { BalanceChangeRow } from '@/features/dashboard/explorador/components/BalanceChangeRow';
 import { NftTransferCard } from '@/features/dashboard/explorador/components/NftTransferCard';
 import { AddressDisplay } from '@/features/dashboard/explorador/components/EntityBadge';

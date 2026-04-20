@@ -389,26 +389,54 @@ export function TransactionDetailsTab({
             return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.from, 'from'), emitter) };
         }
 
-        // BetVoteEvent
-        if (name === 'BetVoteEvent') {
-            const betOption = getField('option', 1);
+        // BetCreatedEvent & BetVoteEvent
+        if (name === 'BetVoteEvent' || name === 'BetCreatedEvent') {
+            const isBetCreated = name === 'BetCreatedEvent';
+            const betOption = getField(isBetCreated ? 'name' : 'option', 1);
             return {
-                titleText: tStr(te.bet_vote, 'Vote / Prediction'),
-                tooltip: tStr(te.bet_vote_title, 'Represents the allocation of tokens towards an option or vote in a component.'),
+                titleText: isBetCreated ? tStr(te.bet_name, 'Bet Name') : tStr(te.bet_vote, 'Vote / Prediction'),
+                tooltip: isBetCreated ? undefined : tStr(te.bet_vote_title, 'Represents the allocation of tokens towards an option or vote in a component.'),
                 description: (
                     <div className="flex flex-col gap-2">
                         <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={tStr(te.option, 'Option')}>
+                        <EventRow label={isBetCreated ? tStr(te.name, 'Name') : tStr(te.option, 'Option')}>
                             <span className="font-bold text-pink-500">
                                 {fResource(betOption)}
                             </span>
                         </EventRow>
-                        {resource && (
+                        {resource && !isBetCreated && (
                             <EventRow label={tStr(te.name, 'Name')}>
                                 <ResourceName address={resource} network={network || 'mainnet'} />
                             </EventRow>
                         )}
-                        <EventRow label={tStr(te.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>
+                        {amount && <EventRow label={tStr(te.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>}
+                    </div>
+                )
+            };
+        }
+
+        // SetMetadataEvent
+        if (name === 'SetMetadataEvent') {
+            const key = getField('key', 0);
+            const valueField = fields.find((f: GatewayField) => f.field_name === 'value');
+            let metaValue = '...';
+            
+            const vfFields = valueField?.fields as GatewayField[] | undefined;
+            if (valueField && valueField.variant_name && Array.isArray(vfFields) && vfFields.length > 0) {
+                metaValue = sanitizeText(String(vfFields[0].value || vfFields[0].hex || ''));
+            }
+            
+            return {
+                titleText: tStr(te.set_metadata, 'Profile/Config Update'),
+                tooltip: tStr(te.set_metadata_title, 'Setup or modification of descriptive information (e.g. name, icon) for the component or resource.'),
+                description: (
+                    <div className="flex flex-col gap-2">
+                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={key}>
+                           <span className="font-mono text-xs break-all text-[var(--color-text-main)] max-w-full">
+                               {metaValue.length > 100 ? metaValue.slice(0,100)+'...' : metaValue}
+                           </span>
+                        </EventRow>
                     </div>
                 )
             };

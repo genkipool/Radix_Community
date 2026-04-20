@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, Gift, Box, Vote, TrendingUp, ArrowRight, Check, Copy } from 'lucide-react';
+import { Activity, Gift, Box, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2 } from 'lucide-react';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
@@ -705,6 +705,190 @@ export function RatesChangedSection({
                         </div>
                     );
                 })}
+            </div>
+        </div>
+    );
+}
+
+export function MetadataUpdatesSection({
+    events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network, locale: _locale
+}: {
+    events: GatewayEvent[];
+    tt: TranslationsT['dashboard']['transactions'];
+    te: TranslationsT['events'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    onResourceClick?: (addr: string) => void;
+    network: Network;
+    locale?: string;
+}) {
+    const metaEvents = events.filter(e => e.name === 'SetMetadataEvent');
+    if (metaEvents.length === 0) return null;
+
+    const extractField = (ev: GatewayEvent, key: string): GatewayField | undefined => {
+        const fields = ev.data?.fields || [];
+        const field = fields.find((f: GatewayField) => f.field_name === key);
+        return field;
+    };
+
+    // Agrupar por entidad emisora
+    const grouped = metaEvents.reduce((acc, ev) => {
+        const emitterData = ev.emitter as { entity?: { entity_address: string; entity_type: string }, package_address?: string };
+        const emitter = sanitizeText(emitterData?.entity?.entity_address || emitterData?.package_address || '');
+        const entityType = emitterData?.entity?.entity_type || (emitterData?.package_address ? 'Package' : '');
+        if (!acc[emitter]) acc[emitter] = { emitter, entityType, updates: [] };
+        
+        const keyField = extractField(ev, 'key');
+        const key = sanitizeText(String(keyField?.value || keyField?.hex || ''));
+        
+        const valueField = extractField(ev, 'value');
+        let metaValue = '...';
+        const vfFields = valueField?.fields as GatewayField[] | undefined;
+        if (valueField && valueField.variant_name && Array.isArray(vfFields) && vfFields.length > 0) {
+            metaValue = sanitizeText(String(vfFields[0].value || vfFields[0].hex || ''));
+        }
+        acc[emitter].updates.push({ key, value: metaValue });
+        return acc;
+    }, {} as Record<string, { emitter: string, entityType: string, updates: { key: string, value: string }[] }>);
+
+    const translateKey = (k: string) => {
+        if (k === 'account_type') return te.account_type || 'Account Type';
+        if (k === 'name') return te.name_tag || 'Name';
+        if (k === 'tags') return te.tags || 'Tags';
+        if (k === 'claimed_entities') return te.claimed_entities || 'Claimed Entities';
+        if (k === 'info_url') return te.info_url || 'Info URL';
+        if (k === 'icon_url') return te.icon_url || 'Icon URL';
+        if (k === 'description') return te.description || 'Description';
+        return k;
+    };
+
+    return (
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-indigo-500/30 overflow-hidden mt-4">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-indigo-500/20 bg-[var(--color-surface)] flex items-center gap-2">
+                <Settings2 className="w-3.5 h-3.5 text-indigo-400" />
+                {te.set_metadata || 'Profile/Config Update'}
+            </h3>
+            <div className="p-4 flex flex-col gap-4">
+                {Object.values(grouped).map((grp, idx) => (
+                    <MetadataEntityBlock
+                        key={`meta-grp-${idx}`}
+                        emitter={grp.emitter}
+                        updates={grp.updates}
+                        translateKey={translateKey}
+                        tt={tt}
+                        onCopy={onCopy}
+                        copiedAddress={copiedAddress}
+                        network={network}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MetadataEntityBlock({
+    emitter, updates, translateKey, tt, onCopy, copiedAddress, network
+}: {
+    emitter: string;
+    updates: { key: string, value: string }[];
+    translateKey: (k: string) => string;
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    network: Network;
+}) {
+    const meta = useEntityData(emitter, network);
+
+    // Filter out missing or empty values
+    const validUpdates = updates.filter(u => {
+        const val = u.value?.trim() || '';
+        return val && val !== '...' && val !== '[]' && val !== 'None' && val !== 'null';
+    });
+
+    if (validUpdates.length === 0) return null;
+
+    // Resolve name and icon from updates or fallback to meta.
+    const nameUpdate = validUpdates.find(u => u.key === 'name')?.value;
+    const resolvedName = nameUpdate || meta?.name;
+
+    const iconUrlUpdate = validUpdates.find(u => u.key === 'icon_url')?.value;
+    const resolvedIconUrl = iconUrlUpdate || meta?.iconUrl;
+
+    // Ordered keys to display below the address
+    const orderedKeys = ['info_url', 'icon_url', 'claimed_entities', 'tags', 'account_type'];
+    
+    // Group them: matching the ordered keys first, then the rest
+    const orderedUpdates = orderedKeys.map(k => validUpdates.find(u => u.key === k)).filter(Boolean) as {key: string, value: string}[];
+    const restUpdates = validUpdates.filter(u => !orderedKeys.includes(u.key) && u.key !== 'name');
+    
+    const displayUpdates = [...orderedUpdates, ...restUpdates];
+
+    return (
+        <div className="flex flex-col sm:flex-row items-start gap-4 pb-4 last:pb-0 border-b border-[var(--color-card-border)] last:border-0 border-dashed">
+            {/* Left side: Circular Image */}
+            <div className="shrink-0 mt-0.5">
+                {resolvedIconUrl ? (
+                    <img 
+                        src={resolvedIconUrl} 
+                        alt={resolvedName || 'Entity Icon'} 
+                        className="w-12 h-12 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)]"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                    />
+                ) : (
+                    <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center">
+                        <span className="text-[10px] text-[var(--color-text-muted)]">N/A</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Right side: Information */}
+            <div className="flex flex-col min-w-0 flex-1">
+                {/* 1. Name */}
+                {resolvedName && (
+                    <div className="font-bold text-[var(--color-text-main)] text-sm mb-0.5">
+                        {resolvedName}
+                    </div>
+                )}
+                
+                {/* 2. Address */}
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-mono text-[var(--color-text-muted)] select-all truncate" title={emitter}>
+                        {emitter.length > 40 ? `${emitter.slice(0, 15)}...${emitter.slice(-15)}` : emitter}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
+                        className="p-1 hover:bg-slate-500/10 rounded transition-colors shrink-0"
+                        title={tt.copy_raw || 'Copy'}
+                    >
+                        {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                    </button>
+                </div>
+
+                {/* The rest in specific order */}
+                <div className="flex flex-col gap-0.5 text-xs">
+                    {displayUpdates.map((u, i) => (
+                        <div key={`param-${i}`} className="flex flex-col sm:flex-row sm:items-start sm:gap-1">
+                            <span className="font-semibold text-[var(--color-text-main)] capitalize shrink-0">
+                                {translateKey(u.key)}:
+                            </span>
+                            {u.key === 'info_url' ? (
+                                <a 
+                                    href={u.value.startsWith('http') ? u.value : `https://${u.value}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="font-mono text-blue-500 hover:underline break-all mt-0.5 sm:mt-0"
+                                >
+                                    {u.value}
+                                </a>
+                            ) : (
+                                <span className="font-mono text-[var(--color-text-muted)] break-all mt-0.5 sm:mt-0">
+                                    {u.value}
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
