@@ -228,6 +228,9 @@ export const en = {
       committed_label: "Committed — Zero counterparty risk · ~3s · T+0",
       tooltip: "The Manifest takes 10 million CBDC from the bank and 200k RWA Bonds from the fund, and swaps them between their accounts simultaneously. If anyone lacks the funds, the entire operation is automatically cancelled."
     },
+    btn_prev: "Slide anterior",
+    btn_next: "Slide siguiente",
+    aria_go: "Ir al slide",
     tags: {
       community: "Community",
       foundation: "Foundation"

@@ -95,7 +95,9 @@ export function AssetTransferGroup({
 
                                 return (
                                     <div key={'s' + i} className={isCM ? 'rounded-xl border border-blue-500/20 bg-blue-500/5 p-2' : ''}>
-                                        <AddressDisplay label={tt.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
+                                        <div className="pl-2 mb-2">
+                                            <AddressDisplay label={tt.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
+                                        </div>
                                         <div className="space-y-1">
                                             <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" />
                                             {matchingFee && !change.is_fee && (
@@ -148,7 +150,9 @@ export function AssetTransferGroup({
                                 const matchedOp = isClaim && validatorOps ? (validatorOps[ni] ?? validatorOps[0]) : undefined;
                                 return (
                                     <div key={'nft-orphan-s-' + ni}>
-                                        <AddressDisplay label={tt.from_address || 'From'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                        <div className="pl-2 mb-2">
+                                            <AddressDisplay label={tt.from_address || 'From'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                        </div>
                                         <div className="mt-2">
                                             <NftTransferCard
                                                 resourceAddress={nft.resource_address}
@@ -190,7 +194,7 @@ export function AssetTransferGroup({
                                 return (
                                     <div key={'r' + i}>
                                         <div className="flex items-center justify-between gap-2 mb-2">
-                                            <div className="min-w-0 flex-1">
+                                            <div className="min-w-0 flex-1 pl-2">
                                                 <AddressDisplay label={tt.to_address || 'To'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                             </div>
                                             <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
@@ -284,7 +288,9 @@ export function AssetTransferGroup({
                                 .map((nft, ni: number) => (
                                     <div key={'nft-orphan-r-' + ni}>
                                         <div className="flex items-start justify-between gap-2 mb-2">
-                                            <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                            <div className="pl-2">
+                                                <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                            </div>
                                             <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
                                         </div>
                                         <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" /></div>

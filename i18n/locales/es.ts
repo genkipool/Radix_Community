@@ -228,6 +228,9 @@ export const es = {
       committed_label: "Confirmado — Riesgo de contraparte cero · ~3s · T+0",
       tooltip: "El Manifiesto toma 10 millones de CBDC del banco y 200k de Bonos RWA del fondo, y los intercambia entre sus cuentas de forma simultánea. Si alguien no tiene los fondos, toda la operación se cancela automáticamente."
     },
+    btn_prev: "Slide anterior",
+    btn_next: "Slide siguiente",
+    aria_go: "Ir al slide",
     tags: {
       community: "Comunidad",
       foundation: "Fundación"

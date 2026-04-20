@@ -80,7 +80,7 @@ export function AddressDisplay({
     const meta = useEntityData(address, network);
     const entityName = meta?.name;
     const entityIcon = meta?.iconUrl;
-    const isValidator = sanitizeText(address).startsWith('validator_');
+
     const displayText = isCM 
         ? (tt.consensus_manager_label || 'Consensus Manager (Protocol Action)')
         : address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address;
@@ -97,14 +97,10 @@ export function AddressDisplay({
                 </span>
             )}
             <div className="flex items-center gap-2">
-                {isValidator && entityIcon && (
+                {entityIcon && (
                     <img src={entityIcon} alt={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
                 )}
-                {isValidator && !entityIcon && entityName && (
-                    <div className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-[var(--color-primary)]/10 flex items-center justify-center text-[8px] font-bold text-[var(--color-primary)]">
-                        {String(entityName).slice(0, 2).toUpperCase()}
-                    </div>
-                )}
+
                 <div className="flex flex-col min-w-0">
                     {entityName && (
                         <span className="text-[11px] font-semibold text-[var(--color-text-main)] truncate max-w-[200px]">{entityName}</span>
