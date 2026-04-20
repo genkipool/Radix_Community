@@ -725,7 +725,7 @@ const getFilteredTransactionsFromDataCache = (
 
             return result;
         },
-        [`filtered-txs-${options.network}-${options.tag.replace(/\s+/g, '_').toLowerCase()}-${options.address || 'global'}-${options.cursor || 'tip'}-${options.limit}`],
+        [`filtered-txs-${options.network}-${options.tag.replace(/\s+/g, '_').toLowerCase()}-${options.address || 'global'}-${options.start || 'all'}-${options.end || 'all'}-${options.timezone.replace(/\//g, '_')}-${options.cursor || 'tip'}-${options.limit}`],
         { revalidate: 30, tags: ['transactions', `transactions-${options.network}`] }
     )();
 

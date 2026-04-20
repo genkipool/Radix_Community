@@ -201,7 +201,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         // Filter out obviously non-fetchable or system internal addresses
         const toFetch = Array.from(discoveredAddresses).filter(addr => {
           const clean = normalizeAddress(addr);
-          return needsFetch(clean) && !clean.startsWith('resource_rdx');
+          return needsFetch(clean);
         });
 
         if (toFetch.length > 0) {
