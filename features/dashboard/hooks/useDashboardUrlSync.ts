@@ -6,15 +6,22 @@ import { isRadixAddress } from '../utils/radixAddress';
 
 export interface UseDashboardUrlSyncOptions {
   initialView: DashboardView;
+
   initialNetwork: Network;
   initialSearchQuery: string;
+  initialDateRange?: { start: string | null; end: string | null };
 }
+
+
 
 export function useDashboardUrlSync({
   initialView,
   initialNetwork,
   initialSearchQuery,
+  initialDateRange = { start: null, end: null },
 }: UseDashboardUrlSyncOptions) {
+
+
   const [, startViewTransition] = useTransition();
 
   const [activeView, setActiveView] = useState<DashboardView>(initialView);
@@ -23,6 +30,25 @@ export function useDashboardUrlSync({
 
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const deferredSearch = useDeferredValue(searchQuery);
+
+  const [dateRange, setDateRange] = useState(initialDateRange);
+
+  const handleDateRangeChange = (range: { start: string | null; end: string | null }) => {
+    const url = new URL(window.location.href);
+    if (range.start) url.searchParams.set('start', range.start);
+    else url.searchParams.delete('start');
+    
+    if (range.end) url.searchParams.set('end', range.end);
+    else url.searchParams.delete('end');
+
+    if (activeView === 'transactions') {
+      url.searchParams.set('view', 'transactions');
+    }
+    
+    window.history.replaceState({}, '', url.toString());
+    setDateRange(range);
+  };
+
 
   const handleViewChange = (view: DashboardView) => {
     const url = new URL(window.location.href);
@@ -35,6 +61,8 @@ export function useDashboardUrlSync({
     url.searchParams.delete('tx'); // Clear tx parameter when changing views
     window.history.replaceState({}, '', url.toString());
     setSearchQuery(''); // Clear search when switching views
+    setDateRange({ start: null, end: null }); // Reset dates on view change
+
     startViewTransition(() => setActiveView(view));
   };
 
@@ -47,6 +75,8 @@ export function useDashboardUrlSync({
     url.searchParams.delete('tx'); // Clear tx parameter when changing network
     window.history.replaceState({}, '', url.toString());
     setSearchQuery(''); // Clear search on network change
+    setDateRange({ start: null, end: null }); // Reset dates on network change
+
     setNetwork(net);
   };
 
@@ -57,9 +87,12 @@ export function useDashboardUrlSync({
     searchQuery,
     setSearchQuery,
     deferredSearch,
+    dateRange,
+    handleDateRangeChange,
     handleViewChange,
     handleNetworkChange,
   };
+
 }
 
 export interface UseDashboardUrlEffectsOptions {

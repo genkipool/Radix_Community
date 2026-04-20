@@ -718,8 +718,16 @@ export async function fetchFilteredTransactions(options: {
 
     const opParams = { tag, start, end, cursor, limit, address, network, tzOffsetMinutes };
 
+    if (start || end) {
+        // BYPASS ALL CACHES FOR DATE RANGE FILTERING
+        // Calendar filters are unique and should hit the API directly
+        logger.info({ network, tag, address }, '[TransactionsService] Bypassing cache for calendar filter');
+        return fetchFilteredTransactionsRaw(opParams);
+    }
+
     // Generate a unique key based on all filter parameters to isolate versions in Redis
     const paramHash = crypto.createHash('md5').update(JSON.stringify(opParams)).digest('hex').slice(0, 16);
+
     const backupKey = `radix_txs_filtered_${network}_${paramHash}`;
 
     const redis = getRedisClient();

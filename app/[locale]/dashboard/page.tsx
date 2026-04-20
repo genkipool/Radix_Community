@@ -69,8 +69,15 @@ function makeCookieReader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
 
 // ── Page ───────────────────────────────────────────────────────
 interface DashboardPageProps {
-  searchParams: Promise<{ view?: string; network?: string; tx?: string }>;
+  searchParams: Promise<{ 
+    view?: string; 
+    network?: string; 
+    tx?: string;
+    start?: string;
+    end?: string;
+  }>;
 }
+
 
 /**
  * DashboardPage — Server Component
@@ -86,6 +93,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const params = await searchParams;
   const initialView = (params.view === 'transactions' || params.tx) ? 'transactions' : 'staking';
   const network = (params.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
+
+  // Parse date range from URL params
+  const start = params.start || null;
+  const end = params.end || null;
+  const initialDateRange = { start, end };
+
 
   // Read all persisted UI state from cookies
   const cookieStore = await cookies();
@@ -130,7 +143,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         staleTime: 300_000,
       }),
       serverQueryClient.prefetchInfiniteQuery({
-        queryKey: ['transactions', network, txid ?? undefined, 'All', { start: null, end: null }],
+        queryKey: ['transactions', network, txid ?? undefined, 'All', initialDateRange],
+
         queryFn: async () => {
           if (txid) {
             const data = await searchTransactionsByAddress(txid, undefined, 15, network);
@@ -164,7 +178,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         // 2. Extract unique resource/entity addresses from the transaction
         const addressesToFetch = new Set<string>();
         const item = rawDetails as TransactionDetails;
-        
+
         // Add globally affected entities (usually components, accounts, and validators)
         const entities = item.affected_global_entities || [];
         (entities as Array<string | { address: string }>).forEach((e) => {
@@ -177,14 +191,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         // Add resource addresses strictly from balance changes (simple transfers don't appear in affected_global_entities)
         const bc = item.balance_changes || {};
         (bc.fungible_fee_balance_changes || []).forEach((fc) => {
-            const addr = fc.resource_address || (network === 'stokenet' ? 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc' : 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd');
-            addressesToFetch.add(addr);
+          const addr = fc.resource_address || (network === 'stokenet' ? 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc' : 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd');
+          addressesToFetch.add(addr);
         });
         (bc.fungible_balance_changes || []).forEach((fc: FungibleChange) => {
-            if (fc.resource_address) addressesToFetch.add(fc.resource_address);
+          if (fc.resource_address) addressesToFetch.add(fc.resource_address);
         });
         (bc.non_fungible_balance_changes || []).forEach((nfc: NonFungibleChange) => {
-            if (nfc.resource_address) addressesToFetch.add(nfc.resource_address);
+          if (nfc.resource_address) addressesToFetch.add(nfc.resource_address);
         });
 
         // 3. Fetch all entity metadata in parallel and inject to cache
@@ -225,8 +239,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialExpandedValidators={c.ids(COOKIE_KEYS.expandedValidators, network)}
         initialExpandedTxs={txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network)}
         initialSearchQuery={txid ?? ''}
+        initialDateRange={initialDateRange}
         randomSeed={randomSeed}
       />
+
     </ReactQueryHydrate>
   );
 }

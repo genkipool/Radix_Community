@@ -77,25 +77,53 @@ export default function DashboardClient({
   initialExpandedValidators = [],
   initialExpandedTxs = [],
   initialSearchQuery = '',
+  initialDateRange,
   randomSeed = 0,
 }: DashboardInitialProps) {
+
   const { t, language } = useLanguage();
   const { setShowFooter } = useLayout();
   const dt = t.dashboard ?? {};
 
-  /* View / Network / Search (URL Sync) */
+  /* View / Network / Search (URL Sync) / Date Range */
   const {
     activeView, network, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
+    dateRange, handleDateRangeChange,
     handleViewChange, handleNetworkChange,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
+    initialDateRange,
   });
 
-  /* Date Range Filter */
-  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
+  /* Date Range Filter (Temporal state while picking dates) */
+  const [tempDateRange, setTempDateRange] = useState<{ start: string | null; end: string | null }>(dateRange);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
+
+  // Sync temp state with committed state if URL changes externally (e.g., reset)
+  useEffect(() => {
+    setTempDateRange(dateRange);
+  }, [dateRange]);
+
+  // Commit the date range and close the calendar when both dates are selected
+  useEffect(() => {
+    if (tempDateRange.start && tempDateRange.end) {
+      setCalendarOpen(false);
+      handleDateRangeChange(tempDateRange);
+    }
+  }, [tempDateRange]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCalendarToggle = (isOpen: boolean) => {
+    setCalendarOpen(isOpen);
+    // When closing with only start selected, treat as single-day filter
+    if (!isOpen && tempDateRange.start && !tempDateRange.end) {
+      const singleDay = { start: tempDateRange.start, end: tempDateRange.start };
+      setTempDateRange(singleDay);
+      handleDateRangeChange(singleDay);
+    }
+  };
+
 
   /* ── Cookie-persisted preferences ───────────────────────── */
   const prefs = useDashboardPreferences({
@@ -365,44 +393,50 @@ export default function DashboardClient({
             expanded.toggleAll(activeView === 'staking' ? filtered : filteredTxs)
           }
           calendarOpen={calendarOpen}
-          onCalendarToggle={setCalendarOpen}
-          dateRange={dateRange}
-          onSelectRange={setDateRange}
-          onResetRange={() => { setDateRange({ start: null, end: null }); setCalendarOpen(false); }}
+          onCalendarToggle={handleCalendarToggle}
+          dateRange={tempDateRange}
+          onSelectRange={setTempDateRange}
+          onResetRange={() => { 
+            const empty = { start: null, end: null };
+            setTempDateRange(empty); 
+            handleDateRangeChange(empty); // Reset commits immediately
+            setCalendarOpen(false); 
+          }}
           calendarT={dt.calendar}
+
           columns={columns}
           onColumnsChange={setColumns}
           dt={dt}
         />
 
         <div className="w-full min-w-0">
-        {/* ── Card grid + empty states ── */}
-        <DashboardCardGrid
-          activeView={activeView}
-          gridClass={getGridClass(deferredColumns)}
-          filteredValidators={filtered}
-          visibleValCount={visibleValCount}
-          sentinelRef={sentinelRef}
-          filteredTxs={filteredTxs}
-          loadingTxs={loadingTxs}
-          txsInitialized={txsInitialized}
-          columns={deferredColumns}
-          expandedPosts={expanded.expandedPosts}
-          readingMode={readingMode}
-          copiedAddress={copiedAddress}
-          searchQuery={deferredSearch}
-          network={deferredNetwork}
-          t={t}
-          dt={dt}
-          onExpand={expanded.handleExpandPost}
-          onCopy={copyAddress}
-          timezone={timezone}
-          locale={language}
-        />
+          {/* ── Card grid + empty states ── */}
+          <DashboardCardGrid
+            activeView={activeView}
+            gridClass={getGridClass(deferredColumns)}
+            filteredValidators={filtered}
+            visibleValCount={visibleValCount}
+            sentinelRef={sentinelRef}
+            filteredTxs={filteredTxs}
+            loadingTxs={loadingTxs}
+            txsInitialized={txsInitialized}
+            columns={deferredColumns}
+            expandedPosts={expanded.expandedPosts}
+            readingMode={readingMode}
+            copiedAddress={copiedAddress}
+            searchQuery={deferredSearch}
+            network={deferredNetwork}
+            t={t}
+            dt={dt}
+            onExpand={expanded.handleExpandPost}
+            onCopy={copyAddress}
+            timezone={timezone}
+            locale={language}
+          />
+        </div>
       </div>
-    </div>
 
-    {/* ── Modals (reading-mode) ── */}
+      {/* ── Modals (reading-mode) ── */}
       <DashboardModals
         activeView={activeView}
         readingMode={readingMode}

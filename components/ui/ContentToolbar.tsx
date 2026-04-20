@@ -165,11 +165,7 @@ export function ContentToolbar({
                             align={getCalendarAlign()}
                             calendarT={calendarT}
                             dateRange={dateRange ?? { start: null, end: null }}
-                            onSelectRange={(range) => {
-                                onSelectRange(range);
-                                // Auto-close once both ends are selected
-                                if (range.start && range.end) setCalendarOpen?.(false);
-                            }}
+                            onSelectRange={onSelectRange}
                             onReset={() => {
                                 onResetRange?.();
                                 setCalendarOpen?.(false);

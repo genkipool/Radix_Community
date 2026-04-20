@@ -33,5 +33,7 @@ export interface DashboardInitialProps {
   /** Transaction intent hashes expanded on the last session */
   initialExpandedTxs?: string[];
   initialSearchQuery?: string;
+  initialDateRange?: { start: string | null; end: string | null };
   randomSeed: number;
 }
+
