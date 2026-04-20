@@ -8,15 +8,26 @@ import type { MetadataItem } from '@/features/dashboard/types/shared.types';
 // ─────────────────────────────────────────
 const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_'] as const;
 
+/** 
+ * Normalizes a Radix address for use in cache keys.
+ * Ensures consistent lookups between server and client.
+ */
+export function normalizeAddress(addr: string | undefined | null): string {
+  if (!addr) return '';
+  return sanitizeText(addr).trim();
+}
+
 export function needsFetch(address: string): boolean {
-  return FETCHABLE_PREFIXES.some(p => address.startsWith(p));
+  const clean = normalizeAddress(address);
+  return FETCHABLE_PREFIXES.some(p => clean.startsWith(p));
 }
 
 export function extractEntityMeta(res: unknown): EntityMeta | null {
   if (!res) return null;
 
-  // Simplified validator shape: { name, iconUrl, symbol, address, ... }
   const r = res as Record<string, unknown>;
+
+  // 1. Check for flat structure (used in some internal cache objects)
   if (typeof r.name === 'string' && ('iconUrl' in r || 'address' in r) && !r.metadata) {
     return {
       name: r.name ? sanitizeText(r.name) : null,
@@ -25,6 +36,7 @@ export function extractEntityMeta(res: unknown): EntityMeta | null {
     };
   }
 
+  // 2. Extract from Gateway standard metadata structure
   const items: MetadataItem[] =
     ((r?.metadata as Record<string, unknown>)?.items as MetadataItem[]) ??
     (((r?.details as Record<string, unknown>)?.metadata as Record<string, unknown>)?.items as MetadataItem[]) ??
@@ -35,29 +47,25 @@ export function extractEntityMeta(res: unknown): EntityMeta | null {
     return raw ? sanitizeText(String(raw)) : null;
   };
 
-  return {
+  const meta = {
     name: pick('name'),
     iconUrl: pick('icon_url'),
     symbol: pick('symbol'),
   };
+
+  // If we found absolutely nothing, return null so the hook knows it's truly empty
+  if (!meta.name && !meta.symbol && !meta.iconUrl) return null;
+
+  return meta;
 }
 
 // ─────────────────────────────────────────
 //  Query key factory
 // ─────────────────────────────────────────
-/**
- * entityKeys
- *
- * Provides standardized query keys for React Query and caching.
- * SEPARATE NAMESPACES — intentional and critical:
- *
- *   entityKeys.detail  →  stores EntityMeta ({ name, iconUrl, symbol })
- *   entityKeys.full    →  stores the raw full Gateway response object
- */
 export const entityKeys = {
   all: ['entity'] as const,
-  // Partial summary (EntityMeta) — used by useEntityData / EntityBadge
-  detail: (address: string, network: string) => ['entity', 'meta', address, network] as const,
-  // Full Gateway response — used by BalanceChangeRow / ResourceDetailModal / panels
-  full: (address: string, network: string) => ['entity', 'full', address, network] as const,
+  detail: (address: string, network: string) => 
+    ['entity', 'meta', normalizeAddress(address), network] as const,
+  full: (address: string, network: string) => 
+    ['entity', 'full', normalizeAddress(address), network] as const,
 };

@@ -171,19 +171,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       // 2. DEEP HYDRATION: Scan the list for resources displayed in collapsed cards
       // and pre-resolve their metadata so symbols show up instantly.
       (async () => {
-        const listResourceAddresses = new Set<string>();
+        const discoveredAddresses = new Set<string>();
         txData.transactions.forEach((tx) => {
-          if (tx.displayResource && tx.displayResource !== 'XRD' && !tx.displayResource.startsWith('resource_rdx')) {
-            listResourceAddresses.add(tx.displayResource);
+          // Main displayed resource (token symbol)
+          if (tx.displayResource && tx.displayResource !== 'XRD') {
+            discoveredAddresses.add(tx.displayResource);
           }
+          // Scan for any other entities that might need a symbol/name in the UI
+          if (tx.validatorAddress) discoveredAddresses.add(tx.validatorAddress);
         });
 
-        if (listResourceAddresses.size > 0) {
+        // Filter out obviously non-fetchable or system internal addresses
+        const toFetch = Array.from(discoveredAddresses).filter(addr => {
+          const clean = normalizeAddress(addr);
+          return needsFetch(clean) && !clean.startsWith('resource_rdx');
+        });
+
+        if (toFetch.length > 0) {
           await Promise.all(
-            Array.from(listResourceAddresses).map(async (addr) => {
-              const entDetails = await fetchEntityDetails(addr, network);
-              if (entDetails) {
-                serverQueryClient.setQueryData(entityKeys.detail(addr, network), extractEntityMeta(entDetails));
+            toFetch.map(async (addr) => {
+              try {
+                const entDetails = await fetchEntityDetails(addr, network);
+                if (entDetails) {
+                  const normalized = normalizeAddress(addr);
+                  serverQueryClient.setQueryData(entityKeys.detail(normalized, network), extractEntityMeta(entDetails));
+                }
+              } catch (e) {
+                // Ignore individual fetch failures during background hydration
+                logger.debug({ addr, err: e }, '[DashboardPage] Background hydration fetch failed');
               }
             })
           );
@@ -238,8 +253,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           Array.from(addressesToFetch).map(async (addr) => {
             const entDetails = await fetchEntityDetails(addr, network);
             if (entDetails) {
-              serverQueryClient.setQueryData(entityKeys.full(addr, network), entDetails);
-              serverQueryClient.setQueryData(entityKeys.detail(addr, network), extractEntityMeta(entDetails));
+              const clean = normalizeAddress(addr);
+              serverQueryClient.setQueryData(entityKeys.full(clean, network), entDetails);
+              serverQueryClient.setQueryData(entityKeys.detail(clean, network), extractEntityMeta(entDetails));
             }
           })
         );
