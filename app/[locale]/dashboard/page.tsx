@@ -122,6 +122,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Pre-populate React Query cache server-side
   const serverQueryClient = makeQueryClient();
 
+  // Read transaction tag from cookies (sync server prefetch with client state)
+  const activeTxTag = c.decoded(COOKIE_KEYS.txTag) ?? 'All';
+
   // If a validator modal is open (restored from cookie), prefetch its stake
   // history so SSR and first client render have identical data — no hydration
   // mismatch and no spinner flash on reload.
@@ -130,6 +133,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const expandedValidatorIds = c.ids(COOKIE_KEYS.expandedValidators, network);
 
   try {
+    // 1. Fetch the first page of transactions explicitly so we can scan it for resources
+    const txData = await (async () => {
+      if (txid) {
+        const data = await searchTransactionsByAddress(txid, undefined, 15, network);
+        return { transactions: data.transactions, nextCursor: data.nextCursor };
+      }
+      const data = await getRecentTransactionsCached(undefined, 100, network);
+      return {
+        transactions: (data?.transactions ?? []) as TransactionInfo[],
+        nextCursor: data?.nextCursor ?? undefined,
+      };
+    })();
+
     await Promise.all([
       serverQueryClient.prefetchQuery({
         queryKey: ['validators', network],
@@ -142,24 +158,39 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         },
         staleTime: 300_000,
       }),
-      serverQueryClient.prefetchInfiniteQuery({
-        queryKey: ['transactions', network, txid ?? undefined, 'All', initialDateRange],
 
-        queryFn: async () => {
-          if (txid) {
-            const data = await searchTransactionsByAddress(txid, undefined, 15, network);
-            return { transactions: data.transactions, nextCursor: data.nextCursor };
+      // Seed the infinite query cache with the transaction data we just fetched
+      serverQueryClient.setQueryData(
+        ['transactions', network, txid ?? undefined, activeTxTag, initialDateRange],
+        {
+          pages: [txData],
+          pageParams: [undefined],
+        }
+      ),
+
+      // 2. DEEP HYDRATION: Scan the list for resources displayed in collapsed cards
+      // and pre-resolve their metadata so symbols show up instantly.
+      (async () => {
+        const listResourceAddresses = new Set<string>();
+        txData.transactions.forEach((tx) => {
+          if (tx.displayResource && tx.displayResource !== 'XRD' && !tx.displayResource.startsWith('resource_rdx')) {
+            listResourceAddresses.add(tx.displayResource);
           }
-          const data = await getRecentTransactionsCached(undefined, 100, network);
-          return {
-            transactions: (data?.transactions ?? []) as TransactionInfo[],
-            nextCursor: data?.nextCursor ?? undefined,
-          };
-        },
-        initialPageParam: undefined,
-        staleTime: 30_000,
-      }),
-      // Prefetch stake history for ALL expanded validators
+        });
+
+        if (listResourceAddresses.size > 0) {
+          await Promise.all(
+            Array.from(listResourceAddresses).map(async (addr) => {
+              const entDetails = await fetchEntityDetails(addr, network);
+              if (entDetails) {
+                serverQueryClient.setQueryData(entityKeys.detail(addr, network), extractEntityMeta(entDetails));
+              }
+            })
+          );
+        }
+      })(),
+
+      // 3. Prefetch stake history for ALL expanded validators
       ...expandedValidatorIds.map((vid) =>
         serverQueryClient.prefetchQuery({
           queryKey: ['stake-history', network, vid],
@@ -167,7 +198,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           staleTime: 5 * 60_000,
         })
       ),
-      // DEEP PREFETCHING for expanded transactions
+
+      // 4. DEEP PREFETCHING for expanded transactions (restored from cookies)
       ...initialExpandedTxs.map(async (txHash: string) => {
         const rawDetails = await fetchTransactionDetails(txHash, network);
         if (!rawDetails) return;
@@ -212,7 +244,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           })
         );
       }),
-
     ]);
   } catch (error) {
     // Non-fatal: the client fetches on mount if cache is empty
