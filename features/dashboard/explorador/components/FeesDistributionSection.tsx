@@ -2,7 +2,7 @@
 import { parseFloatSafe } from '../../utils/resourceUtils';
 
 import React from 'react';
-import { Check, Copy, ChevronDown, ChevronUp, Coins } from 'lucide-react';
+import { Check, Copy, ChevronDown, Coins } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { apiFetchRoundProposer } from '@/features/dashboard/services/apiClient';
@@ -163,7 +163,7 @@ export function FeesDistributionSection({
                 {/* ── LEFT: payers + cost breakdown ── */}
                 <div className="flex-1 p-3 bg-red-500/3">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#ef4444] mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronUp className="w-3 h-3" />
+                        <ChevronDown className="w-3 h-3 -rotate-180" />
                         {tt.fees_from_label || 'Fees Paid'}
                     </h5>
 
