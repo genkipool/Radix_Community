@@ -420,12 +420,12 @@ export function TransactionDetailsTab({
             const key = getField('key', 0);
             const valueField = fields.find((f: GatewayField) => f.field_name === 'value');
             let metaValue = '...';
-            
+
             const vfFields = valueField?.fields as GatewayField[] | undefined;
             if (valueField && valueField.variant_name && Array.isArray(vfFields) && vfFields.length > 0) {
                 metaValue = sanitizeText(String(vfFields[0].value || vfFields[0].hex || ''));
             }
-            
+
             return {
                 titleText: tStr(te.set_metadata, 'Profile/Config Update'),
                 tooltip: tStr(te.set_metadata_title, 'Setup or modification of descriptive information (e.g. name, icon) for the component or resource.'),
@@ -433,9 +433,9 @@ export function TransactionDetailsTab({
                     <div className="flex flex-col gap-2">
                         <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
                         <EventRow label={key}>
-                           <span className="font-mono text-xs break-all text-[var(--color-text-main)] max-w-full">
-                               {metaValue.length > 100 ? metaValue.slice(0,100)+'...' : metaValue}
-                           </span>
+                            <span className="font-mono text-xs break-all text-[var(--color-text-main)] max-w-full">
+                                {metaValue.length > 100 ? metaValue.slice(0, 100) + '...' : metaValue}
+                            </span>
                         </EventRow>
                     </div>
                 )

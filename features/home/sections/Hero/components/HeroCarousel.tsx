@@ -5,38 +5,83 @@
  * Replaced Framer Motion with native CSS animations to significantly improve 
  * LCP (Largest Contentful Paint) and reduce hydration blocking time.
  */
-import { useState, useEffect } from 'react';
+import { useReducer, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Dictionary } from '@/types/i18n';
 
+interface CarouselState {
+  activeIdx: number;
+  exitingIdx: number | null;
+  targetIdx: number | null;
+  isPaused: boolean;
+}
+
+type CarouselAction =
+  | { type: 'GO_TO'; index: number }
+  | { type: 'COMPLETE_TRANSITION' }
+  | { type: 'SET_PAUSED'; paused: boolean }
+  | { type: 'NEXT'; total: number }
+  | { type: 'PREV'; total: number };
+
+const initialState: CarouselState = {
+  activeIdx: 0,
+  exitingIdx: null,
+  targetIdx: null,
+  isPaused: false,
+};
+
+function carouselReducer(state: CarouselState, action: CarouselAction): CarouselState {
+  switch (action.type) {
+    case 'GO_TO':
+      if (state.exitingIdx !== null || action.index === state.activeIdx) return state;
+      return { ...state, exitingIdx: state.activeIdx, targetIdx: action.index };
+    case 'NEXT': {
+      if (state.exitingIdx !== null) return state;
+      const nextIdx = (state.activeIdx + 1) % action.total;
+      return { ...state, exitingIdx: state.activeIdx, targetIdx: nextIdx };
+    }
+    case 'PREV': {
+      if (state.exitingIdx !== null) return state;
+      const nextIdx = (state.activeIdx - 1 + action.total) % action.total;
+      return { ...state, exitingIdx: state.activeIdx, targetIdx: nextIdx };
+    }
+    case 'COMPLETE_TRANSITION':
+      if (state.targetIdx === null) return state;
+      return { ...state, activeIdx: state.targetIdx, exitingIdx: null, targetIdx: null };
+    case 'SET_PAUSED':
+      return { ...state, isPaused: action.paused };
+    default:
+      return state;
+  }
+}
+
 export default function HeroCarousel({ t }: { t: Dictionary }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [exitingIdx, setExitingIdx] = useState<number | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
+  const [state, dispatch] = useReducer(carouselReducer, initialState);
+  const { activeIdx, exitingIdx, isPaused } = state;
 
   const TOTAL = 3;
 
-  const goTo = (nextIdx: number) => {
-    if (exitingIdx !== null || nextIdx === activeIdx) return;
-    
-    // Set current as exiting
-    setExitingIdx(activeIdx);
-    
-    // After animation duration, switch indices
-    setTimeout(() => {
-      setActiveIdx(nextIdx);
-      setExitingIdx(null);
-    }, 500); // Matches .animate-hero-out duration
-  };
+  // Handle transition timing
+  useEffect(() => {
+    if (exitingIdx === null) return;
+    const timer = setTimeout(() => {
+      dispatch({ type: 'COMPLETE_TRANSITION' });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [exitingIdx]);
 
-  const prev = () => goTo((activeIdx - 1 + TOTAL) % TOTAL);
-  const next = () => goTo((activeIdx + 1) % TOTAL);
-
+  // Handle auto-play
   useEffect(() => {
     if (isPaused || exitingIdx !== null) return;
-    const timer = setInterval(next, 5000);
+    const timer = setInterval(() => {
+      dispatch({ type: 'NEXT', total: TOTAL });
+    }, 5000);
     return () => clearInterval(timer);
-  }, [isPaused, exitingIdx, next]);
+  }, [isPaused, exitingIdx]);
+
+  const goTo = (index: number) => dispatch({ type: 'GO_TO', index });
+  const next = () => dispatch({ type: 'NEXT', total: TOTAL });
+  const prev = () => dispatch({ type: 'PREV', total: TOTAL });
 
   const slides = [
     {
@@ -76,8 +121,8 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
             <div
               key={`slide-${idx}`}
               className={`absolute inset-0 ${isExiting ? 'animate-hero-out' : 'animate-hero-in'}`}
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
+              onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
+              onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
             >
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--color-text-main)] mb-4 leading-tight tracking-tighter">
                 <span>{slide.h1a}</span><br />
@@ -95,8 +140,8 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
       {/* Progress bars + arrows */}
       <div
         className="flex items-center gap-3 mt-6 mb-4"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+        onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
+        onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
       >
         <button
           onClick={prev}

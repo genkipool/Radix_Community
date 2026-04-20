@@ -398,9 +398,15 @@ const getCachedTransactionDetails = unstable_cache(
                             affected_global_entities: true,
                             balance_changes: true,
                             receipt_fee_summary: true,
+                            receipt_fee_source: true,
                             receipt_fee_destination: true,
                             manifest_instructions: true,
                             confirmed_at: true,
+                            raw_hex: false,
+                            receipt_state_changes: true,
+                            receipt_costing_parameters: true,
+                            receipt_output: true,
+                            detailed_events: true
                         },
                     }),
                 });
@@ -756,7 +762,7 @@ export async function fetchStakeHistoryCached(
     } catch (e) {
         logger.error({ err: e, validatorAddress }, '[TransactionsService] Failed to read stake history from Redis');
     }
-    
+
     // Fallback: Calculate synchronously if missing from Redis
     logger.warn({ validatorAddress }, '[TransactionsService] Stake history missing in Redis. Falling back to heavy Gateway fetch.');
     return fetchStakeHistoryRaw(validatorAddress, network);
