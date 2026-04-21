@@ -100,6 +100,7 @@ export default function DashboardClient({
   const [tempDateRange, setTempDateRange] = useState<{ start: string | null; end: string | null }>(dateRange);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
+  const [activeRanking, setActiveRanking] = useState<string | null>(null);
 
   // Sync temp state with committed state if URL changes externally (e.g., reset)
   useEffect(() => {
@@ -406,6 +407,8 @@ export default function DashboardClient({
 
           columns={columns}
           onColumnsChange={setColumns}
+          activeRanking={activeRanking}
+          onRankingChange={setActiveRanking}
           dt={dt}
         />
 

@@ -56,6 +56,8 @@ export interface DashboardToolbarProps {
     calendarT?: CalendarTranslations;
     columns: number;
     onColumnsChange: (cols: number) => void;
+    activeRanking: string | null;
+    onRankingChange: (ranking: string | null) => void;
     dt?: TranslationsT['dashboard'];
 }
 

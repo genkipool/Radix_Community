@@ -11,6 +11,7 @@ import { Pill } from '@/components/ui/Pill';
 import { getMetaValue } from '../utils/metadataUtils';
 import { TokenBadge } from '@/components/ui/TokenBadge';
 import { NftCollectionPanel } from './NftCollectionPanel';
+import { IconFlame } from './TransactionIcons';
 
 import { NftTransferCardProps } from '../types';
 import type { GatewayEntityDetails } from '@/features/dashboard/types';
@@ -25,7 +26,8 @@ const NftTransferCard = ({
     sourceMethod: _sourceMethod, sourceColor: _sourceColor, sourceBg: _sourceBg,
     sourceTitle: _sourceTitle, methodLabel: _methodLabel, readingMode: _readingMode,
     tt, network = 'mainnet', side: _side,
-    claimXrdTotal, isClaim, isStakeClaim: isStakeClaimProp, unstakeXrdExpected, nftReceivedLabel,
+    claimXrdTotal, isClaim, isStakeClaim: isStakeClaimProp, isClaimRedeemed, isClaimAuthorized,
+    unstakeXrdExpected, nftReceivedLabel,
     locale,
 }: NftTransferCardProps) => {
     const [expanded, setExpanded] = useState(false);
@@ -51,9 +53,19 @@ const NftTransferCard = ({
     const isReceived = type === 'added';
     const color = isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
-    const titleStr = isReceived
+    const specializedTooltip = isClaimRedeemed
+        ? tt?.claim_nft_redeemed_tooltip
+        : isClaimAuthorized
+            ? tt?.claim_nft_authorized_tooltip
+            : (isStakeClaimProp && isReceived)
+                ? tt?.unstake_claim_nft_tooltip
+                : (isClaim && type === 'removed')
+                    ? tt?.claim_nft_presented_tooltip
+                    : null;
+
+    const titleStr = specializedTooltip || (isReceived
         ? String(tt?.nft_received_collection || 'Received {count} NFT(s) from {name} collection ({address})').replace('{count}', String(ids.length)).replace('{name}', name).replace('{address}', resourceAddress)
-        : String(tt?.nft_sent_collection || 'Sent {count} NFT(s) from {name} collection ({address})').replace('{count}', String(ids.length)).replace('{name}', name).replace('{address}', resourceAddress);
+        : String(tt?.nft_sent_collection || 'Sent {count} NFT(s) from {name} collection ({address})').replace('{count}', String(ids.length)).replace('{name}', name).replace('{address}', resourceAddress));
 
     return (
         <div className="mb-2">
@@ -88,7 +100,13 @@ const NftTransferCard = ({
                     <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70">
                         {nftReceivedLabel ?? (isClaim ? (tt?.nft_presented_label || 'NFT Presentado') : (tt?.nft_label || 'No Fungible'))}
                     </div>
-                    {isClaim && type === 'removed' ? (
+                    {isClaimRedeemed ? (
+                        <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-black">
+                            <IconFlame className="w-4 h-4" />
+                            <span className="text-xl tabular-nums">{ids.length}</span>
+                            <span className="text-base font-semibold opacity-70">NFT</span>
+                        </div>
+                    ) : isClaim && type === 'removed' ? (
                         <div className="font-mono font-bold text-base tabular-nums text-red-600 dark:text-red-400">−1 <span className="text-sm font-semibold opacity-70">NFT</span></div>
                     ) : (
                         <div className="text-xl font-black tabular-nums text-green-700 dark:text-green-400">+{ids.length} <span className="text-sm font-semibold opacity-70">NFT{ids.length > 1 ? 's' : ''}</span></div>
@@ -105,6 +123,8 @@ const NftTransferCard = ({
                             onCopy={onCopy} copiedAddress={copiedAddress} tt={tt}
                             claimXrdTotal={claimXrdTotal} isClaim={isClaim}
                             isStakeClaimOverride={isStakeClaimProp}
+                            isClaimRedeemed={isClaimRedeemed}
+                            isClaimAuthorized={isClaimAuthorized}
                             unstakeXrdExpected={unstakeXrdExpected}
                             network={network}
                             locale={locale}

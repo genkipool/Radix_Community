@@ -126,6 +126,7 @@ function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress,
 /* ═══════ BALANCE CHANGE ROW ═══════ */
 const BalanceChangeRow = ({
     change, t, tt: ttProp, onResourceClick: _onResourceClick, onCopy, copiedAddress, readingMode: _readingMode, network = 'mainnet', side: _side, locale,
+    iconOverride, colorOverride, hideSign,
 }: BalanceChangeRowProps) => {
     const tt = ttProp ?? (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const [expanded, setExpanded] = useState(false);
@@ -138,8 +139,8 @@ const BalanceChangeRow = ({
 
     const isPositive = parseFloat(change.balance_change || '0') > 0;
     const isNegative = parseFloat(change.balance_change || '0') < 0;
-    const color = isPositive ? 'text-green-600' : isNegative ? 'text-red-600 dark:text-red-400' : 'text-[var(--color-text-main)]';
-    const sign = isPositive ? '+' : '';
+    const color = colorOverride ?? (isPositive ? 'text-green-600' : isNegative ? 'text-red-500 dark:text-red-400' : 'text-[var(--color-text-main)]');
+    const sign = hideSign ? '' : isPositive ? '+' : '';
 
     const metaItems: MetadataItem[] = (metadata as GatewayEntityDetails | null)?.metadata?.items ?? [];
     const rawName = getMetaValue(metaItems, 'name');
@@ -207,7 +208,12 @@ const BalanceChangeRow = ({
                         {isRoyalty ? 'Royalties' : isFee ? (tt?.fee_label || 'Fees') : (tt?.amount_label || 'Amount')}
                     </div>
                     <div className="flex items-baseline gap-1.5 justify-end">
-                        <span>{sign}{parseFloat(change.balance_change).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 18 })}</span>
+                        {iconOverride && <span className="shrink-0">{iconOverride}</span>}
+                        <span>
+                            {sign}
+                            {(hideSign ? Math.abs(parseFloat(change.balance_change)) : parseFloat(change.balance_change))
+                                .toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 18 })}
+                        </span>
                         {isRoyalty && <span className="text-[10px] text-green-600 font-black ml-1">100%</span>}
                         {symbol && <span className="text-xs font-semibold opacity-70">{symbol}</span>}
                     </div>

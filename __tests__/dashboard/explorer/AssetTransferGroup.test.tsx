@@ -47,10 +47,12 @@ describe('AssetTransferGroup', () => {
         t: {} as unknown as TranslationsT,
         tt: {} as unknown as TranslationsT['dashboard']['transactions'],
         onCopy: vi.fn(),
+        onResourceClick: vi.fn(),
         copiedAddress: null,
         formatEntity: (e: string) => e,
         network: 'mainnet' as const,
         columns: 3,
+        locale: 'en',
     };
 
     it('nests a fee under an origin transfer row', () => {

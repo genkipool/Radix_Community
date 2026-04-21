@@ -19,7 +19,7 @@ export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | '
 
 export function NftCollectionPanel({
     resourceAddress: _resourceAddress, meta, nftData, nftLoading, ids, type,
-    onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, unstakeXrdExpected, network: _network,
+    onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, isClaimRedeemed, isClaimAuthorized, unstakeXrdExpected, network: _network,
     locale,
 }: NftCollectionPanelProps) {
     const [activeTab, setActiveTab] = useState<NftPanelTab>('items');
@@ -153,7 +153,7 @@ export function NftCollectionPanel({
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 {isClaim && type === 'removed' ? (
-                                                    <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
+                                                    <div className="text-right" title={isClaimRedeemed ? tt?.claim_nft_redeemed_tooltip : isClaimAuthorized ? tt?.claim_nft_authorized_tooltip : tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
                                                             <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
@@ -162,7 +162,7 @@ export function NftCollectionPanel({
                                                         )}
                                                     </div>
                                                 ) : isClaim && type === 'added' ? (
-                                                    <div className="text-right" title={tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
+                                                    <div className="text-right" title={isClaimRedeemed ? tt?.claim_nft_redeemed_tooltip : isClaimAuthorized ? tt?.claim_nft_authorized_tooltip : tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
                                                             <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
@@ -197,7 +197,7 @@ export function NftCollectionPanel({
                                                                         {isClaim ? (tt?.stake_claim_xrd_claimed || 'XRD Reclamados') : (tt?.stake_claim_xrd_amount || 'XRD Reclamables')}
                                                                     </p>
                                                                     <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-                                                                        {isClaim ? (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD') : (tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period')}
+                                                                        {isClaimRedeemed ? tt?.claim_nft_redeemed_tooltip : isClaimAuthorized ? tt?.claim_nft_authorized_tooltip : isClaim ? (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD') : (tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period')}
                                                                     </p>
                                                                 </div>
                                                                 <span className="text-base font-black font-mono text-amber-600 shrink-0 tabular-nums">

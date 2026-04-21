@@ -12,6 +12,8 @@ interface SearchableTagFilterProps {
     tagLabels?: Record<string, string>;
     placeholder?: string;
     className?: string;
+    hideAll?: boolean;
+    width?: string;
 }
 
 export function SearchableTagFilter({
@@ -22,6 +24,8 @@ export function SearchableTagFilter({
     tagLabels,
     placeholder = 'Search tags...',
     className = '',
+    hideAll = false,
+    width = 'w-[280px]',
 }: SearchableTagFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -30,11 +34,18 @@ export function SearchableTagFilter({
     const getLabel = (tag: string) => tagLabels?.[tag] || tag;
 
     const cycle = (direction: 'next' | 'prev') => {
-        const allOptions = [null, ...tags];
-        const currentIdx = allOptions.indexOf(activeTag);
-        const nextIdx = direction === 'next'
-            ? (currentIdx + 1) % allOptions.length
-            : (currentIdx - 1 + allOptions.length) % allOptions.length;
+        const allOptions = hideAll ? tags : [null, ...tags];
+        let nextIdx;
+
+        if (activeTag === null) {
+            nextIdx = direction === 'next' ? 0 : allOptions.length - 1;
+        } else {
+            const currentIdx = allOptions.indexOf(activeTag);
+            nextIdx = direction === 'next'
+                ? (currentIdx + 1) % allOptions.length
+                : (currentIdx - 1 + allOptions.length) % allOptions.length;
+        }
+        
         onSelect(allOptions[nextIdx]);
     };
 
@@ -53,7 +64,7 @@ export function SearchableTagFilter({
     );
 
     return (
-        <div className={`relative w-[280px] shrink-0 ${className}`} ref={containerRef}>
+        <div className={`relative ${width} shrink-0 ${className}`} ref={containerRef}>
             <div className="flex items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] shadow-sm overflow-hidden h-9 w-full">
                 {/* Prev */}
                 <button
@@ -67,8 +78,15 @@ export function SearchableTagFilter({
                 {/* Main Label/Toggle */}
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${activeTag ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (activeTag) {
+                            onSelect(null);
+                        } else {
+                            onSelect(tags[0]);
+                        }
+                    }}
+                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${activeTag ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)] transition-colors'}`}
                 >
                     {activeTag ? getLabel(activeTag) : allLabel}
                 </button>
@@ -118,13 +136,15 @@ export function SearchableTagFilter({
                             </div>
                         </div>
                         <div className="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                            <button
-                                type="button"
-                                onClick={() => { onSelect(null); setIsOpen(false); }}
-                                className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${activeTag === null ? 'bg-[var(--color-primary)] text-white font-bold' : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'}`}
-                            >
-                                {allLabel}
-                            </button>
+                            {!hideAll && (
+                                <button
+                                    type="button"
+                                    onClick={() => { onSelect(null); setIsOpen(false); }}
+                                    className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${activeTag === null ? 'bg-[var(--color-primary)] text-white font-bold' : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'}`}
+                                >
+                                    {allLabel}
+                                </button>
+                            )}
                             {filteredTags.map(tag => (
                                 <button
                                     key={tag}

@@ -7,6 +7,8 @@ import { NftTransferCard } from './NftTransferCard';
 import { AddressDisplay } from './EntityBadge';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { TransferFooter } from './TransferFooter';
+import { getXrdAddress } from '../constants';
+import { IconFlame, IconBolt } from './TransactionIcons';
 
 import { UnstakeAssetCardProps } from '../types';
 
@@ -37,6 +39,55 @@ export function UnstakeAssetCard({
                                     {allLsuChanges.map((change, i: number) => (
                                         <BalanceChangeRow key={i} change={change} tt={tt} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
                                     ))}
+
+                                    {/* Network Fee - Origin Side */}
+                                    {actualFeePaid && parseFloat(actualFeePaid) > 0 && (
+                                        <div className="pl-4 border-l-2 border-[var(--color-card-border)] opacity-80 scale-95 origin-left mt-1">
+                                            <BalanceChangeRow
+                                                change={{
+                                                    balance_change: `-${actualFeePaid}`,
+                                                    resource_address: getXrdAddress(network),
+                                                    entity_address: senderAddr,
+                                                    is_fee: true,
+                                                }}
+                                                tt={tt}
+                                                onResourceClick={onResourceClick}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                readingMode={readingMode}
+                                                network={network}
+                                                side="sender"
+                                                locale={locale}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Stake Claim NFT (+1 NFT) - Origin Side */}
+                                    {validatorOps.map((op, i: number) => {
+                                        const nft = nftAdded[i] ?? null;
+                                        if (!nft) return null;
+                                        return (
+                                            <div key={'unstake-origin-nft-' + i} className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left mt-2">
+                                                <NftTransferCard
+                                                    resourceAddress={nft.resource_address}
+                                                    ids={nft.added || []}
+                                                    type="added"
+                                                    onCopy={onCopy}
+                                                    copiedAddress={copiedAddress}
+                                                    formatEntity={formatEntity}
+                                                    onResourceClick={onResourceClick}
+                                                    readingMode={readingMode}
+                                                    network={network}
+                                                    tt={tt}
+                                                    side="sender"
+                                                    isStakeClaim={true}
+                                                    unstakeXrdExpected={op.unstakeXrdExpected}
+                                                    nftReceivedLabel={tt.nft_claim_label || 'NFT de Reclamo'}
+                                                    locale={locale}
+                                                />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -51,59 +102,63 @@ export function UnstakeAssetCard({
                     </h5>
                     <div className="space-y-2">
                         {/* System burn card */}
-                        <div className="px-3 py-2 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)] italic flex items-center justify-between gap-4">
-                            <span>{tt.system_burn_lsu || 'Quema de token del sistema/red vía Componente'}</span>
-                            <span className="font-mono font-bold text-red-500 whitespace-nowrap">
-                                −{parseFloat(String(totalLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-[10px] opacity-70">LSU</span>
-                            </span>
+                        <div className="pl-4 border-l-2 border-orange-500/25 mt-1 mb-3">
+                            <div className="scale-95 origin-left">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-500/30 bg-orange-500/5 mb-1.5">
+                                    <IconFlame className="text-orange-600 w-3.5 h-3.5 shrink-0" />
+                                    <span className="text-[10px] uppercase font-black text-orange-700 dark:text-orange-400 tracking-wider">
+                                        {tt.system_burn_lsu || 'Quema de token del sistema/red vía Componente'}
+                                    </span>
+                                </div>
+                                <div className="space-y-1">
+                                    {allLsuChanges.map((change, i: number) => (
+                                        <BalanceChangeRow
+                                            key={i}
+                                            change={change}
+                                            tt={tt}
+                                            onResourceClick={onResourceClick}
+                                            onCopy={onCopy}
+                                            copiedAddress={copiedAddress}
+                                            readingMode={readingMode}
+                                            network={network}
+                                            side="sender"
+                                            locale={locale}
+                                            colorOverride="text-orange-600 dark:text-orange-400"
+                                            iconOverride={<IconFlame className="w-4 h-4 mr-0.5" />}
+                                            hideSign={true}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Interleaved: validator → stake claim NFT */}
-                        {validatorOps.map((op, i: number) => {
-                            const nft = nftAdded[i] ?? null;
-                            return (
-                                <div key={'unstake-dest-' + i} className="space-y-1">
-                                    {/* Validator panel — NFT ENTREGADO / -1 NFT */}
-                                    <ValidatorInlinePanel
-                                        validatorAddress={op.validatorAddress}
-                                        isStake={false}
-                                        isUnstake={true}
-                                        isClaim={false}
-                                        unstakeLsu={op.unstakeLsu}
-                                        unstakeXrdExpected={op.unstakeXrdExpected}
-                                        tt={tt}
-                                        onCopy={onCopy}
-                                        copiedAddress={copiedAddress}
-                                        network={network}
-                                        locale={locale}
-                                        rightLabel={tt.nft_delivered_label || 'NFT Entregado'}
-                                        rightContent={<span className="font-mono font-bold text-base tabular-nums text-red-500">−1 <span className="text-xs font-semibold opacity-70">NFT</span></span>}
-                                    />
-                                    {/* Stake claim NFT — NFT DE RECLAMO / +1 NFT + XRD in elements */}
-                                    {nft && (
-                                        <div className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left">
-                                            <NftTransferCard
-                                                resourceAddress={nft.resource_address}
-                                                ids={nft.added || []}
-                                                type="added"
-                                                onCopy={onCopy}
-                                                copiedAddress={copiedAddress}
-                                                formatEntity={formatEntity}
-                                                onResourceClick={onResourceClick}
-                                                readingMode={readingMode}
-                                                network={network}
-                                                tt={tt}
-                                                side="receiver"
-                                                isStakeClaim={true}
-                                                unstakeXrdExpected={op.unstakeXrdExpected}
-                                                nftReceivedLabel={tt.nft_claim_label || 'NFT de Reclamo'}
-                                                locale={locale}
-                                            />
+                        {validatorOps.map((op, i: number) => (
+                            <div key={'unstake-dest-' + i} className="space-y-1">
+                                {/* Validator panel — NFT ENTREGADO / -1 NFT */}
+                                <ValidatorInlinePanel
+                                    validatorAddress={op.validatorAddress}
+                                    isStake={false}
+                                    isUnstake={true}
+                                    isClaim={false}
+                                    unstakeLsu={op.unstakeLsu}
+                                    unstakeXrdExpected={op.unstakeXrdExpected}
+                                    tt={tt}
+                                    onCopy={onCopy}
+                                    copiedAddress={copiedAddress}
+                                    network={network}
+                                    locale={locale}
+                                    rightLabel={tt.nft_delivered_label || 'NFT Entregado'}
+                                    rightContent={
+                                        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-black" title={tt.claim_nft_presented_tooltip}>
+                                            <IconBolt className="w-4 h-4" />
+                                            <span className="text-base tabular-nums">1</span>
+                                            <span className="text-xs font-semibold opacity-70">NFT</span>
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    }
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -119,6 +174,7 @@ export function UnstakeAssetCard({
                 actualFeePaid={actualFeePaid}
                 tt={tt}
                 resourceAddress={allLsuChanges[0]?.resource_address}
+                mintedNftCount={nftAdded.reduce((s, n) => s + (n?.added?.length || 0), 0)}
                 network={network}
                 locale={locale}
             />

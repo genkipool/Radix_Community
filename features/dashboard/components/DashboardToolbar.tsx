@@ -34,6 +34,7 @@ export const DashboardToolbar = ({
     dateRange, onSelectRange, onResetRange,
     calendarT,
     columns, onColumnsChange,
+    activeRanking, onRankingChange,
     isReadingModeManual,
     dt,
 }: DashboardToolbarProps) => {
@@ -121,13 +122,25 @@ export const DashboardToolbar = ({
                                 tagLabels={dt?.tags}
                             />
                         ) : (
-                            <TagFilterBar
-                                tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                                onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                                tagLabels={dt?.transaction_tags}
-                            />
+                            <div className="flex items-center justify-center gap-3">
+                                <TagFilterBar
+                                    tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                    activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
+                                    onSelect={tag => onTransactionTagChange(tag || 'All')}
+                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                    tagLabels={dt?.transaction_tags}
+                                />
+                                <SearchableTagFilter
+                                    tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
+                                    activeTag={activeRanking}
+                                    onSelect={onRankingChange}
+                                    allLabel={dt?.rankings?.['filter_by'] || 'Filtrar por...'}
+                                    tagLabels={dt?.rankings}
+                                    hideAll={true}
+                                    width="w-[240px]"
+                                    placeholder={dt?.rankings?.search_placeholder || 'Filtrar rankings...'}
+                                />
+                            </div>
                         )}
                     </div>
 
@@ -140,17 +153,31 @@ export const DashboardToolbar = ({
                                 onSelect={tag => onActiveTagChange(tag || 'All')}
                                 allLabel={dt?.tags?.['All'] || 'All'}
                                 tagLabels={dt?.tags}
-                                placeholder={dt?.search?.placeholder || 'Search tags...'}
+                                placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
                             />
                         ) : (
-                            <SearchableTagFilter
-                                tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                                onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                                tagLabels={dt?.transaction_tags}
-                                placeholder={dt?.search?.placeholder || 'Search tags...'}
-                            />
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
+                                <SearchableTagFilter
+                                    tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                    activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
+                                    onSelect={tag => onTransactionTagChange(tag || 'All')}
+                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                    tagLabels={dt?.transaction_tags}
+                                    placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
+                                />
+                                <div className="sm:shrink-0">
+                                    <SearchableTagFilter
+                                        tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
+                                        activeTag={activeRanking}
+                                        onSelect={onRankingChange}
+                                        allLabel={dt?.rankings?.['filter_by'] || 'Filtrar por...'}
+                                        tagLabels={dt?.rankings}
+                                        hideAll={true}
+                                        width="w-[240px]"
+                                        placeholder={dt?.rankings?.search_placeholder || 'Filtrar rankings...'}
+                                    />
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>

@@ -59,6 +59,8 @@ export interface TransferFooterProps {
     actualFeePaid: string;
     tt: TranslationsT['dashboard']['transactions'];
     resourceAddress?: string;
+    mintedNftCount?: number;
+    burnedNftCount?: number;
     network?: Network;
     locale: string;
 }
@@ -211,6 +213,9 @@ export interface BalanceChangeRowProps {
     network?: Network;
     side?: 'sender' | 'receiver';
     locale: string;
+    iconOverride?: React.ReactNode;
+    colorOverride?: string;
+    hideSign?: boolean;
 }
 
 export interface ResourceInlinePanelProps {
@@ -243,6 +248,8 @@ export interface NftTransferCardProps {
     claimXrdTotal?: number;
     isClaim?: boolean;
     isStakeClaim?: boolean;
+    isClaimRedeemed?: boolean;
+    isClaimAuthorized?: boolean;
     unstakeXrdExpected?: number;
     nftReceivedLabel?: string;
     locale: string;
@@ -261,6 +268,8 @@ export interface NftCollectionPanelProps {
     claimXrdTotal?: number;
     isClaim?: boolean;
     isStakeClaimOverride?: boolean;
+    isClaimRedeemed?: boolean;
+    isClaimAuthorized?: boolean;
     unstakeXrdExpected?: number;
     network: Network;
     locale: string;

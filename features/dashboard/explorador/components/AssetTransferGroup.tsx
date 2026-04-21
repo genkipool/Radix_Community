@@ -15,6 +15,8 @@ import { classifySource } from '../utils/parseManifest';
 import { getXrdAddress } from '../constants';
 import type { TranslationsT } from '@/features/dashboard/types';
 
+import { IconFlame } from './TransactionIcons';
+
 export function AssetTransferGroup({
     group, balanceChanges, allSenderAddresses, realTransferAddresses,
     actualFeePaid, tt: _tt, t,
@@ -101,6 +103,7 @@ export function AssetTransferGroup({
                                         </div>
                                         <div className="space-y-1">
                                             <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
+
                                             {matchingFee && !change.is_fee && (
                                                 <div className="pl-4 border-l-2 border-[var(--color-card-border)] opacity-80 scale-95 origin-left">
                                                     <BalanceChangeRow change={{ ...matchingFee, resource_address: matchingFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
@@ -113,7 +116,13 @@ export function AssetTransferGroup({
                                             {pairedClaimNft && (
                                                 <div className="pl-4 border-l-2 border-[var(--color-primary)]/25 mt-1">
                                                     <div className="scale-95 origin-left">
-                                                        <AddressDisplay label={tt.from_address || 'From'} address={pairedClaimNft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                                        {/* SYSTEM CARD replacement for Claim origin address */}
+                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-500/30 bg-orange-500/5 mb-1.5">
+                                                            <IconFlame className="text-orange-600 w-3.5 h-3.5 shrink-0" />
+                                                            <span className="text-[10px] uppercase font-black text-orange-700 dark:text-orange-400 tracking-wider">
+                                                                {tt.claim_card_system_burn || 'System Card / Smart Contract (Burn)'}
+                                                            </span>
+                                                        </div>
                                                         <div className="mt-1">
                                                             <NftTransferCard
                                                                 resourceAddress={pairedClaimNft.resource_address}
@@ -128,7 +137,8 @@ export function AssetTransferGroup({
                                                                 tt={tt}
                                                                 side="sender"
                                                                 isClaim={true}
-                                                                nftReceivedLabel={tt?.nft_presented_label || 'NFT Presentado'}
+                                                                isClaimRedeemed={true}
+                                                                nftReceivedLabel={tt?.claim_nft_redeemed_label || 'NFT Canjeado'}
                                                                 claimXrdTotal={pairedOp?.claimXrd as number}
                                                                 locale={locale}
                                                             />
@@ -232,6 +242,7 @@ export function AssetTransferGroup({
                                                                 tt={tt}
                                                                 side="receiver"
                                                                 isClaim={true}
+                                                                isClaimAuthorized={true}
                                                                 claimXrdTotal={matchedOp?.claimXrd}
                                                                 nftReceivedLabel={tt.nft_presented_label || 'NFT Presentado'}
                                                                 locale={locale}
@@ -308,7 +319,17 @@ export function AssetTransferGroup({
             </div>
 
             {/* ── Footer summary ── */}
-            <TransferFooter senders={senders} receivers={receivers} actualFeePaid={actualFeePaid} tt={tt} resourceAddress={group[0]?.resource_address} network={network} locale={locale} />
+            <TransferFooter
+                senders={senders}
+                receivers={receivers}
+                actualFeePaid={actualFeePaid}
+                tt={tt}
+                resourceAddress={group[0]?.resource_address}
+                mintedNftCount={isUnstake ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.added?.length || 0), 0) : undefined}
+                burnedNftCount={isClaim ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.removed?.length || 0), 0) : undefined}
+                network={network}
+                locale={locale}
+            />
         </div>
     );
 }
