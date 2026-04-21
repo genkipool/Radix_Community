@@ -59,17 +59,19 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
     // Fetch details via React Query — uses the same cache key as prefetchTx,
     // so a hover pre-fetch means no extra request when the card expands.
-    // NOTE: Enabled always to resolve proposer info early.
     const { data: details } = useQuery({
         queryKey: ['tx-details', tx.intentHash, network],
         queryFn: () => apiFetchTransactionDetails(tx.intentHash, network),
-        enabled: true,
+        enabled: isExpanded,
         staleTime: 30_000,
     });
 
     // Fetch validators to map proposer index to name/icon
     const { data: validatorsData } = useValidatorsQuery(network);
-    const proposerInfo = resolveProposerInfo(details as TransactionDetails);
+    
+    // Perfect Hydration: proposerInfo comes fully populated from the backend.
+    // Fall back to client calculation only if not hydrated (e.g. older caches).
+    const proposerInfo = tx.proposerInfo || resolveProposerInfo(details as TransactionDetails);
     const proposerValidator = proposerInfo && validatorsData?.validators
         ? validatorsData.validators.find(v => v.rank === proposerInfo.rank)
         : null;

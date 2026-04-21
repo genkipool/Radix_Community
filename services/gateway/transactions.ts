@@ -50,7 +50,12 @@ type GatewayEvent = {
 type GatewayItem = {
     fee_paid?: string;
     affected_global_entities?: string[];
-    receipt?: { status?: string; events?: GatewayEvent[]; state_updates?: { updated_substates?: unknown[] } };
+    receipt?: { 
+        status?: string; 
+        events?: GatewayEvent[]; 
+        state_updates?: { updated_substates?: unknown[] };
+        fee_destination?: { to_proposer?: string | { xrd_amount?: string } };
+    };
     balance_changes?: {
         fungible_balance_changes?: Array<{ resource_address: string; entity_address: string; balance_change: string }>;
         non_fungible_balance_changes?: unknown[];
@@ -78,6 +83,8 @@ const STREAM_OPT_INS = {
     balance_changes: true,
     receipt_events: true,
     confirmed_at: true,
+    receipt_state_changes: true,
+    receipt_fee_destination: true,
 } as const;
 
 
@@ -253,6 +260,66 @@ function parseValidatorOpsFromEvents(events: GatewayEvent[]): ValidatorOp[] | un
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// resolveProposerInfoFromGatewayItem
+//
+// Extracts proposer validator index directly from the gateway items
+// when receipt_state_changes and receipt_fee_destination are opted in.
+// ─────────────────────────────────────────────────────────────────────────────
+function resolveProposerInfoFromGatewayItem(item: GatewayItem): { validatorIndex: number; rank: number; rewardAmount: string } | undefined {
+    if (!item.receipt?.fee_destination) return undefined;
+    
+    const fd = item.receipt.fee_destination;
+    const toProposerRaw = fd.to_proposer;
+    // to_proposer can be a simple string depending on Gateway version
+    const toProposerAmtStr = typeof toProposerRaw === 'string'
+        ? toProposerRaw
+        : (toProposerRaw as { xrd_amount?: string } | undefined)?.xrd_amount;
+
+    if (!toProposerAmtStr || toProposerAmtStr === '0') return undefined;
+    const targetDelta = parseFloat(toProposerAmtStr);
+
+    const substates = item.receipt.state_updates?.updated_substates as Array<{
+        new_value?: { substate_data?: { value?: { proposer_rewards?: Array<{ xrd_amount: string; validator_index: { index: number } }> } } };
+        previous_value?: { substate_data?: { value?: { proposer_rewards?: Array<{ xrd_amount: string; validator_index: { index: number } }> } } };
+    }> | undefined;
+
+    if (!substates) return undefined;
+
+    let newRewards: Array<{ xrd_amount: string; validator_index: { index: number } }> = [];
+    let previousRewards: Array<{ xrd_amount: string; validator_index: { index: number } }> = [];
+
+    for (const entry of substates) {
+        const nr = entry?.new_value?.substate_data?.value?.proposer_rewards;
+        if (Array.isArray(nr) && nr.length > 0) {
+            newRewards = nr;
+            previousRewards = entry?.previous_value?.substate_data?.value?.proposer_rewards ?? [];
+            break;
+        }
+    }
+
+    if (newRewards.length === 0) return undefined;
+
+    for (let i = 0; i < newRewards.length; i++) {
+        const nr = newRewards[i];
+        const pr = previousRewards[i];
+        const newAmt = parseFloat(nr.xrd_amount);
+        const prevAmt = pr ? parseFloat(pr.xrd_amount) : 0;
+        const delta = newAmt - prevAmt;
+
+        if (Math.abs(delta - targetDelta) < 0.000000000001) {
+            const validatorIndex = nr.validator_index.index;
+            return {
+                validatorIndex,
+                rank: validatorIndex + 1,
+                rewardAmount: toProposerAmtStr,
+            };
+        }
+    }
+
+    return undefined;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // parseTransactionItem
 //
 // Converts a raw Gateway transaction item into a typed TransactionInfo.
@@ -265,6 +332,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
         ? item.affected_global_entities
         : [];
     const events: GatewayEvent[] = ((item.receipt as Record<string, unknown>)?.events as GatewayEvent[]) || [];
+    const proposerInfo = resolveProposerInfoFromGatewayItem(item);
 
     // ── Validator-specific staking amounts (only when requested) ──
     let stakeXrd: number | undefined;
@@ -444,6 +512,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
         displayIsXrd,
         displayIsMint,
         displayResourceName,
+        proposerInfo,
         ...(validatorAddress && { stakeXrd, unstakeXrd, claimXrd }),
     };
 }
@@ -1076,7 +1145,7 @@ export async function getRecentTransactionsCached(
                                     const tagRes = await fetchFilteredTransactionsRaw(opParams);
                                     if (tagRes.transactions && tagRes.transactions.length > 0) {
                                         const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
+                                        await redis.set(`radix_txs_v2_filtered_${network}_${tagSlug}`, tagRes);
                                     }
                                 })
                             );

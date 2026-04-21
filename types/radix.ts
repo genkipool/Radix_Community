@@ -119,6 +119,12 @@ export interface TransactionInfo {
     claimXrd?: number;
     /** Full balance changes if available in the summary */
     balanceChanges?: Record<string, unknown>;
+    /** Perfect hydration for proposer */
+    proposerInfo?: {
+        validatorIndex: number;
+        rank: number;
+        rewardAmount: string;
+    };
 }
 
 export interface ValidatorOp {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import '@/app/globals.css';
+import { useEffect, useState } from 'react';
 import { en } from '@/i18n/locales/en';
 import { es } from '@/i18n/locales/es';
 import { Providers } from '@/components/layout/Providers';
