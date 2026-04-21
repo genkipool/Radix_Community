@@ -115,7 +115,7 @@ export function AddressDisplay({
                         <button
                             type="button"
                             onClick={e => { e.stopPropagation(); onCopy(copyableAddr); }}
-                            className="hover:text-white transition-colors shrink-0"
+                            className="hover:text-[var(--color-text-main)] transition-colors shrink-0"
                             title="Copy Address"
                         >
                             {copiedAddress === copyableAddr

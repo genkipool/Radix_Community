@@ -377,7 +377,7 @@ function VaultCreationCard({
                     <div className="min-w-0 flex flex-col">
                         <div className="flex items-center gap-2">
                             {meta?.name && (
-                                <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic">
+                                <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic pe-0.5">
                                     {meta.name}
                                 </span>
                             )}
@@ -579,12 +579,12 @@ function BetVoteCard({
                             {label}
                         </span>
                         {option && option !== resourceAddress && (
-                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic">
+                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic pe-0.5">
                                 {option}
                             </span>
                         )}
                         {meta?.name && (
-                            <span className="text-[10px] font-bold truncate text-blue-900/60 dark:text-blue-100/60 italic">
+                            <span className="text-[10px] font-bold truncate text-blue-900/60 dark:text-blue-100/60 italic pe-0.5">
                                 {meta.name}
                             </span>
                         )}

@@ -45,7 +45,7 @@ describe('entityUtils', () => {
         it('resolves components (Pool Mother)', () => {
             const res = getEntityType('component_rdx1scv9scv9scv9scv9scv9scv9scv9scv9scv9scv9scv9scv9', mockTt);
             expect(res.label).toBe('Component');
-            expect(res.color).toContain('text-purple-400');
+            expect(res.color).toContain('text-purple-600');
         });
 
         it('resolves resources (XRD)', () => {
@@ -63,7 +63,7 @@ describe('entityUtils', () => {
         it('resolves packages (Account Locker)', () => {
             const res = getEntityType('package_rdx1pkscv9scv9scv9scv9scv9scv9scv9scv9scv9scv9scv9scv9', mockTt);
             expect(res.label).toBe('Package');
-            expect(res.color).toContain('text-cyan-500');
+            expect(res.color).toContain('text-cyan-600');
         });
 
         it('falls back to unknown for unrecognized prefixes', () => {

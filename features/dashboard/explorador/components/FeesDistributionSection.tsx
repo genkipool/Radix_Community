@@ -446,7 +446,7 @@ function CopyIconBtn({
         <button
             type="button"
             onClick={e => { e.stopPropagation(); onCopy(address); }}
-            className={`p-1 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-colors ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-white`
+            className={`p-1 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-colors ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
                 }`}
         >
             {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}

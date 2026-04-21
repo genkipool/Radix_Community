@@ -5,6 +5,10 @@ html {
 body {
   background-color: var(--color-bg);
   color: var(--color-text-main);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Global Scrollbar - thin & elegant */

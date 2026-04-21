@@ -44,12 +44,12 @@ export function LockFeePanel({
                 {lockFeeAccount && (
                     <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
                         <span className="font-mono truncate" title={lockFeeAccount}>{lockFeeAccount.slice(0, 16)}...{lockFeeAccount.slice(-6)}</span>
-                        <button type="button" onClick={e => { e.stopPropagation(); onCopy(lockFeeAccount); }} className={`p-0.5 rounded transition-colors ${copiedAddress === lockFeeAccount ? 'text-green-500' : 'hover:text-white'}`}>
+                        <button type="button" onClick={e => { e.stopPropagation(); onCopy(lockFeeAccount); }} className={`p-0.5 rounded transition-colors ${copiedAddress === lockFeeAccount ? 'text-green-500' : 'hover:text-[var(--color-text-main)]'}`}>
                             {copiedAddress === lockFeeAccount ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                         </button>
                     </div>
                 )}
-                <p className="text-[10px] text-[var(--color-text-muted)] italic">
+                <p className="text-[12px] text-[var(--color-text-muted)] italic">
                     {String(tt.lock_fee_desc || 'You authorized the network to spend up to {max} XRD. The actual fee was {actual} XRD.')
                         .replace('{max}', lockFeeAmount)
                         .replace('{actual}', actualFeePaid)}
