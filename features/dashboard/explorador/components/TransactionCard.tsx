@@ -12,6 +12,9 @@ import { Card } from '@/components/ui/Card';
 import type { TranslationsT, TransactionDetails } from '@/features/dashboard/types';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
+import { resolveProposerInfo } from '../utils/proposerUtils';
+import { useValidatorsQuery } from '@/features/dashboard/staking';
+import { SafeImage } from '@/components/ui/SafeImage';
 
 /* ─────────────────────────────────────────
    formatAmount
@@ -56,12 +59,34 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
     // Fetch details via React Query — uses the same cache key as prefetchTx,
     // so a hover pre-fetch means no extra request when the card expands.
+    // NOTE: Enabled always to resolve proposer info early.
     const { data: details } = useQuery({
         queryKey: ['tx-details', tx.intentHash, network],
         queryFn: () => apiFetchTransactionDetails(tx.intentHash, network),
-        enabled: isExpanded,
+        enabled: true,
         staleTime: 30_000,
     });
+
+    // Fetch validators to map proposer index to name/icon
+    const { data: validatorsData } = useValidatorsQuery(network);
+    const proposerInfo = resolveProposerInfo(details as TransactionDetails);
+    const proposerValidator = proposerInfo && validatorsData?.validators
+        ? validatorsData.validators.find(v => v.rank === proposerInfo.rank)
+        : null;
+
+    const proposerDisplay = proposerValidator ? (
+        <div className="flex items-center gap-2 min-w-0">
+            <SafeImage
+                src={proposerValidator.iconUrl || ''}
+                alt={proposerValidator.name}
+                fallbackName={proposerValidator.name}
+                className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] object-cover shrink-0"
+            />
+            <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-main)] truncate" title={proposerValidator.address}>
+                {proposerValidator.name}
+            </span>
+        </div>
+    ) : null;
 
     const statusLabel = isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed');
 
@@ -186,7 +211,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         </div>
 
                         {/* Stats Grid */}
-                        <div className={`grid ${isCompact ? 'grid-cols-1' : (columns === 2 || isVertical) ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
+                        <div className={`grid ${isCompact ? 'grid-cols-1' : (columns >= 2 && columns <= 4) ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
@@ -213,8 +238,8 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     ) : (
                                         <>
                                             <Coins className="w-3 h-3" />
-                                            {tx.displayAmount !== undefined 
-                                                ? (tt.amount || 'Amount') 
+                                            {tx.displayAmount !== undefined
+                                                ? (tt.amount || 'Amount')
                                                 : (tt.fee_paid || 'Fee Paid')}
                                         </>
                                     )}
@@ -227,10 +252,10 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                                 {tx.displayIsXrd || tx.displayResource === 'XRD' ? (
                                                     'XRD'
                                                 ) : (
-                                                    <RenderSymbol 
-                                                        address={tx.displayResource || ''} 
-                                                        fallback={tx.displayResourceName} 
-                                                        network={network} 
+                                                    <RenderSymbol
+                                                        address={tx.displayResource || ''}
+                                                        fallback={tx.displayResourceName}
+                                                        network={network}
                                                     />
                                                 )}
                                             </span>
@@ -240,20 +265,45 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     )}
                                 </div>
                             </div>
-                            <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0">
-                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
-                                    <Users className="w-3 h-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
+                            <div className={`flex items-center gap-8 sm:gap-12 min-w-0 w-full ${columns === 1 ? 'sm:col-span-2' : 'col-span-1'}`}>
+                                <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0 shrink-0">
+                                    <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
+                                        <Users className="w-3 h-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
+                                    </div>
+                                    <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
+                                        <Landmark className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
+                                    </div>
                                 </div>
-                                <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
-                                    <Landmark className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
-                                </div>
+
+                                {/* Proposer for Grid 1 (Collapsed context) */}
+                                {columns === 1 && proposerDisplay && (
+                                    <div className="flex flex-col gap-0.5 border-s border-[var(--color-card-border)] ps-6 min-w-0 flex-1">
+                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">{tt.proposer || 'Proposer'}</div>
+                                        {proposerDisplay}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Proposer for Grid 5-8 (Extra row) */}
+                            {columns >= 5 && proposerDisplay && (
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">{tt.proposer || 'Proposer'}</div>
+                                    {proposerDisplay}
+                                </div>
+                            )}
                         </div>
 
                         {/* Labels Footer (Grid 2+) */}
                         {columns >= 2 && (
                             <div className={`flex ${columns >= 7 ? 'flex-col items-start' : 'items-center'} gap-2 mt-4 pt-3 border-t border-[var(--color-card-border)]/50`}>
                                 <StatusTypeLabels />
+
+                                {/* Proposer for Grid 2-4 (Footer) */}
+                                {columns >= 2 && columns <= 4 && proposerDisplay && (
+                                    <div className="flex items-center gap-2 border-s border-[var(--color-card-border)] ps-3 ml-1 min-w-0">
+                                        {proposerDisplay}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

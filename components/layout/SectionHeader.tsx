@@ -12,6 +12,7 @@ interface SectionHeaderProps {
     titleEnd?: string;
     subtitle?: string;
     gradient?: string;
+    children?: React.ReactNode;
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -24,6 +25,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
     titleEnd = '',
     subtitle,
     gradient = 'from-[var(--color-secondary)] to-[var(--color-primary)]',
+    children,
 }) => {
     const defaultBadge = badgeColor
         ? `bg-[${badgeColor}]/10 border-[${badgeColor}]/30 text-[${badgeColor}]`
@@ -54,6 +56,12 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             {subtitle && (
                 <FadeIn as="p" delay={0.1} className="text-xl text-[var(--color-text-muted)] max-w-3xl mx-auto leading-8">
                     {subtitle}
+                </FadeIn>
+            )}
+
+            {children && (
+                <FadeIn delay={0.15}>
+                    {children}
                 </FadeIn>
             )}
         </div>

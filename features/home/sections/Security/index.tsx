@@ -1,4 +1,4 @@
-import { Shield } from 'lucide-react';
+import { Shield, FileText, ArrowUpRight } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import type { BaseSectionProps } from '../../types';
@@ -16,7 +16,33 @@ export default function Security({ t }: BaseSectionProps) {
           titleAccent={t.seguridad.h2b}
           subtitle={t.seguridad.sub}
           gradient="from-[var(--color-accent)] to-[var(--color-secondary)]"
-        />
+        >
+          <div className="flex flex-wrap justify-center items-center gap-4 mt-8">
+            <a
+              href={t.seguridad.url_hacken_1}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <FileText className="w-4 h-4" />
+              {t.seguridad.audit_hacken_1}
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+            <span style={{ color: 'var(--color-card-border)' }}>|</span>
+            <a
+              href={t.seguridad.url_hacken_2}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <FileText className="w-4 h-4" />
+              {t.seguridad.audit_hacken_2}
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+          </div>
+        </SectionHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {(t.seguridad.cards as Array<Record<string, string>>).map((card, idx: number) => (

@@ -604,6 +604,10 @@ export const es = {
     h2a: "La bóveda más segura",
     h2b: "que existe en Web3.",
     sub: "ROA (Resource-Oriented Architecture) no es solo un modelo de programación. Es una garantía matemática de que los activos no pueden desaparecer por errores de código.",
+    audit_hacken_1: "Hacken primer informe de auditoría",
+    url_hacken_1: "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff8df9bf8825cb7ca1_Hacken-Radix-Audit-1.pdf",
+    audit_hacken_2: "Hacken segundo informe de auditoría",
+    url_hacken_2: "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff428a5ed19e5f5bdd_Hacken-Radix-Audit-2.pdf",
     cards: [
       {
         title: "El Problema de la EVM",
@@ -2124,7 +2128,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       confirm_time: 'Fecha de confirmación',
       epoch_round: 'Época y Ronda',
       details: 'Detalles',
-      raw_receipt: 'Recibo (Raw)',
+      raw_receipt: 'Recibo sin procesar',
       copy_raw: 'Copiar JSON',
       message_payload: 'Mensaje',
       success: 'Éxito',

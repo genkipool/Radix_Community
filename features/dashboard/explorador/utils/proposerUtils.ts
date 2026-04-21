@@ -34,6 +34,11 @@ interface UpdatedSubstate {
             value?: SubstateValue;
         };
     };
+    previous_value?: {
+        substate_data?: {
+            value?: SubstateValue;
+        };
+    };
     [key: string]: unknown;
 }
 
@@ -48,31 +53,36 @@ export interface ProposerInfo {
 }
 
 /**
- * Extracts the `proposer_rewards` array from the consensus manager state update
- * inside the transaction receipt.
+ * Extracts the `proposer_rewards` arrays (new and previous) from the
+ * consensus manager state update inside the transaction receipt.
  */
-function extractProposerRewards(details: TransactionDetails): ProposerRewardEntry[] {
+function extractProposerRewardsData(details: TransactionDetails): { 
+    newRewards: ProposerRewardEntry[], 
+    previousRewards: ProposerRewardEntry[] 
+} {
     const substates = (details.receipt as Record<string, unknown>)
         ?.state_updates as Record<string, unknown> | undefined;
     const updated = (substates?.updated_substates as UpdatedSubstate[]) ?? [];
 
     for (const entry of updated) {
-        const rewards = entry?.new_value?.substate_data?.value?.proposer_rewards;
-        if (Array.isArray(rewards) && rewards.length > 0) {
-            return rewards;
+        const newRewards = entry?.new_value?.substate_data?.value?.proposer_rewards;
+        if (Array.isArray(newRewards) && newRewards.length > 0) {
+            const previousRewards = entry?.previous_value?.substate_data?.value?.proposer_rewards ?? [];
+            return { newRewards, previousRewards };
         }
     }
-    return [];
+    return { newRewards: [], previousRewards: [] };
 }
 
 /**
  * Resolves the proposer validator for a given transaction.
  *
- * Algorithm:
- * 1. Read `fee_destination.to_proposer` (the XRD reward string).
- * 2. Extract `proposer_rewards` from the consensus manager state update.
- * 3. Match the amount to find the validator_index.
- * 4. Return { validatorIndex, rank, rewardAmount }.
+ * Algorithm (Refined):
+ * 1. Read `fee_destination.to_proposer` (the XRD reward expected for this tx).
+ * 2. Extract both `new_value` and `previous_value` rewards for all validators.
+ * 3. For each index `i`, calculate the increase (delta):
+ *    delta = newRewards[i].xrd_amount - (previousRewards[i]?.xrd_amount || 0)
+ * 4. Match the delta against `to_proposer` to identify the proposer.
  *
  * Returns `null` if the proposer cannot be determined.
  */
@@ -84,29 +94,41 @@ export function resolveProposerInfo(details: TransactionDetails | null | undefin
     if (!fd) return null;
 
     const toProposerRaw = fd.to_proposer ?? fd.toProposer;
-    const toProposerAmt = typeof toProposerRaw === 'string'
+    const toProposerAmtStr = typeof toProposerRaw === 'string'
         ? toProposerRaw
         : (toProposerRaw as Record<string, string> | undefined)?.xrd_amount;
 
-    if (!toProposerAmt || toProposerAmt === '0') return null;
+    if (!toProposerAmtStr || toProposerAmtStr === '0') return null;
 
-    // Step 2: Extract proposer_rewards from state_updates
-    const rewards = extractProposerRewards(details);
-    if (rewards.length === 0) return null;
+    // We use numeric comparison for the delta matching
+    const targetDelta = parseFloat(toProposerAmtStr);
 
-    // Step 3: Match the LAST item in the array to see if it's the proposer
-    const lastReward = rewards[rewards.length - 1];
-    if (!lastReward || lastReward.xrd_amount !== toProposerAmt) {
-        return null;
+    // Step 2: Extract proposer_rewards (new and previous)
+    const { newRewards, previousRewards } = extractProposerRewardsData(details);
+    if (newRewards.length === 0) return null;
+
+    // Step 3: Identify the index where the reward increased by the targetDelta
+    for (let i = 0; i < newRewards.length; i++) {
+        const nr = newRewards[i];
+        const pr = previousRewards[i];
+
+        const newAmt = parseFloat(nr.xrd_amount);
+        const prevAmt = pr ? parseFloat(pr.xrd_amount) : 0;
+        const delta = newAmt - prevAmt;
+
+        // Use a small epsilon for float comparison to be safe, 
+        // though rewards are usually exact strings.
+        if (Math.abs(delta - targetDelta) < 0.000000000001) {
+            const validatorIndex = nr.validator_index.index;
+            return {
+                validatorIndex,
+                rank: validatorIndex + 1,
+                rewardAmount: toProposerAmtStr,
+            };
+        }
     }
 
-    const validatorIndex = lastReward.validator_index.index;
-
-    return {
-        validatorIndex,
-        rank: validatorIndex + 1,
-        rewardAmount: toProposerAmt,
-    };
+    return null;
 }
 
 /**

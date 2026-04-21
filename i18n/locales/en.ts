@@ -604,6 +604,10 @@ export const en = {
     h2a: "The most secure vault",
     h2b: "that exists in Web3.",
     sub: "ROA (Resource-Oriented Architecture) is not just a programming model. It is a mathematical guarantee that assets cannot disappear due to coding errors.",
+    audit_hacken_1: "Hacken first audit report",
+    url_hacken_1: "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff8df9bf8825cb7ca1_Hacken-Radix-Audit-1.pdf",
+    audit_hacken_2: "Hacken second audit report",
+    url_hacken_2: "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff428a5ed19e5f5bdd_Hacken-Radix-Audit-2.pdf",
     cards: [
       {
         title: "The EVM Problem",
