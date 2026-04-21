@@ -227,9 +227,9 @@ export function EntityBadge({
    Inline display: "Name (short…addr)"
 ───────────────────────────────────────── */
 export function ValidatorNameLabel({
-    address, fallback, network,
+    address, fallback, network, hideParentheses = false,
 }: {
-    address: string; fallback?: string; network: Network;
+    address: string; fallback?: string; network: Network; hideParentheses?: boolean;
 }) {
     const meta = useEntityData(address, network);
     const name = meta?.name;
@@ -239,7 +239,12 @@ export function ValidatorNameLabel({
     return (
         <span className="font-mono text-xs truncate" title={address}>
             {name
-                ? <><span className="font-semibold text-[var(--color-text-main)]">{name}</span>{' '}<span className="text-[var(--color-text-muted)] text-[10px]">({short})</span></>
+                ? <>
+                    <span className="font-semibold text-[var(--color-text-main)]">{name}</span>{' '}
+                    <span className="text-[var(--color-text-muted)] text-[10px]">
+                        {hideParentheses ? short : `(${short})`}
+                    </span>
+                  </>
                 : (fallback || short)}
         </span>
     );

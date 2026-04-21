@@ -1,11 +1,11 @@
 'use client';
-import { parseFloatSafe } from '../../utils/resourceUtils';
 
 import React from 'react';
+import { parseFloatSafe } from '../../utils/resourceUtils';
+
 import { Check, Copy, ChevronDown, Coins } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+
 import { sanitizeText } from '@/utils/sanitize';
-import { apiFetchRoundProposer } from '@/features/dashboard/services/apiClient';
 import { BalanceChangeRow } from './BalanceChangeRow';
 import { AddressDisplay, EntityBadge, ValidatorNameLabel } from './EntityBadge';
 import { isConsensusManager } from '@/features/dashboard/hooks/useEntityData';
@@ -13,7 +13,7 @@ import {
     IconFlame, IconMedal, IconBolt, IconGem, IconTip,
 } from './TransactionIcons';
 import { getXrdAddress } from '../constants';
-import type { Network } from '@/features/dashboard/types';
+
 import type { FungibleChange } from '@/features/dashboard/types/shared.types';
 import type {
     RoyaltyRecipientObj,
@@ -24,21 +24,8 @@ import type {
 /* ─── Helper ─────────────────────────────── */
 const fmtAmt = (v: number) => v.toFixed(4).replace(/\.?0+$/, '');
 
-
-/* ─── useProposerAddress ─────────────────── */
-function useProposerAddress(epoch: number, round: number, stateVersion: number, network: Network) {
-    const enabled = epoch > 0 && round > 0 && stateVersion > 0;
-    const { data: addr = null } = useQuery<string | null>({
-        queryKey: ['proposer', epoch, round, stateVersion, network],
-        queryFn: () => apiFetchRoundProposer(epoch, round, stateVersion, network as 'mainnet' | 'stokenet'),
-        enabled,
-        // Proposer for a committed round is immutable — cache indefinitely
-        staleTime: Infinity,
-        gcTime: 1000 * 60 * 10,
-        retry: 1,
-    });
-    return addr;
-}
+import { useQueryClient } from '@tanstack/react-query';
+import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
 
 /* ─── Props ──────────────────────────────── */
 import { FeesDistributionSectionProps } from '../types';
@@ -62,12 +49,13 @@ export function FeesDistributionSection({
     );
     const cmAmount = Math.abs(parseFloatSafe(cmEntry?.balance_change));
 
-    const proposerAddr = useProposerAddress(
-        Number(tx.epoch) || 0,
-        Number(tx.round) || 0,
-        details.state_version || 0,
-        network,
-    );
+    const qc = useQueryClient();
+    const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network ?? 'mainnet']);
+    const proposerInfo = resolveProposerInfo(details);
+    const proposerValidator = proposerInfo && validatorsData?.validators
+        ? findProposerValidator(proposerInfo, validatorsData.validators)
+        : null;
+    const proposerAddr = proposerValidator?.address ?? null;
     if (accountPayers.length === 0 && cmAmount <= 0) return null;
 
     /* ── fee_destination (supports both flat strings and nested objects) ── */
@@ -264,9 +252,11 @@ export function FeesDistributionSection({
                                                 <span className="text-[8px] uppercase font-black text-blue-600/60 leading-none">
                                                     {tt.fees_proposer_validator || 'Proposer Validator'}
                                                 </span>
-                                                <ValidatorNameLabel address={proposerAddr} network={network} />
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <ValidatorNameLabel address={proposerAddr} network={network} hideParentheses />
+                                                    <CopyIconBtn address={proposerAddr} onCopy={onCopy} copiedAddress={copiedAddress} variant="ghost" />
+                                                </div>
                                             </div>
-                                            <CopyIconBtn address={proposerAddr} onCopy={onCopy} copiedAddress={copiedAddress} />
                                         </div>
                                     </div>
                                 )}
@@ -438,15 +428,20 @@ function FeeRowHeader({
 }
 
 function CopyIconBtn({
-    address, onCopy, copiedAddress, groupHide = false,
+    address, onCopy, copiedAddress, groupHide = false, variant = 'default',
 }: {
-    address: string; onCopy: (v: string) => void; copiedAddress: string | null; groupHide?: boolean;
+    address: string; onCopy: (v: string) => void; copiedAddress: string | null; groupHide?: boolean; variant?: 'default' | 'ghost';
 }) {
+    const isGhost = variant === 'ghost';
     return (
         <button
             type="button"
             onClick={e => { e.stopPropagation(); onCopy(address); }}
-            className={`p-1 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-colors ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
+            className={`p-1 rounded transition-colors ${
+                isGhost 
+                ? 'bg-transparent border-none' 
+                : 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm'
+            } ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
                 }`}
         >
             {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}

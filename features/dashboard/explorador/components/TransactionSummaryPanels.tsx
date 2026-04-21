@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React from 'react';
-import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2, Landmark } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2, Landmark, User, Hash, Clock, Database } from 'lucide-react';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
@@ -10,6 +10,8 @@ import type { OracleUpdate, AirdropData } from '@/features/dashboard/explorador/
 import type { Network, TranslationsT, GatewayEvent, GatewayField } from '@/features/dashboard/types';
 import { sanitizeText } from '@/utils/sanitize';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
+import { resolveProposerInfo, findProposerValidator } from '@/features/dashboard/explorador/utils/proposerUtils';
+import { SafeImage } from '@/components/ui/SafeImage';
 
 const findEventAmount = (events: GatewayEvent[], resourceAddress: string): string | null => {
     if (!resourceAddress) return null;
@@ -203,7 +205,14 @@ function AirdropRewardCard({
                             className="flex items-center gap-1 mt-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
                             onClick={() => onResourceClick?.(airdropData.resource!)}
                         >
-                            {iconUrl && <img src={iconUrl} alt="Token" className="w-4 h-4 rounded-full bg-white/10" />}
+                            {iconUrl && (
+                                <SafeImage
+                                    src={iconUrl}
+                                    alt="Token"
+                                    className="w-4 h-4 rounded-full bg-white/10"
+                                    fallbackName={symbol || 'Token'}
+                                />
+                            )}
                             <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[120px]" title={airdropData.resource}>
                                 {airdropData.resource.slice(0, 8)}...{airdropData.resource.slice(-6)}
                             </span>
@@ -367,11 +376,11 @@ function VaultCreationCard({
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                     {meta?.iconUrl && (
-                        <img
+                        <SafeImage
                             src={meta.iconUrl}
                             alt={meta.name || 'Token'}
                             className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-amber-500/20 shrink-0 object-cover"
-                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                            fallbackName={meta.name || 'Token'}
                         />
                     )}
                     <div className="min-w-0 flex flex-col">
@@ -567,11 +576,11 @@ function BetVoteCard({
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                     {meta?.iconUrl && (
-                        <img
+                        <SafeImage
                             src={meta.iconUrl}
                             alt={meta.name || 'Token'}
                             className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-blue-500/20 shrink-0 object-cover"
-                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                            fallbackName={meta.name || 'Token'}
                         />
                     )}
                     <div className="flex flex-col gap-0.5 min-w-0">
@@ -828,11 +837,11 @@ function MetadataEntityBlock({
             {/* Left side: Circular Image */}
             <div className="shrink-0 mt-0.5">
                 {resolvedIconUrl ? (
-                    <img 
-                        src={resolvedIconUrl} 
-                        alt={resolvedName || 'Entity Icon'} 
+                    <SafeImage
+                        src={resolvedIconUrl}
+                        alt={resolvedName || 'Entity Icon'}
                         className="w-12 h-12 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)]"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+                        fallbackName={resolvedName || 'Entity'}
                     />
                 ) : (
                     <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center">
@@ -889,6 +898,143 @@ function MetadataEntityBlock({
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+/* ── ProposerSection ── */
+interface ProposerSectionProps {
+    details?: import('@/features/dashboard/types').TransactionDetails;
+    tx: import('@/types/radix').TransactionInfo;
+    tt: TranslationsT['dashboard']['transactions'];
+    network?: 'mainnet' | 'stokenet';
+    onCopy: (val: string) => void;
+    copiedAddress: string | null;
+    locale?: string;
+}
+
+export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddress, locale = 'en' }: ProposerSectionProps) {
+    const qc = useQueryClient();
+    const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network ?? 'mainnet']);
+
+    const proposerInfo = resolveProposerInfo(details ?? null);
+    if (!proposerInfo) return null;
+
+    const proposerValidator = validatorsData?.validators
+        ? findProposerValidator(proposerInfo, validatorsData.validators)
+        : null;
+    
+    const valName = proposerValidator?.name || sanitizeText(tt.proposer_box_title || 'Proposer');
+    const valAddress = proposerValidator?.address || '';
+    const valIcon = proposerValidator?.iconUrl;
+    
+    // Formatting local and UTC dates
+    const dateObj = tx.confirmedAt;
+    let formattedDate = '-';
+    try {
+        if (dateObj) {
+            const d = new Date(dateObj);
+            
+            const localDate = d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+            const localTime = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            formattedDate = `${localDate} ${localTime}`;
+        }
+    } catch {}
+
+    const stateVersionValue = details?.state_version || '?';
+
+    return (
+        <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
+                <span className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    {tt.proposer_box_title || 'Proposer'}
+                </span>
+            </h3>
+
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 divide-y xl:divide-y-0 xl:divide-x divide-[var(--color-card-border)]">
+                
+                {/* 1. Name */}
+                <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)] xl:border-none first:pt-0 first:border-0 first:xl:pl-0">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+                        {tt.proposer_name || 'Validator Name'}
+                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                        {valIcon ? (
+                            <SafeImage
+                                src={valIcon}
+                                alt={valName}
+                                className="w-5 h-5 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)] shrink-0"
+                                fallbackName={valName}
+                            />
+                        ) : (
+                            <div className="w-5 h-5 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center shrink-0">
+                                <User className="w-2.5 h-2.5 text-[var(--color-text-muted)]" />
+                            </div>
+                        )}
+                        <span className="text-[13px] font-bold text-[var(--color-text-main)] truncate" title={valName}>
+                            {valName}
+                        </span>
+                    </div>
+                </div>
+
+                {/* 2. Address */}
+                <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+                        {tt.proposer_address || 'Validator Address'}
+                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[13px] font-mono text-[var(--color-text-main)] truncate" title={valAddress}>
+                            {valAddress ? `${valAddress.slice(0, 10)}...${valAddress.slice(-8)}` : 'N/A'}
+                        </span>
+                        {valAddress && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onCopy(valAddress); }}
+                                className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
+                                title={tt.copy_raw || 'Copy'}
+                            >
+                                {copiedAddress === valAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. Date & Time */}
+                <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {tt.proposer_local_date || 'Local Date'}
+                    </span>
+                    <span className="text-[11px] text-[var(--color-text-main)] font-mono truncate" title={formattedDate}>
+                        {formattedDate}
+                    </span>
+                </div>
+
+                {/* 4. Epoch/Round */}
+                <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
+                        <Hash className="w-3 h-3" />
+                        {tt.proposer_epoch_round || 'Epoch/Round'}
+                    </span>
+                    <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
+                        {tx.epoch} / {tx.round}
+                    </span>
+                </div>
+
+                {/* 5. State Version & Index */}
+                <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
+                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
+                        <Database className="w-3 h-3" />
+                        {tt.proposer_state_version_index || 'State Version / Index'}
+                    </span>
+                    <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
+                        {stateVersionValue} / #{proposerInfo.validatorIndex}
+                    </span>
+                </div>
+                
             </div>
         </div>
     );

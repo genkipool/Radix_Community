@@ -7,7 +7,6 @@ import {
     apiFetchEntityDetails,
     apiFetchNonFungibleData,
     apiFetchValidators,
-    apiFetchRoundProposer,
 } from '@/features/dashboard/services/apiClient';
 
 // ─── MSW lifecycle ───────────────────────────────────────────────────────────
@@ -184,23 +183,3 @@ describe('apiFetchValidators', () => {
     });
 });
 
-// ─── apiFetchRoundProposer ────────────────────────────────────────────────────
-describe('apiFetchRoundProposer', () => {
-    it('fetches round proposer address', async () => {
-        server.use(
-            http.get('/api/round-proposer', () => {
-                return HttpResponse.json('validator_rdx1test123');
-            }),
-        );
-        const result = await apiFetchRoundProposer(100, 5, 99999, 'mainnet');
-        expect(result).toBe('validator_rdx1test123');
-    });
-
-    it('returns null on error', async () => {
-        server.use(
-            http.get('/api/round-proposer', () => HttpResponse.json(null, { status: 500 })),
-        );
-        const result = await apiFetchRoundProposer(100, 5, 99999, 'mainnet');
-        expect(result).toBeNull();
-    });
-});

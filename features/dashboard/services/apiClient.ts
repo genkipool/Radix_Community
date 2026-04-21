@@ -67,22 +67,7 @@ export async function apiFetchStakeHistory(
     return res.json();
 }
 
-export async function apiFetchRoundProposer(
-    epoch: number,
-    round: number,
-    stateVersion: number,
-    network: 'mainnet' | 'stokenet' = 'mainnet',
-): Promise<string | null> {
-    const params = new URLSearchParams();
-    params.set('epoch', String(epoch));
-    params.set('round', String(round));
-    params.set('stateVersion', String(stateVersion));
-    params.set('network', network);
 
-    const res = await fetch(`/api/round-proposer?${params.toString()}`);
-    if (!res.ok) return null;
-    return res.json();
-}
 
 export async function apiFetchValidators(
     network: 'mainnet' | 'stokenet' = 'mainnet',

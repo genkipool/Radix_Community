@@ -11,7 +11,7 @@ import { TransactionDetailsTab } from './TransactionDetailsTab';
 import { EntitiesSection } from './EntitiesSection';
 import { FeesDistributionSection } from './FeesDistributionSection';
 import { ProtocolVoteCard } from './ProtocolVoteCard';
-import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection, MetadataUpdatesSection } from './TransactionSummaryPanels';
+import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection, MetadataUpdatesSection, ProposerSection } from './TransactionSummaryPanels';
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 
@@ -102,6 +102,7 @@ const TransactionTabs = ({
                 {/* ══ SUMMARY ══ */}
                 {activeTab === 'summary' && (
                     <div className="space-y-6">
+                        <ProposerSection details={details} tx={tx} tt={tt} network={network} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
                         {/* Message payload */}
                         {tx.message && (
@@ -229,6 +230,7 @@ const TransactionTabs = ({
                             <AssetTransferGroup key={'nft-rg' + idx} group={group} balanceChanges={balanceChanges as BalanceChanges} allSenderAddresses={allSenderAddresses} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
                         ))}
 
+
                         {/* Lock Fee */}
                         {parsed.lockFeeAmount && (
                             <LockFeePanel lockFeeAmount={parsed.lockFeeAmount} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
@@ -239,7 +241,11 @@ const TransactionTabs = ({
                             <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={parsed.badgeAmount} badgeOrigin={parsed.badgeOrigin} t={t as TranslationsT} readingMode={readingMode} {...shared} />
                         )}
 
-                        <OracleUpdateSection updates={parsed.oracleUpdates} {...shared} />
+
+                        
+                        {parsed.oracleUpdates && parsed.oracleUpdates.length > 0 && (
+                            <OracleUpdateSection updates={parsed.oracleUpdates} {...shared} />
+                        )}
                         <AirdropSection airdropData={airdropData} {...shared} />
 
                         {receipt?.events !== undefined && (receipt.events?.length ?? 0) > 0 && (
@@ -259,6 +265,7 @@ const TransactionTabs = ({
                                 <MetadataUpdatesSection events={receipt.events ?? []} {...shared} />
                             </>
                         )}
+
 
                         <FeesDistributionSection details={details} tx={tx} readingMode={readingMode} {...shared} />
                         <EntitiesSection variant="affected" details={details} {...shared} />

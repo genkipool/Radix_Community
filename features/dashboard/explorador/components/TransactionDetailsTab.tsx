@@ -8,6 +8,7 @@ import { getXrdAddress } from '../constants';
 import { DetailRow } from '../../components/DetailRow';
 import { getMetaValue } from '../utils/metadataUtils';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
+import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
 
 import { TransactionDetailsTabProps } from '../types';
 import type { GatewayEvent, GatewayField } from '@/features/dashboard/types/shared.types';
@@ -59,6 +60,13 @@ export function TransactionDetailsTab({
     const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network ?? 'mainnet']);
     const { receipt, manifest_instructions } = details || {};
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
+
+    const proposerInfo = resolveProposerInfo(details ?? null);
+    const proposerValidator = proposerInfo && validatorsData?.validators
+        ? findProposerValidator(proposerInfo, validatorsData.validators)
+        : null;
+
+
 
     /* ── Entity name/symbol resolver (uses affected_global_entities from receipt + cache) ── */
     const lookupEntityName = (addr: string): string | null => {
@@ -560,24 +568,54 @@ export function TransactionDetailsTab({
 
             {/* ── Metadata rows ── */}
             <DetailRow label={tt.transaction_id || 'Transaction ID'} value={sanitizeText((details.intent_hash ?? tx.intentHash) as string)} copyable={(details.intent_hash ?? tx.intentHash) as string} onCopy={onCopy} copiedAddress={copiedAddress} />
+            
             <DetailRow label={tt.status || 'Status'} value={
                 <span className={`text-xs font-bold uppercase tracking-wider ${isSuccess ? 'text-green-500' : 'text-red-500'}`}>
                     {isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed')}
                 </span>
             } />
-            <DetailRow label={tt.state_version_label || 'State Version'} value={details.state_version} />
-            <DetailRow label={tt.epoch_round || 'Epoch & Round'} value={`${details.epoch} / ${details.round}`} />
+
             <DetailRow
                 label={tt.confirm_time || 'Confirm time'}
                 value={(
                     <>
-                        {new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        <span className="text-[10px] opacity-80 ml-2">
-                            ({new Date(details.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC)
-                        </span>
+                        {new Date(details?.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        <span className="text-[10px] opacity-80"> ({new Date(details?.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC)</span>
                     </>
                 )}
             />
+
+            <DetailRow label={tt.epoch_round || 'Epoch & Round'} value={`${details?.epoch} / ${details?.round}`} />
+
+            <DetailRow 
+                label={tt.proposer_state_version_index || 'State Version / Index'} 
+                value={`${details?.state_version} / #${proposerInfo?.validatorIndex ?? '?'}`} 
+            />
+
+            {proposerValidator && (
+                <DetailRow 
+                    label={tt.proposer || 'Proposer'} 
+                    value={(
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-semibold text-[var(--color-text-main)] text-sm">
+                                {proposerValidator.name}
+                            </span>
+                            <span className="text-[var(--color-text-muted)] text-[10px] font-mono">
+                                {proposerValidator.address.length > 20 ? `${proposerValidator.address.slice(0, 12)}...${proposerValidator.address.slice(-6)}` : proposerValidator.address}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onCopy(proposerValidator.address); }}
+                                className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
+                                title={tt.copy_raw || 'Copy'}
+                            >
+                                {copiedAddress === proposerValidator.address ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                        </div>
+                    )} 
+                />
+            )}
+
             <DetailRow label={tt.fee || 'Fee Paid'} value={`${sanitizeText(String(tx.feePaid))} XRD`} />
             {tx.message && <DetailRow label={tt.message_payload as string || 'Message'} value={`"${sanitizeText(String(tx.message))}"`} />}
 
