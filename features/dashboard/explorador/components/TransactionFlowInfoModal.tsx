@@ -69,8 +69,7 @@ export function TransactionFlowInfoModal({
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                     <Landmark className="w-16 h-16 text-red-500" />
                                                 </div>
-                                                <h4 className="font-black text-red-500 text-xs tracking-widest uppercase flex items-center gap-2">
-                                                    <Landmark className="w-4 h-4" />
+                                                <h4 className="font-black text-red-500 text-xs tracking-widest uppercase flex items-center">
                                                     {tt.tx_flow_info_left_col_title || 'LEFT COLUMN: Origin Address'}
                                                 </h4>
                                                 <p className="text-[13px] opacity-90">
@@ -86,8 +85,7 @@ export function TransactionFlowInfoModal({
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                     <Landmark className="w-16 h-16 text-green-500" />
                                                 </div>
-                                                <h4 className="font-black text-[#16a34a] text-xs tracking-widest uppercase flex items-center gap-2">
-                                                    <Landmark className="w-4 h-4" />
+                                                <h4 className="font-black text-[#16a34a] text-xs tracking-widest uppercase flex items-center">
                                                     {tt.tx_flow_info_right_col_title || 'RIGHT COLUMN: Destination Address'}
                                                 </h4>
                                                 <p className="text-[13px] opacity-90">
