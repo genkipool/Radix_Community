@@ -92,7 +92,7 @@ export const en = {
     // Popup descriptions
     popup_eco_infra_desc: "Full-stack technical architecture of Radix",
     popup_eco_dapps_desc: "Native DeFi apps in the ecosystem",
-    popup_eco_dashboard_desc: "Real-time validators and staking",
+    popup_eco_dashboard_desc: "Explore transactions, validators, and real-time staking status.",
     popup_eco_astro_desc: "The most advanced DeFi aggregator on Radix",
     popup_dev_docs_desc: "Technical documentation and whitepapers",
     popup_dev_academy_desc: "Learn Scrypto from scratch, for free",
@@ -2041,7 +2041,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
   dashboard: {
     hero: {
       title: 'Dashboard',
-      subtitle: 'Explore staking, monitor network health, and manage your XRD — all in one place.',
+      subtitle: 'Connect your wallet. Manage your staking. Analyze transactions. Control your XRD. All from one place.',
     },
     loading: {
       title: 'Loading network data...',
@@ -2237,6 +2237,15 @@ Download the update today from the iOS App Store or Google Play Store to experie
       recipients_label: 'recipients',
       fees_distribution: 'Fees Distributed',
       fees_distribution_desc: 'Breakdown of how transaction fees were distributed by the protocol.',
+      tx_flow_info_title: 'How to read our transaction flow',
+      tx_flow_info_desc_1: 'In the Web3 ecosystem, transactions are rarely one-way transfers. Usually, they are swaps (you give something to receive something else).',
+      tx_flow_info_desc_2: 'That is why, in our interface, the columns do not separate "what goes out" from "what comes in", but rather group the movements according to the Role of the Actors:',
+      tx_flow_info_left_col_title: 'LEFT COLUMN: Origin Address (The Initiator)',
+      tx_flow_info_left_col_desc: 'This column represents the entity that initiates the action. Here we group all net changes that this account undergoes in the transaction, both positive and negative.',
+      tx_flow_info_left_col_example: 'Example: If you initiate a swap, in this same column you will see that -10 XRD goes out and at the same time +1 NFT comes in. Both data are here because they belong to the final balance of the account that originated the action.',
+      tx_flow_info_right_col_title: 'RIGHT COLUMN: Destination Address (The Receiver / Counterparty)',
+      tx_flow_info_right_col_desc: 'This column represents the entity or smart contract to which the main action is directed. Like the origin, it shows the total impact on that account.',
+      tx_flow_info_right_col_example: 'Example: If the account receiving the transaction is the one that assumes the payment of commissions (fees), you will see that negative value reflected here, in the destination column.',
       fees_from_label: 'Fees Paid',
       fees_to_label: 'Distribution',
       fees_burn: 'Burn',

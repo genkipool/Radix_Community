@@ -92,7 +92,7 @@ export const es = {
     // Popup descriptions
     popup_eco_infra_desc: "Arquitectura técnica full-stack de Radix",
     popup_eco_dapps_desc: "Aplicaciones DeFi nativas del ecosistema",
-    popup_eco_dashboard_desc: "Validadores y staking en tiempo real",
+    popup_eco_dashboard_desc: "Explora transacciones, validadores y el estado del staking en tiempo real.",
     popup_eco_astro_desc: "El agregador DeFi más avanzado de Radix",
     popup_dev_docs_desc: "Documentación técnica y whitepapers",
     popup_dev_academy_desc: "Aprende Scrypto desde cero, gratis",
@@ -2046,7 +2046,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
   dashboard: {
     hero: {
       title: 'Dashboard',
-      subtitle: 'Conecta tu wallet, Gestiona tu staking, analiza transacciones y controla tus XRD — todo desde un único panel.',
+      subtitle: 'Conecta tu wallet. Gestiona tu staking. Analiza transacciones. Controla tus XRD. Todo desde un único panel.',
     },
     loading: {
       title: 'Cargando datos de la red...',
@@ -2242,6 +2242,15 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       recipients_label: 'destinatarios',
       fees_distribution: 'Fees Distribuidas',
       fees_distribution_desc: 'Desglose de cómo se distribuyeron las fees de la transacción por el protocolo.',
+      tx_flow_info_title: 'Cómo leer el flujo de nuestras transacciones',
+      tx_flow_info_desc_1: 'En el ecosistema Web3, las transacciones rara vez son envíos de un solo sentido. Por lo general, son intercambios (entregas algo para recibir otra cosa).',
+      tx_flow_info_desc_2: 'Por eso, en nuestra interfaz, las columnas no separan "lo que sale" de "lo que entra", sino que agrupan los movimientos según el Rol de los Actores:',
+      tx_flow_info_left_col_title: 'COLUMNA IZQUIERDA: Dirección Origen (El Iniciador)',
+      tx_flow_info_left_col_desc: 'Esta columna representa a la entidad que inicia la acción. Aquí agrupamos todos los cambios netos que sufre esta cuenta en la transacción, tanto positivos como negativos.',
+      tx_flow_info_left_col_example: 'Ejemplo: Si inicias un intercambio, en esta misma columna verás que salen -10 XRD y que al mismo tiempo entran +1 NFT. Ambos datos están aquí porque pertenecen al balance final de la cuenta que originó la acción.',
+      tx_flow_info_right_col_title: 'COLUMNA DERECHA: Dirección Destino (El Receptor / Contraparte)',
+      tx_flow_info_right_col_desc: 'Esta columna representa a la entidad o contrato inteligente hacia donde se dirige la acción principal. Al igual que el origen, muestra el impacto total en esa cuenta.',
+      tx_flow_info_right_col_example: 'Ejemplo: Si la cuenta que recibe la transacción es la que asume el pago de las comisiones (fees), verás ese valor negativo reflejado aquí, en la columna de destino.',
       stake_history: {
         title: 'Historial de Stake',
         stake: 'Stake',

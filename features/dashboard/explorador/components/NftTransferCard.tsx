@@ -3,7 +3,7 @@
 import { parseTags } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Copy, ChevronDown, Box } from 'lucide-react';
+import { Check, Copy, ChevronDown, Landmark } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
@@ -76,7 +76,7 @@ const NftTransferCard = ({
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     {iconUrl ? <img src={iconUrl} alt={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                        : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0"><Box className="w-5 h-5" /></div>}
+                        : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0"><Landmark className="w-5 h-5" /></div>}
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 flex-nowrap">
                             <div className="font-bold text-sm sm:text-base text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0" title={name}>{name.length > 10 ? name.slice(0, 7).trim() + '...' : name}</div>

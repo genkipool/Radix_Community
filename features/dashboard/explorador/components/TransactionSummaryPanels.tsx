@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, Gift, Box, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2 } from 'lucide-react';
+import { Activity, Gift, Vote, TrendingUp, ArrowRight, Check, Copy, Settings2, Landmark } from 'lucide-react';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
@@ -303,7 +303,7 @@ export function VaultCreationSection({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-amber-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-amber-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Box className="w-3.5 h-3.5 text-amber-400" />
+                <Landmark className="w-3.5 h-3.5 text-amber-400" />
                 {te.vault_creation || 'Vault Creation'}
             </h3>
             <div className="p-3 space-y-2">
@@ -377,7 +377,7 @@ function VaultCreationCard({
                     <div className="min-w-0 flex flex-col">
                         <div className="flex items-center gap-2">
                             {meta?.name && (
-                                <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic pe-0.5">
+                                <span className="text-xs font-bold truncate text-amber-900 dark:text-amber-100 italic pe-1">
                                     {meta.name}
                                 </span>
                             )}
@@ -430,7 +430,7 @@ function VaultCreationCard({
             <div className="pt-3 border-t border-amber-500/20">
                 <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <Box className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
+                        <Landmark className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
                         <span className="text-[9px] uppercase font-black text-amber-800/60 dark:text-amber-400/60 tracking-wider">
                             {te.vault_id || 'Vault ID'}
                         </span>
@@ -579,12 +579,12 @@ function BetVoteCard({
                             {label}
                         </span>
                         {option && option !== resourceAddress && (
-                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic pe-0.5">
+                            <span className="text-xs font-bold truncate text-blue-900 dark:text-blue-100 italic pe-1">
                                 {option}
                             </span>
                         )}
                         {meta?.name && (
-                            <span className="text-[10px] font-bold truncate text-blue-900/60 dark:text-blue-100/60 italic pe-0.5">
+                            <span className="text-[10px] font-bold truncate text-blue-900/60 dark:text-blue-100/60 italic pe-1">
                                 {meta.name}
                             </span>
                         )}

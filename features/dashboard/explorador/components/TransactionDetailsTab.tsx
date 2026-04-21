@@ -16,9 +16,12 @@ import type { GatewayEvent, GatewayField } from '@/features/dashboard/types/shar
 function ResourceName({ address, network }: { address: string; network: string }) {
     const meta = useEntityData(address, network);
     if (!address) return null;
+    const rawVal = meta?.name || address;
+    const displayVal = rawVal.length > 10 ? rawVal.slice(0, 7).trim() + '...' : rawVal;
+    
     return (
-        <span className="font-bold italic text-[var(--color-primary)]">
-            {meta?.name || address.slice(0, 12) + '...'}
+        <span className="font-bold italic text-[var(--color-primary)] truncate pe-1" title={meta?.name || address}>
+            {displayVal}
         </span>
     );
 }

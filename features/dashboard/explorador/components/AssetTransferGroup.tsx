@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { AssetTransferGroupProps } from '@/features/dashboard/explorador/types';
-import { ChevronDown, ChevronUp, Wallet } from 'lucide-react';
+import { Wallet, Info, Landmark } from 'lucide-react';
 import { BalanceChangeRow } from '@/features/dashboard/explorador/components/BalanceChangeRow';
 import { NftTransferCard } from '@/features/dashboard/explorador/components/NftTransferCard';
 import { AddressDisplay } from '@/features/dashboard/explorador/components/EntityBadge';
@@ -16,6 +16,7 @@ import { getXrdAddress } from '../constants';
 import type { TranslationsT } from '@/features/dashboard/types';
 
 import { IconFlame } from './TransactionIcons';
+import { TransactionFlowInfoModal } from './TransactionFlowInfoModal';
 
 export function AssetTransferGroup({
     group, balanceChanges, allSenderAddresses, realTransferAddresses,
@@ -25,6 +26,8 @@ export function AssetTransferGroup({
     locale,
 }: AssetTransferGroupProps) {
     const tt = _tt || ({} as TranslationsT['dashboard']['transactions']);
+    const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    
     const senders = group.filter(c => {
         const isNegative = parseFloat(c.balance_change) < 0;
         if (!isNegative) return false;
@@ -69,9 +72,18 @@ export function AssetTransferGroup({
 
     return (
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mb-4 last:mb-0">
-            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
-                <Wallet className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                {tt.asset_transfer || 'Asset Transfers'}
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <Wallet className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    {tt.asset_transfer || 'Asset Transfers'}
+                </div>
+                <button
+                    onClick={() => setIsInfoModalOpen(true)}
+                    className="p-1 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-transparent hover:border-[var(--color-card-border)] group"
+                    title={tt.tx_flow_info_title || 'How to read our transaction flow'}
+                >
+                    <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                </button>
             </h3>
 
             <div className={`flex flex-col ${columns === 2 ? '' : 'md:flex-row'} divide-y ${columns === 2 ? 'divide-y' : 'md:divide-y-0 md:divide-x'} divide-[var(--color-card-border)]`}>
@@ -79,7 +91,7 @@ export function AssetTransferGroup({
                 {/* ── ORIGIN column ── */}
                 <div className="flex-1 p-3 bg-red-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#ef4444] mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronUp className="w-3 h-3" />
+                        <Landmark className="w-3 h-3" />
                         {tt.from_address || 'Origin (Sent)'}
                     </h5>
                     <div className="space-y-3">
@@ -193,7 +205,7 @@ export function AssetTransferGroup({
                 {/* ── DESTINATION column ── */}
                 <div className="flex-1 p-3 bg-green-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronDown className="w-3 h-3" />
+                        <Landmark className="w-3 h-3" />
                         {tt.to_address || 'Destination (Received)'}
                     </h5>
                     <div className="space-y-3">
@@ -329,6 +341,12 @@ export function AssetTransferGroup({
                 burnedNftCount={isClaim ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.removed?.length || 0), 0) : undefined}
                 network={network}
                 locale={locale}
+            />
+
+            <TransactionFlowInfoModal
+                isOpen={isInfoModalOpen}
+                onClose={() => setIsInfoModalOpen(false)}
+                tt={tt}
             />
         </div>
     );

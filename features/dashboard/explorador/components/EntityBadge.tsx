@@ -115,7 +115,7 @@ export function AddressDisplay({
                         <button
                             type="button"
                             onClick={e => { e.stopPropagation(); onCopy(copyableAddr); }}
-                            className="hover:text-[var(--color-text-main)] transition-colors shrink-0"
+                            className="hover:text-[var(--color-primary)] transition-colors shrink-0"
                             title="Copy Address"
                         >
                             {copiedAddress === copyableAddr
@@ -210,7 +210,7 @@ export function EntityBadge({
                 onClick={e => { e.stopPropagation(); onCopy(clean); }}
                 className={`shrink-0 p-1 rounded transition-colors ${copiedAddress === clean
                         ? 'text-green-500'
-                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
                     }`}
                 title="Copy address"
             >

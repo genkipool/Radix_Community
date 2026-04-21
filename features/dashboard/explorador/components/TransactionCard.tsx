@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-    Clock, Copy, Coins, Box, Users, Mail, Check
+    Clock, Copy, Coins, Landmark, Users, Mail, Check
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
@@ -33,7 +33,7 @@ const RenderSymbol = ({ address, fallback, network }: { address: string; fallbac
     const rawVal = meta?.symbol || meta?.name || fallback || formatEntity(address);
     const displayVal = rawVal.length > 10 ? rawVal.slice(0, 7).trim() + '...' : rawVal;
     return (
-        <span title={address}>
+        <span className="truncate pe-1" title={address}>
             {displayVal}
         </span>
     );
@@ -207,7 +207,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                     {tx.displayIsMint ? (
                                         <div className="flex items-center gap-1">
-                                            <Box className="w-3 h-3" />
+                                            <Landmark className="w-3 h-3" />
                                             {tt.minting || 'Minting'}
                                         </div>
                                     ) : (
@@ -245,7 +245,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     <Users className="w-3 h-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
                                 </div>
                                 <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
-                                    <Box className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
+                                    <Landmark className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
                                 </div>
                             </div>
                         </div>

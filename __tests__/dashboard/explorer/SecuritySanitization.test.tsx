@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => ({
   Users: () => <div data-testid="users" />,
   Mail: () => <div data-testid="mail" />,
   Check: () => <div data-testid="check" />,
+  Landmark: () => <div data-testid="landmark" />,
 }));
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

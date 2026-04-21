@@ -22,6 +22,7 @@ vi.mock('lucide-react', () => ({
     Users: () => <div data-testid="users" />,
     Mail: () => <div data-testid="mail" />,
     Check: () => <div data-testid="check" />,
+    Landmark: () => <div data-testid="landmark" />,
 }));
 
 const queryClient = new QueryClient({

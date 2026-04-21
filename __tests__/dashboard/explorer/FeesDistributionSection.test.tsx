@@ -13,6 +13,7 @@ vi.mock('lucide-react', () => ({
   ChevronDown: () => <div data-testid="icon-chevron" />,
   ExternalLink: () => <div data-testid="icon-external" />,
   Coins: () => <div data-testid="icon-coins" />,
+  Landmark: () => <div data-testid="landmark" />,
 }));
 vi.mock('@/features/dashboard/explorador/components/TransactionIcons', () => ({
     IconFlame: () => <div data-testid="icon-flame" />,
