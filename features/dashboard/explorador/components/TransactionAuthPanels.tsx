@@ -14,14 +14,14 @@ export function LockFeePanel({
     lockFeeAmount, lockFeeAccount, mainAction, nftId, actualFeePaid,
     tt, onCopy, copiedAddress,
 }: {
-    lockFeeAmount:  string;
+    lockFeeAmount: string;
     lockFeeAccount: string | null;
-    mainAction:     string | null;
-    nftId:          string | null;
-    actualFeePaid:  string;
+    mainAction: string | null;
+    nftId: string | null;
+    actualFeePaid: string;
     tt: TranslationsT['dashboard']['transactions'];
-    onCopy:         (v: string) => void;
-    copiedAddress:  string | null;
+    onCopy: (v: string) => void;
+    copiedAddress: string | null;
 }) {
     return (
         <div
@@ -34,12 +34,12 @@ export function LockFeePanel({
             </h3>
             <div className="p-3 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-black text-amber-600 tracking-tight">{tt.lock_fee_max || 'Max Authorized Fee'}</span>
-                    <span className="font-mono font-black text-sm text-amber-600">{lockFeeAmount} XRD</span>
+                    <span className="text-[10px] uppercase font-black text-amber-600 tracking-widest">{tt.lock_fee_max || 'Max Authorized Fee'}</span>
+                    <span className="font-mono font-semibold text-sm text-amber-600">{lockFeeAmount} XRD</span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-black text-green-700 dark:text-green-400 tracking-tight">{tt.lock_fee_actual || 'Actual Fee Charged'}</span>
-                    <span className="font-mono font-black text-sm text-green-700 dark:text-green-400">{actualFeePaid} XRD</span>
+                    <span className="text-[10px] uppercase font-black text-green-700 dark:text-green-400 tracking-widest">{tt.lock_fee_actual || 'Actual Fee Charged'}</span>
+                    <span className="font-mono font-semibold text-sm text-green-700 dark:text-green-400">{actualFeePaid} XRD</span>
                 </div>
                 {lockFeeAccount && (
                     <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
@@ -57,12 +57,12 @@ export function LockFeePanel({
                 {mainAction && (
                     <div className="mt-1 space-y-1 pt-2 border-t border-amber-500/10">
                         <div className="flex items-center gap-2">
-                            <span className="text-[9px] uppercase font-black text-amber-400/70 tracking-tight shrink-0">{tt.lock_fee_action || 'Action'}:</span>
+                            <span className="text-[9px] uppercase font-black text-amber-400/70 tracking-normal shrink-0">{tt.lock_fee_action || 'Action'}:</span>
                             <span className="text-[10px] font-mono text-[var(--color-text-main)]">{mainAction}</span>
                         </div>
                         {nftId && (
                             <div className="flex items-center gap-2">
-                                <span className="text-[9px] uppercase font-black text-amber-400/70 tracking-tight shrink-0">{tt.lock_fee_objective || 'Objective'}:</span>
+                                <span className="text-[9px] uppercase font-black text-amber-400/70 tracking-normal shrink-0">{tt.lock_fee_objective || 'Objective'}:</span>
                                 <span className="text-[10px] font-mono text-[var(--color-text-main)]">NFT #{nftId}</span>
                             </div>
                         )}
@@ -82,17 +82,17 @@ export function AuthBadgePanel({
     badgeResource, badgeAmount, badgeOrigin,
     tt, t, onCopy, copiedAddress, onResourceClick, readingMode, network = 'mainnet', locale,
 }: {
-    badgeResource:  string;
-    badgeAmount:    string;
-    badgeOrigin:    string | null;
+    badgeResource: string;
+    badgeAmount: string;
+    badgeOrigin: string | null;
     tt: TranslationsT['dashboard']['transactions'];
     t: TranslationsT;
-    onCopy:         (v: string) => void;
-    copiedAddress:  string | null;
+    onCopy: (v: string) => void;
+    copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
-    readingMode?:   boolean;
-    network?:       Network;
-    locale:         string;
+    readingMode?: boolean;
+    network?: Network;
+    locale: string;
 }) {
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-primary)]/30 overflow-hidden mt-4">
@@ -118,8 +118,8 @@ export function AuthBadgePanel({
                     </div>
                 )}
                 <BalanceChangeRow
-                    change={{ 
-                        resource_address: badgeResource, 
+                    change={{
+                        resource_address: badgeResource,
                         balance_change: badgeAmount,
                         entity_address: badgeOrigin || '',
                     }}

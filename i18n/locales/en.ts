@@ -3609,7 +3609,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
   },
   under_construction: {
     title: 'Coming Soon',
-    body: 'This wallet connection feature is currently under intensive development. It will be available in a future update.',
+    body: 'This feature is currently under intensive development. It will be available in a future update.',
     close: 'Understood',
   },
 };

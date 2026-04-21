@@ -32,9 +32,9 @@ export function EntitiesSection({
 
     /* ── Theme tokens ──────────────────────────────────────── */
     const icon       = isCreated
-        ? <Zap     className="w-3.5 h-3.5 text-cyan-400"   />
+        ? <Zap     className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"   />
         : <Activity className="w-3.5 h-3.5 text-violet-400" />;
-    const countColor = isCreated ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+    const countColor = isCreated ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                                  : 'bg-violet-500/10 text-violet-400 border-violet-500/20';
     const heading    = isCreated
         ? (tt.created_entities  || 'Created Entities')

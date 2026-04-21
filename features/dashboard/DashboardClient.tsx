@@ -82,7 +82,7 @@ export default function DashboardClient({
 }: DashboardInitialProps) {
 
   const { t, language } = useLanguage();
-  const { setShowFooter } = useLayout();
+  const { setShowFooter, setShowUnderConstruction } = useLayout();
   const dt = t.dashboard ?? {};
 
   /* View / Network / Search (URL Sync) / Date Range */
@@ -408,7 +408,13 @@ export default function DashboardClient({
           columns={columns}
           onColumnsChange={setColumns}
           activeRanking={activeRanking}
-          onRankingChange={setActiveRanking}
+          onRankingChange={(val) => {
+            if (val) {
+              setShowUnderConstruction(true);
+            } else {
+              setActiveRanking(null);
+            }
+          }}
           dt={dt}
         />
 

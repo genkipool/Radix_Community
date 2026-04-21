@@ -15,10 +15,10 @@ import {
 import { getXrdAddress } from '../constants';
 import type { Network } from '@/features/dashboard/types';
 import type { FungibleChange } from '@/features/dashboard/types/shared.types';
-import type { 
-    RoyaltyRecipientObj, 
-    ValidatorSetObj, 
-    ValueWithXrd 
+import type {
+    RoyaltyRecipientObj,
+    ValidatorSetObj,
+    ValueWithXrd
 } from '../types/gateway.types';
 
 /* ─── Helper ─────────────────────────────── */
@@ -30,12 +30,12 @@ function useProposerAddress(epoch: number, round: number, stateVersion: number, 
     const enabled = epoch > 0 && round > 0 && stateVersion > 0;
     const { data: addr = null } = useQuery<string | null>({
         queryKey: ['proposer', epoch, round, stateVersion, network],
-        queryFn:  () => apiFetchRoundProposer(epoch, round, stateVersion, network as 'mainnet' | 'stokenet'),
+        queryFn: () => apiFetchRoundProposer(epoch, round, stateVersion, network as 'mainnet' | 'stokenet'),
         enabled,
         // Proposer for a committed round is immutable — cache indefinitely
         staleTime: Infinity,
-        gcTime:    1000 * 60 * 10,
-        retry:     1,
+        gcTime: 1000 * 60 * 10,
+        retry: 1,
     });
     return addr;
 }
@@ -57,7 +57,7 @@ export function FeesDistributionSection({
     const accountPayers = allFeeChanges.filter(
         (fc) => !isConsensusManager(sanitizeText((fc.entity_address as string) || '')),
     );
-    const cmEntry  = allFeeChanges.find((fc) =>
+    const cmEntry = allFeeChanges.find((fc) =>
         isConsensusManager(sanitizeText(String(fc.entity_address || ''))),
     );
     const cmAmount = Math.abs(parseFloatSafe(cmEntry?.balance_change));
@@ -77,8 +77,8 @@ export function FeesDistributionSection({
 
     const fdBurn = fd?.to_burn as ValueWithXrd | string | undefined;
     const fdToBurn = fd?.toBurn as ValueWithXrd | string | undefined;
-    const burnAmt     = pick(fdBurn, (fdBurn as ValueWithXrd)?.xrd_amount ?? (fdToBurn as ValueWithXrd)?.xrdAmount,     fdToBurn ?? 0);
-    
+    const burnAmt = pick(fdBurn, (fdBurn as ValueWithXrd)?.xrd_amount ?? (fdToBurn as ValueWithXrd)?.xrdAmount, fdToBurn ?? 0);
+
     const fdProposer = fd?.to_proposer as ValueWithXrd | string | undefined;
     const fdToProposer = fd?.toProposer as ValueWithXrd | string | undefined;
     const proposerAmt = pick(fdProposer, (fdProposer as ValueWithXrd)?.xrd_amount ?? (fdToProposer as ValueWithXrd)?.xrdAmount, fdToProposer ?? 0);
@@ -89,7 +89,7 @@ export function FeesDistributionSection({
     if (typeof fdValSetRaw === 'string') {
         validatorAmt = parseFloatSafe(fdValSetRaw);
     } else if (fdValSetRaw) {
-        fdValShares  = fdValSetRaw.shares ?? [];
+        fdValShares = fdValSetRaw.shares ?? [];
         validatorAmt = fdValShares.length > 0
             ? fdValShares.reduce((s: number, v) => s + parseFloatSafe(String(v.xrd_amount ?? v.xrdAmount)), 0)
             : parseFloatSafe(fdValSetRaw.xrd_amount ?? fdValSetRaw.xrdAmount);
@@ -101,12 +101,12 @@ export function FeesDistributionSection({
             s + parseFloatSafe(typeof r === 'string' ? r : (r.xrd_amount ?? r.xrdAmount ?? r.amount)), 0)
         : 0;
 
-    const feeSummary     = details.receipt?.fee_summary ?? null;
-    const tippingAmt     = parseFloatSafe(feeSummary?.xrd_total_tipping_cost);
-    const execCost       = parseFloatSafe(feeSummary?.xrd_total_execution_cost);
-    const storageCost    = parseFloatSafe(feeSummary?.xrd_total_storage_cost);
+    const feeSummary = details.receipt?.fee_summary ?? null;
+    const tippingAmt = parseFloatSafe(feeSummary?.xrd_total_tipping_cost);
+    const execCost = parseFloatSafe(feeSummary?.xrd_total_execution_cost);
+    const storageCost = parseFloatSafe(feeSummary?.xrd_total_storage_cost);
     const finalizationCost = parseFloatSafe(feeSummary?.xrd_total_finalization_cost);
-    const royaltyCost    = parseFloatSafe(feeSummary?.xrd_total_royalty_cost);
+    const royaltyCost = parseFloatSafe(feeSummary?.xrd_total_royalty_cost);
 
     const royaltyAmtFromFees = allFeeChanges
         .filter(fc => fc.type === 'RoyaltyDistributed')
@@ -114,14 +114,14 @@ export function FeesDistributionSection({
 
     const royaltyAmt = Math.max(royaltyAmtFromFD, royaltyAmtFromFees, royaltyCost);
 
-    const costingParams  = details.receipt?.costing_parameters ?? null;
-    const xrdUsdPrice    = parseFloatSafe(costingParams?.xrd_usd_price);
+    const costingParams = details.receipt?.costing_parameters ?? null;
+    const xrdUsdPrice = parseFloatSafe(costingParams?.xrd_usd_price);
 
     const hasFeeDestination = burnAmt > 0 || proposerAmt > 0 || validatorAmt > 0;
-    const finalBurn      = hasFeeDestination ? burnAmt     : cmAmount;
-    const finalProposer  = hasFeeDestination ? proposerAmt : cmAmount / 2;
+    const finalBurn = hasFeeDestination ? burnAmt : cmAmount;
+    const finalProposer = hasFeeDestination ? proposerAmt : cmAmount / 2;
     const finalValidator = hasFeeDestination ? validatorAmt : cmAmount / 2;
-    const totalFee       = parseFloatSafe(tx.feePaid);
+    const totalFee = parseFloatSafe(tx.feePaid);
 
     const rawEntities = details.affected_global_entities ?? [];
     const sourcePackages = Array.from(new Set([
@@ -138,10 +138,10 @@ export function FeesDistributionSection({
         ? (fdRoyaltyRecipients as RoyaltyRecipientObj[]).filter((r) => {
             const addr = sanitizeText(
                 r.royalty_recipient?.entity_address ??
-                r.royalty_recipient?.entityAddress  ??
-                r.recipient_address                 ??
-                r.recipientAddress                  ??
-                r.recipient_component_address       ?? '',
+                r.royalty_recipient?.entityAddress ??
+                r.recipient_address ??
+                r.recipientAddress ??
+                r.recipient_component_address ?? '',
             );
             return !sourcePackages.includes(addr);
         })
@@ -172,7 +172,7 @@ export function FeesDistributionSection({
                             ? accountPayers.map((fc, i: number) => {
                                 const isRoyalty = fc.type === 'RoyaltyDistributed';
                                 return (
-                                    <div key={'fp' + i} className={`space-y-1.5 p-2 rounded-xl transition-colors ${isRoyalty ? 'bg-purple-500/5 border border-purple-500/20' : ''}`}>
+                                    <div key={'fp' + i} className="space-y-1.5 transition-colors">
                                         <AddressDisplay
                                             label={isRoyalty ? (tt.fees_royalty_package || 'Royalty Recipient') : String(tt.from_address || 'From')}
                                             address={sanitizeText(fc.entity_address || '')}
@@ -184,10 +184,10 @@ export function FeesDistributionSection({
                                         />
                                         <div className="pt-1.5">
                                             <BalanceChangeRow
-                                                change={{ 
-                                                    ...fc, 
+                                                change={{
+                                                    ...fc,
                                                     resource_address: fc.resource_address || getXrdAddress(network),
-                                                    is_fee: true 
+                                                    is_fee: true
                                                 } as FungibleChange}
                                                 tt={tt}
                                                 onCopy={onCopy}
@@ -207,17 +207,17 @@ export function FeesDistributionSection({
                     {feeSummary && (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                             {[
-                                { label: tt.fee_execution    || 'Execution',    value: execCost,          color: 'text-cyan-600',   border: 'border-cyan-500/30',   bg: 'bg-cyan-500/6',   title: tt.fee_execution_title    || 'Computational cost of processing the transaction logic.' },
-                                { label: tt.fee_storage      || 'Storage',      value: storageCost,        color: 'text-amber-600',  border: 'border-amber-500/30',  bg: 'bg-amber-500/6',  title: tt.fee_storage_title      || `Cost of storing data on-ledger.${xrdUsdPrice > 0 ? ` XRD/USD: $${xrdUsdPrice.toFixed(2)}` : ''}` },
-                                { label: tt.fee_finalization || 'Finalization', value: finalizationCost,   color: 'text-indigo-600', border: 'border-indigo-500/30', bg: 'bg-indigo-500/6', title: tt.fee_finalization_title  || 'Cost of signature verification and finalization.' },
-                                ...(royaltyCost  > 0 ? [{ label: tt.fee_royalties || 'Royalties', value: royaltyCost,  color: 'text-purple-600', border: 'border-purple-500/30', bg: 'bg-purple-500/6', title: tt.fee_royalty_cost_title || '100% paid to the Blueprint/Component developer.' }] : []),
-                                ...(tippingAmt   > 0 ? [{ label: tt.fee_tipping  || 'Tips',       value: tippingAmt,   color: 'text-[var(--color-accent)]',   border: 'border-[var(--color-primary)]/30',   bg: 'bg-[var(--color-primary)]/5',  title: tt.fee_tips_cost_title    || '100% goes to the block proposer validator.' }] : []),
+                                { label: tt.fee_execution || 'Execution', value: execCost, color: 'text-cyan-600', border: 'border-cyan-500/30', bg: 'bg-cyan-500/6', title: tt.fee_execution_title || 'Computational cost of processing the transaction logic.' },
+                                { label: tt.fee_storage || 'Storage', value: storageCost, color: 'text-amber-600', border: 'border-amber-500/30', bg: 'bg-amber-500/6', title: tt.fee_storage_title || `Cost of storing data on-ledger.${xrdUsdPrice > 0 ? ` XRD/USD: $${xrdUsdPrice.toFixed(2)}` : ''}` },
+                                { label: tt.fee_finalization || 'Finalization', value: finalizationCost, color: 'text-indigo-600', border: 'border-indigo-500/30', bg: 'bg-indigo-500/6', title: tt.fee_finalization_title || 'Cost of signature verification and finalization.' },
+                                ...(royaltyCost > 0 ? [{ label: tt.fee_royalties || 'Royalties', value: royaltyCost, color: 'text-purple-600', border: 'border-purple-500/30', bg: 'bg-purple-500/6', title: tt.fee_royalty_cost_title || '100% paid to the Blueprint/Component developer.' }] : []),
+                                ...(tippingAmt > 0 ? [{ label: tt.fee_tipping || 'Tips', value: tippingAmt, color: 'text-[var(--color-accent)]', border: 'border-[var(--color-primary)]/30', bg: 'bg-[var(--color-primary)]/5', title: tt.fee_tips_cost_title || '100% goes to the block proposer validator.' }] : []),
                             ].map(item => (
                                 <div key={item.label}
                                     className={`flex flex-col gap-0.5 px-2.5 py-2 rounded-lg border ${item.border} ${item.bg}`}
                                     title={item.title}
                                 >
-                                    <span className={`text-[9px] uppercase font-black tracking-tight ${item.color}`}>{item.label}</span>
+                                    <span className={`text-[10px] uppercase font-black tracking-widest ${item.color}`}>{item.label}</span>
                                     <span className="text-[13px] font-mono font-black text-[var(--color-text-main)]">{fmtAmt(item.value)} XRD</span>
                                 </div>
                             ))}
@@ -293,7 +293,7 @@ export function FeesDistributionSection({
                                         </span>
                                         {fdValShares.slice(0, 5).map((s, si: number) => {
                                             const addr = sanitizeText(String(s.validator_address ?? s.validatorAddress ?? ''));
-                                            const amt  = parseFloatSafe(s.xrd_amount ?? s.xrdAmount);
+                                            const amt = parseFloatSafe(s.xrd_amount ?? s.xrdAmount);
                                             if (!addr || amt <= 0) return null;
                                             return (
                                                 <div key={'vs' + si} className="flex items-center justify-between text-[10px] group/vs gap-2">
@@ -380,11 +380,11 @@ export function FeesDistributionSection({
                         const amt = Math.abs(parseFloatSafe(fc.balance_change));
                         return <span key={'fs' + i} className="flex items-center gap-1.5"><span className="text-red-500 font-black">-{fmtAmt(amt)}</span> {tt.sent_label || 'sent'}</span>;
                     })}
-                    {finalBurn     > 0 && <FooterItem icon={<IconFlame  className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)}     color="text-orange-600" label={tt.fees_burn     || 'Burn'}  />}
-                    {finalProposer > 0 && <FooterItem icon={<IconMedal  className="w-3.5 h-3.5 text-blue-600"   />} value={fmtAmt(finalProposer)} color="text-blue-600"   label={tt.fees_proposer || 'Proposer'} />}
-                    {finalValidator > 0 && <FooterItem icon={<IconBolt  className="w-3.5 h-3.5 text-green-700 dark:text-green-400"  />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400"  label={tt.fees_validator_set || 'Validator'} />}
-                    {tippingAmt    > 0 && <FooterItem icon={<IconTip   className="w-3.5 h-3.5 text-[var(--color-accent)]"   />} value={fmtAmt(tippingAmt)}    color="text-[var(--color-accent)]"   label={tt.fees_tips    || 'Tips'}  />}
-                    {royaltyAmt    > 0 && <FooterItem icon={<IconGem   className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)}    color="text-purple-600" label={tt.fees_royalty || 'Royalties'} />}
+                    {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt.fees_burn || 'Burn'} />}
+                    {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt.fees_proposer || 'Proposer'} />}
+                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt.fees_validator_set || 'Validator'} />}
+                    {tippingAmt > 0 && <FooterItem icon={<IconTip className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt.fees_tips || 'Tips'} />}
+                    {royaltyAmt > 0 && <FooterItem icon={<IconGem className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt.fees_royalty || 'Royalties'} />}
                     <div className="h-4 w-px bg-[var(--color-card-border)] mx-1 hidden md:block" />
                     <span className="flex items-center gap-1.5 font-black text-[var(--color-text-main)]">
                         {tt.fees_total || 'Total'}: <span className="text-amber-600 text-xs">{fmtAmt(totalFee)} XRD</span>
@@ -413,10 +413,10 @@ function FeeRow({
 
 const COLOR_CLASSES: Record<string, { text: string; bg: string; border: string }> = {
     orange: { text: 'text-orange-600', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
-    blue:   { text: 'text-blue-600',   bg: 'bg-blue-500/20',   border: 'border-blue-500/30' },
-    green:  { text: 'text-green-700 dark:text-green-400',  bg: 'bg-green-500/20',  border: 'border-green-500/30' },
+    blue: { text: 'text-blue-600', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+    green: { text: 'text-green-700 dark:text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
     purple: { text: 'text-purple-600', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
-    pink:   { text: 'text-[var(--color-accent)]',   bg: 'bg-[var(--color-primary)]/10',   border: 'border-[var(--color-primary)]/30' },
+    pink: { text: 'text-[var(--color-accent)]', bg: 'bg-[var(--color-primary)]/10', border: 'border-[var(--color-primary)]/30' },
 };
 
 function FeeRowHeader({
@@ -446,9 +446,8 @@ function CopyIconBtn({
         <button
             type="button"
             onClick={e => { e.stopPropagation(); onCopy(address); }}
-            className={`p-1 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-colors ${
-                copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-white`
-            }`}
+            className={`p-1 rounded bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-colors ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-white`
+                }`}
         >
             {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
         </button>

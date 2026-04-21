@@ -30,9 +30,11 @@ const RenderSymbol = ({ address, fallback, network }: { address: string; fallbac
     const meta = useEntityData(address, network);
     if (!address) return null;
     if (address === 'XRD') return 'XRD';
+    const rawVal = meta?.symbol || meta?.name || fallback || formatEntity(address);
+    const displayVal = rawVal.length > 10 ? rawVal.slice(0, 7).trim() + '...' : rawVal;
     return (
         <span title={address}>
-            {meta?.symbol || meta?.name || fallback || formatEntity(address)}
+            {displayVal}
         </span>
     );
 };

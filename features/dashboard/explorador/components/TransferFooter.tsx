@@ -40,7 +40,7 @@ export function TransferFooter({
     return (
         <div className="p-4 bg-[var(--color-surface)] border-t border-[var(--color-card-border)] text-xs text-[var(--color-text-muted)] font-mono uppercase tracking-tight">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                
+
                 {/* ── Fungible Senders ── */}
                 {senders.length > 0 && (
                     <span className="flex items-center gap-2">

@@ -204,8 +204,11 @@ const BalanceChangeRow = ({
                     </div>
                 </div>
                 <div className={`font-mono font-bold lg:text-lg ${color} shrink-0 text-right flex flex-col justify-end`}>
-                    <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black mb-0.5 opacity-70">
-                        {isRoyalty ? 'Royalties' : isFee ? (tt?.fee_label || 'Fees') : (tt?.amount_label || 'Amount')}
+                    <div className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-black mb-0.5 opacity-70">
+                        {(() => {
+                            const lbl = isRoyalty ? (tt?.fees_royalty || 'Royalties') : isFee ? (tt?.fee_label || 'Fees') : (tt?.amount_label || 'Amount');
+                            return lbl.length > 10 ? lbl.slice(0, 8).trim() + '...' : lbl;
+                        })()}
                     </div>
                     <div className="flex items-baseline gap-1.5 justify-end">
                         {iconOverride && <span className="shrink-0">{iconOverride}</span>}
@@ -214,7 +217,7 @@ const BalanceChangeRow = ({
                             {(hideSign ? Math.abs(parseFloat(change.balance_change)) : parseFloat(change.balance_change))
                                 .toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 18 })}
                         </span>
-                        {isRoyalty && <span className="text-[10px] text-green-600 font-black ml-1">100%</span>}
+
                         {symbol && <span className="text-xs font-semibold opacity-70">{symbol}</span>}
                     </div>
                 </div>

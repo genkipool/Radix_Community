@@ -2259,7 +2259,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       fees_proposer_validator: 'Validador Proponente',
       fees_top_recipients: 'Principales Receptores',
       fees_validator_set_desc: 'XRD distribuido entre el conjunto de nodos',
-      fees_royalty: 'Royalties',
+      fees_royalty: 'Regalías',
       fees_royalty_desc: 'XRD distribuidos a los receptores de regalías',
       fees_royalty_package: 'Paquete de origen',
       fees_recipients: 'Destinatarios',
@@ -3628,7 +3628,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
   },
   under_construction: {
     title: 'Próximamente',
-    body: 'Esta funcionalidad de conexión de billetera está actualmente bajo desarrollo intensivo. Estará disponible en una futura actualización.',
+    body: 'Esta funcionalidad está actualmente bajo desarrollo intensivo. Estará disponible en una futura actualización.',
     close: 'Entendido',
   },
 };

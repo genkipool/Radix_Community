@@ -79,7 +79,7 @@ const NftTransferCard = ({
                         : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0"><Box className="w-5 h-5" /></div>}
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 flex-nowrap">
-                            <div className="font-bold text-sm sm:text-base text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0">{name}</div>
+                            <div className="font-bold text-sm sm:text-base text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0" title={name}>{name.length > 10 ? name.slice(0, 7).trim() + '...' : name}</div>
                             {symbol && <TokenBadge className="shrink-0">{symbol}</TokenBadge>}
                             <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                         </div>
