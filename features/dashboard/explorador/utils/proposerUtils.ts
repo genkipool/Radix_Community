@@ -60,9 +60,9 @@ export interface ProposerInfo {
  * Extracts the `proposer_rewards` arrays (new and previous) from the
  * consensus manager state update inside the transaction receipt.
  */
-function extractProposerRewardsData(details: TransactionDetails): { 
-    newRewards: ProposerRewardEntry[], 
-    previousRewards: ProposerRewardEntry[] 
+function extractProposerRewardsData(details: TransactionDetails): {
+    newRewards: ProposerRewardEntry[],
+    previousRewards: ProposerRewardEntry[]
 } {
     const substates = (details.receipt as Record<string, unknown>)
         ?.state_updates as Record<string, unknown> | undefined;

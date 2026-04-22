@@ -831,6 +831,12 @@ export async function fetchFilteredTransactions(options: {
     const opParams = { tag, start, end, cursor, limit, address, network, timezone };
 
     const isGlobalTip = !start && !end && !cursor && !address;
+    
+    // Fix: Unify tip limit to 100 to prevent smaller queries from shrinking the cache
+    if (isGlobalTip) {
+        opParams.limit = 100;
+    }
+    
     const hasDateFilter = !!(start || end);
 
     if (hasDateFilter) {
@@ -1109,8 +1115,10 @@ export async function getRecentTransactionsCached(
     network: Network = 'mainnet'
 ) {
     const isTip = !cursor;
+    // Fix: Unify tip limit to 100 to prevent smaller queries from shrinking the cache
+    const actualLimit = isTip ? 100 : limit;
     const redis = isTip ? getRedisClient() : null;
-    const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+    const backupKey = `radix_txs_${network}_tip_${actualLimit}_backup`;
 
     // ── Step 1: Try Storage for instant SWR return (tip only) ──────────────
     if (redis && isTip) {
@@ -1131,7 +1139,7 @@ export async function getRecentTransactionsCached(
                 after(async () => {
                     try {
                         logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
-                        const freshResult = await fetchRecentTransactions(cursor, limit, network);
+                        const freshResult = await fetchRecentTransactions(cursor, actualLimit, network);
 
                         if (freshResult.transactions && freshResult.transactions.length > 0) {
                             // Update Redis + Invalidate Data Cache
@@ -1141,11 +1149,11 @@ export async function getRecentTransactionsCached(
                             const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
                             await Promise.allSettled(
                                 prefetchTags.map(async (t) => {
-                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
+                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit: actualLimit, address: undefined, network, timezone: 'UTC' };
                                     const tagRes = await fetchFilteredTransactionsRaw(opParams);
                                     if (tagRes.transactions && tagRes.transactions.length > 0) {
                                         const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                                        await redis.set(`radix_txs_v2_filtered_${network}_${tagSlug}`, tagRes);
+                                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
                                     }
                                 })
                             );
@@ -1169,7 +1177,7 @@ export async function getRecentTransactionsCached(
 
     // ── Step 3: Use Next.js Data Cache (with blocking fetch on miss) ───────
     try {
-        return await getRecentTransactionsFromDataCache(cursor, limit, network);
+        return await getRecentTransactionsFromDataCache(cursor, actualLimit, network);
     } catch (error) {
         if (isTip) {
             logger.error(

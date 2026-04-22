@@ -208,10 +208,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     // so TransactionCard renders proposer info without a separate query.
     // Source: validators already fetched into the query cache above.
     const validatorsData = serverQueryClient.getQueryData<{ validators: Validator[] }>(['validators', network]);
-    
+
     if (validatorsData?.validators?.length) {
       let enrichedCount = 0;
-      
+
       // Build a fast lookup map in memory
       const proposerMap: Record<string, { name: string; iconUrl: string; address: string }> = {};
       for (const v of validatorsData.validators) {
@@ -231,7 +231,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           }
         }
       });
-      
+
       if (enrichedCount > 0) {
         // Re-set the enriched data in the query cache
         serverQueryClient.setQueryData(txQueryKey, {
