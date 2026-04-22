@@ -50,9 +50,9 @@ type GatewayEvent = {
 type GatewayItem = {
     fee_paid?: string;
     affected_global_entities?: string[];
-    receipt?: { 
-        status?: string; 
-        events?: GatewayEvent[]; 
+    receipt?: {
+        status?: string;
+        events?: GatewayEvent[];
         state_updates?: { updated_substates?: unknown[] };
         fee_destination?: { to_proposer?: string | { xrd_amount?: string } };
     };
@@ -267,7 +267,7 @@ function parseValidatorOpsFromEvents(events: GatewayEvent[]): ValidatorOp[] | un
 // ─────────────────────────────────────────────────────────────────────────────
 function resolveProposerInfoFromGatewayItem(item: GatewayItem): { validatorIndex: number; rank: number; rewardAmount: string } | undefined {
     if (!item.receipt?.fee_destination) return undefined;
-    
+
     const fd = item.receipt.fee_destination;
     const toProposerRaw = fd.to_proposer;
     // to_proposer can be a simple string depending on Gateway version
