@@ -380,6 +380,14 @@ export default function DashboardClient({
           onTransactionTagChange={(tag) => {
             setSearchQuery('');
             prefs.setTransactionActiveTag(tag);
+            // Sync tag to URL so server prefetches correct filtered data
+            const url = new URL(window.location.href);
+            if (tag && tag !== 'All') {
+              url.searchParams.set('tag', tag);
+            } else {
+              url.searchParams.delete('tag');
+            }
+            window.history.replaceState({}, '', url.toString());
           }}
           sortMode={sortMode}
           onSortModeChange={setSortMode}

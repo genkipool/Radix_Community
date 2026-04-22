@@ -76,6 +76,7 @@ interface DashboardPageProps {
     tx?: string;
     start?: string;
     end?: string;
+    tag?: string;
   }>;
 }
 
@@ -123,8 +124,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Pre-populate React Query cache server-side
   const serverQueryClient = makeQueryClient();
 
-  // Read transaction tag from cookies (sync server prefetch with client state)
-  const activeTxTag = c.decoded(COOKIE_KEYS.txTag) ?? 'All';
+  // Read transaction tag: URL param takes priority, then cookie, then default
+  const VALID_TX_TAGS = ['All', 'Success', 'Failed', 'With Message', 'With NFTs'];
+  const urlTag = params.tag ? decodeURIComponent(params.tag) : null;
+  const cookieTag = c.decoded(COOKIE_KEYS.txTag) ?? 'All';
+  const activeTxTag = urlTag && VALID_TX_TAGS.includes(urlTag) ? urlTag : cookieTag;
 
   // If a validator modal is open (restored from cookie), prefetch its stake
   // history so SSR and first client render have identical data — no hydration
@@ -155,7 +159,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         return { transactions: data.transactions, nextCursor: data.nextCursor };
       }
 
-      // Priority 3: Default "All" view (Redis cached tip)
+      // Priority 3: Tag filter OR default "All" view
+      if (activeTxTag !== 'All') {
+        // Server fetches filtered data so client renders immediately with correct filter
+        const data = await fetchFilteredTransactions({
+          tag: activeTxTag,
+          limit: 15,
+          network,
+          timezone,
+        });
+        return { transactions: data.transactions, nextCursor: data.nextCursor };
+      }
+
+      // Default: Redis cached tip (all transactions)
       const data = await getRecentTransactionsCached(undefined, 100, network);
       return {
         transactions: (data?.transactions ?? []) as TransactionInfo[],
@@ -163,42 +179,81 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       };
     })();
 
-    await Promise.all([
-      serverQueryClient.prefetchQuery({
-        queryKey: ['validators', network],
-        queryFn: async () => {
-          const data = await getValidatorsCached(network);
-          return {
-            validators: data?.validators ?? [] as Validator[],
-            networkStats: data?.networkStats ?? emptyNetworkStats,
-          };
-        },
-        staleTime: 300_000,
-      }),
+    // ── PHASE 1: Critical data (must complete before render) ──────────────
+    // Validators prefetch is async; transactions are set synchronously.
+    // Using a dedicated await ensures validators are in the cache before
+    // we enrich proposer info and dehydrate.
+    const txQueryKey = ['transactions', network, txid ?? undefined, activeTxTag, initialDateRange];
 
-      // Seed the infinite query cache with the transaction data we just fetched
-      serverQueryClient.setQueryData(
-        ['transactions', network, txid ?? undefined, activeTxTag, initialDateRange],
-        {
+    await serverQueryClient.prefetchQuery({
+      queryKey: ['validators', network],
+      queryFn: async () => {
+        const data = await getValidatorsCached(network);
+        return {
+          validators: data?.validators ?? [] as Validator[],
+          networkStats: data?.networkStats ?? emptyNetworkStats,
+        };
+      },
+      staleTime: 300_000,
+    });
+
+    // Seed the infinite query cache with the transaction data we just fetched
+    serverQueryClient.setQueryData(txQueryKey, {
+      pages: [txData],
+      pageParams: [undefined],
+    });
+
+    // ── PROPOSER ENRICHMENT ─────────────────────────────────────────────
+    // Embed validator name/iconUrl/address directly into tx.proposerInfo
+    // so TransactionCard renders proposer info without a separate query.
+    // Source: validators already fetched into the query cache above.
+    const validatorsData = serverQueryClient.getQueryData<{ validators: Validator[] }>(['validators', network]);
+    
+    if (validatorsData?.validators?.length) {
+      let enrichedCount = 0;
+      
+      // Build a fast lookup map in memory
+      const proposerMap: Record<string, { name: string; iconUrl: string; address: string }> = {};
+      for (const v of validatorsData.validators) {
+        if (v.rank > 0) {
+          proposerMap[String(v.rank)] = { name: v.name, iconUrl: v.iconUrl || '', address: v.address };
+        }
+      }
+
+      txData.transactions.forEach((tx: TransactionInfo) => {
+        if (tx.proposerInfo && !tx.proposerInfo.name) {
+          const entry = proposerMap[String(tx.proposerInfo.rank)];
+          if (entry) {
+            tx.proposerInfo.name = entry.name;
+            tx.proposerInfo.iconUrl = entry.iconUrl;
+            tx.proposerInfo.address = entry.address;
+            enrichedCount++;
+          }
+        }
+      });
+      
+      if (enrichedCount > 0) {
+        // Re-set the enriched data in the query cache
+        serverQueryClient.setQueryData(txQueryKey, {
           pages: [txData],
           pageParams: [undefined],
-        }
-      ),
+        });
+        logger.info({ network, enrichedCount }, '[DashboardPage] Proposer info enriched in transaction data');
+      }
+    }
 
-      // 2. DEEP HYDRATION: Scan the list for resources displayed in collapsed cards
-      // and pre-resolve their metadata so symbols show up instantly.
+    // ── PHASE 2: Best-effort hydration (failures don't affect critical data) ──
+    await Promise.allSettled([
+      // Deep entity metadata hydration for collapsed card symbols
       (async () => {
         const discoveredAddresses = new Set<string>();
         txData.transactions.forEach((tx: TransactionInfo) => {
-          // Main displayed resource (token symbol)
           if (tx.displayResource && tx.displayResource !== 'XRD') {
             discoveredAddresses.add(tx.displayResource);
           }
-          // Scan for any other entities that might need a symbol/name in the UI
           if (tx.validatorAddress) discoveredAddresses.add(tx.validatorAddress);
         });
 
-        // Filter out obviously non-fetchable or system internal addresses
         const toFetch = Array.from(discoveredAddresses).filter(addr => {
           const clean = normalizeAddress(addr);
           return needsFetch(clean);
@@ -214,7 +269,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   serverQueryClient.setQueryData(entityKeys.detail(normalized, network), extractEntityMeta(entDetails));
                 }
               } catch (e) {
-                // Ignore individual fetch failures during background hydration
                 logger.debug({ addr, err: e }, '[DashboardPage] Background hydration fetch failed');
               }
             })
@@ -222,7 +276,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         }
       })(),
 
-      // 3. Prefetch stake history for ALL expanded validators
+      // Prefetch stake history for ALL expanded validators
       ...expandedValidatorIds.map((vid) =>
         serverQueryClient.prefetchQuery({
           queryKey: ['stake-history', network, vid],
@@ -231,51 +285,54 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         })
       ),
 
-      // 4. DEEP PREFETCHING for expanded transactions (restored from cookies)
+      // Deep prefetching for expanded transactions (restored from cookies)
       ...initialExpandedTxs.map(async (txHash: string) => {
-        const rawDetails = await fetchTransactionDetails(txHash, network);
-        if (!rawDetails) return;
+        try {
+          const rawDetails = await fetchTransactionDetails(txHash, network);
+          if (!rawDetails) return;
 
-        // 1. Inject transaction details into cache
-        serverQueryClient.setQueryData(['tx-details', txHash, network], rawDetails);
+          serverQueryClient.setQueryData(['tx-details', txHash, network], rawDetails);
 
-        // 2. Extract unique resource/entity addresses from the transaction
-        const addressesToFetch = new Set<string>();
-        const item = rawDetails as TransactionDetails;
+          const addressesToFetch = new Set<string>();
+          const item = rawDetails as TransactionDetails;
 
-        // Add globally affected entities (usually components, accounts, and validators)
-        const entities = item.affected_global_entities || [];
-        (entities as Array<string | { address: string }>).forEach((e) => {
-          const addr = typeof e === 'string' ? e : e?.address;
-          if (addr && (addr.startsWith('resource_') || addr.startsWith('component_') || addr.startsWith('validator_'))) {
-            addressesToFetch.add(addr);
-          }
-        });
-
-        // Add resource addresses strictly from balance changes (simple transfers don't appear in affected_global_entities)
-        const bc = item.balance_changes || {};
-        (bc.fungible_fee_balance_changes || []).forEach((fc) => {
-          const addr = fc.resource_address || (network === 'stokenet' ? 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc' : 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd');
-          addressesToFetch.add(addr);
-        });
-        (bc.fungible_balance_changes || []).forEach((fc: FungibleChange) => {
-          if (fc.resource_address) addressesToFetch.add(fc.resource_address);
-        });
-        (bc.non_fungible_balance_changes || []).forEach((nfc: NonFungibleChange) => {
-          if (nfc.resource_address) addressesToFetch.add(nfc.resource_address);
-        });
-
-        // 3. Fetch all entity metadata in parallel and inject to cache
-        await Promise.all(
-          Array.from(addressesToFetch).map(async (addr) => {
-            const entDetails = await fetchEntityDetails(addr, network);
-            if (entDetails) {
-              const clean = normalizeAddress(addr);
-              serverQueryClient.setQueryData(entityKeys.full(clean, network), entDetails);
-              serverQueryClient.setQueryData(entityKeys.detail(clean, network), extractEntityMeta(entDetails));
+          const entities = item.affected_global_entities || [];
+          (entities as Array<string | { address: string }>).forEach((e) => {
+            const addr = typeof e === 'string' ? e : e?.address;
+            if (addr && (addr.startsWith('resource_') || addr.startsWith('component_') || addr.startsWith('validator_'))) {
+              addressesToFetch.add(addr);
             }
-          })
-        );
+          });
+
+          const bc = item.balance_changes || {};
+          (bc.fungible_fee_balance_changes || []).forEach((fc) => {
+            const addr = fc.resource_address || (network === 'stokenet' ? 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc' : 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd');
+            addressesToFetch.add(addr);
+          });
+          (bc.fungible_balance_changes || []).forEach((fc: FungibleChange) => {
+            if (fc.resource_address) addressesToFetch.add(fc.resource_address);
+          });
+          (bc.non_fungible_balance_changes || []).forEach((nfc: NonFungibleChange) => {
+            if (nfc.resource_address) addressesToFetch.add(nfc.resource_address);
+          });
+
+          await Promise.all(
+            Array.from(addressesToFetch).map(async (addr) => {
+              try {
+                const entDetails = await fetchEntityDetails(addr, network);
+                if (entDetails) {
+                  const clean = normalizeAddress(addr);
+                  serverQueryClient.setQueryData(entityKeys.full(clean, network), entDetails);
+                  serverQueryClient.setQueryData(entityKeys.detail(clean, network), extractEntityMeta(entDetails));
+                }
+              } catch (e) {
+                logger.debug({ addr, err: e }, '[DashboardPage] Expanded tx entity fetch failed');
+              }
+            })
+          );
+        } catch (e) {
+          logger.debug({ txHash, err: e }, '[DashboardPage] Expanded tx prefetch failed');
+        }
       }),
     ]);
   } catch (error) {
@@ -291,7 +348,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialView={initialView as DashboardView}
         initialNetwork={network}
         initialActiveTag={c.ids(COOKIE_KEYS.activeTag).length > 0 ? c.ids(COOKIE_KEYS.activeTag) : ['All']}
-        initialTransactionActiveTag={c.decoded(COOKIE_KEYS.txTag) ?? 'All'}
+        initialTransactionActiveTag={activeTxTag}
         initialValSortMode={c.sort(COOKIE_KEYS.valSortMode)}
         initialTxSortMode={c.sort(COOKIE_KEYS.txSortMode)}
         initialValColumns={c.int(COOKIE_KEYS.valColumns, 2)}

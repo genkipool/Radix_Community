@@ -31,7 +31,7 @@ export const SidebarGraphic = ({
 
     const [safeTheme, setSafeTheme] = useState<Theme>(() => {
         if (typeof window !== 'undefined') return getHtmlTheme();
-        return ctxTheme ?? 'radix-oscuro';
+        return ctxTheme ?? 'radix-dark';
     });
 
     useEffect(() => {

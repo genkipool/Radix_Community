@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Clock, Copy, Coins, Landmark, Users, Mail, Check
@@ -67,26 +67,38 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
         staleTime: 30_000,
     });
 
-    // Fetch validators to map proposer index to name/icon
+    // Fetch validators to map proposer index to name/icon (fallback only)
     const { data: validatorsData } = useValidatorsQuery(network);
 
     // Perfect Hydration: proposerInfo comes fully populated from the backend.
     // Fall back to client calculation only if not hydrated (e.g. older caches).
     const proposerInfo = tx.proposerInfo || resolveProposerInfo(details as TransactionDetails);
-    const proposerValidator = proposerInfo && validatorsData?.validators
-        ? validatorsData.validators.find(v => v.rank === proposerInfo.rank)
-        : null;
 
-    const proposerDisplay = proposerValidator ? (
+    // Primary path: use pre-enriched display data embedded by page.tsx
+    // This data is part of the dehydrated tx cache, so it's available on the
+    // very first render — no separate query needed, no hydration flash.
+    // Fallback: resolve from validators query (for older cache entries or edge cases)
+    const proposerSource = (() => {
+        if (proposerInfo?.name) {
+            return { name: proposerInfo.name, iconUrl: proposerInfo.iconUrl || '', address: proposerInfo.address || '' };
+        }
+        if (proposerInfo && validatorsData?.validators) {
+            const v = validatorsData.validators.find(val => val.rank === proposerInfo.rank);
+            if (v) return { name: v.name, iconUrl: v.iconUrl || '', address: v.address };
+        }
+        return null;
+    })();
+
+    const proposerDisplay = proposerSource ? (
         <div className="flex items-center gap-2 min-w-0">
             <SafeImage
-                src={proposerValidator.iconUrl || ''}
-                alt={proposerValidator.name}
-                fallbackName={proposerValidator.name}
+                src={proposerSource.iconUrl}
+                alt={proposerSource.name}
+                fallbackName={proposerSource.name}
                 className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] object-cover shrink-0"
             />
-            <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-main)] truncate" title={proposerValidator.address}>
-                {proposerValidator.name}
+            <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-main)] truncate" title={proposerSource.address}>
+                {proposerSource.name}
             </span>
         </div>
     ) : null;
@@ -120,6 +132,8 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     const immediateTypeFallback = resolveTransactionType(immediateClasses, [], tt);
     const immediateType = (isExpanded ? transactionType : immediateTypeFallback) || resolveTransactionType(immediateClasses, [], tt);
     const [downTime, setDownTime] = useState(0);
+    const [downPos, setDownPos] = useState({ x: 0, y: 0 });
+    const selectionRef = useRef<string | null>(null);
 
     // Common Label Styles to ensure Status & Type match
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
@@ -139,10 +153,56 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     return (
         <Card
             onPointerEnter={() => prefetchTx(tx.intentHash, network)}
-            onPointerDown={() => setDownTime(Date.now())}
-            onClick={() => {
-                if (Date.now() - downTime > 500) return; // Prevent long-press expansion
-                if (window.getSelection()?.toString()) return; // Don't toggle when text is selected
+            onPointerDown={(e) => {
+                setDownTime(Date.now());
+                setDownPos({ x: e.clientX, y: e.clientY });
+                
+                // Capture current selection state to differentiate between starting a selection
+                // and clicking after a selection already existed.
+                const selection = window.getSelection();
+                if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    // Check if the selection is inside this card's DOM
+                    if (e.currentTarget.contains(range.commonAncestorContainer)) {
+                        selectionRef.current = selection.toString();
+                    } else {
+                        selectionRef.current = null;
+                    }
+                } else {
+                    selectionRef.current = null;
+                }
+            }}
+            onClick={(e) => {
+                const target = e.target as HTMLElement;
+                
+                // 1. Interactive check: If we click on a button, link, or any identified interactive role, don't toggle expansion.
+                if (target.closest('button, a, [role="button"], input, textarea')) return;
+
+                // 2. Deselection check: 
+                // If a selection EXISTED when we pressed down, it means we are now
+                // either interacting with it or clearing it. We MUST NOT toggle in this case.
+                if (selectionRef.current && selectionRef.current.trim().length > 0) {
+                    // We clear it so that the NEXT click (after selection is gone) will work.
+                    selectionRef.current = null;
+                    return;
+                }
+
+                // 3. New selection check: If text was selected during this specific click, don't toggle.
+                const currentSelection = window.getSelection();
+                if (currentSelection && !currentSelection.isCollapsed) {
+                    return;
+                }
+
+                // 4. Distance check: If the mouse moved significantly (drag/selection), don't toggle.
+
+                const distance = Math.sqrt(
+                    Math.pow(e.clientX - downPos.x, 2) + Math.pow(e.clientY - downPos.y, 2)
+                );
+                if (distance > 10) return;
+
+                // 5. Time check: Prevent long-press triggers.
+                if (Date.now() - downTime > 500) return;
+
                 onExpand(tx.intentHash);
             }}
             className={`p-0 shadow-md transition-all duration-300 group cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg hover:border-[var(--color-secondary)]/30'}`}
@@ -150,7 +210,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
                 {/* AVATAR / ICON */}
                 <div onClick={() => undefined}
-                    className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-default self-stretch justify-center`}>
+                    className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, ${color}, transparent)` }} />
                     <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center" style={{ borderColor: color, boxShadow: `0 0 15px ${color}30` }}>
                         {isSuccess ? (

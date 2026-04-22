@@ -56,6 +56,7 @@ export function useDashboardUrlSync({
       url.searchParams.set('view', 'transactions');
     } else {
       url.searchParams.delete('view');
+      url.searchParams.delete('tag'); // Transaction tags are not relevant for staking view
     }
     url.searchParams.set('network', network);
     url.searchParams.delete('tx'); // Clear tx parameter when changing views

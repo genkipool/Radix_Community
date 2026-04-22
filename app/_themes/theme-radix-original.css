@@ -17,7 +17,8 @@
   --color-secondary: #d829aa;
   --color-accent: #00C389;
   --color-surface: #f4f7fc;
-  --color-close-hover: #dc2626; /* Semantic Red 600 */
+  --color-close-hover: #dc2626;
+  /* Semantic Red 600 */
 
   --color-card-bg: #ffffff;
   --color-card-border: #dde4f0;
@@ -90,7 +91,8 @@
   --color-secondary: #d829aa;
   --color-accent: #2BDFAA;
   --color-surface: #0d1538;
-  --color-close-hover: #f87171; /* Semantic Red 400 */
+  --color-close-hover: #f87171;
+  /* Semantic Red 400 */
 
   --color-card-bg: #0d1538;
   --color-card-border: #1a2550;

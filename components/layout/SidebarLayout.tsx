@@ -70,12 +70,13 @@ export default function SidebarLayout({
 
     return (
         <aside
-            className={`w-full md:w-96 flex flex-col border-r shrink-0 ${className}`}
+            className={`w-full md:w-96 flex flex-col border-r shrink-0 cursor-pointer ${className}`}
             style={{
                 background: 'var(--color-bg)',
                 borderColor: 'var(--color-card-border)',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
+                cursor: 'pointer',
             }}
             onDragStart={e => e.preventDefault()}
         >

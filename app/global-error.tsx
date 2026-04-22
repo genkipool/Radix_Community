@@ -7,7 +7,6 @@ import { es } from '@/i18n/locales/es';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { NotFoundContent } from '@/components/error/NotFoundContent';
-import { getCookie } from '@/utils/cookies';
 import { Theme } from '@/context/ThemeContext';
 
 /**
@@ -27,17 +26,13 @@ export default function GlobalError({
 }) {
   // Client-side detection for global-error outside the [locale] param
   const [locale, setLocale] = useState<'en' | 'es'>('en');
-  const [theme, setTheme] = useState<Theme>('radix-dark');
+  const [theme] = useState<Theme>('radix-dark');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // Detect Locale from URL
       const isEsPath = window.location.pathname.startsWith('/es');
       setLocale(isEsPath ? 'es' : 'en');
-
-      // Detect Theme from Cookies
-      const savedTheme = getCookie('theme') as Theme;
-      if (savedTheme) setTheme(savedTheme);
     }
   }, []);
 
@@ -45,7 +40,21 @@ export default function GlobalError({
   const t = dictionary.errors.error_500;
 
   return (
-    <html lang={locale} className={theme} style={{ colorScheme: theme.includes('dark') ? 'dark' : 'light' }}>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var match = document.cookie.match(new RegExp('(^| )theme=([^;]+)'));
+                var t = match ? match[2] : 'radix-dark';
+                document.documentElement.className = t;
+                document.documentElement.style.colorScheme = t.includes('dark') ? 'dark' : 'light';
+              } catch (e) {}
+            `
+          }}
+        />
+      </head>
       <body className="bg-[var(--color-bg)] font-sans text-[var(--color-text-main)] antialiased">
         <Providers locale={locale} dictionary={dictionary} theme={theme}>
           <AppShell>

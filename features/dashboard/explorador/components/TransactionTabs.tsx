@@ -82,7 +82,6 @@ const TransactionTabs = ({
     return (
         <div
             className="flex flex-col mt-4 pt-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50 rounded-xl overflow-hidden"
-            onClick={e => e.stopPropagation()}
         >
             {/* ── Tab bar ── */}
             <div className="flex items-center gap-1 border-b border-[var(--color-card-border)] p-2 overflow-x-auto hide-scrollbar">

@@ -124,6 +124,10 @@ export interface TransactionInfo {
         validatorIndex: number;
         rank: number;
         rewardAmount: string;
+        /** Pre-enriched display fields (resolved server-side from validators cache or Redis) */
+        name?: string;
+        iconUrl?: string;
+        address?: string;
     };
 }
 

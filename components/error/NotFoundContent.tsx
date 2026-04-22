@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { RadixIcon } from '@/components/shared/RadixIcon';
+
 
 interface NotFoundContentProps {
   title: string;
@@ -38,23 +40,12 @@ export function NotFoundContent({
       <div className="absolute left-1/2 top-1/2 -z-20 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-primary)]/10 blur-[120px]" />
 
       {/* Large Inverted "Failed" Radix Icon (No animation as requested) */}
-      <div className="mb-12 transform hover:scale-110 transition-transform duration-500">
-        <svg
-          width="140"
-          height="140"
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="drop-shadow-[0_0_30px_rgba(239,68,68,0.4)]"
-        >
-          <path
-            d="M14,47 L25,47 L42,22 L66,80 L88,80"
-            stroke="#ef4444"
-            strokeWidth="10"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      <div className="mb-12">
+        <RadixIcon
+          className="w-[140px] h-[140px] drop-shadow-[0_0_30px_rgba(239,68,68,0.4)] -scale-y-100"
+          strokeColor="#ef4444"
+          animate={false}
+        />
       </div>
 
       {/* Status Badge */}

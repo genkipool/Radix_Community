@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function RadixIcon({ className = "w-4 h-4", strokeColor = "#00C389" }: { className?: string, strokeColor?: string }) {
+export function RadixIcon({ className = "w-4 h-4", strokeColor = "#00C389", animate = true }: { className?: string, strokeColor?: string, animate?: boolean }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 194.2" fill="none" className={className}>
       {/* Translate protege el grosor del trazo (13.05 es la mitad de 26.1) */}
@@ -12,7 +12,7 @@ export function RadixIcon({ className = "w-4 h-4", strokeColor = "#00C389" }: { 
           strokeWidth="26.1" 
           strokeLinecap="round" 
           strokeLinejoin="round" 
-          className="logo-dash-animate"
+          className={animate ? "logo-dash-animate" : ""}
         />
       </g>
     </svg>

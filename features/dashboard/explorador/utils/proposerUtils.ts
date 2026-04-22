@@ -50,6 +50,10 @@ export interface ProposerInfo {
     rank: number;
     /** Amount of XRD rewarded to the proposer */
     rewardAmount: string;
+    /** Pre-enriched display fields (resolved server-side from validators cache or Redis) */
+    name?: string;
+    iconUrl?: string;
+    address?: string;
 }
 
 /**
