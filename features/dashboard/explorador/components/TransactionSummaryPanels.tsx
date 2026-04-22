@@ -948,7 +948,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 cursor-help" title={tt.proposer_tooltip}>
                     <User className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     {tt.proposer_box_title || 'Proposer'}
                 </span>

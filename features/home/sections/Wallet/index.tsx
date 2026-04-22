@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Smartphone, Ban, Monitor, Shield, BadgeCheck, KeyRound } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { IconFeatureItem } from '@/components/ui/IconFeatureItem';
@@ -44,12 +45,43 @@ export default function Wallet({ t }: BaseSectionProps) {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Link href={t.wallet.urlIOS} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] text-[var(--color-text-main)] font-bold hover:opacity-90 transition-opacity">
-                {t.wallet.btnIOS}
-              </Link>
-              <Link href={t.wallet.urlAndroid} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)]">
-                {t.wallet.btnAndroid}
-              </Link>
+              {/* iOS Button with QR Hover */}
+              <div className="relative group">
+                <Link href={t.wallet.urlIOS} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] text-[var(--color-text-main)] font-bold hover:opacity-90 transition-opacity">
+                  {t.wallet.btnIOS}
+                </Link>
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out z-50 origin-bottom">
+                  {/* CAMBIO AQUÍ: Añadido w-[300px] para fijar el mismo ancho en ambos */}
+                  <div className="bg-white p-4 rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center gap-3 w-[180px]">
+                    <Image src="/SVGs/DescargaIOSQRCode.svg" alt="Descarga iOS QR" width={240} height={240} className="w-[240px] h-auto object-contain" />
+                    {/* CAMBIO AQUÍ: Añadido w-full y text-center para que el texto se centre en el nuevo ancho */}
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-full text-center">
+                      {t.wallet.btnIOS}
+                    </span>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Android Button with QR Hover */}
+              <div className="relative group">
+                <Link href={t.wallet.urlAndroid} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)]">
+                  {t.wallet.btnAndroid}
+                </Link>
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out z-50 origin-bottom">
+                  {/* CAMBIO AQUÍ: Añadido w-[300px] para fijar el mismo ancho en ambos */}
+                  <div className="bg-white p-4 rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center gap-3 w-[180px]">
+                    <Image src="/SVGs/DescargaAndroidQRCode.svg" alt="Descarga Android QR" width={240} height={240} className="w-[240px] h-auto object-contain" />
+                    {/* CAMBIO AQUÍ: Añadido w-full y text-center para que el texto se centre en el nuevo ancho */}
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-full text-center">
+                      {t.wallet.btnAndroid}
+                    </span>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chrome Extension Button */}
               <Link href={t.wallet.urlChrome} target="_blank" rel="noopener noreferrer" className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold hover:text-[var(--color-primary)] transition-colors border border-[var(--color-card-border)]">
                 {t.wallet.btnChrome}
               </Link>

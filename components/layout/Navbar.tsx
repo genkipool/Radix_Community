@@ -592,8 +592,9 @@ export default function Navbar() {
                     viewBox="0 0 210 40"
                     fontSize={18}
                     textX={32}
-                    logoScale={0.38}
-                    logoTranslateY={0}
+                    logoScale={0.12}
+                    logoTranslateY={8}
+                    logoTranslateX={5}
                     strokeColor="white"
                     textColor="white"
                   />
@@ -719,8 +720,9 @@ export default function Navbar() {
                     viewBox="0 0 210 40"
                     fontSize={18}
                     textX={36}
-                    logoScale={0.36}
-                    logoTranslateY={0}
+                    logoScale={0.12}
+                    logoTranslateY={8}
+                    logoTranslateX={10}
                     strokeColor="white"
                     textColor="white"
                   />

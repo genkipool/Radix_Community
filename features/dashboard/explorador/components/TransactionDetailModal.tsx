@@ -12,6 +12,7 @@ import { Pill } from '@/components/ui/Pill';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 
 import { TransactionDetailModalProps } from '../types';
 
@@ -81,13 +82,9 @@ export function TransactionDetailModal({
                                     <div className="relative z-10 w-16 h-16 rounded-2xl border-2 flex items-center justify-center bg-[var(--color-surface)] shadow-lg"
                                         style={{ borderColor: statusColor, boxShadow: `0 0 20px ${statusColor}30` }}>
                                         {isSuccess ? (
-                                            <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M14,53 L25,53 L42,78 L66,20 L88,20" fill="none" stroke={statusColor} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
+                                            <RadixIcon className="w-8 h-8" strokeColor={statusColor} />
                                         ) : (
-                                            <svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M14,47 L25,47 L42,22 L66,80 L88,80" fill="none" stroke={statusColor} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" />
-                                            </svg>
+                                            <RadixIcon className="w-8 h-8" strokeColor={statusColor} />
                                         )}
                                     </div>
                                 </div>

@@ -15,6 +15,7 @@ import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { resolveProposerInfo } from '../utils/proposerUtils';
 import { useValidatorsQuery } from '@/features/dashboard/staking';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 
 /* ─────────────────────────────────────────
    formatAmount
@@ -68,7 +69,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
     // Fetch validators to map proposer index to name/icon
     const { data: validatorsData } = useValidatorsQuery(network);
-    
+
     // Perfect Hydration: proposerInfo comes fully populated from the backend.
     // Fall back to client calculation only if not hydrated (e.g. older caches).
     const proposerInfo = tx.proposerInfo || resolveProposerInfo(details as TransactionDetails);
@@ -153,13 +154,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, ${color}, transparent)` }} />
                     <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center" style={{ borderColor: color, boxShadow: `0 0 15px ${color}30` }}>
                         {isSuccess ? (
-                            <svg width={isVertical ? (isCompact ? "20" : "24") : "32"} height={isVertical ? (isCompact ? "20" : "24") : "32"} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M14,53 L25,53 L42,78 L66,20 L88,20" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                            <RadixIcon className={isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} strokeColor={color} />
                         ) : (
-                            <svg width={isVertical ? (isCompact ? "20" : "24") : "32"} height={isVertical ? (isCompact ? "20" : "24") : "32"} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M14,47 L25,47 L42,22 L66,80 L88,80" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" />
-                            </svg>
+                            <RadixIcon className={`${isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} scale-y-[-1] [stroke-dasharray:4_4]`} strokeColor={color} />
                         )}
                     </div>
                 </div>
@@ -280,7 +277,12 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 {/* Proposer for Grid 1 (Collapsed context) */}
                                 {columns === 1 && proposerDisplay && (
                                     <div className="flex flex-col gap-0.5 border-s border-[var(--color-card-border)] ps-6 min-w-0 flex-1">
-                                        <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">{tt.proposer || 'Proposer'}</div>
+                                        <div
+                                            className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold cursor-help w-fit"
+                                            title={tt.proposer_tooltip}
+                                        >
+                                            {tt.proposer || 'Proposer'}
+                                        </div>
                                         {proposerDisplay}
                                     </div>
                                 )}
@@ -289,7 +291,12 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                             {/* Proposer for Grid 5-8 (Extra row) */}
                             {columns >= 5 && proposerDisplay && (
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">{tt.proposer || 'Proposer'}</div>
+                                    <div
+                                        className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold cursor-help w-fit"
+                                        title={tt.proposer_tooltip}
+                                    >
+                                        {tt.proposer || 'Proposer'}
+                                    </div>
                                     {proposerDisplay}
                                 </div>
                             )}

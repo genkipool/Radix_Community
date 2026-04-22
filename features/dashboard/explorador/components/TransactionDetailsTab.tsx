@@ -594,7 +594,7 @@ export function TransactionDetailsTab({
 
             {proposerValidator && (
                 <DetailRow 
-                    label={tt.proposer || 'Proposer'} 
+                    label={<span title={tt.proposer_tooltip} className="cursor-help">{tt.proposer || 'Proposer'}</span>} 
                     value={(
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-semibold text-[var(--color-text-main)] text-sm">

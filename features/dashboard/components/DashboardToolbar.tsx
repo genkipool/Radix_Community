@@ -6,11 +6,11 @@ import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { TagFilterBar } from '@/components/ui/TagFilterBar';
 import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 import { GridToggle } from '@/components/ui/GridToggle';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 import { DASHBOARD_TAGS } from '@/constants/dashboard';
 import { TRANSACTION_TAGS } from '../explorador/constants';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/services/apiClient';
-
 import type { DashboardToolbarProps } from '../types';
 
 /**
@@ -44,7 +44,7 @@ export const DashboardToolbar = ({
         // Prefetch validators
         queryClient.prefetchQuery({
             queryKey: ['validators', net],
-            queryFn:  () => apiFetchValidators(net),
+            queryFn: () => apiFetchValidators(net),
             staleTime: 300_000,
         });
 
@@ -52,7 +52,7 @@ export const DashboardToolbar = ({
         if (activeView === 'transactions') {
             queryClient.prefetchInfiniteQuery({
                 queryKey: ['transactions', net, undefined],
-            queryFn:  () => apiFetchTransactions({ cursor: undefined, limit: 15, address: undefined, network: net }),
+                queryFn: () => apiFetchTransactions({ cursor: undefined, limit: 15, address: undefined, network: net }),
                 initialPageParam: undefined,
                 staleTime: 30_000,
             });
@@ -74,12 +74,10 @@ export const DashboardToolbar = ({
                         onClick={() => onViewChange(activeView === 'staking' ? 'transactions' : 'staking')}
                         className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-[var(--color-card-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] w-[130px] sm:w-[140px] shrink-0"
                     >
-                        <svg width="18" height="18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                            <path d="M14,53 L25,53 L42,78 L66,20 L88,20" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <RadixIcon className="w-[18px] h-[18px] shrink-0" strokeColor="currentColor" />
                         {activeView === 'staking'
                             ? (dt?.transactions?.toggle_transactions || 'Explorer')
-                            : (dt?.transactions?.toggle_validators  || 'Staking')}
+                            : (dt?.transactions?.toggle_validators || 'Staking')}
                     </button>
 
                     {/* Network toggle */}
@@ -87,22 +85,20 @@ export const DashboardToolbar = ({
                         <button
                             onClick={() => onNetworkChange('mainnet')}
                             onMouseEnter={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
-                            className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${
-                                network === 'mainnet'
-                                    ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
-                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
-                            }`}
+                            className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'mainnet'
+                                ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
+                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
+                                }`}
                         >
                             {dt?.network?.mainnet || 'Mainnet'}
                         </button>
                         <button
                             onClick={() => onNetworkChange('stokenet')}
                             onMouseEnter={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
-                            className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${
-                                network === 'stokenet'
-                                    ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
-                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
-                            }`}
+                            className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'stokenet'
+                                ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
+                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
+                                }`}
                         >
                             {dt?.network?.stokenet || 'Stokenet'}
                         </button>

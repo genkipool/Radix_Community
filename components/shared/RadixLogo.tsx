@@ -14,7 +14,9 @@ interface RadixLogoProps {
   textX?: number;
   strokeColor?: string;
   textColor?: string;
+  strokeWidth?: string | number;
   logoScale?: number;
+  logoTranslateX?: number;
   logoTranslateY?: number;
 }
 
@@ -22,8 +24,8 @@ interface RadixLogoProps {
  * RadixLogo – Global reusable logo component for Navbar and Footer.
  * Ensures consistent branding, font (Inter), and "BETA" label sizing.
  */
-export function RadixLogo({ 
-  className, 
+export function RadixLogo({
+  className,
   showBeta = true,
   label = 'RADIX',
   betaLabel = 'BETA',
@@ -34,8 +36,10 @@ export function RadixLogo({
   textX = 40,
   strokeColor = "var(--color-accent)",
   textColor = "var(--color-text-main)",
-  logoScale = 0.5,
-  logoTranslateY = -6,
+  strokeWidth = "26.1",
+  logoScale = 0.16,
+  logoTranslateX = 10,
+  logoTranslateY = 4.5,
 }: RadixLogoProps) {
   return (
     <svg
@@ -47,12 +51,12 @@ export function RadixLogo({
       className={className}
     >
       {/* ─── Radix Mark (Zigzag) ─── */}
-      <g transform={`translate(0, ${logoTranslateY}) scale(${logoScale})`}>
+      <g transform={`translate(${logoTranslateX}, ${logoTranslateY}) scale(${logoScale})`}>
         <path
-          d="M14,53 L25,53 L42,78 L66,20 L88,20"
+          d="M0,91.1 L27.35,91.1 L82.85,168.1 L156.45,0 L223.9,0"
           fill="none"
           stroke={strokeColor}
-          strokeWidth="8"
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
           // CSS animation defined in global CSS or locally if needed
