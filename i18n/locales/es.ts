@@ -2636,7 +2636,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       rewards_modal_title: 'Descargar Historial de Recompensas',
       rewards_modal_desc: 'Selecciona un año para descargar el desglose diario de recompensas en formato CSV de CoinTracking.',
       rewards_modal_download: 'Descargar CSV',
-      rewards_modal_no_data: 'Aún no hay datos de recompensas. El cron necesita ejecutarse primero.',
+      rewards_modal_no_data: 'Aún no hay datos de recompensas.',
       rewards_modal_error: 'Error',
       rewards_modal_close: 'Cerrar',
       rewards_modal_loading: 'Cargando...',

@@ -11,6 +11,8 @@ interface RewardsCsvModalProps {
     dt?: DashboardDict;
 }
 
+import { createPortal } from 'react-dom';
+
 export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     isOpen,
     onClose,
@@ -22,6 +24,11 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Fetch available years when modal opens
     useEffect(() => {
@@ -101,9 +108,9 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
         return () => window.removeEventListener('keydown', handler);
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
-    return (
+    const modalContent = (
         <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={(e) => {
@@ -183,12 +190,6 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                     <button
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/20 transition-colors"
-                    >
-                        {dt?.details?.rewards_modal_close ?? 'Close'}
-                    </button>
-                    <button
                         onClick={handleDownload}
                         disabled={!selectedYear || downloading || years.length === 0}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[var(--color-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
@@ -198,10 +199,12 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                         ) : (
                             <Download className="w-3.5 h-3.5" />
                         )}
-                        {dt?.details?.rewards_modal_download ?? 'Download CSV'}
+                        {dt?.details?.rewards_modal_download ?? 'Download'}
                     </button>
                 </div>
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };

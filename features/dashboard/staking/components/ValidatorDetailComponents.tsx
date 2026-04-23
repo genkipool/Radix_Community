@@ -19,7 +19,7 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: TranslationsT }) => {
     const color = getUptimeColor(percent);
     const label = `${percent.toFixed(1)}%`;
-    const title = getUptimeTooltipText(percent, true, t?.dashboard?.details);
+    const title = getUptimeTooltipText(percent, false, t?.dashboard?.details);
     
     return (
         <XPBar
