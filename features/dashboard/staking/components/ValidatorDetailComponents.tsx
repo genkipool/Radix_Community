@@ -174,7 +174,7 @@ export const EpochPerformanceTable = ({
 }: {
     validator: Validator;
     dt?: DashboardDict;
-    epochRewards?: Record<number, number>;
+    epochRewards?: Record<number, { fee: number; pool: number }>;
 }) => {
     const { unifiedRows } = useLiveProposals(validator);
 
@@ -192,8 +192,11 @@ export const EpochPerformanceTable = ({
                         <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-red-700 dark:text-red-400">
                             {dt?.details?.proposals_missed ?? 'Proposals Missed'}
                         </th>
-                        <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-primary)]">
-                            {dt?.details?.xrd_reward ?? 'XRD'}
+                        <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-primary)]" title={dt?.details?.xrd_reward_fee_tooltip ?? 'Total XRD earned by the validator'}>
+                            {dt?.details?.xrd_reward_fee ?? 'Validator'}
+                        </th>
+                        <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-text-main)]" title={dt?.details?.xrd_reward_pool_tooltip ?? 'Total XRD distributed to delegators'}>
+                            {dt?.details?.xrd_reward_pool ?? 'Delegators'}
                         </th>
                         <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-text-muted)] text-right">
                             {dt?.details?.epoch_status ?? 'Status'}
@@ -223,7 +226,13 @@ export const EpochPerformanceTable = ({
 
                             <td className="px-3 py-2 font-bold text-[var(--color-primary)] tabular-nums">
                                 {epochRewards[ep.epoch] !== undefined
-                                    ? epochRewards[ep.epoch].toFixed(4)
+                                    ? epochRewards[ep.epoch].fee.toFixed(4)
+                                    : '—'}
+                            </td>
+
+                            <td className="px-3 py-2 font-bold text-[var(--color-text-main)] tabular-nums">
+                                {epochRewards[ep.epoch] !== undefined
+                                    ? epochRewards[ep.epoch].pool.toFixed(4)
                                     : '—'}
                             </td>
 

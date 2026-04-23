@@ -219,7 +219,7 @@ export const HistoryBlock = ({
     live: LiveProposalsResult;
     dt?: DashboardDict;
     className?: string;
-    epochRewards?: Record<number, number>;
+    epochRewards?: Record<number, { fee: number; pool: number }>;
     validatorAddress?: string;
 }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
@@ -251,7 +251,12 @@ export const HistoryBlock = ({
                             <th className="veb-th text-left">{dt?.details?.epoch   ?? 'Época'}</th>
                             <th className="veb-th text-center">{dt?.details?.proposals_made   ?? 'Completadas'}</th>
                             <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Perdidas'}</th>
-                            <th className="veb-th text-right">{dt?.details?.xrd_reward ?? 'XRD'}</th>
+                            <th className="veb-th text-right" title={dt?.details?.xrd_reward_fee_tooltip ?? 'Total XRD earned by the validator'}>
+                                {dt?.details?.xrd_reward_fee ?? 'Validator'}
+                            </th>
+                            <th className="veb-th text-right" title={dt?.details?.xrd_reward_pool_tooltip ?? 'Total XRD distributed to delegators'}>
+                                {dt?.details?.xrd_reward_pool ?? 'Delegators'}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -269,7 +274,14 @@ export const HistoryBlock = ({
                                 <td className="veb-td text-right">
                                     <span className="text-[var(--color-primary)] font-bold tabular-nums text-[11px]">
                                         {epochRewards[ep.epoch] !== undefined
-                                            ? epochRewards[ep.epoch].toFixed(4)
+                                            ? epochRewards[ep.epoch].fee.toFixed(4)
+                                            : ep.isLive ? '—' : '—'}
+                                    </span>
+                                </td>
+                                <td className="veb-td text-right">
+                                    <span className="text-[var(--color-text-main)] font-bold tabular-nums text-[11px]">
+                                        {epochRewards[ep.epoch] !== undefined
+                                            ? epochRewards[ep.epoch].pool.toFixed(4)
                                             : ep.isLive ? '—' : '—'}
                                     </span>
                                 </td>

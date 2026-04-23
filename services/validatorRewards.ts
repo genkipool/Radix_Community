@@ -183,10 +183,10 @@ export async function syncRewardsToRedis(
             processedEpochs.add(ev.epoch);
 
             // Accumulate daily
-            data.daily[today] = (data.daily[today] ?? 0) + ev.totalRewardXrd;
+            data.daily[today] = (data.daily[today] ?? 0) + ev.validatorFeeXrd;
 
             // Accumulate yearly
-            data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.totalRewardXrd;
+            data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
 
             // Track highest epoch
             if (ev.epoch > data.lastSyncedEpoch) {
@@ -212,15 +212,15 @@ export async function syncRewardsToRedis(
     // Store last 6 epochs reward data for the epoch history table
     const epochNumbers = [...processedEpochs].sort((a, b) => b - a);
     if (epochNumbers.length > 0) {
-        // Build per-epoch map: { epoch -> { address -> totalRewardXrd } }
-        const epochMap: Record<number, Record<string, number>> = {};
+        // Build per-epoch map: { epoch -> { address -> { fee, pool } } }
+        const epochMap: Record<number, Record<string, { fee: number; pool: number }>> = {};
         for (const ev of events) {
             if (!epochMap[ev.epoch]) epochMap[ev.epoch] = {};
-            epochMap[ev.epoch][ev.validatorAddress] = ev.totalRewardXrd;
+            epochMap[ev.epoch][ev.validatorAddress] = { fee: ev.validatorFeeXrd, pool: ev.stakePoolAddedXrd };
         }
 
         // Read existing epoch rewards and merge
-        let existingEpochRewards: Record<string, Record<string, number>> | null = null;
+        let existingEpochRewards: Record<string, Record<string, { fee: number; pool: number }>> | null = null;
         try {
             existingEpochRewards = await redis.get(REDIS_EPOCH_REWARDS);
         } catch {
@@ -237,7 +237,7 @@ export async function syncRewardsToRedis(
             .map(Number)
             .sort((a, b) => b - a)
             .slice(0, 10);
-        const pruned: Record<string, Record<string, number>> = {};
+        const pruned: Record<string, Record<string, { fee: number; pool: number }>> = {};
         for (const k of sortedKeys) {
             pruned[k.toString()] = merged[k.toString()];
         }
@@ -268,18 +268,19 @@ export async function syncRewardsToRedis(
  */
 export async function getEpochRewardsForTable(
     validatorAddress: string,
-): Promise<Record<number, number>> {
+): Promise<Record<number, { fee: number; pool: number }>> {
     const redis = getRewardsRedisClient();
     if (!redis) return {};
 
     try {
-        const data = await redis.get<Record<string, Record<string, number>>>(REDIS_EPOCH_REWARDS);
+        const data = await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
         if (!data) return {};
 
-        const result: Record<number, number> = {};
+        const result: Record<number, { fee: number; pool: number }> = {};
         for (const [epoch, rewards] of Object.entries(data)) {
             const xrd = rewards[validatorAddress];
-            if (xrd !== undefined) {
+            // Make sure xrd is an object (it could be a number if reading old cache)
+            if (xrd !== undefined && typeof xrd === 'object' && 'fee' in xrd) {
                 result[parseInt(epoch, 10)] = xrd;
             }
         }
