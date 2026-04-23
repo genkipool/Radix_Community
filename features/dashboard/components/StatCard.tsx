@@ -8,7 +8,7 @@ import type { StatCardProps } from '../types';
 
 /* ═══════ STAT MINI CARD ═══════ */
 const StatCard = ({
-    icon, label, value, accent = false, description, copyText, isLoading = false,
+    icon, label, value, accent = false, description, fullValue, copyText, isLoading = false,
 }: StatCardProps) => {
     const { copiedText, copy } = useCopyToClipboard(2000);
     const copied = copiedText === copyText && copyText !== undefined;
@@ -21,12 +21,16 @@ const StatCard = ({
         }
     };
 
+    const tooltip = [description, fullValue ? `(Valor exacto: ${fullValue})` : null]
+        .filter(Boolean)
+        .join('\n\n');
+
     return (
         <div
-            title={description}
+            title={tooltip}
             className={`flex items-center gap-3 p-4 rounded-2xl border transition-[border-color,background-color,box-shadow] duration-300 ${accent
                 ? 'bg-gradient-to-br from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 border-[var(--color-primary)]/20'
-                : 'bg-[var(--color-surface)] border-[var(--color-card-border)]'} ${description ? 'cursor-help' : ''}`}
+                : 'bg-[var(--color-surface)] border-[var(--color-card-border)]'} ${tooltip ? 'cursor-help' : ''}`}
         >
             <div className="p-2 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex-shrink-0">
                 {icon}
@@ -41,7 +45,7 @@ const StatCard = ({
                         /* Skeleton pulse — only shown when no value is available yet */
                         <div className="h-6 w-28 rounded-md bg-[var(--color-card-border)] animate-pulse mt-0.5" />
                     ) : (
-                        <div className="text-lg font-black text-[var(--color-text-main)] truncate">{value}</div>
+                        <div className="text-[15px] font-black text-[var(--color-text-main)] truncate">{value}</div>
                     )}
                     {copyText && !isLoading && (
                         <button

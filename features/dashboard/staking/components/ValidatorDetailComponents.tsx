@@ -170,9 +170,11 @@ export const AddressItem = ({
 export const EpochPerformanceTable = ({
     validator,
     dt,
+    epochRewards = {},
 }: {
     validator: Validator;
     dt?: DashboardDict;
+    epochRewards?: Record<number, number>;
 }) => {
     const { unifiedRows } = useLiveProposals(validator);
 
@@ -189,6 +191,9 @@ export const EpochPerformanceTable = ({
                         </th>
                         <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-red-700 dark:text-red-400">
                             {dt?.details?.proposals_missed ?? 'Proposals Missed'}
+                        </th>
+                        <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-primary)]">
+                            {dt?.details?.xrd_reward ?? 'XRD'}
                         </th>
                         <th className="px-3 py-2 font-black uppercase tracking-tighter text-[8px] text-[var(--color-text-muted)] text-right">
                             {dt?.details?.epoch_status ?? 'Status'}
@@ -214,6 +219,12 @@ export const EpochPerformanceTable = ({
 
                             <td className="px-3 py-2 font-bold text-red-700 dark:text-red-400 tabular-nums">
                                 {ep.missedProposals.toLocaleString()}
+                            </td>
+
+                            <td className="px-3 py-2 font-bold text-[var(--color-primary)] tabular-nums">
+                                {epochRewards[ep.epoch] !== undefined
+                                    ? epochRewards[ep.epoch].toFixed(4)
+                                    : '—'}
                             </td>
 
                             <td className="px-3 py-2 text-right">

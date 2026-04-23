@@ -11,6 +11,7 @@ import {
 } from '@/services/radixApi';
 import type { TransactionDetails } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
+import { getMarketDataCached } from '@/services/marketData';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import { entityKeys, extractEntityMeta, normalizeAddress, needsFetch } from '@/features/dashboard/utils/entityCache';
 import { getNetworkCookieKey } from '@/features/dashboard/utils/cookieUtils';
@@ -179,6 +180,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       };
     })();
 
+
     // ── PHASE 1: Critical data (must complete before render) ──────────────
     // Validators prefetch is async; transactions are set synchronously.
     // Using a dedicated await ensures validators are in the cache before
@@ -341,6 +343,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     logger.error({ err: error }, '[DashboardPage] Failed to prefetch data: %s', message);
   }
 
+  const marketData = await getMarketDataCached();
+
   return (
     <ReactQueryHydrate state={dehydrate(serverQueryClient)}>
       <DashboardClient
@@ -362,6 +366,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialSearchQuery={txid ?? ''}
         initialDateRange={initialDateRange}
         randomSeed={randomSeed}
+        initialMarketData={marketData}
       />
 
     </ReactQueryHydrate>

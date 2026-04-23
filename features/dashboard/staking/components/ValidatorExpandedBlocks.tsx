@@ -11,6 +11,7 @@ import { Label, DR, AR } from './ValidatorExpandedPrimitives';
 import { StakeEvolutionChart, StakeHistoryChart } from './ValidatorStakeCharts';
 import { useLiveProposals } from './LiveProposals';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
+import { RewardsCsvModal } from './RewardsCsvModal';
 
 type LiveProposalsResult = ReturnType<typeof useLiveProposals>;
 
@@ -213,42 +214,78 @@ export const ActivityBlock = ({
    HistoryBlock
 ───────────────────────────────────────── */
 export const HistoryBlock = ({
-    live, dt, className = '',
+    live, dt, className = '', epochRewards = {}, validatorAddress = '',
 }: {
     live: LiveProposalsResult;
     dt?: DashboardDict;
     className?: string;
-}) => (
-    <div className={`veb-block veb-epochs-panel veb-history ${className}`}>
-        <div className="veb-epochs">
-            <div className="veb-epochs-header">
-                <Label>{dt?.details?.epoch_history ?? 'Epoch History'}</Label>
-                <span className="veb-live-badge">{dt?.details?.live ?? 'Live'}</span>
-            </div>
-            <table className="veb-table">
-                <thead>
-                    <tr className="veb-th-row">
-                        <th className="veb-th text-left">{dt?.details?.epoch   ?? 'Época'}</th>
-                        <th className="veb-th text-center">{dt?.details?.proposals_made   ?? 'Completadas'}</th>
-                        <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Perdidas'}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {/* 1. The Unified 6-Row History (Managed by client to avoid gaps) */}
-                    {live.unifiedRows.map((ep) => (
-                        <tr key={ep.epoch} className={`veb-tr ${ep.isLive ? 'veb-tr-live' : ''}`}>
-                            <td className="veb-td">
-                                <span className={ep.isLive ? "veb-epoch-live-cell" : ""}>
-                                    <span className="veb-epoch-num">{ep.epoch}</span>
-                                    {ep.isLive && <span className="veb-live-tag">live</span>}
-                                </span>
-                            </td>
-                            <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString()}</span></td>
-                            <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString()}</span></td>
+    epochRewards?: Record<number, number>;
+    validatorAddress?: string;
+}) => {
+    const [modalOpen, setModalOpen] = React.useState(false);
+
+    return (
+        <div className={`veb-block veb-epochs-panel veb-history ${className}`}>
+            <div className="veb-epochs">
+                <div className="veb-epochs-header">
+                    <div className="flex items-center gap-2">
+                        <Label>{dt?.details?.epoch_history ?? 'Epoch History'}</Label>
+                        {/* Download CSV button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+                            className="p-1 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                            title={dt?.details?.download_rewards ?? 'Download Rewards'}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                        </button>
+                    </div>
+                    <span className="veb-live-badge">{dt?.details?.live ?? 'Live'}</span>
+                </div>
+                <table className="veb-table">
+                    <thead>
+                        <tr className="veb-th-row">
+                            <th className="veb-th text-left">{dt?.details?.epoch   ?? 'Época'}</th>
+                            <th className="veb-th text-center">{dt?.details?.proposals_made   ?? 'Completadas'}</th>
+                            <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Perdidas'}</th>
+                            <th className="veb-th text-right">{dt?.details?.xrd_reward ?? 'XRD'}</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {/* 1. The Unified 6-Row History (Managed by client to avoid gaps) */}
+                        {live.unifiedRows.map((ep) => (
+                            <tr key={ep.epoch} className={`veb-tr ${ep.isLive ? 'veb-tr-live' : ''}`}>
+                                <td className="veb-td">
+                                    <span className={ep.isLive ? "veb-epoch-live-cell" : ""}>
+                                        <span className="veb-epoch-num">{ep.epoch}</span>
+                                        {ep.isLive && <span className="veb-live-tag">live</span>}
+                                    </span>
+                                </td>
+                                <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString()}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString()}</span></td>
+                                <td className="veb-td text-right">
+                                    <span className="text-[var(--color-primary)] font-bold tabular-nums text-[11px]">
+                                        {epochRewards[ep.epoch] !== undefined
+                                            ? epochRewards[ep.epoch].toFixed(4)
+                                            : ep.isLive ? '—' : '—'}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            {modalOpen && (
+                <RewardsCsvModal
+                    isOpen={modalOpen}
+                    onClose={() => setModalOpen(false)}
+                    validatorAddress={validatorAddress}
+                    dt={dt}
+                />
+            )}
         </div>
-    </div>
-);
+    );
+};

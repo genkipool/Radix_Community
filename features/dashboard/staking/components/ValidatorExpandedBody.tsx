@@ -6,9 +6,9 @@ import { apiFetchStakeHistory } from '@/features/dashboard/services/apiClient';
 import { Button } from '@/components/ui/Button';
 import { useLiveProposals } from './LiveProposals';
 import { useLanguage } from '@/context/LanguageContext';
-// import removed
 import { useLayout } from '@/context/LayoutContext';
 import { VEB_STYLES } from './ValidatorExpandedPrimitives';
+import { useEpochRewards } from '../hooks/useEpochRewards';
 import {
     ProfileBlock,
     DelegationBlock,
@@ -81,7 +81,8 @@ export const ValidatorExpandedBody = ({
     const perfProps = { validator, dt, live };
     const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
     const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
-    const historyProps = { live, dt };
+    const { rewards: epochRewards } = useEpochRewards(validator.address);
+    const historyProps = { live, dt, epochRewards, validatorAddress: validator.address };
 
     /* ── Layouts ─────────────────────────────── */
     const grid1 = (

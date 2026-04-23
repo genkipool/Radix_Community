@@ -1,14 +1,15 @@
 import React from 'react';
 import type { Validator, TransactionInfo, NetworkStats } from '@/types/radix';
-import type { DashboardView, Network, TranslationsT } from './core.types';
+import type { DashboardView, Network, TranslationsT, MarketData } from './core.types';
 import type { CalendarTranslations } from '@/components/ui/CalendarDropdown';
 
 export interface StatCardProps {
     icon: React.ReactNode;
     label: string;
-    value: string;
+    value: React.ReactNode;
     accent?: boolean;
     description?: string;
+    fullValue?: string;
     copyText?: string;
     isLoading?: boolean;
 }
@@ -21,7 +22,7 @@ export interface ExplorerStats {
 export interface DashboardStatsRowProps {
     activeView: 'staking' | 'transactions';
     stats: NetworkStats;
-    explorerStats: ExplorerStats | null;
+    marketData?: MarketData | null;
     isLoading?: boolean;
     dt?: TranslationsT['dashboard'];
     locale: string;

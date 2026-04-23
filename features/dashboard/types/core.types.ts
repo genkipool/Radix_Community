@@ -4,6 +4,17 @@ export type Network = 'mainnet' | 'stokenet';
 export type DashboardView = 'staking' | 'transactions';
 export type SortMode = 'newest' | 'oldest' | 'date' | 'random';
 
+export interface MarketData {
+    priceUsd: number;
+    priceEur: number;
+    priceChange24h: number;
+    marketCapUsd: number;
+    marketCapEur: number;
+    circulatingSupply: number;
+    totalValueLockedUsd: number;
+    totalValueLockedEur: number;
+}
+
 /** Strongly-typed alias for the dashboard translation sub-tree */
 export type DashboardDict = Dictionary['dashboard'];
 
@@ -35,5 +46,6 @@ export interface DashboardInitialProps {
   initialSearchQuery?: string;
   initialDateRange?: { start: string | null; end: string | null };
   randomSeed: number;
+  initialMarketData?: MarketData | null;
 }
 

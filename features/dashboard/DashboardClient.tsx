@@ -79,6 +79,7 @@ export default function DashboardClient({
   initialSearchQuery = '',
   initialDateRange,
   randomSeed = 0,
+  initialMarketData,
 }: DashboardInitialProps) {
 
   const { t, language } = useLanguage();
@@ -245,7 +246,7 @@ export default function DashboardClient({
   })();
 
   /* ── Explorador Filters & Stats ───────────────────────────── */
-  const { filteredTxs, explorerStats } = useExploradorFilters({
+  const { filteredTxs, explorerStats: _explorerStats } = useExploradorFilters({
     txs, deferredSearch, activeView,
   });
 
@@ -331,7 +332,7 @@ export default function DashboardClient({
         <DashboardStatsRow
           activeView={activeView}
           stats={stats}
-          explorerStats={explorerStats}
+          marketData={initialMarketData}
           isLoading={activeView === 'staking'
             ? isValFetching && !validatorsData
             : isTxLoading && txs.length === 0}
