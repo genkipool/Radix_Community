@@ -265,6 +265,27 @@ export async function syncRewardsToRedis(
 
 // ── Read Helpers (for API routes / UI) ─────────────────────────────────────────
 
+import { unstable_cache } from 'next/cache';
+
+/**
+ * Cached getter for all epoch rewards down from Redis to minimize commands.
+ * Cached for 5 minutes (300 seconds).
+ */
+const getCachedAllEpochRewards = unstable_cache(
+    async () => {
+        const redis = getRewardsRedisClient();
+        if (!redis) return null;
+        try {
+            return await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
+        } catch (e) {
+            logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
+            return null;
+        }
+    },
+    ['all_validator_epoch_rewards_cache'],
+    { revalidate: 300 }
+);
+
 /**
  * Returns the XRD rewards for the last N epochs for a specific validator.
  * Used by the epoch history table.
@@ -272,26 +293,18 @@ export async function syncRewardsToRedis(
 export async function getEpochRewardsForTable(
     validatorAddress: string,
 ): Promise<Record<number, { fee: number; pool: number }>> {
-    const redis = getRewardsRedisClient();
-    if (!redis) return {};
+    const data = await getCachedAllEpochRewards();
+    if (!data) return {};
 
-    try {
-        const data = await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
-        if (!data) return {};
-
-        const result: Record<number, { fee: number; pool: number }> = {};
-        for (const [epoch, rewards] of Object.entries(data)) {
-            const xrd = rewards[validatorAddress];
-            // Make sure xrd is an object (it could be a number if reading old cache)
-            if (xrd !== undefined && typeof xrd === 'object' && 'fee' in xrd) {
-                result[parseInt(epoch, 10)] = xrd;
-            }
+    const result: Record<number, { fee: number; pool: number }> = {};
+    for (const [epoch, rewards] of Object.entries(data)) {
+        const xrd = rewards[validatorAddress];
+        // Make sure xrd is an object (it could be a number if reading old cache)
+        if (xrd !== undefined && typeof xrd === 'object' && 'fee' in xrd) {
+            result[parseInt(epoch, 10)] = xrd;
         }
-        return result;
-    } catch (e) {
-        logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
-        return {};
     }
+    return result;
 }
 
 /**
