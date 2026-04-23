@@ -31,7 +31,7 @@ interface RewardsSyncMeta {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const REDIS_REWARDS_PREFIX = 'validator_rewards:';
+const REDIS_REWARDS_ALL = 'validator_rewards_all';
 const REDIS_REWARDS_META = 'validator_rewards_meta';
 const REDIS_EPOCH_REWARDS = 'validator_epoch_rewards';
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
@@ -159,18 +159,16 @@ export async function syncRewardsToRedis(
     const currentYear = new Date().getFullYear().toString();
     const cutoffYear = new Date().getFullYear() - MAX_YEARS_TO_KEEP;
 
+    // Read all existing data once
+    let allData: Record<string, ValidatorRewardData> = {};
+    try {
+        allData = (await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL)) ?? {};
+    } catch {
+        // Initial setup
+    }
+
     for (const [address, validatorEvents] of byValidator) {
-        const key = `${REDIS_REWARDS_PREFIX}${address}`;
-
-        // Read existing data
-        let existing: ValidatorRewardData | null = null;
-        try {
-            existing = await redis.get<ValidatorRewardData>(key);
-        } catch {
-            // First time — will be created
-        }
-
-        const data: ValidatorRewardData = existing ?? {
+        const data: ValidatorRewardData = allData[address] ?? {
             lastSyncedEpoch: 0,
             daily: {},
             yearly: {},
@@ -193,8 +191,13 @@ export async function syncRewardsToRedis(
                 data.lastSyncedEpoch = ev.epoch;
             }
         }
+        
+        allData[address] = data;
+    }
 
-        // Prune old years
+    // Prune old years
+    for (const address of Object.keys(allData)) {
+        const data = allData[address];
         for (const year of Object.keys(data.daily)) {
             if (parseInt(year.substring(0, 4), 10) < cutoffYear) {
                 delete data.daily[year];
@@ -205,9 +208,9 @@ export async function syncRewardsToRedis(
                 delete data.yearly[year];
             }
         }
-
-        pipeline.set(key, data);
     }
+
+    pipeline.set(REDIS_REWARDS_ALL, allData);
 
     // Store last 6 epochs reward data for the epoch history table
     const epochNumbers = [...processedEpochs].sort((a, b) => b - a);
@@ -301,9 +304,8 @@ export async function getAvailableYears(
     if (!redis) return [];
 
     try {
-        const data = await redis.get<ValidatorRewardData>(
-            `${REDIS_REWARDS_PREFIX}${validatorAddress}`,
-        );
+        const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
+        const data = allData?.[validatorAddress];
         if (!data?.yearly) return [];
         return Object.keys(data.yearly).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
     } catch (e) {
@@ -326,9 +328,8 @@ export async function generateRewardsCsv(
     if (!redis) return null;
 
     try {
-        const data = await redis.get<ValidatorRewardData>(
-            `${REDIS_REWARDS_PREFIX}${validatorAddress}`,
-        );
+        const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
+        const data = allData?.[validatorAddress];
         if (!data?.daily) return null;
 
         // Filter daily entries for the requested year  
