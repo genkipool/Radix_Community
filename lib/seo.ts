@@ -10,7 +10,6 @@
 
 const BASE_URL = 'https://radix-community.genkipool.com';
 const LOCALES = ['en', 'es'] as const;
-const DEFAULT_LOCALE = 'en';
 
 type SupportedLocale = (typeof LOCALES)[number];
 
@@ -52,7 +51,8 @@ export function buildAlternates(
   }
 
   // x-default: tells Google which version to show when no hreflang matches the user's language
-  languages['x-default'] = `${BASE_URL}/${DEFAULT_LOCALE}${safePath}`;
+  // Pointing to the root URL (middleware will handle the redirection)
+  languages['x-default'] = `${BASE_URL}${safePath || '/'}`;
 
   return { canonical, languages };
 }

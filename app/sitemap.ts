@@ -27,9 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'weekly' as const,
             priority: path === '' ? 1 : 0.8,
             alternates: {
-                languages: Object.fromEntries(
-                    LOCALES.map((loc) => [loc, `${BASE_URL}/${loc}${path}`])
-                ),
+                languages: {
+                    ...Object.fromEntries(
+                        LOCALES.map((loc) => [loc, `${BASE_URL}/${loc}${path}`])
+                    ),
+                    'x-default': `${BASE_URL}${path || '/'}`
+                },
             },
         }))
     )
