@@ -57,7 +57,7 @@ export function ContentHero({
                         </h1>
 
                         {subtitle && (
-                            <div className="text-base md:text-lg text-[var(--color-text-muted)] max-w-3xl mx-auto leading-relaxed">
+                            <div className="text-base md:text-lg text-[var(--color-text-muted)] max-w-4xl mx-auto leading-relaxed">
                                 {subtitle}
                             </div>
                         )}

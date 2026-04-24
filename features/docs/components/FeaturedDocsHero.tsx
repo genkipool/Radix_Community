@@ -88,6 +88,8 @@ export default function FeaturedDocsHero({
       collapsed={collapsed}
       cta_connect_wallet={docsT.cta_connect_wallet ?? 'Conectar Wallet'}
       onConnectWallet={() => setShowUnderConstruction(true)}
+      cta_buy_badge={docsT.cta_buy_badge}
+      onBuyBadge={() => setShowUnderConstruction(true)}
     />
   );
 }

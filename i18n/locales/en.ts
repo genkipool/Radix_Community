@@ -2650,7 +2650,10 @@ Download the update today from the iOS App Store or Google Play Store to experie
   docs: {
     heroTitle: 'Documents',
     heroSubtitle: 'Atomic Composability',
-    heroDescription: 'Explore the official documentation, technical whitepapers, architecture guides, and resources to deep dive into the Radix ecosystem: the ledger built for DeFi without compromise. Connect your wallet and purchase your admin badge to unlock the Admin card, from which you can create and publish your own documentation on the platform.',
+    heroDescription: 'Explore the official documentation, technical whitepapers, guides, and resources to deep dive into the Radix ecosystem: the ledger built for DeFi without compromise. Connect your wallet and purchase your admin badge to unlock the Admin panel, from which you can create and publish your own documentation on the platform.',
+    /** Highlighting for Docs description */
+    cta_connect_wallet: 'Connect your wallet',
+    cta_buy_badge: 'purchase your admin badge',
     actions: {
       download_md: 'Download Markdown',
       share: 'Share URL (Copy URL)',
@@ -2658,8 +2661,6 @@ Download the update today from the iOS App Store or Google Play Store to experie
       copied: 'Copied!',
     },
     readArticle: 'Read Article',
-    /** Highlighting for Docs description */
-    cta_connect_wallet: 'Connect your wallet',
     searchPlaceholder: 'Search documents...',
     filters: {
       all: 'All',
@@ -3379,7 +3380,7 @@ Download the update today from the iOS App Store or Google Play Store to experie
       brand: 'Radix',
       title: 'Infrastructure',
       badge: 'Full-Stack Architecture',
-      description: 'Radix was built from scratch — not forked from Ethereum or Bitcoin — with a single purpose: to be the global base layer for finance. Explore every technical layer of the stack below.',
+      description: 'Radix was built from scratch, not forked from Ethereum or Bitcoin, with a single purpose: to be the global base layer for finance. Explore every technical layer of the stack below.',
     },
     controls: {
       search_placeholder: 'Search layers and components…',

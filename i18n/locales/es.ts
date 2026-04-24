@@ -2656,9 +2656,10 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
   docs: {
     heroTitle: 'Documentos',
     heroSubtitle: 'Composabilidad Atómica',
-    heroDescription: 'Explora la documentación oficial, whitepapers técnicos, guías de arquitectura y recursos para adentrarte en el ecosistema de Radix: el ledger diseñado para DeFi sin compromisos. Conecta tu billetera y compra tu badge de administrador para acceder a la tarjeta Admin, desde la que podrás crear y publicar tu propia documentación en la plataforma.',
+    heroDescription: 'Explora la documentación oficial, whitepapers técnicos, guías y recursos para adentrarte en el ecosistema de Radix: el ledger diseñado para DeFi sin compromisos. Conecta tu billetera y compra tu badge de administrador para acceder al panel de administración, desde el que podrás crear y publicar tu propia documentación en la plataforma.',
     /** Highlighting for Docs description */
     cta_connect_wallet: 'Conecta tu billetera',
+    cta_buy_badge: 'compra tu badge de administrador',
     searchPlaceholder: 'Buscar documentos...',
     filters: {
       all: 'Todos',
@@ -3398,7 +3399,7 @@ Descarga la actualización hoy mismo desde la App Store de iOS o la Google Play 
       brand: 'Radix',
       title: 'Infraestructura',
       badge: 'Arquitectura Full-Stack',
-      description: 'Radix fue construido desde cero — sin copiar el código de Ethereum ni Bitcoin — con un único objetivo: ser la capa base global para las finanzas. Explora cada capa técnica del stack a continuación.',
+      description: 'Radix fue construido desde cero, sin copiar el código de Ethereum ni Bitcoin, con un único objetivo: ser la capa base global para las finanzas. Explora cada capa técnica del stack a continuación.',
     },
     controls: {
       search_placeholder: 'Buscar capas y componentes…',

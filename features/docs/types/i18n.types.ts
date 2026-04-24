@@ -69,6 +69,7 @@ export interface DocsDictionary {
     heroSubtitle?: string;
     heroDescription?: string;
     cta_connect_wallet?: string;
+    cta_buy_badge?: string;
     searchPlaceholder?: string;
     featured?: string;
     readArticle?: string;

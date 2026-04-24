@@ -35,6 +35,10 @@ export interface SidebarPageHeroProps {
   cta_connect_wallet?: string;
   /** Callback triggered when the clickable CTA is clicked */
   onConnectWallet?: () => void;
+  /** Second optional phrase for another clickable button (e.g. 'compra tu badge') */
+  cta_buy_badge?: string;
+  /** Callback for the second CTA */
+  onBuyBadge?: () => void;
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
@@ -58,6 +62,8 @@ export function SidebarPageHero({
   collapsed = false,
   cta_connect_wallet,
   onConnectWallet,
+  cta_buy_badge,
+  onBuyBadge,
 }: SidebarPageHeroProps) {
   const hero = (
     <ContentHero
@@ -71,22 +77,59 @@ export function SidebarPageHero({
             className="leading-relaxed"
             style={{ color: 'var(--color-text-muted)' }}
           >
-            {cta_connect_wallet && onConnectWallet && heroDescription.includes(cta_connect_wallet) ? (
-              <>
-                {heroDescription.split(cta_connect_wallet)[0]}
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onConnectWallet();
-                  }}
-                  className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mx-1"
-                >
-                  {cta_connect_wallet}
-                </button>
-                {heroDescription.split(cta_connect_wallet)[1]}
-              </>
-            ) : heroDescription}
+            {(() => {
+              let content: (string | ReactNode)[] = [heroDescription];
+
+              // 1. Process Connect Wallet
+              if (cta_connect_wallet && onConnectWallet && heroDescription.includes(cta_connect_wallet)) {
+                const parts = heroDescription.split(cta_connect_wallet);
+                content = [
+                  parts[0],
+                  <button
+                    key="connect"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onConnectWallet();
+                    }}
+                    className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mx-1"
+                  >
+                    {cta_connect_wallet}
+                  </button>,
+                  parts[1]
+                ];
+              }
+
+              // 2. Process Buy Badge (on the already potentially split content)
+              if (cta_buy_badge && onBuyBadge) {
+                const newContent: (string | ReactNode)[] = [];
+                content.forEach((item) => {
+                  if (typeof item === 'string' && item.includes(cta_buy_badge)) {
+                    const parts = item.split(cta_buy_badge);
+                    newContent.push(parts[0]);
+                    newContent.push(
+                      <button
+                        key="buy"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onBuyBadge();
+                        }}
+                        className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mx-1"
+                      >
+                        {cta_buy_badge}
+                      </button>
+                    );
+                    newContent.push(parts[1]);
+                  } else {
+                    newContent.push(item);
+                  }
+                });
+                content = newContent;
+              }
+
+              return content;
+            })()}
           </p>
           {actions}
         </div>
@@ -105,8 +148,8 @@ export function SidebarPageHero({
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards.map((card, i) => (
-          <FeaturedCard key={i} {...card} />
+        {cards.map((card, idx) => (
+          <FeaturedCard key={idx} {...card} />
         ))}
       </div>
     </>
