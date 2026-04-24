@@ -160,7 +160,6 @@ export function EntityBadge({
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;
     const short = clean.length > 20 ? `${clean.slice(0, 12)}...${clean.slice(-6)}` : clean;
-    const isResource = clean.startsWith('resource_');
     const isClickable = !!onResourceClick && (
         clean.startsWith('resource_') ||
         clean.startsWith('account_') ||
@@ -170,7 +169,7 @@ export function EntityBadge({
 
     return (
         <div
-            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border ${bg} group/entity ${isResource ? '' : 'transition-all hover:brightness-110'}`}
+            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border ${bg} group/entity`}
         >
             <div className="flex items-center gap-2 min-w-0">
                 {iconUrl && (

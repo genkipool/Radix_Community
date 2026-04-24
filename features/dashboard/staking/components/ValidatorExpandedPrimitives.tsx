@@ -83,7 +83,7 @@ export const VEB_STYLES = `
     }
     @media (min-width: 1300px) {
         .veb-classic-grid .veb-top { grid-template-columns: 1fr 340px 340px; }
-        .veb-classic-grid .veb-history-grid { grid-template-columns: 1fr 1fr 500px; }
+        .veb-classic-grid .veb-history-grid { grid-template-columns: 1fr 1fr 460px; }
         .veb-classic-grid .veb-uptimes { grid-column: auto; border-top: none; border-left: 1px solid var(--color-card-border); }
         .veb-classic-grid .veb-delegation { border-right: 1px solid var(--color-card-border); }
         .veb-classic-grid .veb-history { grid-column: auto; border-top: none; border-left: 1px solid var(--color-card-border); }

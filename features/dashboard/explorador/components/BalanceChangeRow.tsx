@@ -214,8 +214,11 @@ const BalanceChangeRow = ({
                         {iconOverride && <span className="shrink-0">{iconOverride}</span>}
                         <span>
                             {sign}
-                            {(hideSign ? Math.abs(parseFloat(change.balance_change)) : parseFloat(change.balance_change))
-                                .toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 18 })}
+                            {(() => {
+                                const val = hideSign ? Math.abs(parseFloat(change.balance_change)) : parseFloat(change.balance_change);
+                                const truncated = Math.trunc(val * 10000) / 10000;
+                                return truncated.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+                            })()}
                         </span>
 
                         {symbol && <span className="text-xs font-semibold opacity-70">{symbol}</span>}

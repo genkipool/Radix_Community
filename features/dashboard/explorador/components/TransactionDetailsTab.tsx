@@ -18,7 +18,7 @@ function ResourceName({ address, network }: { address: string; network: string }
     const meta = useEntityData(address, network);
     if (!address) return null;
     const rawVal = meta?.name || address;
-    const displayVal = rawVal.length > 10 ? rawVal.slice(0, 7).trim() + '...' : rawVal;
+    const displayVal = rawVal.length > 40 ? rawVal.slice(0, 37).trim() + '...' : rawVal;
     
     return (
         <span className="font-bold italic text-[var(--color-primary)] truncate pe-1" title={meta?.name || address}>
@@ -140,7 +140,8 @@ export function TransactionDetailsTab({
             );
         }
         const parsed = parseFloat(amt);
-        const displayAmt = isNaN(parsed) ? amt : Math.abs(parsed).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        const truncated = Math.trunc(Math.abs(parsed) * 10000) / 10000;
+        const displayAmt = isNaN(parsed) ? amt : truncated.toLocaleString(locale, { maximumFractionDigits: 4 });
         return (
             <span className="font-bold text-[var(--color-text-main)] inline-flex items-center gap-1.5 flex-wrap">
                 {displayAmt} {addr && !addr.startsWith('internal_') ? fResource(addr) : ''}
@@ -151,7 +152,8 @@ export function TransactionDetailsTab({
     const fAmountSimple = (amt: string, addr: string) => {
         if (!amt) return null;
         const parsed = parseFloat(amt);
-        const displayAmt = isNaN(parsed) ? amt : Math.abs(parsed).toLocaleString(undefined, { maximumFractionDigits: 4 });
+        const truncated = Math.trunc(Math.abs(parsed) * 10000) / 10000;
+        const displayAmt = isNaN(parsed) ? amt : truncated.toLocaleString(locale, { maximumFractionDigits: 4 });
         return (
             <span className="font-bold text-[var(--color-text-main)] inline-flex items-center gap-1.5">
                 {displayAmt} <ResourceName address={addr} network={network || 'mainnet'} />

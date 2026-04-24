@@ -1,44 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 /**
- * Fetches per-epoch XRD rewards for a specific validator from the API.
- * Returns a map of epoch number → fee and pool rewards.
+ * useEpochRewards
+ *
+ * Fetches per-epoch XRD rewards for a specific validator.
+ * Uses React Query for automatic caching and localStorage for instant hydration.
+ *
+ * @param validatorAddress - The address of the validator to fetch rewards for.
+ * @param network - The network name (mainnet/stokenet).
  */
-export function useEpochRewards(validatorAddress: string | undefined) {
-    const [rewards, setRewards] = useState<Record<number, { fee: number; pool: number }>>({});
-    const [loading, setLoading] = useState(false);
+export function useEpochRewards(validatorAddress: string | undefined, network = 'mainnet') {
+    const cacheKey = `epoch-rewards-${network}-${validatorAddress}`;
 
-    useEffect(() => {
-        if (!validatorAddress) return;
+    return useQuery({
+        queryKey: ['epoch-rewards', network, validatorAddress],
+        queryFn: async () => {
+            if (!validatorAddress) return {};
 
-        let cancelled = false;
-        setLoading(true);
+            const res = await fetch(`/api/validator-rewards?address=${encodeURIComponent(validatorAddress)}&action=epochs`);
+            if (!res.ok) return {};
 
-        fetch(`/api/validator-rewards?address=${encodeURIComponent(validatorAddress)}&action=epochs`)
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-                if (!cancelled && data?.rewards) {
-                    // Convert string keys to numbers
-                    const parsed: Record<number, { fee: number; pool: number }> = {};
-                    for (const [k, v] of Object.entries(data.rewards)) {
-                        parsed[parseInt(k, 10)] = v as { fee: number; pool: number };
-                    }
-                    setRewards(parsed);
-                }
-            })
-            .catch(() => {
-                // Silently fail — rewards column just stays empty
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
+            const data = await res.json();
+            if (!data?.rewards) return {};
 
-        return () => {
-            cancelled = true;
-        };
-    }, [validatorAddress]);
+            // Convert string keys to numbers accurately
+            const parsed: Record<number, { fee: number; pool: number }> = {};
+            for (const [k, v] of Object.entries(data.rewards)) {
+                parsed[parseInt(k, 10)] = v as { fee: number; pool: number };
+            }
 
-    return { rewards, loading };
+            // Persistence for maximal hydration (instant display on next mount)
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(cacheKey, JSON.stringify(parsed));
+            }
+
+            return parsed;
+        },
+        enabled: !!validatorAddress,
+        staleTime: 5 * 60_000, // 5 minutes cache (aligns with server)
+        refetchOnWindowFocus: false,
+        placeholderData: (previousData) => {
+            if (previousData) return previousData;
+            // Try to recover from localStorage for instant "hydration" UI
+            if (typeof window === 'undefined') return undefined;
+            const stored = localStorage.getItem(cacheKey);
+            if (!stored) return undefined;
+            try {
+                return JSON.parse(stored);
+            } catch {
+                return undefined;
+            }
+        },
+    });
 }

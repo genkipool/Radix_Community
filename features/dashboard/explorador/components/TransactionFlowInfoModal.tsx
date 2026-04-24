@@ -40,7 +40,7 @@ export function TransactionFlowInfoModal({
                                     {/* Close Button */}
                                     <button
                                         onClick={onClose}
-                                        className="absolute top-6 right-6 w-8 h-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent hover:border-[var(--color-card-border)]"
+                                        className="absolute top-6 right-6 w-8 h-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -65,7 +65,7 @@ export function TransactionFlowInfoModal({
 
                                         <div className="grid md:grid-cols-2 gap-4">
                                             {/* Left Column Explanation */}
-                                            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group hover:border-red-500/40 transition-colors">
+                                            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                     <Landmark className="w-16 h-16 text-red-500" />
                                                 </div>
@@ -81,7 +81,7 @@ export function TransactionFlowInfoModal({
                                             </div>
 
                                             {/* Right Column Explanation */}
-                                            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group hover:border-green-500/40 transition-colors">
+                                            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                     <Landmark className="w-16 h-16 text-green-500" />
                                                 </div>

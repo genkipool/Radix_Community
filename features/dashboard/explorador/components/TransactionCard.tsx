@@ -23,7 +23,12 @@ import { RadixIcon } from '@/components/shared/RadixIcon';
 ───────────────────────────────────────── */
 const formatAmount = (n: number, loc: string): string => {
     if (n === 0) return '0';
-    return Number(n.toFixed(8)).toLocaleString(loc, { maximumFractionDigits: 8 });
+    // Truncate to 4 decimals without rounding
+    const truncated = Math.trunc(n * 10000) / 10000;
+    return truncated.toLocaleString(loc, { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 4 
+    });
 };
 
 /* ─────────────────────────────────────────
@@ -35,7 +40,7 @@ const RenderSymbol = ({ address, fallback, network }: { address: string; fallbac
     if (!address) return null;
     if (address === 'XRD') return 'XRD';
     const rawVal = meta?.symbol || meta?.name || fallback || formatEntity(address);
-    const displayVal = rawVal.length > 10 ? rawVal.slice(0, 7).trim() + '...' : rawVal;
+    const displayVal = rawVal.length > 40 ? rawVal.slice(0, 37).trim() + '...' : rawVal;
     return (
         <span className="truncate pe-1" title={address}>
             {displayVal}
@@ -205,7 +210,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
                 onExpand(tx.intentHash);
             }}
-            className={`p-0 shadow-md transition-all duration-300 group cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg hover:border-[var(--color-secondary)]/30'}`}
+            className={`p-0 shadow-md transition-all duration-300 group cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
         >
             <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
                 {/* AVATAR / ICON */}

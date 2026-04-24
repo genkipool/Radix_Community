@@ -81,7 +81,7 @@ export const ValidatorExpandedBody = ({
     const perfProps = { validator, dt, live };
     const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
     const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
-    const { rewards: epochRewards } = useEpochRewards(validator.address);
+    const { data: epochRewards = {} } = useEpochRewards(validator.address, network);
     const historyProps = { live, dt, epochRewards, validatorAddress: validator.address };
 
     /* ── Layouts ─────────────────────────────── */

@@ -79,7 +79,7 @@ export function AssetTransferGroup({
                 </div>
                 <button
                     onClick={() => setIsInfoModalOpen(true)}
-                    className="p-1 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-transparent hover:border-[var(--color-card-border)] group"
+                    className="p-1 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-transparent group"
                     title={tt.tx_flow_info_title || 'How to read our transaction flow'}
                 >
                     <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />

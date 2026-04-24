@@ -111,7 +111,7 @@ export const DetailItem = ({
     color?: string;
     className?: string;
 }) => (
-    <div className={`p-3 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] transition-colors hover:border-[var(--color-primary)]/20 ${className}`}>
+    <div className={`p-3 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] transition-colors ${className}`}>
         <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-1">{label}</div>
         <div className="flex items-baseline gap-2">
             <div className={`text-sm font-bold truncate ${color ?? 'text-[var(--color-text-main)]'}`}>{value}</div>
@@ -142,11 +142,11 @@ export const AddressItem = ({
     brackets?: boolean;
 }) => (
     <div 
-        className={`col-span-full group/addr cursor-pointer flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors hover:border-[var(--color-primary)]/30 ${className}`}
+        className={`col-span-full group/addr cursor-pointer flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors ${className}`}
         onClick={() => onCopy(brackets ? `[${address}]` : address)}
     >
         <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold shrink-0">{label}</div>
-        <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] group-hover/addr:border-[var(--color-primary)]/20 transition-colors">
+        <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] transition-colors">
             <code className={`text-[10px] truncate font-mono flex-1 transition-colors ${isCopied ? 'text-green-700 dark:text-green-400' : 'text-[var(--color-text-muted)]'}`}>
                 {brackets ? `[${address}]` : address}
             </code>

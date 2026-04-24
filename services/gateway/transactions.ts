@@ -831,12 +831,12 @@ export async function fetchFilteredTransactions(options: {
     const opParams = { tag, start, end, cursor, limit, address, network, timezone };
 
     const isGlobalTip = !start && !end && !cursor && !address;
-    
+
     // Fix: Unify tip limit to 100 to prevent smaller queries from shrinking the cache
     if (isGlobalTip) {
         opParams.limit = 100;
     }
-    
+
     const hasDateFilter = !!(start || end);
 
     if (hasDateFilter) {
@@ -958,6 +958,150 @@ export async function fetchStakeHistoryRaw(
         .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StakeHistoryRecord
+//
+// Extended format that is persisted in Redis instead of the flat array.
+// Stores the data + metadata required for incremental sync.
+// Backward compatible: fetchStakeHistoryCached detects whether what is in Redis
+// is the old format (flat array) or the new one (object with .data).
+// ─────────────────────────────────────────────────────────────────────────────
+export interface StakeHistoryRecord {
+    /** 90 days of history, ordered from oldest to most recent */
+    data: StakeHistoryEntry[];
+    /** Date of the most recent processed day (YYYY-MM-DD) */
+    lastSyncedDate: string;
+    /** Unix timestamp (ms) of the last time the sync was executed */
+    lastSyncedAt: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchStakeHistoryIncremental
+//
+// Incremental version of fetchStakeHistoryRaw. Instead of refetching the
+// full 90 days, it only requests transactions from the day after the
+// last sync. It merges with the existing history and slides the 90-day
+// window by removing expired days.
+//
+// Result: from up to 20 HTTP pages per execution down to 1–2 pages in the
+// normal case (cron running daily).
+//
+// Automatic fallback to fetchStakeHistoryRaw if:
+//   - No previous data exists
+//   - Data has not been updated for more than FULL_REFRESH_DAYS days
+//   - Incremental fails for any reason
+// ─────────────────────────────────────────────────────────────────────────────
+const FULL_REFRESH_DAYS = 3; // If the last sync was more than 3 days ago, do a full refetch
+const WINDOW_DAYS = 90;
+
+export async function fetchStakeHistoryIncremental(
+    validatorAddress: string,
+    existing: StakeHistoryRecord | null,
+    network: Network = 'mainnet',
+): Promise<StakeHistoryRecord> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    // ── Decide whether to perform a full refresh or incremental ───────────────
+    const needsFullRefresh = (() => {
+        if (!existing || !existing.lastSyncedDate || !existing.data?.length) return true;
+        const lastSync = new Date(existing.lastSyncedDate);
+        const daysSinceSync = Math.floor((today.getTime() - lastSync.getTime()) / 86_400_000);
+        return daysSinceSync > FULL_REFRESH_DAYS;
+    })();
+
+    if (needsFullRefresh) {
+        const data = await fetchStakeHistoryRaw(validatorAddress, network);
+        return { data, lastSyncedDate: todayStr, lastSyncedAt: Date.now() };
+    }
+
+    // ── Incremental sync: only fetch new days ────────────────────────────────
+    const lastSyncedDate = existing!.lastSyncedDate;
+
+    // If already up to date, nothing to do
+    if (lastSyncedDate >= todayStr) {
+        return { ...existing!, lastSyncedAt: Date.now() };
+    }
+
+    // startDate = day after the last processed sync
+    const startDt = new Date(lastSyncedDate);
+    startDt.setDate(startDt.getDate() + 1);
+    const startDate = startDt.toISOString().split('T')[0];
+
+    // Pre-fill new days with zeros
+    const newDailyMap = new Map<string, { stake: number; unstake: number; claim: number }>();
+    const tempDt = new Date(startDt);
+    while (tempDt <= today) {
+        newDailyMap.set(tempDt.toISOString().split('T')[0], { stake: 0, unstake: 0, claim: 0 });
+        tempDt.setDate(tempDt.getDate() + 1);
+    }
+
+    // Paginate the Gateway only from startDate (usually 1–2 pages)
+    let cursor: string | undefined;
+    let done = false;
+    let pageCount = 0;
+    const MAX_PAGES = 5; // For incremental, 5 pages is more than enough; if exceeded, something went wrong
+
+    while (!done && pageCount < MAX_PAGES) {
+        const page = await searchTransactionsByAddress(
+            validatorAddress,
+            cursor,
+            100,
+            network,
+            { start: startDate },
+        );
+        pageCount++;
+
+        for (const tx of page.transactions) {
+            const confirmedAt = tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
+            if (confirmedAt < startDt) { done = true; break; }
+
+            const dateStr = confirmedAt.toISOString().split('T')[0];
+            const day = newDailyMap.get(dateStr);
+            if (!day) continue;
+
+            if (tx.stakeXrd) day.stake += tx.stakeXrd;
+            if (tx.unstakeXrd) day.unstake += tx.unstakeXrd;
+            if (tx.claimXrd) day.claim += tx.claimXrd;
+        }
+
+        if (!page.nextCursor) done = true;
+        else cursor = page.nextCursor;
+    }
+
+    // ── Merge: combine existing history with new days ─────────────────────────
+    const cutoffDate = new Date(today);
+    cutoffDate.setDate(cutoffDate.getDate() - (WINDOW_DAYS - 1));
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+    // Filter historical days that are still within the 90-day window
+    const filtered = existing!.data.filter(e => e.date >= cutoffStr);
+
+    // Add new days
+    const newEntries = Array.from(newDailyMap.entries())
+        .map(([date, vals]) => ({ date, ...vals }));
+
+    // Merge and sort
+    const merged = [...filtered, ...newEntries]
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Deduplicate just in case (same day appears in both filtered and newEntries)
+    const seen = new Set<string>();
+    const deduped = merged.filter(e => {
+        if (seen.has(e.date)) return false;
+        seen.add(e.date);
+        return true;
+    });
+
+    return {
+        data: deduped,
+        lastSyncedDate: todayStr,
+        lastSyncedAt: Date.now(),
+    };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchStakeHistoryCached
 //
@@ -971,20 +1115,28 @@ export async function fetchStakeHistoryCached(
     try {
         const redis = getRedisClient();
         if (redis) {
-            const cachedStr = await redis.hget<string>('stake_history_map', validatorAddress);
-            if (cachedStr) {
-                return typeof cachedStr === 'string' ? JSON.parse(cachedStr) : cachedStr;
+            const raw = await redis.hget<StakeHistoryRecord | StakeHistoryEntry[] | string>(
+                'stake_history_map',
+                validatorAddress,
+            );
+            if (raw) {
+                // New format: { data, lastSyncedDate, lastSyncedAt }
+                if (typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw) {
+                    return (raw as StakeHistoryRecord).data;
+                }
+                // Old format: flat array
+                if (Array.isArray(raw)) return raw;
+                // Serialized string (old format)
+                if (typeof raw === 'string') return JSON.parse(raw);
             }
         }
     } catch (e) {
         logger.error({ err: e, validatorAddress }, '[TransactionsService] Failed to read stake history from Redis');
     }
 
-    // Fallback: Calculate synchronously if missing from Redis
     logger.warn({ validatorAddress }, '[TransactionsService] Stake history missing in Redis. Falling back to heavy Gateway fetch.');
     return fetchStakeHistoryRaw(validatorAddress, network);
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchRoundProposer
 //
