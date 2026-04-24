@@ -37,6 +37,7 @@ interface AcademyPageProps {
 }
 
 export default async function AcademyPage({ params }: AcademyPageProps) {
+  "use cache";
   const { locale } = await params;
   const t = await getDictionary(locale as Locale);
 

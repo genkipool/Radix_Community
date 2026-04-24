@@ -6,6 +6,7 @@ import { useForum } from './ForumContext';
 import { getUserRank } from '../data/forumData';
 import { UserStats } from '@/components/ui/UserStats';
 import { XPBar } from '@/components/ui/XPBar';
+import { SafeImage } from '@/components/ui/SafeImage';
 
 export function UserHeader({ authorId, compact = false, right, hideBadge = false }: UserHeaderProps) {
     const { t, users } = useForum();
@@ -15,10 +16,10 @@ export function UserHeader({ authorId, compact = false, right, hideBadge = false
 
     return (
         <div className="flex items-center gap-3 min-w-0 flex-wrap">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
+            <SafeImage 
                 src={u.avatar} 
                 alt={u.name} 
+                fallbackName={u.name}
                 title={u.name}
                 className={`rounded-lg border-2 object-cover shrink-0 ${compact ? 'w-8 h-8' : 'w-10 h-10'}`}
                 style={{ borderColor: rank.color }} 

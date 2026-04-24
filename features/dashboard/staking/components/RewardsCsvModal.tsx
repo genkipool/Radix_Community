@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { X, Download, AlertCircle, Loader2 } from 'lucide-react';
 import type { DashboardDict } from '@/features/dashboard/types';
 
@@ -24,20 +25,24 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
+    const mounted = useMounted();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    // Sync state when modal opens (render-time prop comparison)
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
+            setLoading(true);
+            setError(null);
+            setSelectedYear(null);
+        }
+    }
 
     // Fetch available years when modal opens
     useEffect(() => {
         if (!isOpen) return;
 
         let cancelled = false;
-        setLoading(true);
-        setError(null);
-        setSelectedYear(null);
 
         fetch(`/api/validator-rewards?address=${encodeURIComponent(validatorAddress)}&action=years`)
             .then((res) => {

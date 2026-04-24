@@ -8,9 +8,15 @@ export function useReaderToC(toc: ReaderToCEntry[], docId: string) {
   // Serialize toc ids to a stable string
   const tocKey = toc.map(e => e.id).join(',');
 
+  // Reset activeId when toc changes (render-time prop comparison)
+  const [prevTocKey, setPrevTocKey] = useState(tocKey);
+  if (tocKey !== prevTocKey) {
+    setPrevTocKey(tocKey);
+    setActiveId(toc[0]?.id ?? '');
+  }
+
   useEffect(() => {
     if (toc.length === 0) return;
-    setActiveId(toc[0]?.id ?? '');
 
     const visibleSections = new Map<string, number>();
     observerRef.current?.disconnect();

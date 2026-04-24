@@ -52,6 +52,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
   const [topicOpen, setTopicOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [previewContent, setPreviewContent] = useState('');
 
   const isEditMode = !!initialDoc;
   const { state: formatState, forceUpdate } = useFormattingState(editorRef);
@@ -205,7 +206,12 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                 onHiliteColor={handleHiliteColor}
                 t={editorT}
                 previewMode={previewMode}
-                onTogglePreview={() => setPreviewMode(!previewMode)}
+                onTogglePreview={() => {
+                  if (!previewMode && editorRef.current) {
+                    setPreviewContent(editorRef.current.innerHTML);
+                  }
+                  setPreviewMode(!previewMode);
+                }}
               />
             </div>
 
@@ -236,7 +242,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                     lineHeight: '1.85',
                     fontSize: '1rem'
                   }}
-                  dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(editorRef.current?.innerHTML || '') }}
+                  dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(previewContent) }}
                 />
               )}
               <div

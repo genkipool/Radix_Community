@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 export type Theme = "radix-light" | "radix-dark" | "oro-light" | "oro-dark" | "radix-original-light" | "radix-original-dark";
 
@@ -25,6 +25,10 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
   const [theme, setThemeState] = useState<Theme>(() =>
     typeof window !== 'undefined' ? getHtmlTheme() : (initialTheme ?? 'radix-light')
   );
+
+  useEffect(() => {
+    document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
+  }, [theme]);
 
   const setTheme = (t: Theme) => {
     // Freeze all transitions for exactly one paint cycle.
@@ -53,7 +57,6 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
       });
     });
 
-    document.cookie = `theme=${t}; path=/; max-age=31536000; SameSite=Lax`; // eslint-disable-line react-compiler/react-compiler
     setThemeState(t);
   };
 

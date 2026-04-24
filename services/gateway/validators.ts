@@ -12,7 +12,7 @@ import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
 import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
 import type { Validator, NetworkStats } from '@/types/radix';
-import { unstable_cache, revalidateTag } from 'next/cache';
+import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
 
@@ -827,25 +827,24 @@ async function fetchValidatorsRaw(network: Network) {
     };
 }
 
-const getValidatorsFromDataCache = (network: Network) =>
-    unstable_cache(
-        async () => {
-            const result = await fetchValidatorsRaw(network);
+async function getValidatorsFromDataCache(network: Network) {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag('validators', `validators-${network}`);
 
-            // Optional: Background seed Redis on every Data Cache miss
-            const redis = getRedisClient();
-            if (redis) {
-                const backupKey = `radix_validators_${network}_backup`;
-                redis.set(backupKey, result).catch((e) =>
-                    logger.error({ err: e, network }, '[ValidatorsService] Failed to seed Redis on cache miss'),
-                );
-            }
+    const result = await fetchValidatorsRaw(network);
 
-            return result;
-        },
-        [`validators-${network}`],
-        { revalidate: 300, tags: ['validators', `validators-${network}`] },
-    )();
+    // Optional: Background seed Redis on every Data Cache miss
+    const redis = getRedisClient();
+    if (redis) {
+        const backupKey = `radix_validators_${network}_backup`;
+        redis.set(backupKey, result).catch((e) =>
+            logger.error({ err: e, network }, '[ValidatorsService] Failed to seed Redis on cache miss'),
+        );
+    }
+
+    return result;
+}
 
 /**
  * Cached validator data with SWR (Stale-While-Revalidate) pattern.

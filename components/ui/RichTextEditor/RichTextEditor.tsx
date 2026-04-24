@@ -30,6 +30,7 @@ export function RichTextEditor({
     const editorRef = useRef<HTMLDivElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
+    const [previewContent, setPreviewContent] = useState('');
     const { state: formatState, forceUpdate } = useFormattingState(editorRef);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +81,12 @@ export function RichTextEditor({
             t={t}
             disallowImages={disallowImages}
             previewMode={previewMode}
-            onTogglePreview={() => setPreviewMode(!previewMode)}
+            onTogglePreview={() => {
+                if (!previewMode && editorRef.current) {
+                    setPreviewContent(editorRef.current.innerHTML);
+                }
+                setPreviewMode(!previewMode);
+            }}
         />
     );
     return (
@@ -119,7 +125,7 @@ export function RichTextEditor({
                             lineHeight: '1.6', 
                             fontSize: '0.95rem'
                         }}
-                        dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(editorRef.current?.innerHTML || '') }}
+                        dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(previewContent) }}
                     />
                 )}
                 <div

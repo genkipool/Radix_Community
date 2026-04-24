@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
-'use client';
 
+'use client';
+import { SafeImage } from '@/components/ui/SafeImage';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Copy, Info, Shield } from 'lucide-react';
@@ -81,7 +81,7 @@ export function AddressDisplay({
     const entityName = meta?.name;
     const entityIcon = meta?.iconUrl;
 
-    const displayText = isCM 
+    const displayText = isCM
         ? (tt.consensus_manager_label || 'Consensus Manager (Protocol Action)')
         : address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address;
     const copyableAddr = String(isCM ? (tt.consensus_manager_address || address) : address);
@@ -98,7 +98,7 @@ export function AddressDisplay({
             )}
             <div className="flex items-center gap-2">
                 {entityIcon && (
-                    <img src={entityIcon} alt={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    <SafeImage src={entityIcon} alt={entityName || address} fallbackName={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" />
                 )}
 
                 <div className="flex flex-col min-w-0">
@@ -173,11 +173,11 @@ export function EntityBadge({
         >
             <div className="flex items-center gap-2 min-w-0">
                 {iconUrl && (
-                    <img
+                    <SafeImage
                         src={iconUrl}
                         alt={entityName || 'Token'}
+                        fallbackName={entityName || 'Token'}
                         className="w-6 h-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
-                        onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
                 )}
                 {!hideLabel && (
@@ -208,8 +208,8 @@ export function EntityBadge({
                 type="button"
                 onClick={e => { e.stopPropagation(); onCopy(clean); }}
                 className={`shrink-0 p-1 rounded transition-colors ${copiedAddress === clean
-                        ? 'text-green-500'
-                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                    ? 'text-green-500'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
                     }`}
                 title="Copy address"
             >
@@ -243,7 +243,7 @@ export function ValidatorNameLabel({
                     <span className="text-[var(--color-text-muted)] text-[10px]">
                         {hideParentheses ? short : `(${short})`}
                     </span>
-                  </>
+                </>
                 : (fallback || short)}
         </span>
     );

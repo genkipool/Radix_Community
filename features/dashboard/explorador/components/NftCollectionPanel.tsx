@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -123,7 +123,7 @@ export function NftCollectionPanel({
                                             onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
                                         >
                                             <div className="w-10 h-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
-                                                {imageUrl ? <img src={imageUrl} alt={shortId} className="w-full h-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                                {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" />
                                                     : <Box className="w-4 h-4 text-[var(--color-text-muted)] opacity-40" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -207,7 +207,7 @@ export function NftCollectionPanel({
                                                         )}
                                                         {imageUrl && (
                                                             <div className="rounded-xl overflow-hidden border border-[var(--color-card-border)] max-w-[140px]">
-                                                                <img src={imageUrl} alt={shortId} className="w-full object-cover" onError={e => { const p = e.currentTarget.parentElement; if (p) (p as HTMLElement).style.display = 'none'; }} />
+                                                                <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full object-cover" />
                                                             </div>
                                                         )}
                                                         {fields.length > 0 && (
@@ -245,7 +245,7 @@ export function NftCollectionPanel({
                 {activeTab === 'summary' && (
                     <div>
                         <div className="flex items-center gap-3 mb-4">
-                            {iconUrl ? <img src={iconUrl} alt={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                            {iconUrl ? <SafeImage src={iconUrl} alt={name} fallbackName={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
                                 : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0"><Box className="w-4 h-4" /></div>}
                             <div className="min-w-0 flex-1">
                                 <p className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</p>

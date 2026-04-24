@@ -237,8 +237,8 @@ export default function EditorToolbar({
 }: EditorToolbarProps & { previewMode?: boolean; onTogglePreview?: () => void }) {
     const [showForeColors, setShowForeColors] = useState(false);
     const [showHiliteColors, setShowHiliteColors] = useState(false);
-    const foreBtnRef = useRef<HTMLButtonElement>(null);
-    const hiliteBtnRef = useRef<HTMLButtonElement>(null);
+    const [foreBtnEl, setForeBtnEl] = useState<HTMLButtonElement | null>(null);
+    const [hiliteBtnEl, setHiliteBtnEl] = useState<HTMLButtonElement | null>(null);
 
     const cmd = (command: string, value?: string) => (e: React.MouseEvent) => {
         e.preventDefault();
@@ -320,7 +320,7 @@ export default function EditorToolbar({
                 {/* Text color */}
                 <div className="relative">
                     <TBtn
-                        ref={foreBtnRef}
+                        ref={setForeBtnEl}
                         icon={
                             <span className="flex flex-col items-center gap-0.5">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -342,7 +342,7 @@ export default function EditorToolbar({
                             currentColor={fs.foreColor} 
                             onSelect={onForeColor} 
                             onClose={() => setShowForeColors(false)} 
-                            anchorEl={foreBtnRef.current}
+                            anchorEl={foreBtnEl}
                         />
                     )}
                 </div>
@@ -350,7 +350,7 @@ export default function EditorToolbar({
                 {/* Highlight color */}
                 <div className="relative">
                     <TBtn
-                        ref={hiliteBtnRef}
+                        ref={setHiliteBtnEl}
                         icon={
                             <span className="flex flex-col items-center gap-0.5">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -371,7 +371,7 @@ export default function EditorToolbar({
                             colors={BG_COLORS} 
                             onSelect={onHiliteColor} 
                             onClose={() => setShowHiliteColors(false)} 
-                            anchorEl={hiliteBtnRef.current}
+                            anchorEl={hiliteBtnEl}
                         />
                     )}
                 </div>

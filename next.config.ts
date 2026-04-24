@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
   // direct sub-path imports so only the symbols actually used end up in the
   // bundle — reduces unused JS by ~20–35 KiB on average.
   experimental: {
+    useCache: true,
     optimizePackageImports: [
       'lucide-react',
       'motion/react',

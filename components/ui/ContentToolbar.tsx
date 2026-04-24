@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import {
     SortAsc, SortDesc, BookOpen,
     FoldVertical, UnfoldVertical,
@@ -85,19 +86,19 @@ export function ContentToolbar({
     const containerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
-    const [mounted, setMounted] = React.useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useMounted();
 
     // ── Alignment: open left or right depending on available space ───────────
-    const getCalendarAlign = (): 'left' | 'right' => {
-        if (!buttonRef.current || !mounted || typeof window === 'undefined') return 'left';
-        const { left } = buttonRef.current.getBoundingClientRect();
-        // 280 px = calendar width; if not enough space to the right → open left
-        return left + 280 > window.innerWidth ? 'right' : 'left';
-    };
+    const [calendarAlign, setCalendarAlign] = React.useState<'left' | 'right'>('left');
+
+    useEffect(() => {
+        if (calendarOpen && buttonRef.current && mounted) {
+            const { left } = buttonRef.current.getBoundingClientRect();
+            // 280 px = calendar width; if not enough space to the right → open left
+            const alignment = left + 280 > window.innerWidth ? 'right' : 'left';
+            setCalendarAlign(alignment);
+        }
+    }, [calendarOpen, mounted]);
 
     const handleToggleCalendar = () => {
         setCalendarOpen?.(!calendarOpen);
@@ -162,7 +163,7 @@ export function ContentToolbar({
                     {onSelectRange && (
                         <CalendarDropdown
                             open={!!calendarOpen}
-                            align={getCalendarAlign()}
+                            align={calendarAlign}
                             calendarT={calendarT}
                             dateRange={dateRange ?? { start: null, end: null }}
                             onSelectRange={onSelectRange}

@@ -1,13 +1,12 @@
 'use client';
 
 import '@/app/globals.css';
-import { useEffect, useState } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { en } from '@/i18n/locales/en';
 import { es } from '@/i18n/locales/es';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { NotFoundContent } from '@/components/error/NotFoundContent';
-import { Theme } from '@/context/ThemeContext';
 
 /**
  * Root not-found.tsx
@@ -19,16 +18,8 @@ import { Theme } from '@/context/ThemeContext';
  */
 export default function NotFound() {
   // Client-side detection for root not-found outside the [locale] param
-  const [locale, setLocale] = useState<'en' | 'es'>('en');
-  const [theme] = useState<Theme>('radix-dark');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Detect Locale from URL
-      const isEsPath = window.location.pathname.startsWith('/es');
-      setLocale(isEsPath ? 'es' : 'en');
-    }
-  }, []);
+  const mounted = useMounted();
+  const locale = mounted && typeof window !== 'undefined' && window.location.pathname.startsWith('/es') ? 'es' : 'en';
 
   const dictionary = locale === 'es' ? es : en;
   const t = dictionary.errors.not_found;
@@ -50,7 +41,7 @@ export default function NotFound() {
         />
       </head>
       <body className="bg-[var(--color-bg)] font-sans text-[var(--color-text-main)] antialiased">
-        <Providers locale={locale} dictionary={dictionary} theme={theme}>
+        <Providers locale={locale} dictionary={dictionary} theme="radix-dark">
           <AppShell>
             <NotFoundContent
               title={t.title}

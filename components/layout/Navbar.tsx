@@ -407,7 +407,11 @@ export default function Navbar() {
   const [optimisticLang, setOptimisticLang] = useState<string | null>(null);
   const [, startLangTransition] = useTransition();
 
-  useEffect(() => { setOptimisticLang(null); }, [language]);
+    const [prevLanguage, setPrevLanguage] = useState(language);
+  if (language !== prevLanguage) {
+    setPrevLanguage(language);
+    setOptimisticLang(null);
+  }
 
   // Prefetch the alternate language path so language switches feel instant.
   // Uses window.location.search instead of useSearchParams() to avoid Suspense.
@@ -480,7 +484,7 @@ export default function Navbar() {
       .filter((item) => !item.href.startsWith('http') && item.href !== '#')
       .map((item) => `/${lang}${item.href}`);
 
-  const ThemeIcon = () => {
+  const renderThemeIcon = () => {
     if (theme === 'oro-light' || theme === 'oro-dark') return <GoldPlatinumIcon className="w-4 h-4" />;
     if (theme === 'radix-original-light' || theme === 'radix-original-dark') return <RadixCircleIcon className="w-[18px] h-[18px]" />;
     return isLightTheme ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />;
@@ -568,7 +572,7 @@ export default function Navbar() {
               {/* Theme: click = cycle, hover = popup */}
               <NavPopup align="right" width="w-[440px]" trigger={
                 <button onClick={cycleTheme} className={iconBtnClass} aria-label="Select theme" suppressHydrationWarning>
-                  <ThemeIcon />
+                  {renderThemeIcon()}
                 </button>
               }>
                 <ThemePopupContent currentTheme={theme} onSelect={setTheme} t={t} />
@@ -631,7 +635,7 @@ export default function Navbar() {
                 onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 className={`${iconBtnClass} px-2`} aria-label="Toggle theme" suppressHydrationWarning
               >
-                <ThemeIcon />
+                {renderThemeIcon()}
               </button>
               <button onClick={() => setIsOpen(!isOpen)} className="text-[var(--color-text-main)] p-1 ml-1" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

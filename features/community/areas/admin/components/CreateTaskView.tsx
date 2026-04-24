@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Check, Users, Github } from 'lucide-react';
 import { Area, Task, TaskType, TaskStatus } from '../../../types/data.types';
@@ -15,6 +15,8 @@ interface CreateTaskViewProps {
     t: CommunityDictionary;
 }
 
+const generateTaskId = () => `dyn-${Date.now()}`;
+
 export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps) {
     const [success, setSuccess] = useState(false);
     const [lastCreated, setLastCreated] = useState('');
@@ -23,7 +25,7 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
         register,
         handleSubmit,
         reset,
-        watch,
+        control,
         formState: { errors }
     } = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
@@ -44,8 +46,8 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
         }
     });
 
-    const selectedAreaId = watch('areaId');
-    const taskType = watch('type');
+    const selectedAreaId = useWatch({ control, name: 'areaId' });
+    const taskType = useWatch({ control, name: 'type' });
     const selectedAreaObj = areas.find(a => a.id === selectedAreaId);
 
     const onSubmit = (data: TaskFormValues) => {
@@ -54,7 +56,7 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
         const isVoluntary = data.type === 'voluntary';
 
         const newTask: Task = {
-            id: `dyn-${Date.now()}`,
+            id: generateTaskId(),
             titleKey: '',
             descriptionKey: '',
             titleDirect: data.titleDirect.trim(),

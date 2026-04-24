@@ -75,18 +75,22 @@ export default function DocsClient({
     const [searchQuery, setSearchQuery] = useState('');
     const [localSearchValue, setLocalSearchValue] = useState('');
     // Initialise from SSR-provided cookie metadata so the server already renders the
-    // correct titles in the HTML. On the client, useEffect below syncs full data from
-    // localStorage (same ids/titles — no visual change, no flash).
-    const [userDocs, setUserDocs] = useState<UserDoc[]>(() =>
-        initialUserDocMeta.map((m: UserDocMeta) => ({
+    // correct titles in the HTML. On the client, the initialiser reads full data from
+    // localStorage directly (same ids/titles — no visual change, no flash).
+    const [userDocs, setUserDocs] = useState<UserDoc[]>(() => {
+        if (typeof window !== 'undefined') {
+            const docs = loadUserDocs();
+            if (docs.length > 0) return docs;
+        }
+        return initialUserDocMeta.map((m: UserDocMeta) => ({
             id: m.id,
             title: m.title,
             topic: m.topic,
             html: '',
             tags: '',
             publishedAt: 0,
-        }))
-    );
+        }));
+    });
     const [_isPending, startTransition] = useTransition();
     const { openDeleteDocModal } = useLayout();
 
@@ -108,13 +112,9 @@ export default function DocsClient({
         initialExpandedTopics,
     });
 
-    // After mount, load full docs from localStorage to hydrate the html/tags fields.
-    // The sidebar already shows correct titles from SSR (initialUserDocMeta from cookie),
-    // so this update is invisible — no flash, no layout shift.
+    // Keep sidebar meta cookie in sync for next SSR render (on mount)
     useEffect(() => {
         const docs = loadUserDocs();
-        if (docs.length > 0) setUserDocs(docs);
-        // Keep sidebar meta cookie in sync for next SSR render
         const meta = docs.map(d => ({ i: d.id, t: d.title, p: d.topic }));
         const metaStr = JSON.stringify(meta);
         setCookie('docs_sidebar_meta', metaStr.length < 3800 ? metaStr : '[]');

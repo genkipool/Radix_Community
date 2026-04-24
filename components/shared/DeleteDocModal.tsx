@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { useLayout } from '@/context/LayoutContext';
@@ -19,12 +19,15 @@ export function DeleteDocModal() {
     
     const [inputValue, setInputValue] = useState('');
 
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
     // Reset input when modal opens/closes
-    useEffect(() => {
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
         if (!isOpen) {
             setInputValue('');
         }
-    }, [isOpen]);
+    }
 
     const keyword = modalT.keyword || 'DELETE';
     const isConfirmed = inputValue.trim().toUpperCase() === keyword.toUpperCase();

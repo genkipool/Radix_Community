@@ -7,6 +7,5 @@ export const translations = {
   // Al castear 'es' como 'typeof en', le decimos a TypeScript que ambas
   // tienen exactamente la misma estructura, eliminando el error gigante de 
   // propiedades faltantes y conservando la propiedad '.en' estática.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  es: es as any as typeof en,
+  es: es as typeof en,
 };

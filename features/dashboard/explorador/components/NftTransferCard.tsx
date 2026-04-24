@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -75,7 +75,7 @@ const NftTransferCard = ({
                 onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {iconUrl ? <img src={iconUrl} alt={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0 object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                    {iconUrl ? <SafeImage src={iconUrl} alt={symbol || name} fallbackName={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0 object-cover" />
                         : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0"><Landmark className="w-5 h-5" /></div>}
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0 flex-nowrap">

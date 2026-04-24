@@ -37,7 +37,7 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
         onChange(next);
     };
 
-    const Icon = () => {
+    const renderIcon = () => {
         switch (columns) {
             case 1: return <Rows3 className="w-4 h-4" />;
             case 2: return <Grid2x2 className="w-4 h-4" />;
@@ -67,7 +67,7 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
                     aria-label="Previous grid layout"
                     className="pl-3 pr-1.5 py-2 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
                 >
-                    <Icon />
+                    {renderIcon()}
                 </div>
                 <div 
                     onClick={increment}

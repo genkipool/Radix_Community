@@ -137,9 +137,17 @@ export function useValidatorFilters({
   const [visibleValCount, setVisibleValCount] = useState(VALIDATOR_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  const [prevDeps, setPrevDeps] = useState({ activeTags, searchQuery, sortMode, network, randomSeed });
+  if (
+    activeTags !== prevDeps.activeTags ||
+    searchQuery !== prevDeps.searchQuery ||
+    sortMode !== prevDeps.sortMode ||
+    network !== prevDeps.network ||
+    randomSeed !== prevDeps.randomSeed
+  ) {
+    setPrevDeps({ activeTags, searchQuery, sortMode, network, randomSeed });
     setVisibleValCount(VALIDATOR_PAGE_SIZE);
-  }, [activeTags, searchQuery, sortMode, network, randomSeed]);
+  }
 
   useEffect(() => {
     if (activeView !== 'staking' || visibleValCount >= filtered.length) return;

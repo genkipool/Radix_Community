@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
-import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
+import Image from 'next/image';
 import type { CSSProperties } from 'react';
 import { buildFallbackAvatar } from '@/utils/sanitize';
 
@@ -31,10 +31,15 @@ export function SafeImage({
     const [imgSrc, setImgSrc] = useState(() => resolveSrc(src, fallback));
     const imgRef = useRef<HTMLImageElement>(null);
 
+    const [prevSrc, setPrevSrc] = useState(src);
+    const [prevFallbackName, setPrevFallbackName] = useState(fallbackName);
+    
     // Sync when src prop changes (e.g. list re-renders with different data)
-    useEffect(() => {
+    if (src !== prevSrc || fallbackName !== prevFallbackName) {
+        setPrevSrc(src);
+        setPrevFallbackName(fallbackName);
         setImgSrc(resolveSrc(src, fallback));
-    }, [src, fallback]);
+    }
 
     // Catch cached 404s that resolve before React's onError attaches
     useLayoutEffect(() => {
@@ -45,7 +50,7 @@ export function SafeImage({
     const handleError = () => setImgSrc(fallback);
 
     return (
-        <img
+        <Image
             ref={imgRef}
             src={imgSrc}
             alt={alt}
@@ -54,6 +59,9 @@ export function SafeImage({
             title={title}
             onError={handleError}
             loading={loading}
+            unoptimized={true} // External avatars can be from any domain
+            width={100} // Default placeholder resolution
+            height={100}
         />
     );
 }

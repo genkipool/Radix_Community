@@ -18,7 +18,7 @@
 import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
-import { unstable_cache, revalidateTag } from 'next/cache';
+import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 import { after } from 'next/server';
@@ -574,61 +574,59 @@ export async function fetchRecentTransactions(
 // Returns the raw Gateway item used by both /api/transactions/[hash] and
 // the txid_ fast-path in searchTransactionsByAddress.
 // ─────────────────────────────────────────────────────────────────────────────
-const getCachedTransactionDetails = unstable_cache(
-    async (hash: string, network: Network): Promise<unknown | null> => {
-        const restBase =
-            network === 'stokenet'
-                ? 'https://stokenet.radixdlt.com'
-                : 'https://mainnet.radixdlt.com';
-        try {
-            const res = await withRetry(async () => {
-                const r = await fetch(`${restBase}/transaction/committed-details`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        intent_hash: hash,
-                        opt_ins: {
-                            receipt_events: true,
-                            affected_global_entities: true,
-                            balance_changes: true,
-                            receipt_fee_summary: true,
-                            receipt_fee_source: true,
-                            receipt_fee_destination: true,
-                            manifest_instructions: true,
-                            confirmed_at: true,
-                            raw_hex: false,
-                            receipt_state_changes: true,
-                            receipt_costing_parameters: true,
-                            receipt_output: true,
-                            detailed_events: true
-                        },
-                    }),
-                });
-                if (!r.ok)
-                    throw Object.assign(new Error(`Gateway ${r.status}`), { status: r.status });
-                return r.json();
-            });
-            return res?.transaction ?? null;
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            logger.error(
-                { err: error },
-                'fetchTransactionDetails error: %s',
-                message,
-            );
-            throw new Error(`Failed to fetch transaction details: ${message}`);
-        }
-    },
-    ['tx-details-base'],
-    { revalidate: 3600, tags: ['transactions', 'tx-details'] }
-);
-
 export async function fetchTransactionDetails(
     hash: string,
     network: Network = 'mainnet',
 ): Promise<unknown | null> {
-    return getCachedTransactionDetails(hash, network);
+    "use cache";
+    cacheLife("hours");
+    cacheTag('transactions', 'tx-details', 'tx-details-base');
+
+    const restBase =
+        network === 'stokenet'
+            ? 'https://stokenet.radixdlt.com'
+            : 'https://mainnet.radixdlt.com';
+    try {
+        const res = await withRetry(async () => {
+            const r = await fetch(`${restBase}/transaction/committed-details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    intent_hash: hash,
+                    opt_ins: {
+                        receipt_events: true,
+                        affected_global_entities: true,
+                        balance_changes: true,
+                        receipt_fee_summary: true,
+                        receipt_fee_source: true,
+                        receipt_fee_destination: true,
+                        manifest_instructions: true,
+                        confirmed_at: true,
+                        raw_hex: false,
+                        receipt_state_changes: true,
+                        receipt_costing_parameters: true,
+                        receipt_output: true,
+                        detailed_events: true
+                    },
+                }),
+            });
+            if (!r.ok)
+                throw Object.assign(new Error(`Gateway ${r.status}`), { status: r.status });
+            return r.json();
+        });
+        return res?.transaction ?? null;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(
+            { err: error },
+            'fetchTransactionDetails error: %s',
+            message,
+        );
+        throw new Error(`Failed to fetch transaction details: ${message}`);
+    }
 }
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // searchTransactionsByAddress
@@ -766,7 +764,7 @@ async function fetchFilteredTransactionsRaw(options: {
 /**
  * Next.js Data Cache wrapper for filtered transactions.
  */
-const getFilteredTransactionsFromDataCache = (
+async function getFilteredTransactionsFromDataCache(
     options: {
         tag: string;
         start: string | null;
@@ -778,25 +776,24 @@ const getFilteredTransactionsFromDataCache = (
         timezone: string;
     },
     backupKey: string
-) =>
-    unstable_cache(
-        async () => {
-            logger.info({ tag: options.tag, address: options.address }, '[TransactionsService] Data Cache miss - fetching from API');
-            const result = await fetchFilteredTransactionsRaw(options);
+) {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag('transactions', `transactions-${options.network}`);
 
-            // Seed Redis for SWR
-            const redis = getRedisClient();
-            if (backupKey && redis && result.transactions && result.transactions.length > 0) {
-                redis.set(backupKey, result).catch(e =>
-                    logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
-                );
-            }
+    logger.info({ tag: options.tag, address: options.address }, '[TransactionsService] Data Cache miss - fetching from API');
+    const result = await fetchFilteredTransactionsRaw(options);
 
-            return result;
-        },
-        [`filtered-txs-${options.network}-${options.tag.replace(/\s+/g, '_').toLowerCase()}-${options.address || 'global'}-${options.start || 'all'}-${options.end || 'all'}-${options.timezone.replace(/\//g, '_')}-${options.cursor || 'tip'}-${options.limit}`],
-        { revalidate: 30, tags: ['transactions', `transactions-${options.network}`] }
-    )();
+    // Seed Redis for SWR
+    const redis = getRedisClient();
+    if (backupKey && redis && result.transactions && result.transactions.length > 0) {
+        redis.set(backupKey, result).catch(e =>
+            logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
+        );
+    }
+
+    return result;
+}
 
 /**
  * Entry point for filtered transaction queries.
@@ -1211,45 +1208,44 @@ const getRedisClient = () => {
  * Paginated queries (cursor != null) always go to the API directly
  * since they cannot be meaningfully cached in Storage.
  */
-const getRecentTransactionsFromDataCache = (
+async function getRecentTransactionsFromDataCache(
     cursor: string | undefined,
     limit: number,
     network: Network
-) =>
-    unstable_cache(
-        async () => {
-            const isTip = !cursor;
-            const result = await fetchRecentTransactions(cursor, limit, network);
+) {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag('transactions', `transactions-${network}`);
 
-            // Seed Storage for future requests (tip only)
-            if (isTip) {
-                const redis = getRedisClient();
-                if (redis && result.transactions && result.transactions.length > 0) {
-                    const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
-                    redis.set(backupKey, result).catch((e) =>
-                        logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
-                    );
+    const isTip = !cursor;
+    const result = await fetchRecentTransactions(cursor, limit, network);
 
-                    // Pre-warm the filtered views to keep them mathematically in sync
-                    const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
-                    Promise.allSettled(
-                        prefetchTags.map(async (t) => {
-                            const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
-                            const tagRes = await fetchFilteredTransactionsRaw(opParams);
-                            if (tagRes.transactions && tagRes.transactions.length > 0) {
-                                const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                                await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
-                            }
-                        })
-                    ).catch(() => { });
-                }
-            }
+    // Seed Storage for future requests (tip only)
+    if (isTip) {
+        const redis = getRedisClient();
+        if (redis && result.transactions && result.transactions.length > 0) {
+            const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
+            redis.set(backupKey, result).catch((e) =>
+                logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
+            );
 
-            return result;
-        },
-        [`recent-transactions-${network}-${cursor || 'tip'}-${limit}`],
-        { revalidate: 10, tags: ['transactions', `transactions-${network}`] },
-    )();
+            // Pre-warm the filtered views to keep them mathematically in sync
+            const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
+            Promise.allSettled(
+                prefetchTags.map(async (t) => {
+                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
+                    const tagRes = await fetchFilteredTransactionsRaw(opParams);
+                    if (tagRes.transactions && tagRes.transactions.length > 0) {
+                        const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
+                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
+                    }
+                })
+            ).catch(() => { });
+        }
+    }
+
+    return result;
+}
 
 /**
  * Cached version of fetchRecentTransactions (Data Cache).
@@ -1348,20 +1344,19 @@ export async function getRecentTransactionsCached(
  * Cached version of fetchRoundProposer (Data Cache).
  * A committed round's proposer is immutable — cache for 24 h.
  */
-export const getRoundProposerCached = (
+export async function getRoundProposerCached(
     epoch: number,
     round: number,
     stateVersion: number,
     network: Network = 'mainnet'
-) =>
-    unstable_cache(
-        async () => {
-            const proposer = await fetchRoundProposer(epoch, round, stateVersion, network);
-            if (!proposer) {
-                throw new Error(`Round proposer not available for ${epoch}:${round} on ${network}`);
-            }
-            return proposer;
-        },
-        [`round-proposer-${network}-${epoch}-${round}-${stateVersion}`],
-        { revalidate: 86400, tags: ['round-proposer'] },
-    )();
+) {
+    "use cache";
+    cacheLife("days");
+    cacheTag('round-proposer');
+
+    const proposer = await fetchRoundProposer(epoch, round, stateVersion, network);
+    if (!proposer) {
+        throw new Error(`Round proposer not available for ${epoch}:${round} on ${network}`);
+    }
+    return proposer;
+}

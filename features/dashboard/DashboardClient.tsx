@@ -104,17 +104,19 @@ export default function DashboardClient({
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
 
   // Sync temp state with committed state if URL changes externally (e.g., reset)
-  useEffect(() => {
-    setTempDateRange(dateRange);
-  }, [dateRange]);
+  const [prevDateRange, setPrevDateRange] = useState(dateRange);
+  if (dateRange !== prevDateRange) {
+      setPrevDateRange(dateRange);
+      setTempDateRange(dateRange);
+  }
 
-  // Commit the date range and close the calendar when both dates are selected
-  useEffect(() => {
-    if (tempDateRange.start && tempDateRange.end) {
+  const handleSelectRange = (range: { start: string | null; end: string | null }) => {
+    setTempDateRange(range);
+    if (range.start && range.end) {
       setCalendarOpen(false);
-      handleDateRangeChange(tempDateRange);
+      handleDateRangeChange(range);
     }
-  }, [tempDateRange]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   const handleCalendarToggle = (isOpen: boolean) => {
     setCalendarOpen(isOpen);
@@ -286,7 +288,7 @@ export default function DashboardClient({
   useEffect(() => {
     setShowFooter(true);
     return () => setShowFooter(true);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setShowFooter]);
 
   // Synchronize LiveStore network targeting
   useEffect(() => {
@@ -405,7 +407,7 @@ export default function DashboardClient({
           calendarOpen={calendarOpen}
           onCalendarToggle={handleCalendarToggle}
           dateRange={tempDateRange}
-          onSelectRange={setTempDateRange}
+          onSelectRange={handleSelectRange}
           onResetRange={() => {
             const empty = { start: null, end: null };
             setTempDateRange(empty);

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { TagFilterBar } from "@/components/ui/TagFilterBar";
@@ -16,9 +16,11 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
   const [activeTag, setActiveTag] = useState<string>("All");
 
   // Reset filter when language changes to avoid mismatch with localized tags
-  useEffect(() => {
+  const [prevLanguage, setPrevLanguage] = useState(language);
+  if (language !== prevLanguage) {
+    setPrevLanguage(language);
     setActiveTag("All");
-  }, [language]);
+  }
 
   const phases = Array.from({ length: 32 }, (_, i) => {
     const n = i + 1;

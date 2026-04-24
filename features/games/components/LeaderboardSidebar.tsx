@@ -1,6 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
-
+import { SafeImage } from '@/components/ui/SafeImage';
 import { Trophy, Info, Users, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -47,7 +46,8 @@ function MedalSVG({ rank }: { rank: number }) {
 function PlayerAvatar({ user, size = 36 }: { user: LeaderboardUser; size?: number }) {
     const medal = MEDAL_COLORS[user.rank];
     return (
-        <div className="relative shrink-0 rounded-full overflow-hidden" style={{ width: size, height: size, border: `2px solid ${medal ?? 'var(--color-card-border)'}` }}>            <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" loading="lazy" />
+        <div className="relative shrink-0 rounded-full overflow-hidden" style={{ width: size, height: size, border: `2px solid ${medal ?? 'var(--color-card-border)'}` }}>
+            <SafeImage src={user.avatarUrl} alt={user.username} fallbackName={user.username} className="w-full h-full object-cover" loading="lazy" />
         </div>
     );
 }
@@ -159,9 +159,11 @@ export default function LeaderboardSidebar({ gameTitle }: LeaderboardSidebarProp
                             <div
                                 className="w-9 h-9 rounded-full overflow-hidden border-2"
                                 style={{ borderColor: 'var(--color-primary)' }}
-                            >                                <img
+                            >
+                                <SafeImage
                                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=CurrentUser`}
                                     alt="You"
+                                    fallbackName="You"
                                     className="w-full h-full object-cover"
                                     loading="lazy"
                                 />

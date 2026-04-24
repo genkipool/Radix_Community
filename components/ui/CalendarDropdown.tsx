@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export interface CalendarTranslations {
@@ -64,12 +64,13 @@ export function CalendarDropdown({
         return new Date();
     });
 
-    // Reset to today whenever opened without a selection
-    useEffect(() => {
+    const [prevOpen, setPrevOpen] = useState(open);
+    if (open !== prevOpen) {
+        setPrevOpen(open);
         if (open && !dateRange.start) {
             setViewDate(new Date());
         }
-    }, [open, dateRange.start]);
+    }
 
     const currentMonth = viewDate.getMonth();
     const currentYear = viewDate.getFullYear();

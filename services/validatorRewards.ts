@@ -265,26 +265,26 @@ export async function syncRewardsToRedis(
 
 // ── Read Helpers (for API routes / UI) ─────────────────────────────────────────
 
-import { unstable_cache } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 
 /**
  * Cached getter for all epoch rewards down from Redis to minimize commands.
  * Cached for 5 minutes (300 seconds).
  */
-const getCachedAllEpochRewards = unstable_cache(
-    async () => {
-        const redis = getRewardsRedisClient();
-        if (!redis) return null;
-        try {
-            return await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
-        } catch (e) {
-            logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
-            return null;
-        }
-    },
-    ['all_validator_epoch_rewards_cache'],
-    { revalidate: 300 }
-);
+async function getCachedAllEpochRewards() {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag('all_validator_epoch_rewards_cache');
+
+    const redis = getRewardsRedisClient();
+    if (!redis) return null;
+    try {
+        return await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
+    } catch (e) {
+        logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
+        return null;
+    }
+}
 
 /**
  * Returns the XRD rewards for the last N epochs for a specific validator.

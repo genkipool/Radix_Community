@@ -5,7 +5,8 @@
  * Replaced Framer Motion with native CSS animations to significantly improve 
  * LCP (Largest Contentful Paint) and reduce hydration blocking time.
  */
-import { useReducer, useEffect, useState } from 'react';
+import { useReducer, useEffect } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Dictionary } from '@/types/i18n';
 
@@ -57,13 +58,8 @@ function carouselReducer(state: CarouselState, action: CarouselAction): Carousel
 }
 
 export default function HeroCarousel({ t }: { t: Dictionary }) {
-  const [state, dispatch] = useReducer(carouselReducer, initialState);
-  const [mounted, setMounted] = useState(false);
-  const { activeIdx, exitingIdx, isPaused, targetIdx } = state;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [{ activeIdx, exitingIdx, targetIdx, isPaused }, dispatch] = useReducer(carouselReducer, initialState);
+  const mounted = useMounted();
 
   const slides = [
     {

@@ -50,7 +50,7 @@ export function BlogOverlay({
 }: BlogOverlayProps) {
     // Track the stage of the morph animation to safely detach layout updates during navigation
     const [morphState, setMorphState] = React.useState<'opening' | 'open' | 'closing'>('opening');
-    const morphPostIdRef = React.useRef(post.id); // For the initial open animation
+    const [initialPostId] = React.useState(post.id); // For the initial open animation
 
     // Restore smooth layout transition and specific layoutId before closing so it morphs back to the *current* card!
     const handleInternalClose = React.useCallback(() => {
@@ -65,7 +65,7 @@ export function BlogOverlay({
 
     let activeLayoutId: string | undefined;
     if (morphState === 'opening') {
-        activeLayoutId = `post-${morphPostIdRef.current}`;
+        activeLayoutId = `post-${initialPostId}`;
     } else if (morphState === 'closing') {
         activeLayoutId = `post-${post.id}`;
     }

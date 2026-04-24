@@ -7,14 +7,13 @@
 
 import { getGateway, withRetry, type Network } from './client';
 import logger from '@/lib/logger';
-import { unstable_cache } from 'next/cache';
+import { cacheTag, cacheLife } from 'next/cache';
 
 /** Minimal shape returned by the Gateway for an entity detail response */
 export type EntityDetailsResponse = unknown;
 
 /** Minimal shape for a non-fungible ID item */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type NonFungibleIdItem = any;
+export type NonFungibleIdItem = unknown;
 
 // ── Ledger state ──────────────────────────────────────────────────────────────
 export async function fetchLedgerState(network: Network = 'mainnet') {
@@ -54,48 +53,43 @@ const RESOURCE_METADATA_KEYS = [
   'dapp_definitions',
 ];
 
-const getCachedEntityDetails = (address: string, network: Network) =>
-  unstable_cache(
-    async (): Promise<EntityDetailsResponse | null> => {
-      const gateway = getGateway(network);
-      try {
-        const res = await withRetry(() =>
-          gateway.state.innerClient.stateEntityDetails({
-            stateEntityDetailsRequest: {
-              addresses: [address],
-              opt_ins: {
-                explicit_metadata: RESOURCE_METADATA_KEYS,
-                ancestor_identities: false,
-                component_royalty_vault_balance: false,
-                package_royalty_vault_balance: false,
-                non_fungible_include_nfids: false,
-              },
-            },
-          }),
-        );
-        const item = (res as { items?: unknown[] })?.items?.[0] ?? null;
-        
-        // SECURITY: Anti-Garbage protection.
-        if (!item) {
-          throw new Error(`Empty entity response for ${address} on ${network}`);
-        }
-        
-        return item as EntityDetailsResponse;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logger.error({ err: error }, 'Error fetching entity details: %s', message);
-        throw error; // Re-throw to bypass cache
-      }
-    },
-    [`entity-details-${network}-${address}`],
-    { revalidate: 3600, tags: ['entities', `entity-${address}`] }
-  )();
-
 export async function fetchEntityDetails(
   address: string,
   network: Network = 'mainnet',
 ): Promise<EntityDetailsResponse | null> {
-  return getCachedEntityDetails(address, network);
+  "use cache";
+  cacheLife("hours");
+  cacheTag('entities', `entity-${address}`);
+
+  const gateway = getGateway(network);
+  try {
+    const res = await withRetry(() =>
+      gateway.state.innerClient.stateEntityDetails({
+        stateEntityDetailsRequest: {
+          addresses: [address],
+          opt_ins: {
+            explicit_metadata: RESOURCE_METADATA_KEYS,
+            ancestor_identities: false,
+            component_royalty_vault_balance: false,
+            package_royalty_vault_balance: false,
+            non_fungible_include_nfids: false,
+          },
+        },
+      }),
+    );
+    const item = (res as { items?: unknown[] })?.items?.[0] ?? null;
+    
+    // SECURITY: Anti-Garbage protection.
+    if (!item) {
+      throw new Error(`Empty entity response for ${address} on ${network}`);
+    }
+    
+    return item as EntityDetailsResponse;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error({ err: error }, 'Error fetching entity details: %s', message);
+    throw error; // Re-throw to bypass cache
+  }
 }
 
 // ── NFT data ──────────────────────────────────────────────────────────────────

@@ -144,7 +144,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
 
     // Extracted to avoid duplicating the identical status+type label pair
-    const StatusTypeLabels = () => (
+    const renderStatusTypeLabels = () => (
         <>
             <span className={`${labelBaseClass} bg-white/5`} style={{ color, borderColor: `${color}40`, boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`, textShadow: `0 0 8px ${color}40` }}>
                 <span className="mt-[1px]">{statusLabel}</span>
@@ -269,7 +269,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
                             {columns === 1 && (
                                 <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center gap-2 shrink-0">
-                                    <StatusTypeLabels />
+                                    {renderStatusTypeLabels()}
                                 </div>
                             )}
                         </div>
@@ -370,7 +370,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Labels Footer (Grid 2+) */}
                         {columns >= 2 && (
                             <div className={`flex ${columns >= 7 ? 'flex-col items-start' : 'items-center'} gap-2 mt-4 pt-3 border-t border-[var(--color-card-border)]/50`}>
-                                <StatusTypeLabels />
+                                {renderStatusTypeLabels()}
 
                                 {/* Proposer for Grid 2-4 (Footer) */}
                                 {columns >= 2 && columns <= 4 && proposerDisplay && (

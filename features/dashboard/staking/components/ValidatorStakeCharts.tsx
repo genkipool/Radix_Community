@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useLayoutEffect } from 'react';
+import React from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import {
     ResponsiveContainer,
     ComposedChart,
@@ -94,8 +95,7 @@ export const StakeEvolutionChart = ({
     // chart renders immediately without any visible flash.
     // SSR and first client render both produce the empty placeholder → no
     // hydration mismatch → no re-mount → no modal animation on reload.
-    const [mounted, setMounted] = useState(false);
-    useLayoutEffect(() => { setMounted(true); }, []);
+    const mounted = useMounted();
     if (!mounted) return <div className="veb-chart-recharts" style={{ minHeight: 220 }} />;
 
     const maxVal = Math.max(...data.map(d => d.totalStake), 0);
@@ -132,8 +132,7 @@ export const StakeHistoryChart = ({
     data, t, locale,
 }: StakeHistoryChartProps) => {
     // Same hydration guard as StakeEvolutionChart.
-    const [mounted, setMounted] = useState(false);
-    useLayoutEffect(() => { setMounted(true); }, []);
+    const mounted = useMounted();
     if (!mounted) return <div className="veb-chart-recharts" style={{ minHeight: 220 }} />;
 
     const chartData = data.map(d => ({

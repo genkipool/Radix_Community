@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { createHighlighter, type Highlighter } from 'shiki';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -48,11 +49,7 @@ export function CodeHighlighter({ html, className = '' }: CodeHighlighterProps) 
   const [highlightedHtml, setHighlightedHtml] = useState<string>(html);
   const [isLoaded, setIsLoaded] = useState(false);
   const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   const getActiveTheme = (): ShikiTheme => {
     if (!mounted) return 'dracula';

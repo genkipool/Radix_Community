@@ -28,7 +28,11 @@ export function SearchBar({
     const [localValue, setLocalValue] = useState(value);
     const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-    useEffect(() => { setLocalValue(value); }, [value]);
+        const [prevValue, setPrevValue] = useState(value);
+    if (value !== prevValue) {
+        setPrevValue(value);
+        setLocalValue(value);
+    }
 
     const handleChange = (v: string) => {
         setLocalValue(v);

@@ -556,13 +556,17 @@ function dispatchSfx(events: SfxEvent[]) {
   }
 }
 
+import { useLayoutEffect } from 'react';
+
 // ── Main Game Component ────────────────────────────────────────────
 export default function RadixInvadersGame() {
   const { t: dict, language } = useLanguage();
   const t = (dict.games.space_invaders ?? {}) as unknown as Record<string, string>;
   // Keep a stable ref so useEffect deps don't change on every render
   const tRef = useRef(t);
-  tRef.current = t;
+  useLayoutEffect(() => {
+    tRef.current = t;
+  });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -579,7 +583,10 @@ export default function RadixInvadersGame() {
 
   const [appScreen, setAppScreen] = useState<'INTRO' | 'ALIEN_INTRO' | 'BADGE_ACQUIRING' | 'BADGE_SUCCESS' | 'GAME'>('INTRO');
   const [badgeStep, setBadgeStep] = useState<'acquiring' | 'success'>('acquiring');
-  const [soundMuted, setSoundMuted] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(() => {
+    if (typeof document === 'undefined') return false;
+    return getCookie(COOKIE_MUTED) === 'true';
+  });
   const [pendingMode, setPendingMode] = useState<GameMode>('FUN');
   const { setTheaterMode } = useLayout();
   const isMobileRef = useRef(false);
@@ -592,14 +599,12 @@ export default function RadixInvadersGame() {
     }
   }, [setTheaterMode]);
 
-  // Load mute preference from cookie
+  // Sync Howler mute state with initial sound preference
   useEffect(() => {
-    const saved = getCookie(COOKIE_MUTED);
-    if (saved === 'true') {
-      setSoundMuted(true);
+    if (soundMuted) {
       setMuted(true);
     }
-  }, []);
+  }, [soundMuted]);
 
   // ── Request full-screen on mobile (must be called from user gesture) ──
   const activateTheaterIfMobile = () => {

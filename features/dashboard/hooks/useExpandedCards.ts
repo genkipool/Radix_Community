@@ -53,13 +53,17 @@ export function useExpandedCards({
   }, [expandedTxs, network]);
 
   // ── Auto-collapse on dense grid ──────────────────────────────────
-  useEffect(() => {
-    if (valColumns >= 4 && expandedValidators.size > 0) setExpandedValidators(new Set());
-  }, [valColumns]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [prevValColumns, setPrevValColumns] = useState(valColumns);
+  if (valColumns !== prevValColumns) {
+      setPrevValColumns(valColumns);
+      if (valColumns >= 4 && expandedValidators.size > 0) setExpandedValidators(new Set());
+  }
 
-  useEffect(() => {
-    if (txColumns >= 4 && expandedTxs.size > 0) setExpandedTxs(new Set());
-  }, [txColumns]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [prevTxColumns, setPrevTxColumns] = useState(txColumns);
+  if (txColumns !== prevTxColumns) {
+      setPrevTxColumns(txColumns);
+      if (txColumns >= 4 && expandedTxs.size > 0) setExpandedTxs(new Set());
+  }
 
   // ── Derived view-local set ───────────────────────────────────────
   const expandedPosts    = activeView === 'staking' ? expandedValidators : expandedTxs;

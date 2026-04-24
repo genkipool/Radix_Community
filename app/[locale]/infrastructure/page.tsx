@@ -37,6 +37,7 @@ interface InfrastructurePageProps {
 }
 
 export default async function InfrastructurePage({ params }: InfrastructurePageProps) {
+  "use cache";
   const { locale } = await params;
   const t = await getDictionary(locale as Locale);
 

@@ -1,8 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ForumPost, ForumReply, ForumClientProps } from '../types';
 import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
+
+const formatForumContent = (text: string) => {
+    if (!text) return '';
+    // If it already looks like HTML (starts with < or has tags), return as is
+    if (text.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(text)) return text;
+    // Otherwise replace newlines with <br /> for dangerouslySetInnerHTML
+    return text.replace(/\n/g, '<br />');
+};
+
+type PostsContent = Record<string, { title: string; content: string; replies?: Record<string, string> }>;
+
+const mapLocalizedPosts = (initial: ForumPost[], postsContent: PostsContent) => {
+    return initial.map(post => {
+        const content = postsContent[post.id];
+        return {
+            ...post,
+            title: content?.title || '',
+            content: formatForumContent(content?.content || ''),
+            replies: post.replies.map((reply: ForumReply) => ({
+                ...reply,
+                content: formatForumContent(content?.replies?.[reply.id] || '')
+            }))
+        };
+    });
+};
 
 export function useForumState({ t, initialPosts, initialUsers }: ForumClientProps) {
     const [urlActiveTag, setActiveTag] = useSpeedSyncURL<string>('tag', 'General');
@@ -24,15 +49,7 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [direction, setDirection] = useState(0);
     const [customTagValue, setCustomTagValue] = useState('');
 
-    // Mobile detection: force 1 column on small screens
-    useEffect(() => {
-        const checkMobile = () => {
-            if (typeof window !== 'undefined' && window.innerWidth < 640) setColumns(1);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+
     const [replyingToPost, setReplyingToPost] = useState<{
         postId: number;
         authorId: string;
@@ -46,34 +63,20 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const [replyToFilter, setReplyToFilter] = useState<string>('');
     const [customPosts, setCustomPosts] = useState<ForumPost[]>([]);
 
-    // Derived Data
-    const [localizedPosts, setLocalizedPosts] = useState<ForumPost[]>([]);
+    // Localized Posts State with Sync Pattern
+    const [localizedPosts, setLocalizedPosts] = useState<ForumPost[]>(() => 
+        mapLocalizedPosts(initialPosts, t.forum.posts_content)
+    );
 
-    useEffect(() => {
-        const postsContent = t.forum.posts_content as Record<string, { title: string; content: string; replies?: Record<string, string> }>;
+    const [prevSyncState, setPrevSyncState] = useState({ 
+        initialPosts, 
+        locale: t.forum.posts_content 
+    });
 
-        const formatContent = (text: string) => {
-            if (!text) return '';
-            // If it already looks like HTML (starts with < or has tags), return as is
-            if (text.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(text)) return text;
-            // Otherwise replace newlines with <br /> for dangerouslySetInnerHTML
-            return text.replace(/\n/g, '<br />');
-        };
-
-        const newLocalizedPosts = initialPosts.map(post => {
-            const content = postsContent[post.id];
-            return {
-                ...post,
-                title: content?.title || '',
-                content: formatContent(content?.content || ''),
-                replies: post.replies.map((reply: ForumReply) => ({
-                    ...reply,
-                    content: formatContent(content?.replies?.[reply.id] || '')
-                }))
-            };
-        });
-        setLocalizedPosts(newLocalizedPosts);
-    }, [initialPosts, t.forum.posts_content]);
+    if (initialPosts !== prevSyncState.initialPosts || t.forum.posts_content !== prevSyncState.locale) {
+        setPrevSyncState({ initialPosts, locale: t.forum.posts_content });
+        setLocalizedPosts(mapLocalizedPosts(initialPosts, t.forum.posts_content));
+    }
 
     const allPosts = [...localizedPosts, ...customPosts];
 

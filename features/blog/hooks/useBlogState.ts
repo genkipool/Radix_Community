@@ -48,7 +48,11 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
         return () => observer.disconnect();
     }, [activeTag]);
 
-    useEffect(() => { setVisibleCount(9); }, [activeTag]);
+    const [prevActiveTag, setPrevActiveTag] = useState(activeTag);
+    if (activeTag !== prevActiveTag) {
+        setPrevActiveTag(activeTag);
+        setVisibleCount(9);
+    }
 
     const allPosts = [...publishedPosts, ...localizedPosts];
 

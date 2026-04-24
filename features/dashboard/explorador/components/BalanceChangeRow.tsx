@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
 import { Check, Copy, ChevronDown, ExternalLink } from 'lucide-react';
@@ -68,7 +68,7 @@ function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress,
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
                                     {iconUrl
-                                        ? <img src={iconUrl} alt={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                                        ? <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
                                         : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-xs border border-[var(--color-primary)]/20 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
                                     }
                                     <div className="min-w-0 flex-1">
@@ -186,7 +186,7 @@ const BalanceChangeRow = ({
             >
                 <div className="flex items-center gap-3 min-w-0">
                     {iconUrl
-                        ? <img src={iconUrl} alt={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" onError={e => { e.currentTarget.style.display = 'none'; }} />
+                        ? <SafeImage src={iconUrl} alt={symbol || name} fallbackName={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" />
                         : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
                     }
                     <div className="min-w-0 flex-1">
