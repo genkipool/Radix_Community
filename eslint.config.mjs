@@ -1,23 +1,15 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextConfig from "eslint-config-next";
 import reactCompiler from "eslint-plugin-react-compiler";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-});
-
+/** @type {import("eslint").Linter.Config[]} */
 const eslintConfig = [
     // 0. Ignore compiled folders and dependencies
     {
         ignores: [".next/**", "node_modules/**", "dist/**", "coverage/**", "next-env.d.ts"]
     },
 
-    // 1. Next.js and TypeScript base rules
-    ...compat.extends("next/core-web-vitals", "next/typescript"),
+    // 1. Next.js and TypeScript base rules (native flat config)
+    ...nextConfig,
 
     // 2. React Compiler rules
     {
@@ -31,6 +23,7 @@ const eslintConfig = [
 
     // 3. Overrides: allow `any` in API/service/blockchain code and suppress img warnings
     {
+        files: ["**/*.ts", "**/*.tsx"],
         rules: {
             "@typescript-eslint/no-explicit-any": "warn",
             "@next/next/no-img-element": "warn",

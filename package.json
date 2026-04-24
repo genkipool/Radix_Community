@@ -24,11 +24,11 @@
     "lucide-react": "^0.546.0",
     "marked": "^17.0.5",
     "motion": "^12.23.24",
-    "next": "^16.2.0",
+    "next": "16.2.4",
     "next-themes": "^0.4.6",
     "pino": "^10.3.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "react-hook-form": "^7.72.0",
     "recharts": "^3.8.0",
     "resend": "^6.9.4",
@@ -48,14 +48,14 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/marked": "^5.0.2",
     "@types/node": "^22.14.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-compiler": "^19.0.0-beta-af1b7da-20250417",
     "eslint": "9.39.4",
-    "eslint-config-next": "^15.2.0",
+    "eslint-config-next": "^16.2.4",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
@@ -64,5 +64,9 @@
     "typescript": "~5.8.2",
     "vercel": "^50.37.3",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   }
 }
