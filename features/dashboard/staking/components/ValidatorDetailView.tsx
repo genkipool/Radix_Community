@@ -27,6 +27,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     network = 'mainnet',
     direction: propDirection = 0,
     setDirection,
+    marketData,
 }) => {
     const { setShowUnderConstruction } = useLayout();
     const statusColor = getStatusColor(validator.status);
@@ -172,6 +173,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             network={network}
                             hideCta
                             isModal
+                            marketData={marketData}
                         />
                     </div>
 

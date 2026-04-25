@@ -63,6 +63,7 @@ export interface LocalModalProps {
     copiedAddress: string | null;
     onCopy: (a: string) => void;
     network?: Network;
+    marketData?: MarketData | null;
 }
 
 /**
@@ -81,6 +82,7 @@ export interface ValidatorDetailViewProps {
     network?: Network;
     direction?: number;
     setDirection?: (d: number) => void;
+    marketData?: MarketData | null;
 }
 
 /**

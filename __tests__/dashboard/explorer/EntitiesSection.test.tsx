@@ -8,12 +8,12 @@ vi.mock('@/features/dashboard/hooks/useEntityData', () => ({
     useEntityData: vi.fn(() => null),
     isConsensusManager: vi.fn(() => false),
     getEntityType: vi.fn(() => ({ label: 'Account', color: 'text-gray-500', bg: 'bg-gray-100' })),
-    formatEntityAddress: vi.fn((addr: string) => addr.slice(0, 10) + '...'),
+    entityKeys: { full: vi.fn(), list: vi.fn(), details: vi.fn() }
 }));
 
-// Mock EntityBadge components
-vi.mock('@/features/dashboard/explorador/components/EntityBadge', () => ({
-    EntityBadge: vi.fn(({ address }: { address: string }) => <div data-testid="entity-badge">{address}</div>),
+// Mock ExpandableEntityBadge component
+vi.mock('@/features/dashboard/explorador/components/ExpandableEntityBadge', () => ({
+    ExpandableEntityBadge: vi.fn(({ address }: { address: string }) => <div data-testid="entity-badge">{address}</div>),
     AddressDisplay: vi.fn(({ address }: { address: string }) => <div data-testid="address-display">{address}</div>),
     ConsensusManagerInfoCard: vi.fn(() => null),
     ValidatorNameLabel: vi.fn(() => null),

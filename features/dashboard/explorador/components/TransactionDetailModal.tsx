@@ -19,7 +19,7 @@ import { TransactionDetailModalProps } from '../types';
 export function TransactionDetailModal({
     tx, onClose, onPrev, onNext,
     t, dt, copiedAddress, copyAddress, network, timezone, locale,
-    direction = 0, setDirection,
+    direction = 0, setDirection, marketData,
 }: TransactionDetailModalProps) {
     const tt = (dt?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
@@ -64,7 +64,7 @@ export function TransactionDetailModal({
                         key={tx.intentHash}
                         itemKey={tx.intentHash}
                         direction={direction}
-                        setDirection={setDirection || (() => {})}
+                        setDirection={setDirection || (() => { })}
                         onPrev={onPrev}
                         onNext={onNext}
                         className="flex-1 flex flex-col min-h-0 relative touch-none bg-[var(--color-bg)]"
@@ -118,17 +118,17 @@ export function TransactionDetailModal({
                                         <span className="font-semibold text-[var(--color-text-main)] shrink-0">
                                             {new Date(tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </span>
-                                        
+
                                         <span className="opacity-40 shrink-0">·</span>
-                                        
+
                                         {/* 2. Fee Paid */}
                                         <span className="shrink-0">{tt.fee_paid || 'Fee'}: <span className="font-mono font-bold text-[var(--color-text-main)]">{tx.feePaid} XRD</span></span>
-                                        
+
                                         <span className="opacity-40 shrink-0">·</span>
-                                        
+
                                         {/* 3. Epoch / Round */}
                                         <span className="shrink-0">Ep {tx.epoch} / Rnd {tx.round}</span>
-                                        
+
                                         <span className="opacity-40 shrink-0">·</span>
 
                                         {/* 4. Accounts */}
@@ -151,17 +151,17 @@ export function TransactionDetailModal({
                                                 const detailDetails = details as TransactionDetails | undefined;
                                                 const detailClasses: string[] = detailDetails?.manifest_classes ?? immediateClasses;
                                                 const detailEvents: Record<string, unknown>[] = detailDetails?.receipt?.events ?? [];
-                                                
+
                                                 const resolveType = (classes: string[], events: Record<string, unknown>[]): string => {
                                                     if (classes.includes('ProtocolVote') || events.some((e) => e.name === 'ProtocolUpdateReadinessSignalEvent')) {
                                                         return tt.tx_type_protocol_vote || 'Protocol Vote';
                                                     }
                                                     if (classes.length === 0) return tt.tx_type_general || 'General';
                                                     const c = classes[0];
-                                                    if (c === 'ValidatorStake')    return tt.tx_type_stake    || 'Stake';
-                                                    if (c === 'ValidatorUnstake')  return tt.tx_type_unstake  || 'Unstake';
+                                                    if (c === 'ValidatorStake') return tt.tx_type_stake || 'Stake';
+                                                    if (c === 'ValidatorUnstake') return tt.tx_type_unstake || 'Unstake';
                                                     if (c === 'ValidatorClaimXrd' || c === 'ValidatorClaim') return tt.tx_type_claim || 'Claim';
-                                                    if (c === 'Transfer')          return tt.tx_type_transfer || 'Transfer';
+                                                    if (c === 'Transfer') return tt.tx_type_transfer || 'Transfer';
                                                     if (c === 'AccountDepositSettingsUpdate') return tt.tx_type_settings || 'Settings';
                                                     return c || (tt.tx_type_general || 'General');
                                                 };
@@ -169,11 +169,11 @@ export function TransactionDetailModal({
                                                 const transactionType = resolveType(detailClasses, detailEvents);
                                                 const immediateTypeFallback = resolveType(immediateClasses, []);
                                                 const label = (details ? transactionType : immediateTypeFallback) || resolveType(immediateClasses, []);
-                                                
+
                                                 // Only render the pill if we have an actual type that's not 'General' when there are no classes,
                                                 // or if we have classes. (Mimicking card logic)
                                                 if (immediateClasses.length === 0 && !details && label === (tt.tx_type_general || 'General')) return null;
-                                                
+
                                                 return <Pill color="muted" className="rounded text-[9px] px-2 py-0.5">{label}</Pill>;
                                             })()}
                                         </div>
@@ -204,6 +204,7 @@ export function TransactionDetailModal({
                                         columns={1}
                                         timezone={timezone}
                                         locale={locale}
+                                        marketData={marketData}
                                     />
                                 </div>
                             )}

@@ -51,7 +51,7 @@ interface ExpandableEntityBadgeProps {
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 /* ─── Helpers ───────────────────────────────────────── */

@@ -38,6 +38,7 @@ export const DashboardModals = ({
   setDirection,
   timezone,
   locale,
+  marketData,
 }: DashboardModalsProps) => {
 
   return (
@@ -100,6 +101,7 @@ export const DashboardModals = ({
                 copiedAddress={copiedAddress}
                 copyAddress={copyAddress}
                 network={network}
+                marketData={marketData}
               />
             </div>
           </motion.div>
@@ -143,6 +145,7 @@ export const DashboardModals = ({
             setDirection={setDirection}
             timezone={timezone}
             locale={locale}
+            marketData={marketData}
           />
         </React.Fragment>
       )}

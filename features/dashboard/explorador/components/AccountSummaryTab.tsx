@@ -21,7 +21,7 @@ interface AccountSummaryTabProps {
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
-    marketData?: MarketData;
+    marketData?: MarketData | null;
     locale: string;
 }
 
@@ -333,7 +333,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale }: 
     amount: string;
     symbol: string;
     valueColor: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
     locale: string;
 }) {
     const currency = getCurrencyForLocale(locale);

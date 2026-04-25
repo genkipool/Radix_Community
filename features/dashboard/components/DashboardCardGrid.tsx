@@ -37,6 +37,7 @@ export const DashboardCardGrid = ({
   dt,
   onExpand,
   onCopy,
+  marketData,
 }: DashboardCardGridProps) => (
   <>
     {/* ── Card grid ── */}
@@ -56,6 +57,7 @@ export const DashboardCardGrid = ({
               copiedAddress={copiedAddress}
               t={t}
               network={network}
+              marketData={marketData}
             />
           ))}
 
@@ -94,6 +96,7 @@ export const DashboardCardGrid = ({
                 network={network}
                 timezone={timezone}
                 locale={locale}
+                marketData={marketData}
               />
             ))}
         </>

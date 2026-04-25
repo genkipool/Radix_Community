@@ -52,7 +52,7 @@ export interface AssetTransferGroupProps {
     pairedNftChange?: NonFungibleChange;
     columns: number;
     locale: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface TransferFooterProps {
@@ -80,7 +80,7 @@ export interface TransactionCardProps {
     network?: Network;
     timezone: string;
     locale: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface TransactionDetailModalProps {
@@ -99,7 +99,7 @@ export interface TransactionDetailModalProps {
     setDirection?: React.Dispatch<React.SetStateAction<number>>;
     timezone: string;
     locale: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface TransactionTabsProps {
@@ -115,7 +115,7 @@ export interface TransactionTabsProps {
     columns: number;
     timezone: string;
     locale: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface ValidatorInlinePanelProps {
@@ -156,7 +156,7 @@ export interface UnstakeAssetCardProps {
     network: Network;
     columns: number;
     locale: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface ProtocolVoteCardProps {
@@ -180,7 +180,7 @@ export interface EntitiesSectionProps {
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string;
-    marketData?: MarketData;
+    marketData?: MarketData | null;
 }
 
 export interface TransactionDetailsTabProps {

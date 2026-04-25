@@ -25,9 +25,9 @@ const formatAmount = (n: number, loc: string): string => {
     if (n === 0) return '0';
     // Truncate to 4 decimals without rounding
     const truncated = Math.trunc(n * 10000) / 10000;
-    return truncated.toLocaleString(loc, { 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 4 
+    return truncated.toLocaleString(loc, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 4
     });
 };
 
@@ -53,7 +53,7 @@ import { formatEntity } from '../../utils/entityUtils';
 
 import { TransactionCardProps } from '../types';
 
-const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale }: TransactionCardProps) => {
+const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale, marketData }: TransactionCardProps) => {
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const isVertical = columns >= 3;
     const isCompact = columns >= 5;
@@ -161,7 +161,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             onPointerDown={(e) => {
                 setDownTime(Date.now());
                 setDownPos({ x: e.clientX, y: e.clientY });
-                
+
                 // Capture current selection state to differentiate between starting a selection
                 // and clicking after a selection already existed.
                 const selection = window.getSelection();
@@ -179,7 +179,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             }}
             onClick={(e) => {
                 const target = e.target as HTMLElement;
-                
+
                 // 1. Interactive check: If we click on a button, link, or any identified interactive role, don't toggle expansion.
                 if (target.closest('button, a, [role="button"], input, textarea')) return;
 
@@ -395,7 +395,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             <AnimatePresence initial={false}>
                 {isExpanded && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden bg-[var(--color-bg)]">
-                        <TransactionTabs details={details} tx={tx} t={t} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} readingMode={readingMode} network={network} columns={columns} timezone={timezone} locale={locale} />
+                        <TransactionTabs details={details} tx={tx} t={t} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} readingMode={readingMode} network={network} columns={columns} timezone={timezone} locale={locale} marketData={marketData} />
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -50,6 +50,25 @@ export interface GatewayEntityDetails {
     state?: Record<string, unknown>;
     blueprints?: Blueprint[];
   };
+  fungible_resources?: {
+    items: Array<{
+      resource_address: string;
+      amount: string;
+      explicit_metadata?: { items: MetadataItem[] };
+    }>;
+  };
+  non_fungible_resources?: {
+    items: Array<{
+      resource_address: string;
+      amount?: number;
+      explicit_metadata?: { items: MetadataItem[] };
+      vaults?: {
+        items: Array<{
+          items: string[];
+        }>;
+      };
+    }>;
+  };
   // Fallbacks for when using partial entity data cached or similar
   name?: string | null;
   iconUrl?: string | null;

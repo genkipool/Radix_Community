@@ -83,6 +83,7 @@ export interface DashboardCardGridProps {
     dt?: TranslationsT['dashboard'];
     onExpand: (id: string) => void;
     onCopy: (addr: string) => void;
+    marketData?: MarketData | null;
 }
 
 export interface DashboardModalsProps {
@@ -103,6 +104,7 @@ export interface DashboardModalsProps {
     setDirection: React.Dispatch<React.SetStateAction<number>>;
     timezone: string;
     locale: string;
+    marketData?: MarketData | null;
 }
 
 export interface DetailRowProps {
