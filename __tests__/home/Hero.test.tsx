@@ -85,7 +85,7 @@ describe('Hero', () => {
             // Arrange
             const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const nextBtn = screen.getByRole('button', { name: /slide siguiente/i });
+            const nextBtn = screen.getByRole('button', { name: mockT.hero.btn_next });
             // Act
             await user.click(nextBtn);
             // Assert — slide 1 should now be active (we can check headings changed)
@@ -98,7 +98,7 @@ describe('Hero', () => {
             // Arrange
             const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const prevBtn = screen.getByRole('button', { name: /slide anterior/i });
+            const prevBtn = screen.getByRole('button', { name: mockT.hero.btn_prev });
             // Act — from slide 0, prev should go to slide 2 (circular)
             await user.click(prevBtn);
             // Assert
@@ -110,7 +110,7 @@ describe('Hero', () => {
             // Arrange
             const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const slideBtns = screen.getAllByRole('button', { name: /ir al slide/i });
+            const slideBtns = screen.getAllByRole('button', { name: new RegExp(mockT.hero.aria_go, 'i') });
             expect(slideBtns).toHaveLength(3);
             // Act — click slide 3 button
             await user.click(slideBtns[2]);
@@ -125,7 +125,7 @@ describe('Hero', () => {
             // Arrange
             const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const nextBtn = screen.getByRole('button', { name: /slide siguiente/i });
+            const nextBtn = screen.getByRole('button', { name: mockT.hero.btn_next });
             // Act — click next 3 times (0→1→2→0)
             await user.click(nextBtn);
             await user.click(nextBtn);
@@ -138,7 +138,7 @@ describe('Hero', () => {
             // Arrange
             const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const prevBtn = screen.getByRole('button', { name: /slide anterior/i });
+            const prevBtn = screen.getByRole('button', { name: mockT.hero.btn_prev });
             // Act — at slide 0, click prev
             await user.click(prevBtn);
             // Assert — should go to slide 2 without crash
@@ -151,7 +151,7 @@ describe('Hero', () => {
             renderWithProviders(<Hero t={mockT} locale="en" />);
             // Act — rapid fire clicks, re-querying each time to avoid stale refs
             for (let i = 0; i < 5; i++) {
-                const btn = screen.getByRole('button', { name: /slide siguiente/i });
+                const btn = screen.getByRole('button', { name: mockT.hero.btn_next });
                 await user.click(btn);
             }
             // Assert — should not crash, hero still in DOM
@@ -184,19 +184,19 @@ describe('Hero', () => {
     describe('Accesibilidad', () => {
         it('prev button has aria-label', () => {
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            expect(screen.getByRole('button', { name: /slide anterior/i })).toHaveAttribute('aria-label');
+            expect(screen.getByRole('button', { name: mockT.hero.btn_prev })).toHaveAttribute('aria-label');
         });
 
         it('next button has aria-label', () => {
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            expect(screen.getByRole('button', { name: /slide siguiente/i })).toHaveAttribute('aria-label');
+            expect(screen.getByRole('button', { name: mockT.hero.btn_next })).toHaveAttribute('aria-label');
         });
 
         it('each progress bar button has aria-label', () => {
             renderWithProviders(<Hero t={mockT} locale="en" />);
-            const slideBtns = screen.getAllByRole('button', { name: /ir al slide/i });
+            const slideBtns = screen.getAllByRole('button', { name: new RegExp(mockT.hero.aria_go, 'i') });
             slideBtns.forEach((btn, i) => {
-                expect(btn).toHaveAttribute('aria-label', `Ir al slide ${i + 1}`);
+                expect(btn).toHaveAttribute('aria-label', `${mockT.hero.aria_go} ${i + 1}`);
             });
         });
 
