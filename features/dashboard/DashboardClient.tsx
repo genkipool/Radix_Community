@@ -24,6 +24,7 @@ import React, {
 import { AnimatePresence, motion } from 'motion/react';
 
 /* Services & types */
+import type { NetworkStats } from '@/types/radix';
 import type { DashboardInitialProps } from '@/features/dashboard/types';
 
 /* React Query hooks */
@@ -50,6 +51,7 @@ import { useLayout } from '@/context/LayoutContext';
 import { ContentHero } from '@/components/layout/ContentHero';
 
 /* Dashboard sub-components */
+import { DashboardStatsRow } from './components/DashboardStatsRow';
 import { DashboardToolbar } from './components/DashboardToolbar';
 import { DashboardCardGrid } from './components/DashboardCardGrid';
 import { DashboardModals } from './components/DashboardModals';
@@ -77,7 +79,7 @@ export default function DashboardClient({
   initialSearchQuery = '',
   initialDateRange,
   randomSeed = 0,
-  statsRow,
+  initialMarketData,
 }: DashboardInitialProps) {
 
   const { t, language } = useLanguage();
@@ -183,8 +185,9 @@ export default function DashboardClient({
   const { copiedText: copiedAddress, copy: copyAddress } = useCopyToClipboard(1000);
 
   /* ══ React Query — Validators ══════════════════════════════ */
-  const { data: validatorsData, isFetching: _isValFetching } = useValidatorsQuery(deferredNetwork);
+  const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(deferredNetwork);
   const realValidators = validatorsData?.validators ?? [];
+  const networkStats = validatorsData?.networkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
   const {
@@ -230,7 +233,19 @@ export default function DashboardClient({
   // Loops removed: server now handles filtering via "consulta"
 
   /* ── Derived network stats (fallback) ────────────────────── */
-  // Stats calculation moved to server (DashboardStatsRow is now RSC)
+  const stats: NetworkStats = (() => {
+    if (networkStats) return networkStats;
+    const active = realValidators.filter(v => v.status === 'active');
+    const totalStaked = realValidators.reduce((s, v) => s + v.totalStakeXRD, 0);
+    return {
+      totalStaked,
+      activeValidators: active.length,
+      totalValidators: realValidators.length,
+      avgApy: active.length > 0 ? active.reduce((s, v) => s + v.apy, 0) / active.length : 0,
+      avgUptime: active.length > 0 ? active.reduce((s, v) => s + v.uptimePercent, 0) / active.length : 0,
+      epoch: 0,
+    };
+  })();
 
   /* ── Explorador Filters & Stats ───────────────────────────── */
   const { filteredTxs, explorerStats: _explorerStats } = useExploradorFilters({
@@ -316,7 +331,16 @@ export default function DashboardClient({
 
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12">
         {/* ── Stats strip ── */}
-        {statsRow}
+        <DashboardStatsRow
+          activeView={activeView}
+          stats={stats}
+          marketData={initialMarketData}
+          isLoading={activeView === 'staking'
+            ? isValFetching && !validatorsData
+            : isTxLoading && txs.length === 0}
+          dt={dt}
+          locale={language}
+        />
 
         {/* ── Search / Filters / Grid controls ── */}
         <DashboardToolbar

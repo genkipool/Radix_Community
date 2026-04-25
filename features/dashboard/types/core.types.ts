@@ -1,5 +1,4 @@
 import type { Dictionary } from '@/types/i18n';
-import React from 'react';
 
 export type Network = 'mainnet' | 'stokenet';
 export type DashboardView = 'staking' | 'transactions';
@@ -48,5 +47,5 @@ export interface DashboardInitialProps {
   initialDateRange?: { start: string | null; end: string | null };
   randomSeed: number;
   initialMarketData?: MarketData | null;
-  statsRow?: React.ReactNode;
 }
+
