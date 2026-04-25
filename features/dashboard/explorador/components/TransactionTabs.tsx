@@ -47,7 +47,7 @@ function TransactionDetailsSkeleton({ tt }: { tt: TranslationsT['dashboard']['tr
    Updated to filter out protocol internal fee movements (Consensus Manager).
 ══════════════════════════════════════════ */
 const TransactionTabs = ({
-    details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale,
+    details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale, marketData,
 }: TransactionTabsProps) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'details' | 'raw'>('summary');
     const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
@@ -77,7 +77,7 @@ const TransactionTabs = ({
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
 
     // Shared props passed to most child panels
-    const shared = { tt, te, onCopy, copiedAddress, onResourceClick, network, columns, locale };
+    const shared = { tt, te, onCopy, copiedAddress, onResourceClick, network, columns, locale, marketData };
 
     return (
         <div
@@ -241,7 +241,7 @@ const TransactionTabs = ({
                         )}
 
 
-                        
+
                         {parsed.oracleUpdates && parsed.oracleUpdates.length > 0 && (
                             <OracleUpdateSection updates={parsed.oracleUpdates} {...shared} />
                         )}

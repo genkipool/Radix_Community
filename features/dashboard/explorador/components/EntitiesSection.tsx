@@ -4,7 +4,7 @@ import React from 'react';
 import { Zap, Activity } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import { Pill } from '@/components/ui/Pill';
-import { EntityBadge } from '@/features/dashboard/explorador/components/EntityBadge';
+import { ExpandableEntityBadge } from '@/features/dashboard/explorador/components/ExpandableEntityBadge';
 
 import { EntitiesSectionProps } from '../types';
 
@@ -13,9 +13,10 @@ import { EntitiesSectionProps } from '../types';
  *
  * Replaces the previously duplicated CreatedEntitiesSection and
  * AffectedEntitiesSection. Switch behaviour via the `variant` prop.
+ * Entity badges are expandable — clicking shows detail tabs.
  */
 export function EntitiesSection({
-    variant, details, tt, onCopy, copiedAddress, onResourceClick, network, locale,
+    variant, details, tt, onCopy, copiedAddress, onResourceClick, network, locale, marketData,
 }: EntitiesSectionProps) {
     const isCreated = variant === 'created';
 
@@ -25,22 +26,22 @@ export function EntitiesSection({
             .map((e) => sanitizeText(e?.entity_address || ''))
             .filter(Boolean)
         : (details.affected_global_entities ?? [])
-            .map((e: string | { address: string }) => 
+            .map((e: string | { address: string }) =>
                 sanitizeText(typeof e === 'string' ? e : e?.address || '')
             )
             .filter(Boolean);
 
     /* ── Theme tokens ──────────────────────────────────────── */
-    const icon       = isCreated
-        ? <Zap     className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"   />
+    const icon = isCreated
+        ? <Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
         : <Activity className="w-3.5 h-3.5 text-violet-400" />;
     const countColor = isCreated ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                 : 'bg-violet-500/10 text-violet-400 border-violet-500/20';
-    const heading    = isCreated
-        ? (tt.created_entities  || 'Created Entities')
+        : 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+    const heading = isCreated
+        ? (tt.created_entities || 'Created Entities')
         : (tt.affected_entities || 'Affected Entities');
-    const emptyMsg   = isCreated
-        ? (tt.no_created_entities  || 'No new entities were created.')
+    const emptyMsg = isCreated
+        ? (tt.no_created_entities || 'No new entities were created.')
         : (tt.no_affected_entities || 'No affected entities found.');
 
     return (
@@ -56,9 +57,9 @@ export function EntitiesSection({
             </h3>
             <div className="p-3">
                 {entities.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                         {entities.map((addr, i) => (
-                            <EntityBadge
+                            <ExpandableEntityBadge
                                 key={variant + i}
                                 address={addr}
                                 tt={tt}
@@ -67,6 +68,7 @@ export function EntitiesSection({
                                 onResourceClick={onResourceClick}
                                 network={network}
                                 locale={locale}
+                                marketData={marketData}
                             />
                         ))}
                     </div>

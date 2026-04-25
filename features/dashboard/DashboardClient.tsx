@@ -452,6 +452,7 @@ export default function DashboardClient({
             onCopy={copyAddress}
             timezone={timezone}
             locale={language}
+            marketData={initialMarketData}
           />
         </div>
       </div>
@@ -475,6 +476,7 @@ export default function DashboardClient({
         setDirection={setDirection}
         timezone={timezone}
         locale={language}
+        marketData={initialMarketData}
       />
     </div>
   );
