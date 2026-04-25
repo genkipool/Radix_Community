@@ -21,7 +21,7 @@ const fp = (n: number, d = 2) => `${formatNumber(n, d)}%`;
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '',
+    validator, dt, t, onCopy, copiedAddress, className = '', isModal,
 }: {
     validator: Validator;
     dt?: DashboardDict;
@@ -29,11 +29,12 @@ export const ProfileBlock = ({
     onCopy: (a: string) => void;
     copiedAddress: string | null;
     className?: string;
+    isModal?: boolean;
 }) => {
     const tech = [
-        validator.country  && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country   ?? 'País',      v: sanitizeText(validator.country) },
-        validator.provider && { icon: <Server className="w-3 h-3" />, k: dt?.details?.provider  ?? 'Proveedor', v: sanitizeText(validator.provider) },
-        validator.version  && {                                          k: dt?.details?.version   ?? 'Versión',   v: sanitizeText(validator.version), hi: 'var(--color-primary)' as string },
+        validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'País', v: sanitizeText(validator.country) },
+        validator.provider && { icon: <Server className="w-3 h-3" />, k: dt?.details?.provider ?? 'Proveedor', v: sanitizeText(validator.provider) },
+        validator.version && { k: dt?.details?.version ?? 'Versión', v: sanitizeText(validator.version), hi: 'var(--color-primary)' as string },
     ].filter(Boolean) as { icon?: React.ReactNode; k: string; v: string; hi?: string }[];
 
     return (
@@ -77,12 +78,57 @@ export const ProfileBlock = ({
             </div>
 
             <div className="veb-profile-addrs">
-                <AR label={dt?.details?.address ?? 'Dirección del Validador'} addr={validator.address} onCopy={onCopy} copied={!!copiedAddress && copiedAddress === validator.address} />
-                <AR label={dt?.details?.lsu_resource ?? 'Recurso LSU'} addr={validator.lsuResource} onCopy={onCopy} copied={!!copiedAddress && copiedAddress === validator.lsuResource} />
+                <AR
+                    label={dt?.details?.address ?? 'Validator Address'}
+                    addr={validator.address}
+                    onCopy={onCopy}
+                    copied={!!copiedAddress && copiedAddress === validator.address}
+                    isModal={isModal}
+                />
+                {validator.ownerAddress && (
+                    <AR
+                        label={dt?.details?.owner_address ?? 'Owner Address'}
+                        addr={validator.ownerAddress}
+                        onCopy={onCopy}
+                        copied={!!copiedAddress && copiedAddress === validator.ownerAddress}
+                        isModal={isModal}
+                    />
+                )}
+                {validator.ownerBadge && (
+                    <AR
+                        label={dt?.details?.owner_badge ?? 'Owner Badge'}
+                        addr={validator.ownerBadge}
+                        onCopy={onCopy}
+                        copied={!!copiedAddress && (copiedAddress === validator.ownerBadge || copiedAddress === `[${validator.ownerBadge}]`)}
+                        brackets={!validator.ownerBadge.startsWith('[')}
+                        isModal={isModal}
+                    />
+                )}
+                <AR
+                    label={dt?.details?.lsu_resource ?? 'LSU Resource'}
+                    addr={validator.lsuResource}
+                    onCopy={onCopy}
+                    copied={!!copiedAddress && copiedAddress === validator.lsuResource}
+                    isModal={isModal}
+                />
+                {validator.claimTokenResourceAddress && (
+                    <AR
+                        label={dt?.details?.nft_claim ?? 'NFT Claim'}
+                        addr={validator.claimTokenResourceAddress}
+                        onCopy={onCopy}
+                        copied={!!copiedAddress && copiedAddress === validator.claimTokenResourceAddress}
+                        isModal={isModal}
+                    />
+                )}
                 {validator.publicKey && (
-                    <AR label={dt?.details?.public_key ?? 'Clave Pública'} addr={validator.publicKey} onCopy={onCopy}
+                    <AR 
+                        label={dt?.details?.public_key ?? 'Public Key'} 
+                        addr={validator.publicKey} 
+                        onCopy={onCopy}
                         copied={!!copiedAddress && (copiedAddress === validator.publicKey || copiedAddress === `[${validator.publicKey}]`)}
-                        brackets />
+                        brackets
+                        isModal={isModal}
+                    />
                 )}
             </div>
         </div>
@@ -102,12 +148,12 @@ export const DelegationBlock = ({
     <div className={`veb-block veb-delegation ${className}`}>
         <Label>{dt?.details?.delegation ?? 'Resumen de delegación'}</Label>
         <div className="veb-drows">
-            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'}   value={formatXRD(validator.delegatedStake)}      sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
-            <DR label={dt?.details?.delegators ?? 'Delegadores'}            value={validator.delegators.toLocaleString()} />
-            <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatXRD(validator.ownerDelegation)} />
-            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'}    value={fp(validator.apyProjection)} />
-            <DR label={dt?.card?.fee ?? 'Comisión'}                         value={fp(validator.nominalFee)} sub={`${fp(validator.effectiveFee)} efectiva`} />
-            <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'}      value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8)} XRD` : '—'} />
+            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'} value={formatXRD(validator.delegatedStake)} sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
+            <DR label={dt?.details?.delegators ?? 'Delegadores'} value={validator.delegators.toLocaleString()} />
+            <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatNumber(validator.ownerDelegation, 4)} />
+            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'} value={fp(validator.apyProjection)} />
+            <DR label={dt?.card?.fee ?? 'Comisión'} value={fp(validator.nominalFee)} sub={`${fp(validator.effectiveFee)} efectiva`} />
+            <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8)} XRD` : '—'} />
         </div>
     </div>
 );
@@ -132,16 +178,16 @@ export const PerformanceBlock = ({
                 <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'}    value={<span className="veb-missed">{live.recentMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.recentMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
             <div className="veb-perf-section mt-4">
                 <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.totalUptime, false, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made   ?? 'Completadas'} value={<span className="veb-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'}    value={<span className="veb-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
         </div>
@@ -248,8 +294,8 @@ export const HistoryBlock = ({
                 <table className="veb-table">
                     <thead>
                         <tr className="veb-th-row">
-                            <th className="veb-th text-left">{dt?.details?.epoch   ?? 'Época'}</th>
-                            <th className="veb-th text-center">{dt?.details?.proposals_made   ?? 'Completadas'}</th>
+                            <th className="veb-th text-left">{dt?.details?.epoch ?? 'Época'}</th>
+                            <th className="veb-th text-center">{dt?.details?.proposals_made ?? 'Completadas'}</th>
                             <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Perdidas'}</th>
                             <th className="veb-th text-right" title={dt?.details?.xrd_reward_fee_tooltip ?? 'Total XRD earned by the validator'}>
                                 {dt?.details?.xrd_reward_fee ?? 'Validator'}
@@ -260,7 +306,7 @@ export const HistoryBlock = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {/* 1. The Unified 6-Row History (Managed by client to avoid gaps) */}
+                        {/* 1. The Unified 5-Row History (Managed by client to avoid gaps) */}
                         {live.unifiedRows.map((ep) => (
                             <tr key={ep.epoch} className={`veb-tr ${ep.isLive ? 'veb-tr-live' : ''}`}>
                                 <td className="veb-td">

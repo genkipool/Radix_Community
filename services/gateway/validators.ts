@@ -37,6 +37,7 @@ type GatewayValidator = {
         is_registered?: boolean;
         accepts_delegated_stake?: boolean;
         stake_unit_resource_address?: string;
+        claim_token_resource_address?: string;
         public_key?: { key_hex: string };
         consensus_public_key?: { key_hex: string };
         owner_role?: unknown;
@@ -100,6 +101,8 @@ const METADATA_KEYS = {
     COMMIT: 'validator_commit',
     PROVIDER: 'hosting_provider',
     COUNTRY: 'country',
+    CLAIM_NFT: 'claim_nft',
+    OWNER_BADGE: 'owner_badge',
 };
 
 const PROTOCOL_SIGNALS: Record<string, string> = {
@@ -121,7 +124,13 @@ function getMetadataValue(metadata: GatewayMetadata | null | undefined, key: str
         if (programmatic.hasOwnProperty('value')) {
             raw = String(programmatic.value);
         } else if (Array.isArray(programmatic.fields)) {
-            const stringField = programmatic.fields.find((f) => f.kind === 'String' || f.kind === 'Url');
+            const stringField = programmatic.fields.find((f) =>
+                f.kind === 'String' ||
+                f.kind === 'Url' ||
+                f.kind === 'NonFungibleLocalId' ||
+                f.kind === 'GlobalAddress' ||
+                f.kind === 'InternalAddress'
+            );
             if (stringField) raw = String(stringField.value);
         }
     }
@@ -253,7 +262,10 @@ export async function fetchValidatorsWithLedger(
         do {
             const body: Record<string, unknown> = {
                 limit_per_page: 100,
-                opt_ins: { validator_active_in_epoch: true },
+                opt_ins: {
+                    validator_active_in_epoch: true,
+                    explicit_metadata: true
+                },
             };
             if (cursor) body.cursor = cursor;
             const res = await fetch(`${restBase}/state/validators/list`, {
@@ -439,7 +451,8 @@ export async function fetchValidatorsWithLedger(
     // El sincronizador se realiza en segundo plano vía Uptime Cron para evitar
     // superar los límites hiperestrictos 160req/min de Cloudflare Radix.
     const holdersMap = new Map<string, number>();
-    
+
+    // ── Phase 4: Holder counts (INSTANT REDIS) ──────────────────────
     if (lsuAddresses.length > 0) {
         try {
             const redis = getRedisClient();
@@ -603,22 +616,26 @@ export async function fetchValidatorsWithLedger(
         // ── Technical & Location ──
         const geo = geoResultsMap.get(v.address);
 
-        const _version = getMetadataValue(v.metadata, METADATA_KEYS.VERSION) || '';
-        const _commit = getMetadataValue(v.metadata, METADATA_KEYS.COMMIT) || '';
-
+        const claimTokenResourceAddress = state?.claim_token_resource_address ||
+            getMetadataValue(v.metadata, METADATA_KEYS.CLAIM_NFT) || '';
         // Metadata first, then Geo fallback
         const _provider = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || geo?.org || geo?.isp || '';
         const _country = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || geo?.country || '';
         const countryCode = getMetadataValue(v.metadata, 'country_code') || geo?.countryCode || '';
 
-        // Owner address derived from state only (no NFT location lookup)
-        const ownerRole = state?.owner_role as {
+        // Owner address derived from protocol state + metadata
+        const _ownerRole = state?.owner_role as {
             updater?: { updater?: { non_fungible?: { local_id?: { value?: string } } } },
             updaters?: Array<{ non_fungible?: { local_id?: { value?: string } } }>
         } | undefined;
-        const ownerAddress =
-            ownerRole?.updater?.updater?.non_fungible?.local_id?.value ||
-            ownerRole?.updaters?.[0]?.non_fungible?.local_id?.value || '';
+
+        // Capture badge ID from either protocol state (owner_role) or metadata
+        const badgeIdFromRole = _ownerRole?.updater?.updater?.non_fungible?.local_id?.value ||
+            _ownerRole?.updaters?.[0]?.non_fungible?.local_id?.value;
+        const ownerBadge = badgeIdFromRole || getMetadataValue(v.metadata, METADATA_KEYS.OWNER_BADGE) || '';
+
+        // Initial ownerAddress is empty, will be resolved via location lookup in second phase
+        const ownerAddress = '';
 
         // ── Stake & LSU factor ────────────────────────────────────────────
         const finalXrdStake = delegatedStake;
@@ -667,6 +684,8 @@ export async function fetchValidatorsWithLedger(
             delegatedStakePercent: 0,
             ownerDelegation: ownerDelegation,
             ownerAddress,
+            ownerBadge,
+            claimTokenResourceAddress,
             lsu2xrdFactor: finalLsuFactor,
             apyProjection,
             effectiveFee,
@@ -731,6 +750,77 @@ export async function fetchValidatorsWithLedger(
             proposalsMissed: totalProposalsMissed,
         } as Validator;
     });
+
+    // ── Batch resolve real owner addresses via NFT locations ─────────────────────
+    const validatorsWithBadges = validators.filter((v) =>
+        v.ownerBadge && v.ownerBadge.startsWith('[') && v.ownerBadge.endsWith(']')
+    );
+
+    if (validatorsWithBadges.length > 0) {
+        const ownerBadgeResource = network === 'stokenet'
+            ? 'resource_tdx_2_1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxyerzzk'
+            : 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
+
+        try {
+            // state/non-fungible/location allows max 100 IDs per request
+            const badgeChunks = chunkArray(validatorsWithBadges, 100);
+            const locationMap = new Map<string, string>();
+
+            for (const chunk of badgeChunks) {
+                const ids = chunk.map(v => v.ownerBadge);
+
+                logger.info({ network, badgeCount: ids.length, resource: ownerBadgeResource }, '[ValidatorsService] Resolving owner badge locations via REST');
+
+                const res = await withRetry(() =>
+                    fetch(`${restBase}/state/non-fungible/location`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            resource_address: ownerBadgeResource,
+                            non_fungible_ids: ids
+                        })
+                    })
+                );
+
+                if (res.ok) {
+                    const data = await res.json() as {
+                        non_fungible_ids: Array<{
+                            non_fungible_id: string;
+                            owning_vault_global_ancestor_address?: string;
+                        }>
+                    };
+
+                    const resolvedItems = data.non_fungible_ids || [];
+                    resolvedItems.forEach((item) => {
+                        const ancestor = item.owning_vault_global_ancestor_address;
+                        if (ancestor) {
+                            locationMap.set(item.non_fungible_id, ancestor);
+                        }
+                    });
+                } else {
+                    const errText = await res.text();
+                    logger.error({ status: res.status, err: errText }, '[ValidatorsService] Location resolution API failed');
+                }
+            }
+
+            // Apply discovered real owner addresses to validators
+            validators.forEach((v) => {
+                const resolved = locationMap.get(v.ownerBadge);
+                if (resolved) {
+                    v.ownerAddress = resolved;
+                }
+            });
+
+            logger.info({
+                network,
+                resolvedCount: locationMap.size,
+                totalBadges: validatorsWithBadges.length
+            }, '[ValidatorsService] Resolved owner addresses via badge locations');
+
+        } catch (e) {
+            logger.error({ err: e, network }, '[ValidatorsService] Failed to resolve owner badge locations');
+        }
+    }
 
     // Compute rank and delegatedStakePercent
     validators.sort((a, b) => b.delegatedStake - a.delegatedStake);

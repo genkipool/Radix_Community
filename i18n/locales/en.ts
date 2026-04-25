@@ -2609,6 +2609,8 @@ Download the update today from the iOS App Store or Google Play Store to experie
       lsu_resource: 'LSU Resource',
       public_key: 'Public Key',
       owner_address: 'Owner Address',
+      owner_badge: 'Owner Badge',
+      nft_claim: 'NFT Claim',
       epoch: 'Epoch',
       completed: 'Completed',
       missed: 'Missed',

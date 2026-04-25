@@ -25,6 +25,7 @@ import type { StakeHistoryEntry } from '@/types/radix';
 export const ValidatorExpandedBody = ({
     validator, t, onCopy, copiedAddress,
     network = 'mainnet', columns, hideCta = false,
+    isModal = false,
 }: ValidatorExpandedBodyProps) => {
     const { language } = useLanguage();
     const { setShowUnderConstruction } = useLayout();
@@ -76,7 +77,7 @@ export const ValidatorExpandedBody = ({
     const thirtyDayHistory = stakeHistory.length > 0 ? stakeHistory.slice(-30) : [];
 
     /* ── Shared block props ──────────────────── */
-    const profileProps = { validator, dt, t, onCopy, copiedAddress };
+    const profileProps = { validator, dt, t, onCopy, copiedAddress, isModal };
     const delegationProps = { validator, dt };
     const perfProps = { validator, dt, live };
     const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
@@ -123,7 +124,7 @@ export const ValidatorExpandedBody = ({
     );
 
     return (
-        <div className="veb">
+        <div className={`veb ${isModal ? 'veb-modal' : ''}`}>
             {columns === 1 ? grid1 : columns === 2 ? grid2 : gridN}
 
             {!hideCta && (

@@ -94,6 +94,8 @@ export interface ValidatorExpandedBodyProps {
     columns: number;
     /** When true, hides the delegation CTA footer */
     hideCta?: boolean;
+    /** When true, applies modal-specific layout fixes */
+    isModal?: boolean;
 }
 
 /**
@@ -138,6 +140,8 @@ export interface ARProps {
     onCopy: (a: string) => void;
     copied: boolean;
     brackets?: boolean;
+    extra?: React.ReactNode;
+    isModal?: boolean;
 }
 
 /**

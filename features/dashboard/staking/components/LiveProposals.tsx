@@ -101,7 +101,7 @@ export function useLiveProposals(validator: Validator) {
         // 5. Sort and Slice
         return unique
             .sort((a, b) => b.epoch - a.epoch)
-            .slice(0, 6);
+            .slice(0, 5);
     })();
 
     return {

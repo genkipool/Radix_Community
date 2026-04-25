@@ -33,6 +33,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
 
+
     const activeDirection = propDirection;
 
     return (
@@ -118,38 +119,42 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                 </a>
                             )}
 
-                            {/* Validator address + delegate CTA */}
-                            <div className="flex flex-col sm:flex-row sm:items-center items-start gap-[6px] sm:gap-[10px] min-w-0">
-                                <div
-                                    className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr"
-                                    onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
-                                >
-                                    <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
-                                        <span className="hidden sm:inline">{validator.address || '...'}</span>
-                                        <span className="inline sm:hidden">
-                                            {validator.address ? (
-                                                `${validator.address.slice(0, 8)}...${validator.address.slice(-8)}`
-                                            ) : '...'}
-                                        </span>
-                                    </code>
-                                    <CopyButton
-                                        value={validator.address}
-                                        variant="minimal"
-                                        size="xs"
-                                        forceCopied={isAddrCopied}
-                                        className="pointer-events-none shrink-0"
-                                    />
+                            {/* Addresses + delegate CTA */}
+                            <div className="flex flex-col gap-2">
+                                {/* Validator address */}
+                                <div className="flex flex-col sm:flex-row sm:items-center items-start gap-[6px] sm:gap-[10px] min-w-0">
+                                    <div
+                                        className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr"
+                                        onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
+                                    >
+                                        <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
+                                            <span className="hidden sm:inline">{validator.address || '...'}</span>
+                                            <span className="inline sm:hidden">
+                                                {validator.address ? (
+                                                    `${validator.address.slice(0, 8)}...${validator.address.slice(-8)}`
+                                                ) : '...'}
+                                            </span>
+                                        </code>
+                                        <CopyButton
+                                            value={validator.address}
+                                            variant="minimal"
+                                            size="xs"
+                                            forceCopied={isAddrCopied}
+                                            className="pointer-events-none shrink-0"
+                                        />
+                                    </div>
+                                    <button
+                                        className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
+                                        style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            setShowUnderConstruction(true);
+                                        }}
+                                    >
+                                        {dt?.card?.stake_button ?? 'Stake'}
+                                    </button>
                                 </div>
-                                <button
-                                    className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
-                                    style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        setShowUnderConstruction(true);
-                                    }}
-                                >
-                                    {dt?.card?.stake_button ?? 'Stake'}
-                                </button>
+
                             </div>
                         </div>
                     </div>
@@ -166,6 +171,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             columns={1}
                             network={network}
                             hideCta
+                            isModal
                         />
                     </div>
 

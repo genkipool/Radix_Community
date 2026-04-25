@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { truncateAddress } from '@/utils/formatters';
 import type { LabelProps, DRProps, ARProps } from '../types/components.types';
 
 /* ─────────────────────────────────────────
@@ -29,27 +30,37 @@ export const DR = ({
    AR — address row with copy
 ───────────────────────────────────────── */
 export const AR = ({
-    label, addr, onCopy, copied, brackets,
-}: ARProps) => (
-    <div className="veb-ar">
-        <span className="veb-ar-label">{label}</span>
-        <div
-            className="veb-ar-content group/ar"
-            onClick={e => { e.stopPropagation(); onCopy(brackets ? `[${addr}]` : addr); }}
-        >
-            <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''}`}>
-                {brackets ? `[${addr}]` : addr}
-            </code>
-            <CopyButton
-                value={brackets ? `[${addr}]` : addr}
-                variant="minimal"
-                size="xs"
-                className="pointer-events-none"
-                forceCopied={copied}
-            />
+    label, addr, onCopy, copied, brackets, extra, isModal,
+}: ARProps) => {
+    // Truncate based on view type: Modal (16/40) vs Card (16/20)
+    const displayAddr = isModal
+        ? truncateAddress(addr, 16, 40)
+        : truncateAddress(addr, 16, 25);
+
+    return (
+        <div className="veb-ar">
+            <div className="flex items-center justify-between gap-4">
+                <span className="veb-ar-label">{label}</span>
+                {extra}
+            </div>
+            <div
+                className="veb-ar-content group/ar"
+                onClick={e => { e.stopPropagation(); onCopy(brackets ? `[${addr}]` : addr); }}
+            >
+                <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''}`}>
+                    {brackets ? `[${displayAddr}]` : displayAddr}
+                </code>
+                <CopyButton
+                    value={brackets ? `[${addr}]` : addr}
+                    variant="minimal"
+                    size="xs"
+                    className="pointer-events-none"
+                    forceCopied={copied}
+                />
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* ─────────────────────────────────────────
    Shared CSS — injected once by ValidatorExpandedBody
@@ -157,7 +168,15 @@ export const VEB_STYLES = `
     .veb-techpill-icon { color: var(--color-text-muted); opacity: 0.45; display: flex; }
     .veb-techpill-k { color: var(--color-text-muted); }
     .veb-techpill-v { font-weight: 600; color: var(--color-text-main); }
-    .veb-profile-addrs { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+    .veb-profile-addrs { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 16px 32px; 
+        margin-top: 12px; 
+    }
+    @media (max-width: 900px) {
+        .veb-profile-addrs { grid-template-columns: 1fr; gap: 12px; }
+    }
 
     /* DELEGATION */
     .veb-delegation { padding: 20px 24px; display: flex; flex-direction: column; border-bottom: 1px solid var(--color-card-border); }

@@ -135,7 +135,9 @@ export const Layout1Col = ({
                                 <Globe className="w-3.5 h-3.5 shrink-0" />
                                 {sanitizeText(validator.country)} ({validator.countryPercent}%)
                             </span>
-                            <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} noTruncate />
+                            <div className="flex flex-col gap-1 items-start min-w-0">
+                                <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} noTruncate />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                             <EntityTagsGrid tags={validator.tags} t={t} />
@@ -250,6 +252,7 @@ export const Layout2Col = ({
                                 <Globe className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{sanitizeText(validator.country)}</span>
                             </span>
+                        <div className="flex flex-col gap-1 items-start min-w-0">
                             <CopyAddressButton
                                 address={validator.address}
                                 onCopy={onCopy}
@@ -258,6 +261,7 @@ export const Layout2Col = ({
                                 truncate={true}
                                 noTruncate={false}
                             />
+                        </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                             <EntityTagsGrid tags={validator.tags} t={t} compact={columns === 3} />
@@ -350,6 +354,7 @@ export const Layout4Col = ({
                     <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
                         <Globe className="w-3.5 h-3.5" />
                     </span>
+                <div className="flex flex-col gap-1 items-start min-w-0">
                     <CopyAddressButton
                         address={validator.address}
                         onCopy={onCopy}
@@ -359,6 +364,7 @@ export const Layout4Col = ({
                         start={columns === 5 ? 6 : 12}
                         end={columns === 5 ? 6 : 6}
                     />
+                </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <EntityTagsGrid tags={validator.tags} t={t} compact />

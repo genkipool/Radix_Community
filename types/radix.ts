@@ -40,6 +40,8 @@ export interface Validator {
     delegatedStakePercent: number;
     ownerDelegation: number;
     ownerAddress: string;
+    ownerBadge: string;
+    claimTokenResourceAddress: string;
     lsu2xrdFactor: number;
     apyProjection: number;
     effectiveFee: number;
