@@ -21,7 +21,7 @@ const fp = (n: number, d = 2) => `${formatNumber(n, d)}%`;
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '', isModal,
+    validator, dt, t, onCopy, copiedAddress, className = '', isModal, noTruncate = false,
 }: {
     validator: Validator;
     dt?: DashboardDict;
@@ -30,6 +30,7 @@ export const ProfileBlock = ({
     copiedAddress: string | null;
     className?: string;
     isModal?: boolean;
+    noTruncate?: boolean;
 }) => {
     const tech = [
         validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'País', v: sanitizeText(validator.country) },
@@ -84,6 +85,7 @@ export const ProfileBlock = ({
                     onCopy={onCopy}
                     copied={!!copiedAddress && copiedAddress === validator.address}
                     isModal={isModal}
+                    noTruncate={noTruncate}
                 />
                 {validator.ownerAddress && (
                     <AR
@@ -92,6 +94,7 @@ export const ProfileBlock = ({
                         onCopy={onCopy}
                         copied={!!copiedAddress && copiedAddress === validator.ownerAddress}
                         isModal={isModal}
+                        noTruncate={noTruncate}
                     />
                 )}
                 {validator.ownerBadge && (
@@ -102,6 +105,7 @@ export const ProfileBlock = ({
                         copied={!!copiedAddress && (copiedAddress === validator.ownerBadge || copiedAddress === `[${validator.ownerBadge}]`)}
                         brackets={!validator.ownerBadge.startsWith('[')}
                         isModal={isModal}
+                        noTruncate={noTruncate}
                     />
                 )}
                 <AR
@@ -110,6 +114,7 @@ export const ProfileBlock = ({
                     onCopy={onCopy}
                     copied={!!copiedAddress && copiedAddress === validator.lsuResource}
                     isModal={isModal}
+                    noTruncate={noTruncate}
                 />
                 {validator.claimTokenResourceAddress && (
                     <AR
@@ -118,6 +123,7 @@ export const ProfileBlock = ({
                         onCopy={onCopy}
                         copied={!!copiedAddress && copiedAddress === validator.claimTokenResourceAddress}
                         isModal={isModal}
+                        noTruncate={noTruncate}
                     />
                 )}
                 {validator.publicKey && (
@@ -128,6 +134,7 @@ export const ProfileBlock = ({
                         copied={!!copiedAddress && (copiedAddress === validator.publicKey || copiedAddress === `[${validator.publicKey}]`)}
                         brackets
                         isModal={isModal}
+                        noTruncate={noTruncate}
                     />
                 )}
             </div>

@@ -30,15 +30,17 @@ export const DR = ({
    AR — address row with copy
 ───────────────────────────────────────── */
 export const AR = ({
-    label, addr, onCopy, copied, brackets, extra, isModal,
+    label, addr, onCopy, copied, brackets, extra, isModal, noTruncate,
 }: ARProps) => {
     // Truncate based on view type: Modal (16/40) vs Card (16/20)
-    const displayAddr = isModal
-        ? truncateAddress(addr, 16, 40)
-        : truncateAddress(addr, 16, 25);
+    const displayAddr = noTruncate
+        ? addr
+        : isModal
+            ? truncateAddress(addr, 16, 40)
+            : truncateAddress(addr, 16, 25);
 
     return (
-        <div className="veb-ar">
+        <div className={`veb-ar ${noTruncate ? 'veb-ar-no-trunc' : ''}`}>
             <div className="flex items-center justify-between gap-4">
                 <span className="veb-ar-label">{label}</span>
                 {extra}
@@ -47,7 +49,7 @@ export const AR = ({
                 className="veb-ar-content group/ar"
                 onClick={e => { e.stopPropagation(); onCopy(brackets ? `[${addr}]` : addr); }}
             >
-                <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''}`}>
+                <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''} ${noTruncate ? 'no-truncate' : ''}`}>
                     {brackets ? `[${displayAddr}]` : displayAddr}
                 </code>
                 <CopyButton
@@ -111,6 +113,7 @@ export const VEB_STYLES = `
     .veb-grid-2 { grid-template-columns: 1fr 1fr; }
     .veb-grid-2 .veb-block { border-bottom: 1px solid var(--color-card-border); border-right: 1px solid var(--color-card-border); }
     .veb-grid-2 .col-span-2 { grid-column: span 2; border-right: none; }
+    .veb-grid-2 .veb-profile-addrs { grid-template-columns: 1fr; gap: 12px; }
     .veb-grid-2 .veb-block:nth-child(2), .veb-grid-2 .veb-block:nth-child(5) { border-right: none; }
     .veb-grid-2 .veb-block:nth-child(n+5) { border-bottom: none; }
 
@@ -222,6 +225,7 @@ export const VEB_STYLES = `
     .veb-ar-label { font-size: 12.5px; font-weight: 500; color: var(--color-text-muted); line-height: 1.2; }
     .veb-ar-content { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
     .veb-ar-code { flex: 1; min-width: 0; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--color-text-muted); opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .veb-ar-code.no-truncate { white-space: normal; word-break: break-all; text-overflow: clip; line-height: 1.4; color: var(--color-text-main); opacity: 0.9; }
     .veb-ar-content:hover .veb-ar-code { color: var(--color-primary); opacity: 1; }
 
     /* CTA */

@@ -142,6 +142,7 @@ export interface ARProps {
     brackets?: boolean;
     extra?: React.ReactNode;
     isModal?: boolean;
+    noTruncate?: boolean;
 }
 
 /**
