@@ -148,7 +148,7 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 
 const BATCH_SIZE = 150;
 const LSU_CHUNK_SIZE = 20;  // /state/entity/details allows max 20 addresses per request
-const EPOCH_HISTORY = 5;    // 6 per-epoch entries — enough for last 6 epochs as requested
+const EPOCH_HISTORY = 6;    // 7 per-epoch entries — enough for last 6 epochs as requested
 
 /* ═══════ GEOLOCATION HELPERS ═══════ */
 interface GeoData {

@@ -132,7 +132,7 @@ export const VEB_STYLES = `
 
     /* BLOCK BASE */
     .veb-block { padding: 24px; display: flex; flex-direction: column; min-width: 0; }
-    .veb-chart-panel { min-height: 320px; }
+    .veb-chart-panel { min-height: 320px; padding-bottom: 4px !important; }
 
     /* CHARTS */
     .veb-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -142,10 +142,10 @@ export const VEB_STYLES = `
     .veb-bg-stake   { background: #22c55e; box-shadow: 0 0 6px #22c55e60; }
     .veb-bg-unstake { background: #f59e0b; box-shadow: 0 0 6px #f59e0b60; }
     .veb-bg-claim   { background: #3b82f6; box-shadow: 0 0 6px #3b82f660; }
-    .veb-chart-content { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 220px; }
-    .veb-chart-loading { display: flex; align-items: center; justify-content: center; height: 220px; }
-    .veb-chart-empty { display: flex; align-items: center; justify-content: center; height: 220px; font-size: 12px; color: var(--color-text-muted); opacity: 0.5; font-style: italic; }
-    .veb-chart-recharts { width: 100%; position: relative; }
+    .veb-chart-content { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 200px; }
+    .veb-chart-loading { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; }
+    .veb-chart-empty { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; font-size: 12px; color: var(--color-text-muted); opacity: 0.5; font-style: italic; }
+    .veb-chart-recharts { width: 100%; flex: 1; position: relative; min-height: 0; }
     .veb-spinner { width: 24px; height: 24px; border: 2.5px solid color-mix(in srgb, var(--color-primary) 10%, transparent); border-top-color: var(--color-primary); border-radius: 50%; animation: veb-spin 0.8s linear infinite; }
     @keyframes veb-spin { to { transform: rotate(360deg); } }
 
@@ -203,9 +203,10 @@ export const VEB_STYLES = `
     .veb-missed { color: #dc2626; font-weight: 500; font-variant-numeric: tabular-nums; }
 
     /* EPOCHS TABLE */
+    .veb-history { padding-top: 2px; padding-bottom: 0px; }
     .veb-epochs-panel { background: var(--color-surface); }
-    .veb-epochs { padding: 12px 16px; overflow-x: auto; }
-    .veb-epochs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .veb-epochs { padding: 0 16px 0px 16px; overflow-x: auto; }
+    .veb-epochs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .veb-live-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: var(--color-text-muted); }
     .veb-table { width: 100%; border-collapse: collapse; }
     .veb-th { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted); padding-bottom: 8px; border-bottom: 1px solid var(--color-card-border); }

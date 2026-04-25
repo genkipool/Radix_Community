@@ -14,10 +14,10 @@ import {
     Area,
 } from 'recharts';
 import { formatShortXRD } from '@/utils/formatters';
-import { 
-    type StakeTooltipProps, 
-    type StakeEvolutionChartProps, 
-    type StakeHistoryChartProps 
+import {
+    type StakeTooltipProps,
+    type StakeEvolutionChartProps,
+    type StakeHistoryChartProps
 } from '../types/components.types';
 
 /* ─────────────────────────────────────────
@@ -25,13 +25,13 @@ import {
 ───────────────────────────────────────── */
 const StakeTooltip = ({ active, payload, label, t, locale }: StakeTooltipProps) => {
     if (!active || !payload?.length) return null;
-    const stakeVal     = (payload?.find((p) => p.dataKey === 'stake')?.value as number) ?? 0;
-    const unstakeRaw   = (payload?.find((p) => p.dataKey === 'unstakeNeg')?.value as number) ?? 0;
-    const claimRaw     = (payload?.find((p) => p.dataKey === 'claimNeg')?.value as number) ?? 0;
+    const stakeVal = (payload?.find((p) => p.dataKey === 'stake')?.value as number) ?? 0;
+    const unstakeRaw = (payload?.find((p) => p.dataKey === 'unstakeNeg')?.value as number) ?? 0;
+    const claimRaw = (payload?.find((p) => p.dataKey === 'claimNeg')?.value as number) ?? 0;
     const evolutionVal = payload?.find((p) => p.dataKey === 'totalStake')?.value as number | undefined;
 
     const unstakeVal = Math.abs(unstakeRaw);
-    const claimVal   = Math.abs(claimRaw);
+    const claimVal = Math.abs(claimRaw);
 
     if (!stakeVal && !unstakeVal && !claimVal && evolutionVal === undefined) return null;
 
@@ -106,11 +106,11 @@ export const StakeEvolutionChart = ({
 
     return (
         <div className="veb-chart-recharts">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
                     <defs>
                         <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%"  stopColor="var(--color-primary)" stopOpacity={0.3} />
+                            <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
                             <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
                         </linearGradient>
                     </defs>
@@ -136,10 +136,10 @@ export const StakeHistoryChart = ({
     if (!mounted) return <div className="veb-chart-recharts" style={{ minHeight: 220 }} />;
 
     const chartData = data.map(d => ({
-        date:       d.date,
-        stake:      d.stake   > 0 ? d.stake   : null,
+        date: d.date,
+        stake: d.stake > 0 ? d.stake : null,
         unstakeNeg: d.unstake > 0 ? -d.unstake : null,
-        claimNeg:   d.claim   > 0 ? -d.claim   : null,
+        claimNeg: d.claim > 0 ? -d.claim : null,
     }));
 
     const maxPos = Math.max(...data.map(d => d.stake), 0);
@@ -151,12 +151,12 @@ export const StakeHistoryChart = ({
 
     return (
         <div className="veb-chart-recharts">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="15%" barGap={25}>
                     <defs>
-                        <linearGradient id="stakeGrad"   x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stopColor="#22c55e" stopOpacity={0.95} /><stop offset="100%" stopColor="#16a34a" stopOpacity={0.75} /></linearGradient>
-                        <linearGradient id="unstakeGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0%"   stopColor="#f59e0b" stopOpacity={0.90} /><stop offset="100%" stopColor="#d97706" stopOpacity={0.65} /></linearGradient>
-                        <linearGradient id="claimGrad"   x1="0" y1="0" x2="0" y2="1"><stop offset="0%"   stopColor="#3b82f6" stopOpacity={0.90} /><stop offset="100%" stopColor="#2563eb" stopOpacity={0.65} /></linearGradient>
+                        <linearGradient id="stakeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22c55e" stopOpacity={0.95} /><stop offset="100%" stopColor="#16a34a" stopOpacity={0.75} /></linearGradient>
+                        <linearGradient id="unstakeGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.90} /><stop offset="100%" stopColor="#d97706" stopOpacity={0.65} /></linearGradient>
+                        <linearGradient id="claimGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity={0.90} /><stop offset="100%" stopColor="#2563eb" stopOpacity={0.65} /></linearGradient>
                         <filter id="stakeGlow">  <feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                         <filter id="unstakeGlow"><feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                         <filter id="claimGlow">  <feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -166,9 +166,9 @@ export const StakeHistoryChart = ({
                     <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} interval={7} padding={{ left: 6, right: 6 }} />
                     <YAxis domain={[domainMin, domainMax]} tickFormatter={fmtAxis} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} width={44} tickCount={5} />
                     <Tooltip content={<StakeTooltip t={t} locale={locale} />} cursor={{ fill: 'var(--color-text-muted)', opacity: 0.05, radius: 4 }} />
-                    <Bar dataKey="stake"      fill="url(#stakeGrad)"   radius={[4,4,0,0]} maxBarSize={32} filter="url(#stakeGlow)"   isAnimationActive={false} activeBar={false} />
-                    <Bar dataKey="unstakeNeg" fill="url(#unstakeGrad)" radius={[0,0,4,4]} stackId="negative" maxBarSize={32} filter="url(#unstakeGlow)" isAnimationActive={false} activeBar={false} />
-                    <Bar dataKey="claimNeg"   fill="url(#claimGrad)"   radius={[0,0,4,4]} stackId="negative" maxBarSize={32} filter="url(#claimGlow)"   isAnimationActive={false} activeBar={false} />
+                    <Bar dataKey="stake" fill="url(#stakeGrad)" radius={[4, 4, 0, 0]} maxBarSize={32} filter="url(#stakeGlow)" isAnimationActive={false} activeBar={false} />
+                    <Bar dataKey="unstakeNeg" fill="url(#unstakeGrad)" radius={[0, 0, 4, 4]} stackId="negative" maxBarSize={32} filter="url(#unstakeGlow)" isAnimationActive={false} activeBar={false} />
+                    <Bar dataKey="claimNeg" fill="url(#claimGrad)" radius={[0, 0, 4, 4]} stackId="negative" maxBarSize={32} filter="url(#claimGlow)" isAnimationActive={false} activeBar={false} />
                 </ComposedChart>
             </ResponsiveContainer>
         </div>

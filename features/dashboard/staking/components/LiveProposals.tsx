@@ -35,7 +35,7 @@ export function useLiveProposals(validator: Validator) {
 
     // Live epoch-scoped data (real-time)
     const live = snap.epochProposals.get(validator.address);
-    const epochMade   = live?.made   ?? validator.serverLiveProposalsMade;
+    const epochMade = live?.made ?? validator.serverLiveProposalsMade;
     const epochMissed = live?.missed ?? validator.serverLiveProposalsMissed;
 
     // Is the current on-chain epoch newer than the SSR snapshot?
@@ -52,20 +52,20 @@ export function useLiveProposals(validator: Validator) {
     const bridgedEpochs = snap.finalizedEpochs.map(fe => {
         const stats = fe.data.get(validator.address);
         return {
-            epoch:              fe.epoch,
-            completedProposals: stats?.made   ?? 0,
-            missedProposals:    stats?.missed ?? 0,
-            isLive:             false
+            epoch: fe.epoch,
+            completedProposals: stats?.made ?? 0,
+            missedProposals: stats?.missed ?? 0,
+            isLive: false
         };
     });
 
     const unifiedRows = (() => {
         // 1. Live Row
         const liveRow = {
-            epoch:              liveEpoch ?? 0,
+            epoch: liveEpoch ?? 0,
             completedProposals: epochMade,
-            missedProposals:    epochMissed,
-            isLive:             true
+            missedProposals: epochMissed,
+            isLive: true
         };
 
         // 2. Combine with client-side history (bridged)
@@ -85,7 +85,7 @@ export function useLiveProposals(validator: Validator) {
             combined.reduce((map, row) => {
                 const existing = map.get(row.epoch);
                 const hasData = row.completedProposals > 0 || row.missedProposals > 0;
-                
+
                 if (!existing) {
                     if (row.isLive || hasData) map.set(row.epoch, row);
                 } else {
@@ -101,16 +101,16 @@ export function useLiveProposals(validator: Validator) {
         // 5. Sort and Slice
         return unique
             .sort((a, b) => b.epoch - a.epoch)
-            .slice(0, 5);
+            .slice(0, 6);
     })();
 
     return {
         epochMade,
         epochMissed,
-        recentMade:    validator.recentProposalsMade   - validator.serverLiveProposalsMade   + epochMade,
-        recentMissed:  validator.recentProposalsMissed - validator.serverLiveProposalsMissed + epochMissed,
-        totalMade:     validator.totalProposalsMade    - validator.serverLiveProposalsMade   + epochMade,
-        totalMissed:   validator.totalProposalsMissed  - validator.serverLiveProposalsMissed + epochMissed,
+        recentMade: validator.recentProposalsMade - validator.serverLiveProposalsMade + epochMade,
+        recentMissed: validator.recentProposalsMissed - validator.serverLiveProposalsMissed + epochMissed,
+        totalMade: validator.totalProposalsMade - validator.serverLiveProposalsMade + epochMade,
+        totalMissed: validator.totalProposalsMissed - validator.serverLiveProposalsMissed + epochMissed,
         liveEpoch,
         isNewEpoch,
         unifiedRows
