@@ -29,7 +29,7 @@ import {
 ═════════════════════════════════════════ */
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -150,7 +150,7 @@ export const Layout1Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
         </div>
     );
 };
@@ -160,7 +160,7 @@ export const Layout1Col = ({
 ═════════════════════════════════════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -275,7 +275,7 @@ export const Layout2Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
         </div>
     );
 };
@@ -285,7 +285,7 @@ export const Layout2Col = ({
 ═════════════════════════════════════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -376,7 +376,7 @@ export const Layout4Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
         </div>
     );
 };
@@ -387,7 +387,7 @@ export const Layout4Col = ({
 ═════════════════════════════════════════ */
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet',
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -469,7 +469,7 @@ export const Layout6Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
         </div>
     );
 };
@@ -478,7 +478,7 @@ export const Layout6Col = ({
 
 /** Animated expand panel shared by all layout variants */
 const ExpandPanel = ({
-    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet',
+    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData,
 }: ExpandPanelProps) => (
     <AnimatePresence initial={false}>
         {isExpanded && (
@@ -496,6 +496,7 @@ const ExpandPanel = ({
                     copiedAddress={copiedAddress}
                     columns={columns}
                     network={network}
+                    marketData={marketData}
                 />
             </motion.div>
         )}

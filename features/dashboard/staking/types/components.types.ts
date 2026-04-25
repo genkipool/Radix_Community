@@ -1,6 +1,6 @@
 import React from 'react';
 import { type Validator } from '@/types/radix';
-import { type Network, type TranslationsT, type DashboardDict } from '@/features/dashboard/types';
+import { type Network, type TranslationsT, type DashboardDict, type MarketData } from '@/features/dashboard/types';
 
 /**
  * StatItem
@@ -27,6 +27,7 @@ export interface LayoutProps {
     copiedAddress: string | null;
     network?: Network;
     columns: number;
+    marketData?: MarketData | null;
 }
 
 /**
@@ -46,6 +47,7 @@ export interface ValidatorCardProps {
     network?: Network;
     onOpenModalPrev?: () => void;
     onOpenModalNext?: () => void;
+    marketData?: MarketData | null;
 }
 
 /**
@@ -96,6 +98,7 @@ export interface ValidatorExpandedBodyProps {
     hideCta?: boolean;
     /** When true, applies modal-specific layout fixes */
     isModal?: boolean;
+    marketData?: MarketData | null;
 }
 
 /**
@@ -201,6 +204,7 @@ export interface ExpandPanelProps {
     copiedAddress: string | null;
     columns: number;
     network?: Network;
+    marketData?: MarketData | null;
 }
 
 /**
