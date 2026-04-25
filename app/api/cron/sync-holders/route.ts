@@ -29,12 +29,12 @@ export async function GET(request: Request) {
 
     const redis = new Redis({ url: redisUrl, token: redisToken });
     const BATCH_SIZE = 15; // Number of LSUs to sync per execution to avoid Vercel timeouts and API rate limit bursts
-    const HOLDER_ZSET = 'lsu_sync_queue';
-    const HOLDER_HASH = 'lsu_holders';
     
     // Using Stokenet vs Mainnet based on an env or fixed to mainnet if not specified.
-    // For this cron, we assume mainnet as default or support passing ?network=stokenet if needed.
     const network = (url.searchParams.get('network') as 'mainnet' | 'stokenet') || 'mainnet';
+    
+    const HOLDER_ZSET = `lsu_sync_queue_${network}`;
+    const HOLDER_HASH = `lsu_holders_${network}`;
     const gatewayBaseUrl = network === 'stokenet'
         ? 'https://stokenet.radixdlt.com'
         : 'https://mainnet.radixdlt.com';

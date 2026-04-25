@@ -34,14 +34,14 @@ export async function GET(request: Request) {
 
     const redis = new Redis({ url: redisUrl, token: redisToken });
 
+    const network =
+        (url.searchParams.get('network') as 'mainnet' | 'stokenet') || 'mainnet';
+
     // With incremental sync, most executions only need 1–2 pages
     // per validator, so we can safely increase the batch size from 5 to 10.
     const BATCH_SIZE = 10;
-    const HISTORY_ZSET = 'stake_history_queue';
-    const HISTORY_HASH = 'stake_history_map';
-
-    const network =
-        (url.searchParams.get('network') as 'mainnet' | 'stokenet') || 'mainnet';
+    const HISTORY_ZSET = `stake_history_queue_${network}`;
+    const HISTORY_HASH = `stake_history_map_${network}`;
 
     try {
         // ── 1. Get list of active validators ──────────────────────────────────

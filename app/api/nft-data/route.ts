@@ -1,25 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchNonFungibleData } from '@/services/radixApi';
-import { unstable_cache } from 'next/cache';
+import { fetchNonFungibleDataCached } from '@/services/radixApi';
 import logger from '@/lib/logger';
 import { validateAddress } from '@/utils/apiValidation';
-
-/**
- * Cache NFT metadata for 10 minutes.
- *
- * NFT names, images, and descriptions rarely change after minting.
- * A short cache is a good balance: stale metadata is not a big deal,
- * but hammering the Gateway for the same popular NFT collection on
- * every modal open is wasteful and slow.
- *
- * unstable_cache key includes resourceAddress + localIds for deduplication.
- */
-const fetchCachedNftData = (resourceAddress: string, localIds: string[]) =>
-    unstable_cache(
-        async () => fetchNonFungibleData(resourceAddress, localIds),
-        [`nft-${resourceAddress}-${localIds.join(',')}`],
-        { revalidate: 600, tags: ['nft'] },
-    )();
 
 export async function POST(request: NextRequest) {
     try {
@@ -30,7 +12,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json([], { status: 400 });
         }
         const safeIds = (localIds as unknown[]).slice(0, 10).filter(id => typeof id === 'string') as string[];
-        const data = await fetchCachedNftData(resourceAddress, safeIds);
+        const data = await fetchNonFungibleDataCached(resourceAddress, safeIds, 'mainnet');
         return NextResponse.json(data, {
             headers: {
                 // NFT metadata is mostly immutable — 10 min CDN cache

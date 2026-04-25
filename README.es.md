@@ -46,9 +46,9 @@ El proyecto está dividido en varios módulos o "features" verticales, cada uno 
 
 Este proyecto aplica pautas de arquitectura estricta y código limpio:
 
-- **Core:** Next.js 15+ (App Router Exclusivamente), React 19, TypeScript (Strict Mode).
+- **Core:** Next.js 16+ (App Router exclusivamente), React 19, TypeScript (Strict Mode).
 - **Estilos & UI:** Tailwind CSS, Shadcn UI (Componentes Accesibles), CSS Variables (Soporte Multi-Tema: Claro, Oscuro, Oro), Lucide React (Íconos).
-- **Estado y Mutaciones:** Server Components (RSC), Server Actions, React Query, `unstable_cache`.
+- **Estado y Mutaciones:** Server Components (RSC), Server Actions, React Query, `"use cache"` (Next.js 16).
 - **Formularios & Validación:** React Hook Form + Zod.
 - **Animaciones:** Motion (Framer Motion).
 - **Internacionalización (i18n):** Sistema de Diccionarios Locales (JSON) con Middleware (`proxy.ts`) para detección automática de idioma (es/en).

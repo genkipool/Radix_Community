@@ -92,11 +92,25 @@ export async function fetchEntityDetails(
   }
 }
 
-// ── NFT data ──────────────────────────────────────────────────────────────────
+/**
+ * Cached NFT metadata.
+ */
+export async function fetchNonFungibleDataCached(
+    resourceAddress: string,
+    localIds: string[],
+    network: Network = 'mainnet',
+): Promise<NonFungibleIdItem[]> {
+    "use cache";
+    cacheLife("minutes");
+    cacheTag('nft', `nft-${resourceAddress}`);
+
+    return fetchNonFungibleData(resourceAddress, localIds, network);
+}
+
 export async function fetchNonFungibleData(
-  resourceAddress: string,
-  localIds: string[],
-  network: Network = 'mainnet',
+    resourceAddress: string,
+    localIds: string[],
+    network: Network = 'mainnet',
 ): Promise<NonFungibleIdItem[]> {
   const gateway = getGateway(network);
   try {

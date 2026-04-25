@@ -13,9 +13,10 @@
 import React from 'react';
 import Link from 'next/link';
 import type { BaseSectionProps } from '../../types';
-import { Landmark, ScrollText, Globe, Lock, BarChart3, Zap, Building2, Search, ExternalLink } from 'lucide-react';
+import { Landmark, ScrollText, Globe, Lock, BarChart3, Zap, Building2, Search, ExternalLink, Info } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import InfraReadButton from './components/InfraReadButton';
 
 const ICONS = [
@@ -51,7 +52,15 @@ export default function Institutions({ t }: BaseSectionProps) {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-2">{feature.title}</h3>
-                <p className="text-[var(--color-text-muted)] leading-relaxed text-sm">{feature.desc}</p>
+                <p className="text-[var(--color-text-muted)] leading-relaxed text-sm">
+                  {feature.desc}{'tooltip' in feature && feature.tooltip && (
+                    <span className="inline-flex items-center ml-1.5 align-baseline translate-y-[1px]">
+                      <InfoTooltip content={t.instituciones[feature.tooltip as keyof typeof t.instituciones] as string}>
+                        <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                      </InfoTooltip>
+                    </span>
+                  )}
+                </p>
               </div>
             </FadeIn>
           ))}

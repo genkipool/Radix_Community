@@ -17,10 +17,14 @@ export interface EpochRewardEntry {
 /** Daily breakdown stored per validator in Redis */
 export interface ValidatorRewardData {
     lastSyncedEpoch: number;
-    /** Mapping: "YYYY-MM-DD" → total XRD rewarded that day */
+    /** Mapping: "YYYY-MM-DD" → total validator fee XRD rewarded that day */
     daily: Record<string, number>;
-    /** Mapping: "YYYY" → total XRD rewarded that year */
+    /** Mapping: "YYYY" → total validator fee XRD rewarded that year */
     yearly: Record<string, number>;
+    /** Mapping: "YYYY-MM-DD" → total delegator XRD rewarded that day */
+    dailyDelegants?: Record<string, number>;
+    /** Mapping: "YYYY" → total delegator XRD rewarded that year */
+    yearlyDelegants?: Record<string, number>;
 }
 
 /** Metadata for the sync process */
@@ -172,7 +176,13 @@ export async function syncRewardsToRedis(
             lastSyncedEpoch: 0,
             daily: {},
             yearly: {},
+            dailyDelegants: {},
+            yearlyDelegants: {},
         };
+
+        // Ensure new fields exist for existing records
+        if (!data.dailyDelegants) data.dailyDelegants = {};
+        if (!data.yearlyDelegants) data.yearlyDelegants = {};
 
         for (const ev of validatorEvents) {
             // Skip already processed epochs
@@ -182,9 +192,11 @@ export async function syncRewardsToRedis(
 
             // Accumulate daily
             data.daily[today] = (data.daily[today] ?? 0) + ev.validatorFeeXrd;
+            data.dailyDelegants[today] = (data.dailyDelegants[today] ?? 0) + ev.stakePoolAddedXrd;
 
             // Accumulate yearly
             data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
+            data.yearlyDelegants[currentYear] = (data.yearlyDelegants[currentYear] ?? 0) + ev.stakePoolAddedXrd;
 
             // Track highest epoch
             if (ev.epoch > data.lastSyncedEpoch) {
@@ -198,16 +210,20 @@ export async function syncRewardsToRedis(
     // Prune old years
     for (const address of Object.keys(allData)) {
         const data = allData[address];
-        for (const year of Object.keys(data.daily)) {
-            if (parseInt(year.substring(0, 4), 10) < cutoffYear) {
-                delete data.daily[year];
+        const prune = (map?: Record<string, number>) => {
+            if (!map) return;
+            for (const key of Object.keys(map)) {
+                const year = key.length === 4 ? key : key.substring(0, 4);
+                if (parseInt(year, 10) < cutoffYear) {
+                    delete map[key];
+                }
             }
-        }
-        for (const year of Object.keys(data.yearly)) {
-            if (parseInt(year, 10) < cutoffYear) {
-                delete data.yearly[year];
-            }
-        }
+        };
+
+        prune(data.daily);
+        prune(data.yearly);
+        prune(data.dailyDelegants);
+        prune(data.yearlyDelegants);
     }
 
     pipeline.set(REDIS_REWARDS_ALL, allData);

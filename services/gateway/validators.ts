@@ -445,7 +445,7 @@ export async function fetchValidatorsWithLedger(
             const redis = getRedisClient();
             if (redis) {
                 // Recuperar las cuentas masivamente desde el diccionario subido por el cron
-                const allHolders = await redis.hgetall<Record<string, number>>('lsu_holders');
+                const allHolders = await redis.hgetall<Record<string, number>>(`lsu_holders_${network}`);
                 if (allHolders) {
                     lsuAddresses.forEach(addr => {
                         // El cron podría no haber llegado a él todavía.
@@ -852,7 +852,7 @@ async function getValidatorsFromDataCache(network: Network) {
  * Priority order:
  *   1. Upstash Redis (Storage) — instant (~50-100 ms). Returns stale data
  *      immediately and triggers a background API refresh via after().
- *   2. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   2. Vercel Data Cache ("use cache") — instant if warm.
  *   3. Radix Gateway API (blocking cold-start) — only when Redis is empty.
  *   4. Absolute Fallback — returns empty state ([]) to prevent UI crash.
  */
@@ -875,7 +875,7 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                 );
 
                 // ── Step 2: Background revalidation ────────────────────────
-                // This call is OUTSIDE unstable_cache, so it can safely call revalidateTag.
+                // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                 after(async () => {
                     try {
                         logger.info({ network }, '[ValidatorsService] Background revalidation started');

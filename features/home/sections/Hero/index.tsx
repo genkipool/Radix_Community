@@ -173,19 +173,19 @@ export default function Hero({ t, locale }: HeroProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] mb-2">2²⁵⁶</div>
-              <div className="text-sm text-[var(--color-text-muted)] font-medium">{t.hero.metric1}</div>
+              <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric1}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[var(--color-text-main)] mb-2">100%</div>
-              <div className="text-sm text-[var(--color-text-muted)] font-medium">{t.hero.metric2}</div>
+              <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric2}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] mb-2">ROA</div>
-              <div className="text-sm text-[var(--color-text-muted)] font-medium">{t.hero.metric3}</div>
+              <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric3}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-[var(--color-text-main)] mb-2">T+0</div>
-              <div className="text-sm text-[var(--color-text-muted)] font-medium">{t.hero.metric4}</div>
+              <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric4}</div>
             </div>
           </div>
         </div>

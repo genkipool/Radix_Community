@@ -23,6 +23,7 @@ import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/ra
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { isValidAddressForNetwork } from '@/utils/apiValidation';
 
 
 /**
@@ -642,6 +643,12 @@ export async function searchTransactionsByAddress(
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
+    // Defensive network check: Prevent 400 errors by identifying mismatch before calling Gateway
+    if (!isValidAddressForNetwork(address, network)) {
+        logger.warn({ address, network }, '[TransactionsService] Address does not belong to the requested network. Returning empty result.');
+        return { transactions: [], nextCursor: undefined };
+    }
+
     // Fast path: a txid_ is a direct detail lookup, not a stream query
     if (address.startsWith('txid_')) {
         const item = await fetchTransactionDetails(address, network);
@@ -898,6 +905,11 @@ export async function fetchStakeHistoryRaw(
     validatorAddress: string,
     network: Network = 'mainnet',
 ): Promise<StakeHistoryEntry[]> {
+    if (!isValidAddressForNetwork(validatorAddress, network)) {
+        logger.warn({ validatorAddress, network }, '[TransactionsService] Validator address mismatch for network in Raw Fetch');
+        return [];
+    }
+
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     ninetyDaysAgo.setHours(0, 0, 0, 0);
@@ -1109,23 +1121,28 @@ export async function fetchStakeHistoryCached(
     validatorAddress: string,
     network: Network = 'mainnet',
 ): Promise<StakeHistoryEntry[]> {
+    if (!isValidAddressForNetwork(validatorAddress, network)) {
+        logger.warn({ validatorAddress, network }, '[TransactionsService] Validator address mismatch for network in Cached Fetch');
+        return [];
+    }
+
+    const redis = getRedisClient();
+    const historyMap = `stake_history_map_${network}`;
+
+    if (!redis) return [];
+
     try {
-        const redis = getRedisClient();
-        if (redis) {
-            const raw = await redis.hget<StakeHistoryRecord | StakeHistoryEntry[] | string>(
-                'stake_history_map',
-                validatorAddress,
-            );
-            if (raw) {
-                // New format: { data, lastSyncedDate, lastSyncedAt }
-                if (typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw) {
-                    return (raw as StakeHistoryRecord).data;
-                }
-                // Old format: flat array
-                if (Array.isArray(raw)) return raw;
-                // Serialized string (old format)
-                if (typeof raw === 'string') return JSON.parse(raw);
+        const raw = await redis.hget<StakeHistoryRecord>(historyMap, validatorAddress);
+
+        if (raw) {
+            // New format: { data, lastSyncedDate, lastSyncedAt }
+            if (typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw) {
+                return (raw as StakeHistoryRecord).data;
             }
+            // Old format: flat array (fallback for transition)
+            if (Array.isArray(raw)) return raw;
+            // Serialized string (old format)
+            if (typeof raw === 'string') return JSON.parse(raw);
         }
     } catch (e) {
         logger.error({ err: e, validatorAddress }, '[TransactionsService] Failed to read stake history from Redis');
@@ -1199,7 +1216,7 @@ const getRedisClient = () => {
  * Cached version of fetchRecentTransactions (Data Cache).
  *
  * SWR (Stale-While-Revalidate) pattern for the initial tip load:
- *   1. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   1. Vercel Data Cache ("use cache") — instant if warm.
  *   2. Upstash Redis (Storage) — fast return of stale data, then
  *      background API refresh via after().
  *   3. Radix Gateway API (blocking cold-start) — first ever load.
@@ -1253,7 +1270,7 @@ async function getRecentTransactionsFromDataCache(
  * SWR (Stale-While-Revalidate) pattern for the initial tip load:
  *   1. Upstash Redis (Storage) — fast return of stale data, then
  *      background API refresh via after() outside the cache boundary.
- *   2. Vercel Data Cache (unstable_cache) — instant if warm.
+ *   2. Vercel Data Cache ("use cache") — instant if warm.
  *   3. Radix Gateway API (blocking cold-start) — first ever load.
  *   4. Absolute Fallback — returns empty state to prevent UI crash.
  */
@@ -1283,7 +1300,7 @@ export async function getRecentTransactionsCached(
                 );
 
                 // ── Step 2: Background revalidation ────────────────────────
-                // This call is OUTSIDE unstable_cache, so it can safely call revalidateTag.
+                // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                 after(async () => {
                     try {
                         logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');

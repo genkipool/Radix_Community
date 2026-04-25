@@ -28,6 +28,7 @@ export {
   fetchLedgerState,
   fetchEntityDetails,
   fetchNonFungibleData,
+  fetchNonFungibleDataCached,
   fetchNonFungibleLocation,
 } from './gateway/entities';
 

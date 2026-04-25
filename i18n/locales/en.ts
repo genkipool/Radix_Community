@@ -208,7 +208,7 @@ export const en = {
     btn_dev: "Start Building",
     metric1: "Shards (Infinite Scalability)",
     metric2: "AML / MiCA Traceability",
-    metric3: "Native Security",
+    metric3: "Native Security: Real assets, not code promises.",
     metric4: "Atomic DvP Settlement",
     snippet: {
       title: "Manifest",
@@ -228,9 +228,9 @@ export const en = {
       committed_label: "Committed — Zero counterparty risk · ~3s · T+0",
       tooltip: "The Manifest takes 10 million CBDC from the bank and 200k RWA Bonds from the fund, and swaps them between their accounts simultaneously. If anyone lacks the funds, the entire operation is automatically cancelled."
     },
-    btn_prev: "Slide anterior",
-    btn_next: "Slide siguiente",
-    aria_go: "Ir al slide",
+    btn_prev: "Previous slide",
+    btn_next: "Next slide",
+    aria_go: "Go to slide",
     tags: {
       community: "Community",
       foundation: "Foundation"
@@ -244,7 +244,7 @@ export const en = {
     card1_title: "SWIFT: T+2 Settlement",
     card1_p: "Banks still use 1970s messaging. Asset settlement takes 2 days, generates massive manual reconciliation, and exposes institutions to counterparty bankruptcy risk. In 2026, this is unacceptable.",
     card2_title: "EVM: Blind and Hackable Code",
-    card2_p: "Ethereum treats tokens as variables in a contract. A single code error can drain billions. Banks cannot demand 'Blind Signing' from their executives. Over $3.8B stolen in DeFi hacks in 2022.",
+    card2_p: "No global system asks its users to sign unreadable transactions. “Blind signing” enabled the $570M hack of Drift and Kelp in 2026. DeFi architecture needs to evolve toward secure vaults and native assets.",
     card3_title: "Compliance: No Native Traceability",
     card3_p: "Current blockchains don't allow KYC/AML holding restrictions natively. Implementing MiCA, DORA, or Travel Rule requires costly middleware layers that add attack vectors.",
     sol_card1_title: "T+0 → Atomic DvP",
@@ -260,11 +260,12 @@ export const en = {
     h2a: "Financial infrastructure that transforms",
     h2b: "risk into mathematical certainty.",
     sub: "Every architecture decision in Radix was made thinking of the real needs of institutional treasuries, regulators, and compliance teams.",
+    smartAccountsTooltip: "<strong>Native Smart Accounts:</strong><br/><br/>Native smart accounts integrated directly into the network, without relying on external smart contracts. They allow defining authorization rules such as “2 of 3”, where 2 signatures out of 3 possible are required to approve a transaction. This model distributes control across multiple parties and eliminates single points of failure, increasing security in fund management.",
     features: [
       { title: "Atomic DvP (Delivery vs Payment)", desc: "Exchange Bonds, CBDCs, and RWAs in a single atomic transaction. If any leg fails, everything reverts. Counterparty risk mathematically equal to zero. Goodbye to SWIFT's T+2." },
       { title: "Human-Readable Manifests (No Blind Signing)", desc: "Executives don't approve opaque code. The Transaction Manifest is a document of intentions in natural language. Internal audit compliance guaranteed." },
       { title: "Native MiCA, DORA and AML Compliance", desc: "Auth Zones allow restricting asset holding to wallets with verified KYC (idOS). Travel Rule and AML are implemented at the base layer, not in external middleware." },
-      { title: "Institutional Multisig Without Smart Contracts", desc: "Native Smart Accounts with 2-of-3 or N-of-M rules for corporate treasuries. No auditable external code, no additional attack vectors. Secure governance for executives." },
+      { title: "Institutional Multisig Without Smart Contracts", desc: "Native Smart Accounts with 2-of-3 or N-of-M rules for corporate treasuries. No auditable external code, no additional attack vectors. Secure governance for executives.", tooltip: "smartAccountsTooltip" },
       { title: "RWA Tokenization with Physical Guarantees", desc: "Real estate, corporate bonds, and gold tokenized with 1:1 backing guaranteed by ROA. Impossible to fragment due to code error. Total balance integrity at all times." },
       { title: "Zero-Risk Institutional Flash Loans", desc: "Arbitrage and instant liquidity provision in one transaction. If funds are not returned at the end of the pipeline, the entire operation reverts. Treasury management with no exposure." },
       { title: "Mutable NFTs for Financial Contracts", desc: "Bonds with states that mutate on-ledger: Active → Expired → Redeemed. Without recreating contracts. Ideal for representing complex financial instruments with a full lifecycle." },

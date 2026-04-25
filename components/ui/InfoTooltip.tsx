@@ -127,18 +127,18 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
   const isTop = placement === 'top';
 
   return (
-    <div
+    <span
       ref={triggerRef}
-      className="inline-block"
+      className="inline-flex items-center"
       onMouseEnter={handleOpen}
       onMouseLeave={handleClose}
     >
-      <div
+      <span
         onClick={handleToggle}
-        className="cursor-pointer"
+        className="cursor-pointer inline-flex items-center"
       >
         {children}
-      </div>
+      </span>
 
       <AnimatePresence>
         {isOpen && (
@@ -191,7 +191,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
           </Portal>
         )}
       </AnimatePresence>
-    </div>
+    </span>
   );
 }
 // Sync verified: dom 19 abr 2026 02:30:04 CEST

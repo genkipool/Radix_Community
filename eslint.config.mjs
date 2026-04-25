@@ -34,13 +34,18 @@ const eslintConfig = [
                 "destructuredArrayIgnorePattern": "^_",
             }],
             "no-restricted-imports": [
-                "warn",
+                "error",
                 {
                     paths: [
                         {
                             name: "react",
                             importNames: ["useMemo", "useCallback", "memo"],
                             message: "We have the React Compiler! Don't use useMemo, useCallback or memo. Write normal code."
+                        },
+                        {
+                            name: "next/cache",
+                            importNames: ["unstable_cache"],
+                            message: "Please use Next.js 16 native 'use cache' directive instead of unstable_cache."
                         }
                     ]
                 }
