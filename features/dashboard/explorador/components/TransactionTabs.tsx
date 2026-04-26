@@ -42,10 +42,10 @@ function TransactionDetailsSkeleton({ tt }: { tt: TranslationsT['dashboard']['tr
     );
 }
 
-/* ══════════════════════════════════════════
+/* ==============================════════════
    TransactionTabs — pure tab orchestrator
    Updated to filter out protocol internal fee movements (Consensus Manager).
-══════════════════════════════════════════ */
+==============================════════════ */
 const TransactionTabs = ({
     details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale, marketData,
 }: TransactionTabsProps) => {

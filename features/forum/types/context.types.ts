@@ -1,10 +1,10 @@
-import { en } from '@/i18n/locales/en';
+import { Dictionary } from '@/i18n';
 import { ForumUser, ForumPost, ForumReply } from './data.types';
 
-/* ═══════════════ CONTEXT TYPES ═══════════════ */
+/* =============== CONTEXT TYPES =============== */
 
 export interface ForumCtxValue {
-    t: typeof en;
+    t: Dictionary;
     language: 'en' | 'es';
     users: Record<string, ForumUser>;
     // State

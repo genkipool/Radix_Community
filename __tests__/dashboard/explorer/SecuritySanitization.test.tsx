@@ -24,7 +24,8 @@ vi.mock('lucide-react', () => ({
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/context/LanguageContext';
-import { en } from '@/i18n/locales/en';
+import { translations } from '@/i18n';
+const en = translations.en;
 
 const queryClient = new QueryClient({
   defaultOptions: {

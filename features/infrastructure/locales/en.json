@@ -1,0 +1,195 @@
+{
+  "infrastructure_page": {
+    "meta": {
+      "title": "Radix Infrastructure",
+      "description": "A complete breakdown of the Radix full-stack technical infrastructure: from the ledger and consensus layers to DeFi, identity and developer tooling."
+    },
+    "hero": {
+      "brand": "Radix",
+      "title": "Infrastructure",
+      "badge": "Full-Stack Architecture",
+      "description": "Radix was built from scratch, not forked from Ethereum or Bitcoin, with a single purpose: to be the global base layer for finance. Explore every technical layer of the stack below."
+    },
+    "controls": {
+      "search_placeholder": "Search layers and components…",
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "auto_collapse": "Auto-collapse",
+      "results_one": "1 result",
+      "results_many": "{n} results",
+      "no_results": "No components match your search."
+    },
+    "layers": {
+      "ledger": {
+        "number": "01",
+        "title": "Ledger & Storage",
+        "subtitle": "The Ground of the Network",
+        "description": "The physical foundation where all data resides. Radix does not use a traditional blockchain; instead it uses a massively pre-sharded distributed ledger designed for infinite parallelism.",
+        "items": {
+          "global_ledger": {
+            "title": "Radix Global Ledger",
+            "description": "An immense distributed ledger pre-sharded from day one into 2²⁵⁶ shards. It is the infinite canvas on which every asset, identity and smart component exists."
+          },
+          "substate_model": {
+            "title": "Substate Model",
+            "description": "Every asset, resource and smart component is an independent \"substate\" on the ledger, enabling fully parallel processing of interactions that touch different parts of the ledger."
+          },
+          "jmt": {
+            "title": "Jellyfish Merkle Tree (JMT)",
+            "description": "The underlying cryptographic data structure that stores and verifies all substates with ultra-fast read/write performance, enabling cryptographic proofs of any ledger state."
+          }
+        }
+      },
+      "consensus": {
+        "number": "02",
+        "title": "Network & Consensus",
+        "subtitle": "The Muscle and the Scalability",
+        "description": "This layer dictates how validator nodes agree on ledger updates. Cerberus and Hyperscale together deliver linear scalability — the more nodes, the more throughput — without bottlenecks.",
+        "items": {
+          "cerberus": {
+            "title": "Cerberus (Braided Consensus)",
+            "description": "The native consensus algorithm that enables atomic transactions spanning multiple shards simultaneously. A complex operation either executes in full or is rolled back entirely — no partial failures."
+          },
+          "hyperscale": {
+            "title": "Hyperscale Architecture",
+            "description": "The network topology and parallelisation layer that allows Cerberus to scale horizontally. Adding validator nodes directly increases transactions per second (TPS) without any ceiling."
+          },
+          "nodes": {
+            "title": "Validator, Full & Archive Nodes",
+            "description": "Decentralised physical servers that run Cerberus, secure the network via XRD staking, process transaction batches and store the complete ledger history for auditability."
+          }
+        }
+      },
+      "execution": {
+        "number": "03",
+        "title": "Execution & Programming",
+        "subtitle": "The Brain",
+        "description": "The environment where smart logic is built and run. Radix Engine's asset-oriented model treats tokens as physical resources — they cannot disappear or be duplicated by a code bug.",
+        "items": {
+          "radix_engine": {
+            "title": "Radix Engine v2",
+            "description": "The Virtual Machine of the network. It is an \"Asset-Oriented\" engine where tokens behave like physical objects with real ownership semantics, making an entire class of DeFi exploits structurally impossible."
+          },
+          "scrypto": {
+            "title": "Scrypto",
+            "description": "The smart-contract programming language built on Rust. Scrypto exposes Radix Engine's asset model directly so developers work with typed, safe resources instead of raw integer balances."
+          },
+          "blueprints": {
+            "title": "Blueprints, Components & Royalties",
+            "description": "Developers write Blueprints (logic templates) that are instantiated as on-ledger Components. A unique protocol-level Developer Royalty system allows creators to earn a fee automatically every time their code is invoked by any dApp or user."
+          },
+          "nft_catalog": {
+            "title": "Native Resource & NFT Catalog",
+            "description": "NFTs are first-class citizens on Radix — not an afterthought. The engine supports Mutable NFTs (attributes that evolve, ideal for games or identities) governed by a granular Role-Based Access Control system: mint, update, burn rules are set at protocol level, not in custom code."
+          }
+        }
+      },
+      "defi": {
+        "number": "04",
+        "title": "DeFi Layer",
+        "subtitle": "The Final Purpose",
+        "description": "The application layer that sits on top of all the layers below. Radix provides native, standardised DeFi building blocks that any developer can compose without re-implementing security from scratch.",
+        "items": {
+          "native_defi": {
+            "title": "Native DeFi Components",
+            "description": "Liquidity pools, oracles, lending markets and decentralised exchanges (DEXs) built from standardised, audited Blueprints. Developers assemble DeFi products from proven pieces rather than writing everything from zero."
+          },
+          "atomic_composability": {
+            "title": "Global Atomic Composability",
+            "description": "dApps can interact with each other simultaneously across any number of shards with full atomicity. One transaction can span a DEX swap, a lending deposit and an NFT mint — and either all succeed or none do."
+          }
+        }
+      },
+      "interoperability": {
+        "number": "05",
+        "title": "Interoperability & Bridges",
+        "subtitle": "The Doors to the Outside",
+        "description": "How the Radix ecosystem connects to the broader Web3 world — moving assets and messages between Radix and over 150 other blockchains.",
+        "items": {
+          "hyperlane": {
+            "title": "Hyperlane",
+            "description": "A decentralised, permissionless messaging infrastructure connecting Radix to 150+ blockchains (Ethereum, Solana, Arbitrum and more) for cross-chain message passing and liquidity bridging."
+          },
+          "instabridge": {
+            "title": "Instabridge / Instapass",
+            "description": "The native Radix bridge and its optional compliance infrastructure (KYC/AML on-chain). Instapass enables institutional-grade, regulated DeFi access directly from the Radix ledger."
+          }
+        }
+      },
+      "frontend": {
+        "number": "06",
+        "title": "Authentication & Front-end",
+        "subtitle": "The Web3 Plug",
+        "description": "The tools that let web applications communicate with the Radix network. ROLA, the dApp Toolkit and human-readable Transaction Manifests together make building and using dApps safe and intuitive.",
+        "items": {
+          "rola": {
+            "title": "ROLA (Radix Off-Ledger Authentication)",
+            "description": "A cryptographic protocol that lets users log in to dApps by proving they own a Radix account — without ever exposing a private key or seed phrase."
+          },
+          "rdt": {
+            "title": "Radix dApp Toolkit (RDT)",
+            "description": "Libraries and web components developers embed in their front-end UIs to handle wallet connection, transaction signing and account query flows with a few lines of code."
+          },
+          "manifests": {
+            "title": "Transaction Manifests",
+            "description": "Human-readable scripts that detail exactly which assets will enter and leave your account before you approve any transaction. No more blind-signing opaque hex blobs."
+          }
+        }
+      },
+      "identity": {
+        "number": "07",
+        "title": "User & Identity",
+        "subtitle": "Your Control Panel",
+        "description": "How end-users interact with the network. Radix Smart Accounts are smart contracts in themselves, enabling native multi-factor recovery and granular access rules without any additional setup.",
+        "items": {
+          "smart_accounts": {
+            "title": "Smart Accounts (Native Account Abstraction)",
+            "description": "Every Radix wallet is a smart contract on-ledger, enabling complex recovery rules, multi-factor authentication (MFA) and programmable access control natively at the protocol level."
+          },
+          "radix_wallet": {
+            "title": "Radix Wallet & Personas",
+            "description": "The official mobile app that acts as your vault and manages your digital identities (Personas). You decide exactly which personal attributes to share with each dApp — full self-sovereign identity."
+          },
+          "radix_connect": {
+            "title": "Radix Connect",
+            "description": "The WebRTC-based protocol that securely pairs your mobile phone with your desktop browser, letting you approve transactions from your phone while browsing dApps on your computer."
+          }
+        }
+      },
+      "tooling": {
+        "number": "08",
+        "title": "Data, APIs & Tooling",
+        "subtitle": "The Workshop & Engine Room",
+        "description": "The complete developer toolkit — from the public Testnet and local simulator to low-level institutional APIs and the public Gateway used by every dApp in the ecosystem.",
+        "items": {
+          "stokenet": {
+            "title": "Stokenet",
+            "description": "The official public Testnet of Radix. It is an exact replica of Mainnet used by developers to safely test dApps and infrastructure before launching with real money."
+          },
+          "resim": {
+            "title": "Radix Engine Simulator (resim)",
+            "description": "A command-line tool (CLI) and standalone local environment. Developers simulate the full Radix Engine on their own machines and run rapid Scrypto contract tests without any internet connection."
+          },
+          "core_api": {
+            "title": "Core API & System API",
+            "description": "Low-level direct programming interfaces used by institutional node operators and centralised exchanges (such as Bitfinex or KuCoin) to interact directly with the physical blockchain core and manage heavy transaction flows."
+          },
+          "gateway": {
+            "title": "Gateway API / Network Gateway",
+            "description": "The master indexing server that reads the entire blockchain (balances, histories, component states) and serves it to developers via an easy-to-use RESTful API — eliminating the costly need for every dApp to run and maintain its own node."
+          },
+          "dashboard": {
+            "title": "Radix Dashboard",
+            "description": "The official block explorer — the visual interface. It translates the entire complex infrastructure of substates and components into a clean, readable web page so any user can audit the network, view transactions and check validator status."
+          }
+        }
+      }
+    }
+  },
+  "seo": {
+    "infrastructure": {
+      "title": "Infrastructure | Run a Radix Node",
+      "description": "Everything you need to run a Radix validator node — setup guides, hardware requirements, and monitoring."
+    }
+  }
+}

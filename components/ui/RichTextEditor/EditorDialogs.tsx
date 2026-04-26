@@ -85,9 +85,9 @@ export function Btn({ variant = 'primary', children, ...rest }: BtnProps) {
     );
 }
 
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 /*  LinkDialog                                            */
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
     const [url, setUrl] = useState('');
     const [label, setLabel] = useState('');
@@ -140,9 +140,9 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
     );
 }
 
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 /*  DiscardDialog                                         */
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 export function DiscardDialog({ onConfirm, onClose, t }: DiscardDialogProps) {
     return (
         <ModalShell onBackdropClick={onClose}>

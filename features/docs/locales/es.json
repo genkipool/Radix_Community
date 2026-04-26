@@ -1,0 +1,232 @@
+{
+  "docs": {
+    "heroTitle": "Documentos",
+    "heroSubtitle": "Composabilidad Atómica",
+    "heroDescription": "Explora la documentación oficial, whitepapers técnicos, guías y recursos para adentrarte en el ecosistema de Radix: el ledger diseñado para DeFi sin compromisos. Conecta tu billetera y compra tu badge de administrador para acceder al panel de administración, desde el que podrás crear y publicar tu propia documentación en la plataforma.",
+    "cta_connect_wallet": "Conecta tu billetera",
+    "cta_buy_badge": "compra tu badge de administrador",
+    "searchPlaceholder": "Buscar documentos...",
+    "filters": {
+      "all": "Todos",
+      "whitepapers": "Whitepapers",
+      "developer": "Desarrolladores",
+      "guides": "Guías",
+      "resources": "Recursos"
+    },
+    "featured": "Documentos Destacados",
+    "onThisPage": "En esta página",
+    "noResults": "Sin resultados para",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "actions": {
+      "download_md": "Descargar Markdown",
+      "share": "Compartir URL (Copiar URL)",
+      "print": "Imprimir",
+      "copied": "¡Copiado!"
+    },
+    "readArticle": "Leer artículo",
+    "topics": {
+      "admin": "Administración",
+      "developers": "Desarrolladores",
+      "whitepapers": "Whitepapers",
+      "guides": "Guías",
+      "node_operators": "Operadores de Nodo",
+      "defi": "DeFi & Protocolo"
+    },
+    "documents": {
+      "ledger_architecture": "Arquitectura del Ledger Radix",
+      "atomic_composability": "Composabilidad Atómica",
+      "cerberus": "Cerberus: Consenso en Profundidad",
+      "cerberus_braiding": "Cross-Shard Braiding",
+      "scrypto_basics": "Scrypto: Smart Contracts Básico",
+      "asset_paradigm": "Paradigma Orientado a Activos",
+      "blueprints": "Blueprints & Componentes",
+      "frontend_sdk": "Integración Frontend SDK",
+      "tx_manifests": "Transaction Manifests",
+      "babylon_guide": "Guía Babylon para Operadores",
+      "epochs": "Épocas & Propuestas",
+      "defi_overview": "Visión General DeFi en Radix",
+      "flash_loans": "Flash Loans & Composabilidad"
+    },
+    "svg": {
+      "appName": "Documentación Técnica de Radix",
+      "docsTitle": "Radix Documentos",
+      "docsSubtitle": "Explora la documentación oficial.",
+      "ledger": "LEDGER",
+      "radix": "RADIX"
+    },
+    "featured_cards": {
+      "architecture": {
+        "title": "Arquitectura Radix",
+        "desc": "Inmersión profunda en Cerberus y la estructura del ledger escalable."
+      },
+      "scrypto": {
+        "title": "Smart Contracts Scrypto",
+        "desc": "Aprende el lenguaje definitivo para construir lógica Web3 segura."
+      },
+      "staking": {
+        "title": "Ecosistema de Staking",
+        "desc": "Recompensas de nodos, penalizaciones y épocas explicadas."
+      },
+      "security": {
+        "title": "Seguridad & Consenso",
+        "desc": "Cómo la composabilidad atómica protege contra hackeos en DeFi."
+      }
+    },
+    "callout_epochs": "Nota sobre Épocas",
+    "content": {
+      "ledger_intro": "La Red Pública de Radix representa un cambio fundamental en cómo se diseñan los ledgers distribuidos. En lugar de forzar todas las transacciones por un único canal secuencial, Cerberus habilita paralelismo infinito.",
+      "core_concepts_title": "Conceptos Fundamentales",
+      "core_concepts_body": "Cada recurso en Radix es una vault física. A diferencia de Ethereum donde los tokens son solo saldos en un contrato inteligente masivo, en Radix los tokens son objetos nativos comprendidos directamente por el motor del ledger.",
+      "callout_epochs_body": "Las transiciones de época ocurren aproximadamente cada 5 minutos. Durante este tiempo, el conjunto de nodos rota según el stake delegado total. Los operadores activos deben mantener alta disponibilidad para evitar propuestas perdidas.",
+      "atomic_title": "Composabilidad Atómica",
+      "atomic_body": "Cuando una transacción interactúa con múltiples aplicaciones descentralizadas, Cerberus trenza dinámicamente los shards relevantes. Si un paso falla, toda la transacción se revierte automáticamente sin bloquear fondos entre shards.",
+      "validator_title": "Operadores de Nodo Validador",
+      "validator_body": "Los nodos nodos son responsables de proponer y votar sobre lotes de transacciones dentro de sus shards asignados. Los operadores deben mantener alta disponibilidad y hacer stake de XRD para participar.",
+      "cerberus_title": "El Algoritmo Cerberus",
+      "cerberus_body": "Cerberus es el protocolo de consenso Tolerante a Fallos Bizantinos único de Radix. Logra escalado lineal permitiendo que los shards operen independientemente, coordinándose solo cuando las transacciones abarcan múltiples shards.",
+      "native_assets_title": "Activos Nativos & Vaults",
+      "native_assets_body": "Los activos en Radix son objetos de primera clase en el ledger. Cada recurso reside en una vault que actúa como contenedor seguro. La lógica de transferencia está incorporada en el protocolo, no en contratos externos.",
+      "resource_model_title": "Modelo de Recursos",
+      "resource_model_body": "El modelo de recursos de Radix define cómo se crean, dividen y fusionan los activos. Cada recurso tiene metadatos inmutables y comportamientos definidos en el momento de la creación mediante blueprints de Scrypto.",
+      "cross_shard_title": "Transacciones Cross-Shard",
+      "cross_shard_body": "Las transacciones que abarcan múltiples shards se coordinan mediante el protocolo de braiding de Cerberus. El ledger garantiza que o bien todas las operaciones se confirman atómicamente, o bien ninguna lo hace.",
+      "braiding_title": "Protocolo de Braiding de Shards",
+      "braiding_body": "El braiding entrelaza temporalmente los shards participantes durante la ejecución de una transacción cross-shard. Una vez completada la transacción, los shards reanudan su operación independiente sin overhead adicional."
+    },
+    "editor": {
+      "title": "Editor de Documentos",
+      "subtitle": "Crear y publicar documentación",
+      "title_placeholder": "Título del documento…",
+      "topic_label": "Categoría",
+      "tags_label": "Etiquetas",
+      "tags_placeholder": "etiqueta1, etiqueta2, etiqueta3…",
+      "publish_btn": "Publicar",
+      "save_draft": "Guardar borrador",
+      "preview": "Vista previa",
+      "edit": "Editar",
+      "discard": "Descartar",
+      "cancel": "Cancelar",
+      "insert": "Insertar",
+      "confirm_discard": "¿Descartar cambios?",
+      "confirm_discard_desc": "Todos los cambios no guardados se perderán permanentemente.",
+      "content_placeholder": "Empieza a escribir tu documento…",
+      "word_count": "Palabras",
+      "char_count": "Caracteres",
+      "insert_link": "Insertar enlace",
+      "link_label_placeholder": "Etiqueta del enlace (opcional)",
+      "empty_title_error": "Por favor añade un título antes de publicar.",
+      "empty_content_error": "El contenido no puede estar vacío.",
+      "publish_success": "¡Documento publicado con éxito!",
+      "draft_saved": "Borrador guardado.",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "underline": "Subrayado",
+      "strikethrough": "Tachado",
+      "heading1": "Título 1",
+      "heading2": "Título 2",
+      "heading3": "Título 3",
+      "paragraph": "Párrafo",
+      "ordered_list": "Lista numerada",
+      "unordered_list": "Lista con viñetas",
+      "blockquote": "Cita",
+      "code": "Código en línea",
+      "code_block": "Bloque de código",
+      "link": "Insertar enlace",
+      "horizontal_rule": "Línea horizontal",
+      "align_left": "Alinear izquierda",
+      "align_center": "Centrar",
+      "align_right": "Alinear derecha",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "clear_format": "Limpiar formato",
+      "text_color": "Color de texto",
+      "bg_color": "Color de fondo",
+      "insert_image": "Insertar imagen",
+      "import_md": "Importar archivo Markdown",
+      "import_md_short": "Importar .md",
+      "drop_image": "Suelta la imagen aquí",
+      "image_error": "Error al cargar la imagen.",
+      "close": "Cerrar editor",
+      "font_size_small": "Pequeño",
+      "font_size_medium": "Mediano",
+      "font_size_large": "Grande",
+      "draft_recovery_title": "Borrador sin guardar encontrado",
+      "draft_recovery_desc": "¿Quieres restaurar tu borrador anterior?",
+      "draft_restore": "Restaurar borrador",
+      "draft_discard_btn": "Descartar",
+      "draft_last_saved": "Guardado a las",
+      "publish_success_title": "¡Publicado!",
+      "publish_success_body": "Tu documento ha sido publicado con éxito.",
+      "close_published": "Cerrar",
+      "actions_label": "Acciones",
+      "import_md_title": "Importar Markdown",
+      "user_doc_community_badge": "Comunidad",
+      "expand_collapse_all": "Expandir / Colapsar",
+      "update_btn": "Actualizar",
+      "edit_doc": "Editar",
+      "show_author_label": "Mostrar nombre del autor",
+      "author_name_placeholder": "Tu nombre…"
+    },
+    "sidebar": {
+      "collapse_all": "Colapsar todo",
+      "expand_all": "Expandir todo",
+      "docs_home_aria": "Ir al inicio de documentos"
+    },
+    "delete_modal": {
+      "title": "Confirmar Eliminación",
+      "description": "Por favor, escribe \"{keyword}\" para confirmar la eliminación de \"{docTitle}\". Esta acción no se puede deshacer.",
+      "keyword": "eliminar",
+      "input_placeholder": "Escribe \"{keyword}\" aquí...",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar"
+    }
+  },
+  "documentacion": {
+    "label": "Documentación",
+    "h2a": "Conocimiento profundo",
+    "h2b": "a tu alcance",
+    "sub": "Whitepapers, documentación técnica, ejemplos de código y recursos educativos para entender y construir sobre Radix.",
+    "cards": [
+      {
+        "title": "Whitepapers",
+        "desc": "Los papers técnicos fundacionales de Radix: Cerberus consensus, Radix Engine, el paradigma ROA (Resource-Oriented Architecture) y la visión de escalabilidad lineal infinita.",
+        "links": [
+          "Radix DeFi White Paper",
+          "Cerberus Peer Review (UC)",
+          "Cerberus Consensus"
+        ]
+      },
+      {
+        "title": "Documentación para Desarrolladores",
+        "desc": "Guías completas de Scrypto, Blueprints, Transaction Manifests, APIs (Core, Gateway, Network), SDKs y tutoriales paso a paso para construir dApps en Radix.",
+        "links": [
+          "Docs Técnicos",
+          "Developer Portal"
+        ]
+      },
+      {
+        "title": "Scrypto & Recursos",
+        "desc": "Aprende el lenguaje orientado a activos de Radix. Repositorios de ejemplos, guías de sintaxis y recursos para la comunidad hispana.",
+        "links": [
+          "Scrypto 101",
+          "Academia Hispana"
+        ]
+      },
+      {
+        "title": "Radix Learn",
+        "desc": "Artículos educativos sobre DeFi, Web3, asset-oriented programming, seguridad cripto y cómo Radix resuelve los problemas fundamentales de la industria blockchain.",
+        "links": [
+          "Radix Blog",
+          "Learn Portal"
+        ]
+      }
+    ]
+  },
+  "seo": {
+    "docs": {
+      "title": "Docs | Documentación de Radix Community",
+      "description": "Documentación oficial de Radix Community, whitepapers técnicos de RWA, guías de arquitectura y recursos para banca."
+    }
+  }
+}

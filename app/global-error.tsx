@@ -2,8 +2,7 @@
 
 import '@/app/globals.css';
 import { useMounted } from '@/hooks/useMounted';
-import { en } from '@/i18n/locales/en';
-import { es } from '@/i18n/locales/es';
+import { translations } from '@/i18n';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { NotFoundContent } from '@/components/error/NotFoundContent';
@@ -27,7 +26,7 @@ export default function GlobalError({
   const mounted = useMounted();
   const locale = mounted && typeof window !== 'undefined' && window.location.pathname.startsWith('/es') ? 'es' : 'en';
 
-  const dictionary = locale === 'es' ? es : en;
+  const dictionary = translations[locale as keyof typeof translations];
   const t = dictionary.errors.error_500;
 
   return (

@@ -1,6 +1,6 @@
-import { en } from '@/i18n/locales/en';
+import { Dictionary } from '@/i18n';
 
-/* ═══════════════ DATA TYPES ═══════════════ */
+/* =============== DATA TYPES =============== */
 
 export interface ForumUser {
     id: string;
@@ -49,4 +49,4 @@ export interface Rank {
     progress?: number; // added by getUserRank
 }
 
-export type ForumDictionary = typeof en.forum;
+export type ForumDictionary = Dictionary['forum'];

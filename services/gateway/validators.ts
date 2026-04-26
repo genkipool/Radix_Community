@@ -805,9 +805,11 @@ export async function fetchValidatorsWithLedger(
 
             // Apply discovered real owner addresses to validators
             validators.forEach((v) => {
-                const resolved = locationMap.get(v.ownerBadge);
-                if (resolved) {
-                    v.ownerAddress = resolved;
+                if (v.ownerBadge) {
+                    const resolved = locationMap.get(v.ownerBadge);
+                    if (resolved) {
+                        v.ownerAddress = resolved;
+                    }
                 }
             });
 

@@ -1,0 +1,1062 @@
+{
+  "roadmap": {
+    "title": "El Camino hacia la",
+    "title_accent": "Adopción Global",
+    "subtitle": "Más de 10 años de investigación y desarrollo. Cada era resuelve problemas fundamentales de las finanzas descentralizadas.",
+    "eras": [
+      {
+        "title": "Cassandra & Xi'an",
+        "year": "2025–2027",
+        "status": "progress",
+        "milestones": [
+          "Lanzamiento Xi'an estimado H2 2027",
+          "Cerberus completo: sharding infinito, escalabilidad lineal ilimitada",
+          "Xi'an: red de grado comercial en Rust construida por la comunidad",
+          "Fundación reducida de 70 a 14 empleados — descentralización real",
+          "Gobernanza comunitaria: consejo elegido por 1,151 cuentas",
+          "500k+ TPS sostenidos, picos de 800k — 590+ nodos, 128 shards",
+          "Cassandra: primeras txs atómicas cross-shard del mundo"
+        ]
+      },
+      {
+        "title": "Babylon",
+        "year": "2023–2024",
+        "status": "done",
+        "milestones": [
+          "Gateway API, Core API y TypeScript SDK estables",
+          "Flash Loans institucionales y operaciones atómicas complejas",
+          "Project Ignition: $10M+ inyectados en liquidez DeFi",
+          "Ecosistema DeFi live: Ociswap, DefiPlaza, CaviarNine",
+          "Radix Connect: conexión P2P segura mobile-to-desktop",
+          "Radix Wallet: biometría, sin seed phrases",
+          "Transaction Manifests: legibles, sin blind signing",
+          "Radix Engine v2, Smart Accounts y Personas en Mainnet",
+          "Actualización masiva de Mainnet (28 sept 2023)"
+        ]
+      },
+      {
+        "title": "Alexandria",
+        "year": "2022",
+        "status": "done",
+        "milestones": [
+          "Primera comunidad de desarrolladores Scrypto activa",
+          "Developer Toolkit: cargo tools, tests, publicación a Stokenet",
+          "Radix Engine v2 en simulador local (resim)",
+          "Blueprints & Components: contratos reutilizables e instanciables",
+          "ROA: tokens como objetos físicos, no registros",
+          "Scrypto: lenguaje basado en Rust para DeFi seguro"
+        ]
+      },
+      {
+        "title": "Olympia",
+        "year": "2021",
+        "status": "done",
+        "milestones": [
+          "Radix Desktop Wallet y Explorer disponibles",
+          "2M+ transacciones con 100% de uptime",
+          "50+ TPS, finalidad <5 segundos",
+          "DPoS con ~100 nodos activos",
+          "Cerberus v1: consenso sin sharding",
+          "Token nativo XRD con emisión en red",
+          "Lanzamiento de Mainnet (28 julio 2021)"
+        ]
+      }
+    ]
+  },
+  "hero": {
+    "badge": "Infraestructura DLT Institucional",
+    "slide0": {
+      "h1a": "El fin de la liquidación en T+2.",
+      "h1b": "Riesgo de contraparte ",
+      "h1c": "cero.",
+      "p": "Abandone la ineficiencia de la mensajería SWIFT. Intercambie CBDCs y Activos del Mundo Real (RWA) en 3 segundos con ejecución DvP (Delivery vs Payment) garantizada. Si una parte del acuerdo falla, la transacción revierte automáticamente."
+    },
+    "slide1": {
+      "h1a": "La seguridad de una bóveda",
+      "h1b": "bancaria. ",
+      "h1c": "Traducida a código.",
+      "p": "Ethereum trata su capital como un apunte contable vulnerable a hackeos. Radix trata sus activos como objetos físicos inmutables dentro del motor (ROA). Construya productos financieros donde el riesgo de brechas se mitiga desde el diseño base."
+    },
+    "slide2": {
+      "h1a": "Cumplimiento MiCA Nativo.",
+      "h1b": "Trazabilidad ",
+      "h1c": "Institucional.",
+      "p": "Diseñado para los reguladores, construido para los bancos. Emita activos, restrinja su tenencia mediante validación KYC (idOS) y obtenga un recorrido de fondos 100% auditable. Integre políticas AML directamente en la capa base."
+    },
+    "btn_inst": "Solicitar Piloto Institucional",
+    "btn_dev": "Empezar a Construir",
+    "metric1": "Shards (Escalabilidad Infinita)",
+    "metric2": "Trazabilidad AML / MiCA",
+    "metric3": "Seguridad Nativa: Activos reales, no promesas de código.",
+    "metric4": "Liquidación Atómica DvP",
+    "snippet": {
+      "title": "Manifiesto",
+      "pill_rollback": "Rollback on fail: true",
+      "pill_risk": "Riesgo de Contraparte 0.00%",
+      "pill_settlement": "Liquidación ~3s",
+      "comment": "// Operación Institucional: Atómica T+0",
+      "riskLabel": "Riesgo de Contraparte",
+      "riskValue": "0.00% (Por Diseño)",
+      "timeLabel": "Liquidación",
+      "timeValue": "~ 3 Segundos",
+      "step1_comment": "// 1. El Banco retira €10M CBDC → Worktop (Liquidación ~3s - Cerberus)",
+      "step2_comment": "// 2. El Fondo retira 200k Bonos RWA → Worktop (Riesgo de Contraparte 0.00%)",
+      "step3_comment": "// 3. Swap atómico — depósito cruzado, todo o nada (Rollback on fail: true)",
+      "worktop_label": "Regla del Worktop:",
+      "worktop_note": "Si queda algún activo sin depositar, Radix Engine revierte todo automáticamente.",
+      "committed_label": "Confirmado — Riesgo de contraparte cero · ~3s · T+0",
+      "tooltip": "El Manifiesto toma 10 millones de CBDC del banco y 200k de Bonos RWA del fondo, y los intercambia entre sus cuentas de forma simultánea. Si alguien no tiene los fondos, toda la operación se cancela automáticamente."
+    },
+    "btn_prev": "Slide anterior",
+    "btn_next": "Slide siguiente",
+    "aria_go": "Ir al slide",
+    "tags": {
+      "community": "Comunidad",
+      "foundation": "Fundación"
+    }
+  },
+  "problema": {
+    "label": "El Problema Real",
+    "h2a": "Las finanzas globales están",
+    "h2b": "rotas en tres niveles.",
+    "sub": "SWIFT, Ethereum y la banca tradicional comparten el mismo problema raíz: arquitecturas que no fueron diseñadas para el dinero digital del siglo XXI.",
+    "card1_title": "SWIFT: Liquidación en T+2",
+    "card1_p": "Los bancos siguen usando mensajería de los años 70. La liquidación de activos tarda 2 días, genera reconciliación manual masiva y expone a las instituciones a riesgo de quiebra de contraparte. En 2026, esto es inaceptable.",
+    "card2_title": "EVM: Código Ciego y Hackeable",
+    "card2_p": "Ningún sistema global pide a sus usuarios firmar transacciones ilegibles. El 'Blind Signing' permitió en 2026 el hackeo de $570M en Drift y Kelp. La arquitectura defi necesita evolucionar a bóvedas seguras y activos nativos.",
+    "card3_title": "Cumplimiento: Sin Trazabilidad Nativa",
+    "card3_p": "Las blockchains actuales no permiten restricciones de tenencia por KYC/AML de forma nativa. Implementar MiCA, DORA o Travel Rule requiere capas de middleware costosas que añaden vectores de ataque.",
+    "sol_card1_title": "T+0 → DvP Atómico",
+    "sol_card1_p": "Liquidación en ~3 segundos con garantía de revertir si falla cualquier extremo. Sin intermediarios. Sin riesgo de contraparte.",
+    "sol_card2_title": "ROA → Sin Reentrancy",
+    "sol_card2_p": "Los activos son objetos físicos en memoria. Imposible duplicar o robar saldos. Los Manifiestos de Transacción son legibles por humanos.",
+    "sol_card3_title": "Auth Zones → KYC Nativo",
+    "sol_card3_p": "Emita activos con restricciones on-ledger. Solo usuarios verificados por idOS pueden recibirlos. Trazabilidad AML 100% auditable.",
+    "vs": "RADIX LO RESUELVE EN LA CAPA BASE"
+  },
+  "instituciones": {
+    "label": "Para Instituciones y Directivos",
+    "h2a": "Infraestructura financiera que transforma el",
+    "h2b": "riesgo en certeza matemática.",
+    "sub": "Cada decisión de arquitectura en Radix fue tomada pensando en las necesidades reales de tesorerías institucionales, reguladores y equipos de cumplimiento normativo.",
+    "smartAccountsTooltip": "<strong>Cuentas Inteligentes Nativas (Smart Accounts):</strong><br/><br/>Cuentas inteligentes nativas (smart accounts) integradas directamente en la red, sin depender de contratos externos. Permiten definir reglas de autorización como “2 de 3”, donde se requieren 2 firmas de 3 posibles para aprobar una operación. Este modelo distribuye el control entre varias partes y elimina puntos únicos de fallo, aumentando la seguridad en la gestión de fondos.",
+    "features": [
+      {
+        "title": "DvP Atómico (Delivery vs Payment)",
+        "desc": "Intercambie Bonos, CBDCs y RWAs en una única transacción atómica. Si cualquier parte de la operación falla, todo revierte. Riesgo de contraparte matemáticamente igual a cero. Adiós al T+2 de SWIFT."
+      },
+      {
+        "title": "Manifiestos Legibles (No Blind Signing)",
+        "desc": "Los directivos no aprueban código opaco. El Manifiesto de Transacción es un documento de intenciones en lenguaje natural. Cumplimiento de auditoría interna garantizado."
+      },
+      {
+        "title": "Cumplimiento MiCA, DORA y AML Nativos",
+        "desc": "Auth Zones permiten restringir la tenencia de activos a wallets con KYC verificado (idOS). Travel Rule y AML se implementan en la capa base, no en middleware externo."
+      },
+      {
+        "title": "Multisig Institucional sin Smart Contracts",
+        "desc": "Smart Accounts nativas con reglas 2-de-3 o N-de-M para tesorerías corporativas. Sin código externo auditable, sin vectores de ataque adicionales. Gobernanza segura para directivos.",
+        "tooltip": "smartAccountsTooltip"
+      },
+      {
+        "title": "Tokenización de RWAs con Garantías Físicas",
+        "desc": "Inmuebles, bonos corporativos y oro tokenizados con respaldo 1:1 garantizado por ROA. Imposible fraccionarse por error de código. Integridad total del balance en todo momento."
+      },
+      {
+        "title": "Flash Loans Institucionales de Riesgo Cero",
+        "desc": "Arbitraje y provisión de liquidez instantánea en una transacción. Si los fondos no se devuelven al final del pipeline, la operación completa revierte. Gestión de tesorería sin exposición."
+      },
+      {
+        "title": "NFTs Mutables para Contratos Financieros",
+        "desc": "Bonos con estados que mutan on-ledger: Activo → Vencido → Redimido. Sin recrear contratos. Ideal para representar instrumentos financieros complejos con ciclo de vida completo."
+      },
+      {
+        "title": "Trazabilidad 100% Auditable",
+        "desc": "Cada transacción tiene un Manifiesto legible. El recorrido de fondos es visible por reguladores, auditores y compliance. Dashboards bancarios con datos en tiempo real vía Gateway Network."
+      }
+    ],
+    "btnInfraRead": "Radix Infraestructura (modo lectura)",
+    "btnInfraWeb": "Radix Infraestructura (modo web)"
+  },
+  "comparativa": {
+    "label": "Comparativa Técnica",
+    "h2a": "Infraestructura Financiera de Nueva Generación.",
+    "h2b": "De SWIFT a Radix.",
+    "description": "Un análisis técnico y objetivo de Radix frente a los sistemas tradicionales (SWIFT), las redes descentralizadas (EVM) y las iniciativas gubernamentales (BCE).",
+    "thFeature": "Característica",
+    "explanations": {
+      "atomic": "<strong>Opción Optima: Radix DLT (~3 seg DvP Atómico)</strong><br/><br/><strong>Por qué:</strong> SWIFT tarda días (<strong>T+2</strong>) debido a los bancos corresponsales. Ethereum tarda ~15s, pero a veces sufre de reorganizaciones de bloques. Por su parte, Appia/Pontes (BCE) logra una liquidación en el mismo día (<strong>T+0</strong>) muy robusta al usar dinero del banco central (DvP), pero su gran limitación es que opera en una <strong>infraestructura privada, cerrada</strong> (solo para entidades mayoristas autorizadas) y sujeta a horarios bancarios y fronteras europeas. La liquidación de Radix es la ganadora porque ofrece un DvP (Entrega contra Pago) \"Atómico\" en apenas <strong>~3 segundos</strong> en un entorno público, <strong>sin fronteras y operativo 24/7/365</strong>. Esto significa que transacciones financieras altamente complejas se liquidan al instante sin importar si es domingo o madrugada: o los activos cambian de manos simultáneamente, o la transacción falla y no ocurre nada, <strong>eliminando el 100% del riesgo de contraparte</strong> sin depender de cámaras de compensación ni de los permisos de un banco central.",
+      "sharding": "<strong>Opción Optima: Radix DLT (Millones TPS - Cerberus Sharding)</strong><br/><br/><strong>Por qué:</strong> Ethereum está ahogado en su Capa 1 (~30 TPS) y depende de Capas 2 (Rollups). SWIFT y BCE son redes centralizadas que pueden escalar añadiendo servidores, pero no son Web3. El algoritmo de consenso de Radix (Cerberus) tiene una <strong>arquitectura de sharding (fragmentación) teóricamente infinita</strong>. Es la única red pública diseñada para soportar el <strong>volumen del sistema financiero mundial entero simultáneamente</strong>.",
+      "fragmentation": "<strong>Opción Optima: Radix DLT (Cero - Red global unificada)</strong><br/><br/><strong>Por qué:</strong> Este es el gran talón de Aquiles de Ethereum hoy en día. Al usar Layer-2s (Arbitrum, Optimism, Base), la liquidez se divide en \"silos\", haciendo que el capital sea ineficiente. Radix permite <strong>componibilidad atómica \"cross-shard\"</strong> (entre fragmentos de la red). Es decir, todas las aplicaciones y toda la liquidez interactúan <strong>como si estuvieran en el mismo lugar, sin fricciones</strong>.",
+      "security": "<strong>Opción Optima: Radix DLT (0% por diseño - ROA/FSM)</strong><br/><br/><strong>Por qué:</strong> Ethereum utiliza contratos inteligentes que son básicamente hojas de cálculo donde se anotan saldos, propensos a \"bugs\" catastróficos (como los ataques de reentrada que han robado miles de millones). Radix usa <strong>ROA (Arquitectura Orientada a Recursos)</strong>. Los tokens son \"recursos físicos\" regidos por máquinas de estado finito (FSM) de la propia red. Matemáticamente, un token <strong>no puede ser duplicado ni desaparecer</strong>.",
+      "wallet": "<strong>Opción Optima: Radix DLT (Smart Wallet - Biometría + Social Recovery)</strong><br/><br/><strong>Por qué:</strong> La principal barrera de entrada a Web3 es el miedo a perder la frase semilla (12/24 palabras). MetaMask es un infierno de usabilidad para un novato. Las apps bancarias son fáciles, pero no tienes la custodia real del dinero. La Radix Wallet usa <strong>\"Smart Accounts\" nativas en la red</strong>, permitiendo recuperar cuentas con <strong>factores físicos, móviles de confianza o biometría, sin ceder el control</strong>.",
+      "readability": "<strong>Opción Optima: Radix DLT (Manifiestos en lenguaje natural)</strong><br/><br/><strong>Por qué:</strong> En Ethereum firmas un código hexadecimal incomprensible (Blind Signing), cruzando los dedos para que no sea un contrato malicioso. SWIFT y BCE usan códigos opacos para el usuario. Radix usa <strong>\"Transaction Manifests\"</strong>: la red lee la transacción y te muestra en la pantalla, en español/inglés simple, <strong>exactamente qué va a salir de tu wallet y qué va a entrar antes de que des a Aceptar</strong>. Es el mayor avance en seguridad Web3 actual.",
+      "regulation": "<strong>Opción Optima: Appia/Pontes (BCE) por autoridad regulatoria y Radix DLT por innovación tecnológica.</strong><br/><br/><strong>Por qué:</strong> Lógicamente, el BCE es el regulador, por lo que su sistema institucional tiene el cumplimiento garantizado. Sin embargo, en el mundo de las redes públicas descentralizadas, <strong>Radix es el claro ganador</strong>. En Ethereum, el KYC se debe hacer con parches externos. Radix incorpora <strong>zonas de autorización y un sistema de identidad (iDOS) en la capa base</strong>. Esto permite a los bancos crear \"piscinas de liquidez\" donde solo pueden entrar carteras que hayan pasado un KYC, <strong>cumpliendo con la Ley MiCA europea sin renunciar a DeFi</strong>.",
+      "kyc": "<strong>Opción Optima: Appia / Pontes (BCE) por garantía regulatoria y Radix DLT por infraestructura técnica nativa.</strong><br/><br/><strong>Por qué:</strong> Mientras que <strong>SWIFT depende de procesos manuales externos</strong> y <strong>Ethereum de parches de terceros (middleware)</strong> que añaden fricción, estas dos redes integran el <strong>cumplimiento en su núcleo</strong>. Appia/Pontes (BCE) es la elección lógica para el <strong>mercado interbancario cerrado</strong>, al ser <strong>100% institucional</strong>. Sin embargo, <strong>Radix DLT es la ganadora para la economía abierta</strong>: a través de sus <strong>\"Auth Zones\"</strong> y el sistema de identidad <strong>idOS</strong>, permite que el cumplimiento KYC/AML sea <strong>programable y nativo</strong> en la red pública. Esto significa que un activo puede programarse para que <strong>solo carteras verificadas puedan tocarlo</strong>, <strong>eliminando automáticamente el riesgo regulatorio</strong> sin sacrificar la eficiencia blockchain.",
+      "costs": "<strong>Opción Optima: Radix DLT (Bajos y predecibles por diseño)</strong><br/><br/><strong>Por qué:</strong> Quien haya usado Ethereum en un mercado alcista sabe que una transacción puede costar $2 un día y $150 al día siguiente por culpa del Gas. <strong>Ninguna empresa tradicional puede planificar un modelo de negocio con esos costes variables</strong>. La arquitectura de Radix mantiene las <strong>comisiones bajas y constantes</strong> sin importar cuánta congestión haya, lo que la hace <strong>\"Enterprise-ready\" (lista para empresas)</strong>.",
+      "language": "<strong>Opción Optima: Radix DLT (Scrypto - Basado en Rust)</strong><br/><br/><strong>Por qué:</strong> Solidity (Ethereum) es un lenguaje muy difícil de asegurar; el 80% del tiempo de desarrollo se gasta intentando que no te hackeen. Scrypto, basado en Rust (el lenguaje más amado por los programadores convencionales hoy en día), está <strong>orientado a activos</strong>. Cosas que en Solidity toman cientos de líneas de código complejo, en Scrypto son <strong>funciones nativas de 1 sola línea</strong>. Reduce los tiempos y costes de desarrollo brutalmente."
+    },
+    "featureDefinitions": {
+      "atomic": "<strong>Liquidación de activos (y Liquidación Atómica):</strong><br/><br/>Es el tiempo que tarda una transferencia en ser definitiva e irreversible. La liquidación atómica es una garantía tecnológica donde el intercambio de activos es \"todo o nada\": o los activos de ambas partes cambian de manos simultáneamente al instante, o la transacción falla y nadie pierde nada. Esto elimina el riesgo de que una parte entregue el activo y la otra no pague (riesgo de contraparte).",
+      "scalability": "<strong>Escalabilidad:</strong><br/><br/>Es la capacidad de la red para procesar un volumen masivo de transacciones por segundo (TPS). Una red scalables permite que miles de personas y empresas operen al mismo tiempo sin que el sistema se ralentice o se bloquee.",
+      "liquidity": "<strong>Fragmentación de Liquidez:</strong><br/><br/>Se refiere a si el dinero y los activos están todos en el mismo \"sitio\" (red unificada) o si están repartidos en diferentes capas o silos aislados. La liquidez unificada es mucho más eficiente porque permite mover el capital sin trabas ni puentes complejos.",
+      "hackRisk": "<strong>Riesgo de hackeo DeFi:</strong><br/><br/>Mide qué tan vulnerable es la red a errores de lógica en los contratos inteligentes. Las redes seguras por diseño tienen reglas matemáticas que impiden que los tokens sean duplicados o robados por fallos de código comunes.",
+      "walletUX": "<strong>Wallet / UX usuario final:</strong><br/><br/>Es la experiencia de uso de la \"cartera\" digital. Evalúa si es fácil de usar (como una app bancaria con biometría) o si es difícil y arriesgada (tener que guardar 24 palabras en un papel para no perder tu dinero).",
+      "legibility": "<strong>Legibilidad de transacciones:</strong><br/><br/>Es la capacidad de la red de explicarte qué vas a firmar. En lugar de mostrar códigos extraños, el sistema te dice en texto claro: \"Vas a enviar 100€ y vas a recibir 1 acción de Apple\".",
+      "mica": "<strong>Cumplimiento MiCA:</strong><br/><br/>Indica si la tecnología está adaptada legalmente para cumplir con la nueva normativa de la Unión Europea para criptoactivos, permitiendo que las empresas operen con seguridad jurídica.",
+      "kycAml": "<strong>KYC / AML nativo:</strong><br/><br/>Es la capacidad de verificar la identidad (Know Your Customer) y prevenir el blanqueo de capitales directamente dentro de la red, permitiendo que solo usuarios autorizados participen en ciertas operaciones financieras.",
+      "costPredictability": "<strong>Previsibilidad de costes:</strong><br/><br/>Se refiere a si las comisiones por usar la red son estables y baratas, o si cambian bruscamente según la hora del día, lo cual dificulta a las empresas planificar sus gastos.",
+      "programming": "<strong>Lenguaje de programación:</strong><br/><br/>Es el \"idioma\" que usan los desarrolladores para crear aplicaciones. Un lenguaje moderno y orientado a activos permite crear herramientas financieras más rápido, con menos errores y con costes de desarrollo mucho más bajos."
+    },
+    "categories": [
+      {
+        "title": "RENDIMIENTO Y ARQUITECTURA",
+        "rows": [
+          {
+            "feature": "Liquidación de activos",
+            "swift": "T+2 días",
+            "evm": "~15 seg (T+0 parcial)",
+            "bce": "T+0 (Dinero central)",
+            "radix": "T+0 DvP Atómico ~3 seg",
+            "winner": "radix",
+            "expKey": "atomic",
+            "featKey": "atomic"
+          },
+          {
+            "feature": "Escalabilidad",
+            "swift": "Centralizada",
+            "evm": "~30 TPS (L1)",
+            "bce": "Volumen mayorista",
+            "radix": "Millones TPS (Cerberus)",
+            "winner": "radix",
+            "expKey": "sharding",
+            "featKey": "scalability"
+          },
+          {
+            "feature": "Fragmentación de Liquidez",
+            "swift": "Silos aislados",
+            "evm": "Alta (Múltiples L2s)",
+            "bce": "Alta (DLTs cerradas)",
+            "radix": "Cero (Unificada)",
+            "winner": "radix",
+            "expKey": "fragmentation",
+            "featKey": "liquidity"
+          }
+        ]
+      },
+      {
+        "title": "SEGURIDAD Y UX",
+        "rows": [
+          {
+            "feature": "Riesgo de hackeo DeFi",
+            "swift": "N/A",
+            "evm": "Alto (Bugs de lógica)",
+            "bce": "N/A (Red privada)",
+            "radix": "0% por diseño (ROA/FSM)",
+            "winner": "radix",
+            "expKey": "security",
+            "featKey": "hackRisk"
+          },
+          {
+            "feature": "Wallet / UX usuario final",
+            "swift": "App bancaria",
+            "evm": "MetaMask (Seeds)",
+            "bce": "B2B Exclusivo",
+            "radix": "Smart Wallet (Biometría)",
+            "winner": "radix",
+            "expKey": "wallet",
+            "featKey": "walletUX"
+          },
+          {
+            "feature": "Legibilidad de transacciones",
+            "swift": "Opaco (Swift Msg)",
+            "evm": "Blind Signing (Hex)",
+            "bce": "Opaco (TradFi Standard)",
+            "radix": "Manifiestos Legibles",
+            "winner": "radix",
+            "expKey": "readability",
+            "featKey": "legibility"
+          }
+        ]
+      },
+      {
+        "title": "REGULACIÓN Y NEGOCIO",
+        "rows": [
+          {
+            "feature": "Cumplimiento MiCA",
+            "swift": "No aplica",
+            "evm": "Adaptación externa",
+            "bce": "Exento por Ley",
+            "radix": "Cumplimiento Nativo",
+            "winner": "shared",
+            "expKey": "regulation",
+            "featKey": "mica"
+          },
+          {
+            "feature": "KYC / AML nativo",
+            "swift": "Manual externo",
+            "evm": "Middleware terceros",
+            "bce": "100% Institucional",
+            "radix": "Auth Zones + idOS",
+            "winner": "shared",
+            "expKey": "kyc",
+            "featKey": "kycAml"
+          },
+          {
+            "feature": "Previsibilidad de costes",
+            "swift": "Altos y opacos",
+            "evm": "Alta volatilidad",
+            "bce": "Fijado por el BCE",
+            "radix": "Bajos y Predecibles",
+            "winner": "radix",
+            "expKey": "costs",
+            "featKey": "costPredictability"
+          }
+        ]
+      },
+      {
+        "title": "DESARROLLO",
+        "rows": [
+          {
+            "feature": "Lenguaje de programación",
+            "swift": "Propietario",
+            "evm": "Solidity (Inseguro)",
+            "bce": "Múltiple (BYO-DLT)",
+            "radix": "Scrypto (Asset-Oriented)",
+            "winner": "radix",
+            "expKey": "language",
+            "featKey": "programming"
+          }
+        ]
+      }
+    ]
+  },
+  "devs": {
+    "label": "Para Desarrolladores",
+    "h2a": "Construye DeFi sin miedo.",
+    "h2b": "Scrypto cambia todo.",
+    "sub": "El paradigma Asset-Oriented de Scrypto elimina el 90% de las vulnerabilidades DeFi por diseño. Deja de reimplementar ERC-20 y empieza a construir lógica de negocio real.",
+    "tabs": [
+      "Scrypto vs Solidity",
+      "Blueprints & Componentes",
+      "Manifiestos de Transacción",
+      "Herramientas Dev"
+    ],
+    "tab0": {
+      "solLabel": "Solidity (EVM) — Vulnerable a Reentrada",
+      "solComment1": "Comprueba que el usuario tenga saldo suficiente",
+      "solComment2": "Envía el Ether. ¡Peligro! Aquí ocurre el hack de reentrada",
+      "solComment3": "Actualiza el estado demasiado tarde. El atacante ya drenó el contrato",
+      "solStat": "Más de $3.8B robados en hacks de EVM por este error de diseño.",
+      "scrLabel": "Scrypto (Radix) — Seguro por Diseño (Orientado a Activos)",
+      "scrComment1": "Extrae los tokens físicos del Vault (bóveda)",
+      "scrComment2": "Devuelve el cubo (Bucket) lleno de tokens al usuario",
+      "scrStat": "0 hacks de reentrada posibles. El activo ya no está físicamente en el Vault."
+    },
+    "tab1": {
+      "commentInstantiate": "1. La función de instanciación recibe BUCKETS con liquidez inicial, no Vaults.",
+      "commentVaults": "Creamos los vaults y guardamos los buckets de inmediato",
+      "commentSwap": "2. La función de Swap verifica qué token está entrando",
+      "commentSwapA": "Si entra Token A, calculamos y sacamos Token B",
+      "commentSwapB": "Si entra Token B, calculamos y sacamos Token A",
+      "commentPanic": "Si el token no pertenece al pool, abortamos (no es hackeable)",
+      "commentMath": "3. Función matemática necesaria (Fórmula de producto constante x * y = k)",
+      "commentMathFormula": "Ejemplo básico sin comisiones: (input_amount * output_reserve) / (input_reserve + input_amount)",
+      "cards": [
+        {
+          "title": "Liquidity Pools como componentes del Engine",
+          "desc": "Sin Smart Contracts propensos a ataques de precio."
+        },
+        {
+          "title": "Delegación a nodos",
+          "desc": "Sin enviar fondos a contratos externos. LSUs como colateral líquido."
+        },
+        {
+          "title": "Monetización on-ledger",
+          "desc": "Cada uso de tu Blueprint genera un micro-pago automático para ti."
+        }
+      ]
+    },
+    "tab2": {
+      "comment1": "Retira 10M de EUR (CBDC) del Tesoro",
+      "comment2": "Ejecuta un Swap Atómico y deposita el resultado de vuelta",
+      "tags": [
+        "Composición atómica nativa",
+        "Legible para el usuario y auditor",
+        "Garantía sin contratos inteligentes"
+      ]
+    },
+    "tab3": {
+      "devTools": "Herramientas Desarrollador",
+      "tags": {
+        "rust": "Rust",
+        "stable": "Estable",
+        "openapi": "OpenAPI",
+        "web3": "Web3",
+        "ide": "IDE",
+        "cli": "CLI"
+      },
+      "tools": {
+        "rust": {
+          "name": "Entorno Rust",
+          "desc": "Instalación del compilador de Rust y gestores de paquetes necesarios."
+        },
+        "vscode": {
+          "name": "Visual Studio Code",
+          "desc": "Configuración recomendada y extensiones esenciales para el desarrollo en Radix."
+        },
+        "scrypto": {
+          "name": "Scrypto (On Chain)",
+          "desc": "Instalación del entorno de desarrollo Scrypto (CLI y simulador)."
+        },
+        "ret": {
+          "name": "Radix Engine Toolkit (Off Chain)",
+          "desc": "Libreria (backend) que permite a los desarrolladores compilar, analizar, firmar y traducir transacciones complejas para la red Radix."
+        },
+        "resim": {
+          "name": "Radix Simulator (resim)",
+          "desc": "Simulador local del ledger de Radix para probar transacciones de forma rápida y offline."
+        },
+        "core": {
+          "name": "Core API Babylonnode",
+          "desc": "Interfaz de bajo nivel que conecta directamente con el nodo en tiempo real, diseñada para nodos e infraestructura base (no para dApps comunes)."
+        },
+        "gateway": {
+          "name": "Gateway API",
+          "desc": "Servicio que indexa los datos de la red y ofrece consultas rápidas y amigables para que las dApps lean balances, historiales y NFTs."
+        },
+        "ts": {
+          "name": "TypeScript SDK",
+          "desc": "Librería TypeScript para construir, validar y firmar manifiestos de transacciones."
+        },
+        "dapp": {
+          "name": "Radix dApp Toolkit (RDT)",
+          "desc": "Librería frontend que proporciona el botón de conexión (\"Connect\") y gestiona la comunicación fluida entre la página web y la billetera móvil del usuario."
+        }
+      },
+      "comments": {
+        "rustUniversal": "# Comando universal para cualquier Linux:",
+        "rustSource": "source \"$HOME/.cargo/env\"",
+        "rustArch": "# Arch Linux y Manjaro",
+        "rustUbuntu": "# Ubuntu, Debian, Linux Mint, Pop!_OS",
+        "rustFedora": "# Fedora, CentOS, RHEL",
+        "rustSuse": "# openSUSE (Tumbleweed o Leap)",
+        "rustAlpine": "# Alpine Linux",
+        "rustVerify": "# Cómo verificar la instalación",
+        "rustVerifyRustcNote": "# Versión del compilador de Rust:",
+        "rustVerifyCargoNote": "# Versión del gestor de paquetes Cargo:",
+        "vscode": "# Configuración de VS Code",
+        "vscodeInstall": "# Instalar extensiones desde la terminal:",
+        "vscodeExt1": "code --install-extension rust-lang.rust-analyzer",
+        "vscodeExt2": "code --install-extension radixpublishing.radix-developer-tools",
+        "retInstall": "# Instalar Scrypto y Radix Engine Toolkit",
+        "retNew": "# Crear un nuevo paquete de Smart Contract",
+        "retTest": "# Compilar y ejecutar pruebas unitarias",
+        "retBuild": "# Generar el binario final (.rpd y .wasm)",
+        "scryptoStep1": "# 1. Dependencias (LLVM y Clang)",
+        "scryptoStep1Desc": "# Necesario para compilar a WebAssembly.",
+        "scryptoUbuntu": "# Ubuntu, Debian, Linux Mint:",
+        "scryptoArch": "# Arch Linux y Manjaro:",
+        "scryptoFedora": "# Fedora:",
+        "scryptoDebian": "# Linux (Distribuciones basadas en Debian - Instalar Rust y Scrypto):",
+        "scryptoStep2": "# 2. Rust para WASM",
+        "scryptoStep2Cmd": "rustup target add wasm32-unknown-unknown",
+        "scryptoStep3": "# 3. Configurar entorno y compilar Scrypto",
+        "scryptoStep3Cmd1": "radix-clis",
+        "scryptoStep4Title": "# 4. Configurar la terminal (Bash y ZSH) y comprobar",
+        "scryptoStep4Cmd1": "echo 'export PATH=\"$HOME/.cargo/bin:$PATH\"' >> ~/.bashrc",
+        "scryptoStep4Cmd2": "echo 'export PATH=\"$HOME/.cargo/bin:$PATH\"' >> ~/.zshrc",
+        "scryptoStep4Cmd3": "source \"$HOME/.cargo/env\"",
+        "scryptoStep4Cmd4": "scrypto --version",
+        "scryptoFirstCmdTitle": "# Primer Proyecto",
+        "scryptoFirstCmd": "scrypto new-package mi_proyecto",
+        "retTsNode": "# TypeScript / Node.js:",
+        "retRust": "# Dentro de tu proyecto Rust, añade la dependencia:",
+        "retPython": "# Instalación en python:",
+        "coreInit": "// Inicializar cliente Core para nodo local o remoto",
+        "gwInit": "// Inicializar Gateway API para datos de la dApp",
+        "netReq": "// Consultar estado de la red vía REST",
+        "tsToolkit": "// Construir manifiesto de transacción en TS",
+        "rdtInit": "// Inicializar dApp Toolkit para la interfaz de usuario",
+        "resimSection1": "# Entorno y Cuentas (Preparación)",
+        "resimReset": "# Borra la blockchain local (¡Úsalo antes de cada prueba nueva!)",
+        "resimNewAccount": "# Crea una cuenta, la hace default y le da 10,000 XRD gratis",
+        "resimShowConfigs": "# Muestra tu cuenta por defecto y rutas del simulador",
+        "resimShowEntity": "# Muestra una entidad en el estado del ledger",
+        "resimSection2": "# Crear Activos de Prueba (Tokens / Badges)",
+        "resimTokenFixed": "# Token Fijo (Suministro inmutable)",
+        "resimBadgeFixed": "# Badge Fijo (Insignia para usar como llave de Administrador)",
+        "resimTokenMutable": "# Token Mutable (Requiere el Badge anterior como autoridad)",
+        "resimMint": "# Acuñar más tokens (Mint) de un token mutable existente",
+        "coreStep1": "# Dependencias y Permisos",
+        "coreStep2": "# Configurar Nodo como usuario radixdlt",
+        "coreStep3": "# Configuración de Red (Mainnet / Stokenet)",
+        "coreIPPlaceholder": "tu_ip_externa",
+        "coreStep4": "# Seguridad y Autenticación Nginx",
+        "coreStep5": "# Comprobación de salud y llamada API",
+        "coreStep6": "# Control"
+      }
+    }
+  },
+  "ecosistema": {
+    "label": "Ecosistema Completo",
+    "h2a": "32 innovaciones que redefinen",
+    "h2b": "las finanzas globales.",
+    "sub": "El stack tecnológico de Radix fue construido desde cero, capa por capa, para resolver problemas reales de instituciones financieras.",
+    "all": "Todas",
+    "phase1_title": "EL PROBLEMA: SWIFT (T+2)",
+    "phase1_desc": "Los bancos actuales usan mensajería (SWIFT). La liquidación de activos tarda días (T+2). Requiere reconciliación manual masiva y genera alto riesgo de contraparte (quiebras).",
+    "phase1_tag": "Problema Legacy",
+    "phase2_title": "EL RIESGO DE LA EVM",
+    "phase2_desc": "Ethereum trata los tokens como variables en un contrato, además de exigir \"Blind Signing\". Un error de código drena todos los fondos. Seguridad inaceptable para Bonos/CBDCs.",
+    "phase2_tag": "Problema Legacy",
+    "phase3_title": "SCRYPTO (ASSET-ORIENTED)",
+    "phase3_desc": "El lenguaje Scrypto (basado en Rust) cambia el paradigma. Los tokens no son variables en listas, son \"Recursos de Primera Clase\" nativos de la VM. Reduce el 90% del código y bugs financieros.",
+    "phase3_tag": "Arquitectura Core",
+    "phase4_title": "ROA SECURITY (FSM)",
+    "phase4_desc": "Resource-Oriented Architecture (ROA). El dinero es un objeto físico en la RAM (FSM). Viaja en Buckets de un Vault a otro. Imposible hackear saldos (Anti-Reentrancy).",
+    "phase4_tag": "Arquitectura Core",
+    "phase5_title": "Sin Contraseñas: Badges + ROLA",
+    "phase5_desc": "Sin msg.sender. Radix autentica mediante Badges (NFTs físicos) y ROLA — un protocolo descentralizado tipo PassKeys que prueba la propiedad de cuentas criptográficamente sin exponer claves privadas.",
+    "phase5_tag": "Problema Legacy",
+    "phase6_title": "KYC NATIVO E IDOS",
+    "phase6_desc": "Integración de Auth Zones con sistemas de identidad descentralizada como idOS. Bancos transfieren activos sólo a usuarios que presentan la prueba de KYC exigida (Anti-AML).",
+    "phase6_tag": "Arquitectura Core",
+    "phase7_title": "PERMISOS DEFI (RBAC)",
+    "phase7_desc": "Control granular nativo. Los tokens definen roles precisos (Minter, Burner, Withdrawer) que se asignan usando Badges como llaves de acceso, sin programar lógica compleja en Smart Contracts.",
+    "phase7_tag": "Identidad y UX",
+    "phase8_title": "SMART WALLET (NO SEEDS)",
+    "phase8_desc": "La Billetera Radix es una Smart Account nativa. No obliga a guardar semillas de 24 palabras. Si pierdes el móvil, activas recuperación (MFA) con preguntas o amigos. UX de banca tradicional.",
+    "phase8_tag": "Identidad y UX",
+    "phase9_title": "TRANSACTION MANIFESTS",
+    "phase9_desc": "Los bancos no aprueban código ciego. El Manifiesto de Radix es un documento de \"intenciones\" legible y atómico generado por el cliente. Sustituye la creación de Smart Contracts.",
+    "phase9_tag": "Identidad y UX",
+    "phase10_title": "PRE-AUTORIZACIONES",
+    "phase10_desc": "Fin de los \"Infinite Approvals\" de ERC-20. Smart Accounts permiten pre-autorizar pagos acotados y por sesiones. Los fondos nunca quedan expuestos a contratos de terceros.",
+    "phase10_tag": "DeFi e Institucional",
+    "phase11_title": "CORPORATE TREASURY",
+    "phase11_desc": "Gobernanza Institucional Nativa. Las Smart Accounts permiten establecer políticas multifirma complejas para directivos, sin recurrir a Smart Contracts externos propensos a hackeos.",
+    "phase11_tag": "Arquitectura Core",
+    "phase12_title": "TRAZABILIDAD (CUMPLIMIENTO MICA)",
+    "phase12_desc": "Las instituciones necesitan saber el origen y destino de cada fondo. Los Manifiestos de Radix hacen que el recorrido del dinero sea 100% legible y auditable por reguladores (AML).",
+    "phase12_tag": "Problema Legacy",
+    "phase13_title": "RWA TOKENIZATION",
+    "phase13_desc": "Real World Assets. Tokenizar oro o inmuebles requiere auditoría estricta. Al usar ROA, el RWA está 1:1 respaldado y no puede fraccionarse por error de código. Integridad total del balance.",
+    "phase13_tag": "Arquitectura Core",
+    "phase14_title": "MUTABLE NFTS (CONTRATOS)",
+    "phase14_desc": "A diferencia de la EVM, los NFTs en Radix tienen campos de estado (ej: Activo -> Vencido) que mutan On-Ledger de forma segura, ideal para reflejar contratos financieros vivos e identidades.",
+    "phase14_tag": "Problema Legacy",
+    "phase15_title": "NATIVE LIQUIDITY POOLS",
+    "phase15_desc": "En EVM los AMMs son Smart Contracts propensos a vulnerabilidades. En Radix, los Liquidity Pools son componentes nativos (Blueprints) del Engine. Riesgo minimizado para proveer liquidez bancaria.",
+    "phase15_tag": "Problema Legacy",
+    "phase16_title": "FLASH LOANS ATÓMICOS",
+    "phase16_desc": "Préstamos sin colateral dentro de 1 transacción. Instituciones pueden arbitrar o dotar liquidez con Riesgo Cero. Si al final de la línea no se devuelve el dinero, toda la operación revierte.",
+    "phase16_tag": "DeFi e Institucional",
+    "phase17_title": "RED DE VALIDADORES (DPOS)",
+    "phase17_desc": "Radix es una DLT pública operada por una red descentralizada de Nodos Validadores de alto rendimiento. Asumen el peso de Cerberus garantizando la inmutabilidad institucional.",
+    "phase17_tag": "Arquitectura Core",
+    "phase18_title": "STAKING NATIVO DE PROTOCOLO",
+    "phase18_desc": "La delegación de tokens (Staking) se ejecuta a nivel de motor (Engine), sin enviar fondos a Smart Contracts de terceros. Seguridad 100% garantizada para tesorerías que buscan yield.",
+    "phase18_tag": "DeFi e Institucional",
+    "phase19_title": "LIQUID STAKING UNITS (LSU)",
+    "phase19_desc": "Al hacer staking, la red acuña nativamente un LSU (Liquid Staking Unit). Es un recibo físico que representa tu depósito y el interés ganado, altamente líquido para usarse como colateral.",
+    "phase19_tag": "DeFi e Institucional",
+    "phase20_title": "DEVELOPER ROYALTIES",
+    "phase20_desc": "Radix integra monetización en el Ledger. Bancos pueden reutilizar módulos complejos (Blueprints) y el creador recibe un micro-pago por uso automáticamente. Mercado Fintech B2B.",
+    "phase20_tag": "Ecosistema Activo",
+    "phase21_title": "WRAPPED ASSETS SEGUROS",
+    "phase21_desc": "Tokenización de activos de otras redes (ETH/BTC). Una vez envueltos en Radix (Wrapped), heredan toda la seguridad ROA como recursos físicos. Protege la liquidez institucional externa.",
+    "phase21_tag": "Arquitectura Core",
+    "phase22_title": "INTEROPERABILIDAD (HYPERLANE)",
+    "phase22_desc": "Conexión con la liquidez global institucional. Integración con puentes modulares sin permisos. Permite a los bancos mover capital entre Radix y más de 150+ blockchains de forma segura.",
+    "phase22_tag": "Ecosistema Activo",
+    "phase23_title": "GATEWAY NETWORK",
+    "phase23_desc": "Las cadenas clásicas requieren TheGraph (lento). Radix integra una Red Gateway descentralizada que indexa y sirve datos ricos al instante. Clave para interfaces y dashboards bancarios.",
+    "phase23_tag": "Ecosistema Activo",
+    "phase24_title": "SEGURIDAD GRADO MILITAR",
+    "phase24_desc": "El modelo matemático ROA de Radix permite Verificación Formal estricta. Los bancos pueden probar matemáticamente que el código nunca fallará bajo ningún escenario.",
+    "phase24_tag": "Arquitectura Core",
+    "phase25_title": "ESTADO: INFINITE SHARDING",
+    "phase25_desc": "El espacio de Radix está pre-fragmentado en $2^{256}$ Shards. Una cantidad infinita. Tu cuenta bancaria y la mía viven en islas separadas. El estado global no se bloquea.",
+    "phase25_tag": "Arquitectura Core",
+    "phase26_title": "PARALELISMO MASIVO",
+    "phase26_desc": "Como las cuentas están en Shards separados, las transacciones que no se cruzan se ejecutan simultáneamente. No hay cuellos de botella. Evita congestiones globales (\"Gas Wars\").",
+    "phase26_tag": "Arquitectura Core",
+    "phase27_title": "CERBERUS (CROSS-SHARD)",
+    "phase27_desc": "Cerberus Consensus \"teje\" (braid) los Shards. Usa un \"3-Phase Commit\" (Propose ➔ Prepare ➔ Commit) para unir transacciones entre Shards distintos manteniendo Componibilidad Atómica.",
+    "phase27_tag": "Arquitectura Core",
+    "phase28_title": "CASSANDRA RESEARCH LABS",
+    "phase28_desc": "Proyecto Cassandra. Investigado junto a la Univ. de UC Davis. Radix sometió su sharding a pruebas académicas globales para demostrar su seguridad antes de lanzar la adopción bancaria y Mainnet.",
+    "phase28_tag": "Arquitectura Core",
+    "phase29_title": "LIQUIDACIÓN ATÓMICA (DvP)",
+    "phase29_desc": "\"Delivery vs Payment\" (DvP) Institucional. Cerberus intercambia activos (Bono ⮀ CBDC) en ~3 segundos. Si un extremo falla, aborta todo. Riesgo de contraparte reducido a Cero (T+0).",
+    "phase29_tag": "Arquitectura Core",
+    "phase30_title": "RED XI'AN: HYPERSCALE",
+    "phase30_desc": "La actualización Xi'an activa el Sharding total. Al añadir más nodos, la red aumenta su capacidad linealmente. Suficiente para absorber las Txs de toda la red bancaria y de consumo.",
+    "phase30_tag": "Arquitectura Core",
+    "phase31_title": "SISTEMA FINANCIERO GLOBAL",
+    "phase31_desc": "Una única Red Pública (Ledger Compartido). Instituciones, usuarios y desarrolladores unificados. Interconectividad total sin puentes L2 frágiles. La red final sobre la que construir las finanzas.",
+    "phase31_tag": "Ecosistema Activo",
+    "phase32_title": "EL TRILEMA CRIPTO, RESUELTO",
+    "phase32_desc": "Radix reconstruyó el Stack Tecnológico entero. Desde Scrypto (Programación) hasta Cerberus (Consenso). Es la única red Layer-1 nativa y preparada para los Bancos y Finanzas Web3.",
+    "phase32_tag": "Arquitectura Core",
+    "graphics": {
+      "g1_counterparty_risk": "RIESGO DE CONTRAPARTE",
+      "g8_biometrics": "Biometría",
+      "g8_ledger": "Ledger",
+      "g8_social_recovery": "Recuperación Social",
+      "g4_physical": "Recurso Físico",
+      "g9_manifest": "Manifiesto",
+      "g11_policy": "Política Multifirma",
+      "g11_treasurer1": "Tesorero 1",
+      "g11_treasurer2": "Tesorero 2",
+      "g11_ceo": "CEO",
+      "g13_gold": "Oro Tokenizado",
+      "g13_backing": "Respaldo 1:1",
+      "g14_bond": "Bono 10Y",
+      "g14_active": "Activo",
+      "g14_expired": "Vencido",
+      "g14_mutate": "Mutar",
+      "g19_stake": "Stake 1000 XRD",
+      "g19_lsu": "LSU Depositado",
+      "g19_usdc": "USDC Prestado",
+      "g20_blueprint": "Blueprint \"Swap\"",
+      "g20_royalty": "Royalty: 0.1%",
+      "g20_bankA": "Banco A",
+      "g20_bankB": "Banco B",
+      "g22_hyperlane": "Hyperlane",
+      "g24_math": "Prueba Matemática",
+      "g24_secure": "100% Seguro",
+      "g28_peer": "Revisado por pares @ UC Davis",
+      "g29_bond": "BONO",
+      "g29_cbdc": "CBDC",
+      "g30_infinite": "ESCALABILIDAD LINEAL INFINITA",
+      "g30_nodes": "Nº de Nodos / Shard Groups Activos",
+      "g30_tps": "TPS",
+      "g30_10k": "10k TPS",
+      "g30_100k": "100k TPS",
+      "g30_millions": "Millones de TPS",
+      "g30_limit": "ILIMITADO",
+      "g32_secure": "Seguro (ROA)",
+      "g32_decentralized": "Descentralizado",
+      "g32_scalable": "Escalable (Xi'an)",
+      "g27_atomicBraid": "Atomic Braid",
+      "g6_idosCheck": "idOS Check",
+      "g16_borrow": "Pedir 10M",
+      "g16_1tx": "1 TX",
+      "g16_repay": "Pagar + Fee"
+    }
+  },
+  "aprendizaje": {
+    "label": "Aprende",
+    "h2": "Aprende a usar XRD",
+    "sub": "Desde staking hasta DeFi nativo, estas herramientas te guiarán paso a paso por todo el ecosistema Radix.",
+    "cards": {
+      "staking": {
+        "badge": "Staking",
+        "title": "Staking de XRD",
+        "desc": "Delega tus XRD a nodos de confianza a través del Dashboard y gana emisiones de red. Necesitas un mínimo de 100 XRD para empezar. Recibes LSUs (Liquid Staking Units) que puedes usar como colateral líquido mientras sigues ganando recompensas.",
+        "linkText": "Dashboard Staking"
+      },
+      "liquidez": {
+        "badge": "Liquidez",
+        "title": "Pools de Liquidez",
+        "desc": "Provee liquidez en DEXs como Ociswap, DefiPlaza o CaviarNine y gana comisiones de trading. DefiPlaza usa CALM para reducir pérdida impermanente. CaviarNine ofrece LSU Pools para rendimiento extra sobre tus tokens stakeados.",
+        "linkText": "Ociswap"
+      },
+      "playground": {
+        "badge": "Playground",
+        "title": "Gumball Club",
+        "desc": "Un playground interactivo para experimentar Web3 con la Radix Wallet. Adquiere GC Tokens, compra Gumballs y Candy, y aprende de forma práctica cómo funcionan los activos nativos y la programación orientada a activos con Scrypto.",
+        "linkText": "Gumball Club"
+      },
+      "onboarding": {
+        "badge": "Onboarding",
+        "title": "RadQuest",
+        "desc": "Plataforma gamificada de onboarding para nuevos usuarios. Completa misiones, gana XRD y NFTs únicos, y aprende sobre Smart Accounts, Personas, activos nativos y transacciones legibles — todo desde tu móvil.",
+        "linkText": "RadQuest"
+      }
+    }
+  },
+  "wallet": {
+    "label": "Radix Smart Wallet",
+    "h2a": "La primera wallet que no",
+    "h2b": "te puede arruinar.",
+    "sub": "Despídete de frases semilla complejas y transacciones opacas. Radix Wallet está integrada nativamente en la red, ofreciendo una experiencia segura, legible y sin firma a ciegas.",
+    "features": [
+      {
+        "title": "Sin Frases Semilla",
+        "desc": "Autenticación biométrica y recuperación social nativa. Tu cuenta es un Smart Contract en la capa base, no un par de claves."
+      },
+      {
+        "title": "Radix Connect (P2P)",
+        "desc": "Enlaza tu móvil al navegador de PC de forma segura. Sin extensiones hackeables. Las dApps se comunican directo con tu teléfono."
+      },
+      {
+        "title": "Transaction Manifests",
+        "desc": "La wallet te muestra exactamente qué entrará y qué saldrá de tu cuenta antes de firmar. Fin del Blind Signing."
+      },
+      {
+        "title": "Personas y Badges",
+        "desc": "Gestiona múltiples identidades (Personas) y credenciales (Badges) para login Web3 sin contraseñas."
+      },
+      {
+        "title": "Autenticación ROLA",
+        "desc": "Radix Off-Ledger Auth: las dApps verifican criptográficamente la propiedad de tu cuenta sin exponer claves privadas. Como PassKeys, pero descentralizado y respaldado por la Red Radix."
+      }
+    ],
+    "btnIOS": "Descargar iOS",
+    "btnAndroid": "Descargar Android",
+    "btnDashboard": "Dashboard",
+    "btnChrome": "Descargar Chrome",
+    "urlIOS": "https://apps.apple.com/us/app/radix-wallet/id6448950995",
+    "urlAndroid": "https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android",
+    "urlChrome": "https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm",
+    "mockup": {
+      "balance": "Total Balance",
+      "reviewTitle": "Transaction Review",
+      "reviewDesc": "✓ Seguro para firmar",
+      "personaTitle": "Persona: Web3 Gamer",
+      "personaDesc": "Conectado a dApp"
+    }
+  },
+  "seguridad": {
+    "label": "Seguridad de Grado Institucional",
+    "h2a": "La bóveda más segura",
+    "h2b": "que existe en Web3.",
+    "sub": "ROA (Resource-Oriented Architecture) no es solo un modelo de programación. Es una garantía matemática de que los activos no pueden desaparecer por errores de código.",
+    "audit_hacken_1": "Hacken primer informe de auditoría",
+    "url_hacken_1": "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff8df9bf8825cb7ca1_Hacken-Radix-Audit-1.pdf",
+    "audit_hacken_2": "Hacken segundo informe de auditoría",
+    "url_hacken_2": "https://cdn.prod.website-files.com/6053f7fca5bf627283b582c2/657754ff428a5ed19e5f5bdd_Hacken-Radix-Audit-2.pdf",
+    "cards": [
+      {
+        "title": "El Problema de la EVM",
+        "desc": "En Ethereum y Solana, los tokens no existen físicamente; son solo números en un registro (Smart Contract). Para enviar tokens, debes dar permiso al contrato para que modifique tu saldo. Esto abre la puerta a ataques de reentrancy, infinite approvals y drenaje de wallets.",
+        "comment1": "// EVM: El token es un balance en un contrato",
+        "comment2": "// Vulnerabilidad: Si el contrato es hackeado, todos los saldos se pierden."
+      },
+      {
+        "title": "La Solución Radix (ROA)",
+        "desc": "Radix Engine utiliza el Radix Object Architecture (ROA). Los activos son recursos físicos de primera clase. Se guardan en \"Vaults\" dentro de tu cuenta. Para enviar tokens, los sacas físicamente de tu Vault y los pones en el del destinatario.",
+        "comment1": "// Radix: El token es un objeto físico (Bucket)",
+        "comment2": "// Seguridad: Imposible crear de la nada o perder en el limbo. El Engine lo impide."
+      }
+    ]
+  },
+  "developerExperience": {
+    "title": "Construye DeFi Seguro con",
+    "titleHighlight": "Scrypto",
+    "subtitle": "Scrypto y el Radix Engine eliminan categorías enteras de vulnerabilidades típicas de Solidity. Construye con velocidad x10 usando lógica basada en activos físicos.",
+    "badge": "Lenguaje Scrypto",
+    "auditReady": "Listo para Auditar",
+    "codeComment": "// Define un bucket seguro de activos",
+    "assetComment": "// Lógica orientada a activos",
+    "features": {
+      "production": {
+        "title": "Listo para Producción",
+        "desc": "Scrypto compila a WASM y se ejecuta en Radix Engine. Despliega a Mainnet con cargo tools y testing en resim."
+      },
+      "security": {
+        "title": "Seguro por Diseño",
+        "desc": "Sin ataques de reentrancy, sin desbordamientos de enteros, sin exploits de aprobación. Los activos son objetos físicos."
+      },
+      "royalties": {
+        "title": "Regalías para Desarrolladores",
+        "desc": "Cada uso de tu Blueprint genera un micro-pago automático. Monetización integrada."
+      },
+      "onboarding": {
+        "title": "Onboarding Rápido",
+        "desc": "Basado en Rust con macros que simplifican la lógica DeFi. De cero a desplegado en horas, no meses."
+      }
+    },
+    "button": "Explorar Scrypto →"
+  },
+  "fullStack": {
+    "tag": "Arquitectura Full Stack",
+    "title": "Un tech stack unificado para las finanzas globales",
+    "desc": "Radix no es solo una capa de consenso. Es un tech stack completo, integrado verticalmente — desde el lenguaje de programación hasta la wallet del usuario — diseñado para que cada componente mejore la seguridad y usabilidad de los demás.",
+    "overviewButton": "Visión General de Arquitectura",
+    "whitepapersButton": "Whitepapers",
+    "layer1Title": "Radix Connect",
+    "layer1Desc": "Capa de Experiencia de Usuario",
+    "layer2Title": "Radix Engine",
+    "layer2Desc": "Capa de Aplicación (Scrypto)",
+    "layer3Title": "Cerberus Consensus",
+    "layer3Desc": "Capa de Red (Sharded)",
+    "watchDemo": "Ver Demo"
+  },
+  "userExperience": {
+    "title": "Una experiencia en la que",
+    "titleHighlight": "la gente realmente confía.",
+    "subtitle": "Radix Wallet está diseñada para que usuarios no técnicos interactúen con Web3 con la misma confianza que tienen con su app bancaria. Sin seed phrases, sin blind signing, sin extensiones.",
+    "features": {
+      "wallet": {
+        "title": "Smart Wallet",
+        "desc": "Smart Account nativa con autenticación biométrica y recuperación social. Sin frases de 24 palabras."
+      },
+      "manifest": {
+        "title": "Transaction Manifests",
+        "desc": "Ve exactamente qué entra y sale de tu cuenta antes de firmar. El fin del blind signing."
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "desc": "Disponible en iOS y Android. Onboarding seguro en 2 minutos con biometría."
+      },
+      "connect": {
+        "title": "Radix Connect",
+        "desc": "Conecta tu teléfono a tu navegador PC de forma segura vía P2P. Sin extensiones hackeables."
+      }
+    },
+    "blindSigning": {
+      "title": "Sin Blind Signing",
+      "desc": "A diferencia de MetaMask y otras wallets, Radix Wallet te muestra un resumen legible de cada transacción antes de aprobarla. Siempre sabes exactamente qué estás firmando."
+    },
+    "seedPhrases": {
+      "title": "Sin Seed Phrases",
+      "desc": "Radix Wallet usa autenticación biométrica y recuperación social nativa. Si pierdes tu teléfono, recuperas acceso mediante preguntas de seguridad o contactos de confianza — igual que la banca tradicional."
+    },
+    "manifestLabel": "Transaction Manifest",
+    "verified": "Verificado",
+    "button": "Descargar Wallet"
+  },
+  "atomicComposability": {
+    "title": "Componibilidad Atómica a Cualquier Escala",
+    "subtitle": "Operaciones DeFi complejas de múltiples pasos se ejecutan como una única transacción atómica — a través de cualquier número de shards. Si algún paso falla, todo revierte.",
+    "radixEngine": {
+      "title": "Radix Engine: VM Orientada a Activos",
+      "desc": "El Radix Engine trata los activos como objetos físicos (Resources) almacenados en Vaults. Se mueven en Buckets de un Vault a otro. Imposible hackear saldos, imposible crear tokens de la nada. El engine impone las leyes de la física para el dinero digital."
+    },
+    "cerberus": {
+      "title": "Cerberus: Consenso Cross-Shard",
+      "desc": "Cerberus usa un protocolo de 3 fases (Propose → Prepare → Commit) para entrelazar shards dinámicamente. Transacciones que tocan múltiples shards aún liquidan atómicamente en ~3 segundos. Sin bridges. Sin rollups. Un ledger unificado."
+    },
+    "defi": {
+      "title": "DeFi Sin Fragmentación",
+      "desc": "En Radix, un swap que toca 4 pools diferentes en 4 shards diferentes es una única operación atómica. Si algún pool falla, toda la transacción revierte. Esto es imposible en cualquier otra red fragmentada."
+    }
+  },
+  "comprarXRD": {
+    "label": "Token XRD",
+    "h2a": "Cómo adquirir XRD,",
+    "h2b": "el token nativo de Radix.",
+    "sub": "XRD es el token de utilidad de la red. Se usa para pagar comisiones, participar en el staking de nodos y como colateral en el ecosistema DeFi de Radix.",
+    "guideTitle": "Guía Paso a Paso",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Descarga la Radix Wallet",
+        "desc": "Disponible en iOS y Android. Sin frases semilla. Sin complejidad. Onboarding en 2 minutos con biometría."
+      },
+      {
+        "num": "02",
+        "title": "Crea tu cuenta",
+        "desc": "La Smart Account se crea automáticamente. Activa la recuperación social o con hardware wallet (Ledger)."
+      },
+      {
+        "num": "03",
+        "title": "Compra XRD en un Exchange",
+        "desc": "Adquiere XRD en cualquiera de los exchanges listados. Los más populares: Bitfinex, Gate.io, KuCoin, Kraken."
+      },
+      {
+        "num": "04",
+        "title": "Transfiere a tu Radix Wallet",
+        "desc": "Copia tu dirección Radix (comienza por \"account_rdx1...\") y retira desde el exchange. Llegará en ~3 segundos."
+      },
+      {
+        "num": "05",
+        "title": "Haz Staking y genera rendimiento",
+        "desc": "Delega XRD a nodos desde la wallet. Recibirás LSUs (recibos líquidos) y APY desde el día 1. Sin lockup forzado."
+      }
+    ],
+    "exchangesTitle": "Exchanges donde comprar XRD",
+    "tip": "Tip institucional:",
+    "tipDesc": "Para posiciones grandes, considera OTC directo. Contacta al equipo de Radix para liquidez institucional.",
+    "utilitiesTitle": "Utilidades del Token XRD",
+    "utilities": [
+      "Pago de comisiones de red (Gas)",
+      "Staking para seguridad de red (~8% APY)",
+      "Colateral base en protocolos DeFi",
+      "Provisión de liquidez en AMMs",
+      "Gobernanza del ecosistema"
+    ],
+    "more": "+ más"
+  },
+  "staking": {
+    "label": "Nodos y Validadores",
+    "h2a": "Asegurando la Red Radix",
+    "h2b": "Prueba de Participación Delegada (DPoS)",
+    "sub": "Radix utiliza un mecanismo de consenso de Prueba de Participación Delegada (DPoS) llamado Cerberus. Los nodos procesan transacciones y aseguran la red, mientras que los delegadores hacen staking de sus XRD para respaldarlos.",
+    "stats": [
+      {
+        "title": "Validadores Activos",
+        "value": "100",
+        "desc": "Nodos que participan en el consenso y proponen bloques."
+      },
+      {
+        "title": "Emisión Anual",
+        "value": "300M XRD",
+        "desc": "Recompensas distribuidas entre nodos y delegadores."
+      },
+      {
+        "title": "Staking APY",
+        "value": "~8%",
+        "desc": "Rendimiento anual estimado por delegar XRD a nodos."
+      }
+    ],
+    "features": [
+      {
+        "title": "Delegated Proof of Stake (DPoS)",
+        "desc": "Los tenedores de XRD delegan stake a nodos para ganar recompensas. Sin lockup forzado. LSUs son líquidos inmediatamente."
+      },
+      {
+        "title": "Cerberus Cross-Shard",
+        "desc": "Los nodos coordinan el 3-Phase Commit para transacciones cross-shard manteniendo atomicidad completa y finalidad rápida."
+      },
+      {
+        "title": "Validadores Institucionales",
+        "desc": "Los bancos pueden operar sus propios nodos nodos para participar directamente en la seguridad de la red e independencia operativa."
+      }
+    ],
+    "lsu": {
+      "title": "Liquid Staking Units (LSUs)",
+      "desc": "Cuando delegas XRD en Radix, recibes LSUs (Liquid Staking Units) a cambio. Estos tokens representan tu participación y las recompensas acumuladas.",
+      "items": [
+        {
+          "bold": "Líquidos:",
+          "text": "Úsalos en DeFi mientras sigues ganando staking."
+        },
+        {
+          "bold": "Nativos:",
+          "text": "Gestionados por el Engine, no por Smart Contracts externos."
+        },
+        {
+          "bold": "Seguros:",
+          "text": "Imposible perder tus fondos por un hackeo de contrato."
+        }
+      ],
+      "cta": "Ir a Staking"
+    }
+  },
+  "interoperabilidad": {
+    "label": "Hyperlane",
+    "h2a": "Interoperabilidad Segura",
+    "h2b": "Conectando Radix al Mundo",
+    "sub": "Radix está integrado con Hyperlane, el protocolo de interoperabilidad sin permisos líder. Esto permite mover liquidez y datos entre Radix y más de 150 blockchains de forma segura y eficiente.",
+    "whatTitle": "¿Qué es Hyperlane?",
+    "whatDesc": "Hyperlane es una capa de interoperabilidad universal que conecta blockchains modulares y monolíticas. A diferencia de los puentes tradicionales, Hyperlane permite a los desarrolladores personalizar su modelo de seguridad (Interchain Security Modules - ISMs).",
+    "features": [
+      {
+        "title": "Liquidez Unificada",
+        "desc": "Mueve USDC, ETH y otros activos importantes hacia y desde Radix sin fricción."
+      },
+      {
+        "title": "Mensajería Cross-Chain",
+        "desc": "Llama a contratos inteligentes en otras cadenas directamente desde Scrypto."
+      },
+      {
+        "title": "Seguridad Modular",
+        "desc": "Elige quién verifica los mensajes inter-cadena (DPoS, Multi-Sig, ZK)."
+      }
+    ],
+    "btnAstrolescent": "Astrolescent",
+    "urlAstrolescent": "https://astrolescent.com/"
+  },
+  "stats": {
+    "items": [
+      {
+        "value": "~3s",
+        "label": "Tiempo de Liquidación Atómica"
+      },
+      {
+        "value": "2²⁵⁶",
+        "label": "Shards de Escalabilidad"
+      },
+      {
+        "value": "$0",
+        "label": "Hacks por Reentrancy en Radix"
+      },
+      {
+        "value": "150+",
+        "label": "Blockchains Conectadas (Hyperlane)"
+      }
+    ]
+  },
+  "dev_page": {
+    "hero_h1": "Construye en ",
+    "hero_accent": "Radix",
+    "hero_p": "El futuro de Web3 y DeFi se construye en Radix usando Scrypto y Radix Engine.",
+    "cards": [
+      {
+        "title": "Scrypto",
+        "desc": "Un lenguaje de contratos inteligentes orientado a activos basado en Rust. Rápido, intuitivo y seguro."
+      },
+      {
+        "title": "Radix Engine",
+        "desc": "El primer motor de activos digitales del mundo. Diseñado específicamente para DeFi."
+      },
+      {
+        "title": "Seguridad por Defecto",
+        "desc": "Los activos y permisos son elementos de primera clase, eliminando clases enteras de exploits."
+      },
+      {
+        "title": "Regalías para Desarrolladores",
+        "desc": "Sé recompensado por el código que aportas al ecosistema con regalías programables."
+      }
+    ],
+    "btn_docs": "Leer Documentación"
+  },
+  "eco_page": {
+    "hero_h1": "El Ecosistema ",
+    "hero_accent": "Radix",
+    "hero_p": "Descubre un mundo creciente de dApps, tokens y nodos que funcionan en Radix.",
+    "cards": [
+      {
+        "title": "Dapps",
+        "desc": "Explora exchanges descentralizados, protocolos de préstamos, mercados NFT y más."
+      },
+      {
+        "title": "Tokens",
+        "desc": "Descubre los activos que impulsan la red Radix y sus aplicaciones."
+      },
+      {
+        "title": "Validadores",
+        "desc": "Consulta los nodos que aseguran la red y participa en el staking."
+      }
+    ],
+    "btn_apps": "Explorar dApps"
+  },
+  "about": {
+    "title": "Nosotros",
+    "subtitle": "Radix",
+    "description": "Estamos redefiniendo el estándar de Web3 y DeFi. Una infraestructura más segura donde desarrolladores e instituciones pueden operar sin fricciones y sin asumir riesgos innecesarios.",
+    "mission": {
+      "title": "Nuestra Misión",
+      "description": "Hacer que Web3 y DeFi sean accesibles, seguros e intuitivos para todos, desde usuarios cotidianos hasta desarrolladores profesionales."
+    },
+    "tech": {
+      "title": "La Tecnología",
+      "description": "Un enfoque full-stack, desde el algoritmo de consenso Cerberus hasta el Radix Engine y el lenguaje Scrypto."
+    },
+    "team": {
+      "title": "El Equipo",
+      "description": "Un equipo global de ingenieros, investigadores y constructores apasionados dedicados a resolver los problemas más difíciles de las criptomonedas."
+    },
+    "whitepapers": "Leer los Whitepapers"
+  },
+  "seo": {
+    "home": {
+      "title": "Radix DLT | Depósitos Tokenizados para Bancos | Soluciones Blockchain Reguladas",
+      "description": "Descubre cómo Radix Community impulsa la DeFi institucional y la tokenización de RWAs. Soluciones blockchain reguladas para bancos, depósitos tokenizados, pagos transfronterizos y ledger unificado.",
+      "keywords": [
+        "tokenización RWA",
+        "banca blockchain",
+        "depósitos tokenizados",
+        "pagos transfronterizos",
+        "DeFi institucional",
+        "BIS Agorá",
+        "MiCA compliance"
+      ]
+    }
+  }
+}

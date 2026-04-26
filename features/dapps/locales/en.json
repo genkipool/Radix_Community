@@ -1,0 +1,120 @@
+{
+  "dapps": {
+    "label": "DeFi Ecosystem",
+    "h2a": "Native DeFi that competes",
+    "h2b": "with banks",
+    "sub": "These dApps operate with real atomic composability on Radix Engine. No bridges, no rollups, no fragmentation. They are the decentralized alternative to traditional financial services.",
+    "visit": "Visit",
+    "items": [
+      {
+        "name": "Ociswap",
+        "type": "DEX",
+        "desc": "Decentralized exchange with concentrated liquidity, ultra-low fees, and near-instant execution thanks to Cerberus. Native integration with Radix Wallet and Transaction Manifests."
+      },
+      {
+        "name": "DefiPlaza",
+        "type": "AMM",
+        "desc": "Multi-token AMM with the CALM (Concentration-Asymmetric Liquidity Model) that drastically reduces impermanent loss. Migrated from Ethereum, operates natively on Radix."
+      },
+      {
+        "name": "CaviarNine",
+        "type": "DeFi Aggregator",
+        "desc": "Complete DeFi suite: Aggregator unifying liquidity from all sources, LSU Pools for yield on staked tokens, Order Book with limit orders, and configurable multi-token Index Pools."
+      }
+    ]
+  },
+  "dapps_page": {
+    "header": {
+      "brand": "Radix",
+      "title_accent": "Dapps",
+      "description": "Discover the most powerful decentralised applications built natively on Radix. Every app leverages Asset-Oriented Programming (ROA), atomic settlement and human-readable Transaction Manifests to deliver DeFi without compromise. Connect your Radix Wallet and acquire your badge to promote your project and join the ecosystem.",
+      "description_highlights": [
+        "Asset-Oriented Programming (ROA)",
+        "atomic settlement",
+        "human-readable Transaction Manifests",
+        "DeFi without compromise"
+      ],
+      "cta_connect_wallet": "Connect your Radix Wallet"
+    },
+    "controls": {
+      "search_placeholder": "Search applications…",
+      "all_tags": "All",
+      "publish": "Promote project",
+      "columns": "column(s)"
+    },
+    "sponsored": "Featured",
+    "like": "Like",
+    "dislike": "Dislike",
+    "no_results": "No applications found.",
+    "modal": {
+      "title": "Promote your project",
+      "subtitle": "Radix DLT · dApps",
+      "field_name": "Project name",
+      "placeholder_name": "e.g. My DeFi Protocol…",
+      "field_description": "Short description",
+      "placeholder_description": "Describe what your project does in 2–3 sentences…",
+      "field_logo": "Logo URL",
+      "placeholder_logo": "https://yourproject.com/logo.png",
+      "field_website": "Website",
+      "placeholder_website": "https://yourproject.com",
+      "field_tags": "Categories",
+      "tags_max": "(max 2)",
+      "optional": "(optional)",
+      "badge_title": "Connect your Radix Wallet to publish",
+      "badge_desc": "Acquire your Radix community badge in XRD. With it you can promote your project, so that the entire community can discover it on this page.",
+      "cancel": "Cancel",
+      "publish": "Publish project",
+      "success": "Project published successfully!",
+      "error_name": "Please enter the project name.",
+      "error_description": "Please add a short description.",
+      "error_website": "Please enter the website URL.",
+      "error_website_invalid": "Please enter a valid URL.",
+      "error_tags": "Select at least one category.",
+      "close_aria": "Close modal"
+    },
+    "items": {
+      "1": {
+        "description": "The leading decentralised exchange on Radix. Swap tokens, provide liquidity and earn yield through concentrated liquidity positions (CLMM). One of the first DeFi protocols built natively on Radix Engine v2."
+      },
+      "2": {
+        "description": "Advanced AMM and liquidity protocol on Radix. Offers multi-step swap routing, yield strategies and one of the deepest liquidity pools in the ecosystem. Built by a veteran DeFi team."
+      },
+      "3": {
+        "description": "Gas-efficient multi-token DEX. DefiPlaza allows swapping between any two tokens with a single contract and minimal gas costs. Available on Radix with a native Scrypto implementation."
+      },
+      "4": {
+        "description": "Decentralised lending and borrowing protocol on Radix. Deposit collateral, borrow assets and earn interest — all secured by Radix Engine's asset-oriented design that eliminates reentrancy vulnerabilities."
+      },
+      "5": {
+        "description": "Aggregator and smart order router for the Radix DeFi ecosystem. Astrolescent automatically finds the best swap rate across all DEXes on Radix, splitting orders for optimal execution."
+      },
+      "6": {
+        "description": "Cross-chain bridge incubated by RDX Works. Move assets between Radix, Ethereum and other EVM networks with atomic guarantees. Built with Hyperlane messaging protocol integration."
+      },
+      "7": {
+        "description": "Fair-launch token launchpad on Radix. Create and discover new tokens with bonding-curve pricing. Every launch is transparent, on-chain and accessible directly from the Radix Wallet."
+      },
+      "8": {
+        "description": "Community-built order-book DEX on Radix. DeXter brings limit orders, stop-losses and professional trading tools to the Radix ecosystem, fully managed and governed by the community."
+      },
+      "9": {
+        "description": "The official Radix smart wallet. Biometric login, no seed phrases, and human-readable Transaction Manifests. Available on iOS and Android. The safest entry point into the Radix ecosystem."
+      },
+      "10": {
+        "description": "Yield vault protocol on Radix. Automatically compound your DeFi returns through optimised vault strategies. Midas integrates with Ociswap and CaviarNine to maximise LP earnings."
+      },
+      "11": {
+        "description": "High-speed perpetuals and derivatives exchange on Radix. Trade leveraged positions with low fees and deep liquidity, powered by Radix Engine's atomic settlement guarantees."
+      },
+      "12": {
+        "description": "Decentralised credit and lending market on Radix. Root Finance offers under-collateralised lending using on-chain reputation scores, bringing capital efficiency to DeFi on Radix."
+      }
+    }
+  },
+  "seo": {
+    "dapps": {
+      "title": "DApps | Radix Ecosystem Applications",
+      "description": "Discover decentralized applications built on Radix — DEXs, lending protocols, NFT platforms, and more."
+    }
+  }
+}

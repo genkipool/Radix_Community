@@ -1,0 +1,120 @@
+{
+  "dapps": {
+    "label": "Ecosistema DeFi",
+    "h2a": "DeFi nativo que compite",
+    "h2b": "con los bancos",
+    "sub": "Estas dApps operan con componibilidad atómica real sobre Radix Engine. Sin bridges, sin rollups, sin fragmentación. Son la alternativa descentralizada a los servicios financieros tradicionales.",
+    "visit": "Visitar",
+    "items": [
+      {
+        "name": "Ociswap",
+        "type": "DEX",
+        "desc": "Exchange descentralizado con liquidez concentrada, fees ultra-bajas y ejecución casi instantánea gracias a Cerberus. Integración nativa con Radix Wallet y Transaction Manifests."
+      },
+      {
+        "name": "DefiPlaza",
+        "type": "AMM",
+        "desc": "AMM multi-token con el modelo CALM (Concentration-Asymmetric Liquidity Model) que reduce drásticamente la pérdida impermanente. Migrado desde Ethereum, opera de forma nativa en Radix."
+      },
+      {
+        "name": "CaviarNine",
+        "type": "Agregador DeFi",
+        "desc": "Suite DeFi completa: Aggregator que unifica liquidez de todas las fuentes, LSU Pools para yield sobre tokens stakeados, Order Book con órdenes límite, e Index Pools multi-token configurables."
+      }
+    ]
+  },
+  "dapps_page": {
+    "header": {
+      "brand": "Radix",
+      "title_accent": "Dapps",
+      "description": "Descubre las aplicaciones descentralizadas más potentes construidas de forma nativa en Radix. Cada app aprovecha la Programación Orientada a Activos (ROA), la liquidación atómica y los Manifiestos de Transacción legibles para ofrecer DeFi sin compromisos. Conecta tu billetera Radix y adquiere tu badge para publicitar tu proyecto y unirte al ecosistema.",
+      "description_highlights": [
+        "Programación Orientada a Activos (ROA)",
+        "liquidación atómica",
+        "Manifiestos de Transacción legibles",
+        "DeFi sin compromisos"
+      ],
+      "cta_connect_wallet": "Conecta tu billetera Radix"
+    },
+    "controls": {
+      "search_placeholder": "Buscar aplicaciones…",
+      "all_tags": "Todas",
+      "publish": "Publicitar proyecto",
+      "columns": "columna(s)"
+    },
+    "sponsored": "Destacado",
+    "like": "Me gusta",
+    "dislike": "No me gusta",
+    "no_results": "No se encontraron aplicaciones.",
+    "modal": {
+      "title": "Publica tu proyecto",
+      "subtitle": "Radix DLT · dApps",
+      "field_name": "Nombre del proyecto",
+      "placeholder_name": "ej. Mi Protocolo DeFi…",
+      "field_description": "Descripción breve",
+      "placeholder_description": "Describe en 2–3 frases qué hace tu proyecto…",
+      "field_logo": "URL del logo",
+      "placeholder_logo": "https://tuproyecto.com/logo.png",
+      "field_website": "Sitio web",
+      "placeholder_website": "https://tuproyecto.com",
+      "field_tags": "Categorías",
+      "tags_max": "(máx. 2)",
+      "optional": "(opcional)",
+      "badge_title": "Conecta tu billetera Radix para publicar",
+      "badge_desc": "Adquiere tu badge de la comunidad Radix en XRD. Con él podrás publicitar tu proyecto para que toda la comunidad lo descubra en esta página.",
+      "cancel": "Cancelar",
+      "publish": "Publicar proyecto",
+      "success": "¡Proyecto publicado con éxito!",
+      "error_name": "Por favor escribe el nombre del proyecto.",
+      "error_description": "Por favor añade una descripción breve.",
+      "error_website": "Por favor introduce la URL del sitio web.",
+      "error_website_invalid": "Por favor introduce una URL válida.",
+      "error_tags": "Selecciona al menos una categoría.",
+      "close_aria": "Cerrar modal"
+    },
+    "items": {
+      "1": {
+        "description": "El exchange descentralizado líder en Radix. Intercambia tokens, proporciona liquidez y obtén rendimiento a través de posiciones de liquidez concentrada (CLMM). Uno de los primeros protocolos DeFi construidos de forma nativa en Radix Engine v2."
+      },
+      "2": {
+        "description": "AMM avanzado y protocolo de liquidez en Radix. Ofrece enrutamiento de intercambio de múltiples pasos, estrategias de rendimiento y uno de los pools de liquidez más profundos del ecosistema. Construido por un equipo veterano de DeFi."
+      },
+      "3": {
+        "description": "DEX multi-token eficiente en gas. DefiPlaza permite intercambiar entre cualquiera de dos tokens con un solo contrato y costos de gas mínimos. Disponible en Radix con una implementación nativa en Scrypto."
+      },
+      "4": {
+        "description": "Protocolo descentralizado de préstamos y créditos en Radix. Deposita garantías, pide prestados activos y gana intereses, todo asegurado por el diseño orientado a activos de Radix Engine que elimina vulnerabilidades de reentrada."
+      },
+      "5": {
+        "description": "Agregador y enrutador inteligente de órdenes para el ecosistema DeFi de Radix. Astrolescent encuentra automáticamente la mejor tasa de intercambio en todos los DEX de Radix, dividiendo las órdenes para una ejecución óptima."
+      },
+      "6": {
+        "description": "Puente cross-chain incubado por RDX Works. Mueve activos entre Radix, Ethereum y otras redes EVM con garantías atómicas. Construido con la integración del protocolo de mensajería Hyperlane."
+      },
+      "7": {
+        "description": "Launchpad de tokens de lanzamiento justo en Radix. Crea y descubre nuevos tokens con precios de curva de enlace. Cada lanzamiento es transparente, on-chain y accesible directamente desde la Radix Wallet."
+      },
+      "8": {
+        "description": "DEX de libro de órdenes construido por la comunidad en Radix. DeXter aporta órdenes limitadas, stop-loss y herramientas de trading profesionales al ecosistema Radix, totalmente gestionado y gobernado por la comunidad."
+      },
+      "9": {
+        "description": "La billetera inteligente oficial de Radix. Inicio de sesión biométrico, sin frases semilla y Manifiestos de Transacción legibles por humanos. Disponible en iOS y Android. El punto de entrada más seguro al ecosistema Radix."
+      },
+      "10": {
+        "description": "Protocolo de bóvedas de rendimiento en Radix. Compone automáticamente tus retornos DeFi a través de estrategias de bóvedas optimizadas. Midas se integra con Ociswap y CaviarNine para maximizar las ganancias de LP."
+      },
+      "11": {
+        "description": "Exchange de derivados y perpetuos de alta velocidad en Radix. Opera posiciones apalancadas con tarifas bajas y gran liquidez, impulsado por las garantías de liquidación atómica de Radix Engine."
+      },
+      "12": {
+        "description": "Mercado de crédito y préstamos descentralizado en Radix. Root Finance ofrece préstamos con garantía insuficiente utilizando puntajes de reputación on-chain, brindando eficiencia de capital a DeFi en Radix."
+      }
+    }
+  },
+  "seo": {
+    "dapps": {
+      "title": "DApps | Aplicaciones del Ecosistema Radix",
+      "description": "Descubre aplicaciones descentralizadas construidas en Radix — DEXs, protocolos de préstamos, plataformas NFT y más."
+    }
+  }
+}

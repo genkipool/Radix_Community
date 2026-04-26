@@ -9,7 +9,7 @@ import { getQueryClient } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
 import type { Locale } from '@/i18n/dictionaries';
 import type { Theme } from '@/context/ThemeContext';
-import type { en as translations } from '@/i18n/locales/en';
+import { translations } from '@/i18n';
 
 /**
  * Providers
@@ -26,7 +26,7 @@ export function Providers({
 }: {
   children: ReactNode;
   locale: Locale;
-  dictionary: typeof translations;
+  dictionary: typeof translations.en;
   theme: Theme;
 }) {
   const queryClient = getQueryClient();

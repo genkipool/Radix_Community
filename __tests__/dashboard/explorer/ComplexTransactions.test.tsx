@@ -6,7 +6,8 @@ import { type TransactionInfo } from '@/types/radix';
 import { type TransactionCardProps } from '@/features/dashboard/explorador/types/components.types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/context/LanguageContext';
-import { en } from '@/i18n/locales/en';
+import { translations } from '@/i18n';
+const en = translations.en;
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({

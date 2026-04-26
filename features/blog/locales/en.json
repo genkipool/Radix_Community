@@ -1,0 +1,413 @@
+{
+  "blog": {
+    "title": "Radix Blog",
+    "subtitle": "The latest news, updates, and insights from the Radix ecosystem.",
+    "controls": {
+      "search_placeholder": "Search posts...",
+      "all_tags": "All",
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "by_date": "By date",
+      "reading_mode": "Reading mode",
+      "auto_collapse": "Auto-collapse",
+      "collapse_all": "Collapse all",
+      "expand_all": "Expand all",
+      "columns": "columns",
+      "column": "column",
+      "disabled_reading_mode": "Disabled by enabling reading mode"
+    },
+    "modal": {
+      "new_post_title": "Publish Article",
+      "subtitle": "Share your insights with the Radix community",
+      "title_label": "Post Title",
+      "title_placeholder": "What is your article about?",
+      "message_label": "Content",
+      "message_placeholder": "Write your article here...",
+      "tag_label": "Select Category",
+      "publish_btn": "Publish",
+      "reward_title": "Ecosystem Reputation",
+      "reward_desc": "By publishing quality content on the blog, you increase your visibility and reputation within the Radix ecosystem.",
+      "beta_disclaimer": "Notice: As this is a beta version, posts are fictional, not saved in a database, and will be deleted upon page reload."
+    },
+    "tags": {
+      "Radix Labs": "Radix Labs",
+      "Crypto": "Crypto",
+      "DeFi": "DeFi",
+      "Community": "Community",
+      "Ecosystem": "Ecosystem",
+      "Token": "Token",
+      "Product": "Product",
+      "Strategy": "Strategy",
+      "Custom": "Custom"
+    },
+    "views": "Views",
+    "all": "All",
+    "listen": "Listen",
+    "stop": "Stop",
+    "author": "Author",
+    "like": "Like",
+    "previous": "Previous Article",
+    "next": "Next Article",
+    "close": "Close",
+    "calendar": {
+      "title": "Date",
+      "month": "March",
+      "year": "2026",
+      "weekdays": [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ],
+      "reset_button": "Reset",
+      "apply_button": "Apply Filter",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "range_placeholder": "Select range..."
+    },
+    "posts": [
+      {
+        "id": 1,
+        "title": "Interim Hyperscale: Closing the Chapter",
+        "summary": "During the interim phase, we took Hyperscale from a codebase to a reproducible, large-scale test network. Public test sustained 500,000 TPS with peaks above 800k.",
+        "content": "During the interim phase, we took Hyperscale from a codebase to a reproducible, large-scale test network.\n\n• Public test sustained **500,000 transactions per second**, with peaks above **800k TPS**\n• Transactions were **real swaps**, executed across **128 shards**\n• **Cross-shard atomic transactions** were preserved at scale\n• Private tests demonstrated **linear scaling**, doubling throughput when moving from 64 to 128 shards\n• All internal tests ran on commodity **Amazon Web Services** infrastructure, and were supported by community nodes during the public test\n• Code, tooling, and logs are ready to be published to enable independent reproduction\n\nThis post closes the interim phase and explains what happens next.\n\nWhen I stepped in after Dan's passing, the goal wasn't to \"take over\" Hyperscale. It was to make sure the work didn't stall, to revive testing, and to get Hyperscale to a point where it could stand on its own: understandable, reproducible, and ready for the community to take forward.\n\nBefore Dan Blueprintsd the first parts of Hyperscale, he walked me through the codebase and showed me how to build and run it. After his passing, I started experimenting, and quickly discovered that the public repository contained enough to understand the architecture, but not enough to run a full network.\n\nFrom there, progress came from doing structured experiments, and iterating quickly with both the private testing group and the Foundation DevOps team. Over the course of the interim phase, we went from compiling and running a singleton build to hitting 100k transactions per second, then 250k, and then pushing close to 400k in private testing environments.\n\nThat work culminated in a public test where we sustained 500,000 transactions per second and saw peaks above 800k TPS.\n\nFor the public test, we ran Hyperscale with 128 shards on Amazon Web Services alongside community nodes where anyone could participate. The network consisted of 384 bootstrap nodes, 40 validator nodes, and 6 load-generation nodes. The bootstrap and validator nodes are m6i.xlarge instances, with 4 CPU cores and 16GB of RAM — truly commodity hardware.\n\nEarlier that same week, private tests demonstrated this explicitly. We ran Hyperscale at roughly 250k TPS on 64 shards, then repeated the test at 500k TPS on 128 shards, observing the same per-shard throughput.",
+        "date": "2026-02-26",
+        "tags": [
+          "Radix Labs"
+        ],
+        "image": "/images/blog/hyperscale-closing.png",
+        "author": "Timan",
+        "likes": 214,
+        "views": 12450
+      },
+      {
+        "id": 2,
+        "title": "Consultation Results: The Future of the Validator Subsidy",
+        "summary": "The community has spoken. The token holder consultation on the future of the validator subsidy is complete, with clear results on how to evolve network security incentives.",
+        "content": "The community has spoken. The token holder consultation on the future of the validator subsidy is complete.\n\nAfter an extensive consultation period, the Radix community has provided clear feedback on how to evolve the validator subsidy program. The consultation addressed key questions about the future of network security incentives and how to best allocate resources for long-term network health.\n\nKey findings:\n• Strong community support for a phased approach to subsidy reduction\n• Clear preference for merit-based allocation rather than flat distribution\n• Emphasis on maintaining network security during the transition period\n• Support for redirecting saved resources toward ecosystem growth\n\nThe implementation will follow a carefully planned schedule to ensure network stability throughout the transition.\n\nImpact on Validators: Validators will need to plan their strategies in advance, considering the new incentive structure and its implications for staking economics.\n\nImpact on Stakers: This is a time for active management. Stakers should review their validator selections and consider how changes in the subsidy model may affect their returns.",
+        "date": "2026-02-19",
+        "tags": [
+          "Token",
+          "Community",
+          "Ecosystem"
+        ],
+        "image": "/images/blog/validator-subsidy.png",
+        "author": "Radix",
+        "likes": 156,
+        "views": 8902,
+        "colSpan": 2
+      },
+      {
+        "id": 3,
+        "title": "Consultation Results: Radix Accountability Council",
+        "summary": "Results from the community consultation on establishing the Radix Accountability Council (RAC), a new governance body for the Radix ecosystem.",
+        "content": "The Radix Accountability Council (RAC) consultation results are in.\n\nThe community has provided overwhelming support for establishing a formal accountability structure within the Radix ecosystem. The RAC will serve as an independent body responsible for overseeing key governance decisions and ensuring transparency in the ecosystem's development.\n\nKey outcomes of the consultation:\n• Strong support for the establishment of the RAC\n• Clear mandate for transparency and accountability measures\n• Community preference for elected council members\n• Framework for regular reporting and community updates\n• Defined scope of authority and responsibilities\n\nThe RAC represents an important step in Radix's decentralization journey, ensuring that key decisions are made with proper oversight and community input. Implementation will begin following the finalization of the governance framework.",
+        "date": "2026-02-14",
+        "tags": [
+          "Community",
+          "Ecosystem"
+        ],
+        "image": "/images/blog/accountability-council.png",
+        "author": "Radix",
+        "likes": 127,
+        "views": 5621,
+        "rowSpan": 2
+      },
+      {
+        "id": 4,
+        "title": "Hyperscale Update: 500k+ Public Test Done",
+        "summary": "We did it! During today's public Hyperscale test, we sustained 500,000 transactions per second, and saw peaks of over 700k TPS. More than 590 nodes joined the test.",
+        "content": "We did it! During today's public Hyperscale test, we sustained 500,000 transactions per second, and saw peaks of over 700k TPS.\n\nMore than 590 nodes joined the test network, ranging from datacenter-grade nodes to desktops and even laptops. Hyperscale runs on commodity hardware, which made it possible to run a truly open participation test where anyone could join.\n\nEarlier this week, during a private test, we also demonstrated that Hyperscale scales linearly. We ran at roughly 250k TPS on 64 shards and reached the same per-shard throughput again at 500k TPS on 128 shards.\n\nThe workload itself is also worth calling out. These were not simple token transfers. They were swaps. That means real complex DeFi-style transactions, executed across more than a hundred shards, at extreme scale.\n\nWhat makes this result particularly meaningful is that it included cross-shard atomic transactions. This is a core property of Radix Hyperscale and a hard requirement for real linear scalability. It shows that the system can scale out across shards without fragmenting state or giving up the guarantees of a single, unified ledger.\n\nA community effort: I want to thank everyone who participated. The node runners who joined the test, the people following along via public dashboards, and the many community members who helped others with onboarding, debugging installs, and configuring port forwarding.\n\nFor me personally this marks a meaningful point in the interim Hyperscale phase. This was never about chasing a big number on a screen. It was about picking up where Dan left Hyperscale and showing that it works. The architecture is solid. And that it does not depend on a single person anymore.",
+        "date": "2026-02-07",
+        "tags": [
+          "Community",
+          "Radix Labs"
+        ],
+        "image": "/images/blog/hyperscale-500k.png",
+        "author": "Timan",
+        "likes": 342,
+        "views": 45600,
+        "colSpan": 2
+      },
+      {
+        "id": 5,
+        "title": "Consultation: The Future of the Validator Subsidy",
+        "summary": "A new token holder consultation is live to determine the future of the validator subsidy. Have your say in shaping Radix network economics.",
+        "content": "A new token holder consultation is now live to determine the future of the validator subsidy program.\n\nThe validator subsidy has been a cornerstone of Radix network security since launch, providing additional incentives for validators to maintain reliable nodes. As the network matures and transaction fees grow, it's time to evaluate the role and structure of this program.\n\nThis consultation asks token holders to weigh in on several key questions:\n• Should the subsidy continue in its current form?\n• What modifications, if any, should be made?\n• How should any savings from subsidy changes be redirected?\n• What timeline is appropriate for changes?\n\nYour vote matters. Every XRD holder can participate in this consultation through the governance dApp. The consultation will remain open for 14 days to ensure maximum participation.",
+        "date": "2026-02-05",
+        "tags": [
+          "Community",
+          "Token"
+        ],
+        "image": "/images/blog/consultation-vote.png",
+        "author": "Radix",
+        "likes": 98,
+        "views": 3421
+      },
+      {
+        "id": 6,
+        "title": "2026 Strategy: The Next Chapter of Radix",
+        "summary": "In 2025, we delivered ecosystem tech including Hyperlane, Radix Rewards, MFA, and Hyperscale. Now we choose to deploy capital to drive decentralized growth.",
+        "content": "In 2025, we delivered high-priority ecosystem tech (Hyperlane, Radix Rewards, MFA, Hyperscale, etc.) and initiated high-level talks with strategic partners. However, burning through treasury while we wait for institutional timelines is the wrong use of funds. We choose to deploy capital to drive immediate, decentralized growth and sustainable network stability.\n\nRadix's ultimate strength is its decentralization. While the Foundation successfully stabilized the network through 2025, we must lean into our strengths. The \"Business as Usual\" model is not an optimal strategy in this market. We are proactively choosing to facilitate a responsible transition to a community-led RFP model now while we have the resources to best support it for long-term success.\n\nThe foundation has sufficient fiat runway. As we execute this transition, our obligation is to the value of the network. Routine operating costs will be covered from existing fiat reserves and therefore, the Foundation does not plan to sell XRD.\n\n2025 tested the character of Radix. We faced brutal market conditions, a restructure after the abrupt transition from RDX Works, and the tragic loss of our founder, Dan. By all conventional metrics, Radix shouldn't have been left standing.\n\nWe didn't just stand. We built.\n\nKey achievements in 2025:\n• Integrated Hyperlane: Connected Radix to 150+ chains\n• Expanded Access: eXRD to Base for Coinbase DEX trading\n• Governance MVP: Launched the consultation dApp\n• Radix Rewards: Doubled weekly transactions and DEX volume\n• Wallet Wins: In-app directory, Arculus support, dark mode\n• Hyperscale: Over 300k TPS on main branch\n• Operational Efficiency: Maintaining core systems with ~10% of prior resources",
+        "date": "2026-01-29",
+        "tags": [
+          "Community",
+          "Product",
+          "Roadmap"
+        ],
+        "image": "/images/blog/strategy-2026.png",
+        "author": "Radix",
+        "likes": 287,
+        "views": 18900,
+        "rowSpan": 2
+      },
+      {
+        "id": 7,
+        "title": "The Next Phase of Decentralization: RFPs for Gateway and Relay Services",
+        "summary": "Announcing Request for Proposals for Gateway and Relay Services as Radix transitions critical infrastructure to community ownership.",
+        "content": "As part of the 2026 strategy, Radix is transitioning critical infrastructure services to community ownership through formal Requests for Proposals (RFPs).\n\nThe Gateway and Relay services are essential components of the Radix network infrastructure. The Gateway provides API access for wallets and dApps, while the Relay service facilitates communication between network participants.\n\nBy opening these services to community proposals, we ensure:\n• Decentralized operation of critical infrastructure\n• Competitive pricing and service quality\n• Community ownership and accountability\n• Sustainable long-term maintenance\n\nInterested teams and individuals are encouraged to submit proposals. The RFP process includes clear evaluation criteria, timelines, and support during the transition period.\n\nThis is a concrete step toward the community-led model outlined in the 2026 strategy, ensuring that Radix's infrastructure is robust, decentralized, and community-maintained.",
+        "date": "2026-01-27",
+        "tags": [
+          "Community",
+          "Scrypto",
+          "Developers"
+        ],
+        "image": "/images/blog/hyperscale-closing.png",
+        "author": "Radix",
+        "likes": 89,
+        "views": 4120,
+        "colSpan": 2
+      },
+      {
+        "id": 8,
+        "title": "Radix Rewards S1 Distribution",
+        "summary": "Season 1 of Radix Rewards is being distributed. Learn about the distribution mechanics and how to claim your rewards.",
+        "content": "The Radix Rewards Season 1 distribution is underway.\n\nAfter months of community participation, the Season 1 rewards are being calculated and distributed to eligible participants. This distribution represents a significant milestone in Radix's incentive program.\n\nDistribution details:\n• Calculations based on on-chain activity during the Season 1 period\n• Points accumulated through DeFi activities including trading, liquidity provision, and lending\n• Distribution through existing Radix Rewards infrastructure\n• Claimable directly through the Radix Wallet\n\nSeason 1 saw remarkable engagement from the community, with significant growth in on-chain metrics. The program successfully achieved its goals of driving real DeFi activity and rewarding active participants.\n\nLooking ahead, the community consultation on future seasons will shape the next phase of the Radix Rewards program.",
+        "date": "2026-01-22",
+        "tags": [
+          "Community",
+          "DeFi",
+          "Crypto"
+        ],
+        "image": "/images/blog/consultation-vote.png",
+        "author": "Radix",
+        "likes": 176,
+        "views": 7850
+      },
+      {
+        "id": 9,
+        "title": "Scrypto 1.3.1: Unlocking Modern Rust Support",
+        "summary": "The latest Scrypto update brings modern Rust support, enabling developers to leverage the latest Rust ecosystem tools and libraries.",
+        "content": "Scrypto 1.3.1 is here, bringing modern Rust support to the Radix development experience.\n\nThis update is a significant quality-of-life improvement for Scrypto developers. By updating the underlying Rust toolchain requirements, developers can now leverage the latest Rust ecosystem tools, libraries, and IDE support.\n\nKey improvements:\n• Updated Rust toolchain compatibility\n• Better IDE integration and developer experience\n• Access to newer Rust crate ecosystem\n• Improved compilation times\n• Enhanced error messages and debugging\n\nThis update was a priority request from the developer community and demonstrates the Foundation's commitment to maintaining a best-in-class development experience.\n\nFor existing projects, migration is straightforward — update your Rust toolchain and Scrypto CLI, and recompile. The developer documentation has been updated with migration guides and troubleshooting information.",
+        "date": "2026-01-17",
+        "tags": [
+          "Scrypto",
+          "Developers"
+        ],
+        "image": "/images/blog/strategy-2026.png",
+        "author": "Radix",
+        "likes": 134,
+        "views": 12100,
+        "colSpan": 2
+      },
+      {
+        "id": 10,
+        "title": "Hyperscale: Completing the Interim Phase",
+        "summary": "A detailed update on the Hyperscale interim phase completion, including technical achievements, testing milestones, and the transition to community ownership.",
+        "content": "The interim Hyperscale phase is officially complete.\n\nOver the past months, we have taken Dan's Hyperscale vision from a private codebase to a publicly tested, reproducible system. This journey was challenging, but the results speak for themselves.\n\nTechnical milestones achieved:\n• Linear scaling confirmed: same per-shard throughput from 64 to 128 shards\n• 500k+ TPS sustained in public testing\n• Cross-shard atomic transactions maintained at scale\n• Commodity hardware support validated\n• Community node participation demonstrated\n\nThe interim phase was about proving that Hyperscale works, is reproducible, and can evolve without depending on a single person. All three goals have been achieved.\n\nWhat comes next is community-driven. Several community members have already begun work on a Rust implementation of Hyperscale. The code, documentation, and testing infrastructure will be published to support these efforts.\n\nThe Foundation will continue to provide technical support during the transition, but the future of Hyperscale development will be shaped by the community.",
+        "date": "2026-01-15",
+        "tags": [
+          "Radix Labs",
+          "Product",
+          "Roadmap"
+        ],
+        "image": "/images/blog/hyperscale-closing.png",
+        "author": "Timan",
+        "likes": 198,
+        "views": 9240,
+        "rowSpan": 2
+      },
+      {
+        "id": 11,
+        "title": "The Foundation Operational Stack: Mapping the 2026 Transition",
+        "summary": "Detailing the operational infrastructure that will support Radix through 2026, including how the Foundation will manage the transition to community-led governance.",
+        "content": "This post maps out the operational infrastructure that will support Radix through 2026 and beyond.\n\nAs the Foundation transitions to a more community-led model, it's important to be transparent about how operations will be managed. This post covers:\n\nCore Infrastructure:\n• Network operations and monitoring\n• Gateway and API services\n• Wallet maintenance and updates\n• Developer tooling and documentation\n\nGovernance Framework:\n• Consultation dApp for community decisions\n• RFP process for service contracts\n• Accountability Council oversight\n• Regular reporting and transparency\n\nFinancial Planning:\n• Fiat runway management\n• XRD treasury stewardship\n• Operational cost optimization\n• Community grant allocations\n\nThe goal is a smooth, responsible transition that maintains network quality while empowering community ownership. Each operational area has a clear plan for either community handoff or sustainable maintenance.",
+        "date": "2026-01-13",
+        "tags": [
+          "Product",
+          "Community",
+          "Ecosystem"
+        ],
+        "image": "/images/blog/accountability-council.png",
+        "author": "Radix",
+        "likes": 112,
+        "views": 6540,
+        "colSpan": 2
+      },
+      {
+        "id": 12,
+        "title": "eXRD Now Accessible via Coinbase DEX",
+        "summary": "eXRD is now tradeable on Coinbase DEX through Base, significantly expanding access to the Radix token ecosystem.",
+        "content": "eXRD is now accessible on Coinbase DEX through the Base network.\n\nThis integration significantly expands the accessibility of Radix tokens to a broader audience. By leveraging the Hyperlane bridge and Base network, users can now trade eXRD directly through Coinbase's decentralized exchange.\n\nWhat this means:\n• Direct eXRD trading on one of the world's most popular crypto platforms\n• Access through the Base L2 for low-cost transactions\n• Permissionless conversion path between eXRD and XRD via Hyperlane\n• Increased liquidity and market access for XRD holders\n\nThis achievement was made possible by the earlier Hyperlane integration, which connected Radix to 150+ chains. The Base deployment was a strategic priority to maximize accessibility.\n\nUsers can access eXRD on Coinbase DEX through the standard Base network interface. The Hyperlane bridge provides the permissionless route between Ethereum/Base and the Radix network.",
+        "date": "2026-01-08",
+        "tags": [
+          "Token",
+          "Community"
+        ],
+        "image": "/images/blog/validator-subsidy.png",
+        "author": "Radix",
+        "likes": 203,
+        "views": 15400
+      },
+      {
+        "id": 13,
+        "title": "Radix Review 2025",
+        "summary": "A comprehensive review of everything Radix accomplished in 2025 — from Hyperlane integration to Hyperscale milestones, Radix Rewards, and the community's resilience.",
+        "content": "2025 was a year that tested the very foundations of Radix. Through extraordinary challenges — market headwinds, organizational restructuring, and the loss of our founder — the Radix community proved its resilience.\n\nKey achievements of 2025 included:\n• Hyperlane integration connecting Radix to 150+ blockchain networks\n• Radix Rewards program driving significant on-chain activity growth\n• Multi-Factor Authentication development and Stokenet deployment\n• Hyperscale development continuation with 300k+ TPS milestones\n• eXRD expansion to Base/Coinbase DEX\n• Governance MVP with the consultation dApp\n• Wallet improvements including dark mode and Arculus support\n\nOn-chain metrics showed meaningful growth:\n• Weekly transaction volumes doubled during Radix Rewards\n• DEX trading volumes increased significantly\n• New wallet creations maintained steady growth\n• DeFi TVL expanded across multiple protocols\n\nLooking ahead to 2026, the focus shifts to sustainable, community-driven growth. The Foundation's 2026 strategy emphasizes decentralization, operational efficiency, and empowering the community to lead.",
+        "date": "2025-12-30",
+        "tags": [
+          "Community",
+          "Ecosystem"
+        ],
+        "image": "/images/blog/strategy-2026.png",
+        "author": "Radix",
+        "likes": 245,
+        "views": 8900,
+        "colSpan": 2
+      },
+      {
+        "id": 14,
+        "title": "MFA Phase 2 - Updating Your Security Made Simple",
+        "summary": "Phase 2 of Multi-Factor Authentication is now live on Stokenet, allowing users to update their security shields directly in the wallet.",
+        "content": "Multi-Factor Authentication Phase 2 is now live on Stokenet.\n\nThis phase brings a major usability improvement: users can now update and modify their security shields directly from within the Radix Wallet. Previously, security configuration required a more complex setup process. With Phase 2, managing your account security is as simple as navigating to your account settings.\n\nNew capabilities:\n• Update security shields without creating a new account\n• Add or remove authentication factors\n• Modify threshold requirements\n• Preview security changes before applying\n• Recovery configuration improvements\n\nSecurity remains paramount. All changes require proper authentication through your existing security setup before modifications takes effect.\n\nPhase 2 on Stokenet allows the community to test these features thoroughly before mainnet deployment. We encourage all users to try the new security management features and provide feedback.",
+        "date": "2025-12-20",
+        "tags": [
+          "Product",
+          "Roadmap"
+        ],
+        "image": "/images/blog/consultation-vote.png",
+        "author": "Radix",
+        "likes": 89,
+        "views": 4200
+      },
+      {
+        "id": 15,
+        "title": "Understanding Trading on Perpetual DEXs",
+        "summary": "A deep dive into how perpetual DEXs work on Radix, explaining the mechanics of perpetual trading, funding rates, and leveraged positions.",
+        "content": "Perpetual DEXs represent one of the most exciting developments in DeFi on Radix.\n\nUnlike traditional spot trading, perpetual contracts allow traders to take leveraged positions without an expiration date. This guide explains how these mechanisms work specifically on the Radix network.\n\nKey concepts covered:\n• What perpetual contracts are and how they differ from futures\n• How funding rates maintain price alignment with the spot market\n• Leverage mechanics and margin requirements\n• Liquidation processes and risk management\n• Benefits of Radix's atomic composability for perp trading\n\nOn Radix, perpetual DEXs benefit from:\n• Atomic transaction composability for complex operations\n• Native asset security preventing common DeFi exploits\n• Transaction Manifests for transparent order execution\n• Fast finality for responsive trading experiences\n\nUnderstanding these instruments is essential for anyone looking to participate in advanced DeFi on Radix.",
+        "date": "2025-12-11",
+        "tags": [
+          "Crypto",
+          "DeFi"
+        ],
+        "image": "/images/blog/hyperscale-500k.png",
+        "author": "Radix",
+        "likes": 67,
+        "views": 3100,
+        "rowSpan": 2
+      },
+      {
+        "id": 16,
+        "title": "Hyperscale Rebirth Part 3",
+        "summary": "The third update in the Hyperscale Rebirth series, detailing the latest progress on testing infrastructure, performance benchmarks, and community participation.",
+        "content": "Hyperscale Rebirth continues with major progress in testing infrastructure and performance.\n\nThis third update in the series covers the evolution from private testing environments to preparation for the public test that would eventually reach 500k+ TPS.\n\nProgress highlights:\n• Stabilized testing infrastructure across multiple AWS regions\n• Resolved cross-shard synchronization edge cases\n• Improved transaction throughput from 250k to 400k TPS in private tests\n• Developed community node participation tooling\n• Created monitoring dashboards for public visibility\n\nTechnical deep dive:\nThe key challenge in this phase was ensuring that cross-shard atomic transactions maintained consistency at increasing throughput levels. Hyperscale's architecture processes transactions in parallel across shards, but atomic operations spanning multiple shards require coordination.\n\nOur testing confirmed that the coordination overhead scales sublinearly — meaning that adding more shards doesn't proportionally increase coordination costs. This is the fundamental property that enables linear scaling.\n\nThe next step: opening the test to community participation for independent validation.",
+        "date": "2025-12-04",
+        "tags": [
+          "Radix Labs"
+        ],
+        "image": "/images/blog/hyperscale-closing.png",
+        "author": "Timan",
+        "likes": 145,
+        "views": 12400,
+        "colSpan": 2
+      },
+      {
+        "id": 17,
+        "title": "DEX Aggregators: Getting Better Prices on Radix",
+        "summary": "How DEX aggregators on Radix leverage atomic composability and Transaction Manifests to find the best trading routes across multiple liquidity sources.",
+        "content": "DEX aggregators are transforming trading on Radix by finding optimal routes across multiple liquidity sources.\n\nOn Radix, DEX aggregators have a unique advantage: atomic composability through Transaction Manifests. This means a single transaction can route through multiple DEXs, compare prices, and execute the optimal path — all atomically, with no risk of partial execution.\n\nHow it works:\n• Aggregators scan all available DEXs for the best prices\n• Routes are optimized for minimal slippage and fees\n• Transaction Manifests bundle all swaps into a single atomic operation\n• If any part fails, the entire transaction reverts\n\nCurrent aggregators on Radix:\n• Multiple community-built aggregation services\n• Integration with major Radix DEXs including CaviarNine, Ociswap, and DefiPlaza\n• Real-time price comparison across all liquidity sources\n• Support for multi-hop routing\n\nThe beauty of Radix's approach is that the user sees exactly what they will receive before confirming — no blind signing, no surprise slippage.",
+        "date": "2025-11-27",
+        "tags": [
+          "Crypto",
+          "DeFi",
+          "Community"
+        ],
+        "image": "/images/blog/validator-subsidy.png",
+        "author": "Radix",
+        "likes": 78,
+        "views": 2800
+      },
+      {
+        "id": 18,
+        "title": "Radix Quick-Start Guide",
+        "summary": "Everything you need to get started with Radix — from setting up a wallet to making your first DeFi transactions on the network.",
+        "content": "Welcome to Radix! This guide will help you get started with the Radix network.\n\nStep 1: Download the Radix Wallet\n• Available on iOS and Android\n• Create your first account with just a few taps\n• Set up your security settings\n\nStep 2: Get XRD\n• Bridge assets from Ethereum via Hyperlane\n• Purchase from supported exchanges\n• Convert eXRD to XRD via the bridge\n\nStep 3: Explore DeFi\n• Swap tokens on CaviarNine, Ociswap, or DefiPlaza\n• Provide liquidity to earn trading fees\n• Lend assets on Root Finance or Weft Finance\n• Stake XRD with validators\n\nStep 4: Stay Connected\n• Join the Radix Discord community\n• Follow @RadixDLT on Twitter\n• Participate in governance consultations\n• Explore the developer portal for building\n\nRadix's unique transaction model means you always see exactly what you're signing. No blind transactions, no hidden approvals — just transparent, secure DeFi.",
+        "date": "2025-11-20",
+        "tags": [
+          "Crypto",
+          "DeFi",
+          "Community"
+        ],
+        "image": "/images/blog/accountability-council.png",
+        "author": "Radix",
+        "likes": 312,
+        "views": 25600,
+        "rowSpan": 2
+      },
+      {
+        "id": 19,
+        "title": "Meet the Community: Radix Indonesia",
+        "summary": "A look into the growing Radix ecosystem in Indonesia, featuring local developers and community leaders driving adoption.",
+        "content": "Indonesia is becoming a major hub for Radix development.\n\nThis month we are highlighting the incredible work being done by the Indonesian community. From local meetups in Jakarta to educational workshops for Scrypto developers, the growth has been phenomenal.\n\nKey highlights:\n• Over 500 active community members in regional groups\n• Successful Scrypto workshop series for local university students\n• Partnership with local tech hubs for educational events\n• Community-led translation projects for Radix documentation\n\nThe enthusiasm for Radix's technical advantages is palpable. We are excited to see how this regional ecosystem continues to evolve.",
+        "date": "2025-11-15",
+        "tags": [
+          "Community",
+          "Ecosystem"
+        ],
+        "image": "/images/blog/strategy-2026.png",
+        "author": "Radix",
+        "likes": 124,
+        "views": 1900
+      },
+      {
+        "id": 20,
+        "title": "The Radix Ecosystem Fund: Phase 2 Launch",
+        "summary": "Announcing the second phase of the Radix Ecosystem Fund, with fresh capital allocated for high-impact DeFi projects.",
+        "content": "The Radix Ecosystem Fund is entering its next phase.\n\nFollowing the success of Phase 1, which supported the launch of several foundational dApps, Phase 2 focuses on scaling the ecosystem with high-impact projects.\n\nNew focus areas:\n• Advanced DeFi primitives (Perpetuals, Options, Yield aggregators)\n• Institutional-grade tooling and integration services\n• Innovative consumer applications leveraging Radix's unique UX\n• Cross-chain expansion projects via Hyperlane\n\nWe are committed to providing the resources necessary for developers to build the future of finance on Radix. Proposals are now open for the first round of Phase 2 funding.",
+        "date": "2025-11-08",
+        "tags": [
+          "Ecosystem",
+          "Token"
+        ],
+        "image": "/images/blog/validator-subsidy.png",
+        "author": "Radix",
+        "likes": 195,
+        "views": 7600,
+        "colSpan": 2
+      },
+      {
+        "id": 21,
+        "title": "Radix Wallet v1.5: Performance and Stability",
+        "summary": "The latest wallet update focuses on performance improvements, faster transaction preview loading, and enhanced connection stability.",
+        "content": "Version 1.5 of Radix Wallet is now available on all platforms.\n\nThis update prioritizes the core user experience, delivering significant performance improvements across the app.\n\nKey updates:\n• 40% faster transaction preview generation\n• Optimized account loading for users with many assets\n• Improved connection stability for Browser Extension linking\n• Dark mode refinements based on community feedback\n• Enhanced security logging for MFA settings\n\nDownload the update today from the iOS App Store or Google Play Store to experience a smoother, faster Radix experience.",
+        "date": "2025-11-01",
+        "tags": [
+          "Product"
+        ],
+        "image": "/images/blog/hyperscale-closing.png",
+        "author": "Radix",
+        "likes": 218,
+        "views": 5400
+      }
+    ]
+  },
+  "seo": {
+    "blog": {
+      "title": "Blog | Radix News & Updates",
+      "description": "Latest news, updates, and insights from the Radix ecosystem."
+    }
+  }
+}

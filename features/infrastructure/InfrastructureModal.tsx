@@ -85,7 +85,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
             >
               <div className="flex flex-col h-full rounded-t-3xl sm:rounded-3xl bg-[var(--color-bg)] border border-[var(--color-card-border)] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.55)] overflow-hidden">
 
-                {/* ══ Header ═══════════════════════════════════════════════════ */}
+                {/* ══ Header =============================================══════ */}
                 <div className="relative shrink-0 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/15 via-[var(--color-surface)] to-[var(--color-accent)]/8 pointer-events-none" />
                   <div
@@ -136,7 +136,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                   </div>
                 </div>
 
-                {/* ══ Body ═════════════════════════════════════════════════════ */}
+                {/* ══ Body =============================================════════ */}
                 <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
                   {INFRA_LAYERS.map(layer => {
                     const lt = pt?.layers?.[layer.id];
@@ -206,7 +206,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                   })}
                 </div>
 
-                {/* ══ Footer ═══════════════════════════════════════════════════ */}
+                {/* ══ Footer =============================================══════ */}
                 <div className="shrink-0 border-t border-[var(--color-card-border)] px-6 py-4 flex items-center justify-end gap-2 bg-[var(--color-surface)]/60">
                   <Link
                     href="/infrastructure"

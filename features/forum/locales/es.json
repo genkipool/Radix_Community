@@ -1,0 +1,288 @@
+{
+  "forum": {
+    "header": {
+      "title": "Radix Foro",
+      "description_p1": "Participa en la discusión, comparte ideas y construye el futuro de las finanzas descentralizadas.",
+      "description_p2": "Tu actividad se transforma en reputación real mediante tu",
+      "badge_name": "Badge NFT mutable de Radix",
+      "description_p3": "Cada aporte te ayuda a escalar posiciones en nuestra jerarquía on-chain:",
+      "points": {
+        "post": "Post",
+        "reply": "Resp.",
+        "like": "Like",
+        "dislike": "No me gusta",
+        "max_xp_tooltip": "Máximo 10 XP por mensaje.",
+        "max_xp_label": "(Max 10)",
+        "xp": "XP"
+      },
+      "ranks_desc": "A medida que acumulas experiencia, tu Badge evoluciona según tu rango:",
+      "wallet_connect": "Conectar billetera Radix",
+      "wallet_desc": "para activar tu progreso."
+    },
+    "sidebar": {
+      "topics": "Temas",
+      "replies": "Resp.",
+      "likes": "Likes",
+      "dislikes": "Dislikes",
+      "ranking": "Ranking Global"
+    },
+    "controls": {
+      "publish_btn": "Publicar",
+      "publish": "Publicar",
+      "search_placeholder": "Buscar temas...",
+      "all_tags": "Todas",
+      "newest": "Más recientes",
+      "oldest": "Más antiguos",
+      "by_date": "Por fecha",
+      "reading_mode": "Modo lectura",
+      "reading_mode_tooltip": "Modo lectura",
+      "auto_collapse": "Auto-colapsar",
+      "auto_collapse_tooltip": "Auto-colapsar",
+      "collapse_all": "Colapsar todo",
+      "expand_all": "Expandir todo",
+      "columns": "columna(s)",
+      "disabled_reading_mode": "Deshabilitado por activar el modo lectura"
+    },
+    "calendar": {
+      "month": "Marzo",
+      "year": "2026",
+      "weekdays": [
+        "Dom",
+        "Lun",
+        "Mar",
+        "Mie",
+        "Jue",
+        "Vie",
+        "Sab"
+      ],
+      "reset_button": "Reiniciar",
+      "apply_button": "Aplicar Filtro",
+      "start_date": "Fecha Inicio",
+      "end_date": "Fecha Fin",
+      "range_placeholder": "Seleccionar rango..."
+    },
+    "post": {
+      "views": "Vistas",
+      "replies": "Respuestas",
+      "like": "Me gusta",
+      "dislike": "No me gusta",
+      "reply": "Responder",
+      "in_reply_to": "En respuesta a",
+      "date": "Fecha",
+      "no_posts": "No se encontraron publicaciones."
+    },
+    "modal": {
+      "new_post_title": "Nueva Publicación",
+      "reply_title": "Responder a {{name}}",
+      "subtitle": "Radix DLT Foro",
+      "title_label": "Título del tema",
+      "title_placeholder": "Escribe un título que genere conversación...",
+      "message_label": "Mensaje",
+      "message_placeholder": "Comparte tus ideas con la comunidad...",
+      "tag_label": "Seleccionar Categoría",
+      "view_original": "Ver mensaje original",
+      "hide_original": "Ocultar mensaje original",
+      "reward_title": "Sistema de Recompensa Activo",
+      "reward_desc": "Al publicar, tu Badge NFT de ranking se actualizará automáticamente.",
+      "beta_disclaimer": "Aviso: Al ser una versión beta, las publicaciones son ficticias, no se guardan en una base de datos y se eliminarán al recargar la web.",
+      "discard": "Descartar",
+      "publish": "Publicar",
+      "send": "Enviar"
+    },
+    "tags": {
+      "General": "General",
+      "Institutional": "Institucional",
+      "DeFi": "DeFi",
+      "Scrypto": "Scrypto",
+      "Governance": "Gobernanza",
+      "Investment": "Inversión",
+      "Technical": "Técnico",
+      "Ecosystem": "Ecosistema",
+      "Custom": "Personalizar"
+    },
+    "ranks": {
+      "Novato": "Novato",
+      "Profesional": "Profesional",
+      "Especialista": "Especialista",
+      "Maestro": "Maestro",
+      "Sabio": "Sabio",
+      "Guru": "Gurú",
+      "Elite": "Élite",
+      "Leyenda": "Leyenda",
+      "Omnipotente": "Omnipotente",
+      "Omnipresente": "Omnipresente"
+    },
+    "reading": {
+      "previous_post": "Mensaje anterior",
+      "next_post": "Siguiente mensaje",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "close": "Cerrar"
+    },
+    "labels": {
+      "radix": "Radix",
+      "xp": "XP"
+    },
+    "posts_content": {
+      "1": {
+        "title": "Cumplimiento regulatorio: ¿Radix está listo para MiCA en despliegues institucionales?",
+        "content": "Nuestro equipo legal está evaluando plataformas DLT para la emisión de bonos tokenizados bajo la regulación MiCA. Necesitamos trazabilidad KYC/AML nativa, no middleware añadido.\n\nRequisitos clave:\n• Trazabilidad completa de transferencias de activos\n• Restricciones de tenencia programables basadas en estado KYC\n• Cumplimiento del Travel Rule sin oráculos de terceros\n• Verificación de identidad on-chain compatible con idOS\n\n¿Alguien ha desplegado un producto financiero compatible con MiCA en Radix? ¿Cuál fue el feedback regulatorio?",
+        "replies": {
+          "1": "Excelente pregunta Mark. Los Manifiestos de Transacción de Radix proporcionan trazabilidad completa legible por humanos. Cada movimiento de activos es rastreable por diseño — sin middleware necesario. El sistema Auth Zone con Badges permite restricción KYC nativa: puedes restringir transferencias a wallets que tengan un Badge KYC válido emitido por un proveedor certificado.",
+          "2": "Construí una prueba de concepto para valores tokenizados con restricciones KYC. La clave es usar control de acceso basado en Badges en tu Blueprint. Defines un recurso Badge KYC, y cualquier método que transfiera el token de seguridad requiere prueba de ese Badge. Son unas 15 líneas de Scrypto frente a cientos de líneas en Solidity con modificadores personalizados.",
+          "3": "Eso es impresionante. ¿Se puede revocar el Badge KYC si el estado del usuario cambia? Necesitamos cumplimiento dinámico, no solo verificación puntual.",
+          "4": "Sí — Los Badges pueden configurarse como revocables al crearlos. El emisor (tu módulo de cumplimiento) retiene la autoridad de revocarlos. Una vez revocado, cualquier transacción que requiera prueba de ese Badge fallará atómicamente. Cero ventana de exposición.",
+          "5": "Evaluamos esto para nuestro fondo. La combinación de Manifiestos de Transacción (sin firma ciega) y KYC basado en Badges fue el factor decisivo. Nuestro equipo de cumplimiento realmente entendió lo que hacían las transacciones — primera vez que eso ocurre con cualquier DLT."
+        }
+      },
+      "2": {
+        "title": "Análisis de ROI: costes de migración DLT vs ganancias en eficiencia de liquidación",
+        "content": "Calculando números sobre migrar nuestra infraestructura de liquidación de SWIFT a Radix. Actualmente pagando ~$12 por transacción transfronteriza con liquidación T+2. El riesgo de contraparte durante esa ventana nos ha costado $2.3M en el último año fiscal.\n\nMétricas clave que estoy seguiendo:\n• Reducción del tiempo de liquidación (T+2 → T+0)\n• Eliminación del riesgo de contraparte\n• Ahorro en costes de reconciliación\n• Ganancias en eficiencia operativa\n\n¿Alguien del lado institucional puede compartir comparativas de costes reales?",
+        "replies": {
+          "1": "Desde la perspectiva de un validador, las comisiones de Radix son fracciones de céntimo. Pero el ahorro real viene de eliminar la reconciliación. Los bancos gastan millones anuales en reconciliación back-office que Radix hace innecesaria — el libro mayor ES la reconciliación.",
+          "2": "Realizamos un piloto el trimestre pasado. La liquidación pasó de 48 horas a 3 segundos. El DvP atómico (Delivery vs Payment) mediante Manifiestos de Transacción eliminó nuestro riesgo de contraparte por completo. Nuestro equipo de tesorería estimó un ahorro anual de $4.7M solo por reducción de exposición de contraparte.",
+          "3": "Esos números son significativos. ¿Cuál fue el coste de implementación? ¿Y cuánto tardó en montarse el piloto?",
+          "4": "Unos 3 meses con un equipo de 2 desarrolladores Scrypto. El modelo Blueprint/Componente permitió reutilizar Blueprints DEX existentes. El coste total de implementación fue inferior a $150K — lo recuperaremos en el primer mes de producción.",
+          "5": "Vale la pena destacar que los Blueprints de Scrypto son reutilizables. Una vez que alguien publica un Blueprint de liquidación compatible, cualquier institución puede instanciarlo con sus propios parámetros. El sistema de royalties para desarrolladores incluso incentiva construir estos componentes compartidos.",
+          "6": "Exacto — esto es lo que hace a Radix único para la adopción institucional. Es un mercado B2B de primitivas financieras, no solo una blockchain."
+        }
+      },
+      "3": {
+        "title": "Scrypto 1.3.1: Toolchain moderno de Rust — guía de migración",
+        "content": "Acabo de migrar nuestro proyecto a Scrypto 1.3.1. Aquí va una guía rápida para quien haga lo mismo:\n\n1. Actualizar rustup: `rustup update stable`\n2. Actualizar scrypto CLI: `cargo install scrypto-cli`\n3. Actualizar dependencias de Cargo.toml\n4. Ejecutar `cargo build` — corregir warnings de deprecación\n5. Testear con `scrypto test`\n\nLa mayor mejora es el soporte de IDE. rust-analyzer ahora funciona perfectamente con las macros de Scrypto. El autocompletado para métodos de Blueprint es un cambio radical.\n\nCualquier problema durante la migración, publicadlo aquí y os ayudo.",
+        "replies": {
+          "1": "Solo las mejoras del IDE hacen que esta actualización valga la pena. Gastaba el 30% de mi tiempo buscando firmas de métodos manualmente. Ahora rust-analyzer lo maneja todo.",
+          "2": "Me sale un error de compilación después de actualizar. Algo sobre cambios en el tipo `NonFungibleLocalId`. ¿Alguien más lo ve?",
+          "3": "Ese es un cambio conocido. `NonFungibleLocalId::String` ahora requiere un string validado. Usa `NonFungibleLocalId::string(\"your_id\").unwrap()` en lugar del constructor antiguo. Revisa las notas de migración en la release.",
+          "4": "Consejo pro: si usas datos NFT personalizados, la macro `#[derive(ScryptoSbor, NonFungibleData)]` ahora auto-genera métodos getter. ¡Menos boilerplate!"
+        }
+      },
+      "4": {
+        "title": "Cerberus vs Ethereum L2s: Comparativa de escalabilidad real",
+        "content": "Nuestra junta directiva pregunta por qué elegimos Radix sobre soluciones L2 de Ethereum (Arbitrum, Optimism, etc.). Necesito argumentos técnicos concretos.\n\nMi entendimiento:\n• Los L2 fragmentan la liquidez entre rollups\n• Las transacciones cross-rollup requieren bridges (riesgo de seguridad)\n• Ethereum L1 sigue limitado a ~15 TPS\n• Radix Cerberus hace transacciones atómicas cross-shard de forma nativa\n\nPero necesito datos. ¿Alguien puede proporcionar un desglose técnico que pueda presentar a una junta no técnica?",
+        "replies": {
+          "1": "Diferencia clave: Los L2 son parches. Mueven computación off-chain pero heredan los cuellos de botella de L1 para liquidación. Cerberus es fundamentalmente diferente — es un protocolo de consenso diseñado para paralelismo. La atomicidad cross-shard significa que no hay fragmentación.",
+          "2": "Aquí va una analogía simple para tu junta: Los L2 son como construir múltiples aeropuertos pequeños para manejar el desbordamiento de uno grande. Todavía necesitas transferir pasajeros entre ellos (bridges). Radix construyó un aeropuerto infinitamente expandible donde cada puerta conecta directamente con todas las demás.",
+          "3": "Analogía perfecta. ¿Qué hay de la prueba de 500K TPS? ¿Cómo se compara con las afirmaciones de throughput de L2?",
+          "4": "La mayoría de las afirmaciones de TPS de L2 son para transferencias simples. Los 500K+ de Radix fueron transacciones de swap complejas — operaciones DeFi reales, no solo mover tokens.",
+          "5": "Escribí un documento comparativo para exactamente este caso de uso. Conclusión clave: La fragmentación L2 cuesta al ecosistema Ethereum ~$2B anuales en comisiones de bridging, extracción MEV y transacciones cross-rollup fallidas."
+        }
+      },
+      "5": {
+        "title": "Tokenomics de XRD: Evaluación del modelo deflacionario para carteras institucionales",
+        "content": "Evaluando XRD para la asignación de nuestro fondo cripto. Necesito claridad sobre:\n\n• Calendario de emisión actual y tasa de inflación proyectada\n• Mecanismo de quema de comisiones — ¿qué porcentaje se quema?\n• Expectativas de rendimiento por staking para posiciones grandes ($10M+)\n• Mecánica de LSU (Liquid Staking Unit) para eficiencia de capital\n• Dinámica de supply a largo plazo vs supply fijo de Bitcoin\n\nBusco análisis basado en datos, no predicciones de precio.",
+        "replies": {
+          "1": "Las emisiones de XRD disminuyen programáticamente con el tiempo. El rendimiento actual del staking en red es alrededor del 8-10% APY para nodos con alto uptime. Para una posición de $10M, distribuye entre 3-5 nodos para optimizar rendimientos y reducir riesgo de validador único.",
+          "2": "Sobre LSUs: cuando haces staking de XRD, recibes tokens LSU que representan tu posición stakeada más recompensas acumuladas. Estos LSUs son totalmente líquidos — puedes usarlos como colateral en protocolos DeFi mientras tu XRD sigue ganando recompensas de staking.",
+          "3": "La curva de emisión decreciente es interesante. ¿Tienes un enlace a la fórmula exacta? Nuestro equipo quant quiere modelar la dinámica de supply a largo plazo.",
+          "4": "El calendario de emisión está on-chain y es verificable. Las emisiones empezaron en ~300M XRD/año y disminuyen durante un periodo de ~40 años acercándose a cero asintóticamente."
+        }
+      },
+      "6": {
+        "title": "Construyendo un agregador DEX con Transaction Manifests — inmersión en la arquitectura",
+        "content": "He estado trabajando en un agregador DEX que aprovecha la composabilidad atómica de Radix. El Transaction Manifest nos permite:\n1. Consultar precios de CaviarNine, Ociswap, DefiPlaza en una sola transacción\n2. Enrutar por la ruta óptima\n3. Ejecutar todo el swap atómicamente\n4. Si alguna parte falla, todo revierte\n\nNo es posible la extracción MEV porque el usuario ve exactamente lo que recibirá antes de firmar. Esto es imposible en Ethereum.",
+        "replies": {
+          "1": "Esto es exactamente lo que hace a Radix DeFi superior. En Ethereum, agregadores como 1inch todavía dependen de enrutamiento off-chain y pueden ser frontruneados. Tu enfoque hace el frontrunning estructuralmente imposible.",
+          "2": "¿Cómo manejas el caso donde la liquidez cambia entre la creación del manifest y la ejecución? ¿Hay algún mecanismo de protección contra slippage?",
+          "3": "El manifest incluye aserciones — especificas la cantidad mínima de salida. Si la salida real cae por debajo de ese umbral, toda la transacción revierte. Integrado en el protocolo.",
+          "4": "Desde una perspectiva de inversión, solo la protección contra MEV vale miles de millones. Los usuarios de Ethereum pierden un estimado de $1.3B anuales por MEV."
+        }
+      },
+      "7": {
+        "title": "Economía de nodos 2026: Cambios en subsidios y sostenibilidad",
+        "content": "Siguiendo la consulta comunitaria sobre subsidios a nodos, aquí va mi análisis:\n\n• La reducción de subsidios se hará por fases durante 18 meses\n• La asignación basada en mérito reemplaza la distribución plana\n• Las comisiones por transacciones crecen pero aún no son suficientes\n• Los requisitos de hardware siguen siendo modestos (equivalente a m6i.xlarge)\n\n¿El crecimiento de comisiones por actividad DeFi compensará la reducción de subsidios?",
+        "replies": {
+          "1": "Hice el mismo análisis. Con Hyperscale y Xi'an impulsando más actividad DeFi, proyecto que los ingresos por comisiones superarán los subsidios actuales en 12-18 meses.",
+          "2": "La asignación basada en mérito es crucial. Incentiva uptime y rendimiento en lugar de simplemente existir.",
+          "3": "Desde una perspectiva institucional, el proceso de gobernanza transparente es un gran punto a favor. Ver cómo la comunidad maneja decisiones económicas nos da confianza."
+        }
+      },
+      "8": {
+        "title": "Principiante total: ¿Cómo empezar con Radix y DeFi?",
+        "content": "He estado leyendo sobre Radix y me fascina la tecnología, pero soy completamente nuevo en DeFi. ¿Por dónde empiezo?\n\n• ¿Cómo consigo una wallet Radix?\n• ¿Cómo compro XRD?\n• ¿Qué protocolos DeFi están disponibles?\n• ¿Hay una comunidad para principiantes?\n\nVengo de un background en finanzas tradicionales.",
+        "replies": {
+          "1": "¡Bienvenido Peter! Inicio rápido:\n1. Descarga Radix Wallet de la tienda iOS/Android\n2. Crea una cuenta (¡sin seed phrases!)\n3. Haz bridge de ETH/USDC desde Ethereum vía Hyperlane\n4. Explora DeFi: CaviarNine para swaps, Ociswap para liquidez\n5. Únete a Discord para soporte comunitario",
+          "2": "Y si quieres entender la tecnología, la Radix Academy tiene un curso gratuito de Scrypto 101 course. Aunque no seas desarrollador, ayuda a entender por qué Radix es diferente.",
+          "3": "¡Gracias! La parte de sin seed phrases es lo que captó mi atención. He perdido acceso a una wallet de Bitcoin antes.",
+          "4": "Ese es exactamente el problema que Radix resuelve. El sistema de recuperación de Smart Account usa MFA — puedes recuperar con preguntas de seguridad, contactos de confianza o llaves hardware."
+        }
+      },
+      "9": {
+        "title": "Perspectiva VC: ¿Qué hace a Radix invertible frente a otros L1s?",
+        "content": "Dirijo un fondo de capital de riesgo cripto de $200M. Llevamos 18 meses siguiendo a Radix. Diferenciadores:\n\n1. Innovación técnica real (Cerberus)\n2. Experiencia de desarrollador que atrae constructores reales\n3. Seguridad de grado institucional por diseño (ROA)\n4. Gobernanza comunitaria que realmente funciona\n\nPreocupaciones: Baja capitalización de mercado, listados limitados en exchanges, ecosistema pequeño.\nMe encantaría la perspectiva de la comunidad.",
+        "replies": {
+          "1": "La brecha de capitalización es exactamente la oportunidad. Radix tiene la mejor tecnología del espacio pero el reconocimiento de un proyecto 1/100 de su calidad. La prueba de 500K TPS debería haber sido noticia de primera plana.",
+          "2": "Desde la perspectiva de un desarrollador: He construido en Ethereum, Solana y Radix. Scrypto es el único lenguaje donde me siento segura de que mi código no tendrá vulnerabilidades de seguridad.",
+          "3": "De acuerdo con la oportunidad. Nuestra preocupación es el timing — ¿cuánto tiempo antes de que el mercado reconozca el valor?",
+          "4": "Xi'an estimado H2 2027. Una vez live con sharding Cerberus completo, ningún otro L1 puede competir en throughput Y composabilidad.",
+          "5": "Los listados en exchanges mejorarán a medida que el ecosistema cresca. El eXRD en Coinbase DEX vía Base fue un paso adelante reciente."
+        }
+      },
+      "10": {
+        "title": "Implementación de Xi'an en Rust: Actualización de progreso comunitario",
+        "content": "Actualización de progreso de la red Xi'an construida por la comunidad en Rust:\n\n• Módulo de consenso core: 60% completo\n• Gestión de shards: 45% completo\n• Pipeline de procesamiento de transacciones: 70% completo\n• Capa de red (P2P): 55% completo\n• Infraestructura de testing: 80% completo\n\nLa implementación en Rust muestra 2x de mejora sobre el nodo Java para operaciones de un solo shard. Se buscan contribuidores.",
+        "replies": {
+          "1": "La mejora 2x en un solo shard es esperada — las abstracciones de coste cero de Rust marcan una gran diferencia para código crítico de consenso. La prueba real será la sobrecarga de coordinación cross-shard.",
+          "2": "Como validador, estoy entusiasmado con el nodo Rust. Menores requisitos de recursos significan que más personas pueden ejecutar nodos, mejorando la descentralización.",
+          "3": "De acuerdo. Actualmente estamos enfocados en la implementación del 3-Phase Commit implementación. Los docs de Dan son increíblemente detallados."
+        }
+      },
+      "11": {
+        "title": "Multisig de Smart Account para gestión de tesorería corporativa",
+        "content": "Estamos evaluando Radix Smart Accounts para nuestra tesorería corporativa. Requisitos:\n\n• Multisig 3 de 5 para transacciones superiores a $100K\n• Transacciones con bloqueo temporal para movimientos grandes\n• Acceso basado en roles (CFO, CEO, niveles de aprobación del consejo)\n• Log de auditoría exportable para cumplimiento\n\n¿Cómo se compara el enfoque nativo de Radix con Gnosis Safe?",
+        "replies": {
+          "1": "Las Smart Accounts de Radix son nativas del motor. Tus reglas multisig se aplican a nivel de control de acceso usando Badges. Cada firmante recibe un Badge, y configuras la cuenta para requerir 3 de 5 pruebas de Badge para operaciones de alto valor.",
+          "2": "Para bloqueo temporal: usa Pre-Autorizaciones. El propietario de la cuenta pre-aprueba una transacción con un retraso. Después del retraso, cualquiera que tenga el Badge de ejecución puede finalizarla.",
+          "3": "El modelo de Pre-Autorización suena exactamente correcto. En Gnosis Safe, hemos tenido que construir módulos personalizados para bloqueos temporales.",
+          "4": "Para auditoría: Los Transaction Manifests son legibles por humanos por diseño. Tu equipo de cumplimiento puede literalmente leer lo que hace cada transacción."
+        }
+      },
+      "12": {
+        "title": "Resultados del test Hyperscale: Inmersión técnica en la atomicidad cross-shard",
+        "content": "Análisis detallado de la prueba pública de 500K+ TPS:\n\n• 128 shards, 384 nodos bootstrap, 40 nodos, 6 generadores de carga\n• Todos en instancias m6i.xlarge (4 CPU, 16GB RAM)\n• 500K TPS sostenidos con picos de 800K+\n• Swaps atómicos cross-shard mantenidos durante toda la prueba\n• Escalado lineal confirmado: 250K en 64 shards → 500K en 128 shards\n\nLa sobrecarga de coordinación escaló sublinealmente — la propiedad crítica para escalado ilimitado.",
+        "replies": {
+          "1": "La sobrecarga de coordinación sublineal es el santo grial. Todos los demás sistemas con sharding tienen costes de coordinación superlineales o lineales. Radix se vuelve MÁS eficiente por shard a medida que escala.",
+          "2": "Para dar contexto: Visa procesa ~1,700 TPS globalmente. Radix demostró 300x el throughput de Visa en hardware convencional.",
+          "3": "Participé. Mi nodo corrió en una instancia AWS estándar de 4 cores. CPU alcanzó el 65%, memoria a 12GB. Esto no es hardware especializado.",
+          "4": "Esto es exactamente lo que destacó nuestro informe institucional. La comparativa de throughput debería redirigir miles de millones en inversión DLT institucional hacia Radix."
+        }
+      },
+      "13": {
+        "title": "Gobernanza comunitaria: Resultados de las elecciones RAC y próximos pasos",
+        "content": "La elección del Consejo de Responsabilidad de Radix (RAC) ha finalizado:\n\n• 1,151 cuentas participaron\n• Más de 1 billón de tokens XRD representados\n• 5 miembros del consejo elegidos de 12 candidatos\n• Primera reunión del consejo programada\n\nEsto es descentralización real en acción — infraestructura de gobernanza real, no un voto DAO sobre una meme coin.",
+        "replies": {
+          "1": "La madurez de gobernanza aquí es impresionante. La estructura RAC con mecanismos de rendición de cuentas se acerca más a la gobernanza corporativa tradicional. Esto importa para inversores institucionales.",
+          "2": "Orgulloso de haber participado. La transparencia fue ejemplar. Cada candidato publicó su plataforma, y la votación fue totalmente verificable on-chain.",
+          "3": "Esta estructura de gobernanza es exactamente lo que buscamos en un DLT empresarial. Predecible, transparente y con rendición de cuentas."
+        }
+      },
+      "14": {
+        "title": "Puente Hyperlane: Evaluación de seguridad para flujos de capital institucional",
+        "content": "Nuestro equipo de riesgos está evaluando la seguridad del puente Hyperlane para mover capital institucional entre Ethereum y Radix. La seguridad de bridges es nuestra preocupación #1 ($2B+ perdidos en la industria).\n\nPreguntas:\n• ¿Modelo de seguridad? ¿Multisig? ¿Optimistic? ¿ZK?\n• ¿Ha sido auditado? ¿Por quién?\n• ¿Tamaño máximo recomendado de transferencia?\n• ¿Mecanismos de seguro o cobertura?",
+        "replies": {
+          "1": "Hyperlane usa seguridad modular. Configuras tus propios Interchain Security Modules (ISMs). Para uso institucional, querrías un ISM multisig con tu propio set de nodos más un ISM optimistic como respaldo.",
+          "2": "Diferencia clave con bridges hackeados (Wormhole, Ronin): Hyperlane no agrega todos los fondos en un solo multisig. Cada despliegue tiene su propia configuración de seguridad.",
+          "3": "El modelo ISM configurable es convincente. ¿Cuál es el tamaño mínimo del set de nodos para una seguridad adecuada?",
+          "4": "Hyperlane ha sido auditado por Spearbit. Los informes son públicos. No hay límite de transferencia a nivel de protocolo, pero divide transferencias grandes para gestión de riesgos."
+        }
+      },
+      "15": {
+        "title": "Tokenización de RWA en Radix: Caso de uso inmobiliario",
+        "content": "Estamos tokenizando un portafolio inmobiliario comercial de $50M en Radix. Por qué Radix sobre Ethereum/Polygon:\n\n1. ROA asegura que el token ES el activo\n2. Control de acceso basado en Badges para inversores acreditados\n3. NFTs mutables para cambios de estado de propiedades\n4. Transaction Manifests para liquidación atómica\n5. Cumplimiento nativo vía KYC Badges\n\nActualmente en fase de diseño del Blueprint. Se agradecen aportes.",
+        "replies": {
+          "1": "Para tokenización de RWA, recomendaría una arquitectura multi-Blueprint:\n1. Blueprint de Propiedad (representa el activo, estado mutable)\n2. Blueprint de Propiedad Fraccionada (gestiona las participaciones)\n3. Blueprint de Gateway de Cumplimiento (verificaciones KYC/AML)\n4. Blueprint de Distribución (dividendos/pagos de alquiler)",
+          "2": "El enfoque de NFT mutable para estado de propiedades es brillante. En Ethereum, necesitarías patrones de proxy complejos. En Scrypto, es simplemente actualizar un campo en el recurso NFT.",
+          "3": "Como inversor, la liquidación atómica para propiedad fraccionada es la killer feature. En inmobiliaria tradicional, las transferencias de título tardan 30-90 días. En Radix, 3 segundos.",
+          "4": "Me encanta el enfoque multi-Blueprint. ¿El Gateway de Cumplimiento tendría la lista de Badges de inversores acreditados, o un registro separado?",
+          "5": "Blueprint de registro separado. Gestiona la emisión y revocación de Badges. Tu Gateway de Cumplimiento solo verifica la prueba del Badge. Un proveedor KYC puede servir múltiples proyectos RWA — reutilizable, monetizado vía royalties."
+        }
+      }
+    }
+  },
+  "seo": {
+    "forum": {
+      "title": "Foro | Foro de Radix Community",
+      "description": "Únete al foro de Radix Community. Debate sobre DeFi institucional, staking de RWAs, desarrollo y el ecosistema Radix."
+    }
+  }
+}

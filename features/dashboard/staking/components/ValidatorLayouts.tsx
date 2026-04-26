@@ -24,9 +24,9 @@ import {
     type DelegateButtonProps
 } from '../types/components.types';
 
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    LAYOUT 1 — Full width, big photo left sidebar
-═════════════════════════════════════════ */
+==============================═══════════ */
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData,
@@ -155,9 +155,9 @@ export const Layout1Col = ({
     );
 };
 
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    LAYOUT 2 — Medium sidebar
-═════════════════════════════════════════ */
+==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData,
@@ -280,9 +280,9 @@ export const Layout2Col = ({
     );
 };
 
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    LAYOUT 4 — Dense compact
-═════════════════════════════════════════ */
+==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData,
@@ -381,10 +381,10 @@ export const Layout4Col = ({
     );
 };
 
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    LAYOUT 6 — Ultra dense list
    Used for grid 6+
-═════════════════════════════════════════ */
+==============================═══════════ */
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData,

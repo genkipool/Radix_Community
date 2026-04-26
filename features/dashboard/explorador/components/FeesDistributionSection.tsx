@@ -31,11 +31,11 @@ import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUti
 import { FeesDistributionSectionProps } from '../types';
 
 
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    FeesDistributionSection
    Left  → account(s) that paid fees + cost breakdown
    Right → Burn · Proposer · Validator Set · Royalties · Tips
-═════════════════════════════════════════ */
+==============================═══════════ */
 export function FeesDistributionSection({
     details, tx, tt, onCopy, copiedAddress, onResourceClick, readingMode, network, columns, locale,
 }: FeesDistributionSectionProps) {

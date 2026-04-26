@@ -51,9 +51,9 @@ function saveUserDocs(docs: UserDoc[]): void {
 const COOKIE_OPEN_TOPICS = 'docs_open_topics';
 const EDITOR_VIEW = 'editor';
 
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 /*  DocsClient — rendered inside a <Suspense> in page.tsx */
-/* ══════════════════════════════════════════════════════ */
+/* =============================================═════════ */
 /**
  * Main Docs client component.
  * Manages URL sync, sidebar state, and document selection for the doc explorer.

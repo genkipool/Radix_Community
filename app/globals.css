@@ -1,6 +1,6 @@
-/* ════════════════════════════════════════════════════════════════════════
+/* ============================================================════════════
    GLOBAL STYLE MANIFEST
-   ════════════════════════════════════════════════════════════════════════
+   ============================================================════════════
    Standard CSS specifies that @import rules MUST appear at the absolute 
    top of the document. We place local themes and utility manifests FIRST
    to ensure they are registered before Tailwind's expansion, avoiding 

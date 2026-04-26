@@ -9,11 +9,11 @@ import {
     Layout4Col,
     Layout6Col,
 } from './ValidatorLayouts';
-/* ═════════════════════════════════════════
+/* ==============================═══════════
    Main export
    Note: Modal logic is now centrally 
    handled by DashboardModals.
-═════════════════════════════════════════ */
+==============================═══════════ */
 import type { ValidatorCardProps } from '../types';
 
 export const ValidatorCard: React.FC<ValidatorCardProps> = ({

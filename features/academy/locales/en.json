@@ -1,0 +1,261 @@
+{
+  "academy": {
+    "hero": {
+      "tag": "Radix Academy",
+      "title": "Scrypto",
+      "titleAccent": "101",
+      "description": "Everything you need to write your first smart contracts with the safest language in Web3. Free, at your own pace, with a certificate.",
+      "btnStart": "Start the Course",
+      "btnDiscord": "Join Discord"
+    },
+    "whatIsScrypto": {
+      "tag": "What is Scrypto?",
+      "title": "The language that DeFi",
+      "titleAccent": "needed",
+      "description": "Scrypto is an asset-oriented language based on Rust, designed specifically for decentralized finance. It eliminates entire categories of vulnerabilities that have caused billions in losses on other blockchains."
+    },
+    "features": [
+      {
+        "title": "Security by Design",
+        "description": "In Scrypto, reentrancy attacks, integer overflow, and underflow don't exist. Assets are native engine objects, not simple table records. Vulnerabilities that have caused millions in losses on Ethereum are structurally impossible on Radix."
+      },
+      {
+        "title": "Asset-Oriented (ROA)",
+        "description": "Tokens, NFTs, and badges are physical engine resources. They're not balances in a mapping. You can create, move, burn, and combine them like real objects. This eliminates accounting errors and drastically simplifies smart contract logic."
+      },
+      {
+        "title": "Blueprints & Components",
+        "description": "Contracts are written as Blueprints (templates) and instantiated as reusable Components with their own state. You can publish a Blueprint once and let thousands of developers instantiate it with their own parameters. Code is shared, reused, and monetized with royalties."
+      },
+      {
+        "title": "Rust-Based",
+        "description": "Scrypto is an extension of Rust — one of the safest and most modern programming languages. If you already know Rust, Scrypto will feel natural. Coming from another language, the learning curve is smooth thanks to macros, strong types, and a compiler that guides you."
+      }
+    ],
+    "comparison": {
+      "tag": "Comparison",
+      "title": "1 line",
+      "titleAccent": "vs",
+      "titleEnd": " 50 lines",
+      "description": "What requires inheritance, imports, and testing frameworks in Solidity is solved with a single native instruction in Scrypto. Less code = less attack surface.",
+      "scryptoLabel": "Scrypto — 6 lines",
+      "solidityLabel": "Solidity — 12+ lines",
+      "scryptoComment": "// Create a fungible token in Scrypto",
+      "solidityComment": "// Create an ERC-20 token in Solidity",
+      "table": {
+        "headers": [
+          "Feature",
+          "Scrypto",
+          "Solidity",
+          "Move"
+        ],
+        "rows": [
+          [
+            "Asset Model",
+            "Native resources (physical objects)",
+            "Balance mapping (ERC-20)",
+            "Linear resources"
+          ],
+          [
+            "Default Security",
+            "No reentrancy or overflow",
+            "Needs manual checks",
+            "Partial (Move Prover)"
+          ],
+          [
+            "Create a Token",
+            "1 line of code",
+            "~50 lines (ERC-20)",
+            "~30 lines"
+          ],
+          [
+            "Composability",
+            "Native atomic (Transaction Manifests)",
+            "Cross-contract calls (risky)",
+            "Limited across modules"
+          ],
+          [
+            "Learning Curve",
+            "Medium (facilitated Rust)",
+            "Low but deceptive",
+            "High (new paradigm)"
+          ],
+          [
+            "Code Reusability",
+            "Instantiable Blueprints + royalties",
+            "Inheritance (fragile)",
+            "Published modules"
+          ],
+          [
+            "Readable Transactions",
+            "Transaction Manifests (no blind signing)",
+            "ABI encoding (opaque)",
+            "Typed scripts"
+          ]
+        ]
+      }
+    },
+    "content": {
+      "tag": "Course Content",
+      "title": "From zero to",
+      "titleAccent": "Mainnet deployment",
+      "description": "6 progressive modules. Each with theory, working code examples, and practical exercises you can run directly with resim.",
+      "modules": [
+        {
+          "num": "01",
+          "title": "Introduction to Scrypto 101",
+          "description": "Welcome to the course, introduction to the Scrypto language and its ecosystem. Learn the fundamental concepts before writing your first line of code.",
+          "duration": "~2 hours",
+          "lessons": [
+            "Introduce Yourself",
+            "1.1 Welcome to Scrypto 101",
+            "1.2 Primer on Scrypto",
+            "Chapter 1 Quiz",
+            "Chapter 1 Feedback",
+            "Scrypto 101 Glossary"
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Getting Started with Scrypto",
+          "description": "Learn the Scrypto package structure, Blueprint anatomy, how to compile, publish and run your first Hello Blueprint, and component modules.",
+          "duration": "~4 hours",
+          "lessons": [
+            "2.1 Introduction to Scrypto",
+            "2.2 Scrypto Package Structure",
+            "2.2 Summary",
+            "2.3 The Anatomy of a Blueprint",
+            "2.3 Summary",
+            "2.4 Compiling, Publishing, and Running Hello Blueprint",
+            "2.4 Summary",
+            "2.5 Component Modules",
+            "2.5 Summary",
+            "Chapter 2 Quiz",
+            "Chapter 2 Feedback"
+          ]
+        },
+        {
+          "num": "03",
+          "title": "Resources",
+          "description": "The heart of Scrypto: fungible and non-fungible resources, behaviors, ResourceManager, containers, NFTs, and how to build a token sale from scratch.",
+          "duration": "~5 hours",
+          "lessons": [
+            "3.1 Introduction to Resources",
+            "3.1 Summary",
+            "3.2 Creating Fungible Resources",
+            "3.2 Summary",
+            "3.3 Resource Behaviors",
+            "3.3 Summary",
+            "3.4 El ResourceManager",
+            "3.4 Summary",
+            "3.5 Working with Resource Containers",
+            "3.5 Summary",
+            "3.6 Non Fungible Tokens (NFT)",
+            "3.6 Summary",
+            "3.7 Building a Token Sale",
+            "3.7 Summary",
+            "Chapter 3 Quiz",
+            "Chapter 3 Feedback"
+          ]
+        },
+        {
+          "num": "04",
+          "title": "Auth",
+          "description": "Master the Radix authentication system: badges, proofs, AccessRules, AuthZone, system-level and application-level auth, and build a decentralized exchange.",
+          "duration": "~6 hours",
+          "lessons": [
+            "4.1 Introduction to Auth",
+            "4.1 Summary",
+            "4.2 Resource Auth - Revisiting Resource Behaviors",
+            "4.2 Summary",
+            "4.3 Badges & Proofs",
+            "4.3 Summary",
+            "4.4 AccessRules & AuthZone",
+            "4.4 Summary",
+            "4.5 Component Auth - Approaches to Auth",
+            "4.5 Summary",
+            "4.6 System-level Auth",
+            "4.6 Summary",
+            "4.7 Application-level Authentication",
+            "4.7 Summary",
+            "4.8 Building a Decentralized Exchange (DEX)",
+            "4.8 Summary",
+            "Chapter 4 Quiz",
+            "Chapter 4 Feedback"
+          ]
+        },
+        {
+          "num": "05",
+          "title": "Transactions",
+          "description": "Understand transactions on Radix with the Transaction Manifest: its structure, anatomy, and practical use to interact with components securely and transparently.",
+          "duration": "~3 hours",
+          "lessons": [
+            "5.1 Introduction to Transactions on Radix with the Transaction Manifest",
+            "5.1 Summary",
+            "5.2 El Transaction Manifest in Practice",
+            "5.2 Summary",
+            "5.3 The Anatomy of the Transaction Manifest",
+            "5.3 Summary",
+            "Chapter 5 Quiz",
+            "Chapter 5 Feedback"
+          ]
+        },
+        {
+          "num": "06",
+          "title": "Build Your First Blueprint",
+          "description": "Put everything into practice: complete the Escrow challenge, receive feedback, and get your Scrypto 101 course completion certificate.",
+          "duration": "~3 hours",
+          "lessons": [
+            "6.1 Completion & Next Steps",
+            "End of Course Exercise — Escrow Challenge",
+            "Overall Course Feedback",
+            "Certificate of Completion"
+          ]
+        }
+      ],
+      "hideLessons": "Hide lessons",
+      "viewLessons": "View lessons"
+    },
+    "faq": {
+      "title": "Frequently Asked ",
+      "titleAccent": "Questions",
+      "items": [
+        {
+          "q": "Who is this course for?",
+          "a": "This course is for anyone with minimal experience in programming and is interested in learning how to build the future of Web3. A little bit of knowledge in Web3 and the crypto space could be helpful but it is not necessary."
+        },
+        {
+          "q": "Do I need to know Rust?",
+          "a": "Scrypto was built as a Rust framework and adds functionality to natively work with assets. This means that knowing the basics of Rust is a requirement before you get started with this course. Note that only the basics are required as you will not use the more advanced Rust concepts often when writing Scrypto code."
+        },
+        {
+          "q": "How long is the course?",
+          "a": "This course is meant to teach you the basics of Scrypto and how to start using it to prototype your ideas. We estimate it takes about 20 hours to complete or about two weeks if you are advancing a little bit every day."
+        },
+        {
+          "q": "Do I get a Scrypto certificate?",
+          "a": "Yes, you will receive a certificate upon receiving passing grades in the exam."
+        },
+        {
+          "q": "Is it free?",
+          "a": "Absolutely. Scrypto 101 is completely free. You just need to register at the Radix Academy to track your progress and get your certificate upon completion."
+        }
+      ]
+    },
+    "cta": {
+      "tag": "Start today",
+      "title": "Build the future of",
+      "titleAccent": "decentralized finance",
+      "description": "Register for free in the Scrypto 101 course, join the Dev Program, and start building dApps that will change the global financial system.",
+      "btnRegister": "Free Registration",
+      "btnProgram": "Dev Program",
+      "hispanicAcademy": "Hispanic Academy"
+    }
+  },
+  "seo": {
+    "academy": {
+      "title": "Academy | Learn Radix",
+      "description": "Learn Radix from the ground up — DeFi fundamentals, Scrypto development, validator operations, and more."
+    }
+  }
+}

@@ -90,7 +90,7 @@ export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Transla
     const isFoundation = lowerTag.includes('foundation') || lowerTag.includes('fundacion');
     const isHispanic   = lowerTag.includes('hispanic')   || lowerTag.includes('hispana');
 
-    const label = t?.dashboard?.tags?.[tag] ?? (
+    const label = t?.dashboard?.tags?.[tag as keyof NonNullable<typeof t.dashboard>["tags"]] ?? (
         isHispanic   ? (t?.dashboard?.tags?.['Hispanic Community'] ?? tag)
         : isCommunity  ? (t?.dashboard?.tags?.Community  ?? tag)
         : isFoundation ? (t?.dashboard?.tags?.Foundation ?? tag)

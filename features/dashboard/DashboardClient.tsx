@@ -184,7 +184,7 @@ export default function DashboardClient({
   /* ── Copy helper ── */
   const { copiedText: copiedAddress, copy: copyAddress } = useCopyToClipboard(1000);
 
-  /* ══ React Query — Validators ══════════════════════════════ */
+  /* ══ React Query — Validators ============================== */
   const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(deferredNetwork);
   const realValidators = validatorsData?.validators ?? [];
   const networkStats = validatorsData?.networkStats ?? null;
@@ -295,7 +295,7 @@ export default function DashboardClient({
     setLiveNetwork(deferredNetwork as 'mainnet' | 'stokenet');
   }, [deferredNetwork]);
 
-  /* ══════════════════════════ RENDER ════════════════════════ */
+  /* ===============═══════════ RENDER ===============═════════ */
   return (
     <div className="pb-20">
       {/* ── Hero ── */}

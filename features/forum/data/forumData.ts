@@ -1,4 +1,4 @@
-/* ═══════════════ FORUM DATA ═══════════════ */
+/* =============== FORUM DATA =============== */
 import type { ForumUser, ForumPost } from '../types';
 
 /* ═══════ RANKING SYSTEM ═══════

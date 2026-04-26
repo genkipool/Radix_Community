@@ -52,9 +52,9 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     onNext={onNext}
                     className="flex-1 flex flex-col min-h-0 relative touch-none bg-[var(--color-surface)]"
                 >
-                    {/* ══════════════════════════════════════════
+                    {/* ==============================════════════
                         ROW 1 — HEADER
-                    ══════════════════════════════════════════ */}
+                    ==============================════════════ */}
                     <div className="relative grid grid-cols-[auto_1fr] items-center gap-0 p-[14px] sm:p-5 border-b border-[var(--color-card-border)] bg-[var(--color-surface)] overflow-hidden" style={{ '--status-color': statusColor } as React.CSSProperties}>
                         <div className="absolute inset-0 pointer-events-none z-0" style={{ background: `linear-gradient(135deg, ${statusColor}22 0%, transparent 60%)` }} />
 
@@ -160,9 +160,9 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                         </div>
                     </div>
 
-                    {/* ══════════════════════════════════════════
+                    {/* ==============================════════════
                         ROWS 2 + 3 — Body
-                    ══════════════════════════════════════════ */}
+                    ==============================════════════ */}
                     <div className="overflow-y-visible flex-1 touch-pan-y custom-scrollbar [&>.veb]:!border-t-0">
                         <ValidatorExpandedBody
                             validator={validator}
@@ -177,9 +177,9 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                         />
                     </div>
 
-                    {/* ══════════════════════════════════════════
+                    {/* ==============================════════════
                         FOOTER — CTA
-                    ══════════════════════════════════════════ */}
+                    ==============================════════════ */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[15px] p-[14px] sm:px-6 sm:py-[18px] border-t border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0 items-stretch sm:items-center">
                         <p className="text-[13px] text-[var(--color-text-muted)] font-medium leading-[1.4] m-0 flex-1 hidden sm:block">
                             {dt?.card?.stake_hint ?? 'Delegate your XRD to this validator and start earning rewards.'}
