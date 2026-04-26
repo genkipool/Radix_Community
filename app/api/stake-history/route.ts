@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
             { error: message || 'Internal server error' },
             { 
                 status: 200, // Stay on 200 for UI but NO CACHE
-                headers: { 'Cache-Control': 'no-store, max-age=0' }
+                headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' }
             }
         );
     }

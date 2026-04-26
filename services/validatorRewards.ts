@@ -85,7 +85,7 @@ export async function fetchEpochRewardEvents(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        cache: 'no-store',
+        next: { revalidate: 300 },
     });
 
     if (!res.ok) {

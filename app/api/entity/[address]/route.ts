@@ -25,7 +25,7 @@ export async function GET(
         logger.error({ err: error }, 'Entity details API error: %s', message);
         return NextResponse.json(null, {
             status: 500,
-            headers: { 'Cache-Control': 'no-store' },
+            headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' },
         });
     }
 }

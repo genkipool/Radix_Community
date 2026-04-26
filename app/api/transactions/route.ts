@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         if (result.transactions.length === 0) {
             logger.warn({ network, tag, address, cursor: !!cursor }, 'SERVED EMPTY TRANSACTIONS');
             return NextResponse.json(result, {
-                headers: { 'Cache-Control': 'no-store, max-age=0' },
+                headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' },
             });
         }
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(result, {
             headers: {
                 'Cache-Control': isFiltered
-                    ? 'no-store, max-age=0'
+                    ? 'no-cache, private, max-age=0, must-revalidate'
                     : 'public, s-maxage=10, stale-while-revalidate=30',
             },
         });
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             { error: message },
             {
                 status: 500,
-                headers: { 'Cache-Control': 'no-store, max-age=0' }
+                headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' }
             },
         );
     }

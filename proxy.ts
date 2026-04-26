@@ -37,7 +37,11 @@ export function proxy(request: NextRequest) {
         (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
     );
 
-    if (pathnameHasLocale) return NextResponse.next();
+    if (pathnameHasLocale) {
+        const response = NextResponse.next();
+        response.headers.set('Cache-Control', 'no-cache, must-revalidate');
+        return response;
+    }
 
     // Redirect if there is no locale
     const locale = getLocale(request);

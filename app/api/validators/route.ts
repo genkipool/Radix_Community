@@ -14,7 +14,7 @@ export async function GET(request: Request) {
             logger.warn({ network }, 'SERVED EMPTY VALIDATORS');
             return NextResponse.json(
                 { validators: [], networkStats: null },
-                { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+                { headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' } }
             );
         }
 
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
             { error: message },
             { 
                 status: 500,
-                headers: { 'Cache-Control': 'no-store, max-age=0' } 
+                headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' } 
             },
         );
     }

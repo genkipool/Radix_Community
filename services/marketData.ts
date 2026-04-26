@@ -38,7 +38,7 @@ export const fetchMarketData = async (): Promise<MarketData | null> => {
     try {
         const res = await fetch(
             'https://api.coingecko.com/api/v3/coins/radix?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false',
-            { cache: 'no-store' }
+            { next: { revalidate: 60 } }
         );
 
         if (!res.ok) {
