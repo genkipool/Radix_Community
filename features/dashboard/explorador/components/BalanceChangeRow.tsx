@@ -27,7 +27,7 @@ import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/featur
 const RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
 type ResourceTab = typeof RESOURCE_TABS[number];
 
-function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale }: ResourceInlinePanelProps) {
+export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
 
     const metadataItems = details?.metadata?.items || [];

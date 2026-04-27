@@ -2306,10 +2306,10 @@ export const Graphic27 = ({ t: _t }: GraphicProps) => (
     <g transform="translate(10, 40)" scale="1.15">
       {/* DNA Triple Helix — filter= moved to inner <g> wrappers so the
           draw-swift <g> itself has no filter and can be GPU-composited */}
-      <g className="draw-swift">
-        <g filter="url(#glowCyan27)"><path d="M 0 0 Q 30 -80, 60 0 T 120 0 T 180 0 T 240 0 T 300 0" fill="none" stroke="#00F0FF" strokeWidth="4" opacity="0.8" /></g>
-        <g filter="url(#glowEmerald27)"><path d="M 0 40 Q 30 -40, 60 40 T 120 40 T 180 40 T 240 40 T 300 40" fill="none" stroke="#10B981" strokeWidth="4" opacity="0.8" /></g>
-        <g filter="url(#glowPink27)"><path d="M 0 -40 Q 30 40, 60 -40 T 120 -40 T 180 -40 T 240 -40 T 300 -40" fill="none" stroke="#F472B6" strokeWidth="4" opacity="0.8" /></g>
+      <g>
+        <g filter="url(#glowCyan27)"><path d="M 0 0 Q 30 -80, 60 0 T 120 0 T 180 0 T 240 0 T 300 0" fill="none" stroke="#00F0FF" strokeWidth="4" opacity="0.8" className="draw-swift" /></g>
+        <g filter="url(#glowEmerald27)"><path d="M 0 40 Q 30 -40, 60 40 T 120 40 T 180 40 T 240 40 T 300 40" fill="none" stroke="#10B981" strokeWidth="4" opacity="0.8" className="draw-swift" /></g>
+        <g filter="url(#glowPink27)"><path d="M 0 -40 Q 30 40, 60 -40 T 120 -40 T 180 -40 T 240 -40 T 300 -40" fill="none" stroke="#F472B6" strokeWidth="4" opacity="0.8" className="draw-swift" /></g>
       </g>
 
       {/* Decorative joining bridges (hydrogen bonds) */}
@@ -2854,10 +2854,10 @@ export const Graphic32 = ({ t: _t }: GraphicProps) => (
       <circle cx="-65" cy="40" r="6" fill="#00F0FF" filter="url(#glowCyan32)" />
 
       {/* Internal lines meeting at the solution (Radix Xi'an context) */}
-      <g className="draw-swift">
-        <line x1="0" y1="-60" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" />
-        <line x1="65" y1="40" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" />
-        <line x1="-65" y1="40" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" />
+      <g>
+        <line x1="0" y1="-60" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" className="draw-swift" />
+        <line x1="65" y1="40" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" className="draw-swift" />
+        <line x1="-65" y1="40" x2="0" y2="5" stroke="#EAB308" strokeWidth="2" strokeDasharray="4" opacity="0.8" className="draw-swift" />
       </g>
 
       <circle cx="0" cy="5" r="10" fill="#EAB308" filter="url(#glowGold32)" />

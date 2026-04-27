@@ -14,14 +14,13 @@ export function getCurrencyForLocale(locale: string): 'EUR' | 'USD' {
     return euroLocales.includes(primary) ? 'EUR' : 'USD';
 }
 
-/**
- * Formats a numeric value as a currency string.
- */
 export function formatCurrency(value: number, currency: 'EUR' | 'USD', locale: string): string {
-    return new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: currency,
+    const formattedNum = new Intl.NumberFormat(locale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(value);
+    
+    // The user specifically requested the currency symbol to be strictly on the right
+    const symbol = currency === 'EUR' ? '€' : '$';
+    return `${formattedNum} ${symbol}`;
 }

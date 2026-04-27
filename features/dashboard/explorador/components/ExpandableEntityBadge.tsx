@@ -32,6 +32,7 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { AccountSummaryTab } from './AccountSummaryTab';
+import { AccountTokensTab, AccountNftsTab } from './AccountAssetsTabs';
 import type {
     MetadataItem,
     MarketData,
@@ -41,7 +42,7 @@ import type {
 } from '@/features/dashboard/types';
 
 /* ─── Types ─────────────────────────────────────────── */
-type EntityTab = 'summary' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'tokens' | 'nfts' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -63,8 +64,14 @@ function getTabsForEntity(
 ): { key: EntityTab; label: string }[] {
     const base: { key: EntityTab; label: string }[] = [
         { key: 'summary', label: tt?.resource_panel_summary || 'Summary' },
-        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' },
     ];
+
+    if (prefix.startsWith('account_')) {
+        base.push({ key: 'tokens', label: tt?.account_summary?.tokens_tab || 'Tokens' });
+        base.push({ key: 'nfts', label: tt?.account_summary?.nfts_tab || 'NFTs' });
+    }
+
+    base.push({ key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' });
 
     // Packages and identities don't have role_assignments typically
     const hasConfig = !prefix.startsWith('package_') && !prefix.startsWith('identity_');
@@ -245,6 +252,30 @@ export function ExpandableEntityBadge({
                                                     onResourceClick={onResourceClick}
                                                 />
                                             )
+                                        )}
+
+                                        {/* ── TOKENS ── */}
+                                        {activeTab === 'tokens' && address.startsWith('account_') && (
+                                            <AccountTokensTab
+                                                entityData={entityData ?? null}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={_locale}
+                                            />
+                                        )}
+
+                                        {/* ── NFTS ── */}
+                                        {activeTab === 'nfts' && address.startsWith('account_') && (
+                                            <AccountNftsTab
+                                                entityData={entityData ?? null}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={_locale}
+                                            />
                                         )}
 
                                         {/* ── METADATA ── */}

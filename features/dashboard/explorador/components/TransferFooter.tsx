@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, ArrowUp, ArrowDown } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { TransferFooterProps } from '../types';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import type { GatewayEntityDetails, MetadataItem } from '@/features/dashboard/types';
-import { IconFlame, IconMedal, IconBolt } from './TransactionIcons';
+import { IconFlame, IconBolt } from './TransactionIcons';
 
 /**
  * TransferFooter
@@ -44,7 +44,7 @@ export function TransferFooter({
                 {/* ── Fungible Senders ── */}
                 {senders.length > 0 && (
                     <span className="flex items-center gap-2">
-                        <IconFlame className="text-red-500 w-3.5 h-3.5" />
+                        <ArrowUp className="text-red-500 w-3.5 h-3.5" />
                         {receivers.length > 0 ? tt.sent_label || 'SENT' : ''}
                         <span className="text-red-500 font-black">
                             {senders.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
@@ -70,7 +70,7 @@ export function TransferFooter({
                     <>
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2">
-                            <IconMedal className={`${greenCls} w-3.5 h-3.5`} />
+                            <ArrowDown className={`${greenCls} w-3.5 h-3.5`} />
                             {senders.length > 0 ? tt.received_label || 'RECEIVED' : ''}
                             <span className={`${greenCls} font-black`}>
                                 {receivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}

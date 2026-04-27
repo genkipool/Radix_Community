@@ -16,6 +16,12 @@ import dappsEs from '@/features/dapps/locales/es.json';
 import dashboardEn from '@/features/dashboard/locales/en.json';
 import dashboardEs from '@/features/dashboard/locales/es.json';
 
+import dashboardStakingEn from '@/features/dashboard/staking/locales/en.json';
+import dashboardStakingEs from '@/features/dashboard/staking/locales/es.json';
+
+import dashboardExploradorEn from '@/features/dashboard/explorador/locales/en.json';
+import dashboardExploradorEs from '@/features/dashboard/explorador/locales/es.json';
+
 import docsEn from '@/features/docs/locales/en.json';
 import docsEs from '@/features/docs/locales/es.json';
 
@@ -36,14 +42,21 @@ type TranslationModule = { seo?: Record<string, unknown> } & Record<string, unkn
 const mergeTranslations = (common: TranslationModule, features: TranslationModule[]) => {
   const result = { ...common };
   features.forEach((feature) => {
-    // Deep merge SEO
-    if (feature.seo) {
-      result.seo = { ...(result.seo || {}), ...feature.seo };
-    }
-    // Merge other keys
     Object.keys(feature).forEach((key) => {
-      if (key !== 'seo') {
-        result[key] = feature[key];
+      const existing = result[key];
+      const incoming = feature[key];
+      // Deep merge objects one level (handles SEO, dashboard, etc.)
+      if (
+        existing &&
+        typeof existing === 'object' &&
+        !Array.isArray(existing) &&
+        incoming &&
+        typeof incoming === 'object' &&
+        !Array.isArray(incoming)
+      ) {
+        result[key] = { ...(existing as Record<string, unknown>), ...(incoming as Record<string, unknown>) };
+      } else {
+        result[key] = incoming;
       }
     });
   });
@@ -56,6 +69,8 @@ const en = mergeTranslations(commonEn, [
   communityEn,
   dappsEn,
   dashboardEn,
+  dashboardStakingEn,
+  dashboardExploradorEn,
   docsEn,
   forumEn,
   gamesEn,
@@ -69,6 +84,8 @@ const es = mergeTranslations(commonEs, [
   communityEs,
   dappsEs,
   dashboardEs,
+  dashboardStakingEs,
+  dashboardExploradorEs,
   docsEs,
   forumEs,
   gamesEs,
@@ -82,6 +99,8 @@ export type Dictionary = typeof commonEn &
   typeof communityEn &
   typeof dappsEn &
   typeof dashboardEn &
+  typeof dashboardStakingEn &
+  typeof dashboardExploradorEn &
   typeof docsEn &
   typeof forumEn &
   typeof gamesEn &

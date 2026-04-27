@@ -210,6 +210,12 @@ export function AccountSummaryTab({
 
     const stakingRows = Array.from(stakingMap.values()).sort((a, b) => b.xrdInStake - a.xrdInStake);
     const totalLsuAmount = lsuTokens.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const totalLsuXrdEquivalent = lsuTokens.reduce((acc, lsu) => {
+        if (!lsu.validatorAddress) return acc;
+        const val = validatorsData?.validators.find(v => v.address === lsu.validatorAddress);
+        const lsuFactor = val?.lsu2xrdFactor || 1;
+        return acc + (parseFloat(lsu.amount) * lsuFactor);
+    }, 0);
 
     return (
         <div className="space-y-6">
@@ -242,17 +248,17 @@ export function AccountSummaryTab({
             </div>
 
             {description && (
-                <p className="text-sm text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
+                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
                     {description}
                 </p>
             )}
 
             {/* Principal Balance */}
             <div>
-                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">Balance Principal</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.principal_balance || 'Balance Principal'}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <BalanceCard
-                        title="TOTAL XRD"
+                        title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
                         amount={xrdAmount}
                         symbol="XRD"
                         valueColor="text-green-500 dark:text-green-400"
@@ -260,10 +266,35 @@ export function AccountSummaryTab({
                         locale={locale}
                     />
                     <BalanceCard
-                        title="TOTAL LSU"
+                        title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
                         amount={String(totalLsuAmount)}
                         symbol="LSU"
                         valueColor="text-blue-500 dark:text-blue-400"
+                        marketData={marketData}
+                        locale={locale}
+                        rawFiatAmount={totalLsuXrdEquivalent}
+                    />
+                    <BalanceCard
+                        title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
+                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                        symbol="XRD"
+                        valueColor="text-[var(--color-text-main)]"
+                        marketData={marketData}
+                        locale={locale}
+                    />
+                    <BalanceCard
+                        title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                        symbol="XRD"
+                        valueColor="text-orange-500"
+                        marketData={marketData}
+                        locale={locale}
+                    />
+                    <BalanceCard
+                        title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
+                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                        symbol="XRD"
+                        valueColor="text-green-500"
                         marketData={marketData}
                         locale={locale}
                     />
@@ -273,7 +304,7 @@ export function AccountSummaryTab({
             {/* Staking */}
             {stakingRows.length > 0 && (
                 <div>
-                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">Staking</h4>
+                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.staking || 'Staking'}</h4>
                     <div className="space-y-3">
                         {stakingRows.map((row) => (
                             <div key={row.validatorAddress} className="py-5 border-b border-[var(--color-card-border)] last:border-0">
@@ -291,15 +322,15 @@ export function AccountSummaryTab({
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">Stake XRD</span>
+                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.stake_xrd || 'Stake XRD'}</span>
                                         <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatXRD(row.xrdInStake)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">Unstake XRD</span>
+                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
                                         <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatXRD(row.xrdInUnstake) : '0'} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">Claim XRD</span>
+                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.claim_xrd || 'Claim XRD'}</span>
                                         <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatXRD(row.xrdInClaim) : '0'} XRD</span>
                                     </div>
                                 </div>
@@ -328,18 +359,23 @@ export function AccountSummaryTab({
     );
 }
 
-function BalanceCard({ title, amount, symbol, valueColor, marketData, locale }: {
+function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount }: {
     title: string;
     amount: string;
     symbol: string;
     valueColor: string;
     marketData?: MarketData | null;
     locale: string;
+    rawFiatAmount?: number;
 }) {
     const currency = getCurrencyForLocale(locale);
     const price = currency === 'EUR' ? marketData?.priceEur : marketData?.priceUsd;
-    const numAmount = parseFloat(amount);
+    const numAmount = rawFiatAmount !== undefined ? rawFiatAmount : parseFloat(amount);
     const fiatValue = price ? numAmount * price : null;
+
+    // Apply exact formatting to the amount
+    const parsedAmount = parseFloat(amount);
+    const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2) : formatNumber(parsedAmount, 4);
 
     return (
         <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow">
@@ -353,7 +389,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale }: 
             {/* Row 2: Amount (right) */}
             <div className="flex justify-end items-baseline gap-1.5 min-w-0">
                 <span className={`text-lg font-black font-mono tracking-tight ${valueColor} truncate`} title={amount}>
-                    {amount}
+                    {formattedAmount}
                 </span>
                 <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase shrink-0">
                     {symbol}

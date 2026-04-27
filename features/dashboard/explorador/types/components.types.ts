@@ -268,7 +268,7 @@ export interface NftCollectionPanelProps {
     nftData: Record<string, unknown>[];
     nftLoading: boolean;
     ids: string[];
-    type: 'added' | 'removed';
+    type: 'added' | 'removed' | 'neutral';
     onCopy?: (v: string) => void;
     copiedAddress: string | null;
     tt: TranslationsT['dashboard']['transactions'];
