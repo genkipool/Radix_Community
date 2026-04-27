@@ -224,14 +224,14 @@ export function AccountSummaryTab({
                 <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
                     <SafeImage
                         src={iconUrl || ''}
-                        alt={entityName || 'Account'}
-                        fallbackName={entityName || 'Account'}
+                        alt={entityName || tt.account_summary?.account || 'Account'}
+                        fallbackName={entityName || tt.account_summary?.account || 'Account'}
                         className="w-full h-full object-cover"
                     />
                 </div>
                 <div className="min-w-0">
                     <p className="font-bold text-base text-[var(--color-text-main)] truncate">
-                        {entityName || 'Account'}
+                        {entityName || tt.account_summary?.account || 'Account'}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
@@ -248,14 +248,14 @@ export function AccountSummaryTab({
             </div>
 
             {description && (
-                <p className="text-xs text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
+                <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
                     {description}
                 </p>
             )}
 
             {/* Principal Balance */}
             <div>
-                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.principal_balance || 'Balance Principal'}</h4>
+                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.principal_balance || 'Principal Balance'}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <BalanceCard
                         title={tt.account_summary?.total_xrd || 'TOTAL XRD'}

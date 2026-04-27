@@ -386,6 +386,7 @@
       "sent_title": "Account {account} sent {amount} {token}",
       "received_title": "Account {account} received {amount} {token}",
       "account_summary": {
+        "account": "Account",
         "principal_balance": "Principal Balance",
         "staking_totals": "Staking Totals",
         "staking_total": "Staking Total",
