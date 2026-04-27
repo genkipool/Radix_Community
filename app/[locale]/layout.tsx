@@ -69,13 +69,6 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.variable} ${theme}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/*
-          Blocking script 1: Theme
-          Applies the saved theme class synchronously before any paint.
-          Eliminates flash-of-wrong-theme in incognito / first visit.
-        */}
         <Script
           id="theme-strategy"
           dangerouslySetInnerHTML={{
