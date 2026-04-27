@@ -118,22 +118,6 @@ export function ExpandableEntityBadge({
 
     const isAccountAddr = address.startsWith('account_');
 
-    const localizedTt = _locale === 'es' ? {
-        account_summary: {
-            download_account_rewards: "Descargar CSV Recompensas Staking (Transacciones Account)",
-            downloading: "Descargando...",
-            generating_csv: "Generando reporte...",
-            completed: "¡Completado!"
-        }
-    } : {
-        account_summary: {
-            download_account_rewards: "Download Staking Rewards CSV (Account Transactions)",
-            downloading: "Downloading...",
-            generating_csv: "Generating report...",
-            completed: "Completed!"
-        }
-    };
-
     const clean = sanitizeText(address);
     const { label, color, bg } = getEntityType(clean, tt);
     const meta = useEntityData(clean, network);
@@ -220,7 +204,7 @@ export function ExpandableEntityBadge({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                             className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={localizedTt.account_summary.download_account_rewards}
+                            title={(tt as any).account_summary?.download_account_rewards}
                         >
                             <Download className="w-3 h-3" />
                         </button>
@@ -238,7 +222,7 @@ export function ExpandableEntityBadge({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={_locale}
-                    tt={localizedTt.account_summary}
+                    tt={(tt as any).account_summary}
                     marketData={marketData}
                 />
             )}

@@ -69,10 +69,12 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         
         let currentProgress = 0;
         const interval = setInterval(() => {
-            currentProgress += Math.random() * 5;
-            if (currentProgress > 95) currentProgress = 95;
+            const remaining = 98 - currentProgress;
+            // Asymptotic curve: fast at first, then slows down progressively over several minutes
+            currentProgress += (remaining * 0.015) + (Math.random() * 0.2);
+            if (currentProgress > 98) currentProgress = 98;
             setProgress(currentProgress);
-        }, 1500);
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [downloading]);
@@ -265,13 +267,18 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5">
-                                    <p className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]">
-                                        {locale === 'es' ? (
-                                            <>Si Radix valiera 1 {summary.currency === 'EUR' ? 'Euro' : 'Dólar'}, habrías ganado <b>{formatCurrency(summary.dreamValue, summary.currency as any, locale || 'en')}</b> con el staking este año.</>
-                                        ) : (
-                                            <>If Radix reached 1 {summary.currency === 'EUR' ? 'Euro' : 'Dollar'}, you would have earned <b>{formatCurrency(summary.dreamValue, summary.currency as any, locale || 'en')}</b> from staking this year.</>
-                                        )}
-                                    </p>
+                                    <p 
+                                        className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
+                                        dangerouslySetInnerHTML={{ 
+                                            __html: (tt?.account_rewards_summary_dream ?? (
+                                                locale === 'es' 
+                                                    ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año." 
+                                                    : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
+                                            ))
+                                            .replace('{currency}', summary.currency === 'EUR' ? (locale === 'es' ? 'Euro' : 'Euro') : (locale === 'es' ? 'Dólar' : 'Dollar'))
+                                            .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as any, locale || 'en'))
+                                        }} 
+                                    />
                                 </div>
                             </div>
                         </div>

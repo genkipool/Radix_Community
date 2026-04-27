@@ -63,6 +63,22 @@
       "actions": "Acciones / Cambios de Estado",
       "json_data": "Datos JSON",
       "error_loading": "Error cargando detalles",
+      "account_summary": {
+        "account": "Cuenta",
+        "principal_balance": "Balance Principal",
+        "total_xrd": "TOTAL XRD",
+        "total_lsu": "TOTAL LSU",
+        "download_account_rewards": "Descargar CSV Recompensas Staking",
+        "account_rewards_modal_title": "Historial de Recompensas de Cuenta",
+        "account_rewards_modal_desc": "Selecciona un año para descargar el desglose de recompensas de staking en formato CSV para CoinTracking. Este proceso puede tardar varios minutos.",
+        "account_rewards_modal_generating": "Generando CSV...",
+        "account_rewards_modal_generating_desc": "Consultando el estado de la red Radix por días. Puede tardar de 2 a 5 minutos dependiendo del número de validadores y días.",
+        "account_rewards_modal_loading": "Cargando...",
+        "account_rewards_modal_no_data": "No hay datos de recompensas disponibles para este año.",
+        "account_rewards_summary_title": "¡Descarga completada!",
+        "account_rewards_summary_total": "Total ganado",
+        "account_rewards_summary_dream": "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
+      },
       "well_known_tooltips": {
         "xrd": "Token nativo de Radix (XRD). Es el recurso principal de la red; se utiliza para pagar las comisiones de transacción (gas) y para asegurar la red mediante staking a validadores.",
         "secp256k1_signature_virtual_badge": "Insignia virtual de firma secp256k1. Generada dinámicamente por el motor para demostrar criptográficamente que la transacción fue firmada con una clave externa (ej. tipo Ethereum). Se usa para validar accesos.",

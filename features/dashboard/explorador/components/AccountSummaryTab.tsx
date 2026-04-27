@@ -64,24 +64,6 @@ export function AccountSummaryTab({
 }: AccountSummaryTabProps) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
-    const localizedTt = locale === 'es' ? {
-        account_summary: {
-            ...tt.account_summary,
-            download_account_rewards: "Descargar CSV Recompensas Staking (Transacciones Account)",
-            downloading: "Descargando...",
-            generating_csv: "Generando reporte...",
-            completed: "¡Completado!"
-        }
-    } : {
-        account_summary: {
-            ...tt.account_summary,
-            download_account_rewards: "Download Staking Rewards CSV (Account Transactions)",
-            downloading: "Downloading...",
-            generating_csv: "Generating report...",
-            completed: "Completed!"
-        }
-    };
-
     const description = getMeta('description');
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
 
@@ -393,7 +375,7 @@ export function AccountSummaryTab({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={locale}
-                    tt={localizedTt.account_summary}
+                    tt={(tt as any).account_summary}
                     marketData={marketData}
                 />
             )}
