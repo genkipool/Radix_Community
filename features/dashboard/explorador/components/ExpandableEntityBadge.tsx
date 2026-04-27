@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Check, Copy } from 'lucide-react';
+import { ChevronDown, Check, Copy, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -32,6 +32,7 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { AccountSummaryTab } from './AccountSummaryTab';
+import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab } from './AccountAssetsTabs';
 import type {
     MetadataItem,
@@ -113,6 +114,25 @@ export function ExpandableEntityBadge({
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
+    const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+
+    const isAccountAddr = address.startsWith('account_');
+
+    const localizedTt = _locale === 'es' ? {
+        account_summary: {
+            download_account_rewards: "Descargar CSV Recompensas Staking (Transacciones Account)",
+            downloading: "Descargando...",
+            generating_csv: "Generando reporte...",
+            completed: "¡Completado!"
+        }
+    } : {
+        account_summary: {
+            download_account_rewards: "Download Staking Rewards CSV (Account Transactions)",
+            downloading: "Downloading...",
+            generating_csv: "Generating report...",
+            completed: "Completed!"
+        }
+    };
 
     const clean = sanitizeText(address);
     const { label, color, bg } = getEntityType(clean, tt);
@@ -195,11 +215,33 @@ export function ExpandableEntityBadge({
                             ? <Check className="w-3 h-3" />
                             : <Copy className="w-3 h-3" />}
                     </button>
+                    {isAccountAddr && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                            title={localizedTt.account_summary.download_account_rewards}
+                        >
+                            <Download className="w-3 h-3" />
+                        </button>
+                    )}
                     <ChevronDown
                         className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
                     />
                 </div>
             </div>
+
+            {/* CSV Modal rendering outside of list interactions for clarity */}
+            {isCsvModalOpen && (
+                <AccountRewardsCsvModal
+                    accountAddress={clean}
+                    isOpen={isCsvModalOpen}
+                    onClose={() => setIsCsvModalOpen(false)}
+                    locale={_locale}
+                    tt={localizedTt.account_summary}
+                    marketData={marketData}
+                />
+            )}
 
             {/* ── Expandable panel ────────────────────── */}
             <AnimatePresence>

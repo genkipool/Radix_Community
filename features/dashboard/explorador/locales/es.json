@@ -402,7 +402,16 @@
         "nfts_tab": "NFTs",
         "summary_tab": "Resumen",
         "pool_units": "Unidades de Pool",
-        "burned_nfts": "NFTs Quemados"
+        "burned_nfts": "NFTs Quemados",
+        "download_account_rewards": "Descargar Recompensas",
+        "account_rewards_modal_title": "Descargar Historial de Recompensas",
+        "account_rewards_modal_desc": "Selecciona un año para descargar el desglose de recompensas de staking en formato CSV de CoinTracking. Este proceso puede tardar varios minutos ya que consulta el Ledger de Radix para obtener instantáneas diarias de tu stake.",
+        "account_rewards_modal_download": "Descargar CSV",
+        "account_rewards_modal_no_data": "No hay datos de recompensas disponibles. La cuenta puede no tener stakes activos.",
+        "account_rewards_modal_error": "Error",
+        "account_rewards_modal_loading": "Cargando...",
+        "account_rewards_modal_generating": "Generando CSV...",
+        "account_rewards_modal_generating_desc": "Consultando la API del Ledger de Radix para obtener instantáneas diarias del stake. Esto puede tardar de 2 a 5 minutos dependiendo del número de validadores y días."
       }
     },
     "explorer": {

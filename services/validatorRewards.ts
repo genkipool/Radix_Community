@@ -12,9 +12,10 @@ export interface EpochRewardEntry {
     totalRewardXrd: number;
     proposalsMade: number;
     proposalsMissed: number;
+    /** Total stake at emission time: starting_stake_pool_xrd + stake_pool_added_xrd */
+    totalStakeXrd: number;
 }
 
-/** Daily breakdown stored per validator in Redis */
 export interface ValidatorRewardData {
     lastSyncedEpoch: number;
     /** Mapping: "YYYY-MM-DD" → total validator fee XRD rewarded that day */
@@ -25,6 +26,8 @@ export interface ValidatorRewardData {
     dailyDelegants?: Record<string, number>;
     /** Mapping: "YYYY" → total delegator XRD rewarded that year */
     yearlyDelegants?: Record<string, number>;
+    /** Mapping: "YYYY-MM-DD" → total stake of the validator that day (starting_stake + pool_added) */
+    dailyStake?: Record<string, number>;
 }
 
 /** Metadata for the sync process */
@@ -116,6 +119,7 @@ export async function fetchEpochRewardEvents(
             const epoch = parseInt(getValue('epoch'), 10);
             const stakePoolAddedXrd = parseFloat(getValue('stake_pool_added_xrd'));
             const validatorFeeXrd = parseFloat(getValue('validator_fee_xrd'));
+            const startingStakePoolXrd = parseFloat(getValue('starting_stake_pool_xrd'));
             const proposalsMade = parseInt(getValue('proposals_made'), 10);
             const proposalsMissed = parseInt(getValue('proposals_missed'), 10);
 
@@ -129,6 +133,7 @@ export async function fetchEpochRewardEvents(
                 totalRewardXrd: stakePoolAddedXrd + validatorFeeXrd,
                 proposalsMade,
                 proposalsMissed,
+                totalStakeXrd: startingStakePoolXrd + stakePoolAddedXrd,
             });
         }
     }
@@ -183,6 +188,7 @@ export async function syncRewardsToRedis(
         // Ensure new fields exist for existing records
         if (!data.dailyDelegants) data.dailyDelegants = {};
         if (!data.yearlyDelegants) data.yearlyDelegants = {};
+        if (!data.dailyStake) data.dailyStake = {};
 
         for (const ev of validatorEvents) {
             // Skip already processed epochs
@@ -197,6 +203,9 @@ export async function syncRewardsToRedis(
             // Accumulate yearly
             data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
             data.yearlyDelegants[currentYear] = (data.yearlyDelegants[currentYear] ?? 0) + ev.stakePoolAddedXrd;
+
+            // Track total stake (use latest epoch's value for that day)
+            data.dailyStake![today] = ev.totalStakeXrd;
 
             // Track highest epoch
             if (ev.epoch > data.lastSyncedEpoch) {
@@ -224,6 +233,7 @@ export async function syncRewardsToRedis(
         prune(data.yearly);
         prune(data.dailyDelegants);
         prune(data.yearlyDelegants);
+        prune(data.dailyStake);
     }
 
     pipeline.set(REDIS_REWARDS_ALL, allData);

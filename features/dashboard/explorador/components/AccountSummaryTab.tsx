@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, Check, Info } from 'lucide-react';
+import { Copy, Check, Info, Download } from 'lucide-react';
+import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { PanelLoadingState } from './EntityPanelShared';
 import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
@@ -61,6 +62,26 @@ export function AccountSummaryTab({
     marketData,
     locale
 }: AccountSummaryTabProps) {
+    const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+
+    const localizedTt = locale === 'es' ? {
+        account_summary: {
+            ...tt.account_summary,
+            download_account_rewards: "Descargar CSV Recompensas Staking (Transacciones Account)",
+            downloading: "Descargando...",
+            generating_csv: "Generando reporte...",
+            completed: "¡Completado!"
+        }
+    } : {
+        account_summary: {
+            ...tt.account_summary,
+            download_account_rewards: "Download Staking Rewards CSV (Account Transactions)",
+            downloading: "Downloading...",
+            generating_csv: "Generating report...",
+            completed: "Completed!"
+        }
+    };
+
     const description = getMeta('description');
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
 
@@ -243,6 +264,15 @@ export function AccountSummaryTab({
                         >
                             {copiedAddress === address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         </button>
+                        {address.startsWith('account_') && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                                title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
+                            >
+                                <Download className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -353,6 +383,18 @@ export function AccountSummaryTab({
                     copiedAddress={copiedAddress}
                     burned
                     titleClassName="text-red-500/80"
+                />
+            )}
+
+            {/* Account Rewards CSV Modal */}
+            {isCsvModalOpen && (
+                <AccountRewardsCsvModal
+                    accountAddress={address}
+                    isOpen={isCsvModalOpen}
+                    onClose={() => setIsCsvModalOpen(false)}
+                    locale={locale}
+                    tt={localizedTt.account_summary}
+                    marketData={marketData}
                 />
             )}
         </div>

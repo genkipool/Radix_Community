@@ -402,7 +402,16 @@
         "nfts_tab": "NFTs",
         "summary_tab": "Summary",
         "pool_units": "Pool Units",
-        "burned_nfts": "Burned NFTs"
+        "burned_nfts": "Burned NFTs",
+        "download_account_rewards": "Download Rewards",
+        "account_rewards_modal_title": "Download Account Reward History",
+        "account_rewards_modal_desc": "Select a year to download the staking reward breakdown in CoinTracking CSV format. This process may take several minutes as it queries the Radix Ledger for daily stake snapshots.",
+        "account_rewards_modal_download": "Download CSV",
+        "account_rewards_modal_no_data": "No reward data available. The account may not have any active stakes.",
+        "account_rewards_modal_error": "Error",
+        "account_rewards_modal_loading": "Loading...",
+        "account_rewards_modal_generating": "Generating CSV...",
+        "account_rewards_modal_generating_desc": "Querying the Radix Ledger API for daily stake snapshots. This can take 2–5 minutes depending on the number of validators and days."
       }
     },
     "explorer": {

@@ -3,7 +3,8 @@
 import { SafeImage } from '@/components/ui/SafeImage';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Copy, Info, Shield } from 'lucide-react';
+import { Check, Copy, Info, Shield, Download } from 'lucide-react';
+import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { sanitizeText } from '@/utils/sanitize';
 import {
     useEntityData,
@@ -69,6 +70,7 @@ export function AddressDisplay({
     locale?: string;
     hideLabel?: boolean;
 }) {
+    const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(address)) : null;
     const wellKnownTip = wellKnownKey
@@ -85,6 +87,7 @@ export function AddressDisplay({
         ? (tt.consensus_manager_label || 'Consensus Manager (Protocol Action)')
         : address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address;
     const copyableAddr = String(isCM ? (tt.consensus_manager_address || address) : address);
+    const isAccountAddr = address.startsWith('account_');
 
     return (
         <div className="flex flex-col gap-0.5">
@@ -122,10 +125,28 @@ export function AddressDisplay({
                                 ? <Check className="w-3 h-3 text-green-500" />
                                 : <Copy className="w-3 h-3" />}
                         </button>
+                        {isAccountAddr && (
+                            <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
+                                title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
+                            >
+                                <Download className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
             {isCM && showConsensusInfo && <ConsensusManagerInfoCard tt={tt} />}
+            {isAccountAddr && (
+                <AccountRewardsCsvModal
+                    isOpen={isCsvModalOpen}
+                    onClose={() => setIsCsvModalOpen(false)}
+                    accountAddress={sanitizeText(address)}
+                    tt={tt.account_summary}
+                />
+            )}
         </div>
     );
 }
