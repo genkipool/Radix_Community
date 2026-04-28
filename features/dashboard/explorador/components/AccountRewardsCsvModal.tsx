@@ -46,7 +46,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: string } | null>(null);
+    const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: 'USD' | 'EUR' | string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const mounted = useMounted();
 
@@ -261,7 +261,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                         </div>
                                         {summary.fiatValue > 0 && (
                                             <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                                                ≈ {formatCurrency(summary.fiatValue, summary.currency as any, locale || 'en')}
+                                                ≈ {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
                                             </div>
                                         )}
                                     </div>
@@ -271,12 +271,12 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                         className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
                                         dangerouslySetInnerHTML={{ 
                                             __html: (tt?.account_rewards_summary_dream ?? (
-                                                locale === 'es' 
+                                                (locale && locale.startsWith('es')) 
                                                     ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año." 
                                                     : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
                                             ))
-                                            .replace('{currency}', summary.currency === 'EUR' ? (locale === 'es' ? 'Euro' : 'Euro') : (locale === 'es' ? 'Dólar' : 'Dollar'))
-                                            .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as any, locale || 'en'))
+                                            .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                            .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
                                         }} 
                                     />
                                 </div>

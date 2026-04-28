@@ -25,7 +25,7 @@ import type { StakeHistoryEntry } from '@/types/radix';
 export const ValidatorExpandedBody = ({
     validator, t, onCopy, copiedAddress,
     network = 'mainnet', columns, hideCta = false,
-    isModal = false,
+    isModal = false, marketData,
 }: ValidatorExpandedBodyProps) => {
     const { language } = useLanguage();
     const { setShowUnderConstruction } = useLayout();
@@ -83,7 +83,14 @@ export const ValidatorExpandedBody = ({
     const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
     const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
     const { data: epochRewards = {} } = useEpochRewards(validator.address, network);
-    const historyProps = { live, dt, epochRewards, validatorAddress: validator.address };
+    const historyProps = { 
+        live, 
+        dt, 
+        epochRewards, 
+        validatorAddress: validator.address,
+        marketData,
+        locale: language
+    };
 
     /* ── Layouts ─────────────────────────────── */
     const grid1 = (

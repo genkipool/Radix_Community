@@ -11,6 +11,7 @@ import { Label, DR, AR } from './ValidatorExpandedPrimitives';
 import { StakeEvolutionChart, StakeHistoryChart } from './ValidatorStakeCharts';
 import { useLiveProposals } from './LiveProposals';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
+import { type MarketData } from '@/features/dashboard/types/core.types';
 import { RewardsCsvModal } from './RewardsCsvModal';
 
 type LiveProposalsResult = ReturnType<typeof useLiveProposals>;
@@ -193,8 +194,8 @@ export const PerformanceBlock = ({
                 <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.totalUptime, false, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-total-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
         </div>
@@ -266,14 +267,24 @@ export const ActivityBlock = ({
 /* ─────────────────────────────────────────
    HistoryBlock
 ───────────────────────────────────────── */
-export const HistoryBlock = ({
-    live, dt, className = '', epochRewards = {}, validatorAddress = '',
-}: {
+interface HistoryBlockProps {
     live: LiveProposalsResult;
     dt?: DashboardDict;
     className?: string;
     epochRewards?: Record<number, { fee: number; pool: number }>;
     validatorAddress?: string;
+    marketData?: MarketData | null;
+    locale?: string;
+}
+
+export const HistoryBlock: React.FC<HistoryBlockProps> = ({
+    live,
+    dt,
+    className = '',
+    epochRewards = {},
+    validatorAddress = '',
+    marketData,
+    locale
 }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
 
@@ -283,7 +294,6 @@ export const HistoryBlock = ({
                 <div className="veb-epochs-header">
                     <div className="flex items-center gap-2">
                         <Label>{dt?.details?.epoch_history ?? 'Epoch History'}</Label>
-                        {/* Download CSV button */}
                         <button
                             onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
                             className="p-1 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
@@ -313,7 +323,6 @@ export const HistoryBlock = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {/* 1. The Unified 5-Row History (Managed by client to avoid gaps) */}
                         {live.unifiedRows.map((ep) => (
                             <tr key={ep.epoch} className={`veb-tr ${ep.isLive ? 'veb-tr-live' : ''}`}>
                                 <td className="veb-td">
@@ -349,6 +358,8 @@ export const HistoryBlock = ({
                     onClose={() => setModalOpen(false)}
                     validatorAddress={validatorAddress}
                     dt={dt}
+                    marketData={marketData}
+                    locale={locale}
                 />
             )}
         </div>

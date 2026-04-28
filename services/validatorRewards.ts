@@ -362,7 +362,7 @@ export async function getAvailableYears(
 export async function generateRewardsCsv(
     validatorAddress: string,
     year: string,
-): Promise<string | null> {
+): Promise<{ csv: string; totalXrd: number } | null> {
     const redis = getRewardsRedisClient();
     if (!redis) return null;
 
@@ -385,7 +385,12 @@ export async function generateRewardsCsv(
             return `"Staking","${xrd.toFixed(8)}","XRD","","","","","Radix Network","Staking","Daily reward - ${shortAddr}","${formattedDate}"`;
         });
 
-        return [header, ...rows].join('\n');
+        const totalXrd = entries.reduce((acc, [_, xrd]) => acc + xrd, 0);
+
+        return {
+            csv: [header, ...rows].join('\n'),
+            totalXrd
+        };
     } catch (e) {
         logger.error({ err: e }, '[ValidatorRewards] Failed to generate CSV');
         return null;

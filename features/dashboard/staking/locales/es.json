@@ -142,7 +142,18 @@
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Cerrar",
       "rewards_modal_loading": "Cargando..."
-    }
+    },
+    "validator_rewards_modal_title": "Descargar Historial de Recompensas",
+    "validator_rewards_modal_desc": "Selecciona un año para descargar el desglose de recompensas que este validador ha generado durante ese periodo en formato CSV de CoinTracking.",
+    "validator_rewards_modal_download": "Descargar CSV",
+    "validator_rewards_modal_no_data": "No hay datos de recompensas disponibles para este año.",
+    "validator_rewards_modal_error": "Error",
+    "validator_rewards_modal_loading": "Cargando...",
+    "validator_rewards_modal_generating": "Generando CSV...",
+    "validator_rewards_modal_generating_desc": "Consultando base de datos de recompensas. Este proceso puede tardar unos segundos.",
+    "validator_rewards_summary_title": "¡Descarga completada!",
+    "validator_rewards_summary_total": "Total generado",
+    "validator_rewards_summary_dream": "Si Radix valiera 1 {currency}, este validador habría generado <b>{value}</b> en recompensas este año."
   },
   "stakes": {
     "history_title": "Actividad de Stake (30 días)",

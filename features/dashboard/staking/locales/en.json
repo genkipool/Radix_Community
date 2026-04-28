@@ -142,7 +142,18 @@
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Close",
       "rewards_modal_loading": "Loading..."
-    }
+    },
+    "validator_rewards_modal_title": "Download Rewards History",
+    "validator_rewards_modal_desc": "Select a year to download the rewards breakdown that this validator has generated during that period in CoinTracking CSV format.",
+    "validator_rewards_modal_download": "Download CSV",
+    "validator_rewards_modal_no_data": "No rewards data available for this year.",
+    "validator_rewards_modal_error": "Error",
+    "validator_rewards_modal_loading": "Loading...",
+    "validator_rewards_modal_generating": "Generating CSV...",
+    "validator_rewards_modal_generating_desc": "Querying rewards database. This process may take a few seconds.",
+    "validator_rewards_summary_title": "Download Complete!",
+    "validator_rewards_summary_total": "Total generated",
+    "validator_rewards_summary_dream": "If Radix reached 1 {currency}, this validator would have generated <b>{value}</b> in rewards this year."
   },
   "stakes": {
     "history_title": "30-Day Stake Activity",

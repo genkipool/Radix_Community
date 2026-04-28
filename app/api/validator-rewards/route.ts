@@ -39,20 +39,17 @@ export async function GET(request: NextRequest) {
                     );
                 }
 
-                const csv = await generateRewardsCsv(address, year);
-                if (!csv) {
+                const data = await generateRewardsCsv(address, year);
+                if (!data) {
                     return NextResponse.json(
                         { error: 'No reward data available for this year' },
                         { status: 404 },
                     );
                 }
 
-                return new NextResponse(csv, {
-                    status: 200,
-                    headers: {
-                        'Content-Type': 'text/csv; charset=utf-8',
-                        'Content-Disposition': `attachment; filename="radix_rewards_${address.substring(0, 20)}_${year}.csv"`,
-                    },
+                return NextResponse.json({
+                    csv: data.csv,
+                    totalXrd: data.totalXrd
                 });
             }
 
