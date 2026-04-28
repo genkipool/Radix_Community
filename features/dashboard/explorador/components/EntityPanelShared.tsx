@@ -16,7 +16,7 @@ import React from 'react';
 import { Check, Copy, Activity } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
-import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip } from '../../utils/resourceUtils';
+import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip, parseProgrammaticJson } from '../../utils/resourceUtils';
 import type { ConfigEntry, MetadataItem } from '@/features/dashboard/types/shared.types';
 export type { ConfigEntry };
 export { getConfigEntries, resolutionTooltip };
@@ -177,14 +177,15 @@ export function PanelMetadataTab({
             {metadataItems.map((meta: MetadataItem, idx: number) => {
                 const tagValues = parseTags(meta);
                 const isTags = meta.key === 'tags' || (meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray';
+                
                 const val = isTags ? '' : (
                     meta.value.typed?.value ??
                     meta.value.typed?.url ??
-                    meta.value.programmatic_json?.value ??
-                    meta.value.programmatic_json?.fields?.[0]?.value ??
+                    (meta.value.programmatic_json ? String(parseProgrammaticJson(meta.value.programmatic_json)) : undefined) ??
                     String(meta.value.typed?.kind ?? '')
                 );
                 const isUrl = !isTags && typeof val === 'string' && (val.startsWith('http') || val.startsWith('ipfs'));
+
                 return (
                     <div key={idx}>
                         <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-1">
@@ -196,7 +197,7 @@ export function PanelMetadataTab({
                             </dd>
                         ) : (
                             <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words">
-                                {isUrl
+                                {isUrl && typeof val === 'string'
                                     ? <a href={val} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{val}</a>
                                     : val}
                             </dd>

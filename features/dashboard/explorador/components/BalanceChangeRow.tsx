@@ -22,12 +22,91 @@ import {
 
 import { BalanceChangeRowProps, ResourceInlinePanelProps } from '../types';
 import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
+import { UnderlyingTokensTab } from './UnderlyingTokensTab';
+
+/* ═══════ Pool Address Resolution ═══════ */
+
+/**
+ * Extracts a pool or component address from the LP token's full entity details.
+ * Checks metadata keys (pool, pool_address), details.state, and details.state.fields.
+ */
+function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): string | undefined {
+    if (!entity) return undefined;
+
+    const meta = entity.metadata?.items ?? [];
+
+    // 1. Check metadata keys: pool, pool_address
+    for (const key of ['pool', 'pool_address']) {
+        const item = meta.find((m: MetadataItem) => m.key === key);
+        if (item?.value?.typed?.value) return item.value.typed.value;
+    }
+
+    // 2. Check dapp_definitions for pool_ or component_ addresses
+    const dappDefs = meta.find((m: MetadataItem) => m.key === 'dapp_definitions');
+    if (dappDefs?.value?.typed?.values) {
+        const poolAddr = dappDefs.value.typed.values.find(
+            (v: string) => v.startsWith('pool_')
+        );
+        if (poolAddr) return poolAddr;
+        const compAddr = dappDefs.value.typed.values.find(
+            (v: string) => v.startsWith('component_')
+        );
+        if (compAddr) return compAddr;
+    }
+
+    // 3. Single dapp_definition
+    const dappDef = meta.find((m: MetadataItem) => m.key === 'dapp_definition');
+    if (dappDef?.value?.typed?.value) return dappDef.value.typed.value;
+
+    // 4. Check details.state for pool references (component entities)
+    const state = entity.details?.state as Record<string, unknown> | undefined;
+    if (state) {
+        // Direct liquidity_pool or pool key
+        for (const key of ['liquidity_pool', 'pool', 'pool_address']) {
+            const val = state[key];
+            if (typeof val === 'string' && (val.startsWith('pool_') || val.startsWith('component_'))) {
+                return val;
+            }
+        }
+
+        // Check state.fields array (Scrypto component state)
+        const fields = state.fields as Array<Record<string, unknown>> | undefined;
+        if (Array.isArray(fields)) {
+            for (const field of fields) {
+                const fVal = field.value as string | undefined;
+                if (typeof fVal === 'string' && (fVal.startsWith('pool_') || fVal.startsWith('component_'))) {
+                    return fVal;
+                }
+                // Nested fields
+                const nestedFields = field.fields as Array<Record<string, unknown>> | undefined;
+                if (Array.isArray(nestedFields)) {
+                    for (const nf of nestedFields) {
+                        const nfVal = nf.value as string | undefined;
+                        if (typeof nfVal === 'string' && (nfVal.startsWith('pool_') || nfVal.startsWith('component_'))) {
+                            return nfVal;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Extract from info_url
+    const infoUrl = meta.find((m: MetadataItem) => m.key === 'info_url');
+    const urlStr = infoUrl?.value?.typed?.value ?? infoUrl?.value?.typed?.url ?? '';
+    const poolMatch = urlStr.match(/(pool_[a-z0-9]+)/i);
+    if (poolMatch) return poolMatch[1];
+    const compMatch = urlStr.match(/(component_[a-z0-9]+)/i);
+    if (compMatch) return compMatch[1];
+
+    return undefined;
+}
 
 /* ═══════ Resource Inline Panel ═══════ */
-const RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
-type ResourceTab = typeof RESOURCE_TABS[number];
+const BASE_RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
+type ResourceTab = 'summary' | 'contributed_tokens' | 'metadata' | 'configuration' | 'raw';
 
-export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale }: ResourceInlinePanelProps) {
+export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale, isPoolUnit, userBalance, poolAddress }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
 
     const metadataItems = details?.metadata?.items || [];
@@ -46,9 +125,21 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
     const configEntries = getConfigEntries(ra, tt);
     const fmt = (v: string | number) => parseFloat(String(v)).toLocaleString(locale);
 
+    const accT = tt?.account_summary;
+
+    // Resolve pool address: prefer prop, fallback to extraction from entity details
+    const resolvedPoolAddress = poolAddress || resolvePoolAddressFromEntity(details);
+
+    // Build tabs dynamically: insert 'contributed_tokens' after 'summary' for pool units
+    const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress
+        ? ['summary', 'contributed_tokens', 'metadata', 'configuration', 'raw']
+        : [...BASE_RESOURCE_TABS];
+
     const tabs = RESOURCE_TABS.map(key => ({
         key,
-        label: tt[`resource_panel_${key}`] || key.charAt(0).toUpperCase() + key.slice(1),
+        label: key === 'contributed_tokens'
+            ? (accT?.contributed_tokens || 'Contributed Tokens')
+            : (tt[`resource_panel_${key}`] || key.charAt(0).toUpperCase() + key.slice(1)),
     }));
 
     return (
@@ -114,6 +205,20 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                             </div>
                         )}
                         {activeTab === 'metadata' && <PanelMetadataTab metadataItems={metadataItems} tt={tt} />}
+                        {activeTab === 'contributed_tokens' && isPoolUnit && resolvedPoolAddress && totalSupply && (
+                            <UnderlyingTokensTab
+                                poolAddress={resolvedPoolAddress}
+                                lpResourceAddress={address}
+                                lpName={name}
+                                userBalance={userBalance ?? 0}
+                                lpTotalSupply={parseFloat(String(totalSupply)) || 0}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                network={address?.startsWith('tdx') ? 'stokenet' : 'mainnet'}
+                                locale={locale}
+                            />
+                        )}
                         {activeTab === 'configuration' && <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
                         {activeTab === 'raw' && <PanelRawTab data={details} />}
                     </>

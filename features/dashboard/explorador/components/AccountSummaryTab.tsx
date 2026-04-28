@@ -13,6 +13,7 @@ import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
+import { parseProgrammaticJson } from '@/features/dashboard/utils/resourceUtils';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -42,13 +43,27 @@ interface ParsedResource {
     isNft: boolean;
 }
 
-// Function to safely extract explicit metadata
 function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
     const meta = items?.find((m) => m.key === key);
     if (meta?.value?.typed?.value) {
         return meta.value.typed.value;
     }
     return '';
+}
+
+// Function to safely extract tags
+function extractTags(items: MetadataItem[] | undefined): string[] {
+    const meta = items?.find((m) => m.key === 'tags');
+    if (meta?.value?.typed?.values) {
+        return meta.value.typed.values;
+    }
+    if (meta?.value?.programmatic_json) {
+        const parsed = parseProgrammaticJson(meta.value.programmatic_json);
+        if (Array.isArray(parsed)) {
+            return parsed.map(String);
+        }
+    }
+    return [];
 }
 
 export function AccountSummaryTab({
@@ -103,8 +118,8 @@ export function AccountSummaryTab({
             symbol: extractMetadata(meta, 'symbol') || '',
             iconUrl: extractMetadata(meta, 'icon_url') || '',
             amount: ft.amount || '0',
-            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit'),
-            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu,
+            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit') || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
+            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
             validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
             isClaim: false,
             isNft: false
@@ -431,11 +446,10 @@ export function AccountSummaryTab({
             {/* Assets */}
             <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
             <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
-            <AssetSection title={`Pool Units (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {burnedNfts.length > 0 && (
                 <AssetSection
-                    title={`NFTs Quemados (${burnedNfts.length})`}
+                    title={`${tt.account_summary?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
                     items={burnedNfts}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}
@@ -444,6 +458,8 @@ export function AccountSummaryTab({
                     locale={locale}
                 />
             )}
+
+            <AssetSection title={`${tt.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {/* Account Rewards CSV Modal */}
             {isCsvModalOpen && (

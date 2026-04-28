@@ -51,6 +51,8 @@ const RESOURCE_METADATA_KEYS = [
   'claim_epoch_delay',
   'dapp_definition',
   'dapp_definitions',
+  'pool',
+  'pool_address',
 ];
 
 export async function fetchEntityDetails(

@@ -267,6 +267,12 @@ export interface ResourceInlinePanelProps {
     copiedAddress: string | null;
     tt: TranslationsT['dashboard']['transactions'];
     locale: string;
+    /** Whether this resource is a pool unit (LP token) */
+    isPoolUnit?: boolean;
+    /** User's balance of this LP token */
+    userBalance?: number;
+    /** Address of the pool component associated with this LP token */
+    poolAddress?: string;
 }
 
 export interface NftTransferCardProps {

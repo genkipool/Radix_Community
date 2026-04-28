@@ -12,7 +12,7 @@ const VALID_NETWORKS = new Set(['mainnet', 'stokenet']);
 const ADDRESS_PREFIXES = [
     'account_', 'component_', 'resource_', 'validator_',
     'package_', 'identity_', 'consensusmanager',
-    'txid_', 'transactionintent_',
+    'txid_', 'transactionintent_', 'pool_', 'internal_', 'vault_', 'global_',
 ];
 
 const HRP_MAP = {

@@ -36,7 +36,7 @@ import {
     AccountRewardsCsvModal
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
-import { AccountTokensTab, AccountNftsTab } from './AccountAssetsTabs';
+import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import type {
     MetadataItem,
     MarketData,
@@ -48,7 +48,7 @@ import { formatNumber } from '@/utils/formatters';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-type EntityTab = 'summary' | 'tokens' | 'nfts' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -66,15 +66,19 @@ interface ExpandableEntityBadgeProps {
 /** Determines which tabs to show based on entity prefix */
 function getTabsForEntity(
     prefix: string,
-    tt: TranslationsT['dashboard']['transactions'],
+    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict },
 ): { key: EntityTab; label: string }[] {
+    const isAccountAddr = prefix.startsWith('account_');
+    const accT = tt?.account_summary;
+
     const base: { key: EntityTab; label: string }[] = [
         { key: 'summary', label: tt?.resource_panel_summary || 'Summary' },
     ];
 
-    if (prefix.startsWith('account_')) {
-        base.push({ key: 'tokens', label: tt?.account_summary?.tokens_tab || 'Tokens' });
-        base.push({ key: 'nfts', label: tt?.account_summary?.nfts_tab || 'NFTs' });
+    if (isAccountAddr) {
+        base.push({ key: 'tokens', label: accT?.tokens_tab || 'Tokens' });
+        base.push({ key: 'nfts', label: accT?.nfts_tab || 'NFTs' });
+        base.push({ key: 'pool_units', label: accT?.pool_units || 'Pool Units' });
     }
 
     base.push({ key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' });
@@ -290,26 +294,38 @@ export function ExpandableEntityBadge({
                                         )}
 
                                         {/* ── TOKENS ── */}
-                                        {activeTab === 'tokens' && address.startsWith('account_') && (
+                                        {activeTab === 'tokens' && (
                                             <AccountTokensTab
                                                 entityData={entityData ?? null}
                                                 tt={tt}
-                                                onCopy={onCopy}
-                                                copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
                                             />
                                         )}
 
                                         {/* ── NFTS ── */}
-                                        {activeTab === 'nfts' && address.startsWith('account_') && (
+                                        {activeTab === 'nfts' && (
                                             <AccountNftsTab
                                                 entityData={entityData ?? null}
                                                 tt={tt}
-                                                onCopy={onCopy}
-                                                copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {/* ── POOL UNITS ── */}
+                                        {activeTab === 'pool_units' && (
+                                            <AccountPoolUnitsTab
+                                                entityData={entityData ?? null}
+                                                tt={tt}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
                                             />
                                         )}
 

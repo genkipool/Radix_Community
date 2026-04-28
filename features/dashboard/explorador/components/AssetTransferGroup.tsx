@@ -80,15 +80,7 @@ export function AssetTransferGroup({
     // This happens for a group (usually XRD) that only contains fees for addresses already shown in other cards.
     if (originActors.length === 0 && destActors.length === 0) return null;
 
-    // Determine the actual senders of this resource to classify the source correctly (e.g. for "Received via" badge)
-    const resourceSenders = group.filter(c => {
-        if (parseFloat(c.balance_change || '0') < 0 && !c.is_fee) return true;
-        const nftRemoved = (balanceChanges.non_fungible_balance_changes ?? []).some(nft => nft.entity_address === c.entity_address && (nft.removed?.length ?? 0) > 0);
-        return nftRemoved;
-    });
-
-    const { method: sourceMethod, title: sourceTitle, color: sourceColor, bg: sourceBg } =
-        classifySource(resourceSenders, tt, { isStakingTx: isClaim || isUnstake || isStake });
+    const isStakingInferred = isClaim || isUnstake || isStake;
 
     const isFungibleBurned = (resAddress: string) => {
         return !(balanceChanges.fungible_balance_changes ?? []).some(
@@ -135,9 +127,20 @@ export function AssetTransferGroup({
                                             <div className="min-w-0 flex-1 pl-2">
                                                 <AddressDisplay label={tt.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
                                             </div>
-                                            {change.entity_address.startsWith('account_') && (parseFloat(change.balance_change || '0') > 0 || (balanceChanges.non_fungible_balance_changes ?? []).some((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0)) && (
-                                                <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
-                                            )}
+                                            {(() => {
+                                                if (!change.entity_address.startsWith('account_')) return null;
+                                                const hasPositiveFungible = parseFloat(change.balance_change || '0') > 0;
+                                                const hasPositiveNft = (balanceChanges.non_fungible_balance_changes ?? []).some((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
+                                                if (!hasPositiveFungible && !hasPositiveNft) return null;
+
+                                                const resourceSenders = group.filter(c =>
+                                                    c.resource_address === change.resource_address &&
+                                                    parseFloat(c.balance_change || '0') < 0 &&
+                                                    !c.is_fee
+                                                );
+                                                const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
+                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />;
+                                            })()}
                                         </div>
                                         <div className="space-y-1">
                                             <BalanceChangeRow
@@ -156,9 +159,12 @@ export function AssetTransferGroup({
                                             />
 
                                             {matchingFee && !change.is_fee && (
-                                                <div className="pl-4 border-l-2 border-[var(--color-card-border)] opacity-80 scale-95 origin-left">
-                                                    <BalanceChangeRow change={{ ...matchingFee, resource_address: matchingFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
-                                                </div>
+                                                /* Only show fee under the first resource (XRD) for staking txs to avoid redundancy */
+                                                !(isStake && change.resource_address !== getXrdAddress(network)) && (
+                                                    <div className="pl-4 border-l-2 border-[var(--color-card-border)] opacity-80 scale-95 origin-left">
+                                                        <BalanceChangeRow change={{ ...matchingFee, resource_address: matchingFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
+                                                    </div>
+                                                )
                                             )}
                                             {nftWithdrawals.map((nft, ni: number) => {
                                                 const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
@@ -232,9 +238,20 @@ export function AssetTransferGroup({
                                             <div className="min-w-0 flex-1 pl-2">
                                                 <AddressDisplay label={tt.to_address || 'To'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                             </div>
-                                            {change.entity_address.startsWith('account_') && (parseFloat(change.balance_change || '0') > 0 || nftDeposits.length > 0) && (
-                                                <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
-                                            )}
+                                            {(() => {
+                                                if (!change.entity_address.startsWith('account_')) return null;
+                                                const hasPositiveFungible = parseFloat(change.balance_change || '0') > 0;
+                                                const hasPositiveNft = nftDeposits.length > 0;
+                                                if (!hasPositiveFungible && !hasPositiveNft) return null;
+
+                                                const resourceSenders = group.filter(c =>
+                                                    c.resource_address === change.resource_address &&
+                                                    parseFloat(c.balance_change || '0') < 0 &&
+                                                    !c.is_fee
+                                                );
+                                                const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
+                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />;
+                                            })()}
                                         </div>
                                         <div className="space-y-1">
                                             <BalanceChangeRow
@@ -309,17 +326,22 @@ export function AssetTransferGroup({
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
                             return (balanceChanges.non_fungible_balance_changes ?? [])
                                 .filter((nft) => (nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address))
-                                .map((nft, ni: number) => (
-                                    <div key={'nft-orphan-r-' + ni}>
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <div className="pl-2">
-                                                <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                .map((nft, ni: number) => {
+                                    const resourceSenders = group.filter(c => c.resource_address === nft.resource_address && parseFloat(c.balance_change || '0') < 0 && !c.is_fee);
+                                    const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
+
+                                    return (
+                                        <div key={'nft-orphan-r-' + ni}>
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div className="pl-2">
+                                                    <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                                </div>
+                                                <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />
                                             </div>
-                                            <SourceBadge method={sourceMethod} color={sourceColor} bg={sourceBg} title={sourceTitle} label={tt.method_label || 'Recibido vía:'} />
+                                            <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} /></div>
                                         </div>
-                                        <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} /></div>
-                                    </div>
-                                ));
+                                    );
+                                });
                         })()}
                         {/* Orphan NFT burns from non-account entities (component vaults) */}
                         {(() => {

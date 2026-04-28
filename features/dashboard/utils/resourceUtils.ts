@@ -258,3 +258,43 @@ export function extractRuleAddress(rule: unknown): string | null {
       || null;
   } catch { return null; }
 }
+
+// ─────────────────────────────────────────
+//  parseProgrammaticJson
+// ─────────────────────────────────────────
+/**
+ * Recursively parses complex programmatic_json metadata structures into standard JS values.
+ * Useful for extracting arrays (like owner_keys) or deep nested object entries from Gateway metadata.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseProgrammaticJson(json: any): any {
+    if (!json) return null;
+    if (json.value !== undefined) return json.value;
+    if (json.elements) {
+        return json.elements.map(parseProgrammaticJson);
+    }
+    if (json.fields) {
+        if (json.variant_name) {
+            const fields = json.fields.map(parseProgrammaticJson);
+            if (fields.length === 1) return `${json.variant_name}: ${fields[0]}`;
+            return { [json.variant_name]: fields };
+        }
+        return json.fields.map(parseProgrammaticJson);
+    }
+    if (json.entries) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const obj: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        json.entries.forEach((e: any) => {
+            const key = parseProgrammaticJson(e.key);
+            const val = parseProgrammaticJson(e.value);
+            obj[String(key)] = val;
+        });
+        return obj;
+    }
+    if (json.variant_name) {
+        return json.variant_name;
+    }
+    return json;
+}
+
