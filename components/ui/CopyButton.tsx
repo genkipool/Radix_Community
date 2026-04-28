@@ -8,18 +8,18 @@ import { useLanguage } from '@/context/LanguageContext';
 interface CopyButtonProps {
     value: string;
     label?: string;
-    variant?: 'ghost' | 'solid' | 'minimal';
+    variant?: 'ghost' | 'solid' | 'minimal' | 'card-inline';
     size?: 'xs' | 'sm' | 'md';
     className?: string;
     forceCopied?: boolean;
     onClick?: (e: React.MouseEvent) => void;
 }
 
-export function CopyButton({ 
-    value, 
-    label, 
-    variant = 'solid', 
-    size = 'sm', 
+export function CopyButton({
+    value,
+    label,
+    variant = 'solid',
+    size = 'sm',
     className = '',
     forceCopied,
     onClick
@@ -45,7 +45,7 @@ export function CopyButton({
     };
 
     const iconSize = size === 'xs' ? 12 : size === 'sm' ? 14 : 16;
-    
+
     const variants = {
         solid: {
             base: 'bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]',
@@ -58,11 +58,15 @@ export function CopyButton({
         minimal: {
             base: 'bg-transparent border-transparent text-[var(--color-text-muted)] opacity-60 hover:opacity-100',
             active: 'bg-transparent border-transparent text-green-500 opacity-100'
+        },
+        'card-inline': {
+            base: 'bg-transparent border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors',
+            active: 'bg-transparent border-transparent text-green-500 transition-colors'
         }
     };
 
     const currentStyle = isCopied ? variants[variant].active : variants[variant].base;
-    
+
     const padding = {
         xs: label ? 'px-2 py-0.5' : 'p-1',
         sm: label ? 'px-2.5 py-1' : 'p-1.5',
@@ -108,10 +112,10 @@ export function CopyButton({
                     </motion.div>
                 )}
             </AnimatePresence>
-            
+
             {/* Subtle glow effect on copy */}
             {isCopied && (
-                <motion.div 
+                <motion.div
                     layoutId="copy-glow"
                     className="absolute inset-0 z-[-1] rounded-lg bg-green-500/10 blur-md"
                     initial={{ opacity: 0 }}

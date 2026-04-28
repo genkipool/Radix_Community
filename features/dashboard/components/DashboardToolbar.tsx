@@ -64,7 +64,9 @@ export const DashboardToolbar = ({
             <SearchBar
                 value={searchQuery}
                 onChange={onSearchChange}
-                placeholder={dt?.search?.placeholder || 'Search...'}
+                placeholder={activeView === 'staking'
+                    ? (dt?.search?.placeholder || 'Search staking nodes by name or address...')
+                    : (dt?.search?.explorer_placeholder || 'Search by account, transaction, validator or resource address...')}
             />
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
                 {/* Left Controls: View & Network */}

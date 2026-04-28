@@ -2,13 +2,14 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-    Clock, Copy, Coins, Landmark, Users, Mail, Check
+    Clock, Coins, Landmark, Users, Mail
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { usePrefetchTransactionDetails } from '../hooks/usePrefetchTx';
 import { TransactionTabs } from './TransactionTabs';
 import { Card } from '@/components/ui/Card';
+import { CopyButton } from '@/components/ui/CopyButton';
 import type { TranslationsT, TransactionDetails } from '@/features/dashboard/types';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
@@ -238,32 +239,14 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                         onCopy(tx.intentHash);
                                     }}>
                                     <span className="truncate">{truncateHash(tx.intentHash)}</span>
-                                    <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                                        <AnimatePresence mode="wait" initial={false}>
-                                            {copiedAddress === tx.intentHash ? (
-                                                <motion.div
-                                                    key="check"
-                                                    initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
-                                                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                                                    exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
-                                                    transition={{ duration: 0.2, ease: "backOut" }}
-                                                >
-                                                    <Check className="w-3.5 h-3.5 text-green-500" />
-                                                </motion.div>
-                                            ) : (
-                                                <motion.div
-                                                    key="copy"
-                                                    initial={{ scale: 0.8, opacity: 0 }}
-                                                    animate={{ scale: 1, opacity: 1 }}
-                                                    exit={{ scale: 0.8, opacity: 0 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    className="text-[var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
+                                    <CopyButton 
+                                        value={tx.intentHash} 
+                                        variant="card-inline" 
+                                        size="sm" 
+                                        forceCopied={copiedAddress === tx.intentHash} 
+                                        onClick={() => onCopy(tx.intentHash)}
+                                        className="shrink-0 ml-1"
+                                    />
                                 </h3>
                             </div>
 

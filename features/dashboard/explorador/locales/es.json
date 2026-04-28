@@ -414,7 +414,8 @@
         "account_rewards_modal_generating_desc": "Consultando la API del Ledger de Radix para obtener instantáneas diarias del stake. Esto puede tardar de 2 a 5 minutos dependiendo del número de validadores y días.",
         "account_rewards_summary_title": "¡Descarga completada!",
         "account_rewards_summary_total": "Total ganado",
-        "account_rewards_summary_dream": "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
+        "account_rewards_summary_dream": "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año.",
+        "csv_button": "CSV"
       }
     },
     "explorer": {

@@ -135,6 +135,21 @@ export interface TransactionTabsProps {
     marketData?: MarketData | null;
 }
 
+export interface AccountCardProps {
+    address: string;
+    columns: number;
+    isExpanded: boolean;
+    onExpand?: (id: string) => void;
+    onCopy: (addr: string) => void;
+    copiedAddress: string | null;
+    t?: TranslationsT;
+    network: Network;
+    locale: string;
+    marketData?: MarketData | null;
+    readingMode?: boolean;
+    isModal?: boolean;
+}
+
 export interface ValidatorInlinePanelProps {
     validatorAddress: string;
     isStake: boolean;

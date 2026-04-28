@@ -491,6 +491,7 @@
     },
     "search": {
       "placeholder": "Search staking nodes by name or address...",
+      "explorer_placeholder": "Search by account, transaction, validator or resource address...",
       "no_results": "No staking nodes found for \"{query}\"",
       "no_validators": "No staking nodes found",
       "tags_placeholder": "Search tags...",

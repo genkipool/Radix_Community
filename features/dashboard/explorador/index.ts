@@ -7,6 +7,7 @@
 
 // ── Components ────────────────────────────────────────────────────────────────
 export { TransactionCard }          from './components/TransactionCard';
+export { AccountCard }              from './components/AccountCard';
 export { TransactionDetailModal }   from './components/TransactionDetailModal';
 export { TransactionTabs }          from './components/TransactionTabs';
 export { EntityBadge, AddressDisplay, ValidatorNameLabel } from './components/EntityBadge';
