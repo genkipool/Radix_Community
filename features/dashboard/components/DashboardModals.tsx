@@ -16,7 +16,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { ValidatorDetailView } from '../staking';
-import { TransactionDetailModal } from '../explorador';
+import { TransactionDetailModal, AccountCard } from '../explorador';
 
 import type { DashboardModalsProps } from '../types';
 
@@ -39,6 +39,7 @@ export const DashboardModals = ({
   timezone,
   locale,
   marketData,
+  expandedAccount,
 }: DashboardModalsProps) => {
 
   return (
@@ -147,6 +148,40 @@ export const DashboardModals = ({
             locale={locale}
             marketData={marketData}
           />
+        </React.Fragment>
+      )}
+    </AnimatePresence>
+
+    {/* ── Account reading-mode modal ── */}
+    <AnimatePresence initial={false}>
+      {readingMode && expandedAccount && (
+        <React.Fragment key="account-modal">
+          <ModalOverlay onClose={closeExpanded} blur="sm" />
+          <motion.div
+            key="account-modal-motion"
+            initial={{ opacity: 0, scale: 0.95, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 40 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed inset-0 z-50 flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto"
+            onClick={closeExpanded}
+          >
+            <div className="w-full max-w-[1600px] mx-auto pointer-events-auto">
+              <AccountCard
+                address={expandedAccount}
+                columns={1}
+                isExpanded={true}
+                onExpand={closeExpanded}
+                onCopy={copyAddress}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                isModal={true}
+              />
+            </div>
+          </motion.div>
         </React.Fragment>
       )}
     </AnimatePresence>

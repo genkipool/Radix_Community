@@ -81,7 +81,7 @@ export const DashboardCardGrid = ({
               <AccountCard
                 address={trimmedQuery}
                 columns={columns}
-                isExpanded={expandedPosts.has(trimmedQuery)}
+                isExpanded={expandedPosts.has(trimmedQuery) && !readingMode}
                 onExpand={onExpand}
                 onCopy={onCopy}
                 copiedAddress={copiedAddress}
@@ -89,6 +89,7 @@ export const DashboardCardGrid = ({
                 network={network}
                 locale={locale}
                 marketData={marketData}
+                readingMode={readingMode}
               />
             )}
             {loadingTxs

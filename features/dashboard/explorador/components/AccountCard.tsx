@@ -3,11 +3,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
-import { Vault, Download } from 'lucide-react';
-
-/* Utilities & Formatters */
+import { Landmark, Download } from 'lucide-react';
 import { formatXRD } from '@/utils/formatters';
-import { formatCurrency } from '@/utils/currencyUtils';
+import { getCurrencyForLocale, formatCurrency } from '@/utils/currencyUtils';
 
 /* Dashboard & Common Components */
 import { Card } from '@/components/ui/Card';
@@ -57,8 +55,8 @@ export function AccountCard({
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
 
     // Layout logic matching TransactionCard
-    const isVertical = columns >= 3;
-    const isCompact = columns >= 5;
+    // AccountCard has a fixed layout regardless of grid columns
+    const isVertical = false;
 
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
@@ -82,6 +80,17 @@ export function AccountCard({
     const { data: validatorsData } = useValidatorsQuery(network);
 
     const isCopied = copiedAddress === address;
+
+    const renderFiatValue = (amount: number) => {
+        if (!marketData || statsLoading) return null;
+        const cur = getCurrencyForLocale(locale);
+        const price = cur === 'EUR' ? marketData.priceEur : marketData.priceUsd;
+        return (
+            <span className="text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
+                ({formatCurrency(amount * price, cur, locale)})
+            </span>
+        );
+    };
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -129,7 +138,7 @@ export function AccountCard({
                         className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-default self-stretch justify-center`}>
                         <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
                         <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
-                            <Vault className={isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} style={{ color: 'var(--color-accent)' }} />
+                            <Landmark className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
                         </div>
                     </div>
 
@@ -177,80 +186,60 @@ export function AccountCard({
                             </div>
 
                             {/* Stats Rows - 5 grid items corresponding to main balance */}
-                            <div className={`grid ${isCompact ? 'grid-cols-2' : (columns >= 2 && columns <= 4) ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                         {accT?.total_xrd || 'TOTAL XRD'}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-green-500 truncate font-mono`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-green-500 font-mono">
                                             {statsLoading ? '-' : formatXRD(parseFloat(xrdAmount))}
                                         </span>
-                                        {marketData && !isCompact && (
-                                            <span className="text-[9px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                                                ≈ {formatCurrency(parseFloat(xrdAmount) * marketData.priceUsd, 'USD', locale)} / {formatCurrency(parseFloat(xrdAmount) * marketData.priceEur, 'EUR', locale)}
-                                            </span>
-                                        )}
+                                        {renderFiatValue(parseFloat(xrdAmount))}
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                         {accT?.total_lsu || 'TOTAL LSU'}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-blue-500 truncate font-mono`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-blue-500 font-mono">
                                             {statsLoading ? '-' : formatXRD(totalLsuAmount)}
                                         </span>
-                                        {marketData && !isCompact && (
-                                            <span className="text-[9px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                                                ≈ {formatCurrency(totalLsuXrdEquivalent * marketData.priceUsd, 'USD', locale)} / {formatCurrency(totalLsuXrdEquivalent * marketData.priceEur, 'EUR', locale)}
-                                            </span>
-                                        )}
+                                        {renderFiatValue(totalLsuXrdEquivalent)}
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                         {accT?.stake_xrd || 'STAKE XRD'}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate font-mono`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
                                             {statsLoading ? '-' : formatXRD(stakedTotal)}
                                         </span>
-                                        {marketData && !isCompact && (
-                                            <span className="text-[9px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                                                ≈ {formatCurrency(stakedTotal * marketData.priceUsd, 'USD', locale)} / {formatCurrency(stakedTotal * marketData.priceEur, 'EUR', locale)}
-                                            </span>
-                                        )}
+                                        {renderFiatValue(stakedTotal)}
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                         {accT?.unstake_xrd || 'UNSTAKE XRD'}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-orange-500 truncate font-mono`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-orange-500 font-mono">
                                             {statsLoading ? '-' : formatXRD(unstakeTotal)}
                                         </span>
-                                        {marketData && !isCompact && (
-                                            <span className="text-[9px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                                                ≈ {formatCurrency(unstakeTotal * marketData.priceUsd, 'USD', locale)} / {formatCurrency(unstakeTotal * marketData.priceEur, 'EUR', locale)}
-                                            </span>
-                                        )}
+                                        {renderFiatValue(unstakeTotal)}
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                         {accT?.claim_xrd || 'CLAIM XRD'}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-green-500 truncate font-mono`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-green-500 font-mono">
                                             {statsLoading ? '-' : formatXRD(claimTotal)}
                                         </span>
-                                        {marketData && !isCompact && (
-                                            <span className="text-[9px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                                                ≈ {formatCurrency(claimTotal * marketData.priceUsd, 'USD', locale)} / {formatCurrency(claimTotal * marketData.priceEur, 'EUR', locale)}
-                                            </span>
-                                        )}
+                                        {renderFiatValue(claimTotal)}
                                     </div>
                                 </div>
                             </div>

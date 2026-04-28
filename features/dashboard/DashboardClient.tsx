@@ -258,6 +258,8 @@ export default function DashboardClient({
     : null;
   const expandedPost = expandedPostId ? realValidators.find(v => v.id === expandedPostId) ?? null : null;
   const expandedTx = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
+  const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
+  const expandedAccount = (isAccountSearch && expandedPostId === deferredSearch.trim()) ? expandedPostId : null;
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -477,6 +479,7 @@ export default function DashboardClient({
         timezone={timezone}
         locale={language}
         marketData={initialMarketData}
+        expandedAccount={expandedAccount}
       />
     </div>
   );

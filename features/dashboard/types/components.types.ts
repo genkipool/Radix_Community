@@ -105,6 +105,7 @@ export interface DashboardModalsProps {
     timezone: string;
     locale: string;
     marketData?: MarketData | null;
+    expandedAccount?: string | null;
 }
 
 export interface DetailRowProps {
