@@ -13,6 +13,7 @@ import { useLiveProposals } from './LiveProposals';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 import { type MarketData } from '@/features/dashboard/types/core.types';
 import { RewardsCsvModal } from './RewardsCsvModal';
+import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 
 type LiveProposalsResult = ReturnType<typeof useLiveProposals>;
 
@@ -287,6 +288,7 @@ export const HistoryBlock: React.FC<HistoryBlockProps> = ({
     locale
 }) => {
     const [modalOpen, setModalOpen] = React.useState(false);
+    const { prefetchValidatorRewards } = usePrefetchRewards();
 
     return (
         <div className={`veb-block veb-epochs-panel veb-history ${className}`}>
@@ -296,6 +298,7 @@ export const HistoryBlock: React.FC<HistoryBlockProps> = ({
                         <Label>{dt?.details?.epoch_history ?? 'Epoch History'}</Label>
                         <button
                             onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+                            onPointerEnter={() => prefetchValidatorRewards(validatorAddress)}
                             className="p-1 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
                             title={dt?.details?.download_rewards ?? 'Download Rewards'}
                         >

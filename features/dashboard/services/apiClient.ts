@@ -76,3 +76,21 @@ export async function apiFetchValidators(
     if (!res.ok) throw new Error(`Validators API error: ${res.status}`);
     return res.json();
 }
+
+/**
+ * Fetches the available years for validator rewards.
+ */
+export async function apiFetchValidatorRewardsYears(address: string): Promise<{ years: number[] }> {
+    const res = await fetch(`/api/validator-rewards?address=${address}&action=years`);
+    if (!res.ok) throw new Error(`Validator rewards years API error: ${res.status}`);
+    return res.json();
+}
+
+/**
+ * Fetches the available years for account rewards.
+ */
+export async function apiFetchAccountRewardsYears(address: string): Promise<{ years: number[] }> {
+    const res = await fetch(`/api/account-rewards?address=${address}&action=years`);
+    if (!res.ok) throw new Error(`Account rewards years API error: ${res.status}`);
+    return res.json();
+}

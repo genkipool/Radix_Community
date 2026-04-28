@@ -31,6 +31,41 @@ export interface LayoutProps {
 }
 
 /**
+ * RewardsCsvModalDict
+ * Translations specifically for the RewardsCsvModal
+ */
+export interface RewardsCsvModalDict {
+    validator_rewards_modal_title?: string;
+    validator_rewards_modal_desc?: string;
+    validator_rewards_modal_download?: string;
+    validator_rewards_modal_no_data?: string;
+    validator_rewards_modal_error?: string;
+    validator_rewards_modal_loading?: string;
+    validator_rewards_modal_generating?: string;
+    validator_rewards_modal_generating_desc?: string;
+    validator_rewards_modal_download_btn?: string;
+    validator_rewards_modal_generating_btn?: string;
+    validator_rewards_modal_no_data_btn?: string;
+    validator_rewards_summary_title?: string;
+    validator_rewards_summary_total?: string;
+    validator_rewards_summary_dream?: string;
+}
+
+/**
+ * RewardsCsvModalProps
+ * Props for the rewards CSV downloader modal
+ */
+export interface RewardsCsvModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    validatorAddress: string;
+    /** Translations from the dashboard locale */
+    dt?: RewardsCsvModalDict;
+    locale?: string;
+    marketData?: MarketData | null;
+}
+
+/**
  * ValidatorCardProps
  * Props for the main ValidatorCard component
  */

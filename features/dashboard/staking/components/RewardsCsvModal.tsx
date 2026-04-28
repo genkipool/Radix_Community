@@ -1,101 +1,65 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useMounted } from '@/hooks/useMounted';
-import { X, Download, AlertCircle, Loader2, Clock, CheckCircle2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import type { MarketData, DashboardDict } from '@/features/dashboard/types';
+import { X, Loader2, Download, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useMounted } from '@/hooks/useMounted';
+import { apiFetchValidatorRewardsYears } from '@/features/dashboard/services/apiClient';
 import { formatXRD } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
-
-interface RewardsCsvModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    validatorAddress: string;
-    /** Market data for fiat conversion */
-    marketData?: MarketData | null;
-    /** Current locale for formatting */
-    locale?: string;
-    /** Translations */
-    dt?: DashboardDict;
-}
+import type { RewardsCsvModalProps } from '../types/components.types';
 
 export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     isOpen,
     onClose,
     validatorAddress,
-    marketData,
+    dt,
     locale,
-    dt
+    marketData,
 }) => {
-    const [years, setYears] = useState<number[]>([]);
     const [selectedYear, setSelectedYear] = useState<number | null>(null);
-    const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: 'USD' | 'EUR' | string } | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: string } | null>(null);
+    const [localError, setLocalError] = useState<string | null>(null);
     const mounted = useMounted();
+
+    const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
+        queryKey: ['validator-rewards-years', validatorAddress],
+        queryFn: () => apiFetchValidatorRewardsYears(validatorAddress),
+        enabled: isOpen,
+        staleTime: 5 * 60_000,
+    });
+
+    const years = yearsData?.years ?? [];
+    const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
+
+    const activeYear = selectedYear || (years.length > 0 ? years[0] : null);
 
     // Handle progress simulation
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (downloading && progress < 90) {
-            timer = setInterval(() => {
-                setProgress(prev => Math.min(prev + (Math.random() * 5), 90));
-            }, 500);
+        let interval: NodeJS.Timeout;
+        if (downloading) {
+            interval = setInterval(() => {
+                setProgress((prev) => (prev < 90 ? prev + Math.random() * 15 : prev));
+            }, 400);
         }
-        return () => clearInterval(timer);
-    }, [downloading, progress]);
+        return () => clearInterval(interval);
+    }, [downloading]);
 
-    // Fetch available years when modal opens
-    useEffect(() => {
-        if (!isOpen) return;
-
-        let cancelled = false;
-
-        const loadInitialData = async () => {
-            setError(null);
-            setSummary(null);
-            setLoading(true);
-            try {
-                const res = await fetch(`/api/validator-rewards?address=${validatorAddress}&action=years`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                
-                if (!cancelled) {
-                    setYears(data.years ?? []);
-                    if (data.years?.length > 0) {
-                        setSelectedYear(data.years[0]);
-                    }
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    setError(err instanceof Error ? err.message : String(err));
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
-        loadInitialData();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isOpen, validatorAddress]);
 
     const handleDownload = async () => {
-        if (!selectedYear) return;
+        if (!activeYear) return;
 
         setDownloading(true);
         setProgress(0);
-        setError(null);
+        setLocalError(null);
         setSummary(null);
 
         try {
             const res = await fetch(
-                `/api/validator-rewards?address=${validatorAddress}&action=csv&year=${selectedYear}`,
+                `/api/validator-rewards?address=${validatorAddress}&action=csv&year=${activeYear}`,
             );
 
             if (!res.ok) {
@@ -108,62 +72,55 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                 throw new Error('CSV is empty');
             }
 
-            setProgress(100);
-
-            // Calculate values
+            // Get currency for locale
             const currency = getCurrencyForLocale(locale || 'en');
-            const priceXRD = currency === 'EUR' ? (marketData?.priceEur || 0) : (marketData?.priceUsd || 0);
-            const fiatValue = (data.totalXrd || 0) * priceXRD;
-            const dreamValue = (data.totalXrd || 0) * 1; // 1 EUR or 1 USD
+            const price = currency === 'EUR' ? (marketData?.priceEur || 0) : (marketData?.priceUsd || 0);
+
+            const totalXrd = data.totalXrd || 0;
 
             setSummary({
-                totalXrd: data.totalXrd || 0,
-                fiatValue,
-                dreamValue,
+                totalXrd: totalXrd,
+                fiatValue: totalXrd * price,
+                dreamValue: totalXrd * 1.0, // If Radix reached 1 unit of currency
                 currency
             });
 
             const blob = new Blob([data.csv], { type: 'text/csv; charset=utf-8' });
+
+            setProgress(100);
+            
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `validator_rewards_${validatorAddress.substring(0, 15)}_${selectedYear}.csv`;
+            a.download = `validator_rewards_${validatorAddress.substring(0, 15)}_${activeYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            // Keep success message for a bit then allow retry/close
+            setTimeout(() => {
+                setDownloading(false);
+            }, 500);
+
         } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
-        } finally {
+            setLocalError(err instanceof Error ? err.message : 'An error occurred');
             setDownloading(false);
-            setProgress(0);
         }
     };
-
-    // Close on Escape
-    useEffect(() => {
-        if (!isOpen) return;
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !downloading) onClose();
-        };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, [isOpen, onClose, downloading]);
 
     if (!isOpen || !mounted) return null;
 
     const modalContent = (
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={(e) => {
-                if (e.target === e.currentTarget && !downloading) onClose();
-            }}
+        <div 
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={onClose}
         >
-            <div
-                className="relative w-full max-w-md mx-4 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden"
+            <div 
+                className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/50"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
+                {/* Header-like part of the modal */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-card-border)]">
                     <h3 className="text-sm font-black uppercase tracking-widest text-[var(--color-text-main)]">
                         {dt?.validator_rewards_modal_title ?? 'Download Validator History'}
@@ -177,14 +134,13 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="px-6 py-5 space-y-4">
                     <p className="text-xs text-[var(--color-text-muted)]">
                         {dt?.validator_rewards_modal_desc ??
                             'Select a year to download the complete validator staking rewards in CSV format.'}
                     </p>
 
-                    {loading ? (
+                    {yearsLoading ? (
                         <div className="flex items-center justify-center py-6">
                             <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
                             <span className="ml-2 text-xs text-[var(--color-text-muted)]">
@@ -228,11 +184,9 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                         <div className="text-sm font-black text-[var(--color-text-main)]">
                                             {formatXRD(summary.totalXrd, locale)} XRD
                                         </div>
-                                        {summary.fiatValue > 0 && (
-                                            <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                                                ≈ {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
-                                            </div>
-                                        )}
+                                        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                                            ≈ {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5 text-center">
@@ -264,7 +218,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
                                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                                        selectedYear === year
+                                        activeYear === year
                                             ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
                                             : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
                                     }`}
@@ -286,19 +240,18 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                <div className="px-6 py-4 bg-[var(--color-bg)] border-t border-[var(--color-card-border)] flex items-center justify-end">
                     <button
                         onClick={handleDownload}
-                        disabled={!selectedYear || downloading || years.length === 0}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[var(--color-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
+                        disabled={downloading || years.length === 0 || !!summary}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                         {downloading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                             <Download className="w-3.5 h-3.5" />
                         )}
-                        {dt?.validator_rewards_modal_download ?? 'Download CSV'}
+                        {downloading ? (dt?.validator_rewards_modal_generating_btn ?? 'Working...') : (dt?.validator_rewards_modal_download_btn ?? 'Download CSV')}
                     </button>
                 </div>
             </div>

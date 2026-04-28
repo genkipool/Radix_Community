@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Copy, Check, Info, Download } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
+import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { PanelLoadingState } from './EntityPanelShared';
 import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
@@ -11,6 +12,7 @@ import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValida
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
+import { type AccountRewardsCsvModalDict } from '../types/components.types';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -18,7 +20,7 @@ interface AccountSummaryTabProps {
     entityName: string | null | undefined;
     iconUrl: string | null | undefined;
     getMeta: (key: string) => string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict };
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
@@ -63,6 +65,7 @@ export function AccountSummaryTab({
     locale
 }: AccountSummaryTabProps) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+    const { prefetchAccountRewards } = usePrefetchRewards();
 
     const description = getMeta('description');
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
@@ -249,6 +252,7 @@ export function AccountSummaryTab({
                         {address.startsWith('account_') && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                onPointerEnter={() => prefetchAccountRewards(address)}
                                 className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                                 title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
                             >
@@ -375,7 +379,7 @@ export function AccountSummaryTab({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={locale}
-                    tt={(tt as any).account_summary}
+                    tt={tt.account_summary}
                     marketData={marketData}
                 />
             )}

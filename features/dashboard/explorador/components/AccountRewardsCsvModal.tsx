@@ -4,31 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { X, Download, AlertCircle, Loader2, Clock, CheckCircle2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import type { MarketData } from '@/features/dashboard/types';
-import { formatXRD, formatNumber } from '@/utils/formatters';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
+import { formatXRD } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
+import type { MarketData } from '@/features/dashboard/types';
+import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
-interface AccountRewardsCsvModalProps {
+export interface AccountRewardsCsvModalProps {
     isOpen: boolean;
     onClose: () => void;
     accountAddress: string;
     /** Translations from the explorador locale */
-    tt?: {
-        download_account_rewards?: string;
-        account_rewards_modal_title?: string;
-        account_rewards_modal_desc?: string;
-        account_rewards_modal_download?: string;
-        account_rewards_modal_no_data?: string;
-        account_rewards_modal_error?: string;
-        account_rewards_modal_loading?: string;
-        account_rewards_modal_generating?: string;
-        account_rewards_modal_generating_desc?: string;
-        account_rewards_modal_close?: string;
-        account_rewards_summary_title?: string;
-        account_rewards_summary_total?: string;
-        account_rewards_summary_fiat?: string;
-        account_rewards_summary_dream?: string;
-    };
+    tt?: AccountRewardsCsvModalDict;
     locale?: string;
     marketData?: MarketData | null;
 }
@@ -41,27 +29,25 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     locale,
     marketData,
 }) => {
-    const [years, setYears] = useState<string[]>([]);
     const [selectedYear, setSelectedYear] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: 'USD' | 'EUR' | string } | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [localError, setLocalError] = useState<string | null>(null);
     const mounted = useMounted();
 
-    // Sync state when modal opens (render-time prop comparison)
-    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-    if (isOpen !== prevIsOpen) {
-        setPrevIsOpen(isOpen);
-        if (isOpen) {
-            setLoading(true);
-            setError(null);
-            setSelectedYear(null);
-            setSummary(null);
-            setProgress(0);
-        }
-    }
+    const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
+        queryKey: ['account-rewards-years', accountAddress],
+        queryFn: () => apiFetchAccountRewardsYears(accountAddress),
+        enabled: isOpen,
+        staleTime: 5 * 60_000,
+    });
+
+    const years = (yearsData?.years ?? []).map(y => String(y));
+    const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
+
+    const activeYear = selectedYear || (years.length > 0 ? years[0] : null);
+
 
     // Progress simulation
     useEffect(() => {
@@ -79,56 +65,19 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         return () => clearInterval(interval);
     }, [downloading]);
 
-    // Fetch available years when modal opens
-    useEffect(() => {
-        if (!isOpen) return;
-
-        let cancelled = false;
-
-        fetch(`/api/account-rewards?address=${encodeURIComponent(accountAddress)}&action=years`)
-            .then((res) => {
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return res.json();
-            })
-            .then((data) => {
-                if (!cancelled) {
-                    setYears(data.years ?? []);
-                    if (data.years?.length > 0) {
-                        setSelectedYear(data.years[0]);
-                    }
-                }
-            })
-            .catch((err) => {
-                if (!cancelled) {
-                    setError(err.message);
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isOpen, accountAddress]);
 
     const handleDownload = async () => {
-        if (!selectedYear) return;
+        if (!activeYear) return;
 
         setDownloading(true);
         setProgress(0);
-        setError(null);
+        setLocalError(null);
         setSummary(null);
 
         try {
             const res = await fetch(
-                `/api/account-rewards?address=${encodeURIComponent(accountAddress)}&action=csv&year=${selectedYear}`,
+                `/api/account-rewards?address=${encodeURIComponent(accountAddress)}&action=csv&year=${activeYear}`,
             );
-
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.error ?? `HTTP ${res.status}`);
-            }
 
             const data = await res.json();
             if (!data.csv) {
@@ -140,11 +89,12 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             // Calculate values
             const currency = getCurrencyForLocale(locale || 'en');
             const priceXRD = currency === 'EUR' ? (marketData?.priceEur || 0) : (marketData?.priceUsd || 0);
-            const fiatValue = data.totalXrd * priceXRD;
-            const dreamValue = data.totalXrd * 1; // 1 EUR or 1 USD
+            const totalXrdValue = data.totalXrd || 0;
+            const fiatValue = totalXrdValue * priceXRD;
+            const dreamValue = totalXrdValue * 1; // 1 EUR or 1 USD
 
             setSummary({
-                totalXrd: data.totalXrd,
+                totalXrd: totalXrdValue,
                 fiatValue,
                 dreamValue,
                 currency
@@ -154,13 +104,13 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `radix_account_rewards_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
+            a.download = `account_rewards_${accountAddress.substring(0, 15)}_${activeYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setLocalError(err instanceof Error ? err.message : String(err));
         } finally {
             setDownloading(false);
             setProgress(0);
@@ -211,7 +161,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                             'Select a year to download the staking reward breakdown in CoinTracking CSV format. This process may take several minutes.'}
                     </p>
 
-                    {loading ? (
+                    {yearsLoading ? (
                         <div className="flex items-center justify-center py-6">
                             <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
                             <span className="ml-2 text-xs text-[var(--color-text-muted)]">
@@ -259,11 +209,9 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                         <div className="text-sm font-black text-[var(--color-text-main)]">
                                             {formatXRD(summary.totalXrd, locale)} XRD
                                         </div>
-                                        {summary.fiatValue > 0 && (
-                                            <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                                                ≈ {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
-                                            </div>
-                                        )}
+                                        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                                            <span>≈</span> {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5">
@@ -283,10 +231,10 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                             </div>
                         </div>
                     ) : years.length === 0 ? (
-                        <div className="text-center py-6">
-                            <p className="text-xs text-[var(--color-text-muted)]">
+                        <div className="text-center py-8 bg-[var(--color-bg)]/50 rounded-2xl border border-dashed border-[var(--color-card-border)]">
+                            <p className="text-xs text-[var(--color-text-muted)] px-4">
                                 {tt?.account_rewards_modal_no_data ??
-                                    'No reward data available. The account may not have any active stakes.'}
+                                    'No reward data available for this account.'}
                             </p>
                         </div>
                     ) : (
@@ -296,7 +244,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
                                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                                        selectedYear === year
+                                        activeYear === year
                                             ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
                                             : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
                                     }`}

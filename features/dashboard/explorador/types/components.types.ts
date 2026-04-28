@@ -29,6 +29,23 @@ export type {
 };
 
 
+export interface AccountRewardsCsvModalDict {
+    download_account_rewards?: string;
+    account_rewards_modal_title?: string;
+    account_rewards_modal_desc?: string;
+    account_rewards_modal_download?: string;
+    account_rewards_modal_no_data?: string;
+    account_rewards_modal_error?: string;
+    account_rewards_modal_loading?: string;
+    account_rewards_modal_generating?: string;
+    account_rewards_modal_generating_desc?: string;
+    account_rewards_modal_close?: string;
+    account_rewards_summary_title?: string;
+    account_rewards_summary_total?: string;
+    account_rewards_summary_fiat?: string;
+    account_rewards_summary_dream?: string;
+}
+
 export interface AssetTransferGroupProps {
     group: FungibleChange[];
     balanceChanges: BalanceChanges;

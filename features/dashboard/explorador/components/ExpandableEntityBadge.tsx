@@ -32,7 +32,10 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { AccountSummaryTab } from './AccountSummaryTab';
-import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
+import {
+    AccountRewardsCsvModal
+} from './AccountRewardsCsvModal';
+import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab } from './AccountAssetsTabs';
 import type {
     MetadataItem,
@@ -41,13 +44,14 @@ import type {
     Network,
     GatewayEntityDetails
 } from '@/features/dashboard/types';
+import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
 type EntityTab = 'summary' | 'tokens' | 'nfts' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict };
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -115,6 +119,7 @@ export function ExpandableEntityBadge({
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+    const { prefetchAccountRewards } = usePrefetchRewards();
 
     const isAccountAddr = address.startsWith('account_');
 
@@ -203,8 +208,9 @@ export function ExpandableEntityBadge({
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                            onPointerEnter={() => prefetchAccountRewards(clean)}
                             className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={(tt as any).account_summary?.download_account_rewards}
+                            title={tt.account_summary?.download_account_rewards}
                         >
                             <Download className="w-3 h-3" />
                         </button>
@@ -222,7 +228,7 @@ export function ExpandableEntityBadge({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={_locale}
-                    tt={(tt as any).account_summary}
+                    tt={tt.account_summary}
                     marketData={marketData}
                 />
             )}

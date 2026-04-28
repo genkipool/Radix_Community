@@ -723,36 +723,46 @@ function rowsToCsv(rows: string[][]): string {
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
- * Returns the list of years that have reward data for validators the account is staked to.
+ * Returns the list of years that have reward data in the system.
  */
 export async function getAvailableYearsForAccount(accountAddress: string): Promise<string[]> {
     const redis = getRedisClient();
-    if (!redis) return [];
+    if (!redis) {
+        logger.error({ accountAddress }, '[AccountRewards] Redis client not available');
+        return [];
+    }
 
     try {
-        // Fetch validator map
-        const validatorMap = await fetchAllValidators();
+        const allDataRaw = await redis.get(REDIS_REWARDS_ALL);
+        if (!allDataRaw) {
+            logger.warn({ accountAddress }, '[AccountRewards] No rewards data found in Redis');
+            return [];
+        }
 
-        // Get account LSU balances
-        const stakes = await getAccountLsuBalances(accountAddress, validatorMap);
-        if (Object.keys(stakes).length === 0) return [];
-
-        // Read all rewards data from Redis
-        const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
-        if (!allData) return [];
-
-        // Collect all years from staked validators
-        const yearsSet = new Set<string>();
-        for (const valAddr of Object.keys(stakes)) {
+        // Handle both stringified and object responses from Redis
+        const allData = (typeof allDataRaw === 'string' ? JSON.parse(allDataRaw) : allDataRaw) as Record<string, ValidatorRewardData>;
+        
+        const systemYears = new Set<string>();
+        for (const valAddr of Object.keys(allData)) {
             const valData = allData[valAddr];
-            if (valData?.yearly) {
+            // Check both yearly (validator fees) and yearlyDelegants (staker rewards)
+            if (valData.yearly) {
                 for (const yr of Object.keys(valData.yearly)) {
-                    yearsSet.add(yr);
+                    if (yr.length === 4) systemYears.add(yr);
+                }
+            }
+            if (valData.yearlyDelegants) {
+                for (const yr of Object.keys(valData.yearlyDelegants)) {
+                    if (yr.length === 4) systemYears.add(yr);
                 }
             }
         }
 
-        return [...yearsSet].sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+        const sortedYears = [...systemYears]
+            .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+
+        logger.info({ accountAddress, count: sortedYears.length, years: sortedYears }, '[AccountRewards] Found available years');
+        return sortedYears;
     } catch (e) {
         logger.error({ err: e, accountAddress }, '[AccountRewards] Failed to get available years');
         return [];

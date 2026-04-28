@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, Copy, Info, Shield, Download } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
+import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { sanitizeText } from '@/utils/sanitize';
 import {
     useEntityData,
@@ -71,6 +72,7 @@ export function AddressDisplay({
     hideLabel?: boolean;
 }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+    const { prefetchAccountRewards } = usePrefetchRewards();
     const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(address)) : null;
     const wellKnownTip = wellKnownKey
@@ -129,6 +131,7 @@ export function AddressDisplay({
                             <button
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                onPointerEnter={() => prefetchAccountRewards(sanitizeText(address))}
                                 className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
                                 title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
                             >
