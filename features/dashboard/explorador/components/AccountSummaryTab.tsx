@@ -115,6 +115,21 @@ export function AccountSummaryTab({
         else tokens.push(r);
     });
 
+    // Add XRD as first token if balance > 0
+    if (parseFloat(xrdAmount) > 0) {
+        tokens.unshift({
+            address: xrdAddress,
+            name: 'Radix',
+            symbol: 'XRD',
+            iconUrl: 'https://assets.coingecko.com/coins/images/4374/standard/Radix.png',
+            amount: xrdAmount,
+            isPoolUnit: false,
+            isLsu: false,
+            isClaim: false,
+            isNft: false
+        });
+    }
+
     // Process Non-Fungibles
     nonFungibles.forEach((nft: { resource_address: string; amount?: number; explicit_metadata?: { items: MetadataItem[] }; vaults?: { items: Array<{ items: string[] }> } }) => {
         const meta = nft.explicit_metadata?.items || [];

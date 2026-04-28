@@ -51,7 +51,11 @@ interface ValidatorItem {
     [key: string]: unknown;
 }
 
-function parseTokensAndNfts(entityData: GatewayEntityDetails | null, validatorsData?: { validators?: ValidatorItem[] }) {
+function parseTokensAndNfts(entityData: GatewayEntityDetails | null, network: 'mainnet' | 'stokenet' = 'mainnet', validatorsData?: { validators?: ValidatorItem[] }) {
+    const xrdAddress = network === 'mainnet'
+        ? 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd'
+        : 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
+
     const fungibles = entityData?.fungible_resources?.items || [];
     const nonFungibles = entityData?.non_fungible_resources?.items || [];
 
@@ -87,6 +91,13 @@ function parseTokensAndNfts(entityData: GatewayEntityDetails | null, validatorsD
             tokens.push(r);
         }
     });
+
+    // Ensure XRD is always first if present
+    const xrdIndex = tokens.findIndex(t => t.address === xrdAddress);
+    if (xrdIndex > -1) {
+        const [xrd] = tokens.splice(xrdIndex, 1);
+        tokens.unshift(xrd);
+    }
 
     nonFungibles.forEach((nft: ResourceItem | unknown) => {
         const nftItem = nft as ResourceItem;
@@ -136,7 +147,7 @@ export function AccountTokensTab({
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
-    const { tokens, poolUnits } = parseTokensAndNfts(entityData);
+    const { tokens, poolUnits } = parseTokensAndNfts(entityData, network);
 
     return (
         <div className="space-y-6">
@@ -164,7 +175,7 @@ export function AccountNftsTab({
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
-    const { activeNfts, burnedNfts } = parseTokensAndNfts(entityData);
+    const { activeNfts, burnedNfts } = parseTokensAndNfts(entityData, network);
 
     return (
         <div className="space-y-6">
