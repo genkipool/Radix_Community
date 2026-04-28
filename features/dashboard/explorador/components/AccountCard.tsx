@@ -135,7 +135,7 @@ export function AccountCard({
                 <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
                     {/* ── AVATAR / SIDEBAR (Matching TransactionCard) ── */}
                     <div onClick={() => undefined}
-                        className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-default self-stretch justify-center`}>
+                        className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
                         <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
                         <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
                             <Landmark className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
@@ -244,121 +244,119 @@ export function AccountCard({
                                 </div>
                             </div>
                         </div>
-
-                        {/* Expanded Content — Placed OUTSIDE the flex row but inside Card via Fragment/Card restructuring earlier in another component */}
-
-                        <AnimatePresence initial={false}>
-                            {isExpanded && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                    className="overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)]"
-                                >
-                                    <div onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
-                                        <PanelTabBar tabs={tabsData} activeTab={activeTab} onTabChange={(t) => setActiveTab(t as EntityTab)} />
-
-                                        <div className="px-4 py-3 pb-6">
-                                            {/* CSS Grid Wrapper injecting logic specifically for Token/NFT tabs */}
-                                            <div className={`account-assets-grid-wrapper 
-                                                ${columns === 1 ? 'is-grid-1' : 'is-grid-multi'} 
-                                                ${isExpanded ? 'is-expanded-card' : ''}
-                                            `}>
-                                                <style dangerouslySetInnerHTML={{
-                                                    __html: `
-                                                    .is-expanded-card .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
-                                                        display: grid !important;
-                                                        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-                                                        gap: 0.75rem !important;
-                                                    }
-                                                    .is-grid-1:not(.is-expanded-card) .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
-                                                        display: grid !important;
-                                                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                                                        gap: 0.75rem !important;
-                                                    }
-                                                    .is-grid-multi:not(.is-expanded-card) .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
-                                                        display: grid !important;
-                                                        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-                                                        gap: 0.75rem !important;
-                                                    }
-                                                    @media (max-width: 1280px) {
-                                                        .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
-                                                            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                                                        }
-                                                    }
-                                                    @media (max-width: 640px) {
-                                                            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                                                        }
-                                                    }
-                                                `}} />
-
-                                                {/* ── SUMMARY ── */}
-                                                {activeTab === 'summary' && (
-                                                    <AccountSummaryTab
-                                                        address={address}
-                                                        entityData={entityData ?? null}
-                                                        entityName={entityName}
-                                                        iconUrl={iconUrl}
-                                                        getMeta={getMeta}
-                                                        tt={tt!}
-                                                        onCopy={onCopy}
-                                                        copiedAddress={copiedAddress}
-                                                        network={network as 'mainnet' | 'stokenet'}
-                                                        marketData={marketData}
-                                                        locale={locale}
-                                                    />
-                                                )}
-
-                                                {/* ── TOKENS ── */}
-                                                {activeTab === 'tokens' && (
-                                                    <AccountTokensTab
-                                                        entityData={entityData ?? null}
-                                                        tt={tt!}
-                                                        onCopy={onCopy}
-                                                        copiedAddress={copiedAddress}
-                                                        network={network as 'mainnet' | 'stokenet'}
-                                                        locale={locale}
-                                                    />
-                                                )}
-
-                                                {/* ── NFTS ── */}
-                                                {activeTab === 'nfts' && (
-                                                    <AccountNftsTab
-                                                        entityData={entityData ?? null}
-                                                        tt={tt!}
-                                                        onCopy={onCopy}
-                                                        copiedAddress={copiedAddress}
-                                                        network={network as 'mainnet' | 'stokenet'}
-                                                        locale={locale}
-                                                    />
-                                                )}
-
-                                                {/* ── METADATA ── */}
-                                                {activeTab === 'metadata' && (
-                                                    <PanelMetadataTab metadataItems={metadataItems} tt={tt!} />
-                                                )}
-
-                                                {/* ── CONFIGURATION ── */}
-                                                {activeTab === 'configuration' && (
-                                                    <PanelConfigurationTab
-                                                        configEntries={configEntries}
-                                                        tt={tt!}
-                                                        onCopy={onCopy}
-                                                        copiedAddress={copiedAddress}
-                                                    />
-                                                )}
-
-                                                {/* ── RAW ── */}
-                                                {activeTab === 'raw' && <PanelRawTab data={entityData} />}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </div>
                 </div>
+
+                <AnimatePresence initial={false}>
+                    {isExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)]"
+                        >
+                            <div onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
+                                <PanelTabBar tabs={tabsData} activeTab={activeTab} onTabChange={(t) => setActiveTab(t as EntityTab)} />
+
+                                <div className="px-4 py-3 pb-6">
+                                    {/* CSS Grid Wrapper injecting logic specifically for Token/NFT tabs */}
+                                    <div className={`account-assets-grid-wrapper 
+                                        ${columns === 1 ? 'is-grid-1' : 'is-grid-multi'} 
+                                        ${isExpanded ? 'is-expanded-card' : ''}
+                                    `}>
+                                        <style dangerouslySetInnerHTML={{
+                                            __html: `
+                                            .is-expanded-card .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
+                                                display: grid !important;
+                                                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                                                gap: 0.75rem !important;
+                                            }
+                                            .is-grid-1:not(.is-expanded-card) .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
+                                                display: grid !important;
+                                                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                                                gap: 0.75rem !important;
+                                            }
+                                            .is-grid-multi:not(.is-expanded-card) .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
+                                                display: grid !important;
+                                                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                                                gap: 0.75rem !important;
+                                            }
+                                            @media (max-width: 1280px) {
+                                                .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
+                                                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                                                }
+                                            }
+                                            @media (max-width: 640px) {
+                                                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                                                }
+                                            }
+                                        `}} />
+
+                                        {/* ── SUMMARY ── */}
+                                        {activeTab === 'summary' && (
+                                            <AccountSummaryTab
+                                                address={address}
+                                                entityData={entityData ?? null}
+                                                entityName={entityName}
+                                                iconUrl={iconUrl}
+                                                getMeta={getMeta}
+                                                tt={tt!}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                marketData={marketData}
+                                                locale={locale}
+                                            />
+                                        )}
+
+                                        {/* ── TOKENS ── */}
+                                        {activeTab === 'tokens' && (
+                                            <AccountTokensTab
+                                                entityData={entityData ?? null}
+                                                tt={tt!}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale}
+                                            />
+                                        )}
+
+                                        {/* ── NFTS ── */}
+                                        {activeTab === 'nfts' && (
+                                            <AccountNftsTab
+                                                entityData={entityData ?? null}
+                                                tt={tt!}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale}
+                                            />
+                                        )}
+
+                                        {/* ── METADATA ── */}
+                                        {activeTab === 'metadata' && (
+                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt!} />
+                                        )}
+
+                                        {/* ── CONFIGURATION ── */}
+                                        {activeTab === 'configuration' && (
+                                            <PanelConfigurationTab
+                                                configEntries={configEntries}
+                                                tt={tt!}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {/* ── RAW ── */}
+                                        {activeTab === 'raw' && <PanelRawTab data={entityData} />}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </Card>
 
             <AccountRewardsCsvModal
