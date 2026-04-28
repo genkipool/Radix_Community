@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
 import { Landmark, Download } from 'lucide-react';
-import { formatXRD } from '@/utils/formatters';
+import { formatNumber } from '@/utils/formatters';
 import { getCurrencyForLocale, formatCurrency } from '@/utils/currencyUtils';
 
 /* Dashboard & Common Components */
@@ -83,11 +83,11 @@ export function AccountCard({
 
     const renderFiatValue = (amount: number) => {
         if (!marketData || statsLoading) return null;
-        const cur = getCurrencyForLocale(locale);
-        const price = cur === 'EUR' ? marketData.priceEur : marketData.priceUsd;
+        const currency = getCurrencyForLocale(locale);
+        const price = currency === 'EUR' ? marketData.priceEur : marketData.priceUsd;
         return (
             <span className="text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                ({formatCurrency(amount * price, cur, locale)})
+                ({formatCurrency(amount * price, currency, locale)})
             </span>
         );
     };
@@ -193,7 +193,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-green-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(parseFloat(xrdAmount), locale)}
+                                            {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                         </span>
                                         {renderFiatValue(parseFloat(xrdAmount))}
                                     </div>
@@ -204,7 +204,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-blue-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(totalLsuAmount, locale)}
+                                            {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
                                         </span>
                                         {renderFiatValue(totalLsuXrdEquivalent)}
                                     </div>
@@ -215,7 +215,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
-                                            {statsLoading ? '-' : formatXRD(stakedTotal, locale)}
+                                            {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
                                         </span>
                                         {renderFiatValue(stakedTotal)}
                                     </div>
@@ -226,7 +226,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-orange-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(unstakeTotal, locale)}
+                                            {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
                                         </span>
                                         {renderFiatValue(unstakeTotal)}
                                     </div>
@@ -237,7 +237,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-green-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(claimTotal, locale)}
+                                            {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                         </span>
                                         {renderFiatValue(claimTotal)}
                                     </div>

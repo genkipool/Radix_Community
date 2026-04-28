@@ -44,6 +44,7 @@ import type {
     Network,
     GatewayEntityDetails
 } from '@/features/dashboard/types';
+import { formatNumber } from '@/utils/formatters';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -113,7 +114,7 @@ export function ExpandableEntityBadge({
     copiedAddress,
     onResourceClick,
     network,
-    locale: _locale = 'en',
+    locale = 'en',
     marketData,
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
@@ -227,7 +228,7 @@ export function ExpandableEntityBadge({
                     accountAddress={clean}
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
-                    locale={_locale}
+                    locale={locale}
                     tt={tt.account_summary}
                     marketData={marketData}
                 />
@@ -268,7 +269,7 @@ export function ExpandableEntityBadge({
                                                     copiedAddress={copiedAddress}
                                                     network={network}
                                                     marketData={marketData}
-                                                    locale={_locale}
+                                                    locale={locale}
                                                 />
                                             ) : (
                                                 <EntitySummaryTab
@@ -282,7 +283,7 @@ export function ExpandableEntityBadge({
                                                     onCopy={onCopy}
                                                     copiedAddress={copiedAddress}
                                                     onResourceClick={onResourceClick}
-                                                    locale={_locale}
+                                                    locale={locale}
                                                 />
                                             )
                                         )}
@@ -295,7 +296,7 @@ export function ExpandableEntityBadge({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
-                                                locale={_locale}
+                                                locale={locale}
                                             />
                                         )}
 
@@ -307,7 +308,7 @@ export function ExpandableEntityBadge({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
-                                                locale={_locale}
+                                                locale={locale}
                                             />
                                         )}
 
@@ -457,21 +458,21 @@ function EntitySummaryTab({
                 {totalSupply !== undefined && totalSupply !== null && (
                     <SummaryRow
                         label={tt?.resource_panel_total_supply || 'Total Supply'}
-                        value={Number(totalSupply).toLocaleString(locale)}
+                        value={formatNumber(Number(totalSupply), 2, locale)}
                         mono
                     />
                 )}
                 {totalMinted !== undefined && totalMinted !== null && Number(totalMinted) > 0 && (
                     <SummaryRow
                         label={tt?.resource_panel_total_minted || 'Total Minted'}
-                        value={Number(totalMinted).toLocaleString(locale)}
+                        value={formatNumber(Number(totalMinted), 2, locale)}
                         mono
                     />
                 )}
                 {totalBurned !== undefined && totalBurned !== null && Number(totalBurned) > 0 && (
                     <SummaryRow
                         label={tt?.resource_panel_total_burned || 'Total Burned'}
-                        value={Number(totalBurned).toLocaleString(locale)}
+                        value={formatNumber(Number(totalBurned), 2, locale)}
                         mono
                     />
                 )}

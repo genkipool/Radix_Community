@@ -6,7 +6,7 @@ import { X, Download, AlertCircle, Loader2, Clock, CheckCircle2 } from 'lucide-r
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
-import { formatXRD } from '@/utils/formatters';
+import { formatNumber } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import type { MarketData } from '@/features/dashboard/types';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
@@ -207,7 +207,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     </span>
                                     <div className="text-right">
                                         <div className="text-sm font-black text-[var(--color-text-main)]">
-                                            {formatXRD(summary.totalXrd, locale)} XRD
+                                            {formatNumber(summary.totalXrd, 2, locale || 'en')} XRD
                                         </div>
                                         <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
                                             <span>≈</span> {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}

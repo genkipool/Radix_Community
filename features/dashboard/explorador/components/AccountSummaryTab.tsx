@@ -9,7 +9,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { PanelLoadingState } from './EntityPanelShared';
 import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
-import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
+import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
@@ -338,16 +338,16 @@ export function AccountSummaryTab({
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.stake_xrd || 'Stake XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatXRD(row.xrdInStake, locale)} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.stake_xrd || 'Stake XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatXRD(row.xrdInUnstake, locale) : '0'} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatNumber(row.xrdInUnstake, 2, locale) : '0'} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.claim_xrd || 'Claim XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatXRD(row.xrdInClaim, locale) : '0'} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.claim_xrd || 'Claim XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatNumber(row.xrdInClaim, 2, locale) : '0'} XRD</span>
                                     </div>
                                 </div>
                             </div>
@@ -482,7 +482,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale }: {
                     <span className="font-bold text-xs text-[var(--color-text-main)] truncate" title={name}>{name}</span>
                     <div className="flex items-center gap-1 mt-0.5">
                         <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)]">
-                            {isNft ? parseInt(amount, 10).toLocaleString(locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
+                            {isNft ? formatNumber(parseInt(amount, 10), 0, locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
                         </span>
                         {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate">{symbol}</span>}
                     </div>
