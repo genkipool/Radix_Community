@@ -32,7 +32,7 @@ const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; s
             className={`flex items-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group shrink-0 ${showText ? 'gap-1.5 px-2 py-1 rounded-lg' : 'p-1 rounded-md'}`}
             title={title}
         >
-            <Download className="w-3.5 h-3.5 transition-transform group-hover:translate-y-[0.5px]" />
+            <Download className="w-3.5 h-3.5" />
             {showText && <span className="text-[10px] font-black uppercase tracking-tight">CSV</span>}
         </button>
     );

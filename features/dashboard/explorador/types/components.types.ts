@@ -49,7 +49,7 @@ export interface AccountRewardsCsvModalDict {
 export interface AssetTransferGroupProps {
     group: FungibleChange[];
     balanceChanges: BalanceChanges;
-    allSenderAddresses: Set<string>;
+    initiators: Set<string>;
     realTransferAddresses: Set<string>;
     actualFeePaid: string;
     tt?: TranslationsT['dashboard']['transactions'];
@@ -288,6 +288,7 @@ export interface NftTransferCardProps {
     isClaim?: boolean;
     isStakeClaim?: boolean;
     isClaimRedeemed?: boolean;
+    isBurned?: boolean;
     isClaimAuthorized?: boolean;
     unstakeXrdExpected?: number;
     nftReceivedLabel?: string;
@@ -308,6 +309,7 @@ export interface NftCollectionPanelProps {
     isClaim?: boolean;
     isStakeClaimOverride?: boolean;
     isClaimRedeemed?: boolean;
+    isBurned?: boolean;
     isClaimAuthorized?: boolean;
     unstakeXrdExpected?: number;
     network: Network;

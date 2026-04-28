@@ -27,6 +27,7 @@ const NftTransferCard = ({
     sourceTitle: _sourceTitle, methodLabel: _methodLabel, readingMode: _readingMode,
     tt, network = 'mainnet', side: _side,
     claimXrdTotal, isClaim, isStakeClaim: isStakeClaimProp, isClaimRedeemed, isClaimAuthorized,
+    isBurned,
     unstakeXrdExpected, nftReceivedLabel,
     locale,
 }: NftTransferCardProps) => {
@@ -53,8 +54,8 @@ const NftTransferCard = ({
     const isReceived = type === 'added';
     const color = isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
-    const specializedTooltip = isClaimRedeemed
-        ? tt?.claim_nft_redeemed_tooltip
+    const specializedTooltip = isClaimRedeemed || isBurned
+        ? tt?.claim_nft_redeemed_tooltip || 'NFT Burned/Redeemed'
         : isClaimAuthorized
             ? tt?.claim_nft_authorized_tooltip
             : (isStakeClaimProp && isReceived)
@@ -100,7 +101,7 @@ const NftTransferCard = ({
                     <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70">
                         {nftReceivedLabel ?? (isClaim ? (tt?.nft_presented_label || 'NFT Presentado') : (tt?.nft_label || 'No Fungible'))}
                     </div>
-                    {isClaimRedeemed ? (
+                    {isClaimRedeemed || isBurned ? (
                         <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-black">
                             <IconFlame className="w-4 h-4" />
                             <span className="text-xl tabular-nums">{ids.length}</span>
@@ -109,7 +110,9 @@ const NftTransferCard = ({
                     ) : isClaim && type === 'removed' ? (
                         <div className="font-mono font-bold text-base tabular-nums text-red-600 dark:text-red-400">−1 <span className="text-sm font-semibold opacity-70">NFT</span></div>
                     ) : (
-                        <div className="text-xl font-black tabular-nums text-green-700 dark:text-green-400">+{ids.length} <span className="text-sm font-semibold opacity-70">NFT{ids.length > 1 ? 's' : ''}</span></div>
+                        <div className={`text-xl font-black tabular-nums ${color}`}>
+                            {type === 'removed' ? '−' : '+'}{ids.length} <span className="text-sm font-semibold opacity-70">NFT{ids.length > 1 ? 's' : ''}</span>
+                        </div>
                     )}
                 </div>
             </div>

@@ -52,7 +52,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     // Progress simulation
     useEffect(() => {
         if (!downloading) return;
-        
+
         let currentProgress = 0;
         const interval = setInterval(() => {
             const remaining = 98 - currentProgress;
@@ -104,7 +104,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `account_rewards_${accountAddress.substring(0, 15)}_${activeYear}.csv`;
+            a.download = `account_rewards_${accountAddress.substring(0, 25)}_${activeYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -183,7 +183,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                         'Querying the Radix Ledger API for daily stake snapshots. This can take 2–5 minutes depending on the number of validators and days.'}
                                 </p>
                                 <div className="h-2 w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-full overflow-hidden mt-3">
-                                    <div 
+                                    <div
                                         className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out"
                                         style={{ width: `${progress}%` }}
                                     />
@@ -215,17 +215,17 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5">
-                                    <p 
+                                    <p
                                         className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
-                                        dangerouslySetInnerHTML={{ 
+                                        dangerouslySetInnerHTML={{
                                             __html: (tt?.account_rewards_summary_dream ?? (
-                                                (locale && locale.startsWith('es')) 
-                                                    ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año." 
+                                                (locale && locale.startsWith('es'))
+                                                    ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
                                                     : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
                                             ))
-                                            .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
-                                            .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
-                                        }} 
+                                                .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                                .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -243,11 +243,10 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                 <button
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                                        activeYear === year
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                                            : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${activeYear === year
+                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                                        : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
+                                        }`}
                                 >
                                     {year}
                                 </button>

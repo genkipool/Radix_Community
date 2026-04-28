@@ -18,7 +18,7 @@ import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { getTransactionFlags } from '../utils/transactionUtils';
 
 import type { TranslationsT } from '@/features/dashboard/types';
-import { getResourceGroups, getAllSenderAddresses, getRealTransferAddresses, getNftOnlyGroups } from '../utils/balanceChangeUtils';
+import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyGroups } from '../utils/balanceChangeUtils';
 
 
 
@@ -70,7 +70,7 @@ const TransactionTabs = ({
 
     /* ── Resource groups for asset transfer cards ── */
     const resourceGroups = getResourceGroups(balanceChanges, network);
-    const allSenderAddresses = getAllSenderAddresses(balanceChanges);
+    const initiators = getInitiators(balanceChanges);
     const realTransferAddresses = getRealTransferAddresses(balanceChanges);
 
     /* ── NFT-only groups ── */
@@ -210,7 +210,7 @@ const TransactionTabs = ({
                                     key={'rg' + idx}
                                     group={group}
                                     balanceChanges={balanceChanges as BalanceChanges}
-                                    allSenderAddresses={allSenderAddresses}
+                                    initiators={initiators}
                                     realTransferAddresses={realTransferAddresses}
                                     actualFeePaid={actualFeePaid}
                                     t={t as TranslationsT}
@@ -226,7 +226,7 @@ const TransactionTabs = ({
                         {/* NFT-only transfers: pass a synthetic group so AssetTransferGroup's
                             orphan-NFT detection handles rendering within the same card design */}
                         {nftOnlyGroups.map((group, idx) => (
-                            <AssetTransferGroup key={'nft-rg' + idx} group={group} balanceChanges={balanceChanges as BalanceChanges} allSenderAddresses={allSenderAddresses} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
+                            <AssetTransferGroup key={'nft-rg' + idx} group={group} balanceChanges={balanceChanges as BalanceChanges} initiators={initiators} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
                         ))}
 
 

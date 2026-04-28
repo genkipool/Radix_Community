@@ -88,11 +88,11 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
             const blob = new Blob([data.csv], { type: 'text/csv; charset=utf-8' });
 
             setProgress(100);
-            
+
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `validator_rewards_${validatorAddress.substring(0, 15)}_${activeYear}.csv`;
+            a.download = `validator_rewards_${validatorAddress.substring(0, 25)}_${activeYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -112,11 +112,11 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     if (!isOpen || !mounted) return null;
 
     const modalContent = (
-        <div 
+        <div
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={onClose}
         >
-            <div 
+            <div
                 className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/50"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -158,7 +158,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                     {dt?.validator_rewards_modal_generating ?? 'Generating CSV...'}
                                 </p>
                                 <div className="h-2 w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-full overflow-hidden mt-3">
-                                    <div 
+                                    <div
                                         className="h-full bg-[var(--color-primary)] transition-all duration-300 ease-out"
                                         style={{ width: `${progress}%` }}
                                     />
@@ -190,17 +190,17 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5 text-center">
-                                    <p 
+                                    <p
                                         className="text-[11px] leading-relaxed font-medium text-[var(--color-primary)]"
-                                        dangerouslySetInnerHTML={{ 
+                                        dangerouslySetInnerHTML={{
                                             __html: (dt?.validator_rewards_summary_dream ?? (
-                                                (locale && locale.startsWith('es')) 
-                                                    ? "Si Radix valiera 1 {currency}, este validador habría ganado <b>{value}</b> este año." 
+                                                (locale && locale.startsWith('es'))
+                                                    ? "Si Radix valiera 1 {currency}, este validador habría ganado <b>{value}</b> este año."
                                                     : "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> this year."
                                             ))
-                                            .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
-                                            .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
-                                        }} 
+                                                .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                                .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -217,11 +217,10 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                 <button
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${
-                                        activeYear === year
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                                            : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${activeYear === year
+                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                                        : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
+                                        }`}
                                 >
                                     {year}
                                 </button>

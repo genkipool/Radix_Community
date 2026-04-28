@@ -57,18 +57,47 @@ export function getRealTransferAddresses(
 }
 
 /**
- * getAllSenderAddresses
- * Returns a set of addresses that are net senders (negative balance change),
- * excluding managerconsensus.
+ * getInitiators
+ * Returns a set of addresses that are the primary initiators of the transaction.
+ * 1. Anyone who paid fees.
+ * 2. Any account_ that sent assets.
+ * 3. Fallback to any account_ involved.
  */
-export function getAllSenderAddresses(
+export function getInitiators(
     balanceChanges: BalanceChanges | undefined
 ): Set<string> {
-    return new Set<string>(
-        (balanceChanges?.fungible_balance_changes ?? [])
-            .filter((c) => !isConsensusManager(sanitizeText(c.entity_address)) && parseFloat(c.balance_change) < 0)
-            .map((c) => sanitizeText(c.entity_address)),
-    );
+    const initiators = new Set<string>();
+
+    (balanceChanges?.fungible_fee_balance_changes ?? []).forEach(f => {
+        initiators.add(sanitizeText(f.entity_address));
+    });
+
+    (balanceChanges?.fungible_balance_changes ?? []).forEach(f => {
+        if (sanitizeText(f.entity_address).startsWith('account_') && parseFloat(f.balance_change) < 0) {
+            initiators.add(sanitizeText(f.entity_address));
+        }
+    });
+
+    (balanceChanges?.non_fungible_balance_changes ?? []).forEach(nf => {
+        if (sanitizeText(nf.entity_address).startsWith('account_') && (nf.removed?.length ?? 0) > 0) {
+            initiators.add(sanitizeText(nf.entity_address));
+        }
+    });
+
+    if (initiators.size === 0) {
+        (balanceChanges?.fungible_balance_changes ?? []).forEach(f => {
+            if (sanitizeText(f.entity_address).startsWith('account_')) {
+                initiators.add(sanitizeText(f.entity_address));
+            }
+        });
+        (balanceChanges?.non_fungible_balance_changes ?? []).forEach(nf => {
+            if (sanitizeText(nf.entity_address).startsWith('account_')) {
+                initiators.add(sanitizeText(nf.entity_address));
+            }
+        });
+    }
+
+    return initiators;
 }
 
 /**
