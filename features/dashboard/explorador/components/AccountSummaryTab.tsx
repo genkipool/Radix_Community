@@ -339,15 +339,15 @@ export function AccountSummaryTab({
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="flex flex-col items-center text-center">
                                         <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.stake_xrd || 'Stake XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatXRD(row.xrdInStake)} XRD</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatXRD(row.xrdInStake, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
                                         <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatXRD(row.xrdInUnstake) : '0'} XRD</span>
+                                        <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatXRD(row.xrdInUnstake, locale) : '0'} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
                                         <span className="text-[9px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.claim_xrd || 'Claim XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatXRD(row.xrdInClaim) : '0'} XRD</span>
+                                        <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatXRD(row.xrdInClaim, locale) : '0'} XRD</span>
                                     </div>
                                 </div>
                             </div>
@@ -357,9 +357,9 @@ export function AccountSummaryTab({
             )}
 
             {/* Assets */}
-            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} />
-            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} />
-            <AssetSection title={`Pool Units (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} />
+            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`Pool Units (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {burnedNfts.length > 0 && (
                 <AssetSection
@@ -369,6 +369,7 @@ export function AccountSummaryTab({
                     copiedAddress={copiedAddress}
                     burned
                     titleClassName="text-red-500/80"
+                    locale={locale}
                 />
             )}
 
@@ -403,7 +404,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
 
     // Apply exact formatting to the amount
     const parsedAmount = parseFloat(amount);
-    const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2) : formatNumber(parsedAmount, 4);
+    const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2, locale) : formatNumber(parsedAmount, 4, locale);
 
     return (
         <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow">
@@ -434,13 +435,14 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     );
 }
 
-function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "" }: {
+function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale }: {
     title: string;
     items: ParsedResource[];
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
     titleClassName?: string;
+    locale: string;
 }) {
     if (items.length === 0) return null;
     return (
@@ -450,18 +452,19 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {items.map((item) => (
-                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} />
+                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} />
                 ))}
             </div>
         </div>
     );
 }
 
-function ResourceCard({ item, onCopy, copiedAddress, burned = false }: {
+function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale }: {
     item: ParsedResource;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
+    locale: string;
 }) {
     const { address, name, symbol, iconUrl, amount, isNft } = item;
 
@@ -479,7 +482,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false }: {
                     <span className="font-bold text-xs text-[var(--color-text-main)] truncate" title={name}>{name}</span>
                     <div className="flex items-center gap-1 mt-0.5">
                         <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)]">
-                            {isNft ? parseInt(amount, 10) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2) : formatNumber(parseFloat(amount), 4))}
+                            {isNft ? parseInt(amount, 10).toLocaleString(locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
                         </span>
                         {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate">{symbol}</span>}
                     </div>

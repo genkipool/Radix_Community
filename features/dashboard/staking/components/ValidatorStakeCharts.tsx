@@ -44,28 +44,28 @@ const StakeTooltip = ({ active, payload, label, t, locale }: StakeTooltipProps) 
                 <div className="veb-shc-tt-row">
                     <span className="veb-shc-tt-dot" style={{ background: 'var(--color-primary)' }} />
                     <span className="veb-shc-tt-k">{t?.stakes?.evolution_title ?? 'Evolution'}</span>
-                    <span className="veb-shc-tt-v" style={{ color: 'var(--color-primary)' }}>{formatShortXRD(evolutionVal)} XRD</span>
+                    <span className="veb-shc-tt-v" style={{ color: 'var(--color-primary)' }}>{formatShortXRD(evolutionVal, locale)} XRD</span>
                 </div>
             )}
             {stakeVal > 0 && (
                 <div className="veb-shc-tt-row">
                     <span className="veb-shc-tt-dot" style={{ background: '#22c55e' }} />
                     <span className="veb-shc-tt-k">{t?.stakes?.stake ?? 'Stake'}</span>
-                    <span className="veb-shc-tt-v" style={{ color: '#22c55e' }}>+{formatShortXRD(stakeVal)} XRD</span>
+                    <span className="veb-shc-tt-v" style={{ color: '#22c55e' }}>+{formatShortXRD(stakeVal, locale)} XRD</span>
                 </div>
             )}
             {unstakeVal > 0 && (
                 <div className="veb-shc-tt-row">
                     <span className="veb-shc-tt-dot" style={{ background: '#f59e0b' }} />
                     <span className="veb-shc-tt-k">{t?.stakes?.unstake ?? 'Unstake'}</span>
-                    <span className="veb-shc-tt-v" style={{ color: '#f59e0b' }}>−{formatShortXRD(unstakeVal)} XRD</span>
+                    <span className="veb-shc-tt-v" style={{ color: '#f59e0b' }}>−{formatShortXRD(unstakeVal, locale)} XRD</span>
                 </div>
             )}
             {claimVal > 0 && (
                 <div className="veb-shc-tt-row">
                     <span className="veb-shc-tt-dot" style={{ background: '#3b82f6' }} />
                     <span className="veb-shc-tt-k">{t?.stakes?.claim ?? 'Claim'}</span>
-                    <span className="veb-shc-tt-v" style={{ color: '#3b82f6' }}>+{formatShortXRD(claimVal)} XRD</span>
+                    <span className="veb-shc-tt-v" style={{ color: '#3b82f6' }}>+{formatShortXRD(claimVal, locale)} XRD</span>
                 </div>
             )}
         </div>
@@ -75,13 +75,13 @@ const StakeTooltip = ({ active, payload, label, t, locale }: StakeTooltipProps) 
 /* ─────────────────────────────────────────
    Axis value formatter
 ───────────────────────────────────────── */
-const fmtAxis = (v: number) => {
+const fmtAxis = (v: number, locale: string = 'en') => {
     const abs = Math.abs(v);
     if (abs === 0) return '0';
-    if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toFixed(1)}B`;
-    if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000) return `${(abs / 1_000).toFixed(0)}K`;
-    return abs.toString();
+    if (abs >= 1_000_000_000) return `${(abs / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}B`;
+    if (abs >= 1_000_000) return `${(abs / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}M`;
+    if (abs >= 1_000) return `${(abs / 1_000).toLocaleString(locale, { maximumFractionDigits: 0 })}K`;
+    return abs.toLocaleString(locale);
 };
 
 /* ─────────────────────────────────────────
@@ -116,7 +116,7 @@ export const StakeEvolutionChart = ({
                     </defs>
                     <CartesianGrid strokeDasharray="2 5" stroke="var(--color-card-border)" strokeOpacity={0.5} vertical={false} />
                     <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} interval={30} padding={{ left: 6, right: 6 }} />
-                    <YAxis domain={[domainMin, domainMax]} tickFormatter={fmtAxis} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} width={44} tickCount={5} />
+                    <YAxis domain={[domainMin, domainMax]} tickFormatter={(v) => fmtAxis(v, locale)} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} width={44} tickCount={5} />
                     <Tooltip content={<StakeTooltip t={t} locale={locale} />} cursor={{ stroke: 'var(--color-primary)', strokeWidth: 1, strokeDasharray: '3 3' }} />
                     <Area type="monotone" dataKey="totalStake" stroke="var(--color-primary)" strokeWidth={2} fillOpacity={1} fill="url(#evolGrad)" isAnimationActive={false} />
                 </AreaChart>
@@ -164,7 +164,7 @@ export const StakeHistoryChart = ({
                     <CartesianGrid strokeDasharray="2 5" stroke="var(--color-card-border)" strokeOpacity={0.5} vertical={false} />
                     <ReferenceLine y={0} stroke="var(--color-card-border)" strokeWidth={1.5} strokeOpacity={0.8} />
                     <XAxis dataKey="date" tickFormatter={fmtDate} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} interval={7} padding={{ left: 6, right: 6 }} />
-                    <YAxis domain={[domainMin, domainMax]} tickFormatter={fmtAxis} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} width={44} tickCount={5} />
+                    <YAxis domain={[domainMin, domainMax]} tickFormatter={(v) => fmtAxis(v, locale)} tick={{ fill: 'var(--color-text-muted)', fontSize: 10, fontWeight: 600 }} axisLine={false} tickLine={false} width={44} tickCount={5} />
                     <Tooltip content={<StakeTooltip t={t} locale={locale} />} cursor={{ fill: 'var(--color-text-muted)', opacity: 0.05, radius: 4 }} />
                     <Bar dataKey="stake" fill="url(#stakeGrad)" radius={[4, 4, 0, 0]} maxBarSize={32} filter="url(#stakeGlow)" isAnimationActive={false} activeBar={false} />
                     <Bar dataKey="unstakeNeg" fill="url(#unstakeGrad)" radius={[0, 0, 4, 4]} stackId="negative" maxBarSize={32} filter="url(#unstakeGlow)" isAnimationActive={false} activeBar={false} />

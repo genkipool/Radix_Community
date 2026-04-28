@@ -59,15 +59,15 @@ export const StatusLabel = ({ status, t, compact = false }: { status: Validator[
 StatusLabel.displayName = 'StatusLabel';
 
 /** Live proposals bar (made vs missed) */
-export const ProposalsBar = ({ validator }: { validator: Validator }) => {
+export const ProposalsBar = ({ validator, locale }: { validator: Validator; locale?: string }) => {
     const { recentMade: made, recentMissed: missed } = useLiveProposals(validator);
     const total = made + missed;
     const pct = total > 0 ? (made / total) * 100 : 100;
     return (
         <div className="w-full">
             <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mb-1">
-                <span>{made.toLocaleString()}</span>
-                <span className="text-red-700 dark:text-red-400 font-bold">{missed.toLocaleString()}</span>
+                <span>{made.toLocaleString(locale)}</span>
+                <span className="text-red-700 dark:text-red-400 font-bold">{missed.toLocaleString(locale)}</span>
             </div>
             <XPBar progress={pct} color="var(--color-primary)" size="sm" showDots={false} />
         </div>
@@ -171,10 +171,12 @@ export const EpochPerformanceTable = ({
     validator,
     dt,
     epochRewards = {},
+    locale,
 }: {
     validator: Validator;
     dt?: DashboardDict;
     epochRewards?: Record<number, { fee: number; pool: number }>;
+    locale?: string;
 }) => {
     const { unifiedRows } = useLiveProposals(validator);
 
@@ -217,22 +219,22 @@ export const EpochPerformanceTable = ({
                             </td>
 
                             <td className="px-3 py-2 font-bold text-green-700 dark:text-green-400 tabular-nums">
-                                {ep.completedProposals.toLocaleString()}
+                                {ep.completedProposals.toLocaleString(locale)}
                             </td>
 
                             <td className="px-3 py-2 font-bold text-red-700 dark:text-red-400 tabular-nums">
-                                {ep.missedProposals.toLocaleString()}
+                                {ep.missedProposals.toLocaleString(locale)}
                             </td>
 
                             <td className="px-3 py-2 font-bold text-[var(--color-primary)] tabular-nums">
                                 {epochRewards[ep.epoch] !== undefined
-                                    ? epochRewards[ep.epoch].fee.toFixed(4)
+                                    ? epochRewards[ep.epoch].fee.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                                     : '—'}
                             </td>
 
                             <td className="px-3 py-2 font-bold text-[var(--color-text-main)] tabular-nums">
                                 {epochRewards[ep.epoch] !== undefined
-                                    ? epochRewards[ep.epoch].pool.toFixed(4)
+                                    ? epochRewards[ep.epoch].pool.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                                     : '—'}
                             </td>
 

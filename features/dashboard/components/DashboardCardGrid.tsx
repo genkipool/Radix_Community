@@ -62,6 +62,7 @@ export const DashboardCardGrid = ({
                 t={t}
                 network={network}
                 marketData={marketData}
+                locale={locale}
               />
             ))}
             {/* Progress load sentinel */}

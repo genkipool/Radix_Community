@@ -17,7 +17,7 @@ import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchReward
 
 type LiveProposalsResult = ReturnType<typeof useLiveProposals>;
 
-const fp = (n: number, d = 2) => `${formatNumber(n, d)}%`;
+const fp = (n: number, locale?: string, d = 2) => `${formatNumber(n, d, locale)}%`;
 
 /* ─────────────────────────────────────────
    ProfileBlock
@@ -148,21 +148,22 @@ export const ProfileBlock = ({
    DelegationBlock
 ───────────────────────────────────────── */
 export const DelegationBlock = ({
-    validator, dt, className = '',
+    validator, dt, className = '', locale,
 }: {
     validator: Validator;
     dt?: DashboardDict;
     className?: string;
+    locale?: string;
 }) => (
     <div className={`veb-block veb-delegation ${className}`}>
         <Label>{dt?.details?.delegation ?? 'Resumen de delegación'}</Label>
         <div className="veb-drows">
-            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'} value={formatXRD(validator.delegatedStake)} sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
-            <DR label={dt?.details?.delegators ?? 'Delegadores'} value={validator.delegators.toLocaleString()} />
-            <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatNumber(validator.ownerDelegation, 4)} />
-            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'} value={fp(validator.apyProjection)} />
-            <DR label={dt?.card?.fee ?? 'Comisión'} value={fp(validator.nominalFee)} sub={`${fp(validator.effectiveFee)} efectiva`} />
-            <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8)} XRD` : '—'} />
+            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'} value={formatXRD(validator.delegatedStake, locale)} sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
+            <DR label={dt?.details?.delegators ?? 'Delegadores'} value={validator.delegators.toLocaleString(locale)} />
+            <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatNumber(validator.ownerDelegation, 4, locale)} />
+            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'} value={fp(validator.apyProjection, locale)} />
+            <DR label={dt?.card?.fee ?? 'Comisión'} value={fp(validator.nominalFee, locale)} sub={`${fp(validator.effectiveFee, locale)} efectiva`} />
+            <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD` : '—'} />
         </div>
     </div>
 );
@@ -171,12 +172,13 @@ export const DelegationBlock = ({
    PerformanceBlock
 ───────────────────────────────────────── */
 export const PerformanceBlock = ({
-    validator, dt, live, className = '',
+    validator, dt, live, className = '', locale,
 }: {
     validator: Validator;
     dt?: DashboardDict;
     live: LiveProposalsResult;
     className?: string;
+    locale?: string;
 }) => {
     const uRC = getUptimeColor(validator.recentUptime);
     const uTC = getUptimeColor(validator.totalUptime);
@@ -187,16 +189,16 @@ export const PerformanceBlock = ({
                 <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.recentMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.recentMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
             <div className="veb-perf-section mt-4">
                 <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.totalUptime, false, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-total-made">{live.totalMade.toLocaleString()}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString()}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-total-made">{live.totalMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
         </div>
@@ -334,19 +336,19 @@ export const HistoryBlock: React.FC<HistoryBlockProps> = ({
                                         {ep.isLive && <span className="veb-live-tag">live</span>}
                                     </span>
                                 </td>
-                                <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString()}</span></td>
-                                <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString()}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-made">{ep.completedProposals.toLocaleString(locale)}</span></td>
+                                <td className="veb-td text-center"><span className="veb-num-missed">{ep.missedProposals.toLocaleString(locale)}</span></td>
                                 <td className="veb-td text-right">
                                     <span className="text-[var(--color-primary)] font-bold tabular-nums text-[11px]">
                                         {epochRewards[ep.epoch] !== undefined
-                                            ? epochRewards[ep.epoch].fee.toFixed(4)
+                                            ? epochRewards[ep.epoch].fee.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                                             : ep.isLive ? '—' : '—'}
                                     </span>
                                 </td>
                                 <td className="veb-td text-right">
                                     <span className="text-[var(--color-text-main)] font-bold tabular-nums text-[11px]">
                                         {epochRewards[ep.epoch] !== undefined
-                                            ? epochRewards[ep.epoch].pool.toFixed(4)
+                                            ? epochRewards[ep.epoch].pool.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                                             : ep.isLive ? '—' : '—'}
                                     </span>
                                 </td>

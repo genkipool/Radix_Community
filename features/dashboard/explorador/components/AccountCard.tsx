@@ -167,10 +167,10 @@ export function AccountCard({
                                     <button
                                         onClick={handleDownloadClick}
                                         onMouseEnter={handleDownloadMouseEnter}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface-hover)] hover:bg-[var(--color-accent)]/10 text-[var(--color-text-main)] hover:text-[var(--color-accent)] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-all duration-200 text-xs sm:text-sm font-semibold whitespace-nowrap shadow-sm group active:scale-[0.98]"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface)] hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/40 transition-colors duration-200 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm"
                                         title={accT?.download_account_rewards || 'Download Rewards'}
                                     >
-                                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-y-0.5 transition-transform" />
+                                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-primary)]/70" />
                                         <span>{accT?.csv_button || 'CSV'}</span>
                                     </button>
 
@@ -193,7 +193,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-green-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(parseFloat(xrdAmount))}
+                                            {statsLoading ? '-' : formatXRD(parseFloat(xrdAmount), locale)}
                                         </span>
                                         {renderFiatValue(parseFloat(xrdAmount))}
                                     </div>
@@ -204,7 +204,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-blue-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(totalLsuAmount)}
+                                            {statsLoading ? '-' : formatXRD(totalLsuAmount, locale)}
                                         </span>
                                         {renderFiatValue(totalLsuXrdEquivalent)}
                                     </div>
@@ -215,7 +215,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
-                                            {statsLoading ? '-' : formatXRD(stakedTotal)}
+                                            {statsLoading ? '-' : formatXRD(stakedTotal, locale)}
                                         </span>
                                         {renderFiatValue(stakedTotal)}
                                     </div>
@@ -226,7 +226,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-orange-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(unstakeTotal)}
+                                            {statsLoading ? '-' : formatXRD(unstakeTotal, locale)}
                                         </span>
                                         {renderFiatValue(unstakeTotal)}
                                     </div>
@@ -237,7 +237,7 @@ export function AccountCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-green-500 font-mono">
-                                            {statsLoading ? '-' : formatXRD(claimTotal)}
+                                            {statsLoading ? '-' : formatXRD(claimTotal, locale)}
                                         </span>
                                         {renderFiatValue(claimTotal)}
                                     </div>

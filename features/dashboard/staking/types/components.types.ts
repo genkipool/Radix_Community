@@ -28,6 +28,7 @@ export interface LayoutProps {
     network?: Network;
     columns: number;
     marketData?: MarketData | null;
+    locale?: string;
 }
 
 /**
@@ -83,6 +84,7 @@ export interface ValidatorCardProps {
     onOpenModalPrev?: () => void;
     onOpenModalNext?: () => void;
     marketData?: MarketData | null;
+    locale?: string;
 }
 
 /**
@@ -136,6 +138,7 @@ export interface ValidatorExpandedBodyProps {
     /** When true, applies modal-specific layout fixes */
     isModal?: boolean;
     marketData?: MarketData | null;
+    locale?: string;
 }
 
 /**
@@ -242,6 +245,7 @@ export interface ExpandPanelProps {
     columns: number;
     network?: Network;
     marketData?: MarketData | null;
+    locale?: string;
 }
 
 /**

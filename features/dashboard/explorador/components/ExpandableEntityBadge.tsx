@@ -282,6 +282,7 @@ export function ExpandableEntityBadge({
                                                     onCopy={onCopy}
                                                     copiedAddress={copiedAddress}
                                                     onResourceClick={onResourceClick}
+                                                    locale={_locale}
                                                 />
                                             )
                                         )}
@@ -351,6 +352,7 @@ function EntitySummaryTab({
     onCopy,
     copiedAddress,
     onResourceClick,
+    locale,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -362,6 +364,7 @@ function EntitySummaryTab({
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
+    locale: string;
 }) {
     const entityType = getEntityDetailType(entityData, address);
     const description = getMeta('description');
@@ -454,21 +457,21 @@ function EntitySummaryTab({
                 {totalSupply !== undefined && totalSupply !== null && (
                     <SummaryRow
                         label={tt?.resource_panel_total_supply || 'Total Supply'}
-                        value={Number(totalSupply).toLocaleString()}
+                        value={Number(totalSupply).toLocaleString(locale)}
                         mono
                     />
                 )}
                 {totalMinted !== undefined && totalMinted !== null && Number(totalMinted) > 0 && (
                     <SummaryRow
                         label={tt?.resource_panel_total_minted || 'Total Minted'}
-                        value={Number(totalMinted).toLocaleString()}
+                        value={Number(totalMinted).toLocaleString(locale)}
                         mono
                     />
                 )}
                 {totalBurned !== undefined && totalBurned !== null && Number(totalBurned) > 0 && (
                     <SummaryRow
                         label={tt?.resource_panel_total_burned || 'Total Burned'}
-                        value={Number(totalBurned).toLocaleString()}
+                        value={Number(totalBurned).toLocaleString(locale)}
                         mono
                     />
                 )}

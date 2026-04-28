@@ -284,7 +284,7 @@ function ExpandableResourceCard({
                 <div className="flex items-center gap-2 shrink-0">
                     <div className="flex items-baseline gap-1.5">
                         <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight">
-                            {amount}
+                            {parseFloat(amount).toLocaleString(locale || 'en-US')}
                         </span>
                         <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right truncate max-w-[80px]" title={symbol || name}>
                             {symbol || name}

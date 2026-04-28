@@ -29,7 +29,7 @@ import {
 ==============================═══════════ */
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -76,7 +76,7 @@ export const Layout1Col = ({
                                             className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
-                                            {formatXRD(validator.delegatedStake)}
+                                            {formatXRD(validator.delegatedStake, locale)}
                                         </span>
                                         <span
                                             className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
@@ -92,22 +92,22 @@ export const Layout1Col = ({
                                 tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
                                 value: (
                                     <div className="flex items-center gap-1">
-                                        <span>{formatNumber(validator.nominalFee, 2)}%</span>
+                                        <span>{formatNumber(validator.nominalFee, 2, locale)}%</span>
                                         {validator.hasPendingFeeChange && (
                                             <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%` },
-                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
+                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
                                 value: `${validator.recentUptime.toFixed(2)}%`,
                                 accent: getUptimeColor(validator.recentUptime)
                             },
-                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
+                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
                         ]} />
 
                         <p className="text-xs text-[var(--color-text-muted)] italic leading-relaxed line-clamp-1">
@@ -150,7 +150,7 @@ export const Layout1Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
         </div>
     );
 };
@@ -160,7 +160,7 @@ export const Layout1Col = ({
 ==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -206,7 +206,7 @@ export const Layout2Col = ({
                                             className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
                                         >
-                                            {formatXRD(validator.delegatedStake)}
+                                            {formatXRD(validator.delegatedStake, locale)}
                                         </span>
                                         <span
                                             className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
@@ -222,24 +222,24 @@ export const Layout2Col = ({
                                 tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
                                 value: (
                                     <div className="flex items-center gap-1">
-                                        <span>{formatNumber(validator.nominalFee, 2)}%</span>
+                                        <span>{formatNumber(validator.nominalFee, 2, locale)}%</span>
                                         {validator.hasPendingFeeChange && (
                                             <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2)}%` },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
                         ]} />
                         <StatDivider items={[
-                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2)}%` },
+                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
                                 value: `${validator.recentUptime.toFixed(2)}%`,
                                 accent: getUptimeColor(validator.recentUptime)
                             },
-                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0) },
+                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
                         ]} />
                     </div>
 
@@ -275,7 +275,7 @@ export const Layout2Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
         </div>
     );
 };
@@ -285,7 +285,7 @@ export const Layout2Col = ({
 ==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -317,23 +317,23 @@ export const Layout4Col = ({
                 <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Stake Total'}</span>
                     <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
-                        {formatXRD(validator.delegatedStake)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
+                        {formatXRD(validator.delegatedStake, locale)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Comisión'}</span>
                     <div className="flex items-center gap-1 text-[12px] font-black text-[var(--color-text-main)] truncate">
-                        <span>{formatNumber(validator.nominalFee, 1)}%</span>
+                        <span>{formatNumber(validator.nominalFee, 1, locale)}%</span>
                         {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
                     </div>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.apy ?? 'APY'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.apyProjection, 2)}%</span>
+                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.apyProjection, 2, locale)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Com. Efectiva'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.effectiveFee, 1)}%</span>
+                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.effectiveFee, 1, locale)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.uptime_14d ?? 'Uptime 14d'}</span>
@@ -341,7 +341,7 @@ export const Layout4Col = ({
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegadores'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.delegators, 0)}</span>
+                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.delegators, 0, locale)}</span>
                 </div>
             </div>
 
@@ -376,7 +376,7 @@ export const Layout4Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
         </div>
     );
 };
@@ -387,7 +387,7 @@ export const Layout4Col = ({
 ==============================═══════════ */
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -419,15 +419,15 @@ export const Layout6Col = ({
                 <BizRow
                     label={dt?.card?.stake ?? 'Stake'}
                     value={validator.delegatedStakePercent > 2
-                        ? `${formatXRD(validator.delegatedStake)} (${validator.delegatedStakePercent.toFixed(1)}%)`
-                        : formatXRD(validator.delegatedStake)
+                        ? `${formatXRD(validator.delegatedStake, locale)} (${validator.delegatedStakePercent.toFixed(1)}%)`
+                        : formatXRD(validator.delegatedStake, locale)
                     }
                     accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-text-main)'}
                     tooltip={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                     vertical={columns >= 8}
                 />
-                <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1)}%`} vertical={columns >= 8} />
-                <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1)}%`} vertical={columns >= 8} />
+                <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1, locale)}%`} vertical={columns >= 8} />
+                <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1, locale)}%`} vertical={columns >= 8} />
                 <BizRow
                     label={dt?.card?.uptime_14d ?? 'Uptime'}
                     value={`${validator.recentUptime.toFixed(1)}%`}
@@ -435,7 +435,7 @@ export const Layout6Col = ({
                     tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)}
                     vertical={columns >= 8}
                 />
-                <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0)} vertical={columns >= 8} />
+                <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0, locale)} vertical={columns >= 8} />
             </div>
 
             {/* Row 4: Footer — SVG Web, SVG Address, Button */}
@@ -469,7 +469,7 @@ export const Layout6Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
         </div>
     );
 };
@@ -478,7 +478,7 @@ export const Layout6Col = ({
 
 /** Animated expand panel shared by all layout variants */
 const ExpandPanel = ({
-    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData,
+    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
 }: ExpandPanelProps) => (
     <AnimatePresence initial={false}>
         {isExpanded && (
@@ -497,6 +497,7 @@ const ExpandPanel = ({
                     columns={columns}
                     network={network}
                     marketData={marketData}
+                    locale={locale}
                 />
             </motion.div>
         )}

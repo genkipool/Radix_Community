@@ -29,6 +29,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
     network = 'mainnet',
     isModalMode = false,
     marketData,
+    locale,
 }: ValidatorCardProps & { isModalMode?: boolean }) => {
     const [downTime, setDownTime] = useState(0);
 
@@ -54,6 +55,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         copiedAddress,
         network,
         marketData,
+        locale,
     };
 
     return (

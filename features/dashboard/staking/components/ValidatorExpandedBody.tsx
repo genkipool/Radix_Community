@@ -26,11 +26,13 @@ export const ValidatorExpandedBody = ({
     validator, t, onCopy, copiedAddress,
     network = 'mainnet', columns, hideCta = false,
     isModal = false, marketData,
+    locale,
 }: ValidatorExpandedBodyProps) => {
     const { language } = useLanguage();
     const { setShowUnderConstruction } = useLayout();
     const dt = t?.dashboard;
     const live = useLiveProposals(validator);
+    const activeLocale = locale || language;
 
 
     /* ── Data fetching ───────────────────────── */
@@ -77,11 +79,11 @@ export const ValidatorExpandedBody = ({
     const thirtyDayHistory = stakeHistory.length > 0 ? stakeHistory.slice(-30) : [];
 
     /* ── Shared block props ──────────────────── */
-    const profileProps = { validator, dt, t, onCopy, copiedAddress, isModal };
-    const delegationProps = { validator, dt };
-    const perfProps = { validator, dt, live };
-    const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: language };
-    const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: language };
+    const profileProps = { validator, dt, t, onCopy, copiedAddress, isModal, locale: activeLocale };
+    const delegationProps = { validator, dt, locale: activeLocale };
+    const perfProps = { validator, dt, live, locale: activeLocale };
+    const evolutionProps = { loading: loadingStakes, data: threeMonthEvolution, t, locale: activeLocale };
+    const activityProps = { loading: loadingStakes, allHistory: stakeHistory, thirtyDays: thirtyDayHistory, t, locale: activeLocale };
     const { data: epochRewards = {} } = useEpochRewards(validator.address, network);
     const historyProps = { 
         live, 
@@ -89,7 +91,7 @@ export const ValidatorExpandedBody = ({
         epochRewards, 
         validatorAddress: validator.address,
         marketData,
-        locale: language
+        locale: activeLocale
     };
 
     /* ── Layouts ─────────────────────────────── */
