@@ -41,7 +41,7 @@ describe('AssetTransferGroup', () => {
     const XRD = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
 
     const baseProps = {
-        allSenderAddresses: new Set([ACCOUNT_1]),
+        initiators: new Set([ACCOUNT_1]),
         realTransferAddresses: new Set([ACCOUNT_1]),
         actualFeePaid: '1.0',
         t: {} as unknown as TranslationsT,
@@ -71,18 +71,18 @@ describe('AssetTransferGroup', () => {
         expect(feeRow?.getAttribute('data-side')).toBe('sender');
     });
 
-    it('renders fee as primary row on origin if no non-fee row exists for that address', () => {
+    it('renders fee as primary row on receiver side when address is not an initiator', () => {
         const group: FungibleChange[] = [
             { entity_address: ACCOUNT_2, resource_address: XRD, balance_change: '-1', is_fee: true },
         ];
-        const props = { ...baseProps, allSenderAddresses: new Set([ACCOUNT_1]) };
+        const props = { ...baseProps, initiators: new Set([ACCOUNT_1]) };
         const bc: BalanceChanges = { fungible_balance_changes: [], fungible_fee_balance_changes: group };
 
         render(<AssetTransferGroup {...props} group={group} balanceChanges={bc} />);
         
         const feeRow = screen.getByTestId('balance-row');
         expect(feeRow.getAttribute('data-is-fee')).toBe('true');
-        expect(feeRow.getAttribute('data-side')).toBe('sender');
+        expect(feeRow.getAttribute('data-side')).toBe('receiver');
     });
 
     it('nests destination-side fee correctly', () => {

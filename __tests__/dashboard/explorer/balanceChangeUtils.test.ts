@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getResourceGroups, getAllSenderAddresses, getNftOnlyGroups } from '@/features/dashboard/explorador/utils/balanceChangeUtils';
+import { getResourceGroups, getInitiators, getNftOnlyGroups } from '@/features/dashboard/explorador/utils/balanceChangeUtils';
 import type { BalanceChanges } from '@/features/dashboard/explorador/types';
 
 describe('balanceChangeUtils', () => {
@@ -51,7 +51,7 @@ describe('balanceChangeUtils', () => {
         });
     });
 
-    describe('getAllSenderAddresses', () => {
+    describe('getInitiators', () => {
         it('returns only addresses with negative balance change', () => {
             const bc: BalanceChanges = {
                 fungible_balance_changes: [
@@ -59,7 +59,7 @@ describe('balanceChangeUtils', () => {
                     { entity_address: ACCOUNT_2, resource_address: XRD, balance_change: '10' },
                 ]
             };
-            const senders = getAllSenderAddresses(bc);
+            const senders = getInitiators(bc);
             expect(senders.has(ACCOUNT_1)).toBe(true);
             expect(senders.has(ACCOUNT_2)).toBe(false);
         });
@@ -70,7 +70,7 @@ describe('balanceChangeUtils', () => {
                     { entity_address: CM, resource_address: XRD, balance_change: '-100' },
                 ]
             };
-            const senders = getAllSenderAddresses(bc);
+            const senders = getInitiators(bc);
             expect(senders.size).toBe(0);
         });
     });

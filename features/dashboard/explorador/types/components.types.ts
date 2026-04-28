@@ -62,6 +62,7 @@ export interface AssetTransferGroupProps {
     network: Network;
     isClaim?: boolean;
     isUnstake?: boolean;
+    isStake?: boolean;
     validatorOps?: ValidatorOp[];
     /** For unstake: the validatorOp paired with this LSU group */
     pairedValidatorOp?: ValidatorOp;
@@ -78,6 +79,7 @@ export interface TransferFooterProps {
     actualFeePaid: string;
     tt: TranslationsT['dashboard']['transactions'];
     resourceAddress?: string;
+    isResourceBurned?: boolean;
     mintedNftCount?: number;
     burnedNftCount?: number;
     network?: Network;

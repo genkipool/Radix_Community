@@ -158,7 +158,7 @@ const TransactionTabs = ({
                         {/* Asset transfers */}
                         {(() => {
                             const classes: string[] = (tx.manifestClasses as string[]) ?? (details?.manifest_classes as string[]) ?? [];
-                            const { isClaim: isClaimTx, isUnstake: isUnstakeTx } = getTransactionFlags(classes);
+                            const { isClaim: isClaimTx, isUnstake: isUnstakeTx, isStake: isStakeTx } = getTransactionFlags(classes);
 
                             if (isUnstakeTx && resourceGroups.length > 0) {
                                 // ── UNSTAKE: single merged card (all LSUs from same account) ──
@@ -191,7 +191,13 @@ const TransactionTabs = ({
                             }
 
                             const allGroups = [...resourceGroups, ...nftOnlyGroups];
-                            const filteredGroups = allGroups.filter(g => {
+
+                            // ── STAKE: merge all resource groups (XRD + LSU) into a single card ──
+                            const mergedGroups = isStakeTx && allGroups.length > 1
+                                ? [allGroups.flat()]
+                                : allGroups;
+
+                            const filteredGroups = mergedGroups.filter(g => {
                                 // Skip a group if it ONLY contains fee entries for addresses that already have "real" transfers elsewhere
                                 const hasRealTransferInGroup = g.some(c => !c.is_fee);
                                 if (hasRealTransferInGroup) return true;
@@ -217,6 +223,7 @@ const TransactionTabs = ({
                                     formatEntity={formatEntity}
                                     readingMode={readingMode}
                                     isClaim={isClaimTx}
+                                    isStake={isStakeTx}
                                     validatorOps={tx.validatorOps}
                                     {...shared}
                                 />

@@ -26,8 +26,8 @@ export function UnstakeAssetCard({
 
             <div className={`flex flex-col ${columns === 2 ? '' : 'md:flex-row'} divide-y ${columns === 2 ? 'divide-y' : 'md:divide-y-0 md:divide-x'} divide-[var(--color-card-border)]`}>
                 {/* ── ORIGIN ── */}
-                <div className="flex-1 p-3 bg-red-500/5">
-                    <h5 className="text-[10px] uppercase font-black tracking-widest text-red-600 dark:text-red-400 mb-3 flex items-center gap-1.5 opacity-80">
+                <div className="flex-1 p-3 bg-blue-500/5">
+                    <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
                         {tt.from_address || 'Origin (Sent)'}
                     </h5>
@@ -37,7 +37,22 @@ export function UnstakeAssetCard({
                                 <AddressDisplay label={tt.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                 <div className="space-y-1 mt-2">
                                     {allLsuChanges.map((change, i: number) => (
-                                        <BalanceChangeRow key={i} change={change} tt={tt} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="sender" locale={locale} />
+                                        <BalanceChangeRow 
+                                            key={i} 
+                                            change={change} 
+                                            tt={tt} 
+                                            onResourceClick={onResourceClick} 
+                                            onCopy={onCopy} 
+                                            copiedAddress={copiedAddress} 
+                                            readingMode={readingMode} 
+                                            network={network} 
+                                            side="sender" 
+                                            locale={locale} 
+                                            hideSign={true}
+                                            iconOverride={<IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" />}
+                                            titleOverride={tt.lsu_burn_explanation}
+                                            colorOverride="text-orange-600 dark:text-orange-400"
+                                        />
                                     ))}
 
                                     {/* Network Fee - Origin Side */}
@@ -101,36 +116,6 @@ export function UnstakeAssetCard({
                         {tt.to_address || 'Destination (Received)'}
                     </h5>
                     <div className="space-y-2">
-                        {/* System burn card */}
-                        <div className="pl-4 border-l-2 border-orange-500/25 mt-1 mb-3">
-                            <div className="scale-95 origin-left">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-500/30 bg-orange-500/5 mb-1.5">
-                                    <IconFlame className="text-orange-600 w-3.5 h-3.5 shrink-0" />
-                                    <span className="text-[10px] uppercase font-black text-orange-700 dark:text-orange-400 tracking-wider">
-                                        {tt.system_burn_lsu || 'Quema de token del sistema/red vía Componente'}
-                                    </span>
-                                </div>
-                                <div className="space-y-1">
-                                    {allLsuChanges.map((change, i: number) => (
-                                        <BalanceChangeRow
-                                            key={i}
-                                            change={change}
-                                            tt={tt}
-                                            onResourceClick={onResourceClick}
-                                            onCopy={onCopy}
-                                            copiedAddress={copiedAddress}
-                                            readingMode={readingMode}
-                                            network={network}
-                                            side="sender"
-                                            locale={locale}
-                                            colorOverride="text-orange-600 dark:text-orange-400"
-                                            iconOverride={<IconFlame className="w-4 h-4 mr-0.5" />}
-                                            hideSign={true}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Interleaved: validator → stake claim NFT */}
                         {validatorOps.map((op, i: number) => (

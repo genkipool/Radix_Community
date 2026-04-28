@@ -199,6 +199,8 @@
       "method_network_title": "Estos activos fueron transferidos por un componente a nivel de red (ej. Consensus Manager) como resultado de una acción de la red, como recompensas de staking.",
       "method_smart_contract": "Smart Contract / Pool",
       "method_smart_contract_title": "Estos activos fueron enviados directamente por un Smart Contract (Componente), como un pool de liquidez o un dApp.",
+      "method_staking": "Staking",
+      "method_staking_title": "Estos activos fueron liberados por el componente de staking de un validador como resultado de una operación de reclamación, unstaking o staking.",
       "method_user": "Envío de Usuario",
       "method_user_title": "Estos activos fueron retirados de la cuenta de uno o varios usuarios para ser enviados a esta dirección.",
       "net_summary_title": "Resumen Neto de la Transacción",

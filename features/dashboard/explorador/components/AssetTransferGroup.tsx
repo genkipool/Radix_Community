@@ -22,13 +22,16 @@ export function AssetTransferGroup({
     group, balanceChanges, initiators, realTransferAddresses,
     actualFeePaid, tt: _tt, t,
     onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network,
-    isClaim, isUnstake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
+    isClaim, isUnstake, isStake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
     locale,
 }: AssetTransferGroupProps) {
     const tt = _tt || ({} as TranslationsT['dashboard']['transactions']);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-    
+
+    // Only account_ addresses can be origins; everything else goes to destination.
     const originActors = group.filter(c => {
+        if (!sanitizeText(c.entity_address).startsWith('account_')) return false;
+
         const isOrigin = initiators.has(sanitizeText(c.entity_address));
         if (!isOrigin) return false;
 
@@ -50,6 +53,15 @@ export function AssetTransferGroup({
     });
 
     const destActors = group.filter(c => {
+        // Non-account addresses always go to destination
+        if (!sanitizeText(c.entity_address).startsWith('account_')) {
+            if (!c.is_fee) return true;
+            const hasRealInGroup = group.some(oc => oc.entity_address === c.entity_address && !oc.is_fee);
+            if (hasRealInGroup) return false;
+            const hasRealInWholeTx = realTransferAddresses.has(sanitizeText(c.entity_address));
+            return !hasRealInWholeTx;
+        }
+
         const isOrigin = initiators.has(sanitizeText(c.entity_address));
         if (isOrigin) return false;
 
@@ -67,16 +79,16 @@ export function AssetTransferGroup({
     // If after filtering we have NO actors, we hide the whole card.
     // This happens for a group (usually XRD) that only contains fees for addresses already shown in other cards.
     if (originActors.length === 0 && destActors.length === 0) return null;
-    
+
     // Determine the actual senders of this resource to classify the source correctly (e.g. for "Received via" badge)
     const resourceSenders = group.filter(c => {
         if (parseFloat(c.balance_change || '0') < 0 && !c.is_fee) return true;
         const nftRemoved = (balanceChanges.non_fungible_balance_changes ?? []).some(nft => nft.entity_address === c.entity_address && (nft.removed?.length ?? 0) > 0);
         return nftRemoved;
     });
-    
+
     const { method: sourceMethod, title: sourceTitle, color: sourceColor, bg: sourceBg } =
-        classifySource(resourceSenders, tt);
+        classifySource(resourceSenders, tt, { isStakingTx: isClaim || isUnstake || isStake });
 
     const isFungibleBurned = (resAddress: string) => {
         return !(balanceChanges.fungible_balance_changes ?? []).some(
@@ -115,13 +127,6 @@ export function AssetTransferGroup({
                                 const nftWithdrawals = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.removed?.length ?? 0) > 0);
                                 const isCM = isConsensusManager(change.entity_address);
 
-                                // For claim txs: pair the i-th removed claim NFT with this validator sender
-                                const claimNftChanges = isClaim
-                                    ? (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => (nft.removed?.length ?? 0) > 0)
-                                    : [];
-                                const pairedClaimNft = isClaim ? (claimNftChanges[i] ?? null) : null;
-                                const pairedOp = isClaim && validatorOps ? (validatorOps[i] ?? validatorOps[0]) : null;
-
                                 const fungibleBurned = isFungibleBurned(change.resource_address) && !change.is_fee;
 
                                 return (
@@ -135,18 +140,19 @@ export function AssetTransferGroup({
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <BalanceChangeRow 
-                                                change={change} 
-                                                t={t} 
-                                                onResourceClick={onResourceClick} 
-                                                onCopy={onCopy} 
-                                                copiedAddress={copiedAddress} 
-                                                readingMode={readingMode} 
-                                                network={network} 
-                                                side="sender" 
-                                                locale={locale} 
+                                            <BalanceChangeRow
+                                                change={change}
+                                                t={t}
+                                                onResourceClick={onResourceClick}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                readingMode={readingMode}
+                                                network={network}
+                                                side="sender"
+                                                locale={locale}
                                                 hideSign={fungibleBurned}
                                                 iconOverride={fungibleBurned ? <IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" /> : undefined}
+                                                colorOverride={fungibleBurned ? "text-orange-600 dark:text-orange-400" : undefined}
                                             />
 
                                             {matchingFee && !change.is_fee && (
@@ -159,41 +165,6 @@ export function AssetTransferGroup({
                                                 const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
                                                 return <NftTransferCard key={'nft-s-' + ni} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} isBurned={isBurnedNft} />;
                                             })}
-                                            {/* Claim NFT — address + nested card with left border, +1 NFT (origin side) */}
-                                            {pairedClaimNft && (
-                                                <div className="pl-4 border-l-2 border-[var(--color-primary)]/25 mt-1">
-                                                    <div className="scale-95 origin-left">
-                                                        {/* SYSTEM CARD replacement for Claim origin address */}
-                                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-orange-500/30 bg-orange-500/5 mb-1.5">
-                                                            <IconFlame className="text-orange-600 w-3.5 h-3.5 shrink-0" />
-                                                            <span className="text-[10px] uppercase font-black text-orange-700 dark:text-orange-400 tracking-wider">
-                                                                {tt.claim_card_system_burn || 'System Card / Smart Contract (Burn)'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="mt-1">
-                                                            <NftTransferCard
-                                                                resourceAddress={pairedClaimNft.resource_address}
-                                                                ids={pairedClaimNft.removed || []}
-                                                                type="removed"
-                                                                onCopy={onCopy}
-                                                                copiedAddress={copiedAddress}
-                                                                formatEntity={formatEntity}
-                                                                onResourceClick={onResourceClick}
-                                                                readingMode={readingMode}
-                                                                network={network}
-                                                                tt={tt}
-                                                                side="sender"
-                                                                isClaim={true}
-                                                                isClaimRedeemed={true}
-                                                                nftReceivedLabel={tt?.claim_nft_redeemed_label || 'NFT Canjeado'}
-                                                                claimXrdTotal={pairedOp?.claimXrd as number}
-                                                                locale={locale}
-                                                                isBurned={true}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 );
@@ -205,7 +176,7 @@ export function AssetTransferGroup({
                             if (isClaim) return null;
                             const senderAddrs = new Set(originActors.map((s) => s.entity_address));
                             const orphans = (balanceChanges.non_fungible_balance_changes ?? [])
-                                .filter((nft) => (nft.removed?.length ?? 0) > 0 && !senderAddrs.has(nft.entity_address));
+                                .filter((nft) => (nft.removed?.length ?? 0) > 0 && !senderAddrs.has(nft.entity_address) && sanitizeText(nft.entity_address).startsWith('account_'));
                             return orphans.map((nft, ni: number) => {
                                 const matchedOp = isClaim && validatorOps ? (validatorOps[ni] ?? validatorOps[0]) : undefined;
                                 const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
@@ -266,7 +237,20 @@ export function AssetTransferGroup({
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <BalanceChangeRow change={change} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" locale={locale} />
+                                            <BalanceChangeRow
+                                                change={change}
+                                                t={t}
+                                                onResourceClick={onResourceClick}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                readingMode={readingMode}
+                                                network={network}
+                                                side="receiver"
+                                                locale={locale}
+                                                hideSign={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address)}
+                                                iconOverride={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address) ? <IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" /> : undefined}
+                                                colorOverride={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address) ? "text-orange-600 dark:text-orange-400" : undefined}
+                                            />
                                             {recipientFee && !change.is_fee && (
                                                 <div className="pl-4 border-l-2 border-amber-500/30 opacity-90 scale-95 origin-left">
                                                     <BalanceChangeRow change={{ ...recipientFee, resource_address: recipientFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" locale={locale} />
@@ -275,36 +259,6 @@ export function AssetTransferGroup({
                                             {nftDeposits.map((nft, ni: number) => (
                                                 <NftTransferCard key={'nft-r-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} />
                                             ))}
-                                            {/* Claim txs: show each removed claim NFT nested below XRD row — NFT Presentado / -1 NFT / XRD in elements */}
-                                            {isClaim && (balanceChanges.non_fungible_balance_changes ?? [])
-                                                .filter((nft) => nft.entity_address === change.entity_address && (nft.removed?.length ?? 0) > 0)
-                                                .map((nft, ni: number) => {
-                                                    const matchedOp = validatorOps ? (validatorOps[ni] ?? validatorOps[0]) : undefined;
-                                                    return (
-                                                        <div key={'claim-dest-' + ni} className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left">
-                                                            <NftTransferCard
-                                                                resourceAddress={nft.resource_address}
-                                                                ids={nft.removed || []}
-                                                                type="removed"
-                                                                onCopy={onCopy}
-                                                                copiedAddress={copiedAddress}
-                                                                formatEntity={formatEntity}
-                                                                onResourceClick={onResourceClick}
-                                                                readingMode={readingMode}
-                                                                network={network}
-                                                                tt={tt}
-                                                                side="receiver"
-                                                                isClaim={true}
-                                                                isClaimAuthorized={true}
-                                                                claimXrdTotal={matchedOp?.claimXrd}
-                                                                nftReceivedLabel={tt.nft_presented_label || 'NFT Presentado'}
-                                                                locale={locale}
-                                                            />
-                                                        </div>
-                                                    );
-                                                })
-                                            }
-
                                         </div>
                                     </div>
                                 );
@@ -367,6 +321,26 @@ export function AssetTransferGroup({
                                     </div>
                                 ));
                         })()}
+                        {/* Orphan NFT burns from non-account entities (component vaults) */}
+                        {(() => {
+                            const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
+                            return (balanceChanges.non_fungible_balance_changes ?? [])
+                                .filter((nft) => (nft.removed?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !sanitizeText(nft.entity_address).startsWith('account_'))
+                                .map((nft, ni: number) => {
+                                    const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
+                                    const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
+                                    return (
+                                        <div key={'nft-orphan-burn-' + ni}>
+                                            <div className="pl-2 mb-2">
+                                                <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                            </div>
+                                            <div className="mt-2">
+                                                <NftTransferCard resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} isBurned={isBurnedNft} />
+                                            </div>
+                                        </div>
+                                    );
+                                });
+                        })()}
                     </div>
                 </div>
             </div>
@@ -378,6 +352,7 @@ export function AssetTransferGroup({
                 actualFeePaid={actualFeePaid}
                 tt={tt}
                 resourceAddress={group[0]?.resource_address}
+                isResourceBurned={isFungibleBurned(group[0]?.resource_address)}
                 mintedNftCount={isUnstake ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.added?.length || 0), 0) : undefined}
                 burnedNftCount={isClaim ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.removed?.length || 0), 0) : undefined}
                 network={network}

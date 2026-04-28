@@ -126,8 +126,8 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
 /* ═══════ BALANCE CHANGE ROW ═══════ */
 const BalanceChangeRow = ({
     change, t, tt: ttProp, onResourceClick: _onResourceClick, onCopy, copiedAddress, readingMode: _readingMode, network = 'mainnet', side: _side, locale,
-    iconOverride, colorOverride, hideSign,
-}: BalanceChangeRowProps) => {
+    iconOverride, colorOverride, hideSign, titleOverride,
+}: BalanceChangeRowProps & { titleOverride?: string }) => {
     const tt = ttProp ?? (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
     const [expanded, setExpanded] = useState(false);
 
@@ -182,7 +182,7 @@ const BalanceChangeRow = ({
         <div className="mb-2">
             <div
                 className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 ${!isFee ? 'cursor-pointer' : ''} ${!isFee && expanded ? 'rounded-t-xl border-b-transparent' : 'rounded-xl'}`}
-                title={titleStr} onClick={handleCardClick}
+                title={titleOverride || titleStr} onClick={handleCardClick}
             >
                 <div className="flex items-center gap-3 min-w-0">
                     {iconUrl

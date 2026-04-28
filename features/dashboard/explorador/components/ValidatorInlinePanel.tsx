@@ -10,6 +10,7 @@ import type { GatewayEntityDetails, TranslationsT, DashboardDict, MetadataItem }
 import { getMetaValue } from '../utils/metadataUtils';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { formatXRD, formatNumber } from '@/utils/formatters';
+import { IconFlame } from './TransactionIcons';
 import {
     PanelTabBar,
     PanelLoadingState,
@@ -62,10 +63,10 @@ export function ValidatorInlinePanel({
         : isUnstake ? (unstakeLsu ?? unstakeXrd)
             : claimXrd;
     const primaryUnit = isUnstake ? 'LSU' : 'XRD';
-    const amountColor = isStake ? 'text-green-700 dark:text-green-400' : isUnstake ? 'text-amber-700 dark:text-amber-400' : 'text-[var(--color-primary)]';
+    const amountColor = isStake ? 'text-green-700 dark:text-green-400' : isUnstake ? 'text-orange-600 dark:text-orange-400' : 'text-[var(--color-primary)]';
     const amountSign = isStake ? '+' : '−';
     const numericAmount = primaryAmount != null && primaryAmount > 0
-        ? `${amountSign}${parseFloat(String(primaryAmount)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}` : null;
+        ? `${parseFloat(String(primaryAmount)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}` : null;
 
     const headerMessage = (() => {
         if (!numericAmount) return null;
@@ -150,7 +151,9 @@ export function ValidatorInlinePanel({
                         )}
                         {rightContent ?? (
                             <>
-                                <span className={`text-base font-black font-mono ${amountColor} tabular-nums`}>
+                                <span className={`text-base font-black font-mono ${amountColor} tabular-nums flex items-center gap-1`}>
+                                    {isUnstake && <IconFlame className="w-4 h-4 shrink-0" />}
+                                    {!isUnstake && amountSign}
                                     {numericAmount} <span className="text-xs font-semibold opacity-70">{primaryUnit}</span>
                                 </span>
                                 {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
@@ -216,7 +219,10 @@ export function ValidatorInlinePanel({
                                                     {isUnstake && (unstakeLsu ?? 0) > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-1 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_lsu_burned || 'LSU Quemados'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-amber-600">−{parseFloat(String(unstakeLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} LSU</dd>
+                                                            <dd className="text-sm font-bold font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                                                                <IconFlame className="w-3.5 h-3.5" />
+                                                                {parseFloat(String(unstakeLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} LSU
+                                                            </dd>
                                                         </div>
                                                     )}
                                                     {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
