@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable } from 'lucide-react';
+import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
@@ -24,12 +24,26 @@ import {
     type DelegateButtonProps
 } from '../types/components.types';
 
+/** Internal CSV download button helper */
+const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; showText?: boolean; title?: string }) => {
+    return (
+        <button
+            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            className={`flex items-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group shrink-0 ${showText ? 'gap-1.5 px-2 py-1 rounded-lg' : 'p-1 rounded-md'}`}
+            title={title}
+        >
+            <Download className="w-3.5 h-3.5 transition-transform group-hover:translate-y-[0.5px]" />
+            {showText && <span className="text-[10px] font-black uppercase tracking-tight">CSV</span>}
+        </button>
+    );
+};
+
 /* ==============================═══════════
    LAYOUT 1 — Full width, big photo left sidebar
 ==============================═══════════ */
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -135,8 +149,9 @@ export const Layout1Col = ({
                                 <Globe className="w-3.5 h-3.5 shrink-0" />
                                 {sanitizeText(validator.country)} ({validator.countryPercent}%)
                             </span>
-                            <div className="flex flex-col gap-1 items-start min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} noTruncate />
+                                {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -150,7 +165,7 @@ export const Layout1Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
     );
 };
@@ -160,7 +175,7 @@ export const Layout1Col = ({
 ==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -252,16 +267,19 @@ export const Layout2Col = ({
                                 <Globe className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{sanitizeText(validator.country)}</span>
                             </span>
-                        <div className="flex flex-col gap-1 items-start min-w-0">
-                            <CopyAddressButton
-                                address={validator.address}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                                small
-                                truncate={true}
-                                noTruncate={false}
-                            />
-                        </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                                <CopyAddressButton
+                                    address={validator.address}
+                                    onCopy={onCopy}
+                                    copiedAddress={copiedAddress}
+                                    small
+                                    truncate={true}
+                                    noTruncate={false}
+                                    start={columns === 3 ? 6 : 12}
+                                    end={columns === 3 ? 6 : 12}
+                                />
+                                {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                             <EntityTagsGrid tags={validator.tags} t={t} compact={columns === 3} />
@@ -275,7 +293,7 @@ export const Layout2Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
     );
 };
@@ -285,7 +303,7 @@ export const Layout2Col = ({
 ==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -354,17 +372,18 @@ export const Layout4Col = ({
                     <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
                         <Globe className="w-3.5 h-3.5" />
                     </span>
-                <div className="flex flex-col gap-1 items-start min-w-0">
-                    <CopyAddressButton
-                        address={validator.address}
-                        onCopy={onCopy}
-                        copiedAddress={copiedAddress}
-                        small
-                        truncate
-                        start={columns === 5 ? 6 : 12}
-                        end={columns === 5 ? 6 : 6}
-                    />
-                </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <CopyAddressButton
+                            address={validator.address}
+                            onCopy={onCopy}
+                            copiedAddress={copiedAddress}
+                            small
+                            truncate
+                            start={columns === 5 ? 6 : 12}
+                            end={columns === 5 ? 6 : 6}
+                        />
+                        {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={columns < 5} title={dt?.details?.download_rewards_tooltip} />}
+                    </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
@@ -376,7 +395,7 @@ export const Layout4Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
     );
 };
@@ -387,7 +406,7 @@ export const Layout4Col = ({
 ==============================═══════════ */
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -443,7 +462,7 @@ export const Layout6Col = ({
                 className={`flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)] ${!isExpanded ? 'mt-auto' : ''}`}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center ${columns >= 8 ? 'gap-1' : 'gap-2'}`}>
                     {validator.website && isValidUrl(validator.website) ? (
                         <a href={validator.website} target="_blank" rel="noopener noreferrer" title={sanitizeText(validator.website)}>
                             <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
@@ -458,6 +477,7 @@ export const Layout6Col = ({
                         onCopy={onCopy}
                         copiedAddress={copiedAddress}
                     />
+                    {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={false} title={dt?.details?.download_rewards_tooltip} />}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
@@ -469,7 +489,7 @@ export const Layout6Col = ({
                 </div>
             </div>
 
-            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} />
+            <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
     );
 };
@@ -478,7 +498,7 @@ export const Layout6Col = ({
 
 /** Animated expand panel shared by all layout variants */
 const ExpandPanel = ({
-    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale,
+    isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: ExpandPanelProps) => (
     <AnimatePresence initial={false}>
         {isExpanded && (
@@ -498,6 +518,7 @@ const ExpandPanel = ({
                     network={network}
                     marketData={marketData}
                     locale={locale}
+                    onDownloadCsv={onDownloadCsv}
                 />
             </motion.div>
         )}

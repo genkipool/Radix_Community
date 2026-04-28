@@ -29,6 +29,7 @@ export interface LayoutProps {
     columns: number;
     marketData?: MarketData | null;
     locale?: string;
+    onDownloadCsv?: (address: string) => void;
 }
 
 /**
@@ -139,6 +140,7 @@ export interface ValidatorExpandedBodyProps {
     isModal?: boolean;
     marketData?: MarketData | null;
     locale?: string;
+    onDownloadCsv?: (address: string) => void;
 }
 
 /**
@@ -186,6 +188,7 @@ export interface ARProps {
     extra?: React.ReactNode;
     isModal?: boolean;
     noTruncate?: boolean;
+    onDownloadCsv?: (address: string) => void;
 }
 
 /**
@@ -246,6 +249,7 @@ export interface ExpandPanelProps {
     network?: Network;
     marketData?: MarketData | null;
     locale?: string;
+    onDownloadCsv?: (address: string) => void;
 }
 
 /**

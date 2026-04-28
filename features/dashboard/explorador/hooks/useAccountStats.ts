@@ -2,29 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import type { GatewayEntityDetails, MetadataItem } from '@/features/dashboard/types';
-
-interface ParsedResource {
-    address: string;
-    name: string;
-    symbol: string;
-    iconUrl: string;
-    amount: string;
-    isPoolUnit: boolean;
-    isLsu: boolean;
-    validatorAddress?: string;
-    isClaim: boolean;
-    ids?: string[];
-    isNft: boolean;
-}
-
-export interface StakingEntry {
-    validatorName: string;
-    validatorIcon: string;
-    validatorAddress: string;
-    xrdInStake: number;
-    xrdInUnstake: number;
-    xrdInClaim: number;
-}
+import type { Validator } from '@/types/radix';
+import type { ParsedResource, StakingEntry, FungibleItem, NonFungibleItem } from '../types/models.types';
 
 // Function to safely extract explicit metadata
 export function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
@@ -34,6 +13,7 @@ export function extractMetadata(items: MetadataItem[] | undefined, key: string):
     }
     return '';
 }
+
 
 export function useAccountStats(address: string, network: 'mainnet' | 'stokenet', entityData: GatewayEntityDetails | null) {
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
@@ -55,14 +35,14 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     const claimCollections: Record<string, string[]> = {};
 
     // Process Fungibles
-    fungibles.forEach((ft: any) => {
+    fungibles.forEach((ft: FungibleItem) => {
         if (ft.resource_address === xrdAddress) {
             xrdAmount = ft.amount || '0';
             return;
         }
 
         const meta = ft.explicit_metadata?.items || [];
-        const valByLsu = validatorsData?.validators.find((v: any) => v.lsuResource === ft.resource_address);
+        const valByLsu = validatorsData?.validators.find((v: Validator) => v.lsuResource === ft.resource_address);
 
         const r: ParsedResource = {
             address: ft.resource_address,
@@ -83,9 +63,9 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     });
 
     // Process Non-Fungibles
-    nonFungibles.forEach((nft: any) => {
+    nonFungibles.forEach((nft: NonFungibleItem) => {
         const meta = nft.explicit_metadata?.items || [];
-        const valByClaim = validatorsData?.validators.find((v: any) => v.claimTokenResourceAddress === nft.resource_address);
+        const valByClaim = validatorsData?.validators.find((v: Validator) => v.claimTokenResourceAddress === nft.resource_address);
         const nftItems = nft.vaults?.items?.[0]?.items || [];
         const nftAmount = nft.amount !== undefined ? nft.amount : nftItems.length;
 
@@ -154,9 +134,9 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
 
     if (claimsData) {
         Object.entries(claimsData).forEach(([resAddr, items]) => {
-            const nftEntity = nonFungibles.find((n: any) => n.resource_address === resAddr);
+            const nftEntity = nonFungibles.find((n: NonFungibleItem) => n.resource_address === resAddr);
             const valAddr = extractMetadata(nftEntity?.explicit_metadata?.items || [], 'validator') ||
-                validatorsData?.validators.find((v: any) => v.claimTokenResourceAddress === resAddr)?.address;
+                validatorsData?.validators.find((v: Validator) => v.claimTokenResourceAddress === resAddr)?.address;
 
             if (valAddr) {
                 const entry = getStakingEntry(valAddr);

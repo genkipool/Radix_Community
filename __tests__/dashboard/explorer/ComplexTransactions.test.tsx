@@ -18,6 +18,7 @@ vi.mock('lucide-react', () => ({
     ExternalLink: () => <div data-testid="external-link" />,
     AlertCircle: () => <div data-testid="alert-circle" />,
     Copy: () => <div data-testid="copy" />,
+    Download: () => <div data-testid="download" />,
     Coins: () => <div data-testid="coins" />,
     Box: () => <div data-testid="box" />,
     Users: () => <div data-testid="users" />,

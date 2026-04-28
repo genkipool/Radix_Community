@@ -135,6 +135,7 @@
       "xrd_reward_pool": "D XRD",
       "xrd_reward_pool_tooltip": "Total de XRD distribuidos entre los delegantes",
       "download_rewards": "Descargar Recompensas",
+      "download_rewards_tooltip": "Descargar CSV recompensas validador",
       "rewards_modal_title": "Descargar Historial de Recompensas",
       "rewards_modal_desc": "Selecciona un año para descargar el desglose diario de recompensas en formato CSV de CoinTracking.",
       "rewards_modal_download": "Descargar CSV",
@@ -153,7 +154,7 @@
     "validator_rewards_modal_generating_desc": "Consultando base de datos de recompensas. Este proceso puede tardar unos segundos.",
     "validator_rewards_summary_title": "¡Descarga completada!",
     "validator_rewards_summary_total": "Total generado",
-    "validator_rewards_summary_dream": "Si Radix valiera 1 {currency}, este validador habría generado <b>{value}</b> en recompensas este año."
+    "validator_rewards_summary_dream": "Si Radix valiera 1 {currency}, este validador habría ganado <b>{value}</b> en recompensas este año."
   },
   "stakes": {
     "history_title": "Actividad de Stake (30 días)",

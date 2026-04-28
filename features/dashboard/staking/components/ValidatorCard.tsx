@@ -14,7 +14,8 @@ import {
    Note: Modal logic is now centrally 
    handled by DashboardModals.
 ==============================═══════════ */
-import type { ValidatorCardProps } from '../types';
+import { RewardsCsvModal } from './RewardsCsvModal';
+import { type ValidatorCardProps } from '../types/components.types';
 
 export const ValidatorCard: React.FC<ValidatorCardProps> = ({
     validator,
@@ -32,6 +33,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
     locale,
 }: ValidatorCardProps & { isModalMode?: boolean }) => {
     const [downTime, setDownTime] = useState(0);
+    const [csvModalOpen, setCsvModalOpen] = useState(false);
 
     const { prefetchValidator } = usePrefetchValidatorEntity();
 
@@ -45,6 +47,13 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         handleExpand();
     };
 
+    const handleDownloadCsv = (address: string) => {
+        // We ensure it's the validator address, though the button only appears there
+        if (address === validator.address) {
+            setCsvModalOpen(true);
+        }
+    };
+
     const sharedProps = {
         validator,
         searchQuery,
@@ -56,24 +65,38 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         network,
         marketData,
         locale,
+        onDownloadCsv: handleDownloadCsv,
     };
 
     return (
-        <Card
-            onPointerEnter={() => prefetchValidator(validator.address, network)}
-            onPointerDown={() => setDownTime(Date.now())}
-            onClick={handleCardClick}
-            className={`p-0 overflow-hidden group cursor-pointer transition-[border-color,box-shadow,transform] duration-300 ${isExpanded && !isModalMode
-                ? 'h-full border-[var(--color-primary)]/40 shadow-lg'
-                : 'self-start'
-                }`}
-            innerClassName={`${isExpanded ? 'h-full' : ''} flex flex-col`}
-        >
-            {columns === 1 && <Layout1Col {...sharedProps} columns={columns} />}
-            {(columns === 2 || columns === 3) && <Layout2Col {...sharedProps} columns={columns} />}
-            {(columns === 4 || columns === 5) && <Layout4Col {...sharedProps} columns={columns} />}
-            {columns >= 6 && <Layout6Col {...sharedProps} columns={columns} />}
-        </Card>
+        <>
+            <Card
+                onPointerEnter={() => prefetchValidator(validator.address, network)}
+                onPointerDown={() => setDownTime(Date.now())}
+                onClick={handleCardClick}
+                className={`p-0 overflow-hidden group cursor-pointer transition-[border-color,box-shadow,transform] duration-300 ${isExpanded && !isModalMode
+                    ? 'h-full border-[var(--color-primary)]/40 shadow-lg'
+                    : 'self-start'
+                    }`}
+                innerClassName={`${isExpanded ? 'h-full' : ''} flex flex-col`}
+            >
+                {columns === 1 && <Layout1Col {...sharedProps} columns={columns} />}
+                {(columns === 2 || columns === 3) && <Layout2Col {...sharedProps} columns={columns} />}
+                {(columns === 4 || columns === 5) && <Layout4Col {...sharedProps} columns={columns} />}
+                {columns >= 6 && <Layout6Col {...sharedProps} columns={columns} />}
+            </Card>
+
+            {csvModalOpen && (
+                <RewardsCsvModal
+                    isOpen={csvModalOpen}
+                    onClose={() => setCsvModalOpen(false)}
+                    validatorAddress={validator.address}
+                    dt={t?.dashboard}
+                    marketData={marketData}
+                    locale={locale}
+                />
+            )}
+        </>
     );
 };
 

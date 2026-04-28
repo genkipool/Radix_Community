@@ -117,6 +117,17 @@ export function AddressDisplay({
                         >
                             {displayText}
                         </span>
+                        {isAccountAddr && (
+                            <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                onPointerEnter={() => prefetchAccountRewards(sanitizeText(address))}
+                                className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
+                                title={tt.account_summary?.download_rewards_tooltip || tt.account_summary?.download_account_rewards || 'Download Rewards'}
+                            >
+                                <Download className="w-3 h-3" />
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={e => { e.stopPropagation(); onCopy(copyableAddr); }}
@@ -127,17 +138,6 @@ export function AddressDisplay({
                                 ? <Check className="w-3 h-3 text-green-500" />
                                 : <Copy className="w-3 h-3" />}
                         </button>
-                        {isAccountAddr && (
-                            <button
-                                type="button"
-                                onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}
-                                onPointerEnter={() => prefetchAccountRewards(sanitizeText(address))}
-                                className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
-                                title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
-                            >
-                                <Download className="w-3 h-3" />
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>

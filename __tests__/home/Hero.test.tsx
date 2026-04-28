@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { screen } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../helpers/renderWithProviders';
 import Hero from '@/features/home/sections/Hero';
@@ -165,7 +165,9 @@ describe('Hero', () => {
             // Arrange
             renderWithProviders(<Hero t={mockT} locale="en" />);
             // Act — advance fake timers by 5 seconds
-            vi.advanceTimersByTime(5000);
+            act(() => {
+                vi.advanceTimersByTime(5000);
+            });
             // Assert — component should still be alive (no crash)
             expect(screen.getAllByRole('heading', { level: 1 }).length).toBeGreaterThanOrEqual(1);
         });
@@ -174,7 +176,9 @@ describe('Hero', () => {
             // Arrange
             renderWithProviders(<Hero t={mockT} locale="en" />);
             // Act — 3 full cycles
-            vi.advanceTimersByTime(15000);
+            act(() => {
+                vi.advanceTimersByTime(15000);
+            });
             // Assert
             expect(screen.getAllByRole('heading', { level: 1 }).length).toBeGreaterThanOrEqual(1);
         });

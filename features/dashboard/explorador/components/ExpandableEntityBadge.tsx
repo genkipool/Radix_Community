@@ -192,6 +192,17 @@ export function ExpandableEntityBadge({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                    {isAccountAddr && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                            onPointerEnter={() => prefetchAccountRewards(clean)}
+                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                            title={tt.account_summary?.download_rewards_tooltip || tt.account_summary?.download_account_rewards}
+                        >
+                            <Download className="w-3 h-3" />
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
@@ -205,17 +216,6 @@ export function ExpandableEntityBadge({
                             ? <Check className="w-3 h-3" />
                             : <Copy className="w-3 h-3" />}
                     </button>
-                    {isAccountAddr && (
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
-                            onPointerEnter={() => prefetchAccountRewards(clean)}
-                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={tt.account_summary?.download_account_rewards}
-                        >
-                            <Download className="w-3 h-3" />
-                        </button>
-                    )}
                     <ChevronDown
                         className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
                     />
@@ -270,6 +270,7 @@ export function ExpandableEntityBadge({
                                                     network={network}
                                                     marketData={marketData}
                                                     locale={locale}
+                                                    isBadge={true}
                                                 />
                                             ) : (
                                                 <EntitySummaryTab

@@ -153,25 +153,25 @@ export function AccountCard({
                                             title={address}>
                                             <span className="truncate">{address}</span>
                                         </h3>
-                                        <CopyButton 
-                                            value={address} 
-                                            variant="card-inline" 
-                                            size="sm" 
-                                            forceCopied={isCopied} 
+                                        <CopyButton
+                                            value={address}
+                                            variant="card-inline"
+                                            size="sm"
+                                            forceCopied={isCopied}
                                             onClick={handleCopy}
                                             className="shrink-0"
                                         />
                                     </div>
                                 </div>
-                                <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-2">
+                                <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
                                     <button
                                         onClick={handleDownloadClick}
                                         onMouseEnter={handleDownloadMouseEnter}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-surface)] hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/40 transition-colors duration-200 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm"
-                                        title={accT?.download_account_rewards || 'Download Rewards'}
+                                        className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
+                                        title={accT?.download_rewards_tooltip}
                                     >
-                                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--color-primary)]/70" />
-                                        <span>{accT?.csv_button || 'CSV'}</span>
+                                        <Download className="w-3 h-3" />
+                                        <span className="mt-[0.5px]">CSV</span>
                                     </button>
 
                                     {isModal && onExpand && (
@@ -179,9 +179,10 @@ export function AccountCard({
                                             onClose={() => onExpand(address)}
                                             title={t?.dashboard?.reading?.close || 'Cerrar'}
                                             iconSize={20}
-                                            className="shrink-0 ml-2"
+                                            className="shrink-0 ml-1"
                                         />
                                     )}
+
                                 </div>
                             </div>
 

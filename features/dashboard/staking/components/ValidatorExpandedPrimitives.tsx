@@ -29,8 +29,10 @@ export const DR = ({
 /* ─────────────────────────────────────────
    AR — address row with copy
 ───────────────────────────────────────── */
+import { Download } from 'lucide-react';
+
 export const AR = ({
-    label, addr, onCopy, copied, brackets, extra, isModal, noTruncate,
+    label, addr, onCopy, copied, brackets, extra, isModal, noTruncate, onDownloadCsv,
 }: ARProps) => {
     // Truncate based on view type: Modal (16/40) vs Card (16/20)
     const displayAddr = noTruncate
@@ -49,16 +51,32 @@ export const AR = ({
                 className="veb-ar-content group/ar"
                 onClick={e => { e.stopPropagation(); onCopy(brackets ? `[${addr}]` : addr); }}
             >
-                <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''} ${noTruncate ? 'no-truncate' : ''}`}>
-                    {brackets ? `[${displayAddr}]` : displayAddr}
-                </code>
-                <CopyButton
-                    value={brackets ? `[${addr}]` : addr}
-                    variant="minimal"
-                    size="xs"
-                    className="pointer-events-none"
-                    forceCopied={copied}
-                />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <code className={`veb-ar-code transition-colors duration-300 ${copied ? 'text-green-700 dark:text-green-400' : ''} ${noTruncate ? 'no-truncate' : ''}`}>
+                        {brackets ? `[${displayAddr}]` : displayAddr}
+                    </code>
+                    <div className="flex items-center gap-1 shrink-0">
+                        <CopyButton
+                            value={brackets ? `[${addr}]` : addr}
+                            variant="minimal"
+                            size="xs"
+                            className="pointer-events-none"
+                            forceCopied={copied}
+                        />
+                        {onDownloadCsv && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDownloadCsv(addr);
+                                }}
+                                className="p-1 rounded-md hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                                title="Download History (CSV)"
+                            >
+                                <Download size={12} strokeWidth={2.5} />
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

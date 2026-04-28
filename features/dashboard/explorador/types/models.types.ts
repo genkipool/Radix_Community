@@ -1,7 +1,36 @@
+import type { GatewayEntityDetails } from '@/features/dashboard/types';
+
 /** 
  * Entity and Business models transformed for internal logic
  * Specific to the Explorer (explorador) feature.
  */
+
+// Helper types for resource items
+export type FungibleItem = Exclude<GatewayEntityDetails['fungible_resources'], undefined>['items'][number];
+export type NonFungibleItem = Exclude<GatewayEntityDetails['non_fungible_resources'], undefined>['items'][number];
+
+export interface ParsedResource {
+    address: string;
+    name: string;
+    symbol: string;
+    iconUrl: string;
+    amount: string;
+    isPoolUnit: boolean;
+    isLsu: boolean;
+    validatorAddress?: string;
+    isClaim: boolean;
+    ids?: string[];
+    isNft: boolean;
+}
+
+export interface StakingEntry {
+    validatorName: string;
+    validatorIcon: string;
+    validatorAddress: string;
+    xrdInStake: number;
+    xrdInUnstake: number;
+    xrdInClaim: number;
+}
 
 export interface OracleUpdate {
   baseToken: string;

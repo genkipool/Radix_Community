@@ -23,7 +23,7 @@ const fp = (n: number, locale?: string, d = 2) => `${formatNumber(n, d, locale)}
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '', isModal, noTruncate = false,
+    validator, dt, t, onCopy, copiedAddress, className = '', isModal, noTruncate = false, onDownloadCsv,
 }: {
     validator: Validator;
     dt?: DashboardDict;
@@ -33,6 +33,7 @@ export const ProfileBlock = ({
     className?: string;
     isModal?: boolean;
     noTruncate?: boolean;
+    onDownloadCsv?: (address: string) => void;
 }) => {
     const tech = [
         validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'País', v: sanitizeText(validator.country) },
@@ -88,6 +89,7 @@ export const ProfileBlock = ({
                     copied={!!copiedAddress && copiedAddress === validator.address}
                     isModal={isModal}
                     noTruncate={noTruncate}
+                    onDownloadCsv={onDownloadCsv}
                 />
                 {validator.ownerAddress && (
                     <AR
@@ -302,7 +304,7 @@ export const HistoryBlock: React.FC<HistoryBlockProps> = ({
                             onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
                             onPointerEnter={() => prefetchValidatorRewards(validatorAddress)}
                             className="p-1 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
-                            title={dt?.details?.download_rewards ?? 'Download Rewards'}
+                            title={dt?.details?.download_rewards_tooltip}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

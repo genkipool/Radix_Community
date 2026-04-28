@@ -62,8 +62,9 @@ export function AccountSummaryTab({
     copiedAddress,
     network,
     marketData,
-    locale
-}: AccountSummaryTabProps) {
+    locale,
+    isBadge = false
+}: AccountSummaryTabProps & { isBadge?: boolean }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
 
@@ -198,67 +199,73 @@ export function AccountSummaryTab({
     if (claimsData) {
         Object.entries(claimsData).forEach(([resAddr, items]) => {
             const nftEntity = nonFungibles.find((n: { resource_address: string }) => n.resource_address === resAddr);
-            const valAddr = extractMetadata(nftEntity?.explicit_metadata?.items || [], 'validator') ||
-                validatorsData?.validators.find((v: { claimTokenResourceAddress?: string; address: string }) => v.claimTokenResourceAddress === resAddr)?.address;
+            const rValidatorAddr = nftEntity?.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.value?.typed?.value;
+            const valByClaim = validatorsData?.validators.find((v: { claimTokenResourceAddress?: string; address: string }) => v.claimTokenResourceAddress === resAddr);
+            const validatorAddress = rValidatorAddr || valByClaim?.address;
 
-            if (valAddr) {
-                const entry = getStakingEntry(valAddr);
-                items.forEach((item: Record<string, unknown>) => {
-                    const data = item.data as { programmatic_json?: { fields?: { field_name: string; value: string }[] } } | undefined;
-                    const fields = data?.programmatic_json?.fields;
-                    const amt = parseFloat(fields?.find(f => f.field_name === 'claim_amount')?.value || '0');
-                    // Simplified: Add to unstake column. Distinguishing requires current epoch comparison.
-                    entry.xrdInUnstake += amt;
-                });
-            }
+            if (!validatorAddress) return;
+            const entry = getStakingEntry(validatorAddress);
+
+            items.forEach((nft) => {
+                const nftData = nft as { data?: Array<{ field: string; value: string | boolean }> };
+                const claimXrd = nftData.data?.find((d) => d.field === 'claim_amount')?.value as string || '0';
+                const isLiquid = nftData.data?.find((d) => d.field === 'is_liquid')?.value ?? true;
+
+                if (isLiquid) {
+                    entry.xrdInClaim += parseFloat(claimXrd);
+                } else {
+                    entry.xrdInUnstake += parseFloat(claimXrd);
+                }
+            });
         });
     }
 
-    const stakingRows = Array.from(stakingMap.values()).sort((a, b) => b.xrdInStake - a.xrdInStake);
-    const totalLsuAmount = lsuTokens.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const stakingRows = Array.from(stakingMap.values()).filter(r => r.xrdInStake > 0 || r.xrdInUnstake > 0 || r.xrdInClaim > 0);
+
+    const totalLsuAmount = lsuTokens.reduce((acc, lsu) => acc + parseFloat(lsu.amount), 0);
     const totalLsuXrdEquivalent = lsuTokens.reduce((acc, lsu) => {
-        if (!lsu.validatorAddress) return acc;
         const val = validatorsData?.validators.find(v => v.address === lsu.validatorAddress);
-        const lsuFactor = val?.lsu2xrdFactor || 1;
-        return acc + (parseFloat(lsu.amount) * lsuFactor);
+        return acc + (parseFloat(lsu.amount) * (val?.lsu2xrdFactor || 1));
     }, 0);
 
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {/* Header: Name + Icon */}
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
-                    <SafeImage
-                        src={iconUrl || ''}
-                        alt={entityName || tt.account_summary?.account || 'Account'}
-                        fallbackName={entityName || tt.account_summary?.account || 'Account'}
-                        className="w-full h-full object-cover"
-                    />
-                </div>
+                {iconUrl && (
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
+                        <SafeImage
+                            src={iconUrl}
+                            alt={entityName || address}
+                            fallbackName={entityName || address}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                )}
                 <div className="min-w-0">
-                    <p className="font-bold text-base text-[var(--color-text-main)] truncate">
+                    <p className="font-bold text-sm text-[var(--color-text-main)] truncate">
                         {entityName || tt.account_summary?.account || 'Account'}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
                             {address}
                         </span>
+                        {address.startsWith('account_') && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                onPointerEnter={() => prefetchAccountRewards(address)}
+                                className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                                title={tt.account_summary?.download_rewards_tooltip || 'Download Rewards'}
+                            >
+                                <Download className="w-3 h-3" />
+                            </button>
+                        )}
                         <button
                             onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                             className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
                             {copiedAddress === address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         </button>
-                        {address.startsWith('account_') && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
-                                onPointerEnter={() => prefetchAccountRewards(address)}
-                                className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                                title={tt.account_summary?.download_account_rewards || 'Download Rewards'}
-                            >
-                                <Download className="w-3 h-3" />
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
@@ -272,49 +279,99 @@ export function AccountSummaryTab({
             {/* Principal Balance */}
             <div>
                 <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.principal_balance || 'Principal Balance'}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    <BalanceCard
-                        title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
-                        amount={xrdAmount}
-                        symbol="XRD"
-                        valueColor="text-green-500 dark:text-green-400"
-                        marketData={marketData}
-                        locale={locale}
-                    />
-                    <BalanceCard
-                        title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
-                        amount={String(totalLsuAmount)}
-                        symbol="LSU"
-                        valueColor="text-blue-500 dark:text-blue-400"
-                        marketData={marketData}
-                        locale={locale}
-                        rawFiatAmount={totalLsuXrdEquivalent}
-                    />
-                    <BalanceCard
-                        title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
-                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
-                        symbol="XRD"
-                        valueColor="text-[var(--color-text-main)]"
-                        marketData={marketData}
-                        locale={locale}
-                    />
-                    <BalanceCard
-                        title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
-                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
-                        symbol="XRD"
-                        valueColor="text-orange-500"
-                        marketData={marketData}
-                        locale={locale}
-                    />
-                    <BalanceCard
-                        title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
-                        amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
-                        symbol="XRD"
-                        valueColor="text-green-500"
-                        marketData={marketData}
-                        locale={locale}
-                    />
-                </div>
+                {!isBadge ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <BalanceCard
+                            title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
+                            amount={xrdAmount}
+                            symbol="XRD"
+                            valueColor="text-green-500 dark:text-green-400"
+                            marketData={marketData}
+                            locale={locale}
+                        />
+                        <BalanceCard
+                            title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
+                            amount={String(totalLsuAmount)}
+                            symbol="LSU"
+                            valueColor="text-blue-500 dark:text-blue-400"
+                            marketData={marketData}
+                            locale={locale}
+                            rawFiatAmount={totalLsuXrdEquivalent}
+                        />
+                        <BalanceCard
+                            title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
+                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                            symbol="XRD"
+                            valueColor="text-[var(--color-text-main)]"
+                            marketData={marketData}
+                            locale={locale}
+                        />
+                        <BalanceCard
+                            title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                            symbol="XRD"
+                            valueColor="text-orange-500"
+                            marketData={marketData}
+                            locale={locale}
+                        />
+                        <BalanceCard
+                            title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
+                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                            symbol="XRD"
+                            valueColor="text-green-500"
+                            marketData={marketData}
+                            locale={locale}
+                        />
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <BalanceCard
+                                title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
+                                amount={xrdAmount}
+                                symbol="XRD"
+                                valueColor="text-green-500 dark:text-green-400"
+                                marketData={marketData}
+                                locale={locale}
+                            />
+                            <BalanceCard
+                                title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
+                                amount={String(totalLsuAmount)}
+                                symbol="LSU"
+                                valueColor="text-blue-500 dark:text-blue-400"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={totalLsuXrdEquivalent}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <BalanceCard
+                                title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                symbol="XRD"
+                                valueColor="text-[var(--color-text-main)]"
+                                marketData={marketData}
+                                locale={locale}
+                            />
+                            <BalanceCard
+                                title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                symbol="XRD"
+                                valueColor="text-orange-500"
+                                marketData={marketData}
+                                locale={locale}
+                            />
+                            <BalanceCard
+                                title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                symbol="XRD"
+                                valueColor="text-green-500"
+                                marketData={marketData}
+                                locale={locale}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Staking */}

@@ -404,6 +404,7 @@
         "pool_units": "Pool Units",
         "burned_nfts": "Burned NFTs",
         "download_account_rewards": "Download Rewards",
+        "download_rewards_tooltip": "Download movements and rewards CSV",
         "account_rewards_modal_title": "Download Account Reward History",
         "account_rewards_modal_desc": "Select a year to download the staking reward breakdown in CoinTracking CSV format. This process may take several minutes as it queries the Radix Ledger for daily stake snapshots.",
         "account_rewards_modal_download": "Download CSV",
