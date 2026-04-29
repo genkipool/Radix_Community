@@ -69,31 +69,63 @@ interface ExpandableEntityBadgeProps {
 function getTabsForEntity(
     prefix: string,
     tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict },
-): { key: EntityTab; label: string }[] {
+): { key: EntityTab; label: string; tooltip?: string }[] {
     const isAccountAddr = prefix.startsWith('account_');
     const accT = tt?.account_summary;
 
-    const base: { key: EntityTab; label: string }[] = [
-        { key: 'summary', label: tt?.resource_panel_summary || 'Summary' },
+    const base: { key: EntityTab; label: string; tooltip?: string }[] = [
+        {
+            key: 'summary',
+            label: tt?.resource_panel_summary || 'Summary',
+            tooltip: tt?.tab_summary_tooltip
+        },
     ];
 
     if (isAccountAddr) {
-        base.push({ key: 'tokens', label: accT?.tokens_tab || 'Tokens' });
-        base.push({ key: 'nfts', label: accT?.nfts_tab || 'NFTs' });
-        base.push({ key: 'pool_units', label: accT?.pool_units || 'Pool Units' });
-        base.push({ key: 'transactions', label: accT?.transactions_tab || 'Transactions' });
+        base.push({
+            key: 'tokens',
+            label: accT?.tokens_tab || 'Tokens',
+            tooltip: tt?.tab_tokens_tooltip
+        });
+        base.push({
+            key: 'nfts',
+            label: accT?.nfts_tab || 'NFTs',
+            tooltip: tt?.tab_nfts_tooltip
+        });
+        base.push({
+            key: 'pool_units',
+            label: accT?.pool_units || 'Pool Units',
+            tooltip: tt?.tab_pool_units_tooltip
+        });
+        base.push({
+            key: 'transactions',
+            label: accT?.transactions_tab || 'Transactions',
+            tooltip: tt?.tab_transactions_tooltip
+        });
     }
 
-    base.push({ key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' });
+    base.push({
+        key: 'metadata',
+        label: tt?.resource_panel_metadata || 'Metadata',
+        tooltip: tt?.tab_metadata_tooltip
+    });
 
     // Packages and identities don't have role_assignments typically
     const hasConfig = !prefix.startsWith('package_') && !prefix.startsWith('identity_');
 
     if (hasConfig) {
-        base.push({ key: 'configuration', label: tt?.resource_panel_configuration || 'Configuration' });
+        base.push({
+            key: 'configuration',
+            label: tt?.resource_panel_configuration || 'Configuration',
+            tooltip: tt?.tab_configuration_tooltip
+        });
     }
 
-    base.push({ key: 'raw', label: tt?.resource_panel_raw || 'Raw' });
+    base.push({
+        key: 'raw',
+        label: tt?.resource_panel_raw || 'Raw',
+        tooltip: tt?.tab_raw_tooltip
+    });
     return base;
 }
 
@@ -372,7 +404,14 @@ export function ExpandableEntityBadge({
                                         )}
 
                                         {/* ── RAW ── */}
-                                        {activeTab === 'raw' && <PanelRawTab data={entityData} />}
+                                        {activeTab === 'raw' && (
+                                            <PanelRawTab
+                                                data={entityData}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
+                                        )}
                                     </>
                                 )}
                             </div>

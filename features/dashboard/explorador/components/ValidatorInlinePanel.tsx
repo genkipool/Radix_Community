@@ -99,11 +99,11 @@ export function ValidatorInlinePanel({
         ...enrichedMeta.filter((m) => !META_ORDER.includes(m.key)),
     ] as MetadataItem[];
 
-    const tabs: { key: ValidatorTab; label: string }[] = [
-        { key: 'summary', label: tt?.resource_panel_summary || 'Summary' },
-        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' },
-        { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuration' },
-        { key: 'raw', label: tt?.resource_panel_raw || 'Raw' },
+    const tabs: { key: ValidatorTab; label: string; tooltip?: string }[] = [
+        { key: 'summary', label: tt?.resource_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
+        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
+        { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuration', tooltip: tt?.tab_configuration_tooltip },
+        { key: 'raw', label: tt?.resource_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip },
     ];
 
     const cd = dt?.card || ({} as TranslationsT['dashboard']['card']);
@@ -280,7 +280,14 @@ export function ValidatorInlinePanel({
                                             <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
                                         )}
 
-                                        {activeTab === 'raw' && <PanelRawTab data={entityData} />}
+                                        {activeTab === 'raw' && (
+                                            <PanelRawTab 
+                                                data={entityData} 
+                                                tt={tt} 
+                                                onCopy={onCopy} 
+                                                copiedAddress={copiedAddress} 
+                                            />
+                                        )}
                                     </>
                                 )}
                             </div>

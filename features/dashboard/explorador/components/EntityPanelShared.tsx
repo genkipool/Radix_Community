@@ -13,6 +13,7 @@
  */
 
 import React from 'react';
+import { motion } from 'motion/react';
 import { Check, Copy, Activity } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
@@ -117,25 +118,49 @@ export function PanelRoleRow({
 export function PanelTabBar<T extends string>({
     tabs, activeTab, onTabChange,
 }: {
-    tabs: { key: T; label: string }[];
+    tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
 }) {
     return (
         <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar">
             {tabs.map(tab => (
-                <button
+                <motion.button
                     key={tab.key}
                     type="button"
+                    whileHover="hover"
                     onClick={e => { e.stopPropagation(); onTabChange(tab.key); }}
-                    className={`px-3 py-2.5 text-[10px] font-bold border-b-2 transition-all whitespace-nowrap tracking-wide ${
+                    title={tab.tooltip}
+                    className={`px-4 py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${
                         activeTab === tab.key
-                            ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                            : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-[var(--color-text-muted)]'
                     }`}
                 >
-                    {tab.label}
-                </button>
+                    <span className="relative z-10 transition-colors group-hover:text-[var(--color-text-main)]">
+                        {tab.label}
+                    </span>
+                    
+                    {/* Hover Background */}
+                    <motion.div
+                        className="absolute inset-x-1 inset-y-1.5 rounded-lg bg-white/5 -z-0"
+                        variants={{
+                            hover: { opacity: 1, scale: 1 },
+                            initial: { opacity: 0, scale: 0.95 }
+                        }}
+                        initial="initial"
+                        transition={{ duration: 0.2 }}
+                    />
+
+                    {activeTab === tab.key && (
+                        <motion.div 
+                            layoutId="activeTabUnderline"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)]"
+                            initial={false}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        />
+                    )}
+                </motion.button>
             ))}
         </div>
     );
@@ -322,11 +347,31 @@ export function PanelConfigurationTab({
    Renders a raw JSON blob in a scrollable
    code block.
 ───────────────────────────────────────── */
-export function PanelRawTab({ data }: { data: unknown }) {
+export function PanelRawTab({
+    data, tt, onCopy, copiedAddress,
+}: {
+    data: unknown;
+    tt: TranslationsT['dashboard']['transactions'];
+    onCopy: (v: string) => void;
+    copiedAddress: string | null;
+}) {
+    const rawJson = JSON.stringify(data, null, 2);
     return (
-        <div className="w-full overflow-hidden">
+        <div className="w-full overflow-hidden relative group">
+            <motion.button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onCopy(rawJson); }}
+                className={`absolute top-3 right-3 transition-colors flex items-center z-10 ${
+                    copiedAddress === rawJson
+                        ? 'text-green-500'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                }`}
+                title={copiedAddress === rawJson ? tt.copied_json || 'JSON Copied!' : tt.copy_json || 'Copy JSON'}
+            >
+                {copiedAddress === rawJson ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </motion.button>
             <pre className="p-3 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-[10px] font-mono text-green-400/90 overflow-x-auto overflow-y-auto max-h-56 custom-scrollbar whitespace-pre-wrap break-all">
-                {JSON.stringify(data, null, 2)}
+                {rawJson}
             </pre>
         </div>
     );

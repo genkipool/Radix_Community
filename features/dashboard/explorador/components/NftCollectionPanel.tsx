@@ -81,12 +81,12 @@ export function NftCollectionPanel({
         return isNaN(n) || n <= 0 ? null : n;
     };
 
-    const tabs: { key: NftPanelTab; label: string }[] = [
-        { key: 'items', label: `${tt?.nft_panel_items || 'Items'} (${ids.length})` },
-        { key: 'summary', label: tt?.nft_panel_summary || 'Summary' },
-        { key: 'metadata', label: tt?.nft_panel_metadata || 'Metadata' },
-        { key: 'configuration', label: tt?.nft_panel_configuration || 'Configuration' },
-        { key: 'raw', label: tt?.nft_panel_raw || 'Raw' },
+    const tabs: { key: NftPanelTab; label: string; tooltip?: string }[] = [
+        { key: 'items', label: `${tt?.nft_panel_items || 'Items'} (${ids.length})`, tooltip: tt?.tab_tokens_tooltip },
+        { key: 'summary', label: tt?.nft_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
+        { key: 'metadata', label: tt?.nft_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
+        { key: 'configuration', label: tt?.nft_panel_configuration || 'Configuration', tooltip: tt?.tab_configuration_tooltip },
+        { key: 'raw', label: tt?.nft_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip },
     ];
 
     return (
@@ -293,7 +293,14 @@ export function NftCollectionPanel({
                     />
                 )}
 
-                {activeTab === 'raw' && <PanelRawTab data={meta} />}
+                {activeTab === 'raw' && (
+                    <PanelRawTab 
+                        data={meta} 
+                        tt={tt} 
+                        onCopy={onCopy ?? (() => { })} 
+                        copiedAddress={copiedAddress} 
+                    />
+                )}
             </div>
         </div>
     );

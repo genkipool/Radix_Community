@@ -156,6 +156,11 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
             : key === 'pool'
             ? (accT?.pool_tab || 'Pool')
             : (tt[`resource_panel_${key}`] || key.charAt(0).toUpperCase() + key.slice(1)),
+        tooltip: key === 'contributed_tokens'
+            ? tt?.tab_tokens_tooltip
+            : key === 'pool'
+            ? tt?.tab_pool_units_tooltip
+            : tt[`tab_${key}_tooltip`],
     }));
 
     return (
@@ -264,7 +269,14 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                             </div>
                         )}
                         {activeTab === 'configuration' && <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
-                        {activeTab === 'raw' && <PanelRawTab data={details} />}
+                        {activeTab === 'raw' && (
+                            <PanelRawTab 
+                                data={details} 
+                                tt={tt} 
+                                onCopy={onCopy} 
+                                copiedAddress={copiedAddress} 
+                            />
+                        )}
                     </>
                 )}
             </div>

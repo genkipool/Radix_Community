@@ -495,6 +495,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
             item.confirmed_at || item.round_timestamp
                 ? new Date((item.confirmed_at || item.round_timestamp) as string)
                 : new Date(),
+        stateVersion: item.state_version || 0,
         message: item.message?.content?.value || undefined,
         epoch: item.epoch || 0,
         round: item.round || 0,

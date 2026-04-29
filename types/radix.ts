@@ -96,6 +96,7 @@ export interface TransactionInfo {
     status: string;
     feePaid: number;
     confirmedAt: Date;
+    stateVersion: number;
     message?: string;
     epoch: number;
     round: number;
