@@ -116,12 +116,13 @@ export function PanelRoleRow({
    in all inline entity panels.
 ───────────────────────────────────────── */
 export function PanelTabBar<T extends string>({
-    tabs, activeTab, onTabChange, onTabHover,
+    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline',
 }: {
     tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
     onTabHover?: (tab: T) => void;
+    layoutId?: string;
 }) {
     return (
         <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar">
@@ -156,7 +157,7 @@ export function PanelTabBar<T extends string>({
 
                     {activeTab === tab.key && (
                         <motion.div 
-                            layoutId="activeTabUnderline"
+                            layoutId={layoutId}
                             className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)]"
                             initial={false}
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -213,32 +214,25 @@ export function PanelMetadataTab({
                     meta.value.typed?.kind
                 );
 
-                let valueItems: string[] = [];
-                if (Array.isArray(rawVal)) {
-                    valueItems = rawVal.map(v => String(v));
-                } else if (typeof rawVal === 'string') {
-                    if (rawVal.includes(',')) {
-                        const splitted = rawVal.split(',');
-                        const isAddressList = splitted.every(s => {
-                            const t = s.trim();
-                            return t.startsWith('account_') ||
-                                   t.startsWith('resource_') ||
-                                   t.startsWith('component_') ||
-                                   t.startsWith('pool_') ||
-                                   t.startsWith('package_') ||
-                                   t.startsWith('validator_');
-                        });
-                        if (isAddressList) {
-                            valueItems = splitted.map(s => s.trim()).filter(Boolean);
-                        } else {
-                            valueItems = [rawVal];
-                        }
-                    } else {
-                        valueItems = [rawVal];
+                // Deep flatten any arrays returned by parseProgrammaticJson
+                // This ensures that nested Enum/Array structures (like owner_keys)
+                // result in a flat list of items.
+                const flatten = (val: unknown): unknown[] => {
+                    if (Array.isArray(val)) {
+                        return val.flatMap(flatten);
                     }
-                } else if (rawVal !== null && rawVal !== undefined) {
-                    valueItems = [String(rawVal)];
-                }
+                    return val === null || val === undefined ? [] : [val];
+                };
+
+                const valueItems = flatten(rawVal).map(v => {
+                    if (typeof v === 'string') return v;
+                    if (typeof v === 'object' && v !== null) {
+                        const parsed = parseProgrammaticJson(v);
+                        if (typeof parsed === 'string') return parsed;
+                        return JSON.stringify(v);
+                    }
+                    return String(v);
+                });
 
                 return (
                     <div key={idx}>

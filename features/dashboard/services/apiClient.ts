@@ -28,13 +28,27 @@ export async function apiFetchTransactions(
     params.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
     
     const res = await fetch(`/api/transactions?${params.toString()}`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+        let errorMsg = `API error: ${res.status}`;
+        try {
+            const errJson = await res.json();
+            if (errJson && errJson.error) errorMsg = errJson.error;
+        } catch (_) {}
+        throw new Error(errorMsg);
+    }
     return res.json();
 }
 
 export async function apiFetchTransactionDetails(intentHash: string, network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, unknown>> {
     const res = await fetch(`/api/transactions/${encodeURIComponent(intentHash)}?network=${network}`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+        let errorMsg = `API error: ${res.status}`;
+        try {
+            const errJson = await res.json();
+            if (errJson && errJson.error) errorMsg = errJson.error;
+        } catch (_) {}
+        throw new Error(errorMsg);
+    }
     return res.json();
 }
 

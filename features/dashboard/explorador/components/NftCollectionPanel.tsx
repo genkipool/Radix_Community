@@ -22,7 +22,7 @@ export function NftCollectionPanel({
     onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, isClaimRedeemed, isClaimAuthorized, unstakeXrdExpected, network: _network,
     locale,
 }: NftCollectionPanelProps) {
-    const [activeTab, setActiveTab] = useState<NftPanelTab>('items');
+    const [activeTab, setActiveTab] = useState<NftPanelTab>(ids.length > 0 ? 'items' : 'summary');
     const [expandedNfts, setExpandedNfts] = useState<Set<string>>(new Set());
 
     const metadataItems = meta?.metadata?.items || [];
@@ -81,20 +81,29 @@ export function NftCollectionPanel({
         return isNaN(n) || n <= 0 ? null : n;
     };
 
-    const tabs: { key: NftPanelTab; label: string; tooltip?: string }[] = [
-        { key: 'items', label: `${tt?.nft_panel_items || 'Items'} (${ids.length})`, tooltip: tt?.tab_tokens_tooltip },
+    const tabs: { key: NftPanelTab; label: string; tooltip?: string }[] = ([
+        { 
+            key: 'items', 
+            label: `${(type === 'neutral' ? tt?.nft_panel_items_account : tt?.nft_panel_items) || 'Items'} (${ids.length})`, 
+            tooltip: tt?.tab_tokens_tooltip 
+        },
         { key: 'summary', label: tt?.nft_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
         { key: 'metadata', label: tt?.nft_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
         { key: 'configuration', label: tt?.nft_panel_configuration || 'Configuration', tooltip: tt?.tab_configuration_tooltip },
         { key: 'raw', label: tt?.nft_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip },
-    ];
+    ] as { key: NftPanelTab; label: string; tooltip?: string }[]).filter(tab => tab.key !== 'items' || ids.length > 0);
 
     return (
         <div
             className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
             onClick={e => e.stopPropagation()}
         >
-            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+            <PanelTabBar 
+                tabs={tabs} 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab} 
+                layoutId="nftCollectionTabs"
+            />
 
             <div className="px-5 py-4">
                 {/* ── ITEMS ── */}

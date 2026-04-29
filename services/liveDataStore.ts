@@ -458,6 +458,13 @@ export function registerAddressForPolling(__address: string): void {
     }
 }
 
+export function stopPolling(): void {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
 export function unregisterAddressForPolling(__address: string): void {
     // Polling is global — no per-address teardown needed
 }

@@ -301,7 +301,7 @@ export function ExpandableEntityBadge({
                             className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityBadgeTabs-${address}`} />
 
                             <div className="px-4 py-3">
                                 {isLoading ? (

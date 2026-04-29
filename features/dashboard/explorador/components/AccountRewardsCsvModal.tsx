@@ -37,6 +37,19 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     const abortControllerRef = React.useRef<AbortController | null>(null);
     const mounted = useMounted();
 
+    // Reset state when modal opens/closes
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (!isOpen) {
+            setSelectedYear(null);
+            setDownloading(false);
+            setProgress(0);
+            setSummary(null);
+            setLocalError(null);
+        }
+    }
+
     const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
         queryKey: ['account-rewards-years', accountAddress],
         queryFn: () => apiFetchAccountRewardsYears(accountAddress),
@@ -72,8 +85,12 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const { generateClientAccountRewardsCsv } = await import('../services/clientCsvExport');
             
             const data = await generateClientAccountRewardsCsv(accountAddress, selectedYear, (p) => {
-                setProgress(Math.min(99, p));
-            }, controller.signal);
+                if (abortControllerRef.current === controller) {
+                    setProgress(Math.min(99, p));
+                }
+            }, controller.signal, tt);
+
+            if (abortControllerRef.current !== controller) return;
 
             if (!data.csv) {
                 throw new Error('CSV is empty');
@@ -108,12 +125,12 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             if (err instanceof Error && (err.name === 'AbortError' || err.message === 'Aborted')) {
                 return; // Silently ignore cancellation
             }
-            setLocalError(err instanceof Error ? err.message : String(err));
+            if (abortControllerRef.current === controller) {
+                setLocalError(err instanceof Error ? err.message : String(err));
+            }
         } finally {
-            if (abortControllerRef.current?.signal.aborted) {
-                setDownloading(false);
-                setProgress(0);
-                return;
+            if (abortControllerRef.current !== controller) {
+                return; // This execution was aborted and overwritten. Ignore.
             }
             setDownloading(false);
             // Don't reset progress immediately so user can see 100%

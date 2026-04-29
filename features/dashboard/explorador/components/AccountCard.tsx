@@ -285,6 +285,7 @@ export function AccountCard({
                                             handleTransactionsMouseEnter();
                                         }
                                     }}
+                                    layoutId="accountCardTabs"
                                 />
 
                                 <div className="px-4 py-3 pb-6">

@@ -323,18 +323,33 @@ export function extractRuleAddress(rule: unknown): string | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseProgrammaticJson(json: any): any {
     if (!json) return null;
+    if (typeof json !== 'object') return json;
+
     if (json.value !== undefined) return json.value;
+    if (json.hex !== undefined) return json.hex;
+
+    // Handle Gateway-specific key/hash pairs (like owner_keys)
+    const typeKey = json.key_hash_type || json.key_type || json.hash_type;
+    const hexKey = json.hash_hex || json.key_hex || json.hex;
+    if (typeKey && hexKey) {
+        return `${typeKey}(${hexKey})`;
+    }
+
     if (json.elements) {
         return json.elements.map(parseProgrammaticJson);
     }
+
     if (json.fields) {
-        if (json.variant_name) {
-            const fields = json.fields.map(parseProgrammaticJson);
-            if (fields.length === 1) return `${json.variant_name}: ${fields[0]}`;
-            return { [json.variant_name]: fields };
+        const parsedFields = json.fields.map(parseProgrammaticJson);
+        const name = json.variant_name;
+
+        if (name) {
+            if (parsedFields.length === 1) return `${name}(${parsedFields[0]})`;
+            return { [name]: parsedFields };
         }
-        return json.fields.map(parseProgrammaticJson);
+        return parsedFields.length === 1 ? parsedFields[0] : parsedFields;
     }
+
     if (json.entries) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const obj: any = {};
@@ -346,9 +361,11 @@ export function parseProgrammaticJson(json: any): any {
         });
         return obj;
     }
+
     if (json.variant_name) {
         return json.variant_name;
     }
+
     return json;
 }
 

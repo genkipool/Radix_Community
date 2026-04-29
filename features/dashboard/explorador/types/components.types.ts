@@ -44,6 +44,9 @@ export interface AccountRewardsCsvModalDict {
     account_rewards_summary_total?: string;
     account_rewards_summary_fiat?: string;
     account_rewards_summary_dream?: string;
+    account_rewards_error_gateway?: string;
+    account_rewards_error_retries?: string;
+    account_rewards_error_no_data?: string;
 }
 
 export interface AssetTransferGroupProps {

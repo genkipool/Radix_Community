@@ -276,7 +276,8 @@ export function AccountTransactionsTab({
         hasNextPage,
         isFetchingNextPage,
         isLoading,
-        isError
+        isError,
+        error
     } = useInfiniteQuery({
         queryKey: ['account-transactions', accountAddress, network],
         queryFn: async ({ pageParam }) =>
@@ -386,6 +387,26 @@ export function AccountTransactionsTab({
     const txErrorText = locale === 'es' ? 'Error al cargar las transacciones.' : 'Error loading transactions.';
     const txNoTransactionsText = locale === 'es' ? 'No se encontraron transacciones para esta cuenta.' : 'No transactions found for this account.';
 
+    const getTranslatedError = (rawMsg: string | undefined) => {
+        if (!rawMsg) return txErrorText;
+        if (rawMsg.includes('Failed to fetch transactions for address')) {
+            return tt?.transactions?.error_fetch_address || 'Failed to fetch transactions for this address.';
+        }
+        if (rawMsg.includes('Failed to fetch recent transactions')) {
+            return tt?.transactions?.error_fetch_recent || 'Failed to fetch recent transactions.';
+        }
+        if (rawMsg.includes('Failed to fetch transaction details')) {
+            return tt?.transactions?.error_fetch_details || 'Failed to fetch transaction details.';
+        }
+        if (rawMsg.includes('Failed to fetch full history')) {
+            return tt?.transactions?.error_fetch_history_max_pages || 'Failed to fetch full history (max pages reached).';
+        }
+        if (rawMsg.includes('Round proposer not available')) {
+            return tt?.transactions?.error_no_proposer || 'Round proposer not available.';
+        }
+        return rawMsg;
+    };
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)] gap-3">
@@ -396,10 +417,11 @@ export function AccountTransactionsTab({
     }
 
     if (isError) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
         return (
             <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
                 <AlertCircle className="w-6 h-6" />
-                <span className="text-sm font-medium">{txErrorText}</span>
+                <span className="text-sm font-medium">{getTranslatedError(errorMsg)}</span>
             </div>
         );
     }

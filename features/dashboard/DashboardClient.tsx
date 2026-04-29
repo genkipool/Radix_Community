@@ -28,7 +28,7 @@ import type { NetworkStats } from '@/types/radix';
 import type { DashboardInitialProps } from '@/features/dashboard/types';
 
 /* React Query hooks */
-import { setLiveNetwork } from '@/services/liveDataStore';
+import { setLiveNetwork, stopPolling } from '@/services/liveDataStore';
 import { useValidatorsQuery, useValidatorFilters } from './staking';
 import {
   useTransactionsQuery,
@@ -296,6 +296,13 @@ export default function DashboardClient({
   useEffect(() => {
     setLiveNetwork(deferredNetwork as 'mainnet' | 'stokenet');
   }, [deferredNetwork]);
+
+  // Stop liveDataStore polling when in the explorer view
+  useEffect(() => {
+    if (activeView === 'transactions') {
+      stopPolling();
+    }
+  }, [activeView]);
 
   /* ===============═══════════ RENDER ===============═════════ */
   return (

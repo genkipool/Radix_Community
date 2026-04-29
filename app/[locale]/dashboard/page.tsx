@@ -17,7 +17,7 @@ import { entityKeys, extractEntityMeta, normalizeAddress, needsFetch } from '@/f
 import { getNetworkCookieKey } from '@/features/dashboard/utils/cookieUtils';
 import { makeQueryClient } from '@/lib/queryClient';
 import logger from '@/lib/logger';
-import { validateTxHash } from '@/utils/apiValidation';
+import { validateTxHash, validateAddress } from '@/utils/apiValidation';
 import { COOKIE_KEYS } from '@/constants/dashboard';
 
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
@@ -134,7 +134,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // If a validator modal is open (restored from cookie), prefetch its stake
   // history so SSR and first client render have identical data — no hydration
   // mismatch and no spinner flash on reload.
-  const txid = params.tx ? validateTxHash(params.tx) : null;
+  // Read transaction ID or Account Address from URL
+  const txid = params.tx ? (validateAddress(params.tx) || validateTxHash(params.tx)) : null;
   const initialExpandedTxs = txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network);
   const expandedValidatorIds = c.ids(COOKIE_KEYS.expandedValidators, network);
 

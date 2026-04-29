@@ -178,7 +178,7 @@ export function ValidatorInlinePanel({
                         className="overflow-hidden"
                     >
                         <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]" onClick={e => e.stopPropagation()}>
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId="validatorInlineTabs" />
 
                             <div className="px-5 py-4">
                                 {isLoading ? (
