@@ -390,19 +390,19 @@ export function AccountTransactionsTab({
     const getTranslatedError = (rawMsg: string | undefined) => {
         if (!rawMsg) return txErrorText;
         if (rawMsg.includes('Failed to fetch transactions for address')) {
-            return tt?.transactions?.error_fetch_address || 'Failed to fetch transactions for this address.';
+            return tt?.error_fetch_address || 'Failed to fetch transactions for this address.';
         }
         if (rawMsg.includes('Failed to fetch recent transactions')) {
-            return tt?.transactions?.error_fetch_recent || 'Failed to fetch recent transactions.';
+            return tt?.error_fetch_recent || 'Failed to fetch recent transactions.';
         }
         if (rawMsg.includes('Failed to fetch transaction details')) {
-            return tt?.transactions?.error_fetch_details || 'Failed to fetch transaction details.';
+            return tt?.error_fetch_details || 'Failed to fetch transaction details.';
         }
         if (rawMsg.includes('Failed to fetch full history')) {
-            return tt?.transactions?.error_fetch_history_max_pages || 'Failed to fetch full history (max pages reached).';
+            return tt?.error_fetch_history_max_pages || 'Failed to fetch full history (max pages reached).';
         }
         if (rawMsg.includes('Round proposer not available')) {
-            return tt?.transactions?.error_no_proposer || 'Round proposer not available.';
+            return tt?.error_no_proposer || 'Round proposer not available.';
         }
         return rawMsg;
     };

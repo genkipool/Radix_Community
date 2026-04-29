@@ -32,7 +32,7 @@ export async function apiFetchTransactions(
         let errorMsg = `API error: ${res.status}`;
         try {
             const errJson = await res.json();
-            if (errJson && errJson.error) errorMsg = errJson.error;
+            if (errJson && errJson.error) errorMsg = `API error: ${errJson.error}`;
         } catch (_) {}
         throw new Error(errorMsg);
     }
@@ -45,7 +45,7 @@ export async function apiFetchTransactionDetails(intentHash: string, network: 'm
         let errorMsg = `API error: ${res.status}`;
         try {
             const errJson = await res.json();
-            if (errJson && errJson.error) errorMsg = errJson.error;
+            if (errJson && errJson.error) errorMsg = `API error: ${errJson.error}`;
         } catch (_) {}
         throw new Error(errorMsg);
     }
