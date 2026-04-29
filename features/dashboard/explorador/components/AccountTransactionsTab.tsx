@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
+import type { TransactionInfo, Validator } from '@/types/radix';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
@@ -82,6 +83,185 @@ function TokenDisplay({
     );
 }
 
+interface StakingBalanceCellProps {
+    tx: TransactionInfo & { isEndOfMonthAuth?: boolean };
+    accountAddress: string;
+    network: Network;
+    locale: string;
+    validatorsData?: { validators: Validator[]; networkStats: unknown };
+}
+
+function StakingBalanceCell({
+    tx,
+    accountAddress,
+    network,
+    locale,
+    validatorsData
+}: StakingBalanceCellProps) {
+    const isStakeOrUnstake = tx.manifestClasses?.includes('ValidatorStake') || tx.manifestClasses?.includes('ValidatorUnstake');
+    const shouldQuery = isStakeOrUnstake || tx.isEndOfMonthAuth;
+
+    const { data: balance, isLoading } = useQuery({
+        queryKey: ['staking-balance-version', accountAddress, tx.stateVersion, network],
+        queryFn: async () => {
+            const GATEWAY_URL = network === 'stokenet'
+                ? 'https://stokenet.radixdlt.com'
+                : 'https://mainnet.radixdlt.com';
+
+            const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    addresses: [accountAddress],
+                    opt_ins: { fungible_resources: true },
+                    at_ledger_state: { state_version: tx.stateVersion }
+                })
+            });
+            
+            if (!res.ok) return 0;
+            const data = await res.json();
+            
+            const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
+            if (!accountItem) return 0;
+
+            const fungibles = accountItem.fungible_resources?.items || [];
+            
+            const lsuToValidator = new Map<string, string>();
+            if (validatorsData?.validators) {
+                validatorsData.validators.forEach((v: Validator) => {
+                    if (v.lsuResource) {
+                        lsuToValidator.set(v.lsuResource, v.address);
+                    }
+                });
+            }
+
+            const extraAddresses: string[] = [];
+            const lsuAddressesInAccount: string[] = [];
+            for (const f of fungibles) {
+                if (lsuToValidator.has(f.resource_address)) {
+                    lsuAddressesInAccount.push(f.resource_address);
+                    extraAddresses.push(f.resource_address);
+                    const valAddr = lsuToValidator.get(f.resource_address)!;
+                    extraAddresses.push(valAddr);
+                }
+            }
+
+            const historicalRedemptionRates = new Map<string, number>();
+
+            if (extraAddresses.length > 0) {
+                try {
+                    const resExtra = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            addresses: extraAddresses,
+                            at_ledger_state: { state_version: tx.stateVersion }
+                        })
+                    });
+
+                    if (resExtra.ok) {
+                        const extraData = await resExtra.json();
+                        const items = (extraData.items || []) as Array<{
+                            address: string;
+                            details?: {
+                                total_supply?: string;
+                                total_minted?: string;
+                                state?: {
+                                    stake_vault?: { balance: string }
+                                }
+                            };
+                            stake_vault?: { balance: string };
+                            state?: {
+                                stake_vault?: { balance: string }
+                            };
+                            active_in_epoch?: {
+                                stake: string;
+                            };
+                        }>;
+                        
+                        const itemsMap = new Map<string, typeof items[number]>();
+                        items.forEach((item) => {
+                            itemsMap.set(item.address, item);
+                        });
+
+                        for (const lsuAddr of lsuAddressesInAccount) {
+                            const valAddr = lsuToValidator.get(lsuAddr)!;
+                            const lsuItem = itemsMap.get(lsuAddr);
+                            const valItem = itemsMap.get(valAddr);
+
+                            let lsuSupply = 1;
+                            if (lsuItem) {
+                                lsuSupply = parseFloat(
+                                    lsuItem.details?.total_supply ?? 
+                                    lsuItem.details?.total_minted ?? 
+                                    '1'
+                                );
+                                if (lsuSupply === 0) lsuSupply = 1;
+                            }
+
+                            let valStake = 0;
+                            if (valItem) {
+                                valStake = parseFloat(
+                                    valItem.stake_vault?.balance ??
+                                    valItem.details?.state?.stake_vault?.balance ??
+                                    valItem.state?.stake_vault?.balance ??
+                                    valItem.active_in_epoch?.stake ??
+                                    '0'
+                                );
+                            }
+
+                            const factor = valStake / lsuSupply;
+                            if (factor > 0) {
+                                historicalRedemptionRates.set(lsuAddr, factor);
+                            }
+                        }
+                    }
+                } catch {
+                    // Fallback to mathematical discount on error
+                }
+            }
+
+            let totalStaking = 0;
+            const now = new Date();
+            const txDate = new Date(tx.confirmedAt);
+            const daysDiff = Math.max(0, (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+
+            for (const f of fungibles) {
+                if (lsuToValidator.has(f.resource_address)) {
+                    const amount = parseFloat(f.amount || f.balance?.value || '0');
+                    
+                    let factor = historicalRedemptionRates.get(f.resource_address);
+                    if (factor === undefined) {
+                        const currentVal = validatorsData?.validators.find(v => v.lsuResource === f.resource_address);
+                        const currentFactor = currentVal?.lsu2xrdFactor || 1;
+                        const apy = currentVal?.apyProjection || 5.76;
+                        factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
+                    }
+                    
+                    totalStaking += amount * factor;
+                }
+            }
+            return totalStaking;
+        },
+        enabled: shouldQuery && !!validatorsData,
+        staleTime: Infinity,
+    });
+
+    if (!shouldQuery) {
+        return <span className="text-xs text-[var(--color-text-muted)]">-</span>;
+    }
+
+    if (isLoading) {
+        return <span className="text-xs text-[var(--color-text-muted)] animate-pulse">...</span>;
+    }
+
+    return (
+        <span className="text-xs font-mono text-[var(--color-text-main)]">
+            {balance && balance > 0 ? `${formatNumber(balance, 4, locale)} XRD` : '-'}
+        </span>
+    );
+}
+
 export function AccountTransactionsTab({
     accountAddress,
     network,
@@ -123,7 +303,7 @@ export function AccountTransactionsTab({
         staleTime: 300_000,
     });
 
-    const transactions = React.useMemo(() => data?.pages.flatMap((p) => p.transactions) || [], [data]);
+    const transactions = React.useMemo(() => data?.pages.flatMap((p) => p.transactions || []) || [], [data]);
 
     const transactionsWithBalances = React.useMemo(() => {
         if (!transactions.length || !entityDetails || !validatorsData) {
@@ -174,11 +354,43 @@ export function AccountTransactionsTab({
         });
     }, [transactions, entityDetails, validatorsData, network, accountAddress]);
 
+    const processedTransactions = React.useMemo(() => {
+        const daysAllocated = new Set<string>();
+
+        return transactionsWithBalances.map((tx, index) => {
+            const date = new Date(tx.confirmedAt);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+            const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            const nextDay = new Date(year, month, day + 1);
+            const isLastDay = nextDay.getMonth() !== month;
+
+            let isAuthorizedForDay = false;
+            if (isLastDay && !daysAllocated.has(dayStr)) {
+                isAuthorizedForDay = true;
+                daysAllocated.add(dayStr);
+            }
+
+            const isLatest = index === 0;
+
+            return {
+                ...tx,
+                isEndOfMonthAuth: isAuthorizedForDay || isLatest
+            };
+        });
+    }, [transactionsWithBalances]);
+
+    const txLoadingText = locale === 'es' ? 'Cargando transacciones...' : 'Loading transactions...';
+    const txErrorText = locale === 'es' ? 'Error al cargar las transacciones.' : 'Error loading transactions.';
+    const txNoTransactionsText = locale === 'es' ? 'No se encontraron transacciones para esta cuenta.' : 'No transactions found for this account.';
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)] gap-3">
                 <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
-                <span className="text-sm font-medium">{accT?.tx_loading || 'Loading transactions...'}</span>
+                <span className="text-sm font-medium">{txLoadingText}</span>
             </div>
         );
     }
@@ -187,7 +399,7 @@ export function AccountTransactionsTab({
         return (
             <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
                 <AlertCircle className="w-6 h-6" />
-                <span className="text-sm font-medium">Error loading transactions.</span>
+                <span className="text-sm font-medium">{txErrorText}</span>
             </div>
         );
     }
@@ -195,7 +407,7 @@ export function AccountTransactionsTab({
     if (transactions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)]">
-                <span className="text-sm font-medium">{accT?.tx_no_transactions || 'No transactions found for this account.'}</span>
+                <span className="text-sm font-medium">{txNoTransactionsText}</span>
             </div>
         );
     }
@@ -227,7 +439,7 @@ export function AccountTransactionsTab({
                             <th className="py-3 px-4 font-semibold whitespace-nowrap" title={accT?.tx_status_tooltip || 'Result of transaction execution'}>{accT?.tx_status || 'Status'}</th>
                         </tr>
                     </thead>
-                    {transactionsWithBalances.map((tx) => {
+                    {processedTransactions.map((tx) => {
                         const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
                         
                         // Token movements
@@ -318,8 +530,14 @@ export function AccountTransactionsTab({
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-main)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     {formatNumber(tx.balanceXrd, 4, locale)} XRD
                                                 </td>
-                                                <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-main)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
-                                                    {tx.balanceStaking > 0 ? `${formatNumber(tx.balanceStaking, 4, locale)} XRD` : '-'}
+                                                <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
+                                                    <StakingBalanceCell 
+                                                        tx={tx} 
+                                                        accountAddress={accountAddress} 
+                                                        network={network} 
+                                                        locale={locale} 
+                                                        validatorsData={validatorsData} 
+                                                    />
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     <span className={`text-xs font-semibold ${isSuccess ? 'text-emerald-500' : 'text-red-500'}`}>

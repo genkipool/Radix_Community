@@ -496,7 +496,7 @@
     "search": {
       "placeholder": "Buscar nodos de staking por nombre o dirección...",
       "explorer_placeholder": "Buscar por dirección de cuenta, transacción, validador o recurso...",
-      "no_results": "No se encontraron nodos de staking para \"{query}\"",
+      "no_results": "No se encontraron nodos de staking",
       "no_validators": "No se encontraron nodos de staking",
       "tags_placeholder": "Buscar etiquetas...",
       "transactions_placeholder": "Filtrar transacciones..."

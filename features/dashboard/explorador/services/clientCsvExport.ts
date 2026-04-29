@@ -39,6 +39,7 @@ interface StakingRewardRecord {
     validator: string;
     validatorName: string;
     accountXrd: number;
+    totalAccountXrd: number;
     totalStake: number;
     proportion: number;
     rewardXrd: number;
@@ -155,7 +156,7 @@ interface GatewayTransactionStreamResponse {
 
 // ── Gateway Operations ────────────────────────────────────────────────────────
 
-async function gatewayPost(endpoint: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+async function gatewayPost(endpoint: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
     let backoff = 1000;
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
@@ -163,6 +164,7 @@ async function gatewayPost(endpoint: string, body: Record<string, unknown>): Pro
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
+                signal,
             });
             if (res.status === 429) {
                 const retryAfter = parseFloat(res.headers.get('Retry-After') || '0') * 1000;
@@ -181,7 +183,7 @@ async function gatewayPost(endpoint: string, body: Record<string, unknown>): Pro
     throw new Error(`Exhausted retries in gatewayPost: ${endpoint}`);
 }
 
-async function fetchAllValidators(): Promise<Record<string, ValidatorMapEntry>> {
+async function fetchAllValidators(signal?: AbortSignal): Promise<Record<string, ValidatorMapEntry>> {
     const result: Record<string, ValidatorMapEntry> = {};
     let cursor: string | null = null;
     do {
@@ -191,7 +193,7 @@ async function fetchAllValidators(): Promise<Record<string, ValidatorMapEntry>> 
         };
         if (cursor) body.cursor = cursor;
 
-        const rawData = await gatewayPost('/state/validators/list', body);
+        const rawData = await gatewayPost('/state/validators/list', body, signal);
         const data = rawData as unknown as GatewayValidatorListResponse;
         const validatorsObj = data.validators;
         const items = validatorsObj?.items ?? data.items ?? [];
@@ -218,13 +220,13 @@ async function fetchAllValidators(): Promise<Record<string, ValidatorMapEntry>> 
     return result;
 }
 
-async function getLedgerStateForDay(accountAddress: string, lsuResource: string, vaultAddress: string, dayStr: string): Promise<LedgerDayState> {
+async function getLedgerStateForDay(accountAddress: string, lsuResource: string, vaultAddress: string, dayStr: string, signal?: AbortSignal): Promise<LedgerDayState> {
     try {
         const rawData = await gatewayPost('/state/entity/details', {
             addresses: [accountAddress, lsuResource, vaultAddress],
             at_ledger_state: { timestamp: `${dayStr}T23:59:59Z` },
             opt_ins: { fungible_resources: true },
-        });
+        }, signal);
         const data = rawData as unknown as GatewayEntityDetailsResponse;
 
         let userLsu = 0;
@@ -273,7 +275,7 @@ async function getLedgerStateForDay(accountAddress: string, lsuResource: string,
     }
 }
 
-async function fetchAccountTransactions(accountAddress: string, startDate: string, endDate: string): Promise<AccountTx[]> {
+async function fetchAccountTransactions(accountAddress: string, startDate: string, endDate: string, signal?: AbortSignal): Promise<AccountTx[]> {
     const txs: AccountTx[] = [];
     let cursor: string | null = null;
     let done = false;
@@ -290,7 +292,7 @@ async function fetchAccountTransactions(accountAddress: string, startDate: strin
 
         let rawData;
         try {
-            rawData = await gatewayPost('/stream/transactions', body);
+            rawData = await gatewayPost('/stream/transactions', body, signal);
         } catch {
             break;
         }
@@ -379,7 +381,7 @@ async function fetchAccountTransactions(accountAddress: string, startDate: strin
     return txs;
 }
 
-async function fetchResourceLabels(resourceAddresses: string[]): Promise<Record<string, string>> {
+async function fetchResourceLabels(resourceAddresses: string[], signal?: AbortSignal): Promise<Record<string, string>> {
     const labels: Record<string, string> = { [XRD_ADDR]: 'XRD' };
     const addrs = resourceAddresses.filter((a) => a && a !== XRD_ADDR);
     if (addrs.length === 0) return labels;
@@ -387,7 +389,7 @@ async function fetchResourceLabels(resourceAddresses: string[]): Promise<Record<
     for (let i = 0; i < addrs.length; i += 20) {
         const chunk = addrs.slice(i, i + 20);
         try {
-            const rawData = await gatewayPost('/state/entity/details', { addresses: chunk, opt_ins: { explicit_metadata: ['symbol', 'name'] } });
+            const rawData = await gatewayPost('/state/entity/details', { addresses: chunk, opt_ins: { explicit_metadata: ['symbol', 'name'] } }, signal);
             const resp = rawData as unknown as GatewayEntityDetailsResponse;
             for (const item of (resp.items ?? [])) {
                 const addr = item.address;
@@ -416,10 +418,11 @@ async function computeStakingRewardsMath(
     validatorMap: Record<string, ValidatorMapEntry>,
     accountTxs: AccountTx[],
     year: string,
-    onProgress: (p: number) => void
-): Promise<StakingRewardRecord[]> {
+    onProgress: (p: number) => void,
+    signal?: AbortSignal
+): Promise<MathResult> {
     const records: StakingRewardRecord[] = [];
-    
+
     const usedValidators = new Set<string>();
     for (const tx of accountTxs) {
         for (const op of tx.validatorOps) {
@@ -431,18 +434,29 @@ async function computeStakingRewardsMath(
     }
 
     const prevYear = parseInt(year) - 1;
-    const qDates = [
+    const extraDates = new Set<string>();
+    for (const tx of accountTxs) {
+        if (tx.txType === 'unstake' || tx.txType === 'claim') {
+            extraDates.add(tx.date);
+        }
+    }
+    if (accountTxs.length > 0) {
+        extraDates.add(accountTxs[accountTxs.length - 1].date);
+    }
+
+    const qDates = Array.from(new Set([
         `${prevYear}-12-31`,
         `${year}-03-31`,
         `${year}-06-30`,
         `${year}-09-30`,
-        `${year}-12-31`
-    ];
+        `${year}-12-31`,
+        ...extraDates
+    ])).filter(d => d.startsWith(year) || d === `${prevYear}-12-31`).sort();
 
     // Pre-fetch all required snapshots in parallel batches of 15
     const snapshotCache: Record<string, LedgerDayState> = {};
     const prefetchTasks: { valAddr: string; dateStr: string }[] = [];
-    
+
     for (const valAddr of usedValidators) {
         const valInfo = validatorMap[valAddr];
         if (!valInfo?.lsuResource || !valInfo?.vaultAddress) continue;
@@ -455,17 +469,23 @@ async function computeStakingRewardsMath(
     for (let i = 0; i < prefetchTasks.length; i += BATCH_SIZE) {
         const batch = prefetchTasks.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(async (task) => {
+            if (signal?.aborted) return;
             const valInfo = validatorMap[task.valAddr];
             if (!valInfo) return;
             const key = `${task.valAddr}_${task.dateStr}`;
-            snapshotCache[key] = await getLedgerStateForDay(accountAddress, valInfo.lsuResource, valInfo.vaultAddress, task.dateStr);
+            snapshotCache[key] = await getLedgerStateForDay(accountAddress, valInfo.lsuResource, valInfo.vaultAddress, task.dateStr, signal);
         }));
     }
 
     let processed = 0;
     const totalVals = usedValidators.size;
 
+    // To calculate total balance, we need to store results for each validator
+    const validatorDailyBalances: Record<string, Record<string, number>> = {}; // valAddr -> { date -> balance }
+    const validatorTxBalances: Record<string, Record<string, number>> = {}; // valAddr -> { hash -> balance }
+    
     for (const valAddr of usedValidators) {
+        if (signal?.aborted) throw new Error('Aborted');
         processed++;
         const valData = allRewards[valAddr];
         if (!valData) continue;
@@ -505,16 +525,19 @@ async function computeStakingRewardsMath(
             currentInitialStakeLsu = userB;
         }
 
-        for (let i = 0; i < 4; i++) {
+        validatorDailyBalances[valAddr] = {};
+        validatorTxBalances[valAddr] = {};
+
+        for (let i = 0; i < qDates.length - 1; i++) {
             const pStart = qDates[i];
-            const pEnd = qDates[i+1];
+            const pEnd = qDates[i + 1];
 
             const periodDays = yearDays.filter(d => d > pStart && d <= pEnd);
             if (periodDays.length === 0) continue;
 
             const endState = getCachedSnapshot(pEnd);
-            const exactFinalStakeXrd = endState.lsuSupply > 0 
-                ? new Big(endState.userLsu).times(new Big(endState.stakeVault)).div(new Big(endState.lsuSupply)) 
+            const exactFinalStakeXrd = endState.lsuSupply > 0
+                ? new Big(endState.userLsu).times(new Big(endState.stakeVault)).div(new Big(endState.lsuSupply))
                 : new Big(0);
 
             // SIMULATION PHASE for period
@@ -523,6 +546,7 @@ async function computeStakingRewardsMath(
             let txVolumeInPeriod = new Big(0);
 
             for (const dayStr of periodDays) {
+                if (signal?.aborted) throw new Error('Aborted');
                 const ops = txsByDay[dayStr] || [];
                 for (const op of ops) {
                     txVolumeInPeriod = txVolumeInPeriod.plus(new Big(Math.abs(op.xrd) || Math.abs(op.lsu)));
@@ -557,10 +581,11 @@ async function computeStakingRewardsMath(
             let dayIndex = 0;
 
             for (const dayStr of periodDays) {
+                if (signal?.aborted) throw new Error('Aborted');
                 dayIndex++;
 
                 const validatorProgressBase = ((processed - 1) / totalVals) * 100;
-                const periodProgressFraction = ((i + (dayIndex / periodDays.length)) / 4) * (100 / totalVals);
+                const periodProgressFraction = ((i + (dayIndex / periodDays.length)) / (qDates.length - 1)) * (100 / totalVals);
                 onProgress(validatorProgressBase + periodProgressFraction);
 
                 const ops = txsByDay[dayStr] || [];
@@ -587,43 +612,78 @@ async function computeStakingRewardsMath(
                 const poolReward = new Big(dailyDelegants[dayStr] ?? 0);
                 const jsonTotalStake = new Big(dailyStake[dayStr] ?? 0);
                 let reward = new Big(0);
-                
+
                 if (poolReward.gt(0) && jsonTotalStake.gt(0) && correctedStakeXrd.gt(0)) {
                     reward = correctedStakeXrd.div(jsonTotalStake).times(poolReward);
                     calcStakeXrd = calcStakeXrd.plus(reward);
 
+                    validatorDailyBalances[valAddr][dayStr] = correctedStakeXrd.toNumber();
                     records.push({
                         date: dayStr,
                         validator: valAddr,
                         validatorName: valName,
                         accountXrd: correctedStakeXrd.toNumber(),
+                        totalAccountXrd: 0, // Fill in later pass
                         totalStake: jsonTotalStake.toNumber(),
                         proportion: correctedStakeXrd.div(jsonTotalStake).toNumber(),
                         rewardXrd: reward.toNumber(),
                     });
                 }
+
+                // Also record balance for transactions on this day
+                const dayOps = txsByDay[dayStr] || [];
+                if (dayOps.length > 0) {
+                    const txHashesOnDay = new Set(accountTxs.filter(tx => tx.date === dayStr).map(tx => tx.hash));
+                    for (const hash of txHashesOnDay) {
+                        validatorTxBalances[valAddr][hash] = correctedStakeXrd.toNumber();
+                    }
+                }
             }
 
-            currentInitialStakeXrd = exactFinalStakeXrd; 
+            currentInitialStakeXrd = exactFinalStakeXrd;
             const endPeriodState = getCachedSnapshot(pEnd);
             currentInitialStakeLsu = new Big(endPeriodState.userLsu);
         }
     }
 
+    // Second pass: Sum up balances across all validators
+    const dailyTotalBalance: Record<string, number> = {};
+    const txTotalBalance: Record<string, number> = {};
+
+    for (const valAddr of Object.keys(validatorDailyBalances)) {
+        for (const [date, bal] of Object.entries(validatorDailyBalances[valAddr])) {
+            dailyTotalBalance[date] = (dailyTotalBalance[date] || 0) + bal;
+        }
+        for (const [hash, bal] of Object.entries(validatorTxBalances[valAddr])) {
+            txTotalBalance[hash] = (txTotalBalance[hash] || 0) + bal;
+        }
+    }
+
+    // Update records with total balance
+    for (const r of records) {
+        r.totalAccountXrd = dailyTotalBalance[r.date] || r.accountXrd;
+    }
+
     records.sort((a, b) => a.date.localeCompare(b.date));
-    return records;
+    return { records, txTotalBalance };
+}
+
+interface MathResult {
+    records: StakingRewardRecord[];
+    txTotalBalance: Record<string, number>;
 }
 
 // ── Build CoinTracking CSV rows ────────────────────────────────────────────────
 
 const CT_HEADER = [
     'Type', 'Buy Amount', 'Buy Currency', 'Sell Amount', 'Sell Currency',
-    'Fee Amount', 'Fee Currency', 'Exchange', 'Trade-Group', 'Comment', 'Date', 'Tx-ID',
+    'Fee Amount', 'Fee Currency', 'Exchange', 'Trade-Group', 'Comment', 'Date', 'Tx-ID', 'Staking Balance'
 ];
 
 function csvRow(
     ctType: string, buyAmt: number, buyCur: string, sellAmt: number, sellCur: string,
     feeAmt: number, feeCur: string, group: string, comment: string, dateTime: string, txId = '',
+    stakingBalance?: number
 ): string[] {
     return [
         ctType,
@@ -638,12 +698,14 @@ function csvRow(
         comment,
         dateTime,
         txId,
+        stakingBalance !== undefined ? stakingBalance.toFixed(8) : '',
     ];
 }
 
 function buildCsvRows(
     stakingRewards: StakingRewardRecord[],
     accountTxs: AccountTx[],
+    txBalances: Record<string, number>,
     validatorNameMap: Record<string, string>,
     resourceLabels: Record<string, string>,
 ): string[][] {
@@ -654,6 +716,8 @@ function buildCsvRows(
             'Staking', r.rewardXrd, 'XRD', 0, '', 0, '',
             'Staking', `Staking reward — ${r.validatorName.slice(0, 35)}`,
             `${r.date} 00:00:00`,
+            '',
+            r.totalAccountXrd
         ));
     }
 
@@ -707,7 +771,13 @@ function buildCsvRows(
         }
 
         if (feeToApply > 0) {
-            rows.push(csvRow('Other Fee', 0, '', 0, '', feeToApply, 'XRD', 'Network', 'Transaction Fee', dateTime, hash));
+            rows.push(csvRow('Other Fee', 0, '', 0, '', feeToApply, 'XRD', 'Network', 'Transaction Fee', dateTime, hash, txBalances[hash]));
+        } else {
+            // Even if fee is 0, we might want to update the last row added for this tx with the balance
+            const lastRow = rows[rows.length - 1];
+            if (lastRow && lastRow[11] === hash) {
+                lastRow[12] = txBalances[hash] !== undefined ? txBalances[hash].toFixed(8) : '';
+            }
         }
     }
 
@@ -725,30 +795,32 @@ function rowsToCsv(rows: string[][]): string {
 export async function generateClientAccountRewardsCsv(
     accountAddress: string,
     year: string,
-    onProgress: (p: number) => void
+    onProgress: (p: number) => void,
+    signal?: AbortSignal
 ): Promise<{ csv: string, totalXrd: number }> {
     onProgress(5);
-    
+
     const startDate = `${year}-01-01`;
     const endDate = `${year}-12-31`;
 
     // 1, 2, 3. Fetch all in parallel
     const [validatorMap, rewardsData, accountTxs] = await Promise.all([
-        fetchAllValidators(),
-        fetch(`/api/account-rewards-data?year=${year}`).then(async res => {
+        fetchAllValidators(signal),
+        fetch(`/api/account-rewards-data?year=${year}`, { signal }).then(async res => {
             if (!res.ok) throw new Error('Failed to fetch rewards data');
             const data = await res.json();
             return data.rewardsData;
         }),
-        fetchAccountTransactions(accountAddress, startDate, endDate)
+        fetchAccountTransactions(accountAddress, startDate, endDate, signal)
     ]);
     onProgress(20);
 
     // 4. Compute staking rewards with simulation math
     // We pass 20-90% progress to computeStakingRewardsMath
-    const stakingRewards = await computeStakingRewardsMath(
-        rewardsData, accountAddress, validatorMap, accountTxs, year, 
-        (p) => onProgress(20 + p * 0.7) // Map 0-100 to 20-90
+    const { records: stakingRewards, txTotalBalance } = await computeStakingRewardsMath(
+        rewardsData, accountAddress, validatorMap, accountTxs, year,
+        (p) => onProgress(20 + p * 0.7), // Map 0-100 to 20-90
+        signal
     );
     onProgress(90);
 
@@ -759,7 +831,7 @@ export async function generateClientAccountRewardsCsv(
             if (c.resource) uniqueResources.add(c.resource);
         }
     }
-    const resourceLabels = await fetchResourceLabels([...uniqueResources]);
+    const resourceLabels = await fetchResourceLabels([...uniqueResources], signal);
     onProgress(95);
 
     // 6. Build validator name map
@@ -769,7 +841,7 @@ export async function generateClientAccountRewardsCsv(
     }
 
     // 7. Build and return CSV
-    const csvRows = buildCsvRows(stakingRewards, accountTxs, validatorNameMap, resourceLabels);
+    const csvRows = buildCsvRows(stakingRewards, accountTxs, txTotalBalance, validatorNameMap, resourceLabels);
     if (csvRows.length === 0) throw new Error('No data found for this year');
 
     const totalXrd = stakingRewards.reduce((s, r) => s + r.rewardXrd, 0);

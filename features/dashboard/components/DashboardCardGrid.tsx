@@ -128,7 +128,7 @@ export const DashboardCardGrid = ({
           <Shield className="w-16 h-16 mx-auto mb-4 opacity-30" />
           <p className="text-lg font-bold">
             {searchQuery
-              ? dt?.search?.no_results?.replace('{query}', searchQuery) ?? `No results for "${searchQuery}"`
+              ? dt?.search?.no_results ?? 'No results found'
               : dt?.search?.no_validators ?? 'No validators found'}
           </p>
         </div>

@@ -116,11 +116,12 @@ export function PanelRoleRow({
    in all inline entity panels.
 ───────────────────────────────────────── */
 export function PanelTabBar<T extends string>({
-    tabs, activeTab, onTabChange,
+    tabs, activeTab, onTabChange, onTabHover,
 }: {
     tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
+    onTabHover?: (tab: T) => void;
 }) {
     return (
         <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar">
@@ -130,6 +131,7 @@ export function PanelTabBar<T extends string>({
                     type="button"
                     whileHover="hover"
                     onClick={e => { e.stopPropagation(); onTabChange(tab.key); }}
+                    onMouseEnter={() => onTabHover?.(tab.key)}
                     title={tab.tooltip}
                     className={`px-4 py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${
                         activeTab === tab.key

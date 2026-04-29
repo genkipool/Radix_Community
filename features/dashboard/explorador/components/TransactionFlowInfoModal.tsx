@@ -65,11 +65,11 @@ export function TransactionFlowInfoModal({
 
                                         <div className="grid md:grid-cols-2 gap-4">
                                             {/* Left Column Explanation */}
-                                            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
+                                            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                                    <Landmark className="w-16 h-16 text-red-500" />
+                                                    <Landmark className="w-16 h-16 text-blue-500" />
                                                 </div>
-                                                <h4 className="font-black text-red-500 text-xs tracking-widest uppercase flex items-center">
+                                                <h4 className="font-black text-blue-600 text-xs tracking-widest uppercase flex items-center">
                                                     {tt.tx_flow_info_left_col_title || 'LEFT COLUMN: Origin Address'}
                                                 </h4>
                                                 <p className="text-[13px] opacity-90">

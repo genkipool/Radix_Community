@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Landmark, Download } from 'lucide-react';
 import { formatNumber } from '@/utils/formatters';
 import { getCurrencyForLocale, formatCurrency } from '@/utils/currencyUtils';
@@ -14,7 +14,7 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
-import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { apiFetchEntityDetails, apiFetchTransactions } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
@@ -106,6 +106,21 @@ export function AccountCard({
     const handleDownloadMouseEnter = () => {
         if (!validatorsData) return;
         prefetchAccountRewards(address);
+    };
+
+    const queryClient = useQueryClient();
+    const handleTransactionsMouseEnter = () => {
+        queryClient.prefetchInfiniteQuery({
+            queryKey: ['account-transactions', address, network],
+            queryFn: async ({ pageParam }) =>
+                apiFetchTransactions({
+                    cursor: pageParam as string | undefined,
+                    limit: 15,
+                    address: address,
+                    network: network as 'mainnet' | 'stokenet'
+                }),
+            initialPageParam: undefined as string | undefined,
+        });
     };
 
     // Expandable Tabs Data Processing
@@ -261,7 +276,16 @@ export function AccountCard({
                             className="overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)]"
                         >
                             <div onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
-                                <PanelTabBar tabs={tabsData} activeTab={activeTab} onTabChange={(t) => setActiveTab(t as EntityTab)} />
+                                <PanelTabBar 
+                                    tabs={tabsData} 
+                                    activeTab={activeTab} 
+                                    onTabChange={(t) => setActiveTab(t as EntityTab)} 
+                                    onTabHover={(t) => {
+                                        if (t === 'transactions') {
+                                            handleTransactionsMouseEnter();
+                                        }
+                                    }}
+                                />
 
                                 <div className="px-4 py-3 pb-6">
                                     {/* CSS Grid Wrapper injecting logic specifically for Token/NFT tabs */}

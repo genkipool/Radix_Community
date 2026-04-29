@@ -34,6 +34,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     const [progress, setProgress] = useState(0);
     const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: 'USD' | 'EUR' | string } | null>(null);
     const [localError, setLocalError] = useState<string | null>(null);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
     const mounted = useMounted();
 
     const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
@@ -46,26 +47,33 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     const years = (yearsData?.years ?? []).map(y => String(y));
     const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
 
-    const activeYear = selectedYear || (years.length > 0 ? years[0] : null);
+
 
     // Removed legacy progress simulation that conflicted with actual client processing progress
 
 
     const handleDownload = async () => {
-        if (!activeYear) return;
+        if (!selectedYear) return;
 
         setDownloading(true);
         setProgress(0);
         setLocalError(null);
         setSummary(null);
 
+        // Cancel any previous download
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             // Use the new client-side generation service with dynamic import
             const { generateClientAccountRewardsCsv } = await import('../services/clientCsvExport');
             
-            const data = await generateClientAccountRewardsCsv(accountAddress, activeYear, (p) => {
+            const data = await generateClientAccountRewardsCsv(accountAddress, selectedYear, (p) => {
                 setProgress(Math.min(99, p));
-            });
+            }, controller.signal);
 
             if (!data.csv) {
                 throw new Error('CSV is empty');
@@ -91,29 +99,49 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `account_rewards_${accountAddress.substring(0, 25)}_${activeYear}.csv`;
+            a.download = `account_rewards_${accountAddress.substring(0, 25)}_${selectedYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        } catch (err) {
+        } catch (err: unknown) {
+            if (err instanceof Error && (err.name === 'AbortError' || err.message === 'Aborted')) {
+                return; // Silently ignore cancellation
+            }
             setLocalError(err instanceof Error ? err.message : String(err));
         } finally {
+            if (abortControllerRef.current?.signal.aborted) {
+                setDownloading(false);
+                setProgress(0);
+                return;
+            }
             setDownloading(false);
             // Don't reset progress immediately so user can see 100%
             setTimeout(() => setProgress(0), 2000);
         }
     };
 
-    // Close on Escape
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            // Cancel on close
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+                abortControllerRef.current = null;
+            }
+            return;
+        }
         const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !downloading) onClose();
+            if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, [isOpen, onClose, downloading]);
+        return () => {
+            window.removeEventListener('keydown', handler);
+            // Cancel on unmount
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen || !mounted) return null;
 
@@ -121,7 +149,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={(e) => {
-                if (e.target === e.currentTarget && !downloading) onClose();
+                if (e.target === e.currentTarget) onClose();
             }}
         >
             <div
@@ -135,7 +163,6 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                     </h3>
                     <button
                         onClick={onClose}
-                        disabled={downloading}
                         className="p-1.5 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-40"
                     >
                         <X className="w-4 h-4" />
@@ -231,7 +258,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                 <button
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${activeYear === year
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
                                         ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
                                         : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
                                         }`}

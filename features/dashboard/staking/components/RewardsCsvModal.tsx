@@ -23,6 +23,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     const [progress, setProgress] = useState(0);
     const [summary, setSummary] = useState<{ totalXrd: number; fiatValue: number; dreamValue: number; currency: string } | null>(null);
     const [localError, setLocalError] = useState<string | null>(null);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
     const mounted = useMounted();
 
     const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
@@ -35,7 +36,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     const years = yearsData?.years ?? [];
     const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
 
-    const activeYear = selectedYear || (years.length > 0 ? years[0] : null);
+
 
     // Handle progress simulation
     useEffect(() => {
@@ -50,16 +51,24 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
 
 
     const handleDownload = async () => {
-        if (!activeYear) return;
+        if (!selectedYear) return;
 
         setDownloading(true);
         setProgress(0);
         setLocalError(null);
         setSummary(null);
 
+        // Cancel previous if any
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             const res = await fetch(
-                `/api/validator-rewards?address=${validatorAddress}&action=csv&year=${activeYear}`,
+                `/api/validator-rewards?address=${validatorAddress}&action=csv&year=${selectedYear}`,
+                { signal: controller.signal }
             );
 
             if (!res.ok) {
@@ -92,7 +101,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `validator_rewards_${validatorAddress.substring(0, 25)}_${activeYear}.csv`;
+            a.download = `validator_rewards_${validatorAddress.substring(0, 25)}_${selectedYear}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -103,11 +112,28 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                 setDownloading(false);
             }, 500);
 
-        } catch (err) {
+        } catch (err: unknown) {
+            if (err instanceof Error && err.name === 'AbortError') return;
             setLocalError(err instanceof Error ? err.message : 'An error occurred');
             setDownloading(false);
         }
     };
+
+    // Close and cleanup logic
+    useEffect(() => {
+        if (!isOpen) {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+                abortControllerRef.current = null;
+            }
+            return;
+        }
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, [isOpen]);
 
     if (!isOpen || !mounted) return null;
 
@@ -127,7 +153,6 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                     </h3>
                     <button
                         onClick={onClose}
-                        disabled={downloading}
                         className="p-1.5 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-40"
                     >
                         <X className="w-4 h-4" />
@@ -217,7 +242,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                 <button
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${activeYear === year
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
                                         ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
                                         : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
                                         }`}
@@ -242,7 +267,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                 <div className="px-6 py-4 bg-[var(--color-bg)] border-t border-[var(--color-card-border)] flex items-center justify-end">
                     <button
                         onClick={handleDownload}
-                        disabled={downloading || years.length === 0 || !!summary}
+                        disabled={!selectedYear || downloading || years.length === 0 || !!summary}
                         className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                         {downloading ? (
