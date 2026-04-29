@@ -48,22 +48,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
 
     const activeYear = selectedYear || (years.length > 0 ? years[0] : null);
 
-
-    // Progress simulation
-    useEffect(() => {
-        if (!downloading) return;
-
-        let currentProgress = 0;
-        const interval = setInterval(() => {
-            const remaining = 98 - currentProgress;
-            // Asymptotic curve: fast at first, then slows down progressively over several minutes
-            currentProgress += (remaining * 0.015) + (Math.random() * 0.2);
-            if (currentProgress > 98) currentProgress = 98;
-            setProgress(currentProgress);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [downloading]);
+    // Removed legacy progress simulation that conflicted with actual client processing progress
 
 
     const handleDownload = async () => {
@@ -75,11 +60,13 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         setSummary(null);
 
         try {
-            const res = await fetch(
-                `/api/account-rewards?address=${encodeURIComponent(accountAddress)}&action=csv&year=${activeYear}`,
-            );
+            // Use the new client-side generation service with dynamic import
+            const { generateClientAccountRewardsCsv } = await import('../services/clientCsvExport');
+            
+            const data = await generateClientAccountRewardsCsv(accountAddress, activeYear, (p) => {
+                setProgress(Math.min(99, p));
+            });
 
-            const data = await res.json();
             if (!data.csv) {
                 throw new Error('CSV is empty');
             }
@@ -113,7 +100,8 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             setLocalError(err instanceof Error ? err.message : String(err));
         } finally {
             setDownloading(false);
-            setProgress(0);
+            // Don't reset progress immediately so user can see 100%
+            setTimeout(() => setProgress(0), 2000);
         }
     };
 
