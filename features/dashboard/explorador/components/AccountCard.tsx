@@ -13,6 +13,7 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountTransactionsTab } from './AccountTransactionsTab';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
@@ -33,7 +34,7 @@ import { getMetaValue } from '../utils/metadataUtils';
 import type { AccountCardProps } from '../types/components.types';
 import type { MetadataItem } from '@/features/dashboard/types';
 
-type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 export function AccountCard({
     address,
     columns,
@@ -119,6 +120,7 @@ export function AccountCard({
         { key: 'tokens', label: accT?.tokens_tab || 'Tokens' },
         { key: 'nfts', label: accT?.nfts_tab || 'NFTs' },
         { key: 'pool_units', label: accT?.pool_units || 'Pool Units' },
+        { key: 'transactions', label: accT?.transactions_tab || 'Transactions' },
         { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadatos' },
         { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuración' },
         { key: 'raw', label: tt?.resource_panel_raw || 'Raw' }
@@ -344,6 +346,16 @@ export function AccountCard({
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale}
+                                            />
+                                        )}
+
+                                        {/* ── TRANSACTIONS ── */}
+                                        {activeTab === 'transactions' && (
+                                            <AccountTransactionsTab
+                                                accountAddress={address}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                tt={tt!}
                                                 locale={locale}
                                             />
                                         )}

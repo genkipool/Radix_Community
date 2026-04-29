@@ -38,6 +38,7 @@ import {
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountTransactionsTab } from './AccountTransactionsTab';
 import type {
     MetadataItem,
     MarketData,
@@ -49,7 +50,7 @@ import { formatNumber } from '@/utils/formatters';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -80,6 +81,7 @@ function getTabsForEntity(
         base.push({ key: 'tokens', label: accT?.tokens_tab || 'Tokens' });
         base.push({ key: 'nfts', label: accT?.nfts_tab || 'NFTs' });
         base.push({ key: 'pool_units', label: accT?.pool_units || 'Pool Units' });
+        base.push({ key: 'transactions', label: accT?.transactions_tab || 'Transactions' });
     }
 
     base.push({ key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata' });
@@ -341,6 +343,16 @@ export function ExpandableEntityBadge({
                                                 locale={locale}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
+                                            />
+                                        )}
+
+                                        {/* ── TRANSACTIONS ── */}
+                                        {activeTab === 'transactions' && (
+                                            <AccountTransactionsTab
+                                                accountAddress={clean}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                tt={tt}
+                                                locale={locale}
                                             />
                                         )}
 

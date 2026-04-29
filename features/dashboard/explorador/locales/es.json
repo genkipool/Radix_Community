@@ -433,7 +433,21 @@
         "account_rewards_summary_title": "¡Descarga completada!",
         "account_rewards_summary_total": "Total ganado",
         "account_rewards_summary_dream": "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año.",
-        "csv_button": "CSV"
+        "csv_button": "CSV",
+        "transactions_tab": "Transacciones",
+        "tx_date": "Fecha",
+        "tx_hash": "Hash",
+        "tx_type": "Tipo",
+        "tx_status": "Estado",
+        "tx_fee": "Comisión",
+        "tx_deposit": "Depósito",
+        "tx_withdraw": "Retiro",
+        "tx_amount": "Cantidad",
+        "tx_load_more": "Cargar más",
+        "tx_no_transactions": "No se encontraron transacciones para esta cuenta.",
+        "tx_loading": "Cargando transacciones...",
+        "tx_success": "Éxito",
+        "tx_failed": "Fallido"
       }
     },
     "explorer": {

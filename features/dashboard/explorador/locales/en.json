@@ -433,7 +433,21 @@
         "account_rewards_summary_title": "Download Complete!",
         "account_rewards_summary_total": "Total earned",
         "account_rewards_summary_dream": "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year.",
-        "csv_button": "CSV"
+        "csv_button": "CSV",
+        "transactions_tab": "Transactions",
+        "tx_date": "Date",
+        "tx_hash": "Hash",
+        "tx_type": "Type",
+        "tx_status": "Status",
+        "tx_fee": "Fee",
+        "tx_deposit": "Deposit",
+        "tx_withdraw": "Withdraw",
+        "tx_amount": "Amount",
+        "tx_load_more": "Load More",
+        "tx_no_transactions": "No transactions found for this account.",
+        "tx_loading": "Loading transactions...",
+        "tx_success": "Success",
+        "tx_failed": "Failed"
       }
     },
     "explorer": {

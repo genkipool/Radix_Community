@@ -514,6 +514,7 @@ function parseTransactionItem(item: GatewayItem, validatorAddress?: string, netw
         displayIsMint,
         displayResourceName,
         proposerInfo,
+        balanceChanges: item.balance_changes as Record<string, unknown> | undefined,
         ...(validatorAddress && { stakeXrd, unstakeXrd, claimXrd }),
     };
 }
