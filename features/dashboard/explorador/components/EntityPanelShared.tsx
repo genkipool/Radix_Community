@@ -51,7 +51,7 @@ export function PanelRoleRow({
 }) {
     const resolutionColor = (r: string) =>
         r === (tt.role_resolution_deny_all || 'Deny All')    ? 'text-[var(--color-text-muted)]'
-        : r === (tt.role_resolution_allow_all || 'Allow All') ? 'text-green-400'
+        : r === (tt.role_resolution_allow_all || 'Allow All') ? 'text-green-700 dark:text-green-400'
         : 'text-[var(--color-primary)]';
 
     return (
@@ -71,10 +71,10 @@ export function PanelRoleRow({
                 {entry.ruleAddress && (
                     <div className="flex items-center gap-1 mt-1">
                         <span
-                            className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[180px]"
+                            className="text-[9px] font-mono text-[var(--color-text-muted)] break-all"
                             title={entry.ruleAddress}
                         >
-                            {entry.ruleAddress.slice(0, 16)}...{entry.ruleAddress.slice(-6)}
+                            {entry.ruleAddress}
                         </span>
                         <button
                             onClick={e => { e.stopPropagation(); onCopy(entry.ruleAddress!); }}
@@ -178,13 +178,40 @@ export function PanelMetadataTab({
                 const tagValues = parseTags(meta);
                 const isTags = meta.key === 'tags' || (meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray';
                 
-                const val = isTags ? '' : (
+                const rawVal = isTags ? null : (
+                    meta.value.typed?.values ??
                     meta.value.typed?.value ??
                     meta.value.typed?.url ??
-                    (meta.value.programmatic_json ? String(parseProgrammaticJson(meta.value.programmatic_json)) : undefined) ??
-                    String(meta.value.typed?.kind ?? '')
+                    (meta.value.programmatic_json ? parseProgrammaticJson(meta.value.programmatic_json) : undefined) ??
+                    meta.value.typed?.kind
                 );
-                const isUrl = !isTags && typeof val === 'string' && (val.startsWith('http') || val.startsWith('ipfs'));
+
+                let valueItems: string[] = [];
+                if (Array.isArray(rawVal)) {
+                    valueItems = rawVal.map(v => String(v));
+                } else if (typeof rawVal === 'string') {
+                    if (rawVal.includes(',')) {
+                        const splitted = rawVal.split(',');
+                        const isAddressList = splitted.every(s => {
+                            const t = s.trim();
+                            return t.startsWith('account_') ||
+                                   t.startsWith('resource_') ||
+                                   t.startsWith('component_') ||
+                                   t.startsWith('pool_') ||
+                                   t.startsWith('package_') ||
+                                   t.startsWith('validator_');
+                        });
+                        if (isAddressList) {
+                            valueItems = splitted.map(s => s.trim()).filter(Boolean);
+                        } else {
+                            valueItems = [rawVal];
+                        }
+                    } else {
+                        valueItems = [rawVal];
+                    }
+                } else if (rawVal !== null && rawVal !== undefined) {
+                    valueItems = [String(rawVal)];
+                }
 
                 return (
                     <div key={idx}>
@@ -196,10 +223,19 @@ export function PanelMetadataTab({
                                 {tagValues.map((tag: string, ti: number) => <Pill key={ti}>{tag}</Pill>)}
                             </dd>
                         ) : (
-                            <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words">
-                                {isUrl && typeof val === 'string'
-                                    ? <a href={val} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{val}</a>
-                                    : val}
+                            <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words space-y-1">
+                                {valueItems.map((vItem, vi) => {
+                                    const isUrl = typeof vItem === 'string' && (vItem.startsWith('http') || vItem.startsWith('ipfs'));
+                                    return (
+                                        <div key={vi}>
+                                            {isUrl && typeof vItem === 'string' ? (
+                                                <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
+                                            ) : (
+                                                vItem
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </dd>
                         )}
                     </div>
@@ -229,9 +265,11 @@ export function PanelConfigurationTab({
             </p>
         );
     }
-    const adminEntries    = configEntries.filter(e => e.group === 'admin');
-    const roleEntries     = configEntries.filter(e => e.group === 'roles');
-    const metaRoleEntries = configEntries.filter(e => e.group === 'metadata');
+    const adminEntries       = configEntries.filter(e => e.group === 'admin');
+    const mainRoleEntries    = configEntries.filter(e => e.group === 'main');
+    const royaltyRoleEntries = configEntries.filter(e => e.group === 'royalty');
+    const roleEntries        = configEntries.filter(e => e.group === 'roles');
+    const metaRoleEntries    = configEntries.filter(e => e.group === 'metadata');
     const rowProps = { tt, onCopy, copiedAddress };
     return (
         <dl>
@@ -240,6 +278,22 @@ export function PanelConfigurationTab({
                     <PanelSectionHeader label={tt.role_section_admin || 'Role Administrator'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {adminEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                    </div>
+                </>
+            )}
+            {mainRoleEntries.length > 0 && (
+                <>
+                    <PanelSectionHeader label={tt.role_section_main || 'Main Roles'} />
+                    <div className="divide-y divide-[var(--color-card-border)]/30">
+                        {mainRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                    </div>
+                </>
+            )}
+            {royaltyRoleEntries.length > 0 && (
+                <>
+                    <PanelSectionHeader label={tt.role_section_royalty || 'Royalty Roles'} />
+                    <div className="divide-y divide-[var(--color-card-border)]/30">
+                        {royaltyRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}

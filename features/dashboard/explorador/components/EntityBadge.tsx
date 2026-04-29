@@ -113,7 +113,7 @@ export function AddressDisplay({
                     <div className="flex items-center gap-1.5">
                         <span
                             className={`font-mono truncate max-w-[200px] text-xs ${isCM ? 'text-blue-300 font-semibold' : 'text-[var(--color-text-main)]'}`}
-                            title={sanitizeText(address)}
+                            title={wellKnownTip || sanitizeText(address)}
                         >
                             {displayText}
                         </span>
@@ -221,7 +221,7 @@ export function EntityBadge({
                     <span
                         className={`font-mono text-xs truncate ${entityName ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)]'
                             } ${isClickable ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''}`}
-                        title={clean}
+                        title={wellKnownTip || clean}
                         onClick={() => isClickable && onResourceClick?.(clean)}
                     >
                         {short}

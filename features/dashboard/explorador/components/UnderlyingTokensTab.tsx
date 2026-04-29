@@ -219,6 +219,9 @@ export function UnderlyingTokensTab({
                 accT={accT}
                 network={network}
                 locale={locale}
+                poolAddress={resolvedPoolAddress}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
             />
 
             {/* ── Underlying token expandable cards ── */}
@@ -262,6 +265,9 @@ interface PositionSummaryTableProps {
     accT: TranslationsT['dashboard']['transactions']['account_summary'] | undefined;
     network: 'mainnet' | 'stokenet';
     locale: string;
+    poolAddress?: string;
+    onCopy: (text: string) => void;
+    copiedAddress: string | null;
 }
 
 function PositionSummaryTable({
@@ -273,6 +279,9 @@ function PositionSummaryTable({
     accT,
     network,
     locale,
+    poolAddress,
+    onCopy,
+    copiedAddress,
 }: PositionSummaryTableProps) {
     return (
         <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] overflow-hidden">
@@ -296,6 +305,24 @@ function PositionSummaryTable({
 
             {/* Table */}
             <div className="divide-y divide-[var(--color-card-border)]">
+                {/* Pool Address */}
+                {poolAddress && (
+                    <SummaryRow
+                        label={accT?.pool_address || 'Pool Address'}
+                        value={
+                            <div className="flex items-center gap-2 justify-end w-full max-w-[280px] sm:max-w-md select-all break-all text-right ml-auto">
+                                <span className="font-mono text-[11px] leading-relaxed select-all">{poolAddress}</span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onCopy(poolAddress); }}
+                                    className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === poolAddress ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                >
+                                    {copiedAddress === poolAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                </button>
+                            </div>
+                        }
+                    />
+                )}
+
                 {/* LP units owned */}
                 <SummaryRow
                     label={accT?.contributed_tokens_lp_units || 'LP units you own'}

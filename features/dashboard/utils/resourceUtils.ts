@@ -47,6 +47,24 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
         metadata_locker:                   tt.role_desc_metadata_locker        || 'Can lock metadata fields to prevent future changes.',
         metadata_locker_updater:           tt.role_desc_metadata_locker_updater|| 'Can update who has the metadata locker role.',
     };
+    const isEs = !!tt.role_section_main && tt.role_section_main.toLowerCase().includes('principal');
+    const getRoleDesc = (roleName: string, group: ConfigEntry['group']): string => {
+        if (ROLE_DESC[roleName]) return ROLE_DESC[roleName];
+        const baseName = roleName.replace('_updater', '').replace(/_/g, ' ');
+        if (group === 'main') {
+            return roleName.endsWith('_updater')
+                ? (isEs ? `Puede actualizar quién tiene el rol de ${baseName}.` : `Can update who has the ${baseName} role.`)
+                : (isEs ? `Rol principal que controla el acceso a ${baseName}.` : `Main role controlling access to ${baseName}.`);
+        }
+        if (group === 'royalty') {
+            return roleName.endsWith('_updater')
+                ? (isEs ? `Puede actualizar quién tiene el rol de regalías para ${baseName}.` : `Can update who has the royalty role for ${baseName}.`)
+                : (isEs ? `Gestiona la configuración y asignación de regalías para ${baseName}.` : `Manages royalty configuration and assignment for ${baseName}.`);
+        }
+        return roleName.endsWith('_updater')
+            ? (isEs ? `Puede actualizar quién tiene el rol de ${baseName}.` : `Can update who has the ${baseName} role.`)
+            : (isEs ? `Controla el acceso a ${baseName}.` : `Controls access to ${baseName}.`);
+    };
     const ROLE_GROUP: Record<string, ConfigEntry['group']> = {
         owner: 'admin',
         minter: 'roles', minter_updater: 'roles', burner: 'roles', burner_updater: 'roles',
@@ -80,15 +98,18 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
     };
     const entries: ConfigEntry[] = [];
     if (Array.isArray(r.entries)) {
+        const processedRoles = new Set<string>();
         if (r.owner) {
             const ownerType: string = r.owner.rule?.type ?? '';
             const ruleAddress = ownerType === 'Protected' ? extractRuleAddress(r.owner.rule) : null;
-            entries.push({ name: 'owner', resolution: ownerType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : (ownerType || '—'), updatable: false, desc: ROLE_DESC['owner'], group: 'admin', ruleAddress });
+            entries.push({ name: 'owner', resolution: ownerType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : (ownerType || '—'), updatable: false, desc: ROLE_DESC['owner'] || '', group: 'admin', ruleAddress });
+            processedRoles.add('owner');
         }
         for (const roleName of ALL_ROLES) {
             if (roleName === 'owner') continue;
             const entry = r.entries.find((e) => e?.role_key?.name === roleName);
             if (!entry) continue;
+            processedRoles.add(roleName);
             const resolution: string = entry.assignment?.resolution ?? '';
             const explicitType: string = entry.assignment?.explicit_rule?.type ?? '';
             const ruleAddress = resolution === 'Explicit' && explicitType !== 'AllowAll' && explicitType !== 'DenyAll'
@@ -97,17 +118,50 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
             const updaterRes: string = updaterEntry?.assignment?.resolution ?? '';
             const updaterExplicit: string = updaterEntry?.assignment?.explicit_rule?.type ?? '';
             const updatable = !roleName.endsWith('_updater') && (updaterRes === 'Owner' || (updaterRes === 'Explicit' && updaterExplicit !== 'DenyAll'));
-            entries.push({ name: roleName, resolution: resLabel(resolution, explicitType), updatable, desc: ROLE_DESC[roleName] || '', group: ROLE_GROUP[roleName] || 'roles', ruleAddress });
+            entries.push({ name: roleName, resolution: resLabel(resolution, explicitType), updatable, desc: getRoleDesc(roleName, ROLE_GROUP[roleName] || 'roles'), group: ROLE_GROUP[roleName] || 'roles', ruleAddress });
+        }
+        for (const entry of r.entries) {
+            const roleName = entry.role_key?.name;
+            if (!roleName || processedRoles.has(roleName)) continue;
+            const resolution: string = entry.assignment?.resolution ?? '';
+            const explicitType: string = entry.assignment?.explicit_rule?.type ?? '';
+            const ruleAddress = resolution === 'Explicit' && explicitType !== 'AllowAll' && explicitType !== 'DenyAll'
+                ? extractRuleAddress(entry.assignment?.explicit_rule) : null;
+            const updaterEntry = r.entries.find((e) => e?.role_key?.name === `${roleName}_updater`);
+            const updaterRes: string = updaterEntry?.assignment?.resolution ?? '';
+            const updaterExplicit: string = updaterEntry?.assignment?.explicit_rule?.type ?? '';
+            const updatable = !roleName.endsWith('_updater') && (updaterRes === 'Owner' || (updaterRes === 'Explicit' && updaterExplicit !== 'DenyAll'));
+            
+            let group: ConfigEntry['group'] = ROLE_GROUP[roleName] || 'roles';
+            const moduleStr = entry.role_key?.module;
+            if (moduleStr === 'Main') {
+                group = 'main';
+            } else if (moduleStr === 'Royalty') {
+                group = 'royalty';
+            }
+            
+            entries.push({ name: roleName, resolution: resLabel(resolution, explicitType), updatable, desc: getRoleDesc(roleName, group), group, ruleAddress });
         }
         return entries;
     }
     const raFlat = r as Record<string, { rule?: { type: string } }>;
+    const processedFlat = new Set<string>();
     for (const key of ALL_ROLES) {
         const val = raFlat[key]; if (!val) continue;
+        processedFlat.add(key);
         const ruleType: string = val.rule?.type ?? '';
         const updaterType: string = raFlat[`${key}_updater`]?.rule?.type ?? '';
         const ruleAddress = ruleType === 'Protected' ? extractRuleAddress(val.rule) : null;
-        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: ROLE_DESC[key] || '', group: ROLE_GROUP[key] || 'roles', ruleAddress });
+        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
+    }
+    for (const [key, val] of Object.entries(raFlat)) {
+        if (key === 'owner' || key === 'entries' || processedFlat.has(key)) continue;
+        const v = val as { rule?: { type: string } };
+        if (!v || typeof v !== 'object') continue;
+        const ruleType: string = v.rule?.type ?? '';
+        const updaterType: string = raFlat[`${key}_updater`]?.rule?.type ?? '';
+        const ruleAddress = ruleType === 'Protected' ? extractRuleAddress(v.rule) : null;
+        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
     }
     return entries;
 }

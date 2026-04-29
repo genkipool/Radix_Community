@@ -266,6 +266,7 @@ export interface ResourceInlinePanelProps {
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     tt: TranslationsT['dashboard']['transactions'];
+    network?: Network;
     locale: string;
     /** Whether this resource is a pool unit (LP token) */
     isPoolUnit?: boolean;

@@ -22,7 +22,9 @@ import {
 
 import { BalanceChangeRowProps, ResourceInlinePanelProps } from '../types';
 import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
+import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import { UnderlyingTokensTab } from './UnderlyingTokensTab';
+import { ExpandableEntityBadge } from './ExpandableEntityBadge';
 
 /* ═══════ Pool Address Resolution ═══════ */
 
@@ -104,10 +106,22 @@ function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): stri
 
 /* ═══════ Resource Inline Panel ═══════ */
 const BASE_RESOURCE_TABS = ['summary', 'metadata', 'configuration', 'raw'] as const;
-type ResourceTab = 'summary' | 'contributed_tokens' | 'metadata' | 'configuration' | 'raw';
+type ResourceTab = 'summary' | 'contributed_tokens' | 'pool' | 'metadata' | 'configuration' | 'raw';
 
-export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, locale, isPoolUnit, userBalance, poolAddress }: ResourceInlinePanelProps) {
+export function ResourceInlinePanel({ address, details, loading, onCopy, copiedAddress, tt, network, locale, isPoolUnit, userBalance, poolAddress }: ResourceInlinePanelProps) {
     const [activeTab, setActiveTab] = useState<ResourceTab>('summary');
+
+    // Resolve tooltip for address
+    const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
+    const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
+
+    const wellKnownKey = getWellKnownKey(address, network || 'mainnet');
+    const genericKey = getGenericTooltipKey(address);
+    const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
+        ? well_known[wellKnownKey]
+        : genericKey && type_tooltips?.[genericKey]
+            ? type_tooltips[genericKey]
+            : null;
 
     const metadataItems = details?.metadata?.items || [];
     const name = getMetaValue(metadataItems, 'name') || 'Unknown Entity';
@@ -130,15 +144,17 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
     // Resolve pool address: prefer prop, fallback to extraction from entity details
     const resolvedPoolAddress = poolAddress || resolvePoolAddressFromEntity(details);
 
-    // Build tabs dynamically: insert 'contributed_tokens' after 'summary' for pool units
+    // Build tabs dynamically: insert 'contributed_tokens' and 'pool' after 'summary' for pool units
     const RESOURCE_TABS: ResourceTab[] = isPoolUnit && resolvedPoolAddress
-        ? ['summary', 'contributed_tokens', 'metadata', 'configuration', 'raw']
+        ? ['summary', 'contributed_tokens', 'pool', 'metadata', 'configuration', 'raw']
         : [...BASE_RESOURCE_TABS];
 
     const tabs = RESOURCE_TABS.map(key => ({
         key,
         label: key === 'contributed_tokens'
             ? (accT?.contributed_tokens || 'Contributed Tokens')
+            : key === 'pool'
+            ? (accT?.pool_tab || 'Pool')
             : (tt[`resource_panel_${key}`] || key.charAt(0).toUpperCase() + key.slice(1)),
     }));
 
@@ -168,7 +184,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                             {symbol && <TokenBadge className="shrink-0">{symbol}</TokenBadge>}
                                         </div>
                                         <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[160px]" title={address}>{address.slice(0, 14)}...{address.slice(-6)}</span>
+                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[160px]" title={wellKnownTip || address}>{address.slice(0, 14)}...{address.slice(-6)}</span>
                                             <button onClick={e => { e.stopPropagation(); onCopy(address); }} className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
                                                 {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                             </button>
@@ -179,6 +195,22 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                 {description && <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-4 italic border-l-2 border-[var(--color-primary)]/30 pl-3">{description}</p>}
                                 <div className="border-t border-[var(--color-card-border)] mb-4" />
                                 <dl className="space-y-3">
+                                    {isPoolUnit && resolvedPoolAddress && (
+                                        <div className="flex items-center justify-between gap-4">
+                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">
+                                                {accT?.pool_address || 'Pool Address'}
+                                            </dt>
+                                            <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono flex items-center gap-2 select-all break-all">
+                                                <span>{resolvedPoolAddress}</span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onCopy(resolvedPoolAddress); }}
+                                                    className={`p-0.5 rounded transition-colors ${copiedAddress === resolvedPoolAddress ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                >
+                                                    {copiedAddress === resolvedPoolAddress ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                                                </button>
+                                            </dd>
+                                        </div>
+                                    )}
                                     {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{resourceType}</dd></div>}
                                     {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{divisibility}</dd></div>}
                                     {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply)}{symbol ? ` ${symbol}` : ''}</dd></div>}
@@ -219,6 +251,18 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                 locale={locale}
                             />
                         )}
+                        {activeTab === 'pool' && isPoolUnit && resolvedPoolAddress && (
+                            <div className="space-y-4">
+                                <ExpandableEntityBadge
+                                    address={resolvedPoolAddress}
+                                    tt={tt}
+                                    onCopy={onCopy}
+                                    copiedAddress={copiedAddress}
+                                    network={network || 'mainnet'}
+                                    locale={locale}
+                                />
+                            </div>
+                        )}
                         {activeTab === 'configuration' && <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
                         {activeTab === 'raw' && <PanelRawTab data={details} />}
                     </>
@@ -252,6 +296,18 @@ const BalanceChangeRow = ({
     const rawSymbol = getMetaValue(metaItems, 'symbol');
     const iconUrl = getMetaValue(metaItems, 'icon_url');
     const isFee = change.is_fee;
+
+    // Resolve tooltip for address
+    const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
+    const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
+
+    const wellKnownKey = getWellKnownKey(change.resource_address, network || 'mainnet');
+    const genericKey = getGenericTooltipKey(change.resource_address);
+    const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
+        ? well_known[wellKnownKey]
+        : genericKey && type_tooltips?.[genericKey]
+            ? type_tooltips[genericKey]
+            : null;
 
     const name = rawName
         || (metadata && !isLoading ? `${change.resource_address.slice(0, 10)}...${change.resource_address.slice(-6)}` : '...');
@@ -301,7 +357,7 @@ const BalanceChangeRow = ({
                             {!isFee && <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                            <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={change.resource_address}>{change.resource_address.slice(0, 12)}...{change.resource_address.slice(-6)}</div>
+                            <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={wellKnownTip || change.resource_address}>{change.resource_address.slice(0, 12)}...{change.resource_address.slice(-6)}</div>
                             <button onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
                                 {copiedAddress === change.resource_address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                             </button>
@@ -333,7 +389,7 @@ const BalanceChangeRow = ({
             <AnimatePresence>
                 {!isFee && expanded && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                        <ResourceInlinePanel address={change.resource_address} details={metadata || null} loading={isLoading} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} locale={locale} />
+                        <ResourceInlinePanel address={change.resource_address} details={metadata || null} loading={isLoading} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
                     </motion.div>
                 )}
             </AnimatePresence>

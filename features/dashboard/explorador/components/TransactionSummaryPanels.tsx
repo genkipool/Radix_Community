@@ -400,7 +400,7 @@ function VaultCreationCard({
                             </span>
                             <span
                                 className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''}`}
-                                title={clean}
+                                title={wellKnownTip || clean}
                                 onClick={() => isClickable && _onResourceClick?.(clean)}
                             >
                                 {short}
@@ -808,6 +808,14 @@ function MetadataEntityBlock({
 }) {
     const meta = useEntityData(emitter, network);
 
+    const wellKnownKey = getWellKnownKey(sanitizeText(emitter), network);
+    const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(emitter)) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
+
     // Filter out missing or empty values
     const validUpdates = updates.filter(u => {
         const val = u.value?.trim() || '';
@@ -861,7 +869,7 @@ function MetadataEntityBlock({
                 
                 {/* 2. Address */}
                 <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-mono text-[var(--color-text-muted)] select-all truncate" title={emitter}>
+                    <span className="text-xs font-mono text-[var(--color-text-muted)] select-all truncate" title={wellKnownTip || emitter}>
                         {emitter.length > 40 ? `${emitter.slice(0, 15)}...${emitter.slice(-15)}` : emitter}
                     </span>
                     <button
@@ -928,6 +936,14 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
     const valName = proposerValidator?.name || sanitizeText(tt.proposer_box_title || 'Proposer');
     const valAddress = proposerValidator?.address || '';
     const valIcon = proposerValidator?.iconUrl;
+
+    const wellKnownKey = getWellKnownKey(sanitizeText(valAddress), network || 'mainnet');
+    const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(valAddress)) : null;
+    const wellKnownTip = wellKnownKey
+        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        : genericKey
+            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            : null;
     
     // Formatting local and UTC dates
     const dateObj = tx.confirmedAt;
@@ -986,7 +1002,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                         {tt.proposer_address || 'Validator Address'}
                     </span>
                     <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-[13px] font-mono text-[var(--color-text-main)] truncate" title={valAddress}>
+                        <span className="text-[13px] font-mono text-[var(--color-text-main)] truncate" title={wellKnownTip || valAddress}>
                             {valAddress ? `${valAddress.slice(0, 10)}...${valAddress.slice(-8)}` : 'N/A'}
                         </span>
                         {valAddress && (

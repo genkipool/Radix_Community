@@ -108,5 +108,6 @@ export function getGenericTooltipKey(address: string): string | null {
   if (address.startsWith('package_')) return 'package';
   if (address.startsWith('validator_')) return 'validator';
   if (address.startsWith('identity_')) return 'identity';
+  if (address.startsWith('pool_')) return 'package';
   return null;
 }

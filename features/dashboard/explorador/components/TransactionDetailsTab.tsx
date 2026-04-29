@@ -9,6 +9,7 @@ import { DetailRow } from '../../components/DetailRow';
 import { getMetaValue } from '../utils/metadataUtils';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
+import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 
 import { TransactionDetailsTabProps } from '../types';
 import type { GatewayEvent, GatewayField } from '@/features/dashboard/types/shared.types';
@@ -98,6 +99,18 @@ export function TransactionDetailsTab({
                 resolvedName = formatted;
             }
         }
+
+        const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
+        const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
+
+        const wellKnownKey = getWellKnownKey(addr, network || 'mainnet');
+        const genericKey = getGenericTooltipKey(addr);
+        const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
+            ? well_known[wellKnownKey]
+            : genericKey && type_tooltips?.[genericKey]
+                ? type_tooltips[genericKey]
+                : null;
+
         return (
             <span className="inline-flex items-center gap-1.5 align-middle">
                 {resolvedName && (
@@ -107,7 +120,7 @@ export function TransactionDetailsTab({
                 )}
                 <span
                     className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
-                    title={addr}
+                    title={wellKnownTip || addr}
                     onClick={(e) => {
                         e.stopPropagation();
                         onCopy(addr);
@@ -170,6 +183,18 @@ export function TransactionDetailsTab({
                 resolvedName = formatted;
             }
         }
+
+        const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
+        const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
+
+        const wellKnownKey = getWellKnownKey(addr, network || 'mainnet');
+        const genericKey = getGenericTooltipKey(addr);
+        const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
+            ? well_known[wellKnownKey]
+            : genericKey && type_tooltips?.[genericKey]
+                ? type_tooltips[genericKey]
+                : null;
+
         return (
             <span className="inline-flex items-start sm:items-center gap-1.5 sm:gap-2 flex-col sm:flex-row w-full mt-1 sm:mt-0">
                 {resolvedName && (
@@ -180,7 +205,7 @@ export function TransactionDetailsTab({
                 <span className="inline-flex items-center gap-2 max-w-full">
                     <span
                         className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] break-all"
-                        title={addr}
+                        title={wellKnownTip || addr}
                         onClick={(e) => {
                             e.stopPropagation();
                             onCopy(addr);
@@ -458,6 +483,18 @@ export function TransactionDetailsTab({
         // VaultCreationEvent
         if (name === 'VaultCreationEvent') {
             const vaultId = getField('vault_id', 0);
+
+            const well_known = tt?.well_known_tooltips as Record<string, string> | undefined;
+            const type_tooltips = tt?.type_tooltips as Record<string, string> | undefined;
+
+            const wellKnownKey = resource ? getWellKnownKey(resource, network || 'mainnet') : null;
+            const genericKey = resource ? getGenericTooltipKey(resource) : null;
+            const wellKnownTip = wellKnownKey && well_known?.[wellKnownKey]
+                ? well_known[wellKnownKey]
+                : genericKey && type_tooltips?.[genericKey]
+                    ? type_tooltips[genericKey]
+                    : null;
+
             return {
                 titleText: tStr(te.vault_creation, 'Vault Creation'),
                 tooltip: tStr(te.vault_creation_title, 'An internal vault has been created to securely store physical assets.'),
@@ -472,7 +509,7 @@ export function TransactionDetailsTab({
                                     <span className="inline-flex items-center gap-1.5 align-middle">
                                         <span
                                             className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
-                                            title={resource}
+                                            title={wellKnownTip || resource}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onCopy(resource);

@@ -31,6 +31,7 @@ export function getEntityType(
   if (clean.startsWith('resource_')) return { label: tt.entity_type_resource || 'Resource', color: 'text-amber-800 dark:text-amber-400 font-black tracking-wide', bg: 'bg-amber-500/10 border-amber-500/60' };
   if (clean.startsWith('validator_')) return { label: tt.entity_type_validator || 'Validator', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-500/8 border-emerald-500/40' };
   if (clean.startsWith('package_')) return { label: tt.entity_type_package || 'Package', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/6 border-cyan-500/30' };
+  if (clean.startsWith('pool_')) return { label: tt.entity_type_package || 'Package', color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500/6 border-cyan-500/30' };
   if (clean.startsWith('identity_')) return { label: tt.entity_type_identity || 'Identity', color: 'text-pink-400', bg: 'bg-pink-500/6 border-pink-500/20' };
   return { label: tt.entity_type_unknown || 'Entity', color: 'text-[var(--color-text-muted)]', bg: 'bg-[var(--color-surface)] border-[var(--color-card-border)]' };
 }

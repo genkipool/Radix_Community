@@ -377,6 +377,8 @@
       "resource_panel_updatable": "Updatable",
       "resource_panel_immutable": "Immutable",
       "role_section_admin": "Role Administrator",
+      "role_section_main": "Main Roles",
+      "role_section_royalty": "Royalty Roles",
       "role_section_roles": "Roles",
       "role_section_metadata": "Metadata Roles",
       "role_tooltip_name": "The name of this role and what it controls.",

@@ -47,6 +47,9 @@ export interface GatewayEntityDetails {
     total_minted?: number | string;
     total_burned?: number | string;
     role_assignments?: RoleAssignments;
+    blueprint_name?: string;
+    blueprint_version?: string;
+    package_address?: string;
     state?: Record<string, unknown>;
     blueprints?: Blueprint[];
   };
@@ -148,7 +151,7 @@ export interface ConfigEntry {
   resolution: string;
   updatable: boolean;
   desc: string;
-  group: 'admin' | 'roles' | 'metadata';
+  group: 'admin' | 'roles' | 'metadata' | 'main' | 'royalty';
   ruleAddress?: string | null;
 }
 
