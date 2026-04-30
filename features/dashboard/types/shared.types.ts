@@ -6,6 +6,7 @@ export interface EntityMeta {
   name: string | null;
   iconUrl: string | null;
   symbol: string | null;
+  blueprintName?: string | null;
 }
 
 export interface FungibleChange {

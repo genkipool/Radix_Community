@@ -153,16 +153,32 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
 
     // Extracted to avoid duplicating the identical status+type label pair
-    const renderStatusTypeLabels = () => (
-        <>
-            <span className={`${labelBaseClass} bg-white/5`} style={{ color, borderColor: `${color}40`, boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`, textShadow: `0 0 8px ${color}40` }}>
-                <span className="mt-[1px]">{statusLabel}</span>
-            </span>
-            <div className={`${labelBaseClass} bg-[var(--color-surface)] border-[var(--color-card-border)] px-3 text-[var(--color-text-muted)]`} title="Transaction Type">
-                <span className="mt-[1px]">{immediateType}</span>
-            </div>
-        </>
-    );
+    const renderStatusTypeLabels = () => {
+        const statusStyle = isSuccess 
+            ? { 
+                color: 'var(--color-accent)', 
+                borderColor: 'rgba(var(--color-accent-rgb), 0.2)', 
+                boxShadow: '0 0 12px rgba(var(--color-accent-rgb), 0.1), inset 0 0 4px rgba(var(--color-accent-rgb), 0.05)',
+                textShadow: '0 0 8px rgba(var(--color-accent-rgb), 0.3)'
+              } 
+            : { 
+                color, 
+                borderColor: `${color}40`, 
+                boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`, 
+                textShadow: `0 0 8px ${color}40` 
+              };
+
+        return (
+            <>
+                <span className={`${labelBaseClass} bg-white/5`} style={statusStyle}>
+                    <span className="mt-[1px]">{statusLabel}</span>
+                </span>
+                <div className={`${labelBaseClass} bg-[var(--color-surface)] border-[var(--color-card-border)] px-3 text-[var(--color-text-muted)]`} title="Transaction Type">
+                    <span className="mt-[1px]">{immediateType}</span>
+                </div>
+            </>
+        );
+    };
 
     return (
         <Card
@@ -225,10 +241,10 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                 {/* AVATAR / ICON */}
                 <div onClick={() => undefined}
                     className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
-                    <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, ${color}, transparent)` }} />
-                    <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center" style={{ borderColor: color, boxShadow: `0 0 15px ${color}30` }}>
+                    <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, ${isSuccess ? 'rgba(var(--color-accent-rgb), 0.2)' : color}, transparent)` }} />
+                    <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center" style={{ borderColor: isSuccess ? 'var(--color-accent)' : color, boxShadow: isSuccess ? `0 0 15px rgba(var(--color-accent-rgb), 0.2)` : `0 0 15px ${color}30` }}>
                         {isSuccess ? (
-                            <RadixIcon className={isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} strokeColor={color} />
+                            <RadixIcon className={isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} strokeColor="var(--color-accent)" />
                         ) : (
                             <RadixIcon className={`${isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} scale-y-[-1] [stroke-dasharray:4_4]`} strokeColor={color} />
                         )}

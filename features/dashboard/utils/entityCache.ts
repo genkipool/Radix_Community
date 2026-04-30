@@ -6,7 +6,7 @@ import type { MetadataItem } from '@/features/dashboard/types/shared.types';
 // ─────────────────────────────────────────
 //  Internal helpers
 // ─────────────────────────────────────────
-const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_'] as const;
+const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_', 'pool_'] as const;
 
 /** 
  * Normalizes a Radix address for use in cache keys.
@@ -47,14 +47,19 @@ export function extractEntityMeta(res: unknown): EntityMeta | null {
     return raw ? sanitizeText(String(raw)) : null;
   };
 
-  const meta = {
+  const detailsObj = r?.details as Record<string, unknown> | undefined;
+  const rawBlueprint = detailsObj?.blueprint_name;
+  const blueprintName = rawBlueprint ? sanitizeText(String(rawBlueprint)) : null;
+
+  const meta: EntityMeta = {
     name: pick('name'),
     iconUrl: pick('icon_url'),
     symbol: pick('symbol'),
+    blueprintName,
   };
 
   // If we found absolutely nothing, return null so the hook knows it's truly empty
-  if (!meta.name && !meta.symbol && !meta.iconUrl) return null;
+  if (!meta.name && !meta.symbol && !meta.iconUrl && !meta.blueprintName) return null;
 
   return meta;
 }

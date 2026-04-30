@@ -19,8 +19,10 @@
   /* Sky 500 */
   --color-accent: #10b981;
   /* Emerald 500 */
+  --color-accent-rgb: 16, 185, 129;
   --color-surface: #f8fafc;
-  --color-close-hover: #dc2626; /* Semantic Red 600 */
+  --color-close-hover: #dc2626;
+  /* Semantic Red 600 */
 
   --color-card-bg: #ffffff;
   --color-card-border: #e2e8f0;
@@ -44,7 +46,7 @@
   --code-string: #b45309;
   --code-punct: #1e293b;
 
-  /* Code Syntax Highlighting — Radix Original Light */
+  /* Code Syntax Highlighting — Radix Light */
   --code-bg: #f4f7fc;
   --code-comment: #4b5e7a;
   --code-keyword: #052CC0;
@@ -52,7 +54,7 @@
   --code-string: #052CC0;
   --code-punct: #1e3a5f;
 
-  /* SidebarGraphic Radix Original Light */
+  /* SidebarGraphic Radix Light */
   --sidebar-bg: #eef2fb;
   --sidebar-primary: #052CC0;
   --sidebar-secondary: #00C389;
@@ -101,8 +103,10 @@
   /* Sky 400 */
   --color-accent: #34d399;
   /* Emerald 400 */
+  --color-accent-rgb: 52, 211, 153;
   --color-surface: #18181b;
-  --color-close-hover: #f87171; /* Semantic Red 400 */
+  --color-close-hover: #f87171;
+  /* Semantic Red 400 */
 
   --color-card-bg: #18181b;
   --color-card-border: #27272a;
@@ -118,7 +122,7 @@
   --color-secondary-glow: rgba(56, 189, 248, 0.03);
   --color-scrollbar: rgba(161, 161, 170, 0.3);
 
-  /* Code Syntax Highlighting — Radix Original Dark */
+  /* Code Syntax Highlighting — Radix Dark */
   --code-bg: #080e28;
   --code-comment: #7d96bc;
   --code-keyword: #6C9CFF;
@@ -126,7 +130,7 @@
   --code-string: #6C9CFF;
   --code-punct: #c5d0e8;
 
-  /* SidebarGraphic Radix Original Dark */
+  /* SidebarGraphic Radix Dark */
   --sidebar-bg: #040920;
   --sidebar-primary: #3B9BFF;
   --sidebar-secondary: #2BDFAA;

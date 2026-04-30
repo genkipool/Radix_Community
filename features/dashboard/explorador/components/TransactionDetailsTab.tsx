@@ -609,7 +609,7 @@ export function TransactionDetailsTab({
             <DetailRow label={tt.transaction_id || 'Transaction ID'} value={sanitizeText((details.intent_hash ?? tx.intentHash) as string)} copyable={(details.intent_hash ?? tx.intentHash) as string} onCopy={onCopy} copiedAddress={copiedAddress} />
             
             <DetailRow label={tt.status || 'Status'} value={
-                <span className={`text-xs font-bold uppercase tracking-wider ${isSuccess ? 'text-green-500' : 'text-red-500'}`}>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isSuccess ? 'text-[var(--color-accent)]' : 'text-red-500'}`}>
                     {isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed')}
                 </span>
             } />

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Activity, Check, Copy, FileJson, List, Terminal } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import type { Dictionary } from '@/types/i18n';
 import { AssetTransferGroup } from './AssetTransferGroup';
 import { UnstakeAssetCard } from './UnstakeAssetCard';
+import { SwapSettlementCard } from './SwapSettlementCard';
 import { LockFeePanel, AuthBadgePanel } from './TransactionAuthPanels';
 import { TransactionDetailsTab } from './TransactionDetailsTab';
 import { EntitiesSection } from './EntitiesSection';
@@ -15,7 +17,7 @@ import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSecti
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 
-import { getTransactionFlags } from '../utils/transactionUtils';
+import { getTransactionFlags, isSwapTransaction, extractSwapData } from '../utils/transactionUtils';
 
 import type { TranslationsT } from '@/features/dashboard/types';
 import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyGroups } from '../utils/balanceChangeUtils';
@@ -84,14 +86,25 @@ const TransactionTabs = ({
             className="flex flex-col mt-4 pt-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50 rounded-xl overflow-hidden"
         >
             {/* ── Tab bar ── */}
-            <div className="flex items-center gap-1 border-b border-[var(--color-card-border)] p-2 overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-4 border-b border-[var(--color-card-border)] px-6 overflow-x-auto hide-scrollbar">
                 {(['summary', 'details', 'raw'] as const).map(tab => (
-                    <button key={tab} type="button" onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === tab ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]'}`}
+                    <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveTab(tab)}
+                        className={`py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 relative group ${activeTab === tab ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                     >
-                        {tab === 'summary' && <><Activity className="w-3.5 h-3.5" />{tt.summary || 'Summary'}</>}
-                        {tab === 'details' && <><List className="w-3.5 h-3.5" />{tt.details || 'Details'}</>}
-                        {tab === 'raw' && <><FileJson className="w-3.5 h-3.5" />{tt.raw_receipt || 'Raw Receipt'}</>}
+                        {tab === 'summary' && <><Activity className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.summary || 'Summary'}</>}
+                        {tab === 'details' && <><List className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.details || 'Details'}</>}
+                        {tab === 'raw' && <><FileJson className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.raw_receipt || 'Raw Receipt'}</>}
+
+                        {activeTab === tab && (
+                            <motion.div
+                                layoutId={`activeTab-${tx.intentHash}`}
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10"
+                                transition={{ type: "tween", ease: "circOut", duration: 0.3 }}
+                            />
+                        )}
                     </button>
                 ))}
             </div>
@@ -155,10 +168,35 @@ const TransactionTabs = ({
                             );
                         })()}
 
-                        {/* Asset transfers */}
+                        {/* Asset transfers / Swap settlement */}
                         {(() => {
                             const classes: string[] = (tx.manifestClasses as string[]) ?? (details?.manifest_classes as string[]) ?? [];
                             const { isClaim: isClaimTx, isUnstake: isUnstakeTx, isStake: isStakeTx } = getTransactionFlags(classes);
+
+                            // ── SWAP: render dedicated settlement card ──
+                            const receiptEvents = receipt?.events ?? [];
+                            if (isSwapTransaction(receiptEvents)) {
+                                const swapData = extractSwapData(receiptEvents, balanceChanges, initiators);
+                                if (swapData) {
+                                    return (
+                                        <SwapSettlementCard
+                                            soldToken={swapData.soldToken}
+                                            receivedToken={swapData.receivedToken}
+                                            dexComponent={swapData.dexComponent}
+                                            initiatorAddress={swapData.initiatorAddress}
+                                            routingHops={swapData.routingHops}
+                                            balanceChanges={balanceChanges}
+                                            initiators={initiators}
+                                            tt={tt}
+                                            onCopy={onCopy}
+                                            copiedAddress={copiedAddress}
+                                            onResourceClick={shared.onResourceClick}
+                                            network={network}
+                                            locale={locale}
+                                        />
+                                    );
+                                }
+                            }
 
                             if (isUnstakeTx && resourceGroups.length > 0) {
                                 // ── UNSTAKE: single merged card (all LSUs from same account) ──
