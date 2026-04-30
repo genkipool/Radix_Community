@@ -42,6 +42,7 @@
       "swap_routing_component": "Component",
       "swap_routing_burn": "Burned Tokens",
       "swap_routing_validators": "Validator Rewards",
+    "swap_token_hub": "Token Hub",
     "error_fetch_recent": "Failed to fetch recent transactions.",
     "error_fetch_details": "Failed to fetch transaction details.",
     "error_fetch_address": "Failed to fetch transactions for this address.",

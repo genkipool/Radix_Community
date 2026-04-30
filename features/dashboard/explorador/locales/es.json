@@ -42,6 +42,7 @@
       "swap_routing_component": "Componente",
       "swap_routing_burn": "Tokens Quemados",
       "swap_routing_validators": "Recompensas Validadores",
+    "swap_token_hub": "Hub de Token",
     "error_fetch_recent": "No se pudieron obtener las transacciones recientes.",
     "error_fetch_details": "No se pudieron obtener los detalles de la transacción.",
     "error_fetch_address": "No se pudieron obtener las transacciones para la dirección.",

@@ -26,7 +26,6 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                         lineColor: '#94a3b8',
                         textColor: 'transparent',
                         fontFamily: 'inherit',
-                        fontSize: '20px',
                     },
                     flowchart: { curve: 'basis', nodeSpacing: 80, rankSpacing: 140, padding: 40 },
                 });
@@ -64,7 +63,6 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 [&_.edgeLabel_span]:!text-[var(--color-text-main)]
                 [&_.edgeLabel_rect]:!fill-[var(--color-bg)]
                 [&_.edgeLabel_rect]:!opacity-90
-                [&_.cluster-label]:!text-[20px]
                 [&_.cluster-label]:!font-bold
                 [&_.cluster-label]:!fill-[var(--color-text-main)] 
                 [&_text]:!fill-[var(--color-text-main)] 
