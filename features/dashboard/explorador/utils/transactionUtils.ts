@@ -166,7 +166,7 @@ interface FungibleEntry {
 
 function short(addr: string): string {
     const c = sanitizeText(addr);
-    return c.length > 18 ? `${c.slice(0, 10)}...${c.slice(-4)}` : c;
+    return c.length > 26 ? `${c.slice(0, 16)}...${c.slice(-6)}` : c;
 }
 
 function fmtNum(n: number): string {
@@ -194,7 +194,7 @@ export function buildSwapRoutingChart(
     names: Map<string, string>,
     symbols: Map<string, string>,
     blueprintNames: Map<string, string>,
-    tt: Record<string, string>
+    tt: Partial<TranslationsT['dashboard']['transactions']>
 ): string {
     const isInit = (a: string) => initiatorAddrs.includes(a);
     const isBurn = (a: string) => a.startsWith('resource_');
@@ -218,14 +218,6 @@ export function buildSwapRoutingChart(
     const sym = (r: string) => {
         const c = sanitizeText(r);
         return symbols.get(c) || '';
-    };
-
-    // Blueprint formatter
-    const getBlueprintHtml = (a: string) => {
-        const bp = blueprintNames.get(sanitizeText(a));
-        if (bp) return `<div style="font-size:11px; opacity:0.7; margin-top:2px;">${bp}</div>`;
-        if (isBurn(a) || isValidator(a)) return '';
-        return `<div style="font-size:11px; opacity:0.7; margin-top:2px;">${tt.swap_routing_component || 'Component'}</div>`;
     };
 
     // Combine all entries
@@ -302,6 +294,58 @@ export function buildSwapRoutingChart(
     const burnEntities = Array.from(allEntities).filter(isBurn);
     const validatorEntities = Array.from(allEntities).filter(isValidator);
 
+    // Combined formatter for node content
+    // Combined formatter for node content
+    const buildNodeHtml = (addr: string, mode: 'sender' | 'receiver' | 'other' = 'other') => {
+        const c = sanitizeText(addr);
+        const name = names.get(c);
+        const bp = blueprintNames.get(c);
+        const isAccount = addr.startsWith('account_');
+        const minWidth = isAccount ? '260px' : '120px';
+
+        const parts: string[] = [`<div title="${addr}" style="min-width: ${minWidth}; padding: 0 12px;">`]; // Start tooltip wrapper
+
+        // 1. Name/Blueprint Header
+        if (name) {
+            parts.push(`<div style="margin-bottom:2px; font-size:20px;"><b>${label(addr)}</b></div>`);
+            if (bp) {
+                parts.push(`<div style="font-size:20px; opacity:0.7; margin-bottom:4px;">${bp}</div>`);
+            }
+        } else if (bp) {
+            parts.push(`<div style="margin-bottom:4px; font-size:20px;"><b>${bp}</b></div>`);
+        } else {
+            // Only show address if no name and no blueprint
+            parts.push(`<div style="margin-bottom:4px; font-family:monospace;"><b>${short(addr)}</b></div>`);
+        }
+
+        // Separator
+        parts.push(`<div style="height:1px; border-top:1px dashed rgba(var(--color-text-main-rgb),0.15); margin:4px 0;"></div>`);
+
+        // 2. Balance Changes
+        const ii = entityIn.get(c);
+        const oi = entityOut.get(c);
+
+        if (mode === 'receiver' || mode === 'other') {
+            if (ii) {
+                for (const [r, a] of ii) {
+                    parts.push(`<div style="font-size:18px; color:var(--color-accent) !important;">+${fmtNum(a)} ${sym(r)}</div>`);
+                }
+            }
+        }
+
+        if (mode === 'sender' || mode === 'other') {
+            if (oi) {
+                for (const [r, a] of oi) {
+                    parts.push(`<div style="font-size:18px; color:#f43f5e !important;">-${fmtNum(a)} ${sym(r)}</div>`);
+                }
+            }
+        }
+
+        parts.push(`</div>`); // End tooltip wrapper
+
+        return parts.join('');
+    };
+
     // Build Mermaid lines
     const L: string[] = [];
     L.push('flowchart LR');
@@ -321,10 +365,7 @@ export function buildSwapRoutingChart(
         if (!isInit(addr)) continue;
         const sid = `S${counter++}`;
         senderIds.set(addr, sid);
-        const oi = entityOut.get(addr);
-        const outParts: string[] = [`<div title="${addr}" style="margin-bottom:8px; border-bottom:1px dashed rgba(var(--color-primary-rgb),0.3); padding-bottom:4px;"><b>${label(addr)}</b></div>`];
-        if (oi) for (const [r, a] of oi) outParts.push(`<div style="font-size:12px; margin-top:2px;">-${fmtNum(a)} ${sym(r)}</div>`);
-        L.push(`    ${sid}["${outParts.join('')}"]:::user`);
+        L.push(`    ${sid}["${buildNodeHtml(addr, 'sender')}"]:::user`);
     }
     L.push('  end');
 
@@ -335,10 +376,7 @@ export function buildSwapRoutingChart(
         if (!isInit(addr)) continue;
         const rid = `R${counter++}`;
         receiverIds.set(addr, rid);
-        const ii = entityIn.get(addr);
-        const inParts: string[] = [`<div title="${addr}" style="margin-bottom:8px; border-bottom:1px dashed rgba(var(--color-primary-rgb),0.3); padding-bottom:4px;"><b>${label(addr)}</b></div>`];
-        if (ii) for (const [r, a] of ii) inParts.push(`<div style="font-size:12px; margin-top:2px;">+${fmtNum(a)} ${sym(r)}</div>`);
-        L.push(`    ${rid}["${inParts.join('')}"]:::user`);
+        L.push(`    ${rid}["${buildNodeHtml(addr, 'receiver')}"]:::user`);
     }
     L.push('  end');
 
@@ -346,15 +384,12 @@ export function buildSwapRoutingChart(
     if (burnEntities.length > 0 || validatorEntities.length > 0) {
         L.push(`  subgraph FeesGroup ["${tt?.swap_routing_network_fees || 'Network Fees'}"]`);
         L.push('    direction TB');
-        
+
         if (burnEntities.length > 0) {
             L.push(`    subgraph BurnGroup ["${tt?.swap_routing_burn || 'Burned Tokens'}"]`);
             for (const addr of burnEntities) {
                 const id = nid(addr);
-                const ii = entityIn.get(addr);
-                const parts: string[] = [`<div title="${addr}"><b>${label(addr)}</b></div>`];
-                if (ii) for (const [r, a] of ii) parts.push(`<div style="font-size:11px;">+${fmtNum(a)} ${sym(r)}</div>`);
-                L.push(`      ${id}["${parts.join('')}"]:::fee`);
+                L.push(`      ${id}["${buildNodeHtml(addr)}"]:::fee`);
             }
             L.push('    end');
         }
@@ -363,11 +398,7 @@ export function buildSwapRoutingChart(
             L.push(`    subgraph ValGroup ["${tt?.swap_routing_validators || 'Validator Rewards'}"]`);
             for (const addr of validatorEntities) {
                 const id = nid(addr);
-                const ii = entityIn.get(addr);
-                const parts: string[] = [`<div title="${addr}"><b>${label(addr)}</b></div>`];
-                if (ii) for (const [r, a] of ii) parts.push(`<div style="font-size:11px;">+${fmtNum(a)} ${sym(r)}</div>`);
-                parts.push(getBlueprintHtml(addr));
-                L.push(`      ${id}["${parts.join('')}"]:::vault`);
+                L.push(`      ${id}["${buildNodeHtml(addr)}"]:::vault`);
             }
             L.push('    end');
         }
@@ -378,15 +409,10 @@ export function buildSwapRoutingChart(
     if (dexEntities.length > 0) {
         L.push(`  subgraph DEXGroup ["${tt?.swap_dex_label || 'DEX Intermediaries'}"]`);
         L.push('    direction TB');
+        L.push('    DEXSpacer[" "]:::spacer');
         for (const addr of dexEntities) {
             const id = nid(addr);
-            const ii = entityIn.get(addr);
-            const oi = entityOut.get(addr);
-            const parts: string[] = [`<div title="${addr}"><b>${label(addr)}</b></div>`];
-            if (ii) for (const [r, a] of ii) parts.push(`<div style="font-size:11px; color:#10b981;">+${fmtNum(a)} ${sym(r)}</div>`);
-            if (oi) for (const [r, a] of oi) parts.push(`<div style="font-size:11px; color:#f43f5e;">-${fmtNum(a)} ${sym(r)}</div>`);
-            parts.push(getBlueprintHtml(addr));
-            L.push(`    ${id}["${parts.join('')}"]:::vault`);
+            L.push(`    ${id}["${buildNodeHtml(addr)}"]:::vault`);
         }
         L.push('  end');
     }
@@ -402,7 +428,7 @@ export function buildSwapRoutingChart(
         const tid = isInit(e.to) ? (receiverIds.get(e.to) ?? nid(e.to)) : nid(e.to);
         const s = sym(e.resource);
         const edgeLabel = `${fmtNum(e.amount)} ${s}`.trim();
-        L.push(`  ${fid} -- "<span title='${e.resource}'>${edgeLabel}</span>" --> ${tid}`);
+        L.push(`  ${fid} -- "<span title='${e.resource}' style='font-size:20px;'>${edgeLabel}</span>" --> ${tid}`);
 
         // Track fee edges
         if ((isInit(e.from) && (isBurn(e.to) || isValidator(e.to))) || (isBurn(e.from) || isValidator(e.from))) {

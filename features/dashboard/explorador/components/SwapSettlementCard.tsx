@@ -135,9 +135,9 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt }: 
             {allAddresses.map(addr => (
                 <NameResolver key={addr} address={addr} network={network} onResolved={handleResolved} />
             ))}
-            <h4 className="text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-1.5">
+            <h4 className="px-4 sm:px-5 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-1.5">
                 <Route className="w-3 h-3 text-[var(--color-accent)]" />
-                {tt.swap_routing_label || 'Routing Path'}
+                {tt?.swap_routing_label || 'Routing Path'}
             </h4>
             <MermaidDiagram chart={chart} />
         </>
@@ -289,7 +289,7 @@ export function SwapSettlementCard({
 
                 {/* ── Section 2: Routing Diagram (Mermaid) ── */}
                 {fungibles.length > 0 && (
-                    <div className="px-4 sm:px-5 pb-4">
+                    <div className="px-0 pb-4">
                         <RoutingMermaid
                             fungibles={fungibles}
                             feeEntries={balanceChanges?.fungible_fee_balance_changes ?? []}
