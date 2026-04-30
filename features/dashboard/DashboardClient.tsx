@@ -74,8 +74,6 @@ export default function DashboardClient({
   initialTxReadingMode = false,
   initialValAutoCollapse = false,
   initialTxAutoCollapse = false,
-  initialExpandedValidators = [],
-  initialExpandedTxs = [],
   initialSearchQuery = '',
   initialDateRange,
   randomSeed = 0,
@@ -171,9 +169,6 @@ export default function DashboardClient({
 
   /* ── Expanded cards ──────────────────────────────────────── */
   const expanded = useExpandedCards({
-    network: deferredNetwork,
-    initialExpandedValidators,
-    initialExpandedTxs,
     valColumns: prefs.valColumns,
     txColumns: prefs.txColumns,
     activeView,

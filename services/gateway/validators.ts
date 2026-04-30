@@ -938,6 +938,11 @@ async function getValidatorsFromDataCache(network: Network) {
     return result;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Cache Constants
+// ─────────────────────────────────────────────────────────────────────────────
+const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Cached validator data with SWR (Stale-While-Revalidate) pattern.
  *
@@ -958,6 +963,7 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
             const staleData = await redis.get<{
                 validators: Validator[];
                 networkStats: NetworkStats | null;
+                updatedAt?: number;
             }>(backupKey);
 
             if (staleData?.validators && staleData.validators.length > 0) {
@@ -966,24 +972,29 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                     '[ValidatorsService] Serving stale data from Redis for rapid response',
                 );
 
-                // ── Step 2: Background revalidation ────────────────────────
-                // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
-                after(async () => {
-                    try {
-                        logger.info({ network }, '[ValidatorsService] Background revalidation started');
-                        const freshResult = await fetchValidatorsRaw(network);
+                const now = Date.now();
+                const isStale = !staleData.updatedAt || (now - staleData.updatedAt > REVALIDATION_THRESHOLD);
 
-                        // Update Redis + Invalidate Data Cache
-                        await redis.set(backupKey, freshResult);
+                if (isStale) {
+                    // ── Step 2: Background revalidation ────────────────────────
+                    // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
+                    after(async () => {
+                        try {
+                            logger.info({ network }, '[ValidatorsService] Background revalidation started');
+                            const freshResult = await fetchValidatorsRaw(network);
 
-                        // revalidateTag is safe here because we're in a standard server action/route/after context
-                        revalidateTag(`validators-${network}`, 'max');
+                            // Update Redis with current timestamp + Invalidate Data Cache
+                            await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
 
-                        logger.info({ network }, '[ValidatorsService] Background revalidation complete');
-                    } catch (bgError) {
-                        logger.error({ err: bgError, network }, '[ValidatorsService] Background revalidation failed');
-                    }
-                });
+                            // revalidateTag is safe here because we're in a standard server action/route/after context
+                            revalidateTag(`validators-${network}`, 'max');
+
+                            logger.info({ network }, '[ValidatorsService] Background revalidation complete');
+                        } catch (bgError) {
+                            logger.error({ err: bgError, network }, '[ValidatorsService] Background revalidation failed');
+                        }
+                    });
+                }
 
                 return staleData;
             }

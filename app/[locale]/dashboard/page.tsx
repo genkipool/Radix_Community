@@ -4,16 +4,13 @@ import { ReactQueryHydrate } from '@/components/layout/ReactQueryHydrate';
 import {
   getValidatorsCached,
   getRecentTransactionsCached,
-  fetchStakeHistoryCached,
   fetchFilteredTransactions,
-  searchTransactionsByAddress, fetchTransactionDetails, fetchEntityDetails,
+  searchTransactionsByAddress,
   type Validator, type NetworkStats,
 } from '@/services/radixApi';
-import type { TransactionDetails } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
 import { getMarketDataCached } from '@/services/marketData';
 import DashboardClient from '@/features/dashboard/DashboardClient';
-import { entityKeys, extractEntityMeta, normalizeAddress, needsFetch } from '@/features/dashboard/utils/entityCache';
 import { getNetworkCookieKey } from '@/features/dashboard/utils/cookieUtils';
 import { makeQueryClient } from '@/lib/queryClient';
 import logger from '@/lib/logger';
@@ -21,7 +18,6 @@ import { validateTxHash, validateAddress } from '@/utils/apiValidation';
 import { COOKIE_KEYS } from '@/constants/dashboard';
 
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
-import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
 import { buildAlternates } from '@/lib/seo';
 import type { Metadata } from 'next';
@@ -136,8 +132,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // mismatch and no spinner flash on reload.
   // Read transaction ID or Account Address from URL
   const txid = params.tx ? (validateAddress(params.tx) || validateTxHash(params.tx)) : null;
-  const initialExpandedTxs = txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network);
-  const expandedValidatorIds = c.ids(COOKIE_KEYS.expandedValidators, network);
 
   try {
     // 1. Fetch the first page of transactions explicitly so we can scan it for resources
@@ -245,99 +239,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       }
     }
 
-    // ── PHASE 2: Best-effort hydration (failures don't affect critical data) ──
-    await Promise.allSettled([
-      // Deep entity metadata hydration for collapsed card symbols
-      (async () => {
-        const discoveredAddresses = new Set<string>();
-        txData.transactions.forEach((tx: TransactionInfo) => {
-          if (tx.displayResource && tx.displayResource !== 'XRD') {
-            discoveredAddresses.add(tx.displayResource);
-          }
-          if (tx.validatorAddress) discoveredAddresses.add(tx.validatorAddress);
-        });
-
-        const toFetch = Array.from(discoveredAddresses).filter(addr => {
-          const clean = normalizeAddress(addr);
-          return needsFetch(clean);
-        });
-
-        if (toFetch.length > 0) {
-          await Promise.all(
-            toFetch.map(async (addr) => {
-              try {
-                const entDetails = await fetchEntityDetails(addr, network);
-                if (entDetails) {
-                  const normalized = normalizeAddress(addr);
-                  serverQueryClient.setQueryData(entityKeys.detail(normalized, network), extractEntityMeta(entDetails));
-                }
-              } catch (e) {
-                logger.debug({ addr, err: e }, '[DashboardPage] Background hydration fetch failed');
-              }
-            })
-          );
-        }
-      })(),
-
-      // Prefetch stake history for ALL expanded validators
-      ...expandedValidatorIds.map((vid) =>
-        serverQueryClient.prefetchQuery({
-          queryKey: ['stake-history', network, vid],
-          queryFn: () => fetchStakeHistoryCached(vid, network),
-          staleTime: 5 * 60_000,
-        })
-      ),
-
-      // Deep prefetching for expanded transactions (restored from cookies)
-      ...initialExpandedTxs.map(async (txHash: string) => {
-        try {
-          const rawDetails = await fetchTransactionDetails(txHash, network);
-          if (!rawDetails) return;
-
-          serverQueryClient.setQueryData(['tx-details', txHash, network], rawDetails);
-
-          const addressesToFetch = new Set<string>();
-          const item = rawDetails as TransactionDetails;
-
-          const entities = item.affected_global_entities || [];
-          (entities as Array<string | { address: string }>).forEach((e) => {
-            const addr = typeof e === 'string' ? e : e?.address;
-            if (addr && (addr.startsWith('resource_') || addr.startsWith('component_') || addr.startsWith('validator_'))) {
-              addressesToFetch.add(addr);
-            }
-          });
-
-          const bc = item.balance_changes || {};
-          (bc.fungible_fee_balance_changes || []).forEach((fc) => {
-            const addr = fc.resource_address || (network === 'stokenet' ? 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc' : 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd');
-            addressesToFetch.add(addr);
-          });
-          (bc.fungible_balance_changes || []).forEach((fc: FungibleChange) => {
-            if (fc.resource_address) addressesToFetch.add(fc.resource_address);
-          });
-          (bc.non_fungible_balance_changes || []).forEach((nfc: NonFungibleChange) => {
-            if (nfc.resource_address) addressesToFetch.add(nfc.resource_address);
-          });
-
-          await Promise.all(
-            Array.from(addressesToFetch).map(async (addr) => {
-              try {
-                const entDetails = await fetchEntityDetails(addr, network);
-                if (entDetails) {
-                  const clean = normalizeAddress(addr);
-                  serverQueryClient.setQueryData(entityKeys.full(clean, network), entDetails);
-                  serverQueryClient.setQueryData(entityKeys.detail(clean, network), extractEntityMeta(entDetails));
-                }
-              } catch (e) {
-                logger.debug({ addr, err: e }, '[DashboardPage] Expanded tx entity fetch failed');
-              }
-            })
-          );
-        } catch (e) {
-          logger.debug({ txHash, err: e }, '[DashboardPage] Expanded tx prefetch failed');
-        }
-      }),
-    ]);
+    // ── PHASE 2: Client-Side Hydration ────────────────────────────────────────
+    // We intentionally avoid deep entity metadata hydration on the server to 
+    // minimize CPU usage and TTFB. Transaction cards and validator cards in 
+    // DashboardClient will fetch their own metadata (icons, symbols) on the 
+    // client via useQuery if not found in the initial cache.
   } catch (error) {
     // Non-fatal: the client fetches on mount if cache is empty
     const message = error instanceof Error ? error.message : String(error);
@@ -362,8 +268,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialTxReadingMode={c.bool(COOKIE_KEYS.txReadingMode)}
         initialValAutoCollapse={c.bool(COOKIE_KEYS.valAutoCollapse)}
         initialTxAutoCollapse={c.bool(COOKIE_KEYS.txAutoCollapse)}
-        initialExpandedValidators={c.ids(COOKIE_KEYS.expandedValidators, network)}
-        initialExpandedTxs={txid && txid.startsWith('txid_') ? [txid] : c.ids(COOKIE_KEYS.expandedTxs, network)}
         initialSearchQuery={txid ?? ''}
         initialDateRange={initialDateRange}
         randomSeed={randomSeed}

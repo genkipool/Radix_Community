@@ -39,10 +39,6 @@ export interface DashboardInitialProps {
   initialTxReadingMode?: boolean;
   initialValAutoCollapse?: boolean;
   initialTxAutoCollapse?: boolean;
-  /** Validator IDs expanded on the last session */
-  initialExpandedValidators?: string[];
-  /** Transaction intent hashes expanded on the last session */
-  initialExpandedTxs?: string[];
   initialSearchQuery?: string;
   initialDateRange?: { start: string | null; end: string | null };
   randomSeed: number;

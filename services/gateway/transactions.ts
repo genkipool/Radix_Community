@@ -866,23 +866,28 @@ export async function fetchFilteredTransactions(options: {
     // ── Step 1: Redis Fast Hit ───────────────────────────────────────────────
     if (redis) {
         try {
-            const stale = await redis.get<{ transactions: TransactionInfo[]; nextCursor: string }>(backupKey);
+            const stale = await redis.get<{ transactions: TransactionInfo[]; nextCursor: string; updatedAt?: number }>(backupKey);
             if (stale?.transactions && stale.transactions.length > 0) {
                 logger.info({ tag, address, count: stale.transactions.length }, '[TransactionsService] Serving filtered transactions from Redis');
 
-                // ── Step 2: Background Revalidation ──────────────────────────
-                after(async () => {
-                    try {
-                        const fresh = await fetchFilteredTransactionsRaw(opParams);
-                        if (fresh.transactions && fresh.transactions.length > 0) {
-                            await redis.set(backupKey, fresh);
-                            revalidateTag(`transactions-${network}`, 'max');
-                            logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
+                const now = Date.now();
+                const isStale = !stale.updatedAt || (now - stale.updatedAt > REVALIDATION_THRESHOLD);
+
+                if (isStale) {
+                    // ── Step 2: Background Revalidation ──────────────────────────
+                    after(async () => {
+                        try {
+                            const fresh = await fetchFilteredTransactionsRaw(opParams);
+                            if (fresh.transactions && fresh.transactions.length > 0) {
+                                await redis.set(backupKey, { ...fresh, updatedAt: Date.now() });
+                                revalidateTag(`transactions-${network}`, 'max');
+                                logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
+                            }
+                        } catch (bgErr) {
+                            logger.error({ err: bgErr, tag }, '[TransactionsService] Background filter revalidation failed');
                         }
-                    } catch (bgErr) {
-                        logger.error({ err: bgErr, tag }, '[TransactionsService] Background filter revalidation failed');
-                    }
-                });
+                    });
+                }
 
                 return stale;
             }
@@ -1194,7 +1199,10 @@ export async function fetchRoundProposer(
     }
 }
 
-// ── Centralized Cache Wrappers ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Cache Constants
+// ─────────────────────────────────────────────────────────────────────────────
+const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
 const getRedisClient = () => {
     try {
@@ -1293,6 +1301,7 @@ export async function getRecentTransactionsCached(
             const staleData = await redis.get<{
                 transactions: TransactionInfo[];
                 nextCursor: string | undefined;
+                updatedAt?: number;
             }>(backupKey);
 
             if (staleData?.transactions && staleData.transactions.length > 0) {
@@ -1301,39 +1310,44 @@ export async function getRecentTransactionsCached(
                     '[TransactionsService] Serving stale transactions tip from Redis for rapid response',
                 );
 
-                // ── Step 2: Background revalidation ────────────────────────
-                // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
-                after(async () => {
-                    try {
-                        logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
-                        const freshResult = await fetchRecentTransactions(cursor, actualLimit, network);
+                const now = Date.now();
+                const isStale = !staleData.updatedAt || (now - staleData.updatedAt > REVALIDATION_THRESHOLD);
 
-                        if (freshResult.transactions && freshResult.transactions.length > 0) {
-                            // Update Redis + Invalidate Data Cache
-                            await redis.set(backupKey, freshResult);
+                if (isStale) {
+                    // ── Step 2: Background revalidation ────────────────────────
+                    // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
+                    after(async () => {
+                        try {
+                            logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
+                            const freshResult = await fetchRecentTransactions(cursor, actualLimit, network);
 
-                            // Pre-warm the filtered views to keep them mathematically in sync
-                            const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
-                            await Promise.allSettled(
-                                prefetchTags.map(async (t) => {
-                                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit: actualLimit, address: undefined, network, timezone: 'UTC' };
-                                    const tagRes = await fetchFilteredTransactionsRaw(opParams);
-                                    if (tagRes.transactions && tagRes.transactions.length > 0) {
-                                        const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
-                                    }
-                                })
-                            );
+                            if (freshResult.transactions && freshResult.transactions.length > 0) {
+                                // Update Redis with timestamp + Invalidate Data Cache
+                                await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
 
-                            // revalidateTag is safe here because we're in a standard server action/route/after context
-                            revalidateTag(`transactions-${network}`, 'max');
+                                // Pre-warm the filtered views to keep them mathematically in sync
+                                const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
+                                await Promise.allSettled(
+                                    prefetchTags.map(async (t) => {
+                                        const opParams = { tag: t, start: null, end: null, cursor: undefined, limit: actualLimit, address: undefined, network, timezone: 'UTC' };
+                                        const tagRes = await fetchFilteredTransactionsRaw(opParams);
+                                        if (tagRes.transactions && tagRes.transactions.length > 0) {
+                                            const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
+                                            await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, { ...tagRes, updatedAt: Date.now() });
+                                        }
+                                    })
+                                );
+
+                                // revalidateTag is safe here because we're in a standard server action/route/after context
+                                revalidateTag(`transactions-${network}`, 'max');
+                            }
+
+                            logger.info({ network }, '[TransactionsService] Background revalidation complete with pre-warmed tags');
+                        } catch (bgError) {
+                            logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
                         }
-
-                        logger.info({ network }, '[TransactionsService] Background revalidation complete with pre-warmed tags');
-                    } catch (bgError) {
-                        logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
-                    }
-                });
+                    });
+                }
 
                 return staleData;
             }

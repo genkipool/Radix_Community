@@ -6,9 +6,6 @@ import { type SortMode } from './core.types';
  * Options for the useExpandedCards hook
  */
 export interface UseExpandedCardsOptions {
-  network:                   string;
-  initialExpandedValidators: string[];
-  initialExpandedTxs:        string[];
   valColumns:                number;
   txColumns:                 number;
   activeView:                'staking' | 'transactions';

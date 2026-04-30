@@ -46,6 +46,4 @@ export const COOKIE_KEYS = {
   txReadingMode:        'db_tx_reading_mode',
   valAutoCollapse:      'db_val_auto_collapse',
   txAutoCollapse:       'db_tx_auto_collapse',
-  expandedValidators:   'dashboard_expanded_validators',
-  expandedTxs:          'dashboard_expanded_txs',
 } as const;

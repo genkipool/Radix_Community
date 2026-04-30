@@ -12,14 +12,9 @@
  * - Provides typed expand / close / toggle-all callbacks
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Validator } from '@/types/radix';
 import type { TransactionInfo } from '@/types/radix';
-import { COOKIE_KEYS } from '@/constants/dashboard';
-import { setCookie } from '@/utils/cookies';
-import { getNetworkCookieKey } from '../utils/cookieUtils';
-
-const EXPANDED_CARDS_MAX_AGE = 604800; // 7 days
 
 import { type UseExpandedCardsOptions } from '../types';
 
@@ -29,28 +24,14 @@ import { type UseExpandedCardsOptions } from '../types';
  * and shared state for reading mode.
  */
 export function useExpandedCards({
-  network,
-  initialExpandedValidators,
-  initialExpandedTxs,
   valColumns,
   txColumns,
   activeView,
   readingMode,
   autoCollapse,
 }: UseExpandedCardsOptions) {
-  const [expandedValidators, setExpandedValidators] = useState<Set<string>>(new Set(initialExpandedValidators));
-  const [expandedTxs, setExpandedTxs]                 = useState<Set<string>>(new Set(initialExpandedTxs));
-
-  // ── Cookie sync ──────────────────────────────────────────────────
-  useEffect(() => {
-    const key = getNetworkCookieKey(COOKIE_KEYS.expandedValidators, network);
-    setCookie(key, Array.from(expandedValidators).join(','), EXPANDED_CARDS_MAX_AGE);
-  }, [expandedValidators, network]);
-
-  useEffect(() => {
-    const key = getNetworkCookieKey(COOKIE_KEYS.expandedTxs, network);
-    setCookie(key, Array.from(expandedTxs).join(','), EXPANDED_CARDS_MAX_AGE);
-  }, [expandedTxs, network]);
+  const [expandedValidators, setExpandedValidators] = useState<Set<string>>(new Set());
+  const [expandedTxs, setExpandedTxs]                 = useState<Set<string>>(new Set());
 
   // ── Auto-collapse on dense grid ──────────────────────────────────
   const [prevValColumns, setPrevValColumns] = useState(valColumns);

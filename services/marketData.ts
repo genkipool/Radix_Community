@@ -74,15 +74,15 @@ export const fetchMarketData = async (): Promise<MarketData | null> => {
     }
 };
 
+const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
 /**
  * SWR (Stale-While-Revalidate) with Redis persistence:
  *
  * 1. Try Redis for an instant cached hit.
- * 2. If found, serve it immediately AND refresh in background.
- * 3. If not found, fetch fresh, store in Redis, and return.
- *
- * This ensures the first page load always has data (no flash)
- * and the next load will have updated data.
+ * 2. If found and fresh (within 5 min), serve immediately.
+ * 3. If found but stale, serve immediately AND refresh in background.
+ * 4. If not found, fetch fresh, store in Redis, and return.
  */
 export const getMarketDataCached = async (): Promise<MarketData | null> => {
     const redis = getRedisClient();
@@ -90,19 +90,25 @@ export const getMarketDataCached = async (): Promise<MarketData | null> => {
     // ── Step 1: Redis fast hit ─────────────────────────────────────────
     if (redis) {
         try {
-            const stale = await redis.get<MarketData>(REDIS_KEY);
+            const stale = await redis.get<MarketData & { updatedAt?: number }>(REDIS_KEY);
             if (stale && typeof stale.priceUsd === 'number') {
-                logger.info({}, '[MarketData] Serving from Redis cache — refreshing in background');
+                const now = Date.now();
+                const isStale = !stale.updatedAt || (now - stale.updatedAt > REVALIDATION_THRESHOLD);
 
-                // Background refresh: do NOT await
-                fetchMarketData().then(async (fresh) => {
-                    if (fresh) {
-                        await redis.set(REDIS_KEY, fresh);
-                        logger.info({}, '[MarketData] Redis cache updated with fresh CoinGecko data');
-                    }
-                }).catch((e) =>
-                    logger.error({ err: e }, '[MarketData] Background refresh failed')
-                );
+                if (isStale) {
+                    logger.info({}, '[MarketData] Serving stale from Redis — refreshing in background');
+                    // Background refresh: do NOT await
+                    fetchMarketData().then(async (fresh) => {
+                        if (fresh) {
+                            await redis.set(REDIS_KEY, { ...fresh, updatedAt: Date.now() });
+                            logger.info({}, '[MarketData] Redis cache updated with fresh CoinGecko data');
+                        }
+                    }).catch((e) =>
+                        logger.error({ err: e }, '[MarketData] Background refresh failed')
+                    );
+                } else {
+                    logger.info({}, '[MarketData] Serving fresh data from Redis cache');
+                }
 
                 return stale;
             }
