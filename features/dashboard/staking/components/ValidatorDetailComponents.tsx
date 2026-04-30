@@ -52,7 +52,7 @@ export const StatusLabel = ({ status, t, compact = false }: { status: Validator[
             title={label}
         >
             <Activity size={compact ? 10 : 12} className="shrink-0" />
-            {!compact && <span className="mt-[1px]">{sanitizeText(label)}</span>}
+            {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(label)}</span>}
         </span>
     );
 };

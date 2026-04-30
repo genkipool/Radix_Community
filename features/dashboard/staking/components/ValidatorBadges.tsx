@@ -32,7 +32,7 @@ export const OnlineBadge = ({
             title={sanitizeText(online ? labelOn : labelOff)}
         >
             <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-            {!compact && <span className="mt-[1px]">{sanitizeText(online ? labelOn : labelOff)}</span>}
+            {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(online ? labelOn : labelOff)}</span>}
         </span>
     );
 };
@@ -53,7 +53,7 @@ export const ConnectBadge = ({
             title={sanitizeText(accepts ? labelYes : labelNo)}
         >
             <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
-            {!compact && <span className="mt-[1px]">{sanitizeText(accepts ? labelYes : labelNo)}</span>}
+            {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(accepts ? labelYes : labelNo)}</span>}
         </span>
     );
 };
@@ -76,7 +76,7 @@ export const VoteBadge = ({
             title={`${label}: ${safeVote}`}
         >
             <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
-            {!compact && <span className="mt-[1px] truncate max-w-[80px]">{safeVote || '—'}</span>}
+            {!compact && <span className="mt-[1px] truncate max-w-[80px] hidden sm:inline">{safeVote || '—'}</span>}
         </span>
     );
 };
@@ -128,7 +128,7 @@ export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Transla
             title={label}
         >
             <Icon size={compact ? 10 : 12} className="shrink-0" />
-            {!compact && <span className="mt-[1px]">{label}</span>}
+            {!compact && <span className="mt-[1px] hidden sm:inline">{label}</span>}
         </span>
     );
 };

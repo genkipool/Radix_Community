@@ -52,9 +52,9 @@ export const ProfileBlock = ({
                 </p>
                 {validator.website && isValidUrl(validator.website) && (
                     <a href={validator.website} target="_blank" rel="noopener noreferrer"
-                        className="veb-link" onClick={e => e.stopPropagation()}>
+                        className="veb-link w-fit max-w-[220px] sm:max-w-none" onClick={e => e.stopPropagation()}>
+                        <span className="truncate sm:whitespace-normal">{sanitizeText(validator.website)}</span>
                         <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                        <span>{sanitizeText(validator.website)}</span>
                     </a>
                 )}
             </div>

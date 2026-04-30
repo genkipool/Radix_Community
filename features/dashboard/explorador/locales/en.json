@@ -449,6 +449,7 @@
         "account_rewards_error_gateway": "Gateway returned status {status}",
         "account_rewards_error_retries": "Exhausted retries for endpoint: {endpoint}",
         "account_rewards_error_no_data": "No data found for this year",
+        "account_rewards_modal_select_another": "Select another year",
         "account_rewards_summary_title": "Download Complete!",
         "account_rewards_summary_total": "Total earned",
         "account_rewards_summary_dream": "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year.",

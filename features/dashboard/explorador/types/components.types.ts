@@ -47,6 +47,7 @@ export interface AccountRewardsCsvModalDict {
     account_rewards_error_gateway?: string;
     account_rewards_error_retries?: string;
     account_rewards_error_no_data?: string;
+    account_rewards_modal_select_another?: string;
 }
 
 export interface AssetTransferGroupProps {

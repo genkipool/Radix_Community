@@ -140,7 +140,10 @@ export function ValidatorInlinePanel({
                     {headerMessage ? (
                         <p className={`text-[11px] font-medium leading-snug mt-0.5 ${amountColor}`}>{headerMessage}</p>
                     ) : (
-                        <p className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={validatorAddress}>{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</p>
+                        <p className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={validatorAddress}>
+                            <span className="hidden sm:inline">{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</span>
+                            <span className="inline sm:hidden">{validatorAddress.slice(0, 8)}...{validatorAddress.slice(-8)}</span>
+                        </p>
                     )}
                 </div>
 
@@ -195,7 +198,10 @@ export function ValidatorInlinePanel({
                                                     <div className="min-w-0">
                                                         <p className="font-bold text-sm text-[var(--color-text-main)]">{name as string}</p>
                                                         <div className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[180px]" title={validatorAddress}>{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</span>
+                                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[180px]" title={validatorAddress}>
+                                                                <span className="hidden sm:inline">{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</span>
+                                                                <span className="inline sm:hidden">{validatorAddress.slice(0, 8)}...{validatorAddress.slice(-8)}</span>
+                                                            </span>
                                                             <button onClick={e => { e.stopPropagation(); onCopy(validatorAddress); }} className={`p-0.5 rounded transition-colors ${copiedAddress === validatorAddress ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
                                                                 {copiedAddress === validatorAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                                             </button>

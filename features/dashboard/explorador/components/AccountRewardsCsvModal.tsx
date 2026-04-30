@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useMounted } from '@/hooks/useMounted';
-import { X, Download, AlertCircle, Loader2, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Download, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 import { apiFetchAccountRewardsYears } from '@/features/dashboard/services/apiClient';
 import { formatNumber } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
@@ -222,67 +223,84 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                 </div>
                             </div>
                         </div>
-                    ) : summary ? (
-                        <div className="py-4 space-y-4">
-                            <div className="flex flex-col items-center justify-center text-center space-y-2 mb-4">
-                                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mb-1">
-                                    <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                </div>
-                                <h4 className="text-sm font-bold text-[var(--color-text-main)]">
-                                    {tt?.account_rewards_summary_title ?? 'Download Complete!'}
-                                </h4>
-                            </div>
-                            <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
-                                <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center bg-[var(--color-surface)]">
-                                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-                                        {tt?.account_rewards_summary_total ?? 'Total earned'}
-                                    </span>
-                                    <div className="text-right">
-                                        <div className="text-sm font-black text-[var(--color-text-main)]">
-                                            {formatNumber(summary.totalXrd, 2, locale || 'en')} XRD
+                    ) : (
+                        <div className="space-y-4">
+                            {/* Summary View */}
+                            {summary && (
+                                <div className="py-2 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="flex flex-col items-center justify-center text-center space-y-2 mb-2">
+                                        <div className="w-12 h-12 bg-[var(--color-accent)]/10 rounded-full flex items-center justify-center mb-1">
+                                            <RadixIcon className="w-6 h-6" strokeColor="var(--color-accent)" />
                                         </div>
-                                        <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                                            <span>≈</span> {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
+                                        <h4 className="text-sm font-bold text-[var(--color-text-main)]">
+                                            {tt?.account_rewards_summary_title ?? 'Download Complete!'}
+                                        </h4>
+                                    </div>
+                                    <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
+                                        <div className="p-3 border-b border-[var(--color-card-border)] flex justify-between items-center bg-[var(--color-surface)]">
+                                            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                                                {tt?.account_rewards_summary_total ?? 'Total earned'}
+                                            </span>
+                                            <div className="text-right">
+                                                <div className="text-sm font-black text-[var(--color-text-main)]">
+                                                    {formatNumber(summary.totalXrd, 2, locale || 'en')} XRD
+                                                </div>
+                                                <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                                                    <span>≈</span> {formatCurrency(summary.fiatValue, summary.currency as 'USD' | 'EUR', locale || 'en')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-[var(--color-primary)]/5">
+                                            <p
+                                                className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: (tt?.account_rewards_summary_dream ?? (
+                                                        (locale && locale.startsWith('es'))
+                                                            ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
+                                                            : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
+                                                    ))
+                                                        .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                                        .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-3 bg-[var(--color-primary)]/5">
-                                    <p
-                                        className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
-                                        dangerouslySetInnerHTML={{
-                                            __html: (tt?.account_rewards_summary_dream ?? (
-                                                (locale && locale.startsWith('es'))
-                                                    ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
-                                                    : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
-                                            ))
-                                                .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
-                                                .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
-                                        }}
-                                    />
+                            )}
+
+                            {/* Year Selection */}
+                            {years.length === 0 ? (
+                                <div className="text-center py-8 bg-[var(--color-bg)]/50 rounded-2xl border border-dashed border-[var(--color-card-border)]">
+                                    <p className="text-xs text-[var(--color-text-muted)] px-4">
+                                        {tt?.account_rewards_modal_no_data ??
+                                            'No reward data available for this account.'}
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
-                    ) : years.length === 0 ? (
-                        <div className="text-center py-8 bg-[var(--color-bg)]/50 rounded-2xl border border-dashed border-[var(--color-card-border)]">
-                            <p className="text-xs text-[var(--color-text-muted)] px-4">
-                                {tt?.account_rewards_modal_no_data ??
-                                    'No reward data available for this account.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="flex flex-wrap gap-2">
-                            {years.map((year) => (
-                                <button
-                                    key={year}
-                                    onClick={() => setSelectedYear(year)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
-                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                                        : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
-                                        }`}
-                                >
-                                    {year}
-                                </button>
-                            ))}
+                            ) : (
+                                <div className="space-y-3">
+                                    {summary && (
+                                        <div className="pt-2 border-t border-[var(--color-card-border)]">
+                                            <p className="text-[10px] uppercase tracking-wider font-black text-[var(--color-text-muted)]">
+                                                {tt?.account_rewards_modal_select_another ?? 'Select another year'}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-wrap gap-2">
+                                        {years.map((year) => (
+                                            <button
+                                                key={year}
+                                                onClick={() => setSelectedYear(year)}
+                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
+                                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                                                    : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]'
+                                                    }`}
+                                            >
+                                                {year}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

@@ -117,6 +117,8 @@ export function AssetTransferGroup({
                             ? originActors.map((change, i: number) => {
                                 const matchingFee = balanceChanges.fungible_fee_balance_changes?.find((f) => sanitizeText(f.entity_address) === sanitizeText(change.entity_address));
                                 const nftWithdrawals = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.removed?.length ?? 0) > 0);
+                                // NFT deposits that belong to this origin address — show them here instead of destination
+                                const nftDepositsForOrigin = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
                                 const isCM = isConsensusManager(change.entity_address);
 
                                 const fungibleBurned = isFungibleBurned(change.resource_address) && !change.is_fee;
@@ -171,6 +173,10 @@ export function AssetTransferGroup({
                                                 const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
                                                 return <NftTransferCard key={'nft-s-' + ni} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} isBurned={isBurnedNft} />;
                                             })}
+                                            {/* NFT deposits for this origin address — consolidated here */}
+                                            {nftDepositsForOrigin.map((nft, ni: number) => (
+                                                <NftTransferCard key={'nft-s-dep-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} />
+                                            ))}
                                         </div>
                                     </div>
                                 );
@@ -321,11 +327,11 @@ export function AssetTransferGroup({
                                 )
                                 : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt.system_burn || 'System component burn'}</div>
                         }
-                        {/* Orphan NFT deposits (no matching fungible receiver) */}
+                        {/* Orphan NFT deposits (no matching fungible receiver) — exclude initiator addresses */}
                         {(() => {
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
                             return (balanceChanges.non_fungible_balance_changes ?? [])
-                                .filter((nft) => (nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address))
+                                .filter((nft) => (nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !initiators.has(sanitizeText(nft.entity_address)))
                                 .map((nft, ni: number) => {
                                     const resourceSenders = group.filter(c => c.resource_address === nft.resource_address && parseFloat(c.balance_change || '0') < 0 && !c.is_fee);
                                     const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });

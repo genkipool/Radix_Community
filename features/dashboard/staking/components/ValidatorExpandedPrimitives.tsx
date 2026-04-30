@@ -34,12 +34,21 @@ import { Download } from 'lucide-react';
 export const AR = ({
     label, addr, onCopy, copied, brackets, extra, isModal, noTruncate, onDownloadCsv,
 }: ARProps) => {
-    // Truncate based on view type: Modal (16/40) vs Card (16/20)
+    const [isMobile, setIsMobile] = React.useState(false);
+    React.useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 640);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
     const displayAddr = noTruncate
         ? addr
-        : isModal
-            ? truncateAddress(addr, 16, 40)
-            : truncateAddress(addr, 16, 25);
+        : isMobile
+            ? truncateAddress(addr, 10, 10)
+            : isModal
+                ? truncateAddress(addr, 16, 40)
+                : truncateAddress(addr, 16, 25);
 
     return (
         <div className={`veb-ar ${noTruncate ? 'veb-ar-no-trunc' : ''}`}>
@@ -181,7 +190,7 @@ export const VEB_STYLES = `
     .veb-desc-text { margin-top: 6px; font-size: 13px; line-height: 1.65; }
     .veb-desc-has { font-style: italic; color: var(--color-text-main); opacity: 0.72; }
     .veb-desc-empty { color: var(--color-text-muted); }
-    .veb-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12.5px; font-weight: 500; color: var(--color-primary); text-decoration: none; max-width: 320px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .veb-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12.5px; font-weight: 500; color: var(--color-primary); text-decoration: none; transition: opacity 0.2s; }
     .veb-link:hover { text-decoration: underline; }
     .veb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 2px; }
     .veb-meta-sep { width: 1px; height: 16px; background: var(--color-card-border); flex-shrink: 0; margin: 0 2px; }
@@ -253,6 +262,12 @@ export const VEB_STYLES = `
     .veb-cta-btn { height: 40px !important; padding: 0 40px !important; border-radius: 12px !important; font-size: 13px !important; font-weight: 700 !important; white-space: nowrap; background: var(--color-primary) !important; color: white !important; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 20%, transparent) !important; transition: all 0.3s ease !important; flex-shrink: 0; }
     .veb-cta-btn:hover { opacity: 0.9 !important; }
     .veb-cta-btn:active { transform: scale(0.96) !important; }
+
+    @media (max-width: 640px) {
+        .veb-cta { padding: 14px 20px !important; gap: 16px !important; }
+        .veb-cta-hint { font-size: 12px !important; }
+        .veb-cta-btn { padding: 0 24px !important; height: 36px !important; font-size: 12px !important; }
+    }
 
     /* LABEL */
     .veb-label { font-size: 10.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.16em; color: var(--color-text-muted); }

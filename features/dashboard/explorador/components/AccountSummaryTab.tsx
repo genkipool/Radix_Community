@@ -416,7 +416,8 @@ export function AccountSummaryTab({
                                     <div className="min-w-0 flex-1">
                                         <p className="font-bold text-sm text-[var(--color-text-main)] truncate leading-none mb-1">{row.validatorName}</p>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all leading-relaxed whitespace-pre-wrap">{row.validatorAddress}</span>
+                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all leading-relaxed whitespace-pre-wrap hidden sm:inline">{row.validatorAddress}</span>
+                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] sm:hidden">{truncateAddress(row.validatorAddress, 8, 8)}</span>
                                             <button onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] shrink-0 transition-all active:scale-95">
                                                 {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                                             </button>

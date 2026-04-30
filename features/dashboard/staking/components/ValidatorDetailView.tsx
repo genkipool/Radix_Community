@@ -112,11 +112,11 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     href={validator.website}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-[5px] text-xs font-medium text-[var(--color-primary)] no-underline max-w-[340px] overflow-hidden whitespace-nowrap text-ellipsis transition-opacity hover:opacity-80 hover:underline"
+                                    className="inline-flex items-center gap-[5px] text-xs font-medium text-[var(--color-primary)] no-underline w-fit max-w-[220px] sm:max-w-none transition-opacity hover:opacity-80 hover:underline"
                                     onClick={e => e.stopPropagation()}
                                 >
+                                    <span className="truncate sm:whitespace-normal">{sanitizeText(validator.website)}</span>
                                     <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                    <span>{sanitizeText(validator.website)}</span>
                                 </a>
                             )}
 
@@ -188,7 +188,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             <EntityTagsGrid tags={validator.tags} t={t} />
                             <Button
                                 variant="primary"
-                                className="!h-[38px] !px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-full sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
+                                className="!h-[38px] !px-6 sm:!px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-fit sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
                                 onClick={e => {
                                     e.stopPropagation();
                                     setShowUnderConstruction(true);
