@@ -570,6 +570,80 @@ export async function fetchRecentTransactions(
     }
 }
 
+/**
+ * Enriches a list of transactions with basic metadata (names and icons)
+ * for the primary resources displayed in the UI.
+ * This prevents "hydration flashes" on the client.
+ */
+export async function enrichTransactionsMetadata(
+    transactions: TransactionInfo[],
+    network: Network = 'mainnet'
+): Promise<TransactionInfo[]> {
+    if (!transactions || transactions.length === 0) return transactions;
+
+    // 1. Identify unique resource addresses that need metadata
+    const addresses = new Set<string>();
+    transactions.forEach(tx => {
+        if (tx.displayResource && tx.displayResource !== 'XRD') {
+            addresses.add(tx.displayResource);
+        }
+    });
+
+    if (addresses.size === 0) return transactions;
+
+    // 2. Fetch metadata in batches of 20 (Gateway limit)
+    const gateway = getGateway(network);
+    const addressList = Array.from(addresses);
+    const metadataMap = new Map<string, { name?: string; symbol?: string; icon?: string }>();
+
+    interface GatewayMetadataItem {
+        key: string;
+        value: { typed: { value: string } };
+    }
+    interface GatewayEntityItem {
+        address: string;
+        metadata?: { items: GatewayMetadataItem[] };
+    }
+
+    try {
+        const res = await withRetry(() =>
+            gateway.state.innerClient.stateEntityDetails({
+                stateEntityDetailsRequest: {
+                    addresses: addressList,
+                    opt_ins: {
+                        explicit_metadata: ['name', 'symbol', 'icon_url'],
+                    }
+                }
+            })
+        );
+
+        (res.items as unknown as GatewayEntityItem[] || []).forEach((item) => {
+            const metadata = item.metadata?.items || [];
+            const name = metadata.find(m => m.key === 'name')?.value?.typed?.value;
+            const symbol = metadata.find(m => m.key === 'symbol')?.value?.typed?.value;
+            const icon = metadata.find(m => m.key === 'icon_url')?.value?.typed?.value;
+            metadataMap.set(item.address, { name, symbol, icon });
+        });
+    } catch (error) {
+        logger.error({ err: error, network }, '[TransactionsService] Failed to fetch metadata for enrichment');
+        // Non-blocking: if enrichment fails, we return original transactions
+        return transactions;
+    }
+
+    // 3. Inject metadata into transactions
+    return transactions.map(tx => {
+        if (tx.displayResource && metadataMap.has(tx.displayResource)) {
+            const meta = metadataMap.get(tx.displayResource)!;
+            return {
+                ...tx,
+                displayResourceName: meta.symbol || meta.name || tx.displayResourceName,
+                displayResourceIcon: meta.icon,
+            };
+        }
+        return tx;
+    });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchTransactionDetails
 //
@@ -1202,7 +1276,7 @@ export async function fetchRoundProposer(
 // ─────────────────────────────────────────────────────────────────────────────
 // Cache Constants
 // ─────────────────────────────────────────────────────────────────────────────
-const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+const REVALIDATION_THRESHOLD = 1 * 60 * 1000; // 1 minute
 
 const getRedisClient = () => {
     try {
@@ -1245,7 +1319,10 @@ async function getRecentTransactionsFromDataCache(
     cacheTag('transactions', `transactions-${network}`);
 
     const isTip = !cursor;
-    const result = await fetchRecentTransactions(cursor, limit, network);
+    const rawResult = await fetchRecentTransactions(cursor, limit, network);
+    const result = isTip 
+        ? await enrichTransactionsMetadata(rawResult.transactions, network).then(enriched => ({ ...rawResult, transactions: enriched }))
+        : rawResult;
 
     // Seed Storage for future requests (tip only)
     if (isTip) {
@@ -1318,10 +1395,12 @@ export async function getRecentTransactionsCached(
                     // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                     after(async () => {
                         try {
-                            logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
-                            const freshResult = await fetchRecentTransactions(cursor, actualLimit, network);
+                                logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
+                                const rawResult = await fetchRecentTransactions(cursor, actualLimit, network);
+                                const freshResult = await enrichTransactionsMetadata(rawResult.transactions, network)
+                                    .then(enriched => ({ ...rawResult, transactions: enriched }));
 
-                            if (freshResult.transactions && freshResult.transactions.length > 0) {
+                                if (freshResult.transactions && freshResult.transactions.length > 0) {
                                 // Update Redis with timestamp + Invalidate Data Cache
                                 await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
 

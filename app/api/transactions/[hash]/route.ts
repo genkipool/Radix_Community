@@ -15,8 +15,10 @@ export async function GET(
 
     try {
         const details = await fetchTransactionDetails(hash, network);
+        
         return NextResponse.json(details, {
             headers: {
+                // Maximum protection: 1 day fresh, 1 day stale-while-revalidate
                 'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=86400',
             },
         });

@@ -15,6 +15,7 @@ export async function GET(
 
     try {
         const details = await fetchEntityDetails(address, network);
+        
         return NextResponse.json(details, {
             headers: {
                 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',

@@ -113,6 +113,7 @@ export interface TransactionInfo {
     displayIsXrd?: boolean;
     displayIsMint?: boolean;
     displayResourceName?: string;
+    displayResourceIcon?: string;
     /** @deprecated use validatorOps */
     validatorAddress?: string;
     /** @deprecated use validatorOps */

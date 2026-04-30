@@ -20,6 +20,7 @@ export {
 // ── Transactions ──────────────────────────────────────────────────────────────
 export {
   fetchRecentTransactions,
+  enrichTransactionsMetadata,
   searchTransactionsByAddress,
   fetchTransactionDetails,
   fetchRoundProposer,

@@ -55,9 +55,8 @@ export function TransactionDetailModal({
             />
 
             <div
-                className="relative w-full max-w-[1400px] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto overflow-hidden pointer-events-auto"
+                className="relative w-full max-w-[1400px] h-[calc(100dvh-2rem)] bg-[var(--color-bg)] rounded-2xl border border-[var(--color-card-border)] shadow-[0_0_60px_rgba(0,0,0,0.5)] flex flex-col my-auto overflow-hidden pointer-events-auto"
                 onClick={e => e.stopPropagation()}
-                style={{ maxHeight: 'calc(100dvh - 2rem)' }}
             >
                 <AnimatePresence mode="popLayout" initial={false} custom={direction}>
                     <SwipeableContainer
@@ -116,7 +115,7 @@ export function TransactionDetailModal({
                                     <div className="flex items-center gap-y-2 gap-x-3 text-xs sm:text-sm text-[var(--color-text-muted)] flex-wrap">
                                         {/* 1. Date & Time */}
                                         <span className="font-semibold text-[var(--color-text-main)] shrink-0">
-                                            {new Date(tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </span>
 
                                         <span className="opacity-40 shrink-0">·</span>
@@ -183,9 +182,9 @@ export function TransactionDetailModal({
                         </div>
 
                         {/* ── Content: TransactionTabs directly ── */}
-                        <div className="flex-1 overflow-y-auto touch-pan-y custom-scrollbar min-h-0">
+                        <div className="flex-1 overflow-y-auto touch-pan-y custom-scrollbar">
                             {isLoading ? (
-                                <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--color-text-muted)]">
+                                <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--color-text-muted)]">
                                     <Activity className="w-7 h-7 animate-spin text-[var(--color-primary)]" />
                                     <p className="text-xs uppercase tracking-wider font-bold">{tt.loading_details || 'Loading transaction details...'}</p>
                                 </div>

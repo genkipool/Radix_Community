@@ -36,12 +36,20 @@ const formatAmount = (n: number, loc: string): string => {
    RenderSymbol
    Resolves and displays token symbol/name asynchronously
 ───────────────────────────────────────── */
-const RenderSymbol = ({ address, fallback, network }: { address: string; fallback?: string; network: string }) => {
-    const meta = useEntityData(address, network);
+const RenderSymbol = ({ address, fallback, network, enrichedName }: { address: string; fallback?: string; network: string; enrichedName?: string }) => {
+    // 1. Prioritize pre-enriched data from server/cache
+    const displayName = enrichedName || fallback;
+    
+    // 2. Fallback to client-side hook only if essential metadata is missing
+    const meta = useEntityData((!displayName || displayName === address) ? address : '', network);
+    
     if (!address) return null;
     if (address === 'XRD') return 'XRD';
-    const rawVal = meta?.symbol || meta?.name || fallback || formatEntity(address);
-    const displayVal = rawVal.length > 40 ? rawVal.slice(0, 37).trim() + '...' : rawVal;
+
+    const finalName = enrichedName || meta?.symbol || meta?.name || fallback || formatEntity(address);
+
+    const displayVal = finalName.length > 40 ? finalName.slice(0, 37).trim() + '...' : finalName;
+
     return (
         <span className="truncate pe-1" title={address}>
             {displayVal}
@@ -302,6 +310,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                                     <RenderSymbol
                                                         address={tx.displayResource || ''}
                                                         fallback={tx.displayResourceName}
+                                                        enrichedName={tx.displayResourceName}
                                                         network={network}
                                                     />
                                                 )}
