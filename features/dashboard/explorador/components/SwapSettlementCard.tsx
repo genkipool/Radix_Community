@@ -5,7 +5,8 @@ import { ArrowRight, Check, Copy, ArrowLeftRight, Wallet, Route, Table2 } from '
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { sanitizeText } from '@/utils/sanitize';
-import type { Network, TranslationsT } from '@/features/dashboard/types';
+import type { Network, TranslationsT, TransactionDetails } from '@/features/dashboard/types';
+import type { TransactionInfo } from '@/types/radix';
 import type { SwapHop } from '../utils/transactionUtils';
 import { buildSwapRoutingChart } from '../utils/transactionUtils';
 import { MermaidDiagram } from './MermaidDiagram';
@@ -25,6 +26,8 @@ interface SwapSettlementCardProps {
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale: string;
+    tx: TransactionInfo;
+    details: TransactionDetails;
 }
 
 /* ── Helpers ── */
@@ -97,12 +100,14 @@ function NameResolver({ address, network, onResolved }: {
 }
 
 /* ── Routing Mermaid diagram wrapper ── */
-function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt }: {
+function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details }: {
     fungibles: FungibleChange[];
     feeEntries: { entity_address: string; resource_address: string; balance_change: string }[];
     initiatorAddrs: string[];
     network: Network;
     tt: SwapSettlementCardProps['tt'];
+    tx: TransactionInfo;
+    details: TransactionDetails;
 }) {
     const [names, setNames] = useState<Map<string, string>>(new Map());
     const [symbols, setSymbols] = useState<Map<string, string>>(new Map());
@@ -128,7 +133,22 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt }: 
     };
 
     // Build the Mermaid chart definition
-    const chart = buildSwapRoutingChart(fungibles, feeEntries, initiatorAddrs, names, symbols, blueprintNames, tt);
+    const feePaid = parseFloat(sanitizeText(String(tx.feePaid || '0')));
+    const feeDest = details?.receipt?.fee_destination;
+    const feePayer = details?.balance_changes?.fungible_fee_balance_changes?.find(f => parseFloat(f.balance_change) < 0)?.entity_address;
+
+    const chart = buildSwapRoutingChart(
+        fungibles,
+        feeEntries,
+        initiatorAddrs,
+        names,
+        symbols,
+        blueprintNames,
+        tt,
+        feePaid,
+        feeDest,
+        feePayer
+    );
 
     return (
         <>
@@ -191,6 +211,7 @@ function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAdd
 export function SwapSettlementCard({
     soldToken, receivedToken, dexComponent, initiatorAddress, routingHops,
     balanceChanges, initiators, tt, onCopy, copiedAddress, onResourceClick, network, locale,
+    tx, details,
 }: SwapSettlementCardProps) {
     const dexMeta = useEntityData(dexComponent, network);
     const dexName = dexMeta?.name ?? '';
@@ -296,6 +317,8 @@ export function SwapSettlementCard({
                             initiatorAddrs={Array.from(initiators)}
                             network={network}
                             tt={tt}
+                            tx={tx}
+                            details={details}
                         />
                     </div>
                 )}

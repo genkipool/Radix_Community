@@ -136,6 +136,14 @@
         "validator": "Dirección de Validador (Validator). Nodo de la red encargado de procesar transacciones y asegurar el consenso. Los usuarios pueden delegar (hacer staking) sus XRD en este validador.",
         "identity": "Dirección de Identidad (Persona). Representa el perfil digital de un usuario en la Web3, usado para iniciar sesión en dApps sin contraseña de forma segura."
       },
+      "swap_routing_network_fees": "Desglose de Comisiones",
+      "swap_routing_proposer": "Recompensas Proponente",
+      "swap_routing_validator_set": "Conjunto de Validadores",
+      "swap_routing_burn": "Quema de Protocolo",
+      "swap_routing_royalties": "Regalías (Developer)",
+      "swap_dex_label": "Intermediarios DEX",
+      "swap_routing_sender": "Remitente",
+      "swap_routing_receiver": "Destinatario",
       "all": "Todas",
       "button": "Explorador",
       "tx_types": {

@@ -134,6 +134,14 @@
         "validator": "Validator Address. A network node in charge of processing transactions and securing consensus. Users can stake their XRD on this validator.",
         "identity": "Identity Address (Persona). Represents a user's digital profile in Web3, used for secure passwordless login to dApps."
       },
+      "swap_routing_network_fees": "Fee Breakdown",
+      "swap_routing_proposer": "Proposer Rewards",
+      "swap_routing_validator_set": "Validator Set",
+      "swap_routing_burn": "Protocol Burn",
+      "swap_routing_royalties": "Royalties (Developer)",
+      "swap_dex_label": "DEX Intermediaries",
+      "swap_routing_sender": "Sender",
+      "swap_routing_receiver": "Receiver",
       "button": "Explorer",
       "all": "All",
       "tx_types": {

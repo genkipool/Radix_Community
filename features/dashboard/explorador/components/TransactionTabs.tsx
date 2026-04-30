@@ -193,6 +193,8 @@ const TransactionTabs = ({
                                             onResourceClick={shared.onResourceClick}
                                             network={network}
                                             locale={locale}
+                                            tx={tx}
+                                            details={details}
                                         />
                                     );
                                 }

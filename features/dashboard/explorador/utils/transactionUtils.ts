@@ -5,7 +5,7 @@
  * to avoid duplication across components.
  */
 
-import type { TranslationsT, GatewayEvent } from '@/features/dashboard/types';
+import type { TranslationsT, GatewayEvent, FeeDestination } from '@/features/dashboard/types';
 import type { BalanceChanges } from '../types';
 import { sanitizeText } from '@/utils/sanitize';
 
@@ -178,14 +178,7 @@ function fmtNum(n: number): string {
 }
 
 /**
- * Builds a Mermaid flowchart LR string from balance changes,
- * replicating the reference Mermaid design.
- *
- * @param fungibles  All fungible_balance_changes entries
- * @param feeEntries All fungible_fee_balance_changes entries (optional)
- * @param initiatorAddrs Initiator account addresses
- * @param names      Map of address → display name
- * @param symbols    Map of resource address → token symbol
+ * Builds a Mermaid flowchart LR string from balance changes.
  */
 export function buildSwapRoutingChart(
     fungibles: FungibleEntry[],
@@ -194,7 +187,10 @@ export function buildSwapRoutingChart(
     names: Map<string, string>,
     symbols: Map<string, string>,
     blueprintNames: Map<string, string>,
-    tt: Partial<TranslationsT['dashboard']['transactions']>
+    tt: TranslationsT['dashboard']['transactions'],
+    feePaid: number = 0,
+    feeDest?: FeeDestination,
+    feePayer?: string
 ): string {
     const isInit = (a: string) => initiatorAddrs.includes(a);
     const isBurn = (a: string) => a.startsWith('resource_');
@@ -241,9 +237,12 @@ export function buildSwapRoutingChart(
         }
     }
 
-    // All entities
     const allEntities = new Set<string>();
-    for (const fc of allEntries) allEntities.add(sanitizeText(fc.entity_address));
+    for (const fc of allEntries) {
+        const addr = sanitizeText(fc.entity_address);
+        if (isValidator(addr) || isBurn(addr)) continue; 
+        allEntities.add(addr);
+    }
 
     // Build edges: for each resource, match senders→receivers
     const edges: { from: string; to: string; resource: string; amount: number }[] = [];
@@ -289,13 +288,6 @@ export function buildSwapRoutingChart(
     for (const e of edges) { uniqueEdges.set(edgeKey(e), e); }
     const finalEdges = Array.from(uniqueEdges.values());
 
-    // Classify entities
-    const dexEntities = Array.from(allEntities).filter(isDex);
-    const burnEntities = Array.from(allEntities).filter(isBurn);
-    const validatorEntities = Array.from(allEntities).filter(isValidator);
-
-    // Combined formatter for node content
-    // Combined formatter for node content
     const buildNodeHtml = (addr: string, mode: 'sender' | 'receiver' | 'other' = 'other') => {
         const c = sanitizeText(addr);
         const name = names.get(c);
@@ -303,23 +295,23 @@ export function buildSwapRoutingChart(
         const isAccount = addr.startsWith('account_');
         const minWidth = isAccount ? '260px' : '120px';
 
-        const parts: string[] = [`<div title="${addr}" style="min-width: ${minWidth}; padding: 0 12px;">`]; // Start tooltip wrapper
+        const parts: string[] = [`<div title='${addr}' style='min-width: ${minWidth}; padding: 0 12px;'>`];
 
         // 1. Name/Blueprint Header
         if (name) {
-            parts.push(`<div style="margin-bottom:2px; font-size:20px;"><b>${label(addr)}</b></div>`);
+            parts.push(`<div style='margin-bottom:2px; font-size:20px;'><b>${label(addr)}</b></div>`);
             if (bp) {
-                parts.push(`<div style="font-size:20px; opacity:0.7; margin-bottom:4px;">${bp}</div>`);
+                parts.push(`<div style='font-size:20px; opacity:0.7; margin-bottom:4px;'>${bp}</div>`);
             }
         } else if (bp) {
-            parts.push(`<div style="margin-bottom:4px; font-size:20px;"><b>${bp}</b></div>`);
+            parts.push(`<div style='margin-bottom:4px; font-size:20px;'><b>${bp}</b></div>`);
         } else {
             // Only show address if no name and no blueprint
-            parts.push(`<div style="margin-bottom:4px; font-family:monospace;"><b>${short(addr)}</b></div>`);
+            parts.push(`<div style='margin-bottom:4px; font-family:monospace;'><b>${short(addr)}</b></div>`);
         }
 
         // Separator
-        parts.push(`<div style="height:1px; border-top:1px dashed rgba(var(--color-text-main-rgb),0.15); margin:4px 0;"></div>`);
+        parts.push(`<div style='height:1px; border-top:1px dashed rgba(var(--color-text-main-rgb),0.15); margin:4px 0;'></div>`);
 
         // 2. Balance Changes
         const ii = entityIn.get(c);
@@ -328,7 +320,7 @@ export function buildSwapRoutingChart(
         if (mode === 'receiver' || mode === 'other') {
             if (ii) {
                 for (const [r, a] of ii) {
-                    parts.push(`<div style="font-size:18px; color:var(--color-accent) !important;">+${fmtNum(a)} ${sym(r)}</div>`);
+                    parts.push(`<div style='font-size:18px; color:var(--color-accent) !important;'>+${fmtNum(a)} ${sym(r)}</div>`);
                 }
             }
         }
@@ -336,7 +328,7 @@ export function buildSwapRoutingChart(
         if (mode === 'sender' || mode === 'other') {
             if (oi) {
                 for (const [r, a] of oi) {
-                    parts.push(`<div style="font-size:18px; color:#f43f5e !important;">-${fmtNum(a)} ${sym(r)}</div>`);
+                    parts.push(`<div style='font-size:18px; color:#f43f5e !important;'>-${fmtNum(a)} ${sym(r)}</div>`);
                 }
             }
         }
@@ -380,72 +372,101 @@ export function buildSwapRoutingChart(
     }
     L.push('  end');
 
-    // Network Fees Subgraph (Desglose)
-    if (burnEntities.length > 0 || validatorEntities.length > 0) {
-        L.push(`  subgraph FeesGroup ["${tt?.swap_routing_network_fees || 'Network Fees'}"]`);
+    // 3. DEX & Intermediaries Subgraph
+    const intermediaries = Array.from(allEntities).filter(a => !isInit(a));
+    if (intermediaries.length > 0) {
+        L.push(`  subgraph DEXGroup ["${tt?.swap_dex_label || 'Intermediaries'}"]`);
         L.push('    direction TB');
-
-        if (burnEntities.length > 0) {
-            L.push(`    subgraph BurnGroup ["${tt?.swap_routing_burn || 'Burned Tokens'}"]`);
-            for (const addr of burnEntities) {
-                const id = nid(addr);
-                L.push(`      ${id}["${buildNodeHtml(addr)}"]:::fee`);
-            }
-            L.push('    end');
-        }
-
-        if (validatorEntities.length > 0) {
-            L.push(`    subgraph ValGroup ["${tt?.swap_routing_validators || 'Validator Rewards'}"]`);
-            for (const addr of validatorEntities) {
-                const id = nid(addr);
-                L.push(`      ${id}["${buildNodeHtml(addr)}"]:::vault`);
-            }
-            L.push('    end');
-        }
-        L.push('  end');
-    }
-
-    // DEX subgraph
-    if (dexEntities.length > 0) {
-        L.push(`  subgraph DEXGroup ["${tt?.swap_dex_label || 'DEX Intermediaries'}"]`);
-        L.push('    direction TB');
-        L.push('    DEXSpacer[" "]:::spacer');
-        for (const addr of dexEntities) {
+        for (const addr of intermediaries) {
             const id = nid(addr);
-            L.push(`    ${id}["${buildNodeHtml(addr)}"]:::vault`);
+            const style = isDex(addr) ? 'vault' : 'user';
+            L.push(`    ${id}["${buildNodeHtml(addr, 'other')}"]:::${style}`);
         }
         L.push('  end');
     }
 
-    // Edges — remap initiator nodes to sender/receiver variants
+    // --- Fee Flow Logic (Rhombus + Breakdown) ---
+    const feeLinks: { from: string; to: string; label: string }[] = [];
+    if (feePaid > 0 && feePayer) {
+        const netFeeId = 'NF_Rhombus';
+        const payerId = senderIds.get(feePayer) || nid(feePayer);
+        
+        // 1. Rhombus node for total fee
+        const feeLabel = `Fee<br/>${fmtNum(feePaid)} XRD`;
+        L.push(`  ${netFeeId}{"${feeLabel}"}:::fee`);
+        feeLinks.push({ from: payerId, to: netFeeId, label: '' });
+
+        // 2. Breakdown nodes
+        if (feeDest) {
+            L.push(`  subgraph FeesGroup ["${tt?.swap_routing_network_fees || 'Fee Breakdown'}"]`);
+            L.push('    direction LR');
+            
+            const getVal = (v: string | { xrd_amount?: string; xrdAmount?: string; [key: string]: unknown } | undefined | null) => 
+                typeof v === 'string' ? v : (v as { xrd_amount?: string; xrdAmount?: string })?.xrd_amount || (v as { xrd_amount?: string; xrdAmount?: string })?.xrdAmount || '0';
+
+            const toBurn = parseFloat(getVal(feeDest.to_burn || feeDest.toBurn || '0'));
+            const toProposer = parseFloat(getVal(feeDest.to_proposer || feeDest.toProposer || '0'));
+            const toValSet = parseFloat(getVal(feeDest.to_validator_set || feeDest.toValidatorSet || '0'));
+            const toRoyalties = Array.isArray(feeDest.to_royalty_recipients) 
+                ? feeDest.to_royalty_recipients.reduce((acc: number, r: string | { amount?: string; xrd_amount?: string; xrdAmount?: string }) => {
+                    const amt = typeof r === 'string' ? r : (r.amount || r.xrd_amount || r.xrdAmount || '0');
+                    return acc + parseFloat(amt);
+                }, 0)
+                : 0;
+
+            if (toBurn > 0) {
+                L.push(`    BurnNode["${tt?.swap_routing_burn || 'Burned Tokens'}<br/>${fmtNum(toBurn)} XRD"]:::fee`);
+                feeLinks.push({ from: netFeeId, to: 'BurnNode', label: '' });
+            }
+            if (toProposer > 0) {
+                L.push(`    ProposerNode["${tt?.swap_routing_proposer || 'Proposer Rewards'}<br/>${fmtNum(toProposer)} XRD"]:::vault`);
+                feeLinks.push({ from: netFeeId, to: 'ProposerNode', label: '' });
+            }
+            if (toValSet > 0) {
+                L.push(`    ValidatorNode["${tt?.swap_routing_validators || 'Validator Rewards'}<br/>${fmtNum(toValSet)} XRD"]:::vault`);
+                feeLinks.push({ from: netFeeId, to: 'ValidatorNode', label: '' });
+            }
+            if (toRoyalties > 0) {
+                L.push(`    RoyaltiesNode["Royalties<br/>${fmtNum(toRoyalties)} XRD"]:::fee`);
+                feeLinks.push({ from: netFeeId, to: 'RoyaltiesNode', label: '' });
+            }
+            L.push('  end');
+        }
+    }
+
+    // --- Final Edge Generation ---
+    let edgeIdx = 0;
     const feeEdgeIndices: number[] = [];
     const outputEdgeIndices: number[] = [];
-    let edgeIdx = 0;
 
+    // 1. Add Asset Edges first
     for (const e of finalEdges) {
-        // If from is initiator, use sender node; if to is initiator, use receiver node
+        if (isValidator(e.from) || isValidator(e.to) || isBurn(e.from) || isBurn(e.to)) continue;
+
         const fid = isInit(e.from) ? (senderIds.get(e.from) ?? nid(e.from)) : nid(e.from);
         const tid = isInit(e.to) ? (receiverIds.get(e.to) ?? nid(e.to)) : nid(e.to);
         const s = sym(e.resource);
         const edgeLabel = `${fmtNum(e.amount)} ${s}`.trim();
+        
         L.push(`  ${fid} -- "<span title='${e.resource}' style='font-size:20px;'>${edgeLabel}</span>" --> ${tid}`);
 
-        // Track fee edges
-        if ((isInit(e.from) && (isBurn(e.to) || isValidator(e.to))) || (isBurn(e.from) || isValidator(e.from))) {
-            feeEdgeIndices.push(edgeIdx);
-        }
-        // Track output edges (to receiver from DEX)
         if (isDex(e.from) && isInit(e.to)) {
             outputEdgeIndices.push(edgeIdx);
         }
         edgeIdx++;
     }
 
-    // Style fee edges as dashed red
-    for (const i of feeEdgeIndices) {
-        L.push(`  linkStyle ${i} stroke:#F43F5E,stroke-width:2px,stroke-dasharray: 5 5`);
+    // 2. Add Fee Edges last
+    for (const fl of feeLinks) {
+        const labelStr = fl.label ? ` -- "${fl.label}" --> ` : ' --> ';
+        L.push(`  ${fl.from}${labelStr}${fl.to}`);
+        feeEdgeIndices.push(edgeIdx++);
     }
-    // Style output edges as green/accent
+
+    // --- Styling ---
+    for (const i of feeEdgeIndices) {
+        L.push(`  linkStyle ${i} stroke:#F43F5E,stroke-width:2px,stroke-dasharray:5,5`);
+    }
     for (const i of outputEdgeIndices) {
         L.push(`  linkStyle ${i} stroke:#10b981,stroke-width:2px`);
     }
