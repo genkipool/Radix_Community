@@ -22,7 +22,7 @@ import {
 /* ─────────────────────────────────────
    Props
 ───────────────────────────────────── */
-import { ValidatorInlinePanelProps } from '../types';
+// Removed unused import
 
 type ValidatorTab = 'summary' | 'metadata' | 'configuration' | 'raw';
 
@@ -34,7 +34,14 @@ export function ValidatorInlinePanel({
     stakeXrd, unstakeLsu, unstakeXrdExpected, unstakeXrd, claimXrd,
     tt, dt, onCopy, copiedAddress, network, locale,
     rightLabel, rightContent,
-}: ValidatorInlinePanelProps) {
+}: {
+    validatorAddress: string; isStake?: boolean; isUnstake?: boolean; isClaim?: boolean;
+    stakeXrd?: number; unstakeLsu?: number; unstakeXrdExpected?: number; unstakeXrd?: number; claimXrd?: number;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    dt?: Partial<DashboardDict>;
+    onCopy: (a: string) => void; copiedAddress: string | null; network: string; locale: string;
+    rightLabel?: string; rightContent?: React.ReactNode;
+}) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<ValidatorTab>('summary');
 
@@ -106,8 +113,8 @@ export function ValidatorInlinePanel({
         { key: 'raw', label: tt?.resource_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip },
     ];
 
-    const cd = dt?.card || ({} as TranslationsT['dashboard']['card']);
-    const dd = dt?.details || ({} as DashboardDict['details']);
+    const cd: Partial<TranslationsT['dashboard']['card']> = dt?.card ?? {};
+    const dd: Partial<DashboardDict['details']> = dt?.details ?? {};
 
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">

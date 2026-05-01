@@ -25,6 +25,7 @@ import { AnimatePresence, motion } from 'motion/react';
 
 /* Services & types */
 import type { NetworkStats } from '@/types/radix';
+import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types';
 
 /* React Query hooks */
@@ -78,10 +79,12 @@ export default function DashboardClient({
   initialDateRange,
   randomSeed = 0,
   initialMarketData,
+  dictionary,
 }: DashboardInitialProps) {
 
-  const { t, language } = useLanguage();
+  const { t: dict, language } = useLanguage();
   const { setShowFooter, setShowUnderConstruction } = useLayout();
+  const t = (dictionary || dict || {}) as Dictionary;
   const dt = t.dashboard ?? {};
 
   /* View / Network / Search (URL Sync) / Date Range */

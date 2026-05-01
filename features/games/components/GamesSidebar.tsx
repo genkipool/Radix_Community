@@ -3,6 +3,7 @@
 import { Zap, Layers, Brain, Trophy, Car, Map, Sword, Puzzle } from 'lucide-react';
 import { ReactNode } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import type { Dictionary } from '@/i18n';
 import { GAME_CATEGORIES, GAMES } from '../data/gamesData';
 import { type GameCategory, type GamesSidebarProps } from '../types';
 import SidebarLayout from '@/components/layout/SidebarLayout';
@@ -30,9 +31,10 @@ export default function GamesSidebar({
     searchQuery, onSearchQueryChange,
     gridView, onGridViewToggle,
     theaterMode, onTheaterModeToggle,
-}: GamesSidebarProps) {
+    dictionary,
+}: GamesSidebarProps & { dictionary?: Partial<Dictionary> }) {
     const { t: dict } = useLanguage();
-    const t = dict.games;
+    const t = dictionary?.games || dict?.games || {};
     const categoriesT = (t.categories ?? {}) as Record<string, string>;
     const titles = (t.titles ?? {}) as Record<string, string>;
     const sidebarT = (t.sidebar ?? {}) as Record<string, string>;

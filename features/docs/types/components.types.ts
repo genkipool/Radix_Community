@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import type { UserDoc } from './data.types';
+import type { Dictionary } from '@/i18n';
 /** Compact sidebar metadata serialised into a cookie by saveUserDocs for SSR. */
 export interface UserDocMeta {
     id: string;
@@ -14,6 +15,7 @@ export interface DocsClientProps {
      *  Allows the server to include the correct doc titles in the initial HTML,
      *  so published cards are never missing on reload. */
     initialUserDocMeta?: UserDocMeta[];
+    dictionary?: Partial<Dictionary>;
 }
 
 export interface DocsSidebarProps {

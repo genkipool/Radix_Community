@@ -100,7 +100,7 @@ function CurrencyToggle({ currency, onChange, loading }: { currency: Currency; o
 /* ─── Main modal ─────────────────────────────────────────────────── */
 export default function TournamentModal({ isOpen, onClose }: TournamentModalProps) {
   const { t: dict } = useLanguage();
-  const t = (dict.games.tournament ?? {}) as unknown as Record<string, string>;
+  const t = (dict?.games?.tournament ?? {}) as unknown as Record<string, string>;
 
   const [currency, setCurrency] = useState<Currency>('usd');
 

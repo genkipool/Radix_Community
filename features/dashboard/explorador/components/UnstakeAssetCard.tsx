@@ -21,7 +21,7 @@ export function UnstakeAssetCard({
             {/* Header */}
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
                 <Wallet className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                {tt.asset_transfer || 'Asset Transfers'}
+                {tt?.asset_transfer || 'Asset Transfers'}
             </h3>
 
             <div className={`flex flex-col ${columns === 2 ? '' : 'md:flex-row'} divide-y ${columns === 2 ? 'divide-y' : 'md:divide-y-0 md:divide-x'} divide-[var(--color-card-border)]`}>
@@ -29,12 +29,12 @@ export function UnstakeAssetCard({
                 <div className="flex-1 p-3 bg-blue-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
-                        {tt.from_address || 'Origin (Sent)'}
+                        {tt?.from_address || 'Origin (Sent)'}
                     </h5>
                     <div className="space-y-3">
                         {senderAddr && (
                             <div>
-                                <AddressDisplay label={tt.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                <AddressDisplay label={tt?.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                 <div className="space-y-1 mt-2">
                                     {allLsuChanges.map((change, i: number) => (
                                         <BalanceChangeRow 
@@ -50,7 +50,7 @@ export function UnstakeAssetCard({
                                             locale={locale} 
                                             hideSign={true}
                                             iconOverride={<IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" />}
-                                            titleOverride={tt.lsu_burn_explanation}
+                                            titleOverride={tt?.lsu_burn_explanation}
                                             colorOverride="text-orange-600 dark:text-orange-400"
                                         />
                                     ))}
@@ -97,7 +97,7 @@ export function UnstakeAssetCard({
                                                     side="sender"
                                                     isStakeClaim={true}
                                                     unstakeXrdExpected={op.unstakeXrdExpected}
-                                                    nftReceivedLabel={tt.nft_claim_label || 'NFT de Reclamo'}
+                                                    nftReceivedLabel={tt?.nft_claim_label || 'NFT de Reclamo'}
                                                     locale={locale}
                                                 />
                                             </div>
@@ -113,7 +113,7 @@ export function UnstakeAssetCard({
                 <div className="flex-1 p-3 bg-green-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
-                        {tt.to_address || 'Destination (Received)'}
+                        {tt?.to_address || 'Destination (Received)'}
                     </h5>
                     <div className="space-y-2">
 
@@ -133,9 +133,9 @@ export function UnstakeAssetCard({
                                     copiedAddress={copiedAddress}
                                     network={network}
                                     locale={locale}
-                                    rightLabel={tt.nft_delivered_label || 'NFT Entregado'}
+                                    rightLabel={tt?.nft_delivered_label || 'NFT Entregado'}
                                     rightContent={
-                                        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-black" title={tt.claim_nft_presented_tooltip}>
+                                        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-black" title={tt?.claim_nft_presented_tooltip}>
                                             <IconBolt className="w-4 h-4" />
                                             <span className="text-base tabular-nums">1</span>
                                             <span className="text-xs font-semibold opacity-70">NFT</span>

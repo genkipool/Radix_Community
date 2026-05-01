@@ -21,7 +21,7 @@ interface AccountSummaryTabProps {
     entityName: string | null | undefined;
     iconUrl: string | null | undefined;
     getMeta: (key: string) => string;
-    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict };
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
@@ -274,7 +274,7 @@ export function AccountSummaryTab({
                 )}
                 <div className="min-w-0">
                     <p className="font-bold text-sm text-[var(--color-text-main)] truncate">
-                        {entityName || tt.account_summary?.account || 'Account'}
+                        {entityName || tt?.account_summary?.account || 'Account'}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
@@ -285,7 +285,7 @@ export function AccountSummaryTab({
                                 onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                                 onPointerEnter={() => prefetchAccountRewards(address)}
                                 className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                                title={tt.account_summary?.download_rewards_tooltip || 'Download Rewards'}
+                                title={tt?.account_summary?.download_rewards_tooltip || 'Download Rewards'}
                             >
                                 <Download className="w-3 h-3" />
                             </button>
@@ -308,11 +308,11 @@ export function AccountSummaryTab({
 
             {/* Principal Balance */}
             <div>
-                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.principal_balance || 'Principal Balance'}</h4>
+                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt?.account_summary?.principal_balance || 'Principal Balance'}</h4>
                 {!isBadge ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                         <BalanceCard
-                            title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
+                            title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                             amount={xrdAmount}
                             symbol="XRD"
                             valueColor="text-green-500 dark:text-green-400"
@@ -320,7 +320,7 @@ export function AccountSummaryTab({
                             locale={locale}
                         />
                         <BalanceCard
-                            title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
+                            title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
                             amount={String(totalLsuAmount)}
                             symbol="LSU"
                             valueColor="text-blue-500 dark:text-blue-400"
@@ -329,7 +329,7 @@ export function AccountSummaryTab({
                             rawFiatAmount={totalLsuXrdEquivalent}
                         />
                         <BalanceCard
-                            title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
+                            title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
                             amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                             symbol="XRD"
                             valueColor="text-[var(--color-text-main)]"
@@ -337,7 +337,7 @@ export function AccountSummaryTab({
                             locale={locale}
                         />
                         <BalanceCard
-                            title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                            title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
                             amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                             symbol="XRD"
                             valueColor="text-orange-500"
@@ -345,7 +345,7 @@ export function AccountSummaryTab({
                             locale={locale}
                         />
                         <BalanceCard
-                            title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
+                            title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
                             amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                             symbol="XRD"
                             valueColor="text-green-500"
@@ -357,7 +357,7 @@ export function AccountSummaryTab({
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <BalanceCard
-                                title={tt.account_summary?.total_xrd || 'TOTAL XRD'}
+                                title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                                 amount={xrdAmount}
                                 symbol="XRD"
                                 valueColor="text-green-500 dark:text-green-400"
@@ -365,7 +365,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt.account_summary?.total_lsu || 'TOTAL LSU'}
+                                title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
                                 amount={String(totalLsuAmount)}
                                 symbol="LSU"
                                 valueColor="text-blue-500 dark:text-blue-400"
@@ -376,7 +376,7 @@ export function AccountSummaryTab({
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <BalanceCard
-                                title={tt.account_summary?.stake_xrd || 'STAKE XRD'}
+                                title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-text-main)]"
@@ -384,7 +384,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                 symbol="XRD"
                                 valueColor="text-orange-500"
@@ -392,7 +392,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                                 symbol="XRD"
                                 valueColor="text-green-500"
@@ -407,7 +407,7 @@ export function AccountSummaryTab({
             {/* Staking */}
             {stakingRows.length > 0 && (
                 <div>
-                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt.account_summary?.staking || 'Staking'}</h4>
+                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt?.account_summary?.staking || 'Staking'}</h4>
                     <div className="space-y-3">
                         {stakingRows.map((row) => (
                             <div key={row.validatorAddress} className="py-5 border-b border-[var(--color-card-border)] last:border-0">
@@ -426,15 +426,15 @@ export function AccountSummaryTab({
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.stake_xrd || 'Stake XRD'}</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'Stake XRD'}</span>
                                         <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
                                         <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatNumber(row.xrdInUnstake, 2, locale) : '0'} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt.account_summary?.claim_xrd || 'Claim XRD'}</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'Claim XRD'}</span>
                                         <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatNumber(row.xrdInClaim, 2, locale) : '0'} XRD</span>
                                     </div>
                                 </div>
@@ -450,7 +450,7 @@ export function AccountSummaryTab({
 
             {burnedNfts.length > 0 && (
                 <AssetSection
-                    title={`${tt.account_summary?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
+                    title={`${tt?.account_summary?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
                     items={burnedNfts}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}
@@ -460,7 +460,7 @@ export function AccountSummaryTab({
                 />
             )}
 
-            <AssetSection title={`${tt.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {/* Account Rewards CSV Modal */}
             {isCsvModalOpen && (
@@ -469,7 +469,7 @@ export function AccountSummaryTab({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={locale}
-                    tt={tt.account_summary}
+                    tt={tt?.account_summary}
                     marketData={marketData}
                 />
             )}

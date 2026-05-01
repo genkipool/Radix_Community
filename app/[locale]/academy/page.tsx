@@ -1,5 +1,6 @@
 import AcademyClient from '@/features/academy/AcademyClient';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
@@ -10,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['academy']);
   return {
     title: t.seo.academy.title,
     description: t.seo.academy.description,
@@ -39,9 +40,14 @@ interface AcademyPageProps {
 export default async function AcademyPage({ params }: AcademyPageProps) {
   "use cache";
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['academy']);
 
   // Pass the resolved dictionary to the client component so all sections
   // are present in the server-rendered HTML (SEO + FCP improvement).
-  return <AcademyClient t={t} />;
+  return (
+    <>
+      <DictionaryEnricher partial={t} />
+      <AcademyClient t={t} />
+    </>
+  );
 }

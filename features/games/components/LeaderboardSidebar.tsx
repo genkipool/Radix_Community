@@ -9,6 +9,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import TournamentModal from './TournamentModal';
 import { formatUSD } from '@/features/games/utils/xrdPrice';
 import { useXrdPrice } from '../hooks/useXrdPrice';
+import type { Dictionary } from '@/i18n';
 
 /* ─── Constants ──────────────────────────────────────────────────── */
 const TOTAL_PARTICIPANTS = 12_847;
@@ -79,9 +80,9 @@ function XRDChipIcon() {
 
 /* ─── Main component ─────────────────────────────────────────────── */
 
-export default function LeaderboardSidebar({ gameTitle }: LeaderboardSidebarProps) {
+export default function LeaderboardSidebar({ gameTitle, dictionary }: LeaderboardSidebarProps & { dictionary?: Partial<Dictionary> }) {
     const { t: dict } = useLanguage();
-    const t = (dict.games.leaderboard ?? {}) as unknown as Record<string, string>;
+    const t = (dictionary?.games?.leaderboard || dict?.games?.leaderboard || {}) as unknown as Record<string, string>;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);

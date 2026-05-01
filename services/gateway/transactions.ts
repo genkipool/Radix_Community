@@ -19,8 +19,9 @@ import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
-import type { TransactionInfo, StakeHistoryEntry, ValidatorOp } from '@/types/radix';
+import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
+import { resolveProposerFromReceipt, type ReceiptLike } from '@/features/dashboard/explorador/utils/proposerUtils';
 import { after } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { isValidAddressForNetwork } from '@/utils/apiValidation';
@@ -263,61 +264,12 @@ function parseValidatorOpsFromEvents(events: GatewayEvent[]): ValidatorOp[] | un
 // ─────────────────────────────────────────────────────────────────────────────
 // resolveProposerInfoFromGatewayItem
 //
-// Extracts proposer validator index directly from the gateway items
-// when receipt_state_changes and receipt_fee_destination are opted in.
+// Delegates to the shared algorithm in proposerUtils.ts.
+// Converts the result to undefined (instead of null) to match the optional
+// TransactionInfo.proposerInfo field convention.
 // ─────────────────────────────────────────────────────────────────────────────
 function resolveProposerInfoFromGatewayItem(item: GatewayItem): { validatorIndex: number; rank: number; rewardAmount: string } | undefined {
-    if (!item.receipt?.fee_destination) return undefined;
-
-    const fd = item.receipt.fee_destination;
-    const toProposerRaw = fd.to_proposer;
-    // to_proposer can be a simple string depending on Gateway version
-    const toProposerAmtStr = typeof toProposerRaw === 'string'
-        ? toProposerRaw
-        : (toProposerRaw as { xrd_amount?: string } | undefined)?.xrd_amount;
-
-    if (!toProposerAmtStr || toProposerAmtStr === '0') return undefined;
-    const targetDelta = parseFloat(toProposerAmtStr);
-
-    const substates = item.receipt.state_updates?.updated_substates as Array<{
-        new_value?: { substate_data?: { value?: { proposer_rewards?: Array<{ xrd_amount: string; validator_index: { index: number } }> } } };
-        previous_value?: { substate_data?: { value?: { proposer_rewards?: Array<{ xrd_amount: string; validator_index: { index: number } }> } } };
-    }> | undefined;
-
-    if (!substates) return undefined;
-
-    let newRewards: Array<{ xrd_amount: string; validator_index: { index: number } }> = [];
-    let previousRewards: Array<{ xrd_amount: string; validator_index: { index: number } }> = [];
-
-    for (const entry of substates) {
-        const nr = entry?.new_value?.substate_data?.value?.proposer_rewards;
-        if (Array.isArray(nr) && nr.length > 0) {
-            newRewards = nr;
-            previousRewards = entry?.previous_value?.substate_data?.value?.proposer_rewards ?? [];
-            break;
-        }
-    }
-
-    if (newRewards.length === 0) return undefined;
-
-    for (let i = 0; i < newRewards.length; i++) {
-        const nr = newRewards[i];
-        const pr = previousRewards[i];
-        const newAmt = parseFloat(nr.xrd_amount);
-        const prevAmt = pr ? parseFloat(pr.xrd_amount) : 0;
-        const delta = newAmt - prevAmt;
-
-        if (Math.abs(delta - targetDelta) < 0.000000000001) {
-            const validatorIndex = nr.validator_index.index;
-            return {
-                validatorIndex,
-                rank: validatorIndex + 1,
-                rewardAmount: toProposerAmtStr,
-            };
-        }
-    }
-
-    return undefined;
+    return resolveProposerFromReceipt(item.receipt as ReceiptLike) ?? undefined;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -642,6 +594,78 @@ export async function enrichTransactionsMetadata(
         }
         return tx;
     });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// enrichTransactionsProposerInfo
+//
+// Enriches transactions with proposer display data (name, iconUrl, address)
+// by reading the validator list from Redis backup. This centralizes the
+// enrichment at the service layer so page.tsx does not need to rebuild a
+// lookup map on every request.
+//
+// Transactions that already have a populated `proposerInfo.name` are skipped.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function enrichTransactionsProposerInfo(
+    transactions: TransactionInfo[],
+    network: Network = 'mainnet',
+): Promise<TransactionInfo[]> {
+    if (!transactions || transactions.length === 0) return transactions;
+
+    // Only proceed if at least one tx has proposerInfo without a name
+    const needsEnrichment = transactions.some(tx => tx.proposerInfo && !tx.proposerInfo.name);
+    if (!needsEnrichment) return transactions;
+
+    const redis = getRedisClient();
+    if (!redis) return transactions;
+
+    try {
+        const backupKey = `radix_validators_${network}_backup`;
+        const validatorData = await redis.get<{
+            validators: Validator[];
+        }>(backupKey);
+
+        if (!validatorData?.validators?.length) return transactions;
+
+        // Build a fast lookup map: rank → { name, iconUrl, address }
+        const proposerLookup = new Map<number, { name: string; iconUrl: string; address: string }>();
+        for (const v of validatorData.validators) {
+            if (v.rank > 0) {
+                proposerLookup.set(v.rank, {
+                    name: v.name,
+                    iconUrl: v.iconUrl || '',
+                    address: v.address,
+                });
+            }
+        }
+
+        let enrichedCount = 0;
+        transactions.forEach(tx => {
+            if (tx.proposerInfo && !tx.proposerInfo.name) {
+                const entry = proposerLookup.get(tx.proposerInfo.rank);
+                if (entry) {
+                    tx.proposerInfo.name = entry.name;
+                    tx.proposerInfo.iconUrl = entry.iconUrl;
+                    tx.proposerInfo.address = entry.address;
+                    enrichedCount++;
+                }
+            }
+        });
+
+        if (enrichedCount > 0) {
+            logger.info(
+                { network, enrichedCount },
+                '[TransactionsService] Proposer info enriched from Redis validator backup',
+            );
+        }
+    } catch (error) {
+        logger.error(
+            { err: error, network },
+            '[TransactionsService] Failed to enrich proposer info — non-blocking',
+        );
+    }
+
+    return transactions;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1321,7 +1345,9 @@ async function getRecentTransactionsFromDataCache(
     const isTip = !cursor;
     const rawResult = await fetchRecentTransactions(cursor, limit, network);
     const result = isTip 
-        ? await enrichTransactionsMetadata(rawResult.transactions, network).then(enriched => ({ ...rawResult, transactions: enriched }))
+        ? await enrichTransactionsMetadata(rawResult.transactions, network)
+            .then(enriched => enrichTransactionsProposerInfo(enriched, network))
+            .then(enriched => ({ ...rawResult, transactions: enriched }))
         : rawResult;
 
     // Seed Storage for future requests (tip only)
@@ -1398,6 +1424,7 @@ export async function getRecentTransactionsCached(
                                 logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
                                 const rawResult = await fetchRecentTransactions(cursor, actualLimit, network);
                                 const freshResult = await enrichTransactionsMetadata(rawResult.transactions, network)
+                                    .then(enriched => enrichTransactionsProposerInfo(enriched, network))
                                     .then(enriched => ({ ...rawResult, transactions: enriched }));
 
                                 if (freshResult.transactions && freshResult.transactions.length > 0) {

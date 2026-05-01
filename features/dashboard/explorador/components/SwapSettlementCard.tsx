@@ -20,7 +20,7 @@ interface SwapSettlementCardProps {
     routingHops: SwapHop[];
     balanceChanges: BalanceChanges | undefined;
     initiators: Set<string>;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -46,7 +46,7 @@ function CopyBtn({ addr, onCopy, copiedAddress }: { addr: string; onCopy: (v: st
 /* ── Token column (sold/received) ── */
 function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onResourceClick, network, locale }: {
     resource: string; amount: string; side: 'sold' | 'received';
-    tt: SwapSettlementCardProps['tt']; onCopy: (v: string) => void; copiedAddress: string | null;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>; onCopy: (v: string) => void; copiedAddress: string | null;
     onResourceClick?: (a: string) => void; network: Network; locale: string;
 }) {
     const meta = useEntityData(resource, network);
@@ -62,7 +62,7 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
     return (
         <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
             <span className={`text-[9px] uppercase font-black tracking-widest text-${accent}-500 opacity-80`}>
-                {isSold ? (tt.swap_sold_label || 'Token Sold') : (tt.swap_received_label || 'Token Received')}
+                {isSold ? (tt?.swap_sold_label || 'Token Sold') : (tt?.swap_received_label || 'Token Received')}
             </span>
             <div className={`w-10 h-10 rounded-full border-2 border-${accent}-500/40 bg-${accent}-500/10 flex items-center justify-center shrink-0 shadow-sm`}>
                 {iconUrl ? (
@@ -105,7 +105,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
     feeEntries: { entity_address: string; resource_address: string; balance_change: string }[];
     initiatorAddrs: string[];
     network: Network;
-    tt: SwapSettlementCardProps['tt'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     tx: TransactionInfo;
     details: TransactionDetails;
 }) {
@@ -167,7 +167,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
 /* ── Balance change row ── */
 function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAddress, onResourceClick, network, locale, tt }: {
     change: FungibleChange; isUser: boolean; onCopy: (v: string) => void; copiedAddress: string | null;
-    onResourceClick?: (a: string) => void; network: Network; locale: string; tt: SwapSettlementCardProps['tt'];
+    onResourceClick?: (a: string) => void; network: Network; locale: string; tt?: Partial<TranslationsT['dashboard']['transactions']>;
 }) {
     const entityMeta = useEntityData(sanitizeText(change.entity_address), network);
     const resourceMeta = useEntityData(sanitizeText(change.resource_address), network);
@@ -181,7 +181,7 @@ function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAdd
     // Determine role
     let role = 'DEX';
     let badgeClass = 'bg-white/5 text-[var(--color-text-muted)] border-[var(--color-card-border)]';
-    if (isUser) { role = tt.swap_account_label || 'Account'; badgeClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20'; }
+    if (isUser) { role = tt?.swap_account_label || 'Account'; badgeClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20'; }
     else if (entityClean.includes('consensusmanager')) { role = 'Validators'; badgeClass = 'bg-violet-500/10 text-violet-400 border-violet-500/20'; }
     else if (entityClean.startsWith('resource_')) { role = 'Burn'; badgeClass = 'bg-violet-500/10 text-violet-400 border-violet-500/20'; }
 
@@ -250,7 +250,7 @@ export function SwapSettlementCard({
                 {/* ── Header ── */}
                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
                     <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
-                    {tt.swap_settlement_title || 'DEX Settlement'}
+                    {tt?.swap_settlement_title || 'DEX Settlement'}
                 </h3>
 
                 {/* ── Section 1: Token Flow + Swap Details side-by-side ── */}
@@ -274,7 +274,7 @@ export function SwapSettlementCard({
                         </div>
                         {/* Rate */}
                         <div className="mt-4 pt-3 border-t border-[var(--color-card-border)] flex items-center justify-center gap-2">
-                            <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">{tt.swap_rate_label || 'Rate'}:</span>
+                            <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">{tt?.swap_rate_label || 'Rate'}:</span>
                             <span className="text-[11px] font-mono font-bold text-[var(--color-text-main)]">1 {soldSymbol} = {fmtRate} {receivedSymbol}</span>
                         </div>
                     </div>
@@ -283,24 +283,24 @@ export function SwapSettlementCard({
                     <div className="lg:w-[240px] shrink-0 bg-[var(--color-bg)]/50 rounded-lg border border-[var(--color-card-border)] overflow-hidden self-start">
                         <h4 className="px-3 py-2 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-1.5">
                             <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
-                            {tt.swap_details_label || 'Swap Details'}
+                            {tt?.swap_details_label || 'Swap Details'}
                         </h4>
                         <div className="divide-y divide-[var(--color-card-border)]">
                             <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt.swap_sold_label || 'Sold'}</span>
+                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_sold_label || 'Sold'}</span>
                                 <span className="text-[10px] font-mono font-bold text-rose-500 text-right truncate">−{fmtSold} {soldSymbol}</span>
                             </div>
                             <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt.swap_received_label || 'Received'}</span>
+                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_received_label || 'Received'}</span>
                                 <span className="text-[10px] font-mono font-bold text-emerald-500 text-right truncate">+{fmtReceived} {receivedSymbol}</span>
                             </div>
                             <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt.swap_rate_label || 'Rate'}</span>
+                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_rate_label || 'Rate'}</span>
                                 <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)] text-right">1:{fmtRate}</span>
                             </div>
                             {routingHops.length > 1 && (
                                 <div className="flex justify-between px-3 py-1.5 gap-2">
-                                    <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt.swap_hops_label || 'Hops'}</span>
+                                    <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_hops_label || 'Hops'}</span>
                                     <span className="text-[10px] font-mono font-bold text-[var(--color-accent)]">{routingHops.length}</span>
                                 </div>
                             )}
@@ -329,16 +329,16 @@ export function SwapSettlementCard({
                         <div className="bg-[var(--color-bg)]/50 rounded-lg border border-[var(--color-card-border)] overflow-hidden">
                             <h4 className="px-3 py-2 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-1.5">
                                 <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
-                                {tt.swap_settlements_label || 'Balance Changes'}
+                                {tt?.swap_settlements_label || 'Balance Changes'}
                             </h4>
                             <div className="overflow-x-auto">
                                 <table className="w-full border-collapse text-[10px]">
                                     <thead>
                                         <tr className="border-b border-[var(--color-card-border)]">
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt.swap_entity_label || 'Entity'}</th>
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt.swap_role_label || 'Role'}</th>
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt.swap_asset_label || 'Asset'}</th>
-                                            <th className="px-3 py-2 text-right text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt.swap_variation_label || 'Net'}</th>
+                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_entity_label || 'Entity'}</th>
+                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_role_label || 'Role'}</th>
+                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_asset_label || 'Asset'}</th>
+                                            <th className="px-3 py-2 text-right text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_variation_label || 'Net'}</th>
                                         </tr>
                                     </thead>
                                     <tbody>

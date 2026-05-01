@@ -13,36 +13,36 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
     const items = [
         {
             icon: <Coins className="w-6 h-6 text-[var(--color-primary)]" />,
-            badge: t.aprendizaje.cards.staking.badge,
-            title: t.aprendizaje.cards.staking.title,
-            desc: t.aprendizaje.cards.staking.desc,
+            badge: t.aprendizaje?.cards?.staking?.badge,
+            title: t.aprendizaje?.cards?.staking?.title,
+            desc: t.aprendizaje?.cards?.staking?.desc,
             link: `/${language}/dashboard`,
-            linkText: t.aprendizaje.cards.staking.linkText,
+            linkText: t.aprendizaje?.cards?.staking?.linkText,
             isInternal: true,
         },
         {
             icon: <Droplets className="w-6 h-6 text-[var(--color-secondary)]" />,
-            badge: t.aprendizaje.cards.liquidez.badge,
-            title: t.aprendizaje.cards.liquidez.title,
-            desc: t.aprendizaje.cards.liquidez.desc,
+            badge: t.aprendizaje?.cards?.liquidez?.badge,
+            title: t.aprendizaje?.cards?.liquidez?.title,
+            desc: t.aprendizaje?.cards?.liquidez?.desc,
             link: 'https://ociswap.com',
-            linkText: t.aprendizaje.cards.liquidez.linkText,
+            linkText: t.aprendizaje?.cards?.liquidez?.linkText,
         },
         {
             icon: <Gamepad2 className="w-6 h-6 text-[var(--color-accent)]" />,
-            badge: t.aprendizaje.cards.playground.badge,
-            title: t.aprendizaje.cards.playground.title,
-            desc: t.aprendizaje.cards.playground.desc,
+            badge: t.aprendizaje?.cards?.playground?.badge,
+            title: t.aprendizaje?.cards?.playground?.title,
+            desc: t.aprendizaje?.cards?.playground?.desc,
             link: 'https://gumball-club.radixdlt.com/',
-            linkText: t.aprendizaje.cards.playground.linkText,
+            linkText: t.aprendizaje?.cards?.playground?.linkText,
         },
         {
             icon: <Sparkles className="w-6 h-6 text-[var(--color-primary)]" />,
-            badge: t.aprendizaje.cards.onboarding.badge,
-            title: t.aprendizaje.cards.onboarding.title,
-            desc: t.aprendizaje.cards.onboarding.desc,
+            badge: t.aprendizaje?.cards?.onboarding?.badge,
+            title: t.aprendizaje?.cards?.onboarding?.title,
+            desc: t.aprendizaje?.cards?.onboarding?.desc,
             link: 'https://radquest.io/home/basic',
-            linkText: t.aprendizaje.cards.onboarding.linkText,
+            linkText: t.aprendizaje?.cards?.onboarding?.linkText,
         },
     ];
 
@@ -52,10 +52,10 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                 <SectionHeader
                     icon={<GraduationCap className="w-4 h-4 shrink-0" />}
-                    badge={t.aprendizaje.label}
+                    badge={t.aprendizaje?.label}
                     badgeClassName="bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-primary)]"
-                    title={t.aprendizaje.h2}
-                    subtitle={t.aprendizaje.sub}
+                    title={t.aprendizaje?.h2}
+                    subtitle={t.aprendizaje?.sub}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">

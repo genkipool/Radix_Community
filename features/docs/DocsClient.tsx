@@ -62,6 +62,7 @@ export default function DocsClient({
     initialAutoCollapse = false,
     initialExpandedTopics = '',
     initialUserDocMeta = [],
+    dictionary,
 }: DocsClientProps) {
 
     /* ── Fast URL Sync for selection + editor ── */
@@ -185,6 +186,7 @@ export default function DocsClient({
             style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingTop: '80px' }}
         >
             <DocsSidebar
+                dictionary={dictionary}
                 selectedDocId={selectedDocId}
                 onSelectDoc={handleSelectDoc}
                 expandedTopics={expandedTopics}
@@ -219,6 +221,7 @@ export default function DocsClient({
                     <>
                         <div className="no-print">
                             <FeaturedDocsHero
+                                dictionary={dictionary}
                                 collapsed={selectedDocId !== null}
                                 onSelectDoc={handleSelectDoc}
                             />

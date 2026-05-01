@@ -1,5 +1,6 @@
 import BlogClient from '@/features/blog/BlogClient';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { BlogPost } from '@/features/blog/types';
 import { buildAlternates } from '@/lib/seo';
 import type { Metadata } from 'next';
@@ -10,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['blog']);
   return {
     title: t.seo.blog.title,
     description: t.seo.blog.description,
@@ -28,7 +29,7 @@ export async function generateStaticParams() {
 
 const getBlogPosts = async (locale: string): Promise<BlogPost[]> => {
   "use cache";
-  const dictionary = await getDictionary(locale as Locale);
+  const dictionary = await getFeatureDictionary(locale as Locale, ['blog']);
   return dictionary.blog?.posts ?? [];
 };
 
@@ -38,6 +39,12 @@ interface BlogPageProps {
 
 export default async function BlogPage({ params }: BlogPageProps) {
     const { locale } = await params;
+    const t = await getFeatureDictionary(locale as Locale, ['blog']);
     const initialPosts = await getBlogPosts(locale);
-    return <BlogClient initialPosts={initialPosts} />;
+    return (
+        <>
+            <DictionaryEnricher partial={t} />
+            <BlogClient initialPosts={initialPosts} dictionary={t} />
+        </>
+    );
 }

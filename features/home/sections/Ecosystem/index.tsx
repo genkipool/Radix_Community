@@ -24,7 +24,7 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
 
   const phases = Array.from({ length: 32 }, (_, i) => {
     const n = i + 1;
-    const eco = t.ecosistema as unknown as Record<string, string>;
+    const eco = (t.ecosistema || {}) as unknown as Record<string, string>;
     return {
       num: n,
       title: eco[`phase${n}_title`] ?? '',
@@ -36,7 +36,9 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
   // Extract unique logical grouped tags (excluding "All" for TagFilterBar)
   const logicalTags = (() => {
     const tags = new Set<string>();
-    phases.forEach(p => tags.add(p.tag));
+    phases.forEach(p => {
+      if (p.tag) tags.add(p.tag);
+    });
     return Array.from(tags);
   })();
 
@@ -57,9 +59,9 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
       {/* Increased padding / narrower wrapper by replacing max-w-[1200px] with max-w-[1400px] and increasing px */}
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          title={t.ecosistema.h2a}
-          titleAccent={t.ecosistema.h2b}
-          subtitle={t.ecosistema.sub}
+          title={t.ecosistema?.h2a}
+          titleAccent={t.ecosistema?.h2b}
+          subtitle={t.ecosistema?.sub}
         />
         <ScrollReveal
           from={{ opacity: 0, y: 10 }}
@@ -70,7 +72,7 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
             tags={logicalTags}
             activeTag={activeTag === "All" ? null : activeTag}
             onSelect={(tag) => setActiveTag(tag || "All")}
-            allLabel={t.ecosistema.all}
+            allLabel={t.ecosistema?.all}
           />
         </ScrollReveal>
 

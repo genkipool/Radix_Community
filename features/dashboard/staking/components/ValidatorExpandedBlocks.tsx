@@ -26,8 +26,8 @@ export const ProfileBlock = ({
     validator, dt, t, onCopy, copiedAddress, className = '', isModal, noTruncate = false, onDownloadCsv,
 }: {
     validator: Validator;
-    dt?: DashboardDict;
-    t?: TranslationsT;
+    dt?: Partial<DashboardDict>;
+    t?: Partial<TranslationsT>;
     onCopy: (a: string) => void;
     copiedAddress: string | null;
     className?: string;
@@ -153,7 +153,7 @@ export const DelegationBlock = ({
     validator, dt, className = '', locale,
 }: {
     validator: Validator;
-    dt?: DashboardDict;
+    dt?: Partial<DashboardDict>;
     className?: string;
     locale?: string;
 }) => (
@@ -177,7 +177,7 @@ export const PerformanceBlock = ({
     validator, dt, live, className = '', locale,
 }: {
     validator: Validator;
-    dt?: DashboardDict;
+    dt?: Partial<DashboardDict>;
     live: LiveProposalsResult;
     className?: string;
     locale?: string;
@@ -215,7 +215,7 @@ export const EvolutionBlock = ({
 }: {
     loading: boolean;
     data: { date: string; totalStake: number }[];
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     locale: string;
     className?: string;
 }) => (
@@ -244,7 +244,7 @@ export const ActivityBlock = ({
     loading: boolean;
     allHistory: StakeHistoryEntry[];
     thirtyDays: StakeHistoryEntry[];
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     locale: string;
     className?: string;
 }) => (
@@ -274,7 +274,7 @@ export const ActivityBlock = ({
 ───────────────────────────────────────── */
 interface HistoryBlockProps {
     live: LiveProposalsResult;
-    dt?: DashboardDict;
+    dt?: Partial<DashboardDict>;
     className?: string;
     epochRewards?: Record<number, { fee: number; pool: number }>;
     validatorAddress?: string;

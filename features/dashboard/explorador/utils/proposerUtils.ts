@@ -1,7 +1,7 @@
 /**
  * proposerUtils.ts
  *
- * Extracts the proposer validator index from a committed transaction receipt.
+ * Unified proposer resolution for Radix transactions.
  *
  * The Radix Gateway API returns `proposer_rewards` inside the consensus manager
  * state update substate at:
@@ -12,31 +12,37 @@
  * to identify WHICH validator proposed this round.
  *
  * The validator's index is 0-based in the active set, so rank = index + 1.
+ *
+ * This module exports a single shared algorithm (`resolveProposerFromReceipt`)
+ * consumed by both:
+ *   - `resolveProposerInfo()` → client-side detail views (TransactionDetails)
+ *   - `transactions.ts`       → server-side stream parsing (GatewayItem)
  */
 
 import type { TransactionDetails } from '@/features/dashboard/types';
 import type { Validator } from '@/types/radix';
 
-/* ── Internal types for the raw substate structure ────────────────── */
-interface ProposerRewardEntry {
+/* ── Shared types for the raw substate structure ─────────────────── */
+export interface ProposerRewardEntry {
     xrd_amount: string;
     validator_index: { index: number };
-}
-
-interface SubstateValue {
-    proposer_rewards?: ProposerRewardEntry[];
-    [key: string]: unknown;
 }
 
 interface UpdatedSubstate {
     new_value?: {
         substate_data?: {
-            value?: SubstateValue;
+            value?: {
+                proposer_rewards?: ProposerRewardEntry[];
+                [key: string]: unknown;
+            };
         };
     };
     previous_value?: {
         substate_data?: {
-            value?: SubstateValue;
+            value?: {
+                proposer_rewards?: ProposerRewardEntry[];
+                [key: string]: unknown;
+            };
         };
     };
     [key: string]: unknown;
@@ -56,62 +62,68 @@ export interface ProposerInfo {
     address?: string;
 }
 
-/**
- * Extracts the `proposer_rewards` arrays (new and previous) from the
- * consensus manager state update inside the transaction receipt.
- */
-function extractProposerRewardsData(details: TransactionDetails): {
-    newRewards: ProposerRewardEntry[],
-    previousRewards: ProposerRewardEntry[]
-} {
-    const substates = (details.receipt as Record<string, unknown>)
-        ?.state_updates as Record<string, unknown> | undefined;
-    const updated = (substates?.updated_substates as UpdatedSubstate[]) ?? [];
-
-    for (const entry of updated) {
-        const newRewards = entry?.new_value?.substate_data?.value?.proposer_rewards;
-        if (Array.isArray(newRewards) && newRewards.length > 0) {
-            const previousRewards = entry?.previous_value?.substate_data?.value?.proposer_rewards ?? [];
-            return { newRewards, previousRewards };
-        }
-    }
-    return { newRewards: [], previousRewards: [] };
+/* ── Minimal receipt shape accepted by the shared algorithm ───────── */
+export interface ReceiptLike {
+    fee_destination?: {
+        to_proposer?: string | { xrd_amount?: string };
+        toProposer?: string | { xrd_amount?: string };
+    };
+    state_updates?: {
+        updated_substates?: UpdatedSubstate[];
+    };
 }
 
-/**
- * Resolves the proposer validator for a given transaction.
- *
- * Algorithm (Refined):
- * 1. Read `fee_destination.to_proposer` (the XRD reward expected for this tx).
- * 2. Extract both `new_value` and `previous_value` rewards for all validators.
- * 3. For each index `i`, calculate the increase (delta):
- *    delta = newRewards[i].xrd_amount - (previousRewards[i]?.xrd_amount || 0)
- * 4. Match the delta against `to_proposer` to identify the proposer.
- *
- * Returns `null` if the proposer cannot be determined.
- */
-export function resolveProposerInfo(details: TransactionDetails | null | undefined): ProposerInfo | null {
-    if (!details?.receipt) return null;
+/* ── Constants ───────────────────────────────────────────────────── */
+const DELTA_EPSILON = 0.000000000001;
 
-    // Step 1: Get the to_proposer amount from fee_destination
-    const fd = details.receipt.fee_destination;
-    if (!fd) return null;
+// ─────────────────────────────────────────────────────────────────────────────
+// resolveProposerFromReceipt  (SHARED CORE ALGORITHM)
+//
+// Works on any object with `fee_destination` and `state_updates.updated_substates`.
+// Both GatewayItem.receipt and TransactionDetails.receipt satisfy this shape.
+//
+// Algorithm:
+// 1. Read `fee_destination.to_proposer` (the XRD reward expected for this tx).
+// 2. Extract both `new_value` and `previous_value` rewards for all validators.
+// 3. For each index `i`, calculate the increase (delta):
+//    delta = newRewards[i].xrd_amount - (previousRewards[i]?.xrd_amount || 0)
+// 4. Match the delta against `to_proposer` to identify the proposer.
+//
+// Returns `null` if the proposer cannot be determined.
+// ─────────────────────────────────────────────────────────────────────────────
+export function resolveProposerFromReceipt(
+    receipt: ReceiptLike | null | undefined,
+): ProposerInfo | null {
+    if (!receipt?.fee_destination) return null;
 
+    const fd = receipt.fee_destination;
     const toProposerRaw = fd.to_proposer ?? fd.toProposer;
     const toProposerAmtStr = typeof toProposerRaw === 'string'
         ? toProposerRaw
-        : (toProposerRaw as Record<string, string> | undefined)?.xrd_amount;
+        : (toProposerRaw as { xrd_amount?: string } | undefined)?.xrd_amount;
 
     if (!toProposerAmtStr || toProposerAmtStr === '0') return null;
 
-    // We use numeric comparison for the delta matching
     const targetDelta = parseFloat(toProposerAmtStr);
 
-    // Step 2: Extract proposer_rewards (new and previous)
-    const { newRewards, previousRewards } = extractProposerRewardsData(details);
+    // Extract proposer_rewards (new and previous)
+    const updated = (receipt.state_updates?.updated_substates as UpdatedSubstate[]) ?? [];
+
+    let newRewards: ProposerRewardEntry[] = [];
+    let previousRewards: ProposerRewardEntry[] = [];
+
+    for (const entry of updated) {
+        const nr = entry?.new_value?.substate_data?.value?.proposer_rewards;
+        if (Array.isArray(nr) && nr.length > 0) {
+            newRewards = nr;
+            previousRewards = entry?.previous_value?.substate_data?.value?.proposer_rewards ?? [];
+            break;
+        }
+    }
+
     if (newRewards.length === 0) return null;
 
-    // Step 3: Identify the index where the reward increased by the targetDelta
+    // Identify the index where the reward increased by the targetDelta
     for (let i = 0; i < newRewards.length; i++) {
         const nr = newRewards[i];
         const pr = previousRewards[i];
@@ -120,9 +132,7 @@ export function resolveProposerInfo(details: TransactionDetails | null | undefin
         const prevAmt = pr ? parseFloat(pr.xrd_amount) : 0;
         const delta = newAmt - prevAmt;
 
-        // Use a small epsilon for float comparison to be safe, 
-        // though rewards are usually exact strings.
-        if (Math.abs(delta - targetDelta) < 0.000000000001) {
+        if (Math.abs(delta - targetDelta) < DELTA_EPSILON) {
             const validatorIndex = nr.validator_index.index;
             return {
                 validatorIndex,
@@ -133,6 +143,19 @@ export function resolveProposerInfo(details: TransactionDetails | null | undefin
     }
 
     return null;
+}
+
+/**
+ * Resolves the proposer validator for a given transaction detail object.
+ *
+ * Thin wrapper over `resolveProposerFromReceipt` that accepts the
+ * full `TransactionDetails` type used by client-side detail views.
+ */
+export function resolveProposerInfo(
+    details: TransactionDetails | null | undefined,
+): ProposerInfo | null {
+    if (!details?.receipt) return null;
+    return resolveProposerFromReceipt(details.receipt as ReceiptLike);
 }
 
 /**

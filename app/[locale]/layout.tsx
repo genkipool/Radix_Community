@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 import '@/app/globals.css';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
-import { getDictionary, Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, Locale } from '@/i18n/dictionaries';
 import { buildAlternates } from '@/lib/seo';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
@@ -24,7 +24,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, []);
   return {
     title: t.seo.root.title,
     description: t.seo.root.description,
@@ -62,7 +62,7 @@ export default async function RootLayout({
 }) {
   const resolvedParams = await params;
   const locale = resolvedParams.locale as Locale;
-  const dictionary = await getDictionary(locale);
+  const dictionary = await getFeatureDictionary(locale, []);
   const cookieStore = await cookies();
   const theme = parseTheme(cookieStore.get('theme')?.value);
 

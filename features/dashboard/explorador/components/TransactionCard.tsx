@@ -10,7 +10,7 @@ import { usePrefetchTransactionDetails } from '../hooks/usePrefetchTx';
 import { TransactionTabs } from './TransactionTabs';
 import { Card } from '@/components/ui/Card';
 import { CopyButton } from '@/components/ui/CopyButton';
-import type { TranslationsT, TransactionDetails } from '@/features/dashboard/types';
+import type { TransactionDetails } from '@/features/dashboard/types';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { resolveProposerInfo } from '../utils/proposerUtils';
@@ -63,7 +63,7 @@ import { formatEntity } from '../../utils/entityUtils';
 import { TransactionCardProps } from '../types';
 
 const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale, marketData }: TransactionCardProps) => {
-    const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
+    const tt = t?.dashboard?.transactions;
     const isVertical = columns >= 3;
     const isCompact = columns >= 5;
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
@@ -117,7 +117,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
         </div>
     ) : null;
 
-    const statusLabel = isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed');
+    const statusLabel = isSuccess ? (tt?.success || 'Success') : (tt?.failed || 'Failed');
 
     // Middle truncation for hashes (Grid 2+)
     const truncateHash = (hash: string) => {
@@ -284,7 +284,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Stats Grid */}
                         <div className={`grid ${isCompact ? 'grid-cols-1' : (columns >= 2 && columns <= 4) ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.date_time || 'Date & Time'}</div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt?.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
                                     {new Date(tx.confirmedAt).toLocaleString(locale, {
                                         timeZone: timezone,
@@ -294,7 +294,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
                             </div>
                             <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt.epoch_round || 'Epoch/Round'}</div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt?.epoch_round || 'Epoch/Round'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
                                     Ep: {tx.epoch} / Rnd: {tx.round}
                                 </div>
@@ -304,14 +304,14 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     {tx.displayIsMint ? (
                                         <div className="flex items-center gap-1">
                                             <Landmark className="w-3 h-3" />
-                                            {tt.minting || 'Minting'}
+                                            {tt?.minting || 'Minting'}
                                         </div>
                                     ) : (
                                         <>
                                             <Coins className="w-3 h-3" />
                                             {tx.displayAmount !== undefined
-                                                ? (tt.amount || 'Amount')
-                                                : (tt.fee_paid || 'Fee Paid')}
+                                                ? (tt?.amount || 'Amount')
+                                                : (tt?.fee_paid || 'Fee Paid')}
                                         </>
                                     )}
                                 </div>
@@ -352,9 +352,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                     <div className="flex flex-col gap-0.5 border-s border-[var(--color-card-border)] ps-6 min-w-0 flex-1">
                                         <div
                                             className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold cursor-help w-fit"
-                                            title={tt.proposer_tooltip}
+                                            title={tt?.proposer_tooltip}
                                         >
-                                            {tt.proposer || 'Proposer'}
+                                            {tt?.proposer || 'Proposer'}
                                         </div>
                                         {proposerDisplay}
                                     </div>
@@ -366,9 +366,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 <div className="flex flex-col gap-0.5 min-w-0">
                                     <div
                                         className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold cursor-help w-fit"
-                                        title={tt.proposer_tooltip}
+                                        title={tt?.proposer_tooltip}
                                     >
-                                        {tt.proposer || 'Proposer'}
+                                        {tt?.proposer || 'Proposer'}
                                     </div>
                                     {proposerDisplay}
                                 </div>

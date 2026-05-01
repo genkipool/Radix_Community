@@ -89,7 +89,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-[var(--color-text-muted)] max-w-sm mb-10 leading-relaxed text-[15px] font-medium opacity-80">
-              {t.footer.desc}
+              {t.footer?.desc}
             </p>
             <div className="flex gap-5">
               {SOCIAL_LINKS.map((link, index) => (
@@ -107,8 +107,8 @@ export default function Footer() {
               ))}
               <Link
                 href="#donate"
-                aria-label={t.community.donate}
-                title={t.community.donate}
+                aria-label={t.community?.donate || 'Donate'}
+                title={t.community?.donate || 'Donate'}
                 onClick={(e) => handleLinkClick(e, '#under-construction')}
                 className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
               >
@@ -118,11 +118,11 @@ export default function Footer() {
           </div>
 
           {Object.entries(FOOTER_LINKS).map(([sectionKey, links]) => {
-            const section = t.footer[sectionKey as keyof typeof t.footer] as { title?: string } & Record<string, string>;
+            const section = (t.footer?.[sectionKey as keyof typeof t.footer] || {}) as { title?: string } & Record<string, string>;
             return (
               <div key={sectionKey} className="flex flex-col">
                 <h3 className="text-[var(--color-text-main)] font-black mb-8 text-[11px] uppercase tracking-[0.2em] opacity-50">
-                  {section.title}
+                  {section?.title}
                 </h3>
                 <ul className="space-y-4">
                   {links.map((link) => (
@@ -132,7 +132,7 @@ export default function Footer() {
                         onClick={(e) => handleLinkClick(e, link.path)}
                         className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] text-[14px] font-semibold transition-colors duration-200 flex items-center group/link"
                       >
-                        <span className="opacity-70 group-hover/link:opacity-100 transition-opacity">{section[link.key]}</span>
+                        <span className="opacity-70 group-hover/link:opacity-100 transition-opacity">{section?.[link.key]}</span>
                       </Link>
                     </li>
                   ))}
@@ -146,7 +146,7 @@ export default function Footer() {
           <div className="flex items-center gap-3">
             {isMounted ? (
               <p className="text-[var(--color-text-muted)] text-[13px] font-medium opacity-60 italic">
-                {t.footer.copyright}
+                {t.footer?.copyright}
               </p>
             ) : (
               /* Reserve space to avoid layout shift */
@@ -159,14 +159,14 @@ export default function Footer() {
               onClick={(e) => handleLinkClick(e, '#under-construction')}
               className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] text-[13px] font-semibold transition-colors opacity-70 hover:opacity-100"
             >
-              {t.footer.privacy}
+              {t.footer?.privacy}
             </Link>
             <Link
               href="#under-construction"
               onClick={(e) => handleLinkClick(e, '#under-construction')}
               className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] text-[13px] font-semibold transition-colors opacity-70 hover:opacity-100"
             >
-              {t.footer.terms}
+              {t.footer?.terms}
             </Link>
           </div>
         </div>

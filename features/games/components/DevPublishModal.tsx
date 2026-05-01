@@ -29,7 +29,7 @@ function StatBox({ value, label, gradient }: { value: string; label: string; gra
 
 export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProps) {
   const { t: dict } = useLanguage();
-  const t = dict.games.devModal;
+  const t = (dict?.games?.devModal ?? {}) as unknown as Record<string, string>;
 
   useEffect(() => {
     if (!isOpen) return;

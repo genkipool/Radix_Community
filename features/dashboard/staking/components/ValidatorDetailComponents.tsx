@@ -16,7 +16,7 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 ───────────────────────────────────────── */
 
 /** Animated uptime progress bar */
-export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: TranslationsT }) => {
+export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: Partial<TranslationsT> }) => {
     const color = getUptimeColor(percent);
     const label = `${percent.toFixed(1)}%`;
     const title = getUptimeTooltipText(percent, false, t?.dashboard?.details);
@@ -36,9 +36,9 @@ export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?:
 UptimeBar.displayName = 'UptimeBar';
 
 /** Glowing status pill badge */
-export const StatusLabel = ({ status, t, compact = false }: { status: Validator['status']; t?: TranslationsT; compact?: boolean }) => {
+export const StatusLabel = ({ status, t, compact = false }: { status: Validator['status']; t?: Partial<TranslationsT>; compact?: boolean }) => {
     const color = getStatusColor(status);
-    const label = t?.dashboard?.status?.[status as keyof typeof t.dashboard.status] ?? status;
+    const label = t?.dashboard?.status?.[status as keyof NonNullable<NonNullable<typeof t>["dashboard"]>["status"]] ?? status;
     return (
         <span
             className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-all duration-300 align-middle box-border leading-none ${
@@ -174,7 +174,7 @@ export const EpochPerformanceTable = ({
     locale,
 }: {
     validator: Validator;
-    dt?: DashboardDict;
+    dt?: Partial<DashboardDict>;
     epochRewards?: Record<number, { fee: number; pool: number }>;
     locale?: string;
 }) => {

@@ -37,6 +37,7 @@ describe('Complex Transactions UI', () => {
         status: 'CommittedSuccess',
         feePaid: 0.1,
         confirmedAt: new Date(),
+        stateVersion: 1,
         epoch: 123,
         round: 456,
         accountsCount: 2,

@@ -142,7 +142,7 @@ export function FeesDistributionSection({
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
                 <span className="flex items-center gap-2">
                     <Coins className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    {tt.fees_distribution || 'Fees Distributed'}
+                    {tt?.fees_distribution || 'Fees Distributed'}
                 </span>
             </h3>
 
@@ -152,7 +152,7 @@ export function FeesDistributionSection({
                 <div className="flex-1 p-3 bg-red-500/3">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#ef4444] mb-3 flex items-center gap-1.5 opacity-80">
                         <ChevronDown className="w-3 h-3 -rotate-180" />
-                        {tt.fees_from_label || 'Fees Paid'}
+                        {tt?.fees_from_label || 'Fees Paid'}
                     </h5>
 
                     <div className="space-y-3">
@@ -162,7 +162,7 @@ export function FeesDistributionSection({
                                 return (
                                     <div key={'fp' + i} className="space-y-1.5 transition-colors">
                                         <AddressDisplay
-                                            label={isRoyalty ? (tt.fees_royalty_package || 'Royalty Recipient') : String(tt.from_address || 'From')}
+                                            label={isRoyalty ? (tt?.fees_royalty_package || 'Royalty Recipient') : String(tt?.from_address || 'From')}
                                             address={sanitizeText(fc.entity_address || '')}
                                             tt={tt}
                                             onCopy={onCopy}
@@ -188,18 +188,18 @@ export function FeesDistributionSection({
                                     </div>
                                 );
                             })
-                            : <p className="text-xs text-[var(--color-text-muted)] italic py-2">{tt.system_generation || 'System component generation'}</p>
+                            : <p className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_generation || 'System component generation'}</p>
                         }
                     </div>
 
                     {feeSummary && (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                             {[
-                                { label: tt.fee_execution || 'Execution', value: execCost, color: 'text-cyan-600', border: 'border-cyan-500/30', bg: 'bg-cyan-500/6', title: tt.fee_execution_title || 'Computational cost of processing the transaction logic.' },
-                                { label: tt.fee_storage || 'Storage', value: storageCost, color: 'text-amber-600', border: 'border-amber-500/30', bg: 'bg-amber-500/6', title: tt.fee_storage_title || `Cost of storing data on-ledger.${xrdUsdPrice > 0 ? ` XRD/USD: $${xrdUsdPrice.toFixed(2)}` : ''}` },
-                                { label: tt.fee_finalization || 'Finalization', value: finalizationCost, color: 'text-indigo-600', border: 'border-indigo-500/30', bg: 'bg-indigo-500/6', title: tt.fee_finalization_title || 'Cost of signature verification and finalization.' },
-                                ...(royaltyCost > 0 ? [{ label: tt.fee_royalties || 'Royalties', value: royaltyCost, color: 'text-purple-600', border: 'border-purple-500/30', bg: 'bg-purple-500/6', title: tt.fee_royalty_cost_title || '100% paid to the Blueprint/Component developer.' }] : []),
-                                ...(tippingAmt > 0 ? [{ label: tt.fee_tipping || 'Tips', value: tippingAmt, color: 'text-[var(--color-accent)]', border: 'border-[var(--color-primary)]/30', bg: 'bg-[var(--color-primary)]/5', title: tt.fee_tips_cost_title || '100% goes to the block proposer validator.' }] : []),
+                                { label: tt?.fee_execution || 'Execution', value: execCost, color: 'text-cyan-600', border: 'border-cyan-500/30', bg: 'bg-cyan-500/6', title: tt?.fee_execution_title || 'Computational cost of processing the transaction logic.' },
+                                { label: tt?.fee_storage || 'Storage', value: storageCost, color: 'text-amber-600', border: 'border-amber-500/30', bg: 'bg-amber-500/6', title: tt?.fee_storage_title || `Cost of storing data on-ledger.${xrdUsdPrice > 0 ? ` XRD/USD: $${xrdUsdPrice.toFixed(2)}` : ''}` },
+                                { label: tt?.fee_finalization || 'Finalization', value: finalizationCost, color: 'text-indigo-600', border: 'border-indigo-500/30', bg: 'bg-indigo-500/6', title: tt?.fee_finalization_title || 'Cost of signature verification and finalization.' },
+                                ...(royaltyCost > 0 ? [{ label: tt?.fee_royalties || 'Royalties', value: royaltyCost, color: 'text-purple-600', border: 'border-purple-500/30', bg: 'bg-purple-500/6', title: tt?.fee_royalty_cost_title || '100% paid to the Blueprint/Component developer.' }] : []),
+                                ...(tippingAmt > 0 ? [{ label: tt?.fee_tipping || 'Tips', value: tippingAmt, color: 'text-[var(--color-accent)]', border: 'border-[var(--color-primary)]/30', bg: 'bg-[var(--color-primary)]/5', title: tt?.fee_tips_cost_title || '100% goes to the block proposer validator.' }] : []),
                             ].map(item => (
                                 <div key={item.label}
                                     className={`flex flex-col gap-0.5 px-2.5 py-2 rounded-lg border ${item.border} ${item.bg}`}
@@ -217,17 +217,17 @@ export function FeesDistributionSection({
                 <div className="flex-1 p-3 bg-green-500/3">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
                         <ChevronDown className="w-3 h-3" />
-                        {tt.fees_breakdown || 'Breakdown'}
+                        {tt?.fees_breakdown || 'Breakdown'}
                     </h5>
 
                     <div className="space-y-2">
                         {finalBurn > 0 && (
                             <FeeRow
                                 icon={<IconFlame className="w-4 h-4 text-orange-600 shrink-0" />}
-                                label={tt.fees_burn || 'Burn'} pct="50%"
+                                label={tt?.fees_burn || 'Burn'} pct="50%"
                                 amount={finalBurn} color="orange"
-                                title={tt.fees_burn_title || 'XRD permanently removed from total supply.'}
-                                desc={tt.fees_burn_desc || 'XRD permanently removed from supply'}
+                                title={tt?.fees_burn_title || 'XRD permanently removed from total supply.'}
+                                desc={tt?.fees_burn_desc || 'XRD permanently removed from supply'}
                                 border="border-orange-500/40" bg="bg-orange-500/10"
                             />
                         )}
@@ -235,22 +235,22 @@ export function FeesDistributionSection({
                         {finalProposer > 0 && (
                             <div
                                 className="rounded-xl border border-blue-500/40 bg-blue-500/10 p-3"
-                                title={String(tt.fees_proposer_title || 'XRD awarded to the validator that proposed this block.')}
+                                title={String(tt?.fees_proposer_title || 'XRD awarded to the validator that proposed this block.')}
                             >
                                 <FeeRowHeader
                                     icon={<IconMedal className="w-4 h-4 text-blue-600 shrink-0" />}
-                                    label={tt.fees_proposer || 'Proposer'} pct="25%"
+                                    label={tt?.fees_proposer || 'Proposer'} pct="25%"
                                     amount={finalProposer} color="blue"
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
-                                    {tt.fees_proposer_desc || 'XRD awarded to the block proposer validator'}
+                                    {tt?.fees_proposer_desc || 'XRD awarded to the block proposer validator'}
                                 </p>
                                 {proposerAddr && (
                                     <div className="mt-2.5 pl-2.5 border-l-2 border-blue-500/40 bg-blue-500/5 py-1 rounded-r-lg">
                                         <div className="flex items-center justify-between text-[10px] gap-2">
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[8px] uppercase font-black text-blue-600/60 leading-none">
-                                                    {tt.fees_proposer_validator || 'Proposer Validator'}
+                                                    {tt?.fees_proposer_validator || 'Proposer Validator'}
                                                 </span>
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <ValidatorNameLabel address={proposerAddr} network={network} hideParentheses />
@@ -266,20 +266,20 @@ export function FeesDistributionSection({
                         {finalValidator > 0 && (
                             <div
                                 className="rounded-xl border border-green-500/40 bg-green-500/6 p-3"
-                                title={String(tt.fees_validator_title || '25% distributed among the active validator set.')}
+                                title={String(tt?.fees_validator_title || '25% distributed among the active validator set.')}
                             >
                                 <FeeRowHeader
                                     icon={<IconBolt className="w-4 h-4 text-green-700 dark:text-green-400 shrink-0" />}
-                                    label={tt.fees_validator_set || 'Validator Set'} pct="25%"
+                                    label={tt?.fees_validator_set || 'Validator Set'} pct="25%"
                                     amount={finalValidator} color="green"
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
-                                    {tt.fees_validator_set_desc || 'XRD distributed among the validator set'}
+                                    {tt?.fees_validator_set_desc || 'XRD distributed among the validator set'}
                                 </p>
                                 {fdValShares.length > 0 && (
                                     <div className="mt-2.5 space-y-1.5 pl-2.5 border-l-2 border-green-500/40 bg-green-500/3 py-1.5 rounded-r-lg">
                                         <span className="text-[8px] uppercase font-black text-green-700/70 dark:text-green-400/80 block mb-1">
-                                            {tt.fees_top_recipients || 'Top Recipients'}
+                                            {tt?.fees_top_recipients || 'Top Recipients'}
                                         </span>
                                         {fdValShares.slice(0, 5).map((s, si: number) => {
                                             const addr = sanitizeText(String(s.validator_address ?? s.validatorAddress ?? ''));
@@ -308,20 +308,20 @@ export function FeesDistributionSection({
                         {royaltyAmt > 0 && (
                             <div
                                 className="rounded-xl border border-purple-500/30 bg-purple-500/3 p-3"
-                                title={String(tt.fees_royalty_title || '100% to royalty recipients.')}
+                                title={String(tt?.fees_royalty_title || '100% to royalty recipients.')}
                             >
                                 <FeeRowHeader
                                     icon={<IconGem className="w-4 h-4 text-purple-600 shrink-0" />}
-                                    label={tt.fees_royalty || 'Royalties'} pct="100%"
+                                    label={tt?.fees_royalty || 'Royalties'} pct="100%"
                                     amount={royaltyAmt} color="purple"
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
-                                    {tt.fees_royalty_desc || 'XRD distributed to royalty recipients'}
+                                    {tt?.fees_royalty_desc || 'XRD distributed to royalty recipients'}
                                 </p>
                                 {sourcePackages.length > 0 && (
                                     <div className="mt-3 space-y-1.5">
                                         <span className="text-[8px] uppercase font-black text-purple-600/60 block">
-                                            {tt.fees_royalty_package || 'Source Package'}
+                                            {tt?.fees_royalty_package || 'Source Package'}
                                         </span>
                                         <div className="grid grid-cols-1 gap-2">
                                             {sourcePackages.map((addr, i) => (
@@ -333,7 +333,7 @@ export function FeesDistributionSection({
                                 {filteredRoyaltyRecipients.length > 0 && (
                                     <div className="mt-4 space-y-1.5 pl-2.5 border-l-2 border-purple-500/40 bg-purple-500/3 py-1.5 rounded-r-lg">
                                         <span className="text-[8px] uppercase font-black text-purple-600/60 block mb-1">
-                                            {tt.fees_recipients || 'Recipients'}
+                                            {tt?.fees_recipients || 'Recipients'}
                                         </span>
                                         {filteredRoyaltyRecipients.slice(0, 5).map((r, ri: number) => {
                                             const item = r as RoyaltyRecipientObj;
@@ -348,7 +348,7 @@ export function FeesDistributionSection({
                                                     <EntityBadge address={addr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} />
                                                     {amt > 0 && (
                                                         <div className="flex items-center justify-end gap-1.5">
-                                                            <span className="text-[8px] uppercase font-black text-purple-600/40">{tt.amount_label || 'Amount'}</span>
+                                                            <span className="text-[8px] uppercase font-black text-purple-600/40">{tt?.amount_label || 'Amount'}</span>
                                                             <span className="text-purple-600 font-mono font-black text-xs">{fmtAmt(amt)} XRD</span>
                                                         </div>
                                                     )}
@@ -368,16 +368,16 @@ export function FeesDistributionSection({
                 <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-6">
                     {accountPayers.map((fc, i: number) => {
                         const amt = Math.abs(parseFloatSafe(fc.balance_change));
-                        return <span key={'fs' + i} className="flex items-center gap-1.5"><span className="text-red-500 font-black">-{fmtAmt(amt)}</span> {tt.sent_label || 'sent'}</span>;
+                        return <span key={'fs' + i} className="flex items-center gap-1.5"><span className="text-red-500 font-black">-{fmtAmt(amt)}</span> {tt?.sent_label || 'sent'}</span>;
                     })}
-                    {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt.fees_burn || 'Burn'} />}
-                    {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt.fees_proposer || 'Proposer'} />}
-                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt.fees_validator_set || 'Validator'} />}
-                    {tippingAmt > 0 && <FooterItem icon={<IconTip className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt.fees_tips || 'Tips'} />}
-                    {royaltyAmt > 0 && <FooterItem icon={<IconGem className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt.fees_royalty || 'Royalties'} />}
+                    {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt?.fees_burn || 'Burn'} />}
+                    {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt?.fees_proposer || 'Proposer'} />}
+                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt?.fees_validator_set || 'Validator'} />}
+                    {tippingAmt > 0 && <FooterItem icon={<IconTip className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt?.fees_tips || 'Tips'} />}
+                    {royaltyAmt > 0 && <FooterItem icon={<IconGem className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt?.fees_royalty || 'Royalties'} />}
                     <div className="h-4 w-px bg-[var(--color-card-border)] mx-1 hidden md:block" />
                     <span className="flex items-center gap-1.5 font-black text-[var(--color-text-main)]">
-                        {tt.fees_total || 'Total'}: <span className="text-amber-600 text-xs">{fmtAmt(totalFee)} XRD</span>
+                        {tt?.fees_total || 'Total'}: <span className="text-amber-600 text-xs">{fmtAmt(totalFee)} XRD</span>
                     </span>
                 </div>
             </div>

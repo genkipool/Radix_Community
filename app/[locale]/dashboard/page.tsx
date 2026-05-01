@@ -18,7 +18,8 @@ import { validateTxHash, validateAddress } from '@/utils/apiValidation';
 import { COOKIE_KEYS } from '@/constants/dashboard';
 
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 import type { Metadata } from 'next';
 
@@ -28,7 +29,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador']);
   return {
     title: t.seo.dashboard.title,
     description: t.seo.dashboard.description,
@@ -75,6 +76,9 @@ interface DashboardPageProps {
     end?: string;
     tag?: string;
   }>;
+  params: Promise<{
+    locale: string;
+  }>;
 }
 
 
@@ -88,14 +92,16 @@ interface DashboardPageProps {
  * All cookie-persisted button states are read here and forwarded as props
  * so the server render matches the user's last session exactly.
  */
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const params = await searchParams;
-  const initialView = (params.view === 'transactions' || params.tx) ? 'transactions' : 'staking';
-  const network = (params.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
+export default async function DashboardPage({ searchParams, params }: DashboardPageProps) {
+  const { locale } = await params;
+  const t = await getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador']);
+  const searchParamsResolved = await searchParams;
+  const initialView = (searchParamsResolved.view === 'transactions' || searchParamsResolved.tx) ? 'transactions' : 'staking';
+  const network = (searchParamsResolved.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
 
   // Parse date range from URL params
-  const start = params.start || null;
-  const end = params.end || null;
+  const start = searchParamsResolved.start || null;
+  const end = searchParamsResolved.end || null;
   const initialDateRange = { start, end };
 
 
@@ -123,7 +129,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // Read transaction tag: URL param takes priority, then cookie, then default
   const VALID_TX_TAGS = ['All', 'Success', 'Failed', 'With Message', 'With NFTs'];
-  const urlTag = params.tag ? decodeURIComponent(params.tag) : null;
+  const urlTag = searchParamsResolved.tag ? decodeURIComponent(searchParamsResolved.tag) : null;
   const cookieTag = c.decoded(COOKIE_KEYS.txTag) ?? 'All';
   const activeTxTag = urlTag && VALID_TX_TAGS.includes(urlTag) ? urlTag : cookieTag;
 
@@ -131,7 +137,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // history so SSR and first client render have identical data — no hydration
   // mismatch and no spinner flash on reload.
   // Read transaction ID or Account Address from URL
-  const txid = params.tx ? (validateAddress(params.tx) || validateTxHash(params.tx)) : null;
+  const txid = searchParamsResolved.tx ? (validateAddress(searchParamsResolved.tx) || validateTxHash(searchParamsResolved.tx)) : null;
 
   try {
     // 1. Fetch the first page of transactions explicitly so we can scan it for resources
@@ -194,50 +200,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       staleTime: 300_000,
     });
 
-    // Seed the infinite query cache with the transaction data we just fetched
+    // Seed the infinite query cache with the transaction data we just fetched.
+    // Proposer display data (name/icon/address) is already enriched at the
+    // service layer via enrichTransactionsProposerInfo() when transactions
+    // are cached to Redis, so no per-request lookup map is needed here.
     serverQueryClient.setQueryData(txQueryKey, {
       pages: [txData],
       pageParams: [undefined],
     });
-
-    // ── PROPOSER ENRICHMENT ─────────────────────────────────────────────
-    // Embed validator name/iconUrl/address directly into tx.proposerInfo
-    // so TransactionCard renders proposer info without a separate query.
-    // Source: validators already fetched into the query cache above.
-    const validatorsData = serverQueryClient.getQueryData<{ validators: Validator[] }>(['validators', network]);
-
-    if (validatorsData?.validators?.length) {
-      let enrichedCount = 0;
-
-      // Build a fast lookup map in memory
-      const proposerMap: Record<string, { name: string; iconUrl: string; address: string }> = {};
-      for (const v of validatorsData.validators) {
-        if (v.rank > 0) {
-          proposerMap[String(v.rank)] = { name: v.name, iconUrl: v.iconUrl || '', address: v.address };
-        }
-      }
-
-      txData.transactions.forEach((tx: TransactionInfo) => {
-        if (tx.proposerInfo && !tx.proposerInfo.name) {
-          const entry = proposerMap[String(tx.proposerInfo.rank)];
-          if (entry) {
-            tx.proposerInfo.name = entry.name;
-            tx.proposerInfo.iconUrl = entry.iconUrl;
-            tx.proposerInfo.address = entry.address;
-            enrichedCount++;
-          }
-        }
-      });
-
-      if (enrichedCount > 0) {
-        // Re-set the enriched data in the query cache
-        serverQueryClient.setQueryData(txQueryKey, {
-          pages: [txData],
-          pageParams: [undefined],
-        });
-        logger.info({ network, enrichedCount }, '[DashboardPage] Proposer info enriched in transaction data');
-      }
-    }
 
     // ── PHASE 2: Client-Side Hydration ────────────────────────────────────────
     // We intentionally avoid deep entity metadata hydration on the server to 
@@ -254,6 +224,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <ReactQueryHydrate state={dehydrate(serverQueryClient)}>
+      <DictionaryEnricher partial={t} />
       <DashboardClient
         timezone={timezone}
         initialView={initialView as DashboardView}
@@ -272,6 +243,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         initialDateRange={initialDateRange}
         randomSeed={randomSeed}
         initialMarketData={marketData}
+        dictionary={t}
       />
 
     </ReactQueryHydrate>

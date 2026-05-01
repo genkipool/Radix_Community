@@ -247,7 +247,7 @@ export function TransactionDetailsTab({
                 amount = sanitizeText(String(fields[1]?.value || ''));
             } else if (ev.data?.variant_name === 'NonFungible') {
                 const count = fields[1]?.elements?.length || 0;
-                amount = `${count} ${typeof tt.nfts !== 'undefined' ? tt.nfts : 'NFT(s)'}`;
+                amount = `${count} ${tt?.nfts ?? 'NFT(s)'}`;
             }
         } else {
             // Named amount fields — includes claimed_xrd for ClaimXrdEvent
@@ -284,7 +284,7 @@ export function TransactionDetailsTab({
             // NFT count from ids array
             if (!amount && idsField) {
                 const count = idsField.elements?.length || 0;
-                amount = `${count} ${typeof tt.nfts !== 'undefined' ? tt.nfts : 'NFT(s)'}`;
+                amount = `${count} ${tt?.nfts ?? 'NFT(s)'}`;
             }
 
             resource = resField ? sanitizeText(String(resField.value || '')) : '';
@@ -339,27 +339,27 @@ export function TransactionDetailsTab({
 
         // LockFee (Specific)
         if (name === 'LockFeeEvent') {
-            const titleText = tStr(te.lock_fee, 'Tarifa máxima bloqueada');
-            const tooltip = tStr(te.lock_fee_title, 'Maxima tarifa que el usuario esta dispuesto a pagar en esta transacción');
+            const titleText = tStr(te?.lock_fee, 'Tarifa máxima bloqueada');
+            const tooltip = tStr(te?.lock_fee_title, 'Maxima tarifa que el usuario esta dispuesto a pagar en esta transacción');
             return {
                 titleText,
                 tooltip,
-                description: renderAmountAndLocation(titleText, amount, resource || getXrdAddress(network), tStr(te.at, 'at'), emitter)
+                description: renderAmountAndLocation(titleText, amount, resource || getXrdAddress(network), tStr(te?.at, 'at'), emitter)
             };
         }
 
         // Withdraw / Deposit
         if (name === 'WithdrawEvent' || name === 'DepositEvent') {
-            const titleText = name === 'WithdrawEvent' ? tStr(te.withdraw, 'Withdrawal') : tStr(te.deposit, 'Deposit');
-            const dirLabel = name === 'WithdrawEvent' ? tStr(te.from, 'from') : tStr(te.to, 'to');
+            const titleText = name === 'WithdrawEvent' ? tStr(te?.withdraw, 'Withdrawal') : tStr(te?.deposit, 'Deposit');
+            const dirLabel = name === 'WithdrawEvent' ? tStr(te?.from, 'from') : tStr(te?.to, 'to');
             return { titleText, description: renderAmountAndLocation(titleText, amount, resource, dirLabel, emitter) };
         }
 
         // Fee events
         if (name.includes('Fee')) {
             const feeResource = resource || getXrdAddress(network);
-            const titleText = tStr(te.fee, 'Fee Payment');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, feeResource, tStr(te.at, 'at'), emitter) };
+            const titleText = tStr(te?.fee, 'Fee Payment');
+            return { titleText, description: renderAmountAndLocation(titleText, amount, feeResource, tStr(te?.at, 'at'), emitter) };
         }
 
         // Swap
@@ -367,11 +367,11 @@ export function TransactionDetailsTab({
             const dx = getField('amount_change_x', 0) || getField('amount', 1);
             const dy = getField('amount_change_y', 1) || getField('new_balance', 2);
             return {
-                titleText: tStr(te.swap, 'Swap'),
+                titleText: tStr(te?.swap, 'Swap'),
                 description: (
                     <div className="flex flex-col gap-2">
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={tStr(te.change, 'Cambio')}><b>Δx: {dx}</b> / <b>Δy: {dy}</b></EventRow>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te?.change, 'Cambio')}><b>Δx: {dx}</b> / <b>Δy: {dy}</b></EventRow>
                     </div>
                 ),
             };
@@ -379,19 +379,19 @@ export function TransactionDetailsTab({
 
         // Burn
         if (name.includes('Burn')) {
-            const titleText = tStr(te.burn, 'Burn');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.at, 'at'), emitter) };
+            const titleText = tStr(te?.burn, 'Burn');
+            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te?.at, 'at'), emitter) };
         }
 
         // Mint
         if (name.includes('Mint')) {
-            const titleText = tStr(te.mint, 'Mint');
+            const titleText = tStr(te?.mint, 'Mint');
             return {
                 titleText,
                 description: (
                     <div className="flex flex-col gap-2">
                         <EventRow label={titleText}>{fAmountSimple(amount, resource || emitter)}</EventRow>
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
                     </div>
                 )
             };
@@ -399,32 +399,32 @@ export function TransactionDetailsTab({
 
         // Valuation
         if (name.includes('Valuation')) {
-            const titleText = tStr(te.valuation, 'Valuation');
-            return { titleText, description: renderLocationOnly(tStr(te.at, 'at'), emitter) };
+            const titleText = tStr(te?.valuation, 'Valuation');
+            return { titleText, description: renderLocationOnly(tStr(te?.at, 'at'), emitter) };
         }
 
         // Auth
         if (name.includes('Auth')) {
-            const titleText = tStr(te.auth, 'Authorization');
-            return { titleText, description: renderLocationOnly(tStr(te.at, 'at'), emitter) };
+            const titleText = tStr(te?.auth, 'Authorization');
+            return { titleText, description: renderLocationOnly(tStr(te?.at, 'at'), emitter) };
         }
 
         // Unstake (must come before Stake check)
         if (name.includes('Unstake')) {
-            const titleText = tStr(te.unstake, 'Unstake');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.from, 'from'), emitter) };
+            const titleText = tStr(te?.unstake, 'Unstake');
+            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te?.from, 'from'), emitter) };
         }
 
         // Stake
         if (name.includes('Stake')) {
-            const titleText = tStr(te.stake, 'Stake');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.to, 'to'), emitter) };
+            const titleText = tStr(te?.stake, 'Stake');
+            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te?.to, 'to'), emitter) };
         }
 
         // Claim
         if (name.includes('Claim')) {
-            const titleText = tStr(te.claim, 'Claim');
-            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te.from, 'from'), emitter) };
+            const titleText = tStr(te?.claim, 'Claim');
+            return { titleText, description: renderAmountAndLocation(titleText, amount, resource || emitter, tStr(te?.from, 'from'), emitter) };
         }
 
         // BetCreatedEvent & BetVoteEvent
@@ -432,22 +432,22 @@ export function TransactionDetailsTab({
             const isBetCreated = name === 'BetCreatedEvent';
             const betOption = getField(isBetCreated ? 'name' : 'option', 1);
             return {
-                titleText: isBetCreated ? tStr(te.bet_name, 'Bet Name') : tStr(te.bet_vote, 'Vote / Prediction'),
-                tooltip: isBetCreated ? undefined : tStr(te.bet_vote_title, 'Represents the allocation of tokens towards an option or vote in a component.'),
+                titleText: isBetCreated ? tStr(te?.bet_name, 'Bet Name') : tStr(te?.bet_vote, 'Vote / Prediction'),
+                tooltip: isBetCreated ? undefined : tStr(te?.bet_vote_title, 'Represents the allocation of tokens towards an option or vote in a component.'),
                 description: (
                     <div className="flex flex-col gap-2">
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={isBetCreated ? tStr(te.name, 'Name') : tStr(te.option, 'Option')}>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={isBetCreated ? tStr(te?.name, 'Name') : tStr(te?.option, 'Option')}>
                             <span className="font-bold text-pink-500">
                                 {fResource(betOption)}
                             </span>
                         </EventRow>
                         {resource && !isBetCreated && (
-                            <EventRow label={tStr(te.name, 'Name')}>
+                            <EventRow label={tStr(te?.name, 'Name')}>
                                 <ResourceName address={resource} network={network || 'mainnet'} />
                             </EventRow>
                         )}
-                        {amount && <EventRow label={tStr(te.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>}
+                        {amount && <EventRow label={tStr(te?.amount, 'Amount')}>{fAmount(amount, resource)}</EventRow>}
                     </div>
                 )
             };
@@ -465,11 +465,11 @@ export function TransactionDetailsTab({
             }
 
             return {
-                titleText: tStr(te.set_metadata, 'Profile/Config Update'),
-                tooltip: tStr(te.set_metadata_title, 'Setup or modification of descriptive information (e.g. name, icon) for the component or resource.'),
+                titleText: tStr(te?.set_metadata, 'Profile/Config Update'),
+                tooltip: tStr(te?.set_metadata_title, 'Setup or modification of descriptive information (e.g. name, icon) for the component or resource.'),
                 description: (
                     <div className="flex flex-col gap-2">
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
                         <EventRow label={key}>
                             <span className="font-mono text-xs break-all text-[var(--color-text-main)] max-w-full">
                                 {metaValue.length > 100 ? metaValue.slice(0, 100) + '...' : metaValue}
@@ -496,16 +496,16 @@ export function TransactionDetailsTab({
                     : null;
 
             return {
-                titleText: tStr(te.vault_creation, 'Vault Creation'),
-                tooltip: tStr(te.vault_creation_title, 'An internal vault has been created to securely store physical assets.'),
+                titleText: tStr(te?.vault_creation, 'Vault Creation'),
+                tooltip: tStr(te?.vault_creation_title, 'An internal vault has been created to securely store physical assets.'),
                 description: (
                     <div className="flex flex-col gap-2">
                         {resource && (
                             <>
-                                <EventRow label={tStr(te.name, 'Name')}>
+                                <EventRow label={tStr(te?.name, 'Name')}>
                                     <ResourceName address={resource} network={network || 'mainnet'} />
                                 </EventRow>
-                                <EventRow label={tStr(te.resource, 'Resource')}>
+                                <EventRow label={tStr(te?.resource, 'Resource')}>
                                     <span className="inline-flex items-center gap-1.5 align-middle">
                                         <span
                                             className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
@@ -532,8 +532,8 @@ export function TransactionDetailsTab({
                                 </EventRow>
                             </>
                         )}
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={tStr(te.vault_id, 'Vault ID')}>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te?.vault_id, 'Vault ID')}>
                             <div className="flex items-center gap-2">
                                 <span className="font-mono text-[var(--color-text-main)] break-all">
                                     {vaultId || '-'}
@@ -543,7 +543,7 @@ export function TransactionDetailsTab({
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onCopy(vaultId); }}
                                         className="p-1 hover:bg-[var(--color-surface-hover)] rounded transition-colors shrink-0"
-                                        title={tt.copy_raw || 'Copy'}
+                                        title={tt?.copy_raw || 'Copy'}
                                     >
                                         {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
                                     </button>
@@ -561,15 +561,15 @@ export function TransactionDetailsTab({
             const prev = getField('previous', 1);
             const curr = getField('current', 2);
             return {
-                titleText: tStr(te.rates_changed, 'Rates Update'),
-                tooltip: tStr(te.rates_changed_title, 'The protocol has updated interest rates as a result of the current market state.'),
+                titleText: tStr(te?.rates_changed, 'Rates Update'),
+                tooltip: tStr(te?.rates_changed_title, 'The protocol has updated interest rates as a result of the current market state?.'),
                 description: (
                     <div className="flex flex-col gap-2">
-                        <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={tStr(te.rate_type, 'Rate Type')}>
+                        <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
+                        <EventRow label={tStr(te?.rate_type, 'Rate Type')}>
                             <span className="font-bold text-[var(--color-primary)]">{rateType}</span>
                         </EventRow>
-                        <EventRow label={tStr(te.change, 'Change')}>
+                        <EventRow label={tStr(te?.change, 'Change')}>
                             <span className="inline-flex items-center gap-2 font-bold text-teal-400">
                                 <span>{prev}%</span>
                                 <span>➔</span>
@@ -588,12 +588,12 @@ export function TransactionDetailsTab({
             .map((f: GatewayField) => `${f.field_name}: ${f.value}`).join(', ');
 
         return {
-            titleText: tStr(te.unknown, 'Event'),
+            titleText: tStr(tt?.unknown, 'Event'),
             description: (
                 <div className="flex flex-col gap-2">
-                    <EventRow label={tStr(te.at, 'at')}>{fAddress(emitter)}</EventRow>
+                    <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
                     {genericFields && (
-                        <EventRow label={tStr(te.details_label, 'Detalles')}>
+                        <EventRow label={tStr(tt?.details, 'Details')}>
                             <span className="break-all">{genericFields}{fields.length > 4 ? '...' : ''}</span>
                         </EventRow>
                     )}
@@ -606,16 +606,16 @@ export function TransactionDetailsTab({
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] p-4 sm:p-6 shadow-inner">
 
             {/* ── Metadata rows ── */}
-            <DetailRow label={tt.transaction_id || 'Transaction ID'} value={sanitizeText((details.intent_hash ?? tx.intentHash) as string)} copyable={(details.intent_hash ?? tx.intentHash) as string} onCopy={onCopy} copiedAddress={copiedAddress} />
+            <DetailRow label={tt?.transaction_id || 'Transaction ID'} value={sanitizeText((details.intent_hash ?? tx.intentHash) as string)} copyable={(details.intent_hash ?? tx.intentHash) as string} onCopy={onCopy} copiedAddress={copiedAddress} />
             
-            <DetailRow label={tt.status || 'Status'} value={
+            <DetailRow label={tt?.status || 'Status'} value={
                 <span className={`text-xs font-bold uppercase tracking-wider ${isSuccess ? 'text-[var(--color-accent)]' : 'text-red-500'}`}>
-                    {isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed')}
+                    {isSuccess ? (tt?.success || 'Success') : (tt?.failed || 'Failed')}
                 </span>
             } />
 
             <DetailRow
-                label={tt.confirm_time || 'Confirm time'}
+                label={tt?.confirm_time || 'Confirm time'}
                 value={(
                     <>
                         {new Date(details?.confirmed_at || tx.confirmedAt).toLocaleString(locale, { timeZone: timezone, year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -624,16 +624,16 @@ export function TransactionDetailsTab({
                 )}
             />
 
-            <DetailRow label={tt.epoch_round || 'Epoch & Round'} value={`${details?.epoch} / ${details?.round}`} />
+            <DetailRow label={tt?.epoch_round || 'Epoch & Round'} value={`${details?.epoch} / ${details?.round}`} />
 
             <DetailRow 
-                label={tt.proposer_state_version_index || 'State Version / Index'} 
+                label={tt?.proposer_state_version_index || 'State Version / Index'} 
                 value={`${details?.state_version} / #${proposerInfo?.validatorIndex ?? '?'}`} 
             />
 
             {proposerValidator && (
                 <DetailRow 
-                    label={<span title={tt.proposer_tooltip} className="cursor-help">{tt.proposer || 'Proposer'}</span>} 
+                    label={<span title={tt?.proposer_tooltip} className="cursor-help">{tt?.proposer || 'Proposer'}</span>} 
                     value={(
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-semibold text-[var(--color-text-main)] text-sm">
@@ -646,7 +646,7 @@ export function TransactionDetailsTab({
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(proposerValidator.address); }}
                                 className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
-                                title={tt.copy_raw || 'Copy'}
+                                title={tt?.copy_raw || 'Copy'}
                             >
                                 {copiedAddress === proposerValidator.address ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                             </button>
@@ -655,8 +655,8 @@ export function TransactionDetailsTab({
                 />
             )}
 
-            <DetailRow label={tt.fee || 'Fee Paid'} value={`${sanitizeText(String(tx.feePaid))} XRD`} />
-            {tx.message && <DetailRow label={tt.message_payload as string || 'Message'} value={`"${sanitizeText(String(tx.message))}"`} />}
+            <DetailRow label={tt?.fee || 'Fee Paid'} value={`${sanitizeText(String(tx.feePaid))} XRD`} />
+            {tx.message && <DetailRow label={tt?.message_payload as string || 'Message'} value={`"${sanitizeText(String(tx.message))}"`} />}
 
             {/* ── Events ── */}
             {receipt?.events && receipt.events.length > 0 && (
@@ -664,7 +664,7 @@ export function TransactionDetailsTab({
                     <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
                             <Zap className="w-4 h-4 text-[var(--color-primary)]" />
-                            {tt.events_label || 'Events'} ({receipt.events.length})
+                            {tt?.events_label || 'Events'} ({receipt.events.length})
                         </span>
                         <div className="flex items-center gap-2">
                             <button
@@ -672,7 +672,7 @@ export function TransactionDetailsTab({
                                 onClick={() => setShowRawEvents(!showRawEvents)}
                                 className="text-[10px] sm:text-xs text-[var(--color-text-main)] hover:text-[var(--color-text-muted)] transition-colors font-semibold"
                             >
-                                {showRawEvents ? String(te.hide_json_btn || 'Hide Raw JSON') : String(te.raw_json_btn || 'Show Raw Events JSON')}
+                                {showRawEvents ? String(te?.hide_json_btn || 'Hide Raw JSON') : String(te?.raw_json_btn || 'Show Raw Events JSON')}
                             </button>
                             <button
                                 type="button"
@@ -681,7 +681,7 @@ export function TransactionDetailsTab({
                                     onCopy(JSON.stringify(receipt.events, null, 2));
                                 }}
                                 className={`p-1 rounded-md transition-colors ${copiedAddress === JSON.stringify(receipt.events, null, 2) ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
-                                title={tt.copy_raw || 'Copy Raw JSON'}
+                                title={tt?.copy_raw || 'Copy Raw JSON'}
                             >
                                 {copiedAddress === JSON.stringify(receipt.events, null, 2) ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
@@ -721,14 +721,14 @@ export function TransactionDetailsTab({
             <div className="mt-8">
                 <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-4 flex items-center justify-between gap-1.5">
                     <span className="flex items-center gap-1.5">
-                        <FileText className="w-4 h-4 text-[var(--color-primary)]" /> {tt.manifest_label || 'Manifest'}
+                        <FileText className="w-4 h-4 text-[var(--color-primary)]" /> {tt?.manifest_label || 'Manifest'}
                     </span>
-                    <button type="button" onClick={e => { e.stopPropagation(); onCopy(manifest_instructions || ''); }} className={`p-1.5 rounded-md transition-colors ${copiedAddress === (manifest_instructions || '') ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`} title={tt.copy_manifest || 'Copy Manifest'}>
+                    <button type="button" onClick={e => { e.stopPropagation(); onCopy(manifest_instructions || ''); }} className={`p-1.5 rounded-md transition-colors ${copiedAddress === (manifest_instructions || '') ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`} title={tt?.copy_manifest || 'Copy Manifest'}>
                         {copiedAddress === (manifest_instructions || '') ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                 </h3>
                 <div className="p-4 sm:p-5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] text-xs sm:text-sm font-mono text-[var(--color-text-main)] break-words custom-scrollbar overflow-x-auto whitespace-pre max-h-[500px] overflow-y-auto shadow-inner leading-relaxed">
-                    {sanitizeText(manifest_instructions as string) || (receipt?.state_updates ? JSON.stringify(receipt.state_updates, null, 2) : (tt.no_instructions || 'No instructions found.'))}
+                    {sanitizeText(manifest_instructions as string) || (receipt?.state_updates ? JSON.stringify(receipt.state_updates, null, 2) : (tt?.no_instructions || 'No instructions found.'))}
                 </div>
             </div>
 
@@ -736,7 +736,7 @@ export function TransactionDetailsTab({
             {receipt?.error_message && (
                 <div className="mt-8">
                     <h3 className="text-[11px] text-red-500 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4" /> {tt.error_label || 'Error'}
+                        <AlertCircle className="w-4 h-4" /> {tt?.error_label || 'Error'}
                     </h3>
                     <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 text-xs sm:text-sm font-mono text-red-400 break-words shadow-inner">
                         {sanitizeText(receipt.error_message)}

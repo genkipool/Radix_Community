@@ -21,7 +21,7 @@ export interface LayoutProps {
     validator: Validator;
     searchQuery: string;
     isExpanded: boolean;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     onExpand: () => void;
     onCopy: (a: string) => void;
     copiedAddress: string | null;
@@ -80,7 +80,7 @@ export interface ValidatorCardProps {
     onExpand: (id: string) => void;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     network?: Network;
     onOpenModalPrev?: () => void;
     onOpenModalNext?: () => void;
@@ -97,7 +97,7 @@ export interface LocalModalProps {
     onClose: () => void;
     onPrev?: () => void;
     onNext?: () => void;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     copiedAddress: string | null;
     onCopy: (a: string) => void;
     network?: Network;
@@ -113,8 +113,8 @@ export interface ValidatorDetailViewProps {
     onClose: () => void;
     onPrev?: () => void;
     onNext?: () => void;
-    t?: TranslationsT;
-    dt?: DashboardDict;
+    t?: Partial<TranslationsT>;
+    dt?: Partial<DashboardDict>;
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network?: Network;
@@ -129,7 +129,7 @@ export interface ValidatorDetailViewProps {
  */
 export interface ValidatorExpandedBodyProps {
     validator: Validator;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     onCopy: (a: string) => void;
     copiedAddress: string | null;
     network?: Network;
@@ -242,7 +242,7 @@ export interface SectionHeaderProps {
 export interface ExpandPanelProps {
     isExpanded: boolean;
     validator: Validator;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     onCopy: (a: string) => void;
     copiedAddress: string | null;
     columns: number;
@@ -286,7 +286,7 @@ export interface StakeTooltipProps {
     active?: boolean;
     payload?: Array<Record<string, unknown>>;
     label?: string;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     locale: string;
 }
 
@@ -296,7 +296,7 @@ export interface StakeTooltipProps {
  */
 export interface StakeEvolutionChartProps {
     data: { date: string; totalStake: number }[];
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     locale: string;
 }
 
@@ -306,6 +306,6 @@ export interface StakeEvolutionChartProps {
  */
 export interface StakeHistoryChartProps {
     data: { date: string; stake: number; unstake: number; claim: number }[];
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     locale: string;
 }

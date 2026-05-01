@@ -12,14 +12,15 @@ import { useState } from 'react';
 
 /* ─── Props ─────────────────────────────────────────────────────────────── */
 
+import type { Dictionary } from '@/i18n';
 import { GamesHeroProps } from '../types';
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
 
-export default function GamesHero({ onSelectGame, collapsed = false }: GamesHeroProps) {
+export default function GamesHero({ onSelectGame, collapsed = false, dictionary }: GamesHeroProps & { dictionary?: Partial<Dictionary> }) {
   const { t: dict } = useLanguage();
   const { setShowUnderConstruction } = useLayout();
-  const t = dict.games;
+  const t = dictionary?.games || dict?.games || {};
   const [isTournamentOpen, setIsTournamentOpen] = useState(false);
   const [isDevOpen, setIsDevOpen] = useState(false);
 

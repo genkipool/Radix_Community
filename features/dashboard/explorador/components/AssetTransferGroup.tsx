@@ -13,7 +13,7 @@ import { isConsensusManager } from '@/features/dashboard/hooks/useEntityData';
 import { sanitizeText } from '@/utils/sanitize';
 import { classifySource } from '../utils/parseManifest';
 import { getXrdAddress } from '../constants';
-import type { TranslationsT } from '@/features/dashboard/types';
+
 
 import { IconFlame } from './TransactionIcons';
 import { TransactionFlowInfoModal } from './TransactionFlowInfoModal';
@@ -25,7 +25,7 @@ export function AssetTransferGroup({
     isClaim, isUnstake, isStake, validatorOps, pairedValidatorOp, pairedNftChange, columns,
     locale,
 }: AssetTransferGroupProps) {
-    const tt = _tt || ({} as TranslationsT['dashboard']['transactions']);
+    const tt = _tt;
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
     // Only account_ addresses can be origins; everything else goes to destination.
@@ -93,12 +93,12 @@ export function AssetTransferGroup({
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <Wallet className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    {tt.asset_transfer || 'Asset Transfers'}
+                    {tt?.asset_transfer || 'Asset Transfers'}
                 </div>
                 <button
                     onClick={() => setIsInfoModalOpen(true)}
                     className="p-1 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-transparent group"
-                    title={tt.tx_flow_info_title || 'How to read our transaction flow'}
+                    title={tt?.tx_flow_info_title || 'How to read our transaction flow'}
                 >
                     <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                 </button>
@@ -110,7 +110,7 @@ export function AssetTransferGroup({
                 <div className="flex-1 p-3 bg-blue-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
-                        {tt.from_address || 'Origin (Sent)'}
+                        {tt?.from_address || 'Origin (Sent)'}
                     </h5>
                     <div className="space-y-3">
                         {originActors.length > 0
@@ -127,7 +127,7 @@ export function AssetTransferGroup({
                                     <div key={'s' + i} className={isCM ? 'rounded-xl border border-blue-500/20 bg-blue-500/5 p-2' : ''}>
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <div className="min-w-0 flex-1 pl-2">
-                                                <AddressDisplay label={tt.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
+                                                <AddressDisplay label={tt?.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
                                             </div>
                                             {(() => {
                                                 if (!change.entity_address.startsWith('account_')) return null;
@@ -141,7 +141,7 @@ export function AssetTransferGroup({
                                                     !c.is_fee
                                                 );
                                                 const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
-                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />;
+                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt?.method_label || 'Recibido vía:'} />;
                                             })()}
                                         </div>
                                         <div className="space-y-1">
@@ -181,7 +181,7 @@ export function AssetTransferGroup({
                                     </div>
                                 );
                             })
-                            : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt.system_generation || 'System component generation'}</div>
+                            : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_generation || 'System component generation'}</div>
                         }
                         {/* Orphan NFT withdrawals — skipped for claim txs (already shown inline with address above) */}
                         {(() => {
@@ -196,7 +196,7 @@ export function AssetTransferGroup({
                                 return (
                                     <div key={'nft-orphan-s-' + ni}>
                                         <div className="pl-2 mb-2">
-                                            <AddressDisplay label={tt.from_address || 'From'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                            <AddressDisplay label={tt?.from_address || 'From'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                         </div>
                                         <div className="mt-2">
                                             <NftTransferCard
@@ -228,7 +228,7 @@ export function AssetTransferGroup({
                 <div className="flex-1 p-3 bg-green-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
-                        {tt.to_address || 'Destination (Received)'}
+                        {tt?.to_address || 'Destination (Received)'}
                     </h5>
                     <div className="space-y-3">
                         {destActors.length > 0
@@ -242,7 +242,7 @@ export function AssetTransferGroup({
                                     <div key={'r' + i}>
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <div className="min-w-0 flex-1 pl-2">
-                                                <AddressDisplay label={tt.to_address || 'To'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                                <AddressDisplay label={tt?.to_address || 'To'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                             </div>
                                             {(() => {
                                                 if (!change.entity_address.startsWith('account_')) return null;
@@ -256,7 +256,7 @@ export function AssetTransferGroup({
                                                     !c.is_fee
                                                 );
                                                 const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
-                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />;
+                                                return <SourceBadge method={method} color={color} bg={bg} title={title} label={tt?.method_label || 'Recibido vía:'} />;
                                             })()}
                                         </div>
                                         <div className="space-y-1">
@@ -325,7 +325,7 @@ export function AssetTransferGroup({
                                         )}
                                     </div>
                                 )
-                                : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt.system_burn || 'System component burn'}</div>
+                                : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
                         }
                         {/* Orphan NFT deposits (no matching fungible receiver) — exclude initiator addresses */}
                         {(() => {
@@ -340,9 +340,9 @@ export function AssetTransferGroup({
                                         <div key={'nft-orphan-r-' + ni}>
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <div className="pl-2">
-                                                    <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                                    <AddressDisplay label={tt?.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                                 </div>
-                                                <SourceBadge method={method} color={color} bg={bg} title={title} label={tt.method_label || 'Recibido vía:'} />
+                                                <SourceBadge method={method} color={color} bg={bg} title={title} label={tt?.method_label || 'Recibido vía:'} />
                                             </div>
                                             <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} /></div>
                                         </div>
@@ -360,7 +360,7 @@ export function AssetTransferGroup({
                                     return (
                                         <div key={'nft-orphan-burn-' + ni}>
                                             <div className="pl-2 mb-2">
-                                                <AddressDisplay label={tt.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
+                                                <AddressDisplay label={tt?.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                             </div>
                                             <div className="mt-2">
                                                 <NftTransferCard resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} isBurned={isBurnedNft} />

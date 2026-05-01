@@ -48,11 +48,11 @@ export function TransferFooter({
                 {senders.length > 0 && (
                     <span className="flex items-center gap-2">
                         <ArrowUp className="text-red-500 w-3.5 h-3.5" />
-                        {receivers.length > 0 ? tt.sent_label || 'SENT' : ''}
+                        {receivers.length > 0 ? tt?.sent_label || 'SENT' : ''}
                         <span className="text-red-500 font-black">
                             {senders.filter(c => parseFloat(c.balance_change || '0') < 0).reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
                         </span>
-                        {receivers.length === 0 && <span className="opacity-80 lowercase italic">{tt.burned_by_network_subtitle || 'burned or destroyed by system.'}</span>}
+                        {receivers.length === 0 && <span className="opacity-80 lowercase italic">{tt?.burned_by_network_subtitle || 'burned or destroyed by system.'}</span>}
                     </span>
                 )}
 
@@ -63,7 +63,7 @@ export function TransferFooter({
                         <span className="flex items-center gap-2 text-[var(--color-text-main)]">
                             <IconBolt className="w-3.5 h-3.5 opacity-60" />
                             <span className="font-black">{receivers.length}</span>
-                            {tt.recipients_label || 'RECIPIENTS'}
+                            {tt?.recipients_label || 'RECIPIENTS'}
                         </span>
                     </>
                 )}
@@ -74,11 +74,11 @@ export function TransferFooter({
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2">
                             <ArrowDown className={`${greenCls} w-3.5 h-3.5`} />
-                            {senders.length > 0 ? tt.received_label || 'RECEIVED' : ''}
+                            {senders.length > 0 ? tt?.received_label || 'RECEIVED' : ''}
                             <span className={`${greenCls} font-black`}>
                                 {posReceivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
                             </span>
-                            {senders.length === 0 && <span className="opacity-80 lowercase italic">{tt.validator_emissions_subtitle || 'generated or minted by system.'}</span>}
+                            {senders.length === 0 && <span className="opacity-80 lowercase italic">{tt?.validator_emissions_subtitle || 'generated or minted by system.'}</span>}
                         </span>
                     </>
                 )}
@@ -89,7 +89,7 @@ export function TransferFooter({
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                             <IconFlame className="w-3.5 h-3.5" />
-                            {tt.system_burn || 'BURNED'}
+                            {tt?.system_burn || 'BURNED'}
                             <span className="font-black">
                                 {burnedReceivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
                             </span>
@@ -103,7 +103,7 @@ export function TransferFooter({
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2">
                             <Shield className="text-amber-500 w-3.5 h-3.5" />
-                            {tt.fee_label?.toUpperCase() || 'FEE'}
+                            {tt?.fee_label?.toUpperCase() || 'FEE'}
                             <span className="text-amber-600 font-black">{parseFloat(actualFeePaid).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</span>
                         </span>
                     </>
@@ -115,7 +115,7 @@ export function TransferFooter({
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                             <IconBolt className="w-3.5 h-3.5" />
-                            {tt.nfts_minted_label?.toUpperCase() || 'NFTS MINTED'}
+                            {tt?.nfts_minted_label?.toUpperCase() || 'NFTS MINTED'}
                             <span className="font-black">{mintedNftCount}</span>
                         </span>
                     </>
@@ -127,7 +127,7 @@ export function TransferFooter({
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                             <IconFlame className="w-3.5 h-3.5" />
-                            {tt.nfts_burned_label?.toUpperCase() || 'NFTS BURNED'}
+                            {tt?.nfts_burned_label?.toUpperCase() || 'NFTS BURNED'}
                             <span className="font-black">{burnedNftCount}</span>
                         </span>
                     </>

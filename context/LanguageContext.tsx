@@ -1,12 +1,13 @@
 'use client';
-import { createContext, useContext, ReactNode } from "react";
-import { translations } from "@/i18n";
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import { mergeTranslations, type Dictionary } from "@/i18n";
 
 type Language = "en" | "es";
 
 interface LanguageContextType {
   language: Language;
-  t: typeof translations.en;
+  t: Dictionary;
+  enrich: (partial: Partial<Dictionary>) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -18,15 +19,54 @@ export function LanguageProvider({
 }: {
   children: ReactNode;
   language: Language;
-  dictionary: typeof translations.en;
+  dictionary: Dictionary;
 }) {
-  // React Compiler automatically memoizes the value object.
-  const value = { language, t: dictionary };
+  const [prevDictionaryProp, setPrevDictionaryProp] = useState(dictionary);
+  const [dict, setDict] = useState<Dictionary>(dictionary);
+
+  if (dictionary !== prevDictionaryProp) {
+    setPrevDictionaryProp(dictionary);
+    setDict(dictionary);
+  }
+
+  const enrich = (partial: Partial<Dictionary>) => {
+    setDict(prev => {
+      // Check if any of the incoming partial's top-level keys are actually new or different.
+      // We focus on the features being loaded (home, dapps, etc.)
+      const keys = Object.keys(partial) as Array<keyof Dictionary>;
+      
+      // If all keys in partial already exist in prev and we are not forcing an update,
+      // skip merging to prevent render loops.
+      const hasNewData = keys.some(key => prev[key] === undefined);
+      
+      if (!hasNewData) {
+        return prev;
+      }
+      
+      return mergeTranslations(prev, [partial as Record<string, unknown>]) as unknown as Dictionary;
+    });
+  };
+
+  const value = { language, t: dict, enrich };
+
   return (
     <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
+}
+
+export function DictionaryEnricher({ partial }: { partial: Partial<Dictionary> }) {
+  const context = useContext(LanguageContext);
+  if (!context) throw new Error("DictionaryEnricher must be used within LanguageProvider");
+  
+  useEffect(() => {
+    if (partial) {
+      context.enrich(partial);
+    }
+  }, [partial, context]);
+  
+  return null;
 }
 
 export function useLanguage() {

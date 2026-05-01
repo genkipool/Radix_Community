@@ -12,10 +12,11 @@ import { BlogGrid } from './components/BlogGrid';
 import { BlogOverlay } from './components/BlogOverlay';
 import { BlogPublishModal } from './components/BlogPublishModal';
 
-export default function Blog({ initialPosts = [] }: BlogClientProps) {
+export default function Blog({ initialPosts = [], dictionary }: BlogClientProps) {
   const { language, t: dict } = useLanguage();
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const blogT = dict.blog as BlogDictionary;
+  const t = dictionary || dict || {};
+  const blogT = (t.blog || {}) as BlogDictionary;
   const es = language === 'es';
 
   // State & Logic extracted to hooks
@@ -82,8 +83,8 @@ export default function Blog({ initialPosts = [] }: BlogClientProps) {
 
   return (
     <ContentHero
-      title={blogT.title.split(' ')[1] || 'Blog'}
-      subtitle={blogT.subtitle}
+      title={blogT?.title?.split(' ')[1] || 'Blog'}
+      subtitle={blogT?.subtitle}
     >
       <BlogControls
         searchQuery={searchQuery}

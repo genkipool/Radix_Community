@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 import GamesClient from '@/features/games/GamesClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
@@ -13,7 +14,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['games']);
   return {
     title: t.seo.games.title,
     description: t.seo.games.description,
@@ -32,7 +33,13 @@ export async function generateStaticParams() {
     return [{ locale: 'en' }, { locale: 'es' }];
 }
 
-export default async function GamesPage() {
+interface GamesPageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function GamesPage({ params }: GamesPageProps) {
+    const { locale } = await params;
+    const t = await getFeatureDictionary(locale as Locale, ['games']);
     const cookieStore = await cookies();
 
     const initialGridView = cookieStore.get('games_grid_view')?.value === 'true';
@@ -42,11 +49,13 @@ export default async function GamesPage() {
 
     return (
         <Suspense fallback={<SuspenseSidebarFallback />}>
+            <DictionaryEnricher partial={t} />
             <GamesClient
                 initialGridView={initialGridView}
                 initialTheaterMode={initialTheaterMode}
                 initialAutoCollapse={initialAutoCollapse}
                 initialExpandedTopics={initialExpandedTopics}
+                dictionary={t}
             />
         </Suspense>
     );

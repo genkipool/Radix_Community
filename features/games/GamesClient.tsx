@@ -15,6 +15,7 @@ import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
 const COOKIE_THEATER_MODE = 'games_theater_mode';
 const COOKIE_GRID_VIEW = 'games_grid_view';
 import { GamesClientProps } from './types';
+import { Dictionary } from '@/i18n';
 
 /* ── Exit Theater button icon ── */
 function ExitTheaterButtonIcon() {
@@ -41,12 +42,13 @@ export default function GamesClient({
     initialExpandedTopics = '',
     initialGridView = false,
     initialTheaterMode = false,
-}: GamesClientProps) {
+    dictionary,
+}: GamesClientProps & { dictionary?: Partial<Dictionary> }) {
     const [selectedGameId, setGame] = useSpeedSyncURL<string>('game');
     
     const { t: dict } = useLanguage();
     const { theaterMode, setTheaterMode } = useLayout();
-    const t = dict.games;
+    const t = dictionary?.games || dict?.games || {};
 
     const selectedGame = selectedGameId ? getGameById(selectedGameId) : null;
     const allCategoryIds = GAME_CATEGORIES.map(c => c.id);
@@ -133,6 +135,7 @@ export default function GamesClient({
             >
                 {!theaterMode && (
                     <GamesSidebar
+                        dictionary={dictionary}
                         selectedGameId={selectedGameId}
                         onSelectGame={setGame}
                         expandedCategories={expandedCategories}
@@ -158,7 +161,7 @@ export default function GamesClient({
                         {selectedGame ? (
                             <GamePlayer game={selectedGame} />
                         ) : (
-                            <GamesHero onSelectGame={setGame} collapsed={false} />
+                            <GamesHero dictionary={dictionary} onSelectGame={setGame} collapsed={false} />
                         )}
                     </div>
 
@@ -247,7 +250,7 @@ export default function GamesClient({
                 </main>
 
                 {selectedGame && !theaterMode && (
-                    <LeaderboardSidebar gameTitle={gameTitle} />
+                    <LeaderboardSidebar dictionary={dictionary} gameTitle={gameTitle} />
                 )}
             </div>
         </>

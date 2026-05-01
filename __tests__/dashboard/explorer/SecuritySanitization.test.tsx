@@ -44,6 +44,7 @@ describe('Security & Sanitization', () => {
     status: 'Confirmed',
     feePaid: 0.5,
     confirmedAt: new Date(),
+    stateVersion: 1,
     message: maliciousInput,
     manifestClasses: ['Transfer'],
     epoch: 123,

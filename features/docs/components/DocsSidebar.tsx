@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { DOCS_MAP } from '../data/docsData';
 import type { Topic, DocItem } from '../types/data.types';
 import type { DocsSidebarProps } from '../types/components.types';
+import type { Dictionary } from '@/i18n';
 import type { DocsDictionary } from '../types/i18n.types';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -116,14 +117,15 @@ export default function DocsSidebar({
     onDeleteUserDoc,
     searchValue = '',
     className = '',
-}: DocsSidebarProps) {
+    dictionary,
+}: DocsSidebarProps & { dictionary?: Partial<Dictionary> }) {
     const { t: dict } = useLanguage();
-    const t = dict.docs as DocsDictionary;
-    const docLabels = t.documents;
-    const topicLabels = t.topics;
-    const content = t.content;
-    const sidebarT = t.sidebar;
-    const svgText = t.svg;
+    const t = (dictionary?.docs || dict?.docs || {}) as DocsDictionary;
+    const docLabels = t.documents || {};
+    const topicLabels = t.topics || {};
+    const content = t.content || {};
+    const sidebarT = t.sidebar || {};
+    const svgText = t.svg || {};
 
     const collapseAllLabel = sidebarT?.collapse_all ?? 'Collapse all';
     const expandAllLabel = sidebarT?.expand_all ?? 'Expand all';

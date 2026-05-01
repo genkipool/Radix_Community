@@ -1,5 +1,6 @@
 import DAppsClient from '@/features/dapps/DAppsClient';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { dapps } from '@/features/dapps/data/dappsData';
 import { buildAlternates } from '@/lib/seo';
 
@@ -11,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['dapps']);
   return {
     title: t.seo.dapps.title,
     description: t.seo.dapps.description,
@@ -39,9 +40,14 @@ interface DAppsPageProps {
 
 export default async function DAppsPage({ params }: DAppsPageProps) {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['dapps']);
 
   // Pass the full catalogue so it's part of the server-rendered HTML.
   // DAppsClient uses it as the initial list and handles client-side mutations.
-  return <DAppsClient t={t} initialDapps={dapps} />;
+  return (
+    <>
+      <DictionaryEnricher partial={t} />
+      <DAppsClient t={t} initialDapps={dapps} />
+    </>
+  );
 }

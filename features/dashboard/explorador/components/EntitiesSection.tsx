@@ -38,11 +38,11 @@ export function EntitiesSection({
     const countColor = isCreated ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
         : 'bg-violet-500/10 text-violet-400 border-violet-500/20';
     const heading = isCreated
-        ? (tt.created_entities || 'Created Entities')
-        : (tt.affected_entities || 'Affected Entities');
+        ? (tt?.created_entities || 'Created Entities')
+        : (tt?.affected_entities || 'Affected Entities');
     const emptyMsg = isCreated
-        ? (tt.no_created_entities || 'No new entities were created.')
-        : (tt.no_affected_entities || 'No affected entities found.');
+        ? (tt?.no_created_entities || 'No new entities were created.')
+        : (tt?.no_affected_entities || 'No affected entities found.');
 
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mt-4">

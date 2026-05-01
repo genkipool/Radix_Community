@@ -72,21 +72,21 @@ export function OraclePriceUpdateCard({
     update, tt, onCopy, copiedAddress, onResourceClick, network, locale = 'en',
 }: {
     update: OracleUpdate;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string
 }) {
-    const meta = useEntityData(update.quoteToken, network);
+    const meta = useEntityData(update?.quoteToken, network);
     const symbol = meta?.symbol ?? '';
 
     return (
         <div className="p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-col gap-2.5 shadow-sm">
             <div className="flex flex-col gap-1.5 min-w-0">
                 <EntityBadge
-                    address={update.baseToken}
+                    address={update?.baseToken}
                     tt={tt}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}
@@ -97,10 +97,10 @@ export function OraclePriceUpdateCard({
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-[var(--color-card-border)]">
                 <span className="text-[10px] uppercase font-black text-blue-500 tracking-wider">
-                    {tt.oracle_new_price || 'New Price'}
+                    {tt?.oracle_new_price || 'New Price'}
                 </span>
                 <span className="text-sm font-mono font-black text-blue-400 flex items-center gap-1.5">
-                    {update.price}
+                    {update?.price}
                     {symbol && (
                         <span className="text-[10px] font-bold text-[var(--color-text-main)] bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
                             {symbol}
@@ -110,10 +110,10 @@ export function OraclePriceUpdateCard({
             </div>
             <div className="flex items-center justify-between pt-1">
                 <span className="text-[8px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider border border-[var(--color-card-border)] px-1.5 py-0.5 rounded-sm">
-                    {tt.quote_token || 'Quote Token'}
+                    {tt?.quote_token || 'Quote Token'}
                 </span>
-                <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={update.quoteToken}>
-                    {update.quoteToken.slice(0, 16)}...{update.quoteToken.slice(-6)}
+                <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate" title={update?.quoteToken}>
+                    {update?.quoteToken.slice(0, 16)}...{update?.quoteToken.slice(-6)}
                 </span>
             </div>
         </div>
@@ -126,7 +126,7 @@ export function OracleUpdateSection({
     updates, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     updates: OracleUpdate[];
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -139,16 +139,16 @@ export function OracleUpdateSection({
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center justify-between">
                 <span className="flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-blue-400" />
-                    {tt.oracle_update_label || 'Oracle Price Update'}
+                    {tt?.oracle_update_label || 'Oracle Price Update'}
                 </span>
                 <Pill color="custom" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
                     {updates.length}
                 </Pill>
             </h3>
             <div className="p-3 space-y-2">
-                {tt.oracle_update_desc && (
+                {tt?.oracle_update_desc && (
                     <p className="text-[10px] text-[var(--color-text-muted)] italic mb-3">
-                        {tt.oracle_update_desc}
+                        {tt?.oracle_update_desc}
                     </p>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -176,14 +176,14 @@ function AirdropRewardCard({
     airdropData, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     airdropData: AirdropData;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string
 }) {
-    const meta = useEntityData(airdropData.resource || '', network);
+    const meta = useEntityData(airdropData?.resource || '', network);
     const symbol = meta?.symbol ?? '';
     const iconUrl = meta?.iconUrl;
 
@@ -191,19 +191,19 @@ function AirdropRewardCard({
         <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-3 shadow-sm divide-y divide-[var(--color-card-border)]">
             <div className="pb-2">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
-                    {tt.airdrop_winner || 'Winner Account'}
+                    {tt?.airdrop_winner || 'Winner Account'}
                 </span>
-                <EntityBadge address={airdropData.account} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
+                <EntityBadge address={airdropData?.account} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
             <div className="pt-2 flex items-center justify-between">
                 <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-black text-purple-500 tracking-wider flex items-center gap-1.5 opacity-80">
-                        {tt.airdrop_amount || 'Reward Amount'}
+                        {tt?.airdrop_amount || 'Reward Amount'}
                     </span>
-                    {airdropData.resource && (
+                    {airdropData?.resource && (
                         <div
                             className="flex items-center gap-1 mt-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
-                            onClick={() => onResourceClick?.(airdropData.resource!)}
+                            onClick={() => onResourceClick?.(airdropData?.resource!)}
                         >
                             {iconUrl && (
                                 <SafeImage
@@ -213,14 +213,14 @@ function AirdropRewardCard({
                                     fallbackName={symbol || 'Token'}
                                 />
                             )}
-                            <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[120px]" title={airdropData.resource}>
-                                {airdropData.resource.slice(0, 8)}...{airdropData.resource.slice(-6)}
+                            <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[120px]" title={airdropData?.resource}>
+                                {airdropData?.resource.slice(0, 8)}...{airdropData?.resource.slice(-6)}
                             </span>
                         </div>
                     )}
                 </div>
                 <span className="text-base font-mono font-black text-purple-400 flex items-center gap-1.5">
-                    +{airdropData.amount}
+                    +{airdropData?.amount}
                     {symbol && (
                         <span className="text-xs font-bold text-[var(--color-text-main)] bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
                             {symbol}
@@ -230,16 +230,16 @@ function AirdropRewardCard({
             </div>
             <div className="pt-2 mt-1">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
-                    {tt.airdrop_contract || 'Smart Contract'}
+                    {tt?.airdrop_contract || 'Smart Contract'}
                 </span>
-                <EntityBadge address={airdropData.component} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
+                <EntityBadge address={airdropData?.component} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
             <div className="pt-2 mt-1 flex items-center justify-between">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">
-                    {tt.airdrop_event_id || 'Event ID'}:
+                    {tt?.airdrop_event_id || 'Event ID'}:
                 </span>
                 <span className="text-[10px] font-mono font-bold bg-white/5 px-2 py-0.5 rounded text-[var(--color-text-main)] border border-[var(--color-card-border)]">
-                    #{airdropData.eventId}
+                    #{airdropData?.eventId}
                 </span>
             </div>
         </div>
@@ -250,7 +250,7 @@ export function AirdropSection({
     airdropData, tt, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     airdropData: AirdropData | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -263,12 +263,12 @@ export function AirdropSection({
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-purple-500/20 bg-[var(--color-surface)] flex items-center justify-between">
                 <span className="flex items-center gap-2">
                     <Gift className="w-3.5 h-3.5 text-purple-400" />
-                    {tt.airdrop_label || 'Airdrop / Rewards'}
+                    {tt?.airdrop_label || 'Airdrop / Rewards'}
                 </span>
             </h3>
             <div className="p-3">
-                {tt.airdrop_desc && (
-                    <p className="text-[10px] text-[var(--color-text-muted)] italic mb-3">{tt.airdrop_desc}</p>
+                {tt?.airdrop_desc && (
+                    <p className="text-[10px] text-[var(--color-text-muted)] italic mb-3">{tt?.airdrop_desc}</p>
                 )}
                 <AirdropRewardCard
                     airdropData={airdropData}
@@ -292,8 +292,8 @@ export function VaultCreationSection({
     events, tt, te, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -313,7 +313,7 @@ export function VaultCreationSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-amber-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-amber-500/20 bg-[var(--color-surface)] flex items-center gap-2">
                 <Landmark className="w-3.5 h-3.5 text-amber-400" />
-                {te.vault_creation || 'Vault Creation'}
+                {te?.vault_creation || 'Vault Creation'}
             </h3>
             <div className="p-3 space-y-2">
                 {vaultEvents.map((ev, idx) => {
@@ -348,8 +348,8 @@ function VaultCreationCard({
     resource: string;
     vaultId: string;
     amount: string | null;
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     _onResourceClick?: (addr: string) => void;
@@ -359,9 +359,9 @@ function VaultCreationCard({
     const wellKnownKey = getWellKnownKey(sanitizeText(resource), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(resource)) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
     const meta = useEntityData(resource, network);
     const symbol = meta?.symbol || '';
@@ -396,7 +396,7 @@ function VaultCreationCard({
                                 className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded border border-amber-500/40 text-amber-800 dark:text-amber-400 bg-amber-500/5 shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
                                 title={wellKnownTip ?? undefined}
                             >
-                                {te.resource || 'Resource'}
+                                {te?.resource || 'Resource'}
                             </span>
                             <span
                                 className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''}`}
@@ -409,7 +409,7 @@ function VaultCreationCard({
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
                                 className="p-1 hover:bg-amber-500/20 rounded transition-colors shrink-0"
-                                title={tt.copy_raw || 'Copy'}
+                                title={tt?.copy_raw || 'Copy'}
                             >
                                 {copiedAddress === clean ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-amber-800/40 dark:text-amber-400/40" />}
                             </button>
@@ -421,7 +421,7 @@ function VaultCreationCard({
                 {amount && (
                     <div className="flex flex-col items-end shrink-0 ml-auto">
                         <span className="text-[8px] uppercase font-bold text-amber-800/50 dark:text-amber-400/50 tracking-widest leading-none mb-1">
-                            {te.amount || 'Amount'}
+                            {te?.amount || 'Amount'}
                         </span>
                         <div className="flex items-center gap-1.5">
                             <span className="text-sm font-mono font-black text-amber-700 dark:text-amber-300">{amount}</span>
@@ -441,7 +441,7 @@ function VaultCreationCard({
                     <div className="flex items-center gap-1.5">
                         <Landmark className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
                         <span className="text-[9px] uppercase font-black text-amber-800/60 dark:text-amber-400/60 tracking-wider">
-                            {te.vault_id || 'Vault ID'}
+                            {te?.vault_id || 'Vault ID'}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0 px-0.5">
@@ -450,7 +450,7 @@ function VaultCreationCard({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(vaultId); }}
                             className="hover:text-amber-600 transition-colors shrink-0 p-1"
-                            title={tt.copy_raw || 'Copy'}
+                            title={tt?.copy_raw || 'Copy'}
                         >
                             {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-amber-800/30 dark:text-amber-400/30" />}
                         </button>
@@ -465,8 +465,8 @@ export function BetVoteSection({
     events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -486,7 +486,7 @@ export function BetVoteSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-blue-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center gap-2">
                 <Vote className="w-3.5 h-3.5 text-blue-400" />
-                {te.bet_vote || 'Vote / Prediction'}
+                {te?.bet_vote || 'Vote / Prediction'}
             </h3>
             <div className="p-3 space-y-2">
                 {voteEvents.map((ev, idx) => {
@@ -529,8 +529,8 @@ function BetVoteCard({
     amount: string | null;
     resourceAddress?: string;
     eventName: string;
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     network: Network;
@@ -539,33 +539,33 @@ function BetVoteCard({
     const wellKnownKey = resourceAddress ? getWellKnownKey(resourceAddress, network) : null;
     const genericKey = (!wellKnownKey && resourceAddress) ? getGenericTooltipKey(resourceAddress) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
 
     const emitterKey = getWellKnownKey(emitter, network);
     const genericEmitterKey = !emitterKey ? getGenericTooltipKey(emitter) : null;
     const emitterTip = emitterKey
-        ? tt.well_known_tooltips?.[emitterKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[emitterKey as keyof typeof tt.well_known_tooltips]
         : genericEmitterKey
-            ? tt.type_tooltips?.[genericEmitterKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericEmitterKey as keyof typeof tt.type_tooltips]
             : null;
     const meta = useEntityData(resourceAddress || '', network);
     const symbol = meta?.symbol || '';
     const isBet = eventName === 'BetCreatedEvent';
-    const label = isBet ? (te.bet_name || 'Bet Name') : (te.option || 'Option');
+    const label = isBet ? (te?.bet_name || 'Bet Name') : (te?.option || 'Option');
 
     // Mapeo dinámico a traducciones existentes
     const getEntityTypeLabel = (type: string) => {
         const t = type.toLowerCase();
-        if (t.includes('package')) return tt.entity_type_package || 'Package';
-        if (t.includes('component')) return tt.entity_type_component || 'Component';
-        if (t.includes('account')) return tt.entity_type_account || 'Account';
-        if (t.includes('identity')) return tt.entity_type_identity || 'Identity';
-        if (t.includes('resource')) return tt.entity_type_resource || 'Resource';
-        if (t.includes('validator')) return tt.entity_type_validator || 'Validator';
-        return tt.entity_type_unknown || 'Entity';
+        if (t.includes('package')) return tt?.entity_type_package || 'Package';
+        if (t.includes('component')) return tt?.entity_type_component || 'Component';
+        if (t.includes('account')) return tt?.entity_type_account || 'Account';
+        if (t.includes('identity')) return tt?.entity_type_identity || 'Identity';
+        if (t.includes('resource')) return tt?.entity_type_resource || 'Resource';
+        if (t.includes('validator')) return tt?.entity_type_validator || 'Validator';
+        return tt?.entity_type_unknown || 'Entity';
     };
 
     const typeLabel = entityType ? getEntityTypeLabel(entityType) : '';
@@ -606,7 +606,7 @@ function BetVoteCard({
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); onCopy(resourceAddress); }}
                                     className="p-1 hover:bg-blue-500/20 rounded transition-colors shrink-0"
-                                    title={tt.copy_raw || 'Copy'}
+                                    title={tt?.copy_raw || 'Copy'}
                                 >
                                     {copiedAddress === resourceAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-blue-800/40 dark:text-blue-400/40" />}
                                 </button>
@@ -619,7 +619,7 @@ function BetVoteCard({
                 {amount && amount !== '0' && (
                     <div className="flex flex-col items-end shrink-0 ml-auto">
                         <span className="text-[8px] uppercase font-bold text-blue-800/50 dark:text-blue-400/50 tracking-widest leading-none mb-1">
-                            {te.amount || 'Amount'}
+                            {te?.amount || 'Amount'}
                         </span>
                         <div className="flex items-center gap-1.5">
                             <span className="text-sm font-mono font-black text-blue-700 dark:text-blue-300">{amount}</span>
@@ -638,7 +638,7 @@ function BetVoteCard({
                 <div className="flex flex-col gap-1.5 min-w-0">
                     <div className="flex items-center gap-2">
                         <span className="text-[9px] uppercase font-black text-blue-800/60 dark:text-blue-400/60 tracking-wider">
-                            {te.at || 'at'}
+                            {te?.at || 'at'}
                         </span>
                         {typeLabel && (
                             <span
@@ -655,7 +655,7 @@ function BetVoteCard({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
                             className="hover:text-blue-600 transition-colors shrink-0 p-1"
-                            title={tt.copy_raw || 'Copy'}
+                            title={tt?.copy_raw || 'Copy'}
                         >
                             {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
                         </button>
@@ -670,8 +670,8 @@ export function RatesChangedSection({
     events, tt, te, onCopy, copiedAddress, onResourceClick, network, locale,
 }: {
     events: GatewayEvent[];
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -691,7 +691,7 @@ export function RatesChangedSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-teal-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-teal-500/20 bg-[var(--color-surface)] flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5 text-teal-400" />
-                {te.rates_changed || 'Rates Update'}
+                {te?.rates_changed || 'Rates Update'}
             </h3>
             <div className="p-3 space-y-2">
                 {rateEvents.map((ev, idx) => {
@@ -723,8 +723,8 @@ export function MetadataUpdatesSection({
     events, tt, te, onCopy, copiedAddress, onResourceClick: _onResourceClick, network, locale: _locale
 }: {
     events: GatewayEvent[];
-    tt: TranslationsT['dashboard']['transactions'];
-    te: TranslationsT['events'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -761,13 +761,13 @@ export function MetadataUpdatesSection({
     }, {} as Record<string, { emitter: string, entityType: string, updates: { key: string, value: string }[] }>);
 
     const translateKey = (k: string) => {
-        if (k === 'account_type') return te.account_type || 'Account Type';
-        if (k === 'name') return te.name_tag || 'Name';
-        if (k === 'tags') return te.tags || 'Tags';
-        if (k === 'claimed_entities') return te.claimed_entities || 'Claimed Entities';
-        if (k === 'info_url') return te.info_url || 'Info URL';
-        if (k === 'icon_url') return te.icon_url || 'Icon URL';
-        if (k === 'description') return te.description || 'Description';
+        if (k === 'account_type') return te?.account_type || 'Account Type';
+        if (k === 'name') return te?.name_tag || 'Name';
+        if (k === 'tags') return te?.tags || 'Tags';
+        if (k === 'claimed_entities') return te?.claimed_entities || 'Claimed Entities';
+        if (k === 'info_url') return te?.info_url || 'Info URL';
+        if (k === 'icon_url') return te?.icon_url || 'Icon URL';
+        if (k === 'description') return te?.description || 'Description';
         return k;
     };
 
@@ -775,7 +775,7 @@ export function MetadataUpdatesSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-indigo-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-indigo-500/20 bg-[var(--color-surface)] flex items-center gap-2">
                 <Settings2 className="w-3.5 h-3.5 text-indigo-400" />
-                {te.set_metadata || 'Profile/Config Update'}
+                {te?.set_metadata || 'Profile/Config Update'}
             </h3>
             <div className="p-4 flex flex-col gap-4">
                 {Object.values(grouped).map((grp, idx) => (
@@ -801,7 +801,7 @@ function MetadataEntityBlock({
     emitter: string;
     updates: { key: string, value: string }[];
     translateKey: (k: string) => string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
     network: Network;
@@ -811,9 +811,9 @@ function MetadataEntityBlock({
     const wellKnownKey = getWellKnownKey(sanitizeText(emitter), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(emitter)) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
 
     // Filter out missing or empty values
@@ -876,7 +876,7 @@ function MetadataEntityBlock({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
                         className="p-1 hover:bg-slate-500/10 rounded transition-colors shrink-0"
-                        title={tt.copy_raw || 'Copy'}
+                        title={tt?.copy_raw || 'Copy'}
                     >
                         {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
                     </button>
@@ -912,17 +912,15 @@ function MetadataEntityBlock({
 }
 
 /* ── ProposerSection ── */
-interface ProposerSectionProps {
+export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddress, locale = 'en' }: {
     details?: import('@/features/dashboard/types').TransactionDetails;
     tx: import('@/types/radix').TransactionInfo;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network?: 'mainnet' | 'stokenet';
     onCopy: (val: string) => void;
     copiedAddress: string | null;
     locale?: string;
-}
-
-export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddress, locale = 'en' }: ProposerSectionProps) {
+}) {
     const qc = useQueryClient();
     const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network ?? 'mainnet']);
 
@@ -933,16 +931,16 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
         ? findProposerValidator(proposerInfo, validatorsData.validators)
         : null;
     
-    const valName = proposerValidator?.name || sanitizeText(tt.proposer_box_title || 'Proposer');
+    const valName = proposerValidator?.name || sanitizeText(tt?.proposer_box_title || 'Proposer');
     const valAddress = proposerValidator?.address || '';
     const valIcon = proposerValidator?.iconUrl;
 
     const wellKnownKey = getWellKnownKey(sanitizeText(valAddress), network || 'mainnet');
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(valAddress)) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
     
     // Formatting local and UTC dates
@@ -964,9 +962,9 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
-                <span className="flex items-center gap-2 cursor-help" title={tt.proposer_tooltip}>
+                <span className="flex items-center gap-2 cursor-help" title={tt?.proposer_tooltip || ''}>
                     <User className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                    {tt.proposer_box_title || 'Proposer'}
+                    {tt?.proposer_box_title || 'Proposer'}
                 </span>
             </h3>
 
@@ -975,7 +973,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 {/* 1. Name */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)] xl:border-none first:pt-0 first:border-0 first:xl:pl-0">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
-                        {tt.proposer_name || 'Validator Name'}
+                        {tt?.proposer_name || 'Validator Name'}
                     </span>
                     <div className="flex items-center gap-2 min-w-0">
                         {valIcon ? (
@@ -999,7 +997,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 {/* 2. Address */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
-                        {tt.proposer_address || 'Validator Address'}
+                        {tt?.proposer_address || 'Validator Address'}
                     </span>
                     <div className="flex items-center gap-1.5 min-w-0">
                         <span className="text-[13px] font-mono text-[var(--color-text-main)] truncate" title={wellKnownTip || valAddress}>
@@ -1010,7 +1008,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(valAddress); }}
                                 className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
-                                title={tt.copy_raw || 'Copy'}
+                                title={tt?.copy_raw || 'Copy'}
                             >
                                 {copiedAddress === valAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                             </button>
@@ -1022,7 +1020,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {tt.proposer_local_date || 'Local Date'}
+                        {tt?.proposer_local_date || 'Local Date'}
                     </span>
                     <span className="text-[11px] text-[var(--color-text-main)] font-mono truncate" title={formattedDate}>
                         {formattedDate}
@@ -1033,7 +1031,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
                         <Hash className="w-3 h-3" />
-                        {tt.proposer_epoch_round || 'Epoch/Round'}
+                        {tt?.proposer_epoch_round || 'Epoch/Round'}
                     </span>
                     <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
                         {tx.epoch} / {tx.round}
@@ -1044,7 +1042,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
                         <Database className="w-3 h-3" />
-                        {tt.proposer_state_version_index || 'State Version / Index'}
+                        {tt?.proposer_state_version_index || 'State Version / Index'}
                     </span>
                     <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
                         {stateVersionValue} / #{proposerInfo.validatorIndex}

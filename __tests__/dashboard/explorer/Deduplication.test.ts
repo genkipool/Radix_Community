@@ -8,6 +8,7 @@ describe('flattenTransactionPages (Deduplication)', () => {
     status: 'Confirmed',
     feePaid: 0.1,
     confirmedAt: new Date(),
+    stateVersion: 1,
     epoch: 1,
     round: 1,
     accountsCount: 1,

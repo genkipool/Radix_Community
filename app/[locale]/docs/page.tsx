@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 import DocsClient from '@/features/docs/DocsClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
@@ -14,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['docs']);
   return {
     title: t.seo.docs.title,
     description: t.seo.docs.description,
@@ -31,7 +32,13 @@ export async function generateStaticParams() {
     return [{ locale: 'en' }, { locale: 'es' }];
 }
 
-export default async function DocsPage() {
+interface DocsPageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function DocsPage({ params }: DocsPageProps) {
+    const { locale } = await params;
+    const t = await getFeatureDictionary(locale as Locale, ['docs']);
     const cookieStore = await cookies();
     const initialAutoCollapse = cookieStore.get('docs_auto_collapse')?.value === 'true';
     const initialExpandedTopics = cookieStore.get('docs_open_topics')?.value || '';
@@ -51,10 +58,12 @@ export default async function DocsPage() {
 
     return (
         <Suspense fallback={<SuspenseSidebarFallback />}>
+            <DictionaryEnricher partial={t} />
             <DocsClient
                 initialAutoCollapse={initialAutoCollapse}
                 initialExpandedTopics={initialExpandedTopics}
                 initialUserDocMeta={initialUserDocMeta}
+                dictionary={t}
             />
         </Suspense>
     );

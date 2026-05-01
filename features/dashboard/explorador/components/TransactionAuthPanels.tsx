@@ -19,7 +19,7 @@ export function LockFeePanel({
     mainAction: string | null;
     nftId: string | null;
     actualFeePaid: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
 }) {
@@ -85,8 +85,8 @@ export function AuthBadgePanel({
     badgeResource: string;
     badgeAmount: string;
     badgeOrigin: string | null;
-    tt: TranslationsT['dashboard']['transactions'];
-    t: TranslationsT;
+    tt: Partial<TranslationsT['dashboard']['transactions']>;
+    t: Partial<TranslationsT>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;

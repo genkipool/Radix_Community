@@ -9,7 +9,7 @@ import type { TranslationsT } from '@/features/dashboard/types';
 interface TransactionFlowInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
 }
 
 export function TransactionFlowInfoModal({
@@ -52,15 +52,15 @@ export function TransactionFlowInfoModal({
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-black text-[var(--color-text-main)] tracking-tight">
-                                                {tt.tx_flow_info_title || 'How to read our transaction flow'}
+                                                {tt?.tx_flow_info_title || 'How to read our transaction flow'}
                                             </h3>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6 text-[var(--color-text-main)] text-sm leading-relaxed mb-8">
                                         <div className="space-y-2 opacity-90 text-[15px]">
-                                            <p>{tt.tx_flow_info_desc_1 || 'In the Web3 ecosystem, transactions are rarely one-way transfers. Usually, they are swaps (you give something to receive something else).'}</p>
-                                            <p>{tt.tx_flow_info_desc_2 || 'That is why, in our interface, the columns do not separate "what goes out" from "what comes in", but rather group the movements according to the Role of the Actors:'}</p>
+                                            <p>{tt?.tx_flow_info_desc_1 || 'In the Web3 ecosystem, transactions are rarely one-way transfers. Usually, they are swaps (you give something to receive something else).'}</p>
+                                            <p>{tt?.tx_flow_info_desc_2 || 'That is why, in our interface, the columns do not separate "what goes out" from "what comes in", but rather group the movements according to the Role of the Actors:'}</p>
                                         </div>
 
                                         <div className="grid md:grid-cols-2 gap-4">
@@ -70,13 +70,13 @@ export function TransactionFlowInfoModal({
                                                     <Landmark className="w-16 h-16 text-blue-500" />
                                                 </div>
                                                 <h4 className="font-black text-blue-600 text-xs tracking-widest uppercase flex items-center">
-                                                    {tt.tx_flow_info_left_col_title || 'LEFT COLUMN: Origin Address'}
+                                                    {tt?.tx_flow_info_left_col_title || 'LEFT COLUMN: Origin Address'}
                                                 </h4>
                                                 <p className="text-[13px] opacity-90">
-                                                    {tt.tx_flow_info_left_col_desc || 'This column represents the entity that initiates the action. Here we group all net changes that this account undergoes in the transaction, both positive and negative.'}
+                                                    {tt?.tx_flow_info_left_col_desc || 'This column represents the entity that initiates the action. Here we group all net changes that this account undergoes in the transaction, both positive and negative.'}
                                                 </p>
                                                 <p className="text-[12px] italic text-[var(--color-text-main)] opacity-70 pt-1">
-                                                    {tt.tx_flow_info_left_col_example || 'Example: If you initiate a swap, in this same column you will see that -10 XRD goes out and at the same time +1 NFT comes in. Both data are here because they belong to the final balance of the account that originated the action.'}
+                                                    {tt?.tx_flow_info_left_col_example || 'Example: If you initiate a swap, in this same column you will see that -10 XRD goes out and at the same time +1 NFT comes in. Both data are here because they belong to the final balance of the account that originated the action.'}
                                                 </p>
                                             </div>
 
@@ -86,13 +86,13 @@ export function TransactionFlowInfoModal({
                                                     <Landmark className="w-16 h-16 text-green-500" />
                                                 </div>
                                                 <h4 className="font-black text-[#16a34a] text-xs tracking-widest uppercase flex items-center">
-                                                    {tt.tx_flow_info_right_col_title || 'RIGHT COLUMN: Destination Address'}
+                                                    {tt?.tx_flow_info_right_col_title || 'RIGHT COLUMN: Destination Address'}
                                                 </h4>
                                                 <p className="text-[13px] opacity-90">
-                                                    {tt.tx_flow_info_right_col_desc || 'This column represents the entity or smart contract to which the main action is directed. Like the origin, it shows the total impact on that account.'}
+                                                    {tt?.tx_flow_info_right_col_desc || 'This column represents the entity or smart contract to which the main action is directed. Like the origin, it shows the total impact on that account.'}
                                                 </p>
                                                 <p className="text-[12px] italic text-[var(--color-text-main)] opacity-70 pt-1">
-                                                    {tt.tx_flow_info_right_col_example || 'Example: If the account receiving the transaction is the one that assumes the payment of commissions (fees), you will see that negative value reflected here, in the destination column.'}
+                                                    {tt?.tx_flow_info_right_col_example || 'Example: If the account receiving the transaction is the one that assumes the payment of commissions (fees), you will see that negative value reflected here, in the destination column.'}
                                                 </p>
                                             </div>
                                         </div>

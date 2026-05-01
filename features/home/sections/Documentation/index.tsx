@@ -43,16 +43,16 @@ export default function Documentation({ t }: BaseSectionProps) {
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                 <SectionHeader
                     icon={<FileText className="w-4 h-4 shrink-0" />}
-                    badge={t.documentacion.label}
+                    badge={t.documentacion?.label}
                     badgeClassName="bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-primary)]"
-                    title={t.documentacion.h2a}
-                    titleAccent={t.documentacion.h2b}
-                    subtitle={t.documentacion.sub}
+                    title={t.documentacion?.h2a}
+                    titleAccent={t.documentacion?.h2b}
+                    subtitle={t.documentacion?.sub}
                     gradient="from-[var(--color-primary)] to-[var(--color-secondary)]"
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
-                    {t.documentacion.cards.map((doc, i: number) => (
+                    {(t.documentacion?.cards || []).map((doc: { title: string; desc: string; links: string[] }, i: number) => (
                         <FadeIn key={i} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-14 h-14 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center group-hover:border-[var(--color-primary)]/40 transition-colors">
@@ -65,7 +65,7 @@ export default function Documentation({ t }: BaseSectionProps) {
                             <p className="text-[var(--color-text-muted)] leading-relaxed mb-6 text-sm">{doc.desc}</p>
 
                             <div className="flex flex-wrap gap-4 pt-4 border-t border-[var(--color-card-border)]">
-                                {doc.links.map((linkText: string, linkIdx: number) => {
+                                {(doc.links || []).map((linkText: string, linkIdx: number) => {
                                     const linkData = DOC_LINKS[i]?.[linkIdx];
                                     if (!linkData) return null;
                                     const cls = "text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] transition-colors";

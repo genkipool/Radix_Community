@@ -54,7 +54,7 @@ type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' |
 
 interface ExpandableEntityBadgeProps {
     address: string;
-    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict };
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -68,7 +68,7 @@ interface ExpandableEntityBadgeProps {
 /** Determines which tabs to show based on entity prefix */
 function getTabsForEntity(
     prefix: string,
-    tt: TranslationsT['dashboard']['transactions'] & { account_summary?: AccountRewardsCsvModalDict },
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict },
 ): { key: EntityTab; label: string; tooltip?: string }[] {
     const isAccountAddr = prefix.startsWith('account_');
     const accT = tt?.account_summary;
@@ -173,9 +173,9 @@ export function ExpandableEntityBadge({
     const wellKnownKey = getWellKnownKey(clean, network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(clean) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
 
     // Lazy fetch — only when expanded (eager for pools)
@@ -251,7 +251,7 @@ export function ExpandableEntityBadge({
                             onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                             onPointerEnter={() => prefetchAccountRewards(clean)}
                             className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={tt.account_summary?.download_rewards_tooltip || tt.account_summary?.download_account_rewards}
+                            title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
                         >
                             <Download className="w-3 h-3" />
                         </button>
@@ -282,7 +282,7 @@ export function ExpandableEntityBadge({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={locale}
-                    tt={tt.account_summary}
+                    tt={tt?.account_summary}
                     marketData={marketData}
                 />
             )}
@@ -444,7 +444,7 @@ function EntitySummaryTab({
     iconUrl: string | null | undefined;
     metadataItems: MetadataItem[];
     getMeta: (key: string) => string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;

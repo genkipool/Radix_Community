@@ -6,7 +6,7 @@ import { Check, Copy, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
 import { TransactionTabs } from './TransactionTabs';
-import type { TransactionDetails, TranslationsT } from '@/features/dashboard/types';
+import type { TransactionDetails } from '@/features/dashboard/types';
 import { formatEntity } from '../../utils/entityUtils';
 import { Pill } from '@/components/ui/Pill';
 import { CloseButton } from '@/components/ui/CloseButton';
@@ -21,10 +21,10 @@ export function TransactionDetailModal({
     t, dt, copiedAddress, copyAddress, network, timezone, locale,
     direction = 0, setDirection, marketData,
 }: TransactionDetailModalProps) {
-    const tt = (dt?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
+    const tt = dt?.transactions;
     const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
     const statusColor = isSuccess ? '#22c55e' : '#ef4444';
-    const statusLabel = isSuccess ? (tt.success || 'Success') : (tt.failed || 'Failed');
+    const statusLabel = isSuccess ? (tt?.success || 'Success') : (tt?.failed || 'Failed');
 
     /* Fetch details directly in the modal — uses the same queryKey as the
        prefetch triggered on hover, so if the user hovered before clicking
@@ -121,7 +121,7 @@ export function TransactionDetailModal({
                                         <span className="opacity-40 shrink-0">·</span>
 
                                         {/* 2. Fee Paid */}
-                                        <span className="shrink-0">{tt.fee_paid || 'Fee'}: <span className="font-mono font-bold text-[var(--color-text-main)]">{tx.feePaid} XRD</span></span>
+                                        <span className="shrink-0">{tt?.fee_paid || 'Fee'}: <span className="font-mono font-bold text-[var(--color-text-main)]">{tx.feePaid} XRD</span></span>
 
                                         <span className="opacity-40 shrink-0">·</span>
 
@@ -153,16 +153,16 @@ export function TransactionDetailModal({
 
                                                 const resolveType = (classes: string[], events: Record<string, unknown>[]): string => {
                                                     if (classes.includes('ProtocolVote') || events.some((e) => e.name === 'ProtocolUpdateReadinessSignalEvent')) {
-                                                        return tt.tx_type_protocol_vote || 'Protocol Vote';
+                                                        return tt?.tx_type_protocol_vote || 'Protocol Vote';
                                                     }
-                                                    if (classes.length === 0) return tt.tx_type_general || 'General';
+                                                    if (classes.length === 0) return tt?.tx_type_general || 'General';
                                                     const c = classes[0];
-                                                    if (c === 'ValidatorStake') return tt.tx_type_stake || 'Stake';
-                                                    if (c === 'ValidatorUnstake') return tt.tx_type_unstake || 'Unstake';
-                                                    if (c === 'ValidatorClaimXrd' || c === 'ValidatorClaim') return tt.tx_type_claim || 'Claim';
-                                                    if (c === 'Transfer') return tt.tx_type_transfer || 'Transfer';
-                                                    if (c === 'AccountDepositSettingsUpdate') return tt.tx_type_settings || 'Settings';
-                                                    return c || (tt.tx_type_general || 'General');
+                                                    if (c === 'ValidatorStake') return tt?.tx_type_stake || 'Stake';
+                                                    if (c === 'ValidatorUnstake') return tt?.tx_type_unstake || 'Unstake';
+                                                    if (c === 'ValidatorClaimXrd' || c === 'ValidatorClaim') return tt?.tx_type_claim || 'Claim';
+                                                    if (c === 'Transfer') return tt?.tx_type_transfer || 'Transfer';
+                                                    if (c === 'AccountDepositSettingsUpdate') return tt?.tx_type_settings || 'Settings';
+                                                    return c || (tt?.tx_type_general || 'General');
                                                 };
 
                                                 const transactionType = resolveType(detailClasses, detailEvents);
@@ -171,7 +171,7 @@ export function TransactionDetailModal({
 
                                                 // Only render the pill if we have an actual type that's not 'General' when there are no classes,
                                                 // or if we have classes. (Mimicking card logic)
-                                                if (immediateClasses.length === 0 && !details && label === (tt.tx_type_general || 'General')) return null;
+                                                if (immediateClasses.length === 0 && !details && label === (tt?.tx_type_general || 'General')) return null;
 
                                                 return <Pill color="muted" className="rounded text-[9px] px-2 py-0.5">{label}</Pill>;
                                             })()}
@@ -186,7 +186,7 @@ export function TransactionDetailModal({
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--color-text-muted)]">
                                     <Activity className="w-7 h-7 animate-spin text-[var(--color-primary)]" />
-                                    <p className="text-xs uppercase tracking-wider font-bold">{tt.loading_details || 'Loading transaction details...'}</p>
+                                    <p className="text-xs uppercase tracking-wider font-bold">{tt?.loading_details || 'Loading transaction details...'}</p>
                                 </div>
                             ) : (
                                 /* TransactionTabs renders the tab bar + content directly — no card wrapper */

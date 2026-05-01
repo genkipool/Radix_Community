@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useLayout } from '@/context/LayoutContext';
 import { SidebarPageHero } from '@/components/layout/SidebarPageHero';
 import type { FeaturedDocsHeroProps } from '../types/components.types';
+import type { Dictionary } from '@/i18n';
 import type { DocsDictionary } from '../types/i18n.types';
 import type { FeaturedCardProps } from '@/components/ui/FeaturedCard';
 
@@ -56,11 +57,12 @@ const CARDS_CONFIG = [
 export default function FeaturedDocsHero({
   onSelectDoc,
   collapsed = false,
-}: FeaturedDocsHeroProps) {
+  dictionary,
+}: FeaturedDocsHeroProps & { dictionary?: Partial<Dictionary> }) {
   const { t: dict } = useLanguage();
   const { setShowUnderConstruction } = useLayout();
-  const docsT = dict.docs as DocsDictionary;
-  const docsLabels = docsT.documents;
+  const docsT = (dictionary?.docs || dict?.docs || {}) as DocsDictionary;
+  const docsLabels = docsT.documents || {};
   const topics = docsT.topics ?? {};
   const cards = docsT.featured_cards ?? {};
 

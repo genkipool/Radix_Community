@@ -46,13 +46,13 @@ export function PanelRoleRow({
     entry, tt, onCopy, copiedAddress,
 }: {
     entry: ConfigEntry;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
 }) {
     const resolutionColor = (r: string) =>
-        r === (tt.role_resolution_deny_all || 'Deny All')    ? 'text-[var(--color-text-muted)]'
-        : r === (tt.role_resolution_allow_all || 'Allow All') ? 'text-green-700 dark:text-green-400'
+        r === (tt?.role_resolution_deny_all || 'Deny All')    ? 'text-[var(--color-text-muted)]'
+        : r === (tt?.role_resolution_allow_all || 'Allow All') ? 'text-green-700 dark:text-green-400'
         : 'text-[var(--color-primary)]';
 
     return (
@@ -60,7 +60,7 @@ export function PanelRoleRow({
             <div className="flex-1 min-w-0">
                 <dt
                     className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-main)] capitalize"
-                    title={tt.role_tooltip_name || 'The name of this role and what it controls.'}
+                    title={tt?.role_tooltip_name || 'The name of this role and what it controls.'}
                 >
                     {entry.name.replace(/_/g, ' ')}
                 </dt>
@@ -98,12 +98,12 @@ export function PanelRoleRow({
                 <span
                     className={`text-[9px] font-bold ${entry.updatable ? 'text-amber-400' : 'text-[var(--color-text-muted)]'}`}
                     title={entry.updatable
-                        ? (tt.role_tooltip_status_updatable || 'The assignment of this role can be changed.')
-                        : (tt.role_tooltip_status_immutable || 'The assignment of this role is permanently fixed.')}
+                        ? (tt?.role_tooltip_status_updatable || 'The assignment of this role can be changed.')
+                        : (tt?.role_tooltip_status_immutable || 'The assignment of this role is permanently fixed.')}
                 >
                     {entry.updatable
-                        ? (tt.resource_panel_updatable || 'Updatable')
-                        : (tt.resource_panel_immutable || 'Immutable')}
+                        ? (tt?.resource_panel_updatable || 'Updatable')
+                        : (tt?.resource_panel_immutable || 'Immutable')}
                 </span>
             </div>
         </div>
@@ -172,11 +172,11 @@ export function PanelTabBar<T extends string>({
 /* ─────────────────────────────────────────
    PanelLoadingState
 ───────────────────────────────────────── */
-export function PanelLoadingState({ tt }: { tt: TranslationsT['dashboard']['transactions'] }) {
+export function PanelLoadingState({ tt }: { tt?: Partial<TranslationsT['dashboard']['transactions']> }) {
     return (
         <div className="flex items-center gap-2 py-3 text-[var(--color-text-muted)]">
             <Activity className="w-3.5 h-3.5 animate-spin text-[var(--color-primary)]" />
-            <span className="text-xs">{tt.resource_panel_loading || 'Loading details...'}</span>
+            <span className="text-xs">{tt?.resource_panel_loading || 'Loading details...'}</span>
         </div>
     );
 }
@@ -191,12 +191,12 @@ export function PanelMetadataTab({
     metadataItems, tt,
 }: {
     metadataItems: MetadataItem[];
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
 }) {
     if (metadataItems.length === 0) {
         return (
             <p className="py-4 text-xs text-[var(--color-text-muted)]">
-                {tt.resource_panel_no_metadata || 'No metadata found.'}
+                {tt?.resource_panel_no_metadata || 'No metadata found.'}
             </p>
         );
     }
@@ -275,14 +275,14 @@ export function PanelConfigurationTab({
     configEntries, tt, onCopy, copiedAddress,
 }: {
     configEntries: ConfigEntry[];
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
 }) {
     if (configEntries.length === 0) {
         return (
             <p className="py-4 text-xs text-[var(--color-text-muted)]">
-                {tt.resource_panel_no_config || 'No configuration data.'}
+                {tt?.resource_panel_no_config || 'No configuration data.'}
             </p>
         );
     }
@@ -296,7 +296,7 @@ export function PanelConfigurationTab({
         <dl>
             {adminEntries.length > 0 && (
                 <>
-                    <PanelSectionHeader label={tt.role_section_admin || 'Role Administrator'} />
+                    <PanelSectionHeader label={tt?.role_section_admin || 'Role Administrator'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {adminEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
@@ -304,7 +304,7 @@ export function PanelConfigurationTab({
             )}
             {mainRoleEntries.length > 0 && (
                 <>
-                    <PanelSectionHeader label={tt.role_section_main || 'Main Roles'} />
+                    <PanelSectionHeader label={tt?.role_section_main || 'Main Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {mainRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
@@ -312,7 +312,7 @@ export function PanelConfigurationTab({
             )}
             {royaltyRoleEntries.length > 0 && (
                 <>
-                    <PanelSectionHeader label={tt.role_section_royalty || 'Royalty Roles'} />
+                    <PanelSectionHeader label={tt?.role_section_royalty || 'Royalty Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {royaltyRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
@@ -320,7 +320,7 @@ export function PanelConfigurationTab({
             )}
             {roleEntries.length > 0 && (
                 <>
-                    <PanelSectionHeader label={tt.role_section_roles || 'Roles'} />
+                    <PanelSectionHeader label={tt?.role_section_roles || 'Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {roleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
@@ -328,7 +328,7 @@ export function PanelConfigurationTab({
             )}
             {metaRoleEntries.length > 0 && (
                 <>
-                    <PanelSectionHeader label={tt.role_section_metadata || 'Metadata Roles'} />
+                    <PanelSectionHeader label={tt?.role_section_metadata || 'Metadata Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
                         {metaRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
                     </div>
@@ -347,7 +347,7 @@ export function PanelRawTab({
     data, tt, onCopy, copiedAddress,
 }: {
     data: unknown;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
 }) {
@@ -362,7 +362,7 @@ export function PanelRawTab({
                         ? 'text-green-500'
                         : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
                 }`}
-                title={copiedAddress === rawJson ? tt.copied_json || 'JSON Copied!' : tt.copy_json || 'Copy JSON'}
+                title={copiedAddress === rawJson ? tt?.copied_json || 'JSON Copied!' : tt?.copy_json || 'Copy JSON'}
             >
                 {copiedAddress === rawJson ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </motion.button>

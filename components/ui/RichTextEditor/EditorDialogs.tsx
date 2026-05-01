@@ -104,7 +104,7 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
                     <Link2 className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-base" style={{ color: 'var(--color-text-main)' }}>
-                    {t.insert_link ?? 'Insert link'}
+                    {t?.insert_link ?? 'Insert link'}
                 </h3>
             </div>
 
@@ -121,10 +121,10 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
                     />
                 </div>
                 <div>
-                    <FieldLabel>{t.link_label_placeholder ?? 'Label (optional)'}</FieldLabel>
+                    <FieldLabel>{t?.link_label_placeholder ?? 'Label (optional)'}</FieldLabel>
                     <FieldInput
                         type="text"
-                        placeholder={t.link_label_placeholder ?? 'Link text…'}
+                        placeholder={t?.link_label_placeholder ?? 'Link text…'}
                         value={label}
                         onChange={e => setLabel(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
@@ -133,8 +133,8 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
             </div>
 
             <div className="flex gap-3 mt-5">
-                <Btn variant="primary" onClick={commit}>{t.insert ?? 'Insert'}</Btn>
-                <Btn variant="secondary" onClick={onClose}>{t.cancel ?? 'Cancel'}</Btn>
+                <Btn variant="primary" onClick={commit}>{t?.insert ?? 'Insert'}</Btn>
+                <Btn variant="secondary" onClick={onClose}>{t?.cancel ?? 'Cancel'}</Btn>
             </div>
         </ModalShell>
     );
@@ -149,15 +149,15 @@ export function DiscardDialog({ onConfirm, onClose, t }: DiscardDialogProps) {
             <div className="flex items-center gap-3 mb-3">
                 <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
                 <h3 className="font-bold text-base" style={{ color: 'var(--color-text-main)' }}>
-                    {t.confirm_discard ?? 'Discard changes?'}
+                    {t?.confirm_discard ?? 'Discard changes?'}
                 </h3>
             </div>
             <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
-                {t.confirm_discard_desc ?? 'All unsaved changes will be permanently lost.'}
+                {t?.confirm_discard_desc ?? 'All unsaved changes will be permanently lost.'}
             </p>
             <div className="flex gap-3">
-                <Btn variant="danger" onClick={onConfirm}>{t.discard ?? 'Discard'}</Btn>
-                <Btn variant="secondary" onClick={onClose}>{t.cancel ?? 'Cancel'}</Btn>
+                <Btn variant="danger" onClick={onConfirm}>{t?.discard ?? 'Discard'}</Btn>
+                <Btn variant="secondary" onClick={onClose}>{t?.cancel ?? 'Cancel'}</Btn>
             </div>
         </ModalShell>
     );

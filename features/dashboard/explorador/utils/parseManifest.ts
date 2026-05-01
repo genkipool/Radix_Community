@@ -99,16 +99,16 @@ export function resolveAirdropData(
  */
 export function classifySource(
   senders: FungibleChange[],
-  tt?: TranslationsT['dashboard']['transactions'],
+  tt?: Partial<TranslationsT['dashboard']['transactions']>,
   options?: { isStakingTx?: boolean },
 ): SourceStyle {
-  const dict = tt || ({} as TranslationsT['dashboard']['transactions']);
+  const dict = tt;
   const hasCM = senders.some(s => isConsensusManager(s.entity_address));
   const allUserAccounts = senders.length > 0 && senders.every(s => sanitizeText(s.entity_address).startsWith('account_'));
 
-  if (senders.length === 0) return { method: String(dict.method_minted || 'Minted / Generated'), title: String(dict.method_minted_title || ''), color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30' };
-  if (hasCM) return { method: String(dict.method_network || 'Network / Protocol'), title: String(dict.method_network_title || ''), color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30' };
-  if (options?.isStakingTx) return { method: String(dict.method_staking || 'Staking'), title: String(dict.method_staking_title || ''), color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/30' };
-  if (allUserAccounts) return { method: String(dict.method_user || 'User Transfer'), title: String(dict.method_user_title || ''), color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30' };
-  return { method: String(dict.method_smart_contract || 'Smart Contract / Pool'), title: String(dict.method_smart_contract_title || ''), color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' };
+  if (senders.length === 0) return { method: String(dict?.method_minted || 'Minted / Generated'), title: String(dict?.method_minted_title || ''), color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30' };
+  if (hasCM) return { method: String(dict?.method_network || 'Network / Protocol'), title: String(dict?.method_network_title || ''), color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30' };
+  if (options?.isStakingTx) return { method: String(dict?.method_staking || 'Staking'), title: String(dict?.method_staking_title || ''), color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/30' };
+  if (allUserAccounts) return { method: String(dict?.method_user || 'User Transfer'), title: String(dict?.method_user_title || ''), color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-100/10 border-amber-200 dark:border-amber-800/30' };
+  return { method: String(dict?.method_smart_contract || 'Smart Contract / Pool'), title: String(dict?.method_smart_contract_title || ''), color: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30' };
 }

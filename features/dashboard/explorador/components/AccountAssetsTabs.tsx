@@ -198,7 +198,7 @@ export function AccountTokensTab({
     locale
 }: {
     entityData: GatewayEntityDetails | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network?: 'mainnet' | 'stokenet';
@@ -208,7 +208,7 @@ export function AccountTokensTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt.account_summary?.tokens_tab || 'Tokens'} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={tt?.account_summary?.tokens_tab || 'Tokens'} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
             {tokens.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No tokens found.</p>
             )}
@@ -225,7 +225,7 @@ export function AccountPoolUnitsTab({
     locale
 }: {
     entityData: GatewayEntityDetails | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network?: 'mainnet' | 'stokenet';
@@ -235,7 +235,7 @@ export function AccountPoolUnitsTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt.account_summary?.pool_units || 'Pool Units'} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={tt?.account_summary?.pool_units || 'Pool Units'} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
             {poolUnits.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No pool units found.</p>
             )}
@@ -252,7 +252,7 @@ export function AccountNftsTab({
     locale
 }: {
     entityData: GatewayEntityDetails | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network?: 'mainnet' | 'stokenet';
@@ -262,8 +262,8 @@ export function AccountNftsTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt.account_summary?.nfts_tab || 'NFTs'} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
-            <AssetSection title={tt.account_summary?.burned_nfts || 'Burned NFTs'} items={burnedNfts} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
+            <AssetSection title={tt?.account_summary?.nfts_tab || 'NFTs'} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={tt?.account_summary?.burned_nfts || 'Burned NFTs'} items={burnedNfts} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
             {activeNfts.length === 0 && burnedNfts.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No NFTs found.</p>
             )}
@@ -277,7 +277,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tt,
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
@@ -309,7 +309,7 @@ function ExpandableResourceCard({
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {

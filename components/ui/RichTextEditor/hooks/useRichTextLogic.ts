@@ -15,7 +15,7 @@ interface UseRichTextLogicProps {
     editorRef: React.RefObject<HTMLDivElement | null>;
     onSync: (html: string) => void;
     forceUpdate: () => void;
-    t: EditorToolbarDictionary;
+    t?: Partial<EditorToolbarDictionary>;
     disallowImages?: boolean;
     maxLength?: number;
     addToast?: (type: 'success' | 'error' | 'info', msg: string) => void;
@@ -138,7 +138,7 @@ export function useRichTextLogic({
             const src = await fileToDataUrl(file);
             insertImageSrc(src, file.name);
         } catch (err) {
-            if (addToast) addToast('error', t.image_error ?? 'Failed to load image.');
+            if (addToast) addToast('error', t?.image_error ?? 'Failed to load image.');
             else console.error('Failed to load image', err);
         }
         e.target.value = '';

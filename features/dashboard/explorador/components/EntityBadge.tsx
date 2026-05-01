@@ -19,7 +19,7 @@ import type { Network, TranslationsT } from '@/features/dashboard/types';
    ConsensusManagerInfoCard
    Expandable explanation of what the CM is
 ───────────────────────────────────────── */
-export function ConsensusManagerInfoCard({ tt }: { tt: TranslationsT['dashboard']['transactions'] }) {
+export function ConsensusManagerInfoCard({ tt }: { tt?: Partial<TranslationsT['dashboard']['transactions']> }) {
     const [open, setOpen] = useState(false);
     return (
         <div className="mt-1.5 rounded-xl border border-blue-500/30 bg-blue-500/5 overflow-hidden">
@@ -30,7 +30,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt: TranslationsT['dashboard'
             >
                 <Shield className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                 <span className="text-[11px] font-bold text-blue-300 flex-1">
-                    {String(tt.consensus_manager_badge || 'System Component')}
+                    {String(tt?.consensus_manager_badge || 'System Component')}
                 </span>
                 <Info className="w-3 h-3 text-blue-400/60" />
             </button>
@@ -44,7 +44,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt: TranslationsT['dashboard'
                         className="overflow-hidden"
                     >
                         <p className="px-3 pb-3 pt-1 text-[11px] leading-relaxed text-blue-200/80">
-                            {String(tt.consensus_manager_info_body ||
+                            {String(tt?.consensus_manager_info_body ||
                                 'The Consensus Manager is a native built-in component of the Radix protocol that manages epochs, block proposals, and staking reward distribution. When it appears as Origin, the protocol itself is distributing XRD (e.g., network emissions to validators or delegators).')}
                         </p>
                     </motion.div>
@@ -63,7 +63,7 @@ export function AddressDisplay({
 }: {
     label: string;
     address: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     showConsensusInfo?: boolean;
@@ -76,9 +76,9 @@ export function AddressDisplay({
     const wellKnownKey = getWellKnownKey(sanitizeText(address), network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(sanitizeText(address)) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
     const isCM = isConsensusManager(address);
     const meta = useEntityData(address, network);
@@ -86,9 +86,9 @@ export function AddressDisplay({
     const entityIcon = meta?.iconUrl;
 
     const displayText = isCM
-        ? (tt.consensus_manager_label || 'Consensus Manager (Protocol Action)')
+        ? (tt?.consensus_manager_label || 'Consensus Manager (Protocol Action)')
         : address.length > 20 ? `${address.slice(0, 10)}...${address.slice(-6)}` : address;
-    const copyableAddr = String(isCM ? (tt.consensus_manager_address || address) : address);
+    const copyableAddr = String(isCM ? (tt?.consensus_manager_address || address) : address);
     const isAccountAddr = address.startsWith('account_');
 
     return (
@@ -123,7 +123,7 @@ export function AddressDisplay({
                                 onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                                 onPointerEnter={() => prefetchAccountRewards(sanitizeText(address))}
                                 className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
-                                title={tt.account_summary?.download_rewards_tooltip || tt.account_summary?.download_account_rewards || 'Download Rewards'}
+                                title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards || 'Download Rewards'}
                             >
                                 <Download className="w-3 h-3" />
                             </button>
@@ -147,7 +147,7 @@ export function AddressDisplay({
                     isOpen={isCsvModalOpen}
                     onClose={() => setIsCsvModalOpen(false)}
                     accountAddress={sanitizeText(address)}
-                    tt={tt.account_summary}
+                    tt={tt?.account_summary}
                 />
             )}
         </div>
@@ -162,7 +162,7 @@ export function EntityBadge({
     address, tt, onCopy, copiedAddress, onResourceClick, network, locale: _locale = 'en', hideLabel = false,
 }: {
     address: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -176,9 +176,9 @@ export function EntityBadge({
     const wellKnownKey = getWellKnownKey(clean, network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(clean) : null;
     const wellKnownTip = wellKnownKey
-        ? tt.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
+        ? tt?.well_known_tooltips?.[wellKnownKey as keyof typeof tt.well_known_tooltips]
         : genericKey
-            ? tt.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
+            ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
     const meta = useEntityData(clean, network);
     const entityName = meta?.name;

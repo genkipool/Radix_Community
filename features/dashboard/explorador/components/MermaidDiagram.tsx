@@ -30,7 +30,18 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                     flowchart: { curve: 'basis', nodeSpacing: 80, rankSpacing: 140, padding: 40 },
                 });
                 const { svg: s } = await m.render(`mc${rawId}${Date.now()}`, chart);
-                if (!cancelled) setSvg(s);
+
+                // Extraemos el tamaño de fuente del bloque de inicialización del chart
+                const sizeMatch = chart.match(/'clusterFontSize':\s*'(\d+)px'/);
+                const clusterSize = sizeMatch ? `${sizeMatch[1]}px` : '20px';
+
+                // Inyectamos el estilo directamente en el SVG generado para forzar el escalado
+                const scaledSvg = s.replace(
+                    '<style>',
+                    `<style>.cluster-label, .cluster-label span { font-size: ${clusterSize} !important; font-weight: bold !important; }`
+                );
+
+                if (!cancelled) setSvg(scaledSvg);
             } catch (err) {
                 console.error("Mermaid render error:", err);
                 if (!cancelled) setSvg('<div class="text-red-500 text-[10px]">Error rendering diagram</div>');

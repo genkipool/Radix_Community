@@ -21,7 +21,7 @@ import {
 
 
 import { BalanceChangeRowProps, ResourceInlinePanelProps } from '../types';
-import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
+import type { MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import { UnderlyingTokensTab } from './UnderlyingTokensTab';
 import { ExpandableEntityBadge } from './ExpandableEntityBadge';
@@ -155,12 +155,12 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
             ? (accT?.contributed_tokens || 'Contributed Tokens')
             : key === 'pool'
             ? (accT?.pool_tab || 'Pool')
-            : (tt[`resource_panel_${key}`] || key.charAt(0).toUpperCase() + key.slice(1)),
+            : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
         tooltip: key === 'contributed_tokens'
             ? tt?.tab_tokens_tooltip
             : key === 'pool'
             ? tt?.tab_pool_units_tooltip
-            : tt[`tab_${key}_tooltip`],
+            : (tt as Record<string, string | undefined>)?.[`tab_${key}_tooltip`],
     }));
 
     return (
@@ -216,14 +216,14 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                             </dd>
                                         </div>
                                     )}
-                                    {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{resourceType}</dd></div>}
-                                    {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{divisibility}</dd></div>}
-                                    {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply)}{symbol ? ` ${symbol}` : ''}</dd></div>}
-                                    {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-green-600 font-mono">+{fmt(totalMinted)}{symbol ? ` ${symbol}` : ''}</dd></div>}
-                                    {totalBurned && parseFloat(String(totalBurned)) > 0 && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt.resource_panel_total_burned || 'Total Burned'}</dt><dd className="text-xs font-semibold text-red-400 font-mono">−{fmt(totalBurned)}{symbol ? ` ${symbol}` : ''}</dd></div>}
+                                    {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{resourceType}</dd></div>}
+                                    {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{divisibility}</dd></div>}
+                                    {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply)}{symbol ? ` ${symbol}` : ''}</dd></div>}
+                                    {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-green-600 font-mono">+{fmt(totalMinted)}{symbol ? ` ${symbol}` : ''}</dd></div>}
+                                    {totalBurned && parseFloat(String(totalBurned)) > 0 && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_burned || 'Total Burned'}</dt><dd className="text-xs font-semibold text-red-400 font-mono">−{fmt(totalBurned)}{symbol ? ` ${symbol}` : ''}</dd></div>}
                                     {tagList.length > 0 && (
                                         <div className="flex items-start justify-between gap-4">
-                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">{tt.resource_panel_tags || 'Tags'}</dt>
+                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">{tt?.resource_panel_tags || 'Tags'}</dt>
                                             <dd className="flex items-center gap-1.5 flex-wrap justify-end">
                                                 {tagList.map((tag: string, i: number) => <Pill key={i}>{tag}</Pill>)}
                                             </dd>
@@ -233,7 +233,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                 {behaviors.length > 0 && (
                                     <>
                                         <div className="border-t border-[var(--color-card-border)] mt-4 mb-3" />
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt.resource_panel_behavior || 'Behavior'}</p>
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt?.resource_panel_behavior || 'Behavior'}</p>
                                         <ul className="space-y-1.5">
                                             {behaviors.map((b, i) => <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="w-1 h-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}
                                         </ul>
@@ -289,7 +289,7 @@ const BalanceChangeRow = ({
     change, t, tt: ttProp, onResourceClick: _onResourceClick, onCopy, copiedAddress, readingMode: _readingMode, network = 'mainnet', side: _side, locale,
     iconOverride, colorOverride, hideSign, titleOverride,
 }: BalanceChangeRowProps & { titleOverride?: string }) => {
-    const tt = ttProp ?? (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
+    const tt = ttProp ?? t?.dashboard?.transactions;
     const [expanded, setExpanded] = useState(false);
 
     const { data: metadata, isLoading } = useQuery({
@@ -327,19 +327,19 @@ const BalanceChangeRow = ({
         || (rawName && /liquid.?stake|lsu/i.test(rawName) ? 'LSU' : '');
 
     let titleStr = '';
-    const feeTitle = t?.dashboard?.transactions?.fee_deduction_title || 'Fee deduction of {amount} {token} from account {account}';
-    const sentTitle = t?.dashboard?.transactions?.sent_title || 'Account {account} sent {amount} {token}';
-    const receivedTitle = t?.dashboard?.transactions?.received_title || 'Account {account} received {amount} {token}';
+    const feeTitle = tt?.fee_deduction_title || 'Fee deduction of {amount} {token} from account {account}';
+    const sentTitle = tt?.sent_title || 'Account {account} sent {amount} {token}';
+    const receivedTitle = tt?.received_title || 'Account {account} received {amount} {token}';
 
     if (isFee) {
-        titleStr = feeTitle
+        titleStr = (feeTitle || 'Fee deduction of {amount} {token} from account {account}')
             .replace('{amount}', change.balance_change.replace('-', ''))
             .replace('{token}', symbol || name)
             .replace('{account}', change.entity_address);
     } else {
         titleStr = isNegative
-            ? sentTitle.replace('{account}', change.entity_address).replace('{amount}', change.balance_change.replace('-', '')).replace('{token}', symbol || name)
-            : receivedTitle.replace('{account}', change.entity_address).replace('{amount}', change.balance_change).replace('{token}', symbol || name);
+            ? (sentTitle || 'Account {account} sent {amount} {token}').replace('{account}', change.entity_address).replace('{amount}', change.balance_change.replace('-', '')).replace('{token}', symbol || name)
+            : (receivedTitle || 'Account {account} received {amount} {token}').replace('{account}', change.entity_address).replace('{amount}', change.balance_change).replace('{token}', symbol || name);
     }
 
     const handleCardClick = (e: React.MouseEvent) => {

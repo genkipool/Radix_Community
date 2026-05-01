@@ -39,7 +39,7 @@ import infrastructureEs from '@/features/infrastructure/locales/es.json';
 
 type TranslationModule = { seo?: Record<string, unknown> } & Record<string, unknown>;
 
-const mergeTranslations = (common: TranslationModule, features: TranslationModule[]) => {
+export const mergeTranslations = (common: TranslationModule, features: TranslationModule[]) => {
   const result = { ...common };
   features.forEach((feature) => {
     Object.keys(feature).forEach((key) => {
@@ -111,3 +111,52 @@ export const translations = {
   en: en as unknown as Dictionary,
   es: es as unknown as Dictionary,
 };
+
+export type FeatureKey =
+  | 'academy' | 'blog' | 'community' | 'dapps' | 'dashboard'
+  | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
+  | 'games' | 'home' | 'infrastructure';
+
+const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ default: Record<string, unknown> }>>> = {
+  en: {
+    academy: () => import('@/features/academy/locales/en.json'),
+    blog: () => import('@/features/blog/locales/en.json'),
+    community: () => import('@/features/community/locales/en.json'),
+    dapps: () => import('@/features/dapps/locales/en.json'),
+    dashboard: () => import('@/features/dashboard/locales/en.json'),
+    dashboardStaking: () => import('@/features/dashboard/staking/locales/en.json'),
+    dashboardExplorador: () => import('@/features/dashboard/explorador/locales/en.json'),
+    docs: () => import('@/features/docs/locales/en.json'),
+    forum: () => import('@/features/forum/locales/en.json'),
+    games: () => import('@/features/games/locales/en.json'),
+    home: () => import('@/features/home/locales/en.json'),
+    infrastructure: () => import('@/features/infrastructure/locales/en.json'),
+  },
+  es: {
+    academy: () => import('@/features/academy/locales/es.json'),
+    blog: () => import('@/features/blog/locales/es.json'),
+    community: () => import('@/features/community/locales/es.json'),
+    dapps: () => import('@/features/dapps/locales/es.json'),
+    dashboard: () => import('@/features/dashboard/locales/es.json'),
+    dashboardStaking: () => import('@/features/dashboard/staking/locales/es.json'),
+    dashboardExplorador: () => import('@/features/dashboard/explorador/locales/es.json'),
+    docs: () => import('@/features/docs/locales/es.json'),
+    forum: () => import('@/features/forum/locales/es.json'),
+    games: () => import('@/features/games/locales/es.json'),
+    home: () => import('@/features/home/locales/es.json'),
+    infrastructure: () => import('@/features/infrastructure/locales/es.json'),
+  }
+};
+
+export async function loadFeatureDictionaries(
+  locale: 'en' | 'es',
+  features: FeatureKey[],
+): Promise<Dictionary> {
+  const common = locale === 'es' ? commonEs : commonEn;
+  if (features.length === 0) return common as unknown as Dictionary;
+  
+  const modules = await Promise.all(
+    features.map(f => featureLoaders[locale][f]())
+  );
+  return mergeTranslations(common, modules.map(m => m.default)) as unknown as Dictionary;
+}

@@ -16,7 +16,7 @@ import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/typ
 interface AccountTransactionsTabProps {
     accountAddress: string;
     network: Network;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     locale: string;
 }
 
@@ -268,7 +268,7 @@ export function AccountTransactionsTab({
     tt,
     locale
 }: AccountTransactionsTabProps) {
-    const accT = tt.account_summary;
+    const accT = tt?.account_summary;
 
     const {
         data,

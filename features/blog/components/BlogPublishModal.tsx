@@ -5,18 +5,13 @@ import { FileText, MessageSquare, Tag, Wallet, Sparkles } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor/RichTextEditor';
 import { LabelBadge } from '@/components/ui/LabelBadge';
 import { PublishModalLayout } from '@/components/layout/PublishModalLayout';
-import { BlogPost, BlogDictionary } from '../types';
-import { EditorToolbarDictionary } from '@/components/ui/RichTextEditor/types';
+import type { Dictionary } from '@/i18n';
+import { BlogPost } from '../types';
 
 interface BlogPublishModalProps {
     isOpen: boolean;
     onClose: () => void;
-    t: {
-        blog: BlogDictionary;
-        docs: {
-            editor: EditorToolbarDictionary;
-        };
-    };
+    t?: Partial<Dictionary>;
     customTagValue: string;
     setCustomTagValue: (val: string) => void;
     addPost: (post: Omit<BlogPost, 'id' | 'date'>) => void;
@@ -25,8 +20,8 @@ interface BlogPublishModalProps {
 export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustomTagValue, addPost }: BlogPublishModalProps) {
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
-    const blogTags = Object.keys(t.blog.tags).filter(tag => tag !== 'Custom');
-    const [selectedTag, setSelectedTag] = useState<string | null>(blogTags[0]);
+    const blogTags = Object.keys(t?.blog?.tags || {}).filter(tag => tag !== 'Custom');
+    const [selectedTag, setSelectedTag] = useState<string | null>(blogTags[0] || null);
     const [isEditingCustom, setIsEditingCustom] = useState(false);
     const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -80,13 +75,13 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
             isOpen={isOpen}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            title={t.blog.modal.new_post_title}
-            subtitle={t.blog.modal.subtitle}
+            title={t?.blog?.modal?.new_post_title || 'New Post'}
+            subtitle={t?.blog?.modal?.subtitle || ''}
             icon={<Sparkles className="w-6 h-6" />}
             isPublishing={false}
             canPublish={canPublish}
-            publishLabel={t.blog.modal.publish_btn}
-            disclaimer={t.blog.modal.beta_disclaimer}
+            publishLabel={t?.blog?.modal?.publish_btn || 'Publish'}
+            disclaimer={t?.blog?.modal?.beta_disclaimer || ''}
             footerExtra={
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-accent)]/5 border border-[var(--color-primary)]/20 shadow-inner">
                     <div className="flex items-start gap-5">
@@ -95,10 +90,10 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                         </div>
                         <div className="flex-1 space-y-1.5">
                             <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-wider">
-                                {t.blog.modal.reward_title}
+                                {t?.blog?.modal?.reward_title}
                             </p>
                             <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                                {t.blog.modal.reward_desc}
+                                {t?.blog?.modal?.reward_desc}
                             </p>
                         </div>
                     </div>
@@ -111,7 +106,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
                             <FileText className="w-4 h-4 text-[var(--color-primary)]" />
-                            {t.blog.modal.title_label}
+                            {t?.blog?.modal?.title_label}
                         </label>
                         <span className={`text-[10px] font-bold ${title.length > 60 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
                             {title.length} / 70
@@ -123,7 +118,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                         maxLength={70}
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        placeholder={t.blog.modal.title_placeholder}
+                        placeholder={t?.blog?.modal?.title_placeholder}
                         className="w-full px-6 py-4 rounded-2xl border-2 border-[var(--color-card-border)] bg-[var(--color-bg)]/50 text-[var(--color-text-main)] text-base focus:outline-none focus:border-[var(--color-primary)]/50 transition-all placeholder:text-[var(--color-text-muted)]/40 shadow-inner"
                     />
                 </div>
@@ -133,7 +128,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
                             <MessageSquare className="w-4 h-4 text-[var(--color-primary)]" />
-                            {t.blog.modal.message_label}
+                            {t?.blog?.modal?.message_label}
                         </label>
                         <span className={`text-[10px] font-bold ${message.length > 4500 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
                             {message.length} / 5000
@@ -142,8 +137,8 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                     <RichTextEditor
                         value={message}
                         onChange={setMessage}
-                        placeholder={t.blog.modal.message_placeholder}
-                        t={t.docs.editor}
+                        placeholder={t?.blog?.modal?.message_placeholder}
+                        t={t?.docs?.editor}
                         toolbarPosition="top"
                         minHeight="240px"
                         maxHeight="240px"
@@ -156,7 +151,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                 <div className="space-y-4">
                     <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
                         <Tag className="w-4 h-4 text-[var(--color-primary)]" />
-                        {t.blog.modal.tag_label}
+                        {t?.blog?.modal?.tag_label}
                     </label>
                     <div className="flex flex-row gap-2 overflow-x-auto custom-scrollbar pb-1">
                         {blogTags.map(tag => {
@@ -164,7 +159,7 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                             return (
                                 <LabelBadge
                                     key={tag}
-                                    value={t.blog.tags[tag as keyof typeof t.blog.tags] || tag}
+                                    value={(t?.blog?.tags as Record<string, string>)?.[tag] || tag}
                                     onClick={() => {
                                         setSelectedTag(tag);
                                         setIsEditingCustom(false);
@@ -204,12 +199,12 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                                             if (customTagValue.trim()) setSelectedTag('Custom');
                                         }}
                                         maxLength={16}
-                                        placeholder={t.blog.tags.Custom}
+                                        placeholder={t?.blog?.tags?.Custom || 'Custom'}
                                     />
                                 </div>
                             ) : (
                                 <LabelBadge
-                                    value={customTagValue || t.blog.tags.Custom}
+                                    value={customTagValue || t?.blog?.tags?.Custom || 'Custom'}
                                     onClick={() => {
                                         setIsEditingCustom(true);
                                     }}

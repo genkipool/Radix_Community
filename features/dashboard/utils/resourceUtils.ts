@@ -24,30 +24,30 @@ import type {
  * grouped into admin / roles / metadata. Covers both fungible and NFT resource shapes.
  * Previously duplicated across BalanceChangeRow, ValidatorInlinePanel and NftTransferCard.
  */
-export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['transactions']): ConfigEntry[] {
+export function getConfigEntries(ra: unknown, tt?: Partial<TranslationsT['dashboard']['transactions']>): ConfigEntry[] {
     if (!ra) return [];
     const ROLE_DESC: Record<string, string> = {
-        owner:                             tt.role_desc_owner                  || 'Master authority that can exercise all owner-assigned roles.',
-        minter:                            tt.role_desc_minter                 || 'Can create new tokens and increase supply.',
-        minter_updater:                    tt.role_desc_minter_updater         || 'Can update who has the minter role.',
-        burner:                            tt.role_desc_burner                 || 'Can destroy tokens and reduce supply.',
-        burner_updater:                    tt.role_desc_burner_updater         || 'Can update who has the burner role.',
-        freezer:                           tt.role_desc_freezer                || 'Can freeze/unfreeze token movements in vaults.',
-        freezer_updater:                   tt.role_desc_freezer_updater        || 'Can update who has the freezer role.',
-        recaller:                          tt.role_desc_recaller               || 'Can forcibly retrieve tokens from any vault.',
-        recaller_updater:                  tt.role_desc_recaller_updater       || 'Can update who has the recaller role.',
-        depositor:                         tt.role_desc_depositor              || 'Controls who can deposit tokens into accounts.',
-        depositor_updater:                 tt.role_desc_depositor_updater      || 'Can update who has the depositor role.',
-        withdrawer:                        tt.role_desc_withdrawer             || 'Controls who can withdraw tokens from accounts.',
-        withdrawer_updater:                tt.role_desc_withdrawer_updater     || 'Can update who has the withdrawer role.',
+        owner:                             tt?.role_desc_owner                  || 'Master authority that can exercise all owner-assigned roles.',
+        minter:                            tt?.role_desc_minter                 || 'Can create new tokens and increase supply.',
+        minter_updater:                    tt?.role_desc_minter_updater         || 'Can update who has the minter role.',
+        burner:                            tt?.role_desc_burner                 || 'Can destroy tokens and reduce supply.',
+        burner_updater:                    tt?.role_desc_burner_updater         || 'Can update who has the burner role.',
+        freezer:                           tt?.role_desc_freezer                || 'Can freeze/unfreeze token movements in vaults.',
+        freezer_updater:                   tt?.role_desc_freezer_updater        || 'Can update who has the freezer role.',
+        recaller:                          tt?.role_desc_recaller               || 'Can forcibly retrieve tokens from any vault.',
+        recaller_updater:                  tt?.role_desc_recaller_updater       || 'Can update who has the recaller role.',
+        depositor:                         tt?.role_desc_depositor              || 'Controls who can deposit tokens into accounts.',
+        depositor_updater:                 tt?.role_desc_depositor_updater      || 'Can update who has the depositor role.',
+        withdrawer:                        tt?.role_desc_withdrawer             || 'Controls who can withdraw tokens from accounts.',
+        withdrawer_updater:                tt?.role_desc_withdrawer_updater     || 'Can update who has the withdrawer role.',
         non_fungible_data_updater:         'Can update NFT data fields after minting.',
         non_fungible_data_updater_updater: 'Can update who has the NFT data updater role.',
-        metadata_setter:                   tt.role_desc_metadata_setter        || 'Can update name, symbol and other metadata.',
-        metadata_setter_updater:           tt.role_desc_metadata_setter_updater|| 'Can update who has the metadata setter role.',
-        metadata_locker:                   tt.role_desc_metadata_locker        || 'Can lock metadata fields to prevent future changes.',
-        metadata_locker_updater:           tt.role_desc_metadata_locker_updater|| 'Can update who has the metadata locker role.',
+        metadata_setter:                   tt?.role_desc_metadata_setter        || 'Can update name, symbol and other metadata.',
+        metadata_setter_updater:           tt?.role_desc_metadata_setter_updater|| 'Can update who has the metadata setter role.',
+        metadata_locker:                   tt?.role_desc_metadata_locker        || 'Can lock metadata fields to prevent future changes.',
+        metadata_locker_updater:           tt?.role_desc_metadata_locker_updater|| 'Can update who has the metadata locker role.',
     };
-    const isEs = !!tt.role_section_main && tt.role_section_main.toLowerCase().includes('principal');
+    const isEs = !!tt?.role_section_main && tt.role_section_main.toLowerCase().includes('principal');
     const getRoleDesc = (roleName: string, group: ConfigEntry['group']): string => {
         if (ROLE_DESC[roleName]) return ROLE_DESC[roleName];
         const baseName = roleName.replace('_updater', '').replace(/_/g, ' ');
@@ -83,11 +83,11 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
         'metadata_locker', 'metadata_locker_updater',
     ];
     const resLabel = (resolution: string, explicitType?: string): string => {
-        if (resolution === 'Owner')    return tt.role_resolution_owner     || 'Owner';
+        if (resolution === 'Owner')    return tt?.role_resolution_owner     || 'Owner';
         if (resolution === 'Explicit') {
-            if (explicitType === 'AllowAll') return tt.role_resolution_allow_all || 'Allow All';
-            if (explicitType === 'DenyAll')  return tt.role_resolution_deny_all  || 'Deny All';
-            return tt.role_resolution_explicit || 'Explicit';
+            if (explicitType === 'AllowAll') return tt?.role_resolution_allow_all || 'Allow All';
+            if (explicitType === 'DenyAll')  return tt?.role_resolution_deny_all  || 'Deny All';
+            return tt?.role_resolution_explicit || 'Explicit';
         }
         return resolution || '—';
     };
@@ -102,7 +102,7 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
         if (r.owner) {
             const ownerType: string = r.owner.rule?.type ?? '';
             const ruleAddress = ownerType === 'Protected' ? extractRuleAddress(r.owner.rule) : null;
-            entries.push({ name: 'owner', resolution: ownerType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : (ownerType || '—'), updatable: false, desc: ROLE_DESC['owner'] || '', group: 'admin', ruleAddress });
+            entries.push({ name: 'owner', resolution: ownerType === 'Protected' ? (tt?.role_resolution_explicit || 'Explicit') : (ownerType || '—'), updatable: false, desc: ROLE_DESC['owner'] || '', group: 'admin', ruleAddress });
             processedRoles.add('owner');
         }
         for (const roleName of ALL_ROLES) {
@@ -152,7 +152,7 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
         const ruleType: string = val.rule?.type ?? '';
         const updaterType: string = raFlat[`${key}_updater`]?.rule?.type ?? '';
         const ruleAddress = ruleType === 'Protected' ? extractRuleAddress(val.rule) : null;
-        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
+        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt?.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt?.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt?.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
     }
     for (const [key, val] of Object.entries(raFlat)) {
         if (key === 'owner' || key === 'entries' || processedFlat.has(key)) continue;
@@ -161,7 +161,7 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
         const ruleType: string = v.rule?.type ?? '';
         const updaterType: string = raFlat[`${key}_updater`]?.rule?.type ?? '';
         const ruleAddress = ruleType === 'Protected' ? extractRuleAddress(v.rule) : null;
-        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
+        entries.push({ name: key, resolution: ruleType === 'AllowAll' ? (tt?.role_resolution_allow_all || 'Allow All') : ruleType === 'DenyAll' ? (tt?.role_resolution_deny_all || 'Deny All') : ruleType === 'Protected' ? (tt?.role_resolution_explicit || 'Explicit') : ruleType || '—', updatable: !!updaterType && updaterType !== 'DenyAll', desc: getRoleDesc(key, ROLE_GROUP[key] || 'roles'), group: ROLE_GROUP[key] || 'roles', ruleAddress });
     }
     return entries;
 }
@@ -170,14 +170,14 @@ export function getConfigEntries(ra: unknown, tt: TranslationsT['dashboard']['tr
 //  resolutionTooltip
 // ─────────────────────────────────────────
 /** Returns a human-readable tooltip for a role resolution value. */
-export function resolutionTooltip(resolution: string, tt: TranslationsT['dashboard']['transactions']): string {
-    const ownerLabel = tt.role_resolution_owner    || 'Owner';
-    const allowLabel = tt.role_resolution_allow_all|| 'Allow All';
-    const denyLabel  = tt.role_resolution_deny_all || 'Deny All';
-    if (resolution === ownerLabel)  return tt.role_tooltip_type_owner     || 'Requires the owner badge. Only the owner can exercise this role.';
-    if (resolution === allowLabel)  return tt.role_tooltip_type_allow_all || 'Anyone can exercise this role.';
-    if (resolution === denyLabel)   return tt.role_tooltip_type_deny_all  || 'Nobody can exercise this role — permanently disabled.';
-    return tt.role_tooltip_type_explicit || 'A custom access rule controls who can exercise this role.';
+export function resolutionTooltip(resolution: string, tt?: Partial<TranslationsT['dashboard']['transactions']>): string {
+    const ownerLabel = tt?.role_resolution_owner    || 'Owner';
+    const allowLabel = tt?.role_resolution_allow_all|| 'Allow All';
+    const denyLabel  = tt?.role_resolution_deny_all || 'Deny All';
+    if (resolution === ownerLabel)  return tt?.role_tooltip_type_owner     || 'Requires the owner badge. Only the owner can exercise this role.';
+    if (resolution === allowLabel)  return tt?.role_tooltip_type_allow_all || 'Anyone can exercise this role.';
+    if (resolution === denyLabel)   return tt?.role_tooltip_type_deny_all  || 'Nobody can exercise this role — permanently disabled.';
+    return tt?.role_tooltip_type_explicit || 'A custom access rule controls who can exercise this role.';
 }
 
 // ─────────────────────────────────────────
@@ -252,7 +252,7 @@ export function normaliseRoles(
  */
 export function deriveBehaviors(
   ra: unknown,
-  tt: TranslationsT['dashboard']['transactions'],
+  tt?: Partial<TranslationsT['dashboard']['transactions']>,
 ): string[] {
   const roles = normaliseRoles(ra);
   const isActive   = (n: string) => roles[n] === 'active';
@@ -260,18 +260,18 @@ export function deriveBehaviors(
   const out: string[] = [];
   const tStr = (val: unknown, fallback: string) => String(val || fallback);
 
-  if (isActive('minter'))  out.push(tStr(tt.behavior_supply_increase, 'The supply of this asset can be increased.'));
-  if (isActive('burner'))  out.push(tStr(tt.behavior_supply_decrease, 'The supply of this asset can be decreased.'));
-  if (!isActive('minter') && !isActive('burner')) out.push(tStr(tt.behavior_supply_fixed, 'The supply of this asset is fixed.'));
+  if (isActive('minter'))  out.push(tStr(tt?.behavior_supply_increase, 'The supply of this asset can be increased.'));
+  if (isActive('burner'))  out.push(tStr(tt?.behavior_supply_decrease, 'The supply of this asset can be decreased.'));
+  if (!isActive('minter') && !isActive('burner')) out.push(tStr(tt?.behavior_supply_fixed, 'The supply of this asset is fixed.'));
 
-  if (isActive('metadata_setter')) out.push(tStr(tt.behavior_metadata_changeable, 'Naming and information of this asset can be changed.'));
-  else out.push(tStr(tt.behavior_metadata_fixed, 'Naming and information of this asset is fixed.'));
+  if (isActive('metadata_setter')) out.push(tStr(tt?.behavior_metadata_changeable, 'Naming and information of this asset can be changed.'));
+  else out.push(tStr(tt?.behavior_metadata_fixed, 'Naming and information of this asset is fixed.'));
 
-  if (isActive('withdrawer') && !isAllowAll('withdrawer')) out.push(tStr(tt.behavior_withdrawable_restricted, 'Withdrawals from accounts require special authority.'));
-  if (isActive('depositor')  && !isAllowAll('depositor'))  out.push(tStr(tt.behavior_depositable_restricted, 'Deposits into accounts require special authority.'));
-  if (isActive('freezer'))  out.push(tStr(tt.behavior_freezable, 'This asset can be frozen by an authority.'));
-  if (isActive('recaller')) out.push(tStr(tt.behavior_recallable, 'This asset can be recalled from vaults by an authority.'));
-  if (isActive('non_fungible_data_updater')) out.push(tStr(tt.behavior_nft_data_changeable, 'NFT data fields can be updated.'));
+  if (isActive('withdrawer') && !isAllowAll('withdrawer')) out.push(tStr(tt?.behavior_withdrawable_restricted, 'Withdrawals from accounts require special authority.'));
+  if (isActive('depositor')  && !isAllowAll('depositor'))  out.push(tStr(tt?.behavior_depositable_restricted, 'Deposits into accounts require special authority.'));
+  if (isActive('freezer'))  out.push(tStr(tt?.behavior_freezable, 'This asset can be frozen by an authority.'));
+  if (isActive('recaller')) out.push(tStr(tt?.behavior_recallable, 'This asset can be recalled from vaults by an authority.'));
+  if (isActive('non_fungible_data_updater')) out.push(tStr(tt?.behavior_nft_data_changeable, 'NFT data fields can be updated.'));
 
   return out;
 }
@@ -282,7 +282,7 @@ export function deriveBehaviors(
 /**
  * Returns the i18n label for a metadata key, falling back to the raw key name.
  */
-export function metaKeyLabel(key: string, tt: TranslationsT['dashboard']['transactions']): string {
+export function metaKeyLabel(key: string, tt?: Partial<TranslationsT['dashboard']['transactions']>): string {
   const dict = tt as unknown as Record<string, string>;
   return String(dict[`meta_key_${key}`] || key);
 }

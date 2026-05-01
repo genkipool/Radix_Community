@@ -1,5 +1,6 @@
 import InfrastructureClient from '@/features/infrastructure/InfrastructureClient';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
@@ -10,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['infrastructure']);
   return {
     title: t.seo.infrastructure.title,
     description: t.seo.infrastructure.description,
@@ -39,7 +40,12 @@ interface InfrastructurePageProps {
 export default async function InfrastructurePage({ params }: InfrastructurePageProps) {
   "use cache";
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['infrastructure']);
 
-  return <InfrastructureClient t={t} />;
+  return (
+    <>
+      <DictionaryEnricher partial={t} />
+      <InfrastructureClient t={t} />
+    </>
+  );
 }

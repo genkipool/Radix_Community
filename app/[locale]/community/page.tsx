@@ -1,5 +1,5 @@
 // ═══════ SSG — generateStaticParams ═══════
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['community']);
   return {
     title: t.seo.community.title,
     description: t.seo.community.description,

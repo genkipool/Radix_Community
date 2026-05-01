@@ -38,7 +38,7 @@ interface UnderlyingTokensTabProps {
     lpName: string;
     userBalance: number;
     lpTotalSupply: number;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
@@ -434,7 +434,7 @@ function UnderlyingTokenCard({
     contributed: number;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network: 'mainnet' | 'stokenet';
     locale: string;
 }) {

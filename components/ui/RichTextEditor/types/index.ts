@@ -55,7 +55,7 @@ export interface EditorToolbarProps {
     onFontSize: (size: '1' | '3' | '5') => void;
     onForeColor: (color: string) => void;
     onHiliteColor: (color: string) => void;
-    t: EditorToolbarDictionary;
+    t?: Partial<EditorToolbarDictionary>;
     disallowImages?: boolean;
 }
 
@@ -64,7 +64,7 @@ export interface RichTextEditorProps {
     onChange: (html: string) => void;
     placeholder?: string;
     className?: string;
-    t: EditorToolbarDictionary;
+    t?: Partial<EditorToolbarDictionary>;
     toolbarPosition?: 'top' | 'bottom';
     minHeight?: string;
     maxHeight?: string;
@@ -88,11 +88,11 @@ export interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 export interface LinkDialogProps {
     onInsert: (url: string, label: string) => void;
     onClose: () => void;
-    t: EditorToolbarDictionary;
+    t?: Partial<EditorToolbarDictionary>;
 }
 
 export interface DiscardDialogProps {
     onConfirm: () => void;
     onClose: () => void;
-    t: EditorToolbarDictionary;
+    t?: Partial<EditorToolbarDictionary>;
 }

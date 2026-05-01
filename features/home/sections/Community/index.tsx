@@ -32,10 +32,10 @@ export default function Community({ t }: BaseSectionProps) {
 
                 <SectionHeader
                     icon={<Users size={14} />}
-                    badge={t.community.badge}
-                    title={t.community.title_line1}
-                    titleAccent={t.community.title_line2}
-                    subtitle={t.community.subtitle}
+                    badge={t.community?.badge}
+                    title={t.community?.title_line1}
+                    titleAccent={t.community?.title_line2}
+                    subtitle={t.community?.subtitle}
                 />
 
 
@@ -46,37 +46,37 @@ export default function Community({ t }: BaseSectionProps) {
                     <FadeIn delay={0} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Vote size={16} className="text-[var(--color-primary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community.ev1_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community?.ev1_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev1_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev1_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev1_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev1_p}</p>
                     </FadeIn>
 
                     <FadeIn delay={0.05} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Code size={16} className="text-[var(--color-secondary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community.ev2_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community?.ev2_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev2_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev2_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev2_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev2_p}</p>
                     </FadeIn>
 
                     <FadeIn delay={0.1} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Globe size={16} className="text-[var(--color-accent)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community.ev3_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community?.ev3_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev3_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev3_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev3_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev3_p}</p>
                     </FadeIn>
 
                     <FadeIn delay={0.15} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Rocket size={16} className="text-[var(--color-primary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community.ev4_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community?.ev4_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev4_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev4_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev4_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev4_p}</p>
                     </FadeIn>
 
 
@@ -84,21 +84,21 @@ export default function Community({ t }: BaseSectionProps) {
                     <FadeIn delay={0.05} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Zap size={16} className="text-[var(--color-secondary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community.ev5_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community?.ev5_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev5_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev5_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev5_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev5_p}</p>
                     </FadeIn>
 
                     {/* WIDE CARD: Dan Hughes Part 1 (spans 2 cols) */}
                     <FadeIn delay={0.1} className={`${card} col-span-2 flex flex-col sm:flex-row gap-5`}>
                         <div
                             className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
-                            onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_1.webp", alt: t.community.danFounderAlt || "Dan Hughes" })}
+                            onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_1.webp", alt: t.community?.danFounderAlt || "Dan Hughes" })}
                         >
                             <Image
                                 src="/images/Dan_Hughes_1.webp"
-                                alt={t.community.danFounderAlt || "Dan Hughes"}
+                                alt={t.community?.danFounderAlt || "Dan Hughes"}
                                 fill
                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px"
                                 style={{ objectFit: 'cover' }}
@@ -106,20 +106,20 @@ export default function Community({ t }: BaseSectionProps) {
                             />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)] mb-1 block">{t.community.ch1_badge}</span>
-                            <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch1_title}</h3>
-                            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-2">{t.community.ch1_p1}</p>
-                            <p className="text-xs text-[var(--color-text-main)] leading-relaxed font-medium">{t.community.ch1_p2}</p>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)] mb-1 block">{t.community?.ch1_badge}</span>
+                            <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch1_title}</h3>
+                            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-2">{t.community?.ch1_p1}</p>
+                            <p className="text-xs text-[var(--color-text-main)] leading-relaxed font-medium">{t.community?.ch1_p2}</p>
                         </div>
                     </FadeIn>
 
                     <FadeIn delay={0.15} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Shield size={16} className="text-[var(--color-accent)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community.ev6_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community?.ev6_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ev6_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ev6_p}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ev6_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ev6_p}</p>
                     </FadeIn>
 
 
@@ -127,21 +127,21 @@ export default function Community({ t }: BaseSectionProps) {
                     <FadeIn delay={0.05} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Shield size={16} className="text-[var(--color-primary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community.ch2_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community?.ch2_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch2_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ch2_p4}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch2_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ch2_p4}</p>
                     </FadeIn>
 
                     {/* WIDE CARD: Dan Hughes Part 2 — Tragedy (spans 2 cols) */}
                     <FadeIn delay={0.1} className={`${card} col-span-2 flex flex-col sm:flex-row gap-5`}>
                         <div
                             className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
-                            onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_2.webp", alt: t.community.danWorkingAlt || "Dan Hughes working" })}
+                            onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_2.webp", alt: t.community?.danWorkingAlt || "Dan Hughes working" })}
                         >
                             <Image
                                 src="/images/Dan_Hughes_2.webp"
-                                alt={t.community.danWorkingAlt || "Dan Hughes working"}
+                                alt={t.community?.danWorkingAlt || "Dan Hughes working"}
                                 fill
                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 400px"
                                 style={{ objectFit: 'cover' }}
@@ -149,20 +149,20 @@ export default function Community({ t }: BaseSectionProps) {
                             />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)] mb-1 block">{t.community.ch3_badge}</span>
-                            <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch3_title}</h3>
-                            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-2">{t.community.ch3_p2}</p>
-                            <p className="text-xs text-[var(--color-primary)] italic leading-relaxed font-medium">{t.community.ch3_p3}</p>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)] mb-1 block">{t.community?.ch3_badge}</span>
+                            <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch3_title}</h3>
+                            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-2">{t.community?.ch3_p2}</p>
+                            <p className="text-xs text-[var(--color-primary)] italic leading-relaxed font-medium">{t.community?.ch3_p3}</p>
                         </div>
                     </FadeIn>
 
                     <FadeIn delay={0.15} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Shield size={16} className="text-[var(--color-accent)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community.ch5_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community?.ch5_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch5_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ch5_p1}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch5_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ch5_p1}</p>
                     </FadeIn>
 
 
@@ -170,44 +170,44 @@ export default function Community({ t }: BaseSectionProps) {
                     <FadeIn delay={0} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Rocket size={16} className="text-[var(--color-secondary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community.ch4_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community?.ch4_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch4_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ch4_p1}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch4_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ch4_p1}</p>
                     </FadeIn>
 
                     <FadeIn delay={0.05} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Zap size={16} className="text-[var(--color-primary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community.ch4_vs_title}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)]">{t.community?.ch4_vs_title}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.ch4_vs_subtitle}</h3>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch4_vs_subtitle}</h3>
                         <ul className="space-y-2 text-xs text-[var(--color-text-muted)]">
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community.ch4_vs_swift}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community.ch4_vs_visa}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community.ch4_vs_sol}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community.ch4_vs_eth}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community.ch4_vs_paypal}</li>
-                            <li className="flex items-start gap-2 text-[var(--color-text-main)] font-semibold"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shrink-0 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />{t.community.ch4_vs_radix}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_swift}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_visa}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_sol}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_eth}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_paypal}</li>
+                            <li className="flex items-start gap-2 text-[var(--color-text-main)] font-semibold"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shrink-0 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />{t.community?.ch4_vs_radix}</li>
                         </ul>
                     </FadeIn>
 
                     <FadeIn delay={0.1} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Shield size={16} className="text-[var(--color-accent)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community.row4c3_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-accent)]">{t.community?.row4c3_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.row4c3_title}</h3>
-                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community.ch2_p2}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.row4c3_title}</h3>
+                        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{t.community?.ch2_p2}</p>
                     </FadeIn>
 
                     <FadeIn delay={0.15} className={card}>
                         <div className="flex items-center gap-2 mb-3">
                             <Code size={16} className="text-[var(--color-secondary)]" />
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community.row4c4_badge}</span>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)]">{t.community?.row4c4_badge}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community.row4c4_title}</h3>
-                        <p className="text-xs text-[var(--color-text-main)] font-medium leading-relaxed">{t.community.ch5_p2}</p>
+                        <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.row4c4_title}</h3>
+                        <p className="text-xs text-[var(--color-text-main)] font-medium leading-relaxed">{t.community?.ch5_p2}</p>
                     </FadeIn>
 
                 </div>
@@ -215,9 +215,9 @@ export default function Community({ t }: BaseSectionProps) {
 
                 {/* ═══════ INVESTOR / DEV CTA TEXT ═══════ */}
                 <FadeIn delay={0.1} className="mt-16 max-w-4xl mx-auto text-center space-y-6">
-                    <h3 className="text-2xl font-bold text-[var(--color-text-main)]">{t.community.invest_title}</h3>
-                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{t.community.invest_p}</p>
-                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{t.community.dev_p}</p>
+                    <h3 className="text-2xl font-bold text-[var(--color-text-main)]">{t.community?.invest_title}</h3>
+                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{t.community?.invest_p}</p>
+                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{t.community?.dev_p}</p>
                 </FadeIn>
 
 
@@ -231,7 +231,7 @@ export default function Community({ t }: BaseSectionProps) {
                         >
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                             <HeartHandshake size={16} className="relative z-10" />
-                            <span className="relative z-10 whitespace-nowrap">{t.community.donate}</span>
+                            <span className="relative z-10 whitespace-nowrap">{t.community?.donate}</span>
                         </Link>
                         <Link
                             href="#crowdfunding"
@@ -239,21 +239,21 @@ export default function Community({ t }: BaseSectionProps) {
                             className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap"
                         >
                             <Users size={16} />
-                            {t.community.crowdfund}
+                            {t.community?.crowdfund}
                         </Link>
                         <Link href="/blog" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <BookOpen size={16} />
-                            {t.community.blog}
+                            {t.community?.blog}
                         </Link>
                         <Link href="/forum" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <MessageCircle size={16} />
-                            {t.community.forum}
+                            {t.community?.forum}
                         </Link>
                         <a href="https://t.me/radix_dlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M23.112 4.494c.318-1.55-1.205-2.837-2.68-2.267L2.342 9.216c-1.647.637-1.72 2.941-.117 3.682l3.94 1.818 1.873 6.559a1 1 0 0 0 1.67.432l2.886-2.887 4.044 3.033a2 2 0 0 0 3.159-1.198zM3.063 11.082l18.09-6.99-3.315 16.161L13.1 16.7a1 1 0 0 0-1.307.093l-1.236 1.236.371-2.043 7.28-7.279a1 1 0 0 0-1.204-1.575L6.95 12.876zm5.114 3.397.606 2.123.233-1.281a1 1 0 0 1 .277-.528l2.22-2.22z" fill="currentColor" />
                             </svg>
-                            {t.community.telegram}
+                            {t.community?.telegram}
                         </a>
                         <a href="https://discord.gg/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
@@ -261,18 +261,18 @@ export default function Community({ t }: BaseSectionProps) {
                                 <ellipse cx="8.429" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
                                 <ellipse cx="15.571" cy="12.643" fill="currentColor" rx="1.857" ry="2.143" />
                             </svg>
-                            {t.community.discord}
+                            {t.community?.discord}
                         </a>
                         <a href="https://www.youtube.com/c/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
                                 <rect x="1" y="3" width="22" height="18" rx="3.5" stroke="currentColor" strokeWidth="1.7" />
                                 <polygon points="10,8.5 15.5,12 10,15.5" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
                             </svg>
-                            {t.community.youtube}
+                            {t.community?.youtube}
                         </a>
                         <a href="https://github.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <Github size={16} />
-                            {t.community.github}
+                            {t.community?.github}
                         </a>
                         <a href="https://x.com/radixdlt" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-3 py-3.5 min-w-[140px] rounded-xl bg-[var(--color-surface)] text-[var(--color-text-main)] font-bold text-[13px] hover:text-[var(--color-accent)] transition-all border border-[var(--color-card-border)] shadow whitespace-nowrap">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>

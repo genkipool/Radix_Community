@@ -56,8 +56,8 @@ export interface AssetTransferGroupProps {
     initiators: Set<string>;
     realTransferAddresses: Set<string>;
     actualFeePaid: string;
-    tt?: TranslationsT['dashboard']['transactions'];
-    t?: TranslationsT;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    t?: Partial<TranslationsT>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -81,7 +81,7 @@ export interface TransferFooterProps {
     senders: FungibleChange[];
     receivers: FungibleChange[];
     actualFeePaid: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     resourceAddress?: string;
     isResourceBurned?: boolean;
     mintedNftCount?: number;
@@ -98,7 +98,7 @@ export interface TransactionCardProps {
     onExpand: (intentHash: string) => void;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     readingMode?: boolean;
     network?: Network;
     timezone: string;
@@ -111,8 +111,8 @@ export interface TransactionDetailModalProps {
     onClose: () => void;
     onPrev?: () => void;
     onNext?: () => void;
-    t?: TranslationsT;
-    dt?: TranslationsT['dashboard'];
+    t?: Partial<TranslationsT>;
+    dt?: Partial<TranslationsT['dashboard']>;
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;
@@ -128,7 +128,7 @@ export interface TransactionDetailModalProps {
 export interface TransactionTabsProps {
     details?: TransactionDetails | null;
     tx: TransactionInfo;
-    t?: TranslationsT | null;
+    t?: Partial<TranslationsT> | null;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -148,7 +148,7 @@ export interface AccountCardProps {
     onExpand?: (id: string) => void;
     onCopy: (addr: string) => void;
     copiedAddress: string | null;
-    t?: TranslationsT;
+    t?: Partial<TranslationsT>;
     network: Network;
     locale: string;
     marketData?: MarketData | null;
@@ -167,8 +167,8 @@ export interface ValidatorInlinePanelProps {
     /** @deprecated kept for legacy fallback */
     unstakeXrd?: number;
     claimXrd?: number;
-    tt: TranslationsT['dashboard']['transactions'];
-    dt?: TranslationsT['dashboard'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    dt?: Partial<TranslationsT['dashboard']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     network: Network;
@@ -185,7 +185,7 @@ export interface UnstakeAssetCardProps {
     nftAdded: NonFungibleChange[];
     validatorOps: ValidatorOp[];
     actualFeePaid: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -201,7 +201,7 @@ export interface ProtocolVoteCardProps {
     events: Array<Record<string, unknown>>;
     affectedEntities: string[];
     manifestInstructions: string;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -212,7 +212,7 @@ export interface EntitiesSectionProps {
     /** 'created' shows cyan/Zap; 'affected' shows violet/Activity */
     variant: 'created' | 'affected';
     details: TransactionDetails;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -224,8 +224,8 @@ export interface EntitiesSectionProps {
 export interface TransactionDetailsTabProps {
     details: TransactionDetails;
     tx: TransactionInfo;
-    tt: TranslationsT['dashboard']['transactions'];
-    te: Record<string, string>;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    te?: Partial<TranslationsT['events']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     formatEntity: (e: string) => string;
@@ -238,7 +238,7 @@ export interface FeesDistributionSectionProps {
     details: TransactionDetails;
     tx: TransactionInfo;
     readingMode?: boolean;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
@@ -249,8 +249,8 @@ export interface FeesDistributionSectionProps {
 
 export interface BalanceChangeRowProps {
     change: FungibleChange;
-    t?: TranslationsT;
-    tt?: TranslationsT['dashboard']['transactions'];
+    t?: Partial<TranslationsT>;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onResourceClick?: (addr: string) => void;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
@@ -269,7 +269,7 @@ export interface ResourceInlinePanelProps {
     loading: boolean;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network?: Network;
     locale: string;
     /** Whether this resource is a pool unit (LP token) */
@@ -294,7 +294,7 @@ export interface NftTransferCardProps {
     sourceTitle?: string;
     methodLabel?: string;
     readingMode?: boolean;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     network: Network;
     side?: 'sender' | 'receiver';
     claimXrdTotal?: number;
@@ -317,7 +317,7 @@ export interface NftCollectionPanelProps {
     type: 'added' | 'removed' | 'neutral';
     onCopy?: (v: string) => void;
     copiedAddress: string | null;
-    tt: TranslationsT['dashboard']['transactions'];
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     claimXrdTotal?: number;
     isClaim?: boolean;
     isStakeClaimOverride?: boolean;

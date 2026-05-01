@@ -27,7 +27,7 @@ import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyG
 import { TransactionTabsProps, BalanceChanges, FungibleChange, NonFungibleChange, ValidatorOp } from '../types';
 
 /* ── Loading skeleton ──────────────────── */
-function TransactionDetailsSkeleton({ tt }: { tt: TranslationsT['dashboard']['transactions'] }) {
+function TransactionDetailsSkeleton({ tt }: { tt: Partial<TranslationsT['dashboard']['transactions']> }) {
     return (
         <div className="p-5 space-y-4 animate-pulse">
             <div className="h-3 w-1/3 bg-[var(--color-surface)] rounded" />
@@ -38,7 +38,7 @@ function TransactionDetailsSkeleton({ tt }: { tt: TranslationsT['dashboard']['tr
                 <div className="h-16 bg-[var(--color-surface)] rounded-xl" />
             </div>
             <p className="text-xs text-center text-[var(--color-text-muted)] pt-1 !mt-6">
-                {tt.loading_details || 'Loading transaction details...'}
+                {tt?.loading_details || 'Loading transaction details...'}
             </p>
         </div>
     );
@@ -52,9 +52,9 @@ const TransactionTabs = ({
     details, tx, t, onCopy, copiedAddress, onResourceClick, formatEntity, readingMode, network, columns, timezone, locale, marketData,
 }: TransactionTabsProps) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'details' | 'raw'>('summary');
-    const tt = (t?.dashboard?.transactions ?? {}) as TranslationsT['dashboard']['transactions'];
-    const te = (t?.events ?? {}) as TranslationsT['events'];
-    const dt = (t?.dashboard ?? {}) as TranslationsT['dashboard'];
+    const tt: Partial<TranslationsT['dashboard']['transactions']> = t?.dashboard?.transactions ?? {};
+    const te: Partial<TranslationsT['events']> = t?.events ?? {};
+    const dt: Partial<TranslationsT['dashboard']> = t?.dashboard ?? {};
 
     if (!details) {
         return (
@@ -94,9 +94,9 @@ const TransactionTabs = ({
                         onClick={() => setActiveTab(tab)}
                         className={`py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 relative group ${activeTab === tab ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                     >
-                        {tab === 'summary' && <><Activity className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.summary || 'Summary'}</>}
-                        {tab === 'details' && <><List className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.details || 'Details'}</>}
-                        {tab === 'raw' && <><FileJson className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt.raw_receipt || 'Raw Receipt'}</>}
+                        {tab === 'summary' && <><Activity className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.summary || 'Summary'}</>}
+                        {tab === 'details' && <><List className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.details || 'Details'}</>}
+                        {tab === 'raw' && <><FileJson className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.raw_receipt || 'Raw Receipt'}</>}
 
                         {activeTab === tab && (
                             <motion.div
@@ -121,7 +121,7 @@ const TransactionTabs = ({
                             <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
                                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
                                     <Terminal className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                                    {tt.message_payload || 'Message Payload'}
+                                    {tt?.message_payload || 'Message Payload'}
                                 </h3>
                                 <div className="p-4 sm:p-5 text-xs sm:text-sm font-mono break-words text-[var(--color-text-main)] leading-relaxed">
                                     &quot;{sanitizeText(String(tx.message || ''))}&quot;
@@ -330,7 +330,7 @@ const TransactionTabs = ({
                         <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold flex items-center justify-between px-1">
                             <span className="flex items-center gap-1.5">
                                 <FileJson className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                                {tt.raw_receipt || 'Raw Receipt'}
+                                {tt?.raw_receipt || 'Raw Receipt'}
                             </span>
                             <button
                                 type="button"
@@ -339,7 +339,7 @@ const TransactionTabs = ({
                                     onCopy(JSON.stringify(details, null, 2));
                                 }}
                                 className={`p-1.5 rounded-md transition-colors ${copiedAddress === JSON.stringify(details, null, 2) ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
-                                title={tt.copy_raw || 'Copy Raw JSON'}
+                                title={tt?.copy_raw || 'Copy Raw JSON'}
                             >
                                 {copiedAddress === JSON.stringify(details, null, 2) ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>

@@ -24,7 +24,7 @@ export interface DashboardStatsRowProps {
     stats: NetworkStats;
     marketData?: MarketData | null;
     isLoading?: boolean;
-    dt?: TranslationsT['dashboard'];
+    dt?: Partial<TranslationsT['dashboard']>;
     locale: string;
 }
 
@@ -59,7 +59,7 @@ export interface DashboardToolbarProps {
     onColumnsChange: (cols: number) => void;
     activeRanking: string | null;
     onRankingChange: (ranking: string | null) => void;
-    dt?: TranslationsT['dashboard'];
+    dt?: Partial<TranslationsT['dashboard']>;
 }
 
 export interface DashboardCardGridProps {
@@ -79,8 +79,8 @@ export interface DashboardCardGridProps {
     network: Network;
     timezone: string;
     locale: string;
-    t?: TranslationsT;
-    dt?: TranslationsT['dashboard'];
+    t?: Partial<TranslationsT>;
+    dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;
     onCopy: (addr: string) => void;
     marketData?: MarketData | null;
@@ -95,8 +95,8 @@ export interface DashboardModalsProps {
     filteredTxs: TransactionInfo[];
     closeExpanded: () => void;
     setExpandedPosts: React.Dispatch<React.SetStateAction<Set<string>>>;
-    t?: TranslationsT;
-    dt?: TranslationsT['dashboard'];
+    t?: Partial<TranslationsT>;
+    dt?: Partial<TranslationsT['dashboard']>;
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;

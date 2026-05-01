@@ -19,7 +19,8 @@ import {
   AboutRadix,
   CTAFinal,
 } from '@/features/home';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { buildAlternates } from '@/lib/seo';
 
 import type { Metadata } from 'next';
@@ -30,7 +31,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['home']);
   return {
     title: t.seo.home.title,
     description: t.seo.home.description,
@@ -72,11 +73,12 @@ interface HomePageProps {
  */
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['home', 'dapps', 'community', 'docs']);
   const language = locale as string;
 
   return (
     <div>
+      <DictionaryEnricher partial={t} />
       <Hero t={t} locale={locale} />
       <TheProblem t={t} />
       <Institutions t={t} />

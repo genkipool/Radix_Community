@@ -1,5 +1,6 @@
 import ForumClient from '@/features/forum/ForumClient';
-import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
+import { DictionaryEnricher } from '@/context/LanguageContext';
 import { forumPosts, users } from '@/features/forum/data/forumData';
 import { buildAlternates } from '@/lib/seo';
 
@@ -11,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['forum']);
   return {
     title: t.seo.forum.title,
     description: t.seo.forum.description,
@@ -40,14 +41,17 @@ interface ForumPageProps {
 
 export default async function ForumPage({ params }: ForumPageProps) {
   const { locale } = await params;
-  const t = await getDictionary(locale as Locale);
+  const t = await getFeatureDictionary(locale as Locale, ['forum']);
 
   return (
-    <ForumClient
-      t={t}
-      language={locale as 'en' | 'es'}
-      initialPosts={forumPosts}
-      initialUsers={users}
-    />
+    <>
+      <DictionaryEnricher partial={t} />
+      <ForumClient
+        t={t}
+        language={locale as 'en' | 'es'}
+        initialPosts={forumPosts}
+        initialUsers={users}
+      />
+    </>
   );
 }

@@ -142,7 +142,7 @@ export function AccountCard({
     ];
 
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
-    const configEntries = getConfigEntries(ra, tt!);
+    const configEntries = getConfigEntries(ra, tt);
 
     return (
         <>
@@ -330,7 +330,7 @@ export function AccountCard({
                                                 entityName={entityName}
                                                 iconUrl={iconUrl}
                                                 getMeta={getMeta}
-                                                tt={tt!}
+                                                tt={tt}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -343,7 +343,7 @@ export function AccountCard({
                                         {activeTab === 'tokens' && (
                                             <AccountTokensTab
                                                 entityData={entityData ?? null}
-                                                tt={tt!}
+                                                tt={tt}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -355,7 +355,7 @@ export function AccountCard({
                                         {activeTab === 'nfts' && (
                                             <AccountNftsTab
                                                 entityData={entityData ?? null}
-                                                tt={tt!}
+                                                tt={tt}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -367,7 +367,7 @@ export function AccountCard({
                                         {activeTab === 'pool_units' && (
                                             <AccountPoolUnitsTab
                                                 entityData={entityData ?? null}
-                                                tt={tt!}
+                                                tt={tt}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -380,21 +380,21 @@ export function AccountCard({
                                             <AccountTransactionsTab
                                                 accountAddress={address}
                                                 network={network as 'mainnet' | 'stokenet'}
-                                                tt={tt!}
+                                                tt={tt}
                                                 locale={locale}
                                             />
                                         )}
 
                                         {/* ── METADATA ── */}
                                         {activeTab === 'metadata' && (
-                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt!} />
+                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt} />
                                         )}
 
                                         {/* ── CONFIGURATION ── */}
                                         {activeTab === 'configuration' && (
                                             <PanelConfigurationTab
                                                 configEntries={configEntries}
-                                                tt={tt!}
+                                                tt={tt}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
@@ -404,7 +404,7 @@ export function AccountCard({
                                         {activeTab === 'raw' && (
                                             <PanelRawTab 
                                                 data={entityData} 
-                                                tt={tt!} 
+                                                tt={tt} 
                                                 onCopy={onCopy} 
                                                 copiedAddress={copiedAddress} 
                                             />

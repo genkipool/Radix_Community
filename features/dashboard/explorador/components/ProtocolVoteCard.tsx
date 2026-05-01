@@ -46,8 +46,8 @@ export function ProtocolVoteCard({
     const badgeResource    = sanitizeText(proofMatch?.[2] ?? '');
 
     const friendlyVersion = protocolVersion.includes('cuttlefish')
-        ? (tt.protocol_cuttlefish || 'Cuttlefish')
-        : (protocolVersion || tt.unknown || 'Unknown');
+        ? (tt?.protocol_cuttlefish || 'Cuttlefish')
+        : (protocolVersion || tt?.unknown || 'Unknown');
 
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-accent)]/60 overflow-hidden">
@@ -58,7 +58,7 @@ export function ProtocolVoteCard({
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         <path d="m9 12 2 2 4-4" />
                     </svg>
-                    {tt.protocol_vote_label || 'Protocol Update Vote'}
+                    {tt?.protocol_vote_label || 'Protocol Update Vote'}
                 </span>
                 <Pill color="green" className="text-emerald-600 dark:text-emerald-300 border-emerald-400/60 bg-emerald-400/15 font-black tracking-widest uppercase px-3">
                     {friendlyVersion}
@@ -71,17 +71,17 @@ export function ProtocolVoteCard({
                 <div className="flex-1 p-3 bg-[var(--color-accent)]/6">
                     <h5 className="text-[10px] uppercase font-bold tracking-widest text-emerald-800 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
                         <Shield className="w-3 h-3" />
-                        {tt.protocol_vote_validator || 'Validator'}
+                        {tt?.protocol_vote_validator || 'Validator'}
                     </h5>
 
                     {validatorAddress
                         ? <EntityBadge address={validatorAddress} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
-                        : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt.protocol_vote_no_validator || 'No validator found in affected entities'}</p>
+                        : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt?.protocol_vote_no_validator || 'No validator found in affected entities'}</p>
                     }
 
                     <div className="mt-3 flex items-center justify-between px-2.5 h-8 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30">
                         <span className="text-[9px] uppercase font-bold text-emerald-700 dark:text-emerald-500 tracking-wide">
-                            {tt.protocol_vote_for || 'Voting for'}
+                            {tt?.protocol_vote_for || 'Voting for'}
                         </span>
                         <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 font-mono translate-y-[0.5px]">
                             {friendlyVersion}
@@ -96,7 +96,7 @@ export function ProtocolVoteCard({
                             <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                         </svg>
-                        {tt.protocol_vote_presenter || 'Badge Presenter'}
+                        {tt?.protocol_vote_presenter || 'Badge Presenter'}
                     </h5>
 
                     {presenterAccount
@@ -106,21 +106,21 @@ export function ProtocolVoteCard({
                                 {badgeResource && (
                                     <div>
                                         <span className="text-[9px] uppercase font-bold text-indigo-700 dark:text-indigo-400 tracking-wider block mb-1">
-                                            {tt.protocol_vote_badge || 'Owner Badge Used'}
+                                            {tt?.protocol_vote_badge || 'Owner Badge Used'}
                                         </span>
                                         <EntityBadge address={badgeResource} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
                                     </div>
                                 )}
                             </div>
                         )
-                        : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt.protocol_vote_no_badge || 'No badge proof found in manifest'}</p>
+                        : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt?.protocol_vote_no_badge || 'No badge proof found in manifest'}</p>
                     }
                 </div>
             </div>
 
             {/* Footer */}
             <div className="px-4 py-2.5 bg-[var(--color-surface)] border-t border-[var(--color-accent)]/20 text-[10px] text-[var(--color-text-muted)] italic leading-relaxed">
-                {tt.protocol_vote_desc || 'The validator owner presented their owner badge to authorise this protocol update vote on behalf of the validator node.'}
+                {tt?.protocol_vote_desc || 'The validator owner presented their owner badge to authorise this protocol update vote on behalf of the validator node.'}
             </div>
         </div>
     );
