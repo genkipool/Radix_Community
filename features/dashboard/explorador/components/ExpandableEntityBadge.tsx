@@ -557,7 +557,7 @@ function EntitySummaryTab({
                         </dt>
                         <dd className="flex items-center gap-1">
                             <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={packageAddress}>
-                                {packageAddress}
+                                {packageAddress.length > 20 ? `${packageAddress.slice(0, 12)}...${packageAddress.slice(-6)}` : packageAddress}
                             </span>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCopy(packageAddress); }}
@@ -587,7 +587,7 @@ function EntitySummaryTab({
                         </dt>
                         <dd className="flex items-center gap-1">
                             <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={poolUnit}>
-                                {poolUnit}
+                                {poolUnit.length > 20 ? `${poolUnit.slice(0, 12)}...${poolUnit.slice(-6)}` : poolUnit}
                             </span>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCopy(poolUnit); }}
@@ -620,7 +620,7 @@ function EntitySummaryTab({
                                         </div>
                                         <div className="flex items-center justify-end gap-1 w-full">
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all text-right flex-1" title={resAddr}>
-                                                {resAddr}
+                                                {resAddr.length > 20 ? `${resAddr.slice(0, 12)}...${resAddr.slice(-6)}` : resAddr}
                                             </span>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
@@ -643,7 +643,7 @@ function EntitySummaryTab({
                             {poolResourcesBackup.map((resAddr) => (
                                 <div key={resAddr} className="flex items-center gap-1">
                                     <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={resAddr}>
-                                        {resAddr}
+                                        {resAddr.length > 20 ? `${resAddr.slice(0, 12)}...${resAddr.slice(-6)}` : resAddr}
                                     </span>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}

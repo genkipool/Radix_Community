@@ -445,7 +445,9 @@ function VaultCreationCard({
                         </span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0 px-0.5">
-                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all">{vaultId}</span>
+                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all" title={vaultId}>
+                            {vaultId.length > 20 ? `${vaultId.slice(0, 12)}...${vaultId.slice(-6)}` : vaultId}
+                        </span>
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(vaultId); }}
@@ -650,7 +652,9 @@ function BetVoteCard({
                         )}
                     </div>
                     <div className="flex items-center gap-2 min-w-0 px-0.5">
-                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all">{emitter}</span>
+                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all" title={emitter}>
+                            {emitter.length > 20 ? `${emitter.slice(0, 12)}...${emitter.slice(-6)}` : emitter}
+                        </span>
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
@@ -870,7 +874,7 @@ function MetadataEntityBlock({
                 {/* 2. Address */}
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-mono text-[var(--color-text-muted)] select-all truncate" title={wellKnownTip || emitter}>
-                        {emitter.length > 40 ? `${emitter.slice(0, 15)}...${emitter.slice(-15)}` : emitter}
+                        {emitter.length > 20 ? `${emitter.slice(0, 12)}...${emitter.slice(-6)}` : emitter}
                     </span>
                     <button
                         type="button"
@@ -899,8 +903,10 @@ function MetadataEntityBlock({
                                     {u.value}
                                 </a>
                             ) : (
-                                <span className="font-mono text-[var(--color-text-muted)] break-all mt-0.5 sm:mt-0">
-                                    {u.value}
+                                <span className="font-mono text-[var(--color-text-muted)] break-all mt-0.5 sm:mt-0" title={u.value}>
+                                    {u.value.length > 40 && (u.value.startsWith('resource_') || u.value.startsWith('account_') || u.value.startsWith('package_') || u.value.startsWith('component_'))
+                                        ? `${u.value.slice(0, 12)}...${u.value.slice(-6)}`
+                                        : u.value}
                                 </span>
                             )}
                         </div>
