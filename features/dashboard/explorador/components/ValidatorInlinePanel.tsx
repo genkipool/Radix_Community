@@ -262,6 +262,7 @@ export function ValidatorInlinePanel({
                                                             copiedAddress={copiedAddress}
                                                             locale={locale}
                                                             dt={dt}
+                                                            isModal={true}
                                                         />
                                                     )}
                                                 </div>

@@ -31,6 +31,7 @@ const renderVebRow = (props: MetricRowProps) => (
         value={props.children || props.value}
         sub={props.secondaryValue}
         tooltip={props.tooltip}
+        hi={props.isDanger ? '#ef4444' : (props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined)}
     />
 );
 
@@ -45,6 +46,7 @@ const renderVebAddrRow = (props: MetricRowProps) => (
         copied={!!props.isCopied}
         brackets={props.label.toLowerCase().includes('badge') || props.label.toLowerCase().includes('key')}
         noTruncate={false}
+        isModal={props.isModal}
     />
 );
 
@@ -52,7 +54,7 @@ const renderVebAddrRow = (props: MetricRowProps) => (
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '', locale, _isModal, _noTruncate = false, _onDownloadCsv,
+    validator, dt, t, onCopy, copiedAddress, className = '', locale, isModal, _noTruncate = false, _onDownloadCsv,
 }: {
     validator: Validator;
     dt?: Partial<DashboardDict>;
@@ -61,7 +63,7 @@ export const ProfileBlock = ({
     copiedAddress: string | null;
     className?: string;
     locale?: string;
-    _isModal?: boolean;
+    isModal?: boolean;
     _noTruncate?: boolean;
     _onDownloadCsv?: (address: string) => void;
 }) => {
@@ -120,6 +122,7 @@ export const ProfileBlock = ({
                     locale={locale || ''}
                     dt={dt}
                     renderRow={renderVebAddrRow}
+                    isModal={isModal}
                 />
             </div>
         </div>

@@ -47,7 +47,7 @@ export const AR = ({
         : isMobile
             ? truncateAddress(addr, 10, 10)
             : isModal
-                ? truncateAddress(addr, 16, 40)
+                ? truncateAddress(addr, 32, 24)
                 : truncateAddress(addr, 16, 25);
 
     return (

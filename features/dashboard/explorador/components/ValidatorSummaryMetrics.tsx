@@ -16,7 +16,9 @@ export interface MetricRowProps {
     isCopied?: boolean;
     children?: React.ReactNode;
     tooltip?: string;
-    rawAddress?: string; // New: pass raw address for custom truncation
+    rawAddress?: string;
+    isDanger?: boolean;
+    isModal?: boolean;
 }
 
 interface ValidatorMetricsProps {
@@ -33,6 +35,7 @@ interface ValidatorMetricsProps {
         totalMade: number;
         totalMissed: number;
     };
+    isModal?: boolean;
 }
 
 /**
@@ -53,12 +56,14 @@ function SectionHeader({ label, hide }: { label: string; hide?: boolean }) {
  * Technical / Address Metrics
  */
 export function ValidatorAddressMetrics({
-    validator, address, onCopy, copiedAddress, dt, renderRow
+    validator, address, onCopy, copiedAddress, dt, renderRow, isModal
 }: ValidatorMetricsProps) {
     const dd: Partial<DashboardDict['details']> = dt?.details || {};
-    
+
     const Row = renderRow || SummaryInlineRow;
-    const trunc = (a: string) => a.length > 24 ? `${a.slice(0, 12)}...${a.slice(-8)}` : a;
+    const trunc = (a: string) => isModal
+        ? (a.length > 40 ? `${a.slice(0, 32)}...${a.slice(-24)}` : a)
+        : (a.length > 24 ? `${a.slice(0, 12)}...${a.slice(-8)}` : a);
 
     return (
         <>
@@ -70,6 +75,7 @@ export function ValidatorAddressMetrics({
                 copyable
                 onCopy={() => onCopy(address)}
                 isCopied={copiedAddress === address}
+                isModal={isModal}
             />
             {validator.ownerAddress && (
                 <Row
@@ -80,6 +86,7 @@ export function ValidatorAddressMetrics({
                     copyable
                     onCopy={() => onCopy(validator.ownerAddress)}
                     isCopied={copiedAddress === validator.ownerAddress}
+                    isModal={isModal}
                 />
             )}
             {validator.ownerBadge && (
@@ -91,6 +98,7 @@ export function ValidatorAddressMetrics({
                     copyable
                     onCopy={() => onCopy(validator.ownerBadge!)}
                     isCopied={copiedAddress === validator.ownerBadge || copiedAddress === `[${validator.ownerBadge}]`}
+                    isModal={isModal}
                 />
             )}
             {validator.lsuResource && (
@@ -102,6 +110,7 @@ export function ValidatorAddressMetrics({
                     copyable
                     onCopy={() => onCopy(validator.lsuResource)}
                     isCopied={copiedAddress === validator.lsuResource}
+                    isModal={isModal}
                 />
             )}
             {validator.claimTokenResourceAddress && (
@@ -113,6 +122,7 @@ export function ValidatorAddressMetrics({
                     copyable
                     onCopy={() => onCopy(validator.claimTokenResourceAddress!)}
                     isCopied={copiedAddress === validator.claimTokenResourceAddress}
+                    isModal={isModal}
                 />
             )}
             {validator.publicKey && (
@@ -124,6 +134,7 @@ export function ValidatorAddressMetrics({
                     copyable
                     onCopy={() => onCopy(validator.publicKey)}
                     isCopied={copiedAddress === validator.publicKey || copiedAddress === `[${validator.publicKey}]`}
+                    isModal={isModal}
                 />
             )}
         </>
@@ -137,7 +148,7 @@ export function ValidatorDelegationMetrics({
     validator, locale, dt, renderRow, hideHeader
 }: Partial<ValidatorMetricsProps> & { hideHeader?: boolean }) {
     if (!validator) return null;
-    const dd: any = dt?.details || {};
+    const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const Row = renderRow || SummaryInlineRow;
 
     const delegationLabel = dd.validator_staking_summary || dd.delegation || 'Delegation Overview';
@@ -184,7 +195,7 @@ export function ValidatorDelegationMetrics({
                 {validator.lsu2xrdFactor != null && (
                     <Row
                         label={dd.validator_lsu_factor || dd.lsu_factor || 'LSU to XRD Factor'}
-                        value={`1 LSU = ${validator.lsu2xrdFactor.toFixed(8)} XRD`}
+                        value={`1 LSU = ${validator.lsu2xrdFactor === 1 ? '1' : Number(validator.lsu2xrdFactor.toFixed(8)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} XRD`}
                         mono
                     />
                 )}
@@ -200,7 +211,7 @@ export function ValidatorPerformanceMetrics({
     validator, locale, dt, renderRow, hideHeader
 }: Partial<ValidatorMetricsProps> & { hideHeader?: boolean }) {
     if (!validator) return null;
-    const dd: any = dt?.details || {};
+    const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const Row = renderRow || SummaryInlineRow;
 
     const label14d = dd.validator_performance_14d || dd.performance_14d || 'Epoch Performance (14 days)';
@@ -223,6 +234,7 @@ export function ValidatorPerformanceMetrics({
                 <Row
                     label={dd.validator_missed || dd.proposals_missed || 'Missed'}
                     value={validator.recentProposalsMissed.toLocaleString(locale)}
+                    isDanger={validator.recentProposalsMissed > 0}
                 />
             </div>
 
@@ -241,6 +253,7 @@ export function ValidatorPerformanceMetrics({
                 <Row
                     label={dd.validator_missed || dd.proposals_missed || 'Missed'}
                     value={validator.totalProposalsMissed?.toLocaleString(locale) || '—'}
+                    isDanger={(validator.totalProposalsMissed || 0) > 0}
                 />
             </div>
         </>

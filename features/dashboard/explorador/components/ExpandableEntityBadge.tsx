@@ -639,6 +639,7 @@ function EntitySummaryTab({
                             copiedAddress={copiedAddress}
                             locale={locale}
                             dt={dt}
+                            isModal={true}
                         />
                     );
                 })()}
