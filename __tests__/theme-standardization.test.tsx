@@ -6,6 +6,10 @@ import { BalanceChangeRow } from '@/features/dashboard/explorador/components/Bal
 import { buildSwapRoutingChart } from '@/features/dashboard/explorador/utils/transactionUtils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
+import type { TransactionDetails, FungibleChange } from '@/features/dashboard/types/shared.types';
+import type { BalanceChanges } from '@/features/dashboard/explorador/types/gateway.types';
+import type { TransactionInfo } from '@/types/radix';
+import type { TranslationsT } from '@/features/dashboard/types';
 
 vi.mock('@/features/dashboard/explorador/components/MermaidDiagram', () => ({
     MermaidDiagram: () => <div data-testid="mermaid-mock" />
@@ -48,7 +52,7 @@ describe('Theme Standardization Colors', () => {
                 fungible_balance_changes: [
                     { entity_address: 'account_1', resource_address: 'resource_received', balance_change: '90' }
                 ]
-            } as any,
+            } as BalanceChanges,
             initiators: new Set(['account_1']),
             details: {
                 receipt: { status: 'Succeeded' },
@@ -58,9 +62,9 @@ describe('Theme Standardization Colors', () => {
                         { entity_address: 'account_1', resource_address: 'resource_received', balance_change: '90' }
                     ]
                 }
-            } as any,
-            tx: { feePaid: '1' } as any,
-            tt: mockTt as any,
+            } as unknown as TransactionDetails,
+            tx: { feePaid: 1, confirmedAt: new Date(), status: 'CommittedSuccess', intentHash: 'tx_1', epoch: 1, round: 1, accountsCount: 1, componentsCount: 1, hasNfts: false, stateVersion: 1 } as TransactionInfo,
+            tt: mockTt as unknown as TranslationsT['dashboard']['transactions'],
             onCopy: () => { },
             copiedAddress: null,
             network: 'mainnet' as const,
@@ -111,13 +115,13 @@ describe('Theme Standardization Colors', () => {
             resource_address: 'resource_1',
             balance_change: '10',
             type: 'Deposit'
-        } as any;
+        } as FungibleChange;
 
         render(
             <QueryClientProvider client={queryClient}>
                 <BalanceChangeRow
                     change={mockChange}
-                    tt={mockTt as any}
+                    tt={mockTt as unknown as TranslationsT['dashboard']['transactions']}
                     onCopy={() => { }}
                     copiedAddress={null}
                     network="mainnet"
