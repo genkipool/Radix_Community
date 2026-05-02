@@ -125,8 +125,8 @@ describe('transactionUtils', () => {
             const chart = buildSwapRoutingChart([], mockFungibles, mockFees, ['account_1'], mockNames, mockSymbols, mockBlueprints, {}, 1, feeDest, 'account_1');
 
             expect(chart).toContain('F_Spacer[" "]:::spacer');
-            expect(chart).toContain('Burn<br/><b>0.500000 XRD</b>');
-            expect(chart).toContain('Proposer<br/><b>0.500000 XRD</b>');
+            expect(chart).toContain('Burn<br/><b>0.5 XRD</b>');
+            expect(chart).toContain('Proposer<br/><b>0.5 XRD</b>');
         });
     });
 
