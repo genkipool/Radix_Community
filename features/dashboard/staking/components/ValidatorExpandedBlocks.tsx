@@ -139,14 +139,13 @@ export const DelegationBlock = ({
 }) => (
     <div className={`veb-block veb-delegation ${className}`}>
         <Label>{dt?.details?.delegation ?? 'Delegation Summary'}</Label>
-        <div className="veb-drows">
-            <ValidatorDelegationMetrics
-                validator={validator}
-                locale={locale || ''}
-                dt={dt}
-                renderRow={renderVebRow}
-            />
-        </div>
+        <ValidatorDelegationMetrics
+            validator={validator}
+            locale={locale || ''}
+            dt={dt}
+            renderRow={renderVebRow}
+            hideHeader={true}
+        />
     </div>
 );
 

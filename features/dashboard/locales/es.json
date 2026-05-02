@@ -553,7 +553,7 @@
       "performance_14d_tooltip": "Métricas de fiabilidad y cumplimiento de propuestas del nodo en los últimos 14 días (aprox. 140 épocas).",
       "performance_total": "Rendimiento por Época en total",
       "performance_total_tooltip": "Métricas históricas acumuladas de fiabilidad y cumplimiento de propuestas desde el registro del nodo.",
-      "uptime_recent": "Uptime Reciente (14 días)",
+      "uptime_recent": "Uptime",
       "uptime_total": "Uptime Total",
       "uptime_recent_tooltip": "Disponibilidad real medida en los últimos 14 días (aprox. 140 épocas).",
       "uptime_total_tooltip": "Porcentaje histórico acumulado de disponibilidad y participación en el consenso.",
