@@ -114,7 +114,7 @@ export const Layout1Col = ({
                                 )
                             },
                             { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
-                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
+                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
@@ -157,7 +157,7 @@ export const Layout1Col = ({
                         <div className="flex items-center gap-2 shrink-0">
                             <EntityTagsGrid tags={validator.tags} t={t} />
                             <DelegateButton
-                                label={dt?.card?.stake_button ?? 'Delegar'}
+                                label={dt?.card?.stake_button ?? 'Delegate'}
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
@@ -175,7 +175,7 @@ export const Layout1Col = ({
 ==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv, _onStake
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -247,7 +247,7 @@ export const Layout2Col = ({
                             { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
                         ]} />
                         <StatDivider items={[
-                            { label: dt?.details?.effective_fee ?? 'Eff. Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
+                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
@@ -284,7 +284,7 @@ export const Layout2Col = ({
                         <div className="flex items-center gap-2 shrink-0">
                             <EntityTagsGrid tags={validator.tags} t={t} compact={columns === 3} />
                             <DelegateButton
-                                label={dt?.card?.stake_button ?? 'Delegar'}
+                                label={dt?.card?.stake_button ?? 'Delegate'}
                                 small
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
@@ -303,7 +303,7 @@ export const Layout2Col = ({
 ==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv, _onStake
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -311,7 +311,7 @@ export const Layout4Col = ({
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
-            {/* Fila 1: Imagen y Nombre con Etiquetas */}
+            {/* Row 1: Image and Name with Labels */}
             <div className="flex gap-2.5 p-3 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
                     className="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 transition-transform duration-300"
@@ -333,13 +333,13 @@ export const Layout4Col = ({
             {/* Row 2: Grid of 6 statistics */}
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 border-y border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/30">
                 <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Stake Total'}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Total Stake'}</span>
                     <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
                         {formatXRD(validator.delegatedStake, locale)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Comisión'}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Fee'}</span>
                     <div className="flex items-center gap-1 text-[12px] font-black text-[var(--color-text-main)] truncate">
                         <span>{formatNumber(validator.nominalFee, 1, locale)}%</span>
                         {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
@@ -350,7 +350,7 @@ export const Layout4Col = ({
                     <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.apyProjection, 2, locale)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Com. Efectiva'}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Effective Fee'}</span>
                     <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.effectiveFee, 1, locale)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -358,12 +358,12 @@ export const Layout4Col = ({
                     <span className="text-[12px] font-black" style={{ color: '#16a34a' }}>{validator.recentUptime.toFixed(1)}%</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegadores'}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegators'}</span>
                     <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.delegators, 0, locale)}</span>
                 </div>
             </div>
 
-            {/* Fila 3: Footer */}
+            {/* Row 3: Footer */}
             <div
                 className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''}`}
                 onClick={e => e.stopPropagation()}
@@ -388,7 +388,7 @@ export const Layout4Col = ({
                 <div className="flex items-center gap-2 shrink-0">
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
                     <DelegateButton
-                        label={dt?.card?.stake_button ?? 'Delegar'}
+                        label={dt?.card?.stake_button ?? 'Delegate'}
                         small
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
@@ -414,7 +414,7 @@ export const Layout6Col = ({
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
-            {/* Fila 1: Foto y Nombre (2 columnas) */}
+            {/* Row 1: Photo and Name (2 columns) */}
             <div className="flex gap-2 p-2 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
                     className="w-8 h-8 rounded-lg object-cover shrink-0 transition-transform duration-300"
@@ -424,7 +424,7 @@ export const Layout6Col = ({
                 </h3>
             </div>
 
-            {/* Fila 2: Etiquetas */}
+            {/* Row 2: Labels */}
             <div className="flex items-center gap-1 px-2 pb-2 flex-wrap">
                 <StatusLabel status={validator.status} t={t} compact />
                 <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
@@ -482,7 +482,7 @@ export const Layout6Col = ({
                 <div className="flex items-center gap-1.5 shrink-0">
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
                     <DelegateButton
-                        label={dt?.card?.stake_button ?? 'Delegar'}
+                        label={dt?.card?.stake_button ?? 'Delegate'}
                         small
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />

@@ -49,8 +49,8 @@ export function TransactionDetailModal({
                 hasNext={!!onNext}
                 onPrev={() => { setDirection?.(-1); onPrev?.(); }}
                 onNext={() => { setDirection?.(1); onNext?.(); }}
-                prevLabel={dt?.reading?.previous_post || 'Anterior'}
-                nextLabel={dt?.reading?.next_post || 'Siguiente'}
+                prevLabel={dt?.reading?.previous_post || 'Previous'}
+                nextLabel={dt?.reading?.next_post || 'Next'}
                 className="hidden sm:flex"
             />
 
@@ -105,7 +105,7 @@ export function TransactionDetailModal({
 
                                         <CloseButton
                                             onClose={onClose}
-                                            title={dt?.reading?.close || 'Cerrar'}
+                                            title={dt?.reading?.close || 'Close'}
                                             iconSize={20}
                                             className="shrink-0"
                                         />

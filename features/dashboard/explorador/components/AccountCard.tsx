@@ -131,13 +131,13 @@ export function AccountCard({
 
     // Construct Tabs
     const tabsData: { key: EntityTab; label: string; tooltip?: string }[] = [
-        { key: 'summary', label: tt?.resource_panel_summary || 'Resumen', tooltip: tt?.tab_summary_tooltip },
+        { key: 'summary', label: tt?.resource_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
         { key: 'tokens', label: accT?.tokens_tab || 'Tokens', tooltip: tt?.tab_tokens_tooltip },
         { key: 'nfts', label: accT?.nfts_tab || 'NFTs', tooltip: tt?.tab_nfts_tooltip },
         { key: 'pool_units', label: accT?.pool_units || 'Pool Units', tooltip: tt?.tab_pool_units_tooltip },
         { key: 'transactions', label: accT?.transactions_tab || 'Transactions', tooltip: tt?.tab_transactions_tooltip },
-        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadatos', tooltip: tt?.tab_metadata_tooltip },
-        { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuración', tooltip: tt?.tab_configuration_tooltip },
+        { key: 'metadata', label: tt?.resource_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
+        { key: 'configuration', label: tt?.resource_panel_configuration || 'Configuration', tooltip: tt?.tab_configuration_tooltip },
         { key: 'raw', label: tt?.resource_panel_raw || 'Raw', tooltip: tt?.tab_raw_tooltip }
     ];
 
@@ -195,7 +195,7 @@ export function AccountCard({
                                     {isModal && onExpand && (
                                         <CloseButton
                                             onClose={() => onExpand(address)}
-                                            title={t?.dashboard?.reading?.close || 'Cerrar'}
+                                            title={t?.dashboard?.reading?.close || 'Close'}
                                             iconSize={20}
                                             className="shrink-0 ml-1"
                                         />

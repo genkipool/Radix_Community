@@ -21,7 +21,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 const labelBg = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
                 const labelText = computed.getPropertyValue('--color-text-main').trim() || '#171717';
 
-                // Determinamos si es oscuro basándonos en el brillo del fondo o la clase
+                // Determine if it's dark based on background brightness or class
                 const isDark = labelBg !== '#ffffff' && labelBg !== 'white';
 
                 const m = (await import('mermaid')).default;
@@ -43,21 +43,21 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 });
                 const { svg: s } = await m.render(`mc${rawId}${Date.now()}`, chart);
 
-                // Extraemos el tamaño de fuente del bloque de inicialización del chart
+                // Extract the font size from the chart initialization block
                 const sizeMatch = chart.match(/'clusterFontSize':\s*'(\d+)px'/);
                 const clusterSize = sizeMatch ? `${sizeMatch[1]}px` : '20px';
 
-                // Inyectamos el estilo al FINAL del bloque <style> para máxima prioridad, 
-                // siendo muy específicos para NO afectar a los subgrafos (clusters)
+                // Inject the style at the END of the <style> block for maximum priority, 
+                // being very specific to NOT affect the subgraphs (clusters)
                 const scaledSvg = s.replace(
                     '</style>',
                     `
                     .cluster-label, .cluster-label span { font-size: ${clusterSize} !important; font-weight: bold !important; }
                     
-                    /* Hacemos transparente el rectángulo SVG de fondo para evitar el efecto de "doble capa" */
+                    /* Make the background SVG rectangle transparent to avoid the "double layer" effect */
                     .edgeLabel rect, .labelBkg { fill: none !important; stroke: none !important; }
                     
-                    /* Aplicamos el fondo sólido de la TARJETA y el color de texto a la etiqueta HTML y sus hijos */
+                    /* Apply the card's solid background and text color to the HTML label and its children */
                     .edgeLabel, .edgeLabel span, .edgeLabel div, .edgeLabel text { 
                         background-color: var(--color-surface) !important; 
                         color: var(--color-text-main) !important; 
@@ -92,7 +92,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 }
             });
             if (copiedAddress) {
-                // Usamos un selector más permisivo por si hay caracteres especiales
+                // Use a more permissive selector in case there are special characters
                 const allCopies = document.querySelectorAll('[data-diag-copy]');
                 const container = Array.from(allCopies).find(c => c.getAttribute('data-diag-copy') === copiedAddress);
                 const node = container?.closest('.node');
@@ -101,7 +101,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                     const inner = node.querySelector('rect, path, polygon, circle');
                     if (inner) {
                         (inner as HTMLElement).style.setProperty('stroke', 'var(--color-accent)', 'important');
-                        (inner as HTMLElement).style.setProperty('stroke-width', '6px', 'important'); // Más grueso para que sea obvio
+                        (inner as HTMLElement).style.setProperty('stroke-width', '6px', 'important'); // Thicker to make it obvious
                     }
                 }
             }
@@ -109,7 +109,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
         sync();
         const t1 = setTimeout(sync, 100);
         const t2 = setTimeout(sync, 500);
-        const t3 = setTimeout(sync, 1000); // Uno más por si acaso
+        const t3 = setTimeout(sync, 1000); // One more just in case
         return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }, [svg, copiedAddress]);
 

@@ -556,7 +556,7 @@ function BetVoteCard({
     const isBet = eventName === 'BetCreatedEvent';
     const label = isBet ? (te?.bet_name || 'Bet Name') : (te?.option || 'Option');
 
-    // Mapeo dinámico a traducciones existentes
+    // Dynamic mapping to existing translations
     const getEntityTypeLabel = (type: string) => {
         const t = type.toLowerCase();
         if (t.includes('package')) return tt?.entity_type_package || 'Package';
@@ -740,7 +740,7 @@ export function MetadataUpdatesSection({
         return field;
     };
 
-    // Agrupar por entidad emisora
+    // Group by emitting entity
     const grouped = metaEvents.reduce((acc, ev) => {
         const emitterData = ev.emitter as { entity?: { entity_address: string; entity_type: string }, package_address?: string };
         const emitter = sanitizeText(emitterData?.entity?.entity_address || emitterData?.package_address || '');

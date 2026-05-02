@@ -219,11 +219,9 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                         className="text-[11px] leading-relaxed font-medium text-[var(--color-primary)]"
                                         dangerouslySetInnerHTML={{
                                             __html: (dt?.validator_rewards_summary_dream ?? (
-                                                (locale && locale.startsWith('es'))
-                                                    ? "Si Radix valiera 1 {currency}, este validador habría ganado <b>{value}</b> este año."
-                                                    : "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> this year."
+                                                "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> this year."
                                             ))
-                                                .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                                .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
                                                 .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
                                         }}
                                     />

@@ -6,11 +6,11 @@ import { apiFetchValidators } from '@/features/dashboard/services/apiClient';
 /**
  * usePrefetchDashboard
  *
- * Returns una función `prefetch` que pre-calienta la caché de React Query con
- * datos del dashboard (validators + network stats) cuando se llama.
+ * Returns a `prefetch` function that warms up the React Query cache with
+ * dashboard data (validators + network stats) when called.
  *
- * Uso: adjuntar a `onMouseEnter` / `onFocus` en el enlace de nav del Dashboard
- * para que los datos empiecen a cargarse antes de que el usuario haga clic.
+ * Usage: attach to `onMouseEnter` / `onFocus` on the Dashboard nav link
+ * so data starts loading before the user clicks.
  *
  * Design decisions:
  * - Usa el mismo queryKey ['validators', network] que useValidatorsQuery para

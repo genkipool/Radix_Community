@@ -80,7 +80,7 @@ export function ValidatorInlinePanel({
         if (isUnstake) {
             const xrdStr = unstakeXrdExpected != null && unstakeXrdExpected > 0
                 ? parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 }) : null;
-            const tpl = tt?.validator_info_unstake || 'Has iniciado el retiro de {lsu} LSU {xrd} de este validador. Los tokens estarán disponibles tras el período de desvinculación.';
+            const tpl = tt?.validator_info_unstake || 'You have initiated the withdrawal of {lsu} LSU {xrd} from this validator. Tokens will be available after the unbonding period.';
             return tpl.replace('{lsu}', numericAmount ?? '').replace('{xrd}', xrdStr ? `(~${xrdStr} XRD)` : '');
         }
         const tpl = isStake ? (tt?.validator_info_stake || 'You staked {amount} XRD to this validator')
@@ -225,13 +225,13 @@ export function ValidatorInlinePanel({
                                                 <dl className="space-y-3">
                                                     {isStake && stakeXrd != null && stakeXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_stake_amount || 'XRD Delegado'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_stake_amount || 'Staked XRD'}</dt>
                                                             <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">+{parseFloat(String(stakeXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isUnstake && (unstakeLsu ?? 0) > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-1 border-b border-[var(--color-card-border)]/60">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_lsu_burned || 'LSU Quemados'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_lsu_burned || 'Burned LSU'}</dt>
                                                             <dd className="text-sm font-bold font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1">
                                                                 <IconFlame className="w-3.5 h-3.5" />
                                                                 {parseFloat(String(unstakeLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} LSU
@@ -240,43 +240,43 @@ export function ValidatorInlinePanel({
                                                     )}
                                                     {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_xrd_expected || 'XRD a Reclamar'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_xrd_expected || 'XRD to Claim'}</dt>
                                                             <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isClaim && claimXrd != null && claimXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_claim_amount || 'XRD Reclamados'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_claim_amount || 'Claimed XRD'}</dt>
                                                             <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">+{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegatedStake != null && (
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.delegated_stake || 'Stake Delegado'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.delegated_stake || 'Delegated Stake'}</dt>
                                                             <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{formatXRD(validator.delegatedStake, locale)} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegators != null && (
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{cd.delegators || 'Delegadores'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{cd.delegators || 'Delegators'}</dt>
                                                             <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.delegators.toLocaleString(locale)}</dd>
                                                         </div>
                                                     )}
                                                     {validator?.nominalFee != null && (
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.nominal_fee || 'Comisión'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.nominal_fee || 'Fee'}</dt>
                                                             <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.nominalFee.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</dd>
                                                         </div>
                                                     )}
                                                     {validator?.apyProjection != null && (
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.apy_projection || 'APY Proyección'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.apy_projection || 'APY Projection'}</dt>
                                                             <dd className="text-xs font-semibold text-[var(--color-text-main)]">{validator.apyProjection.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</dd>
                                                         </div>
                                                     )}
                                                     {validator?.lsu2xrdFactor != null && validator.lsu2xrdFactor !== 1 && (
                                                         <div className="flex items-center justify-between gap-4">
-                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.lsu_factor || 'Factor LSU → XRD'}</dt>
+                                                            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{dd.lsu_factor || 'LSU → XRD Factor'}</dt>
                                                             <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">1 LSU = {formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD</dd>
                                                         </div>
                                                     )}

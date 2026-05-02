@@ -229,7 +229,7 @@ export default function DashboardClient({
 
   /* ── Infinite scroll effects ─────────────────────────────── */
   useInfiniteScrollTx({ activeView, hasNextPage, isFetchingNextPage, fetchNextPage });
-  // Loops removed: server now handles filtering via "consulta"
+  // Loops removed: server now handles filtering via "query"
 
   /* ── Derived network stats (fallback) ────────────────────── */
   const stats: NetworkStats = (() => {

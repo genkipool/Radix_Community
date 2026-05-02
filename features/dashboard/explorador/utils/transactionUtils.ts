@@ -216,19 +216,19 @@ export function buildSwapRoutingChart(
     const allEntries = [...fungibles, ...feeEntries];
 
     // ─────────────────────────────────────────────────────────
-    // CÁLCULO DE ESCALA DINÁMICA
+    // DYNAMIC SCALE CALCULATION
     // ─────────────────────────────────────────────────────────
     const complexity = allEntries.length;
     const scale = Math.min(3.0, Math.max(1.0, 1 + (complexity - 3) * 0.15));
 
-    // Textos de cabecera mucho más masivos (fHeader sube a 20 base)
+    // Much more massive header texts (fHeader goes up to 20 base)
     const fHeader = Math.round(20 * scale);
     const fTitle = Math.round(20 * scale);
     const fAmount = Math.round(18 * scale);
     const fEdge = Math.round(18 * scale);
     const fFee = Math.round(16 * scale);
 
-    // Grosor de línea balanceado para no devorar la flecha
+    // Balanced line width to not devour the arrow
     const strokeW = Math.max(3, Math.round(2.5 * scale));
 
     type AmtMap = Map<string, number>;
@@ -266,11 +266,11 @@ export function buildSwapRoutingChart(
         const minWidth = Math.round((isAccount ? 260 : 120) * scale);
         const padX = Math.round(12 * scale);
 
-        // INYECTOR CSS PARA OBLIGAR A LAS FLECHAS A CRECER
+        // CSS INJECTOR TO FORCE ARROWS TO GROW
         let extraCss = '';
         if (!cssInjected) {
             const arrowScale = Math.max(1.5, scale * 1.5);
-            // Usamos comillas simples para no romper el string de Mermaid
+            // We use single quotes to not break the Mermaid string
             extraCss = `<style> marker[id*='arrowhead'] path { transform: scale(${arrowScale}); transform-origin: center; } </style>`;
             cssInjected = true;
         }
@@ -278,7 +278,7 @@ export function buildSwapRoutingChart(
         const copyTooltip = `${tt?.click_to_copy || 'Click to copy address'}: ${addr}`;
         const parts: string[] = [
             `<div data-diag-copy="${addr}" title='${copyTooltip}' style='min-width: ${minWidth}px; padding: 0 ${padX}px; cursor: pointer;'>`,
-            extraCss // Se inyecta invisiblemente en el primer nodo
+            extraCss // Injected invisibly in the first node
         ];
 
         if (name) {
@@ -319,7 +319,7 @@ export function buildSwapRoutingChart(
 
     const L: string[] = [];
 
-    // Forzamos el tamaño de la fuente de los Subgrafos (Cabeceras)
+    // Force the font size of the Subgraphs (Headers)
     L.push(`%%{init: { 'themeVariables': { 'clusterFontSize': '${fHeader}px' } } }%%`);
     L.push('flowchart LR');
 
@@ -382,14 +382,14 @@ export function buildSwapRoutingChart(
         const payerId = senderIds.get(feePayer) || receiverIds.get(feePayer) || nid(feePayer);
         const feeTooltip = `${tt?.click_to_copy || 'Click to copy address'}: ${feePayer}`;
 
-        const rhombusText = tt?.swap_routing_network_fees || 'Comisiones de Red';
+        const rhombusText = tt?.swap_routing_network_fees || 'Network Fees';
         const feeHtml = `<div data-diag-copy="${feePayer}" title='${feeTooltip}' style='cursor:pointer; color:var(--color-text-main); font-size:${fTitle}px; padding: 8px; white-space: nowrap;'>${rhombusText}: <b>${fmtNum(feePaid)} XRD</b></div>`;
 
         L.push(`  ${netFeeId}{"${feeHtml}"}:::fee`);
         feeLinks.push({ from: payerId, to: netFeeId, label: `${fmtNum(feePaid)} XRD` });
 
         if (feeDest) {
-            const breakdownText = tt?.swap_routing_fee_breakdown || 'Desglose de fees';
+            const breakdownText = tt?.swap_routing_fee_breakdown || 'Fee breakdown';
             L.push(`  subgraph FeesGroup["${breakdownText}"]`);
             L.push('    direction TB');
             L.push('    F_Spacer[" "]:::spacer');
@@ -474,7 +474,7 @@ export function buildSwapRoutingChart(
 
                 const edgeLabel = `${fmtNum(transferAmt)} ${getSymbol(res)}`;
 
-                // Usamos "==>" (conexión nativa gruesa) en lugar de "-->" y forzamos nowrap
+                // We use "==>" (thick native connection) instead of "-->" and force nowrap
                 L.push(`  ${sNodeId} == "<span style='font-size:${fEdge}px; white-space: nowrap;'>${edgeLabel}</span>" ==> ${tNodeId}`);
 
                 if (isInit(t.id)) {
@@ -493,13 +493,13 @@ export function buildSwapRoutingChart(
 
     for (const fl of feeLinks) {
         const labelHtml = `<span style='font-size:${fFee}px; white-space: nowrap;'>${fl.label}</span>`;
-        // Usamos "==>" también para las fees
+        // We use "==>" also for fees
         const labelStr = fl.label ? ` == "${labelHtml}" ==> ` : ' ==> ';
         L.push(`  ${fl.from}${labelStr}${fl.to}`);
         feeEdgeIndices.push(edgeIdx++);
     }
 
-    // --- Aplicamos el grosor dinámico pero controlado ---
+    // --- We apply dynamic but controlled width ---
     for (let i = 0; i < edgeIdx; i++) {
         if (feeEdgeIndices.includes(i)) {
             L.push(`  linkStyle ${i} stroke:#F43F5E,stroke-width:${strokeW}px,stroke-dasharray:5,5`);

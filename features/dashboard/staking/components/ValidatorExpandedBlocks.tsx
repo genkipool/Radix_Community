@@ -36,19 +36,19 @@ export const ProfileBlock = ({
     onDownloadCsv?: (address: string) => void;
 }) => {
     const tech = [
-        validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'País', v: sanitizeText(validator.country) },
-        validator.provider && { icon: <Server className="w-3 h-3" />, k: dt?.details?.provider ?? 'Proveedor', v: sanitizeText(validator.provider) },
-        validator.version && { k: dt?.details?.version ?? 'Versión', v: sanitizeText(validator.version), hi: 'var(--color-primary)' as string },
+        validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'Country', v: sanitizeText(validator.country) },
+        validator.provider && { icon: <Server className="w-3 h-3" />, k: dt?.details?.provider ?? 'Provider', v: sanitizeText(validator.provider) },
+        validator.version && { k: dt?.details?.version ?? 'Version', v: sanitizeText(validator.version), hi: 'var(--color-primary)' as string },
     ].filter(Boolean) as { icon?: React.ReactNode; k: string; v: string; hi?: string }[];
 
     return (
         <div className={`veb-block veb-profile ${className}`}>
             <div className="veb-desc-wrap">
-                <Label>{dt?.details?.profile ?? 'Perfil del validador'}</Label>
+                <Label>{dt?.details?.profile ?? 'Validator Profile'}</Label>
                 <p className={`veb-desc-text ${validator.description ? 'veb-desc-has' : 'veb-desc-empty'}`}>
                     {validator.description
                         ? `"${sanitizeText(validator.description)}"`
-                        : (dt?.details?.no_description ?? 'Sin descripción proporcionada.')}
+                        : (dt?.details?.no_description ?? 'No description provided.')}
                 </p>
                 {validator.website && isValidUrl(validator.website) && (
                     <a href={validator.website} target="_blank" rel="noopener noreferrer"
@@ -62,7 +62,7 @@ export const ProfileBlock = ({
             <div className="veb-meta">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <StatusLabel status={validator.status} t={t} />
-                    <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'En línea'} labelOff={dt?.details?.offline ?? 'Offline'} />
+                    <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} />
                     <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} />
                     <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Accepts Connection'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} />
                     <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
@@ -158,14 +158,14 @@ export const DelegationBlock = ({
     locale?: string;
 }) => (
     <div className={`veb-block veb-delegation ${className}`}>
-        <Label>{dt?.details?.delegation ?? 'Resumen de delegación'}</Label>
+        <Label>{dt?.details?.delegation ?? 'Delegation Summary'}</Label>
         <div className="veb-drows">
-            <DR label={dt?.details?.delegated_stake ?? 'Stake delegado'} value={formatXRD(validator.delegatedStake, locale)} sub={`${validator.delegatedStakePercent.toFixed(2)}% de la red`} />
-            <DR label={dt?.details?.delegators ?? 'Delegadores'} value={validator.delegators.toLocaleString(locale)} />
-            <DR label={dt?.details?.owner_delegation ?? 'Stake del Dueño'} value={formatNumber(validator.ownerDelegation, 4, locale)} />
-            <DR label={dt?.details?.apy_projection ?? 'Proyección APY'} value={fp(validator.apyProjection, locale)} />
-            <DR label={dt?.card?.fee ?? 'Comisión'} value={fp(validator.nominalFee, locale)} sub={`${fp(validator.effectiveFee, locale)} efectiva`} />
-            <DR label={dt?.details?.lsu_factor ?? 'Factor LSU → XRD'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD` : '—'} />
+            <DR label={dt?.details?.delegated_stake ?? 'Delegated Stake'} value={formatXRD(validator.delegatedStake, locale)} sub={`${validator.delegatedStakePercent.toFixed(2)}% of the network`} />
+            <DR label={dt?.details?.delegators ?? 'Delegators'} value={validator.delegators.toLocaleString(locale)} />
+            <DR label={dt?.details?.owner_delegation ?? 'Owner Stake'} value={formatNumber(validator.ownerDelegation, 4, locale)} />
+            <DR label={dt?.details?.apy_projection ?? 'APY Projection'} value={fp(validator.apyProjection, locale)} />
+            <DR label={dt?.card?.fee ?? 'Fee'} value={fp(validator.nominalFee, locale)} sub={`${fp(validator.effectiveFee, locale)} effective`} />
+            <DR label={dt?.details?.lsu_factor ?? 'LSU → XRD Factor'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD` : '—'} />
         </div>
     </div>
 );
@@ -188,19 +188,19 @@ export const PerformanceBlock = ({
     return (
         <div className={`veb-block veb-uptimes ${className}`}>
             <div className="veb-perf-section">
-                <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Rendimiento por Época en 14 días'}</Label>
+                <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Epoch Performance (14 days)'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-made">{live.recentMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-missed">{live.recentMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completed'} value={<span className="veb-made">{live.recentMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Missed'} value={<span className="veb-missed">{live.recentMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
             <div className="veb-perf-section mt-4">
-                <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Rendimiento por Época en total'}</Label>
+                <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Epoch Performance (Total)'}</Label>
                 <div className="veb-drows">
                     <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.totalUptime, false, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completadas'} value={<span className="veb-total-made">{live.totalMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Perdidas'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
+                    <DR label={dt?.details?.proposals_made ?? 'Completed'} value={<span className="veb-total-made">{live.totalMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
+                    <DR label={dt?.details?.proposals_missed ?? 'Missed'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
                 </div>
             </div>
         </div>
@@ -227,7 +227,7 @@ export const EvolutionBlock = ({
             {loading && data.length === 0 ? (
                 <div className="veb-chart-loading"><div className="veb-spinner" /></div>
             ) : data.length === 0 ? (
-                <div className="veb-chart-empty">{t?.stakes?.no_activity ?? 'Sin actividad de stake'}</div>
+                <div className="veb-chart-empty">{t?.stakes?.no_activity ?? 'No stake activity'}</div>
             ) : (
                 <StakeEvolutionChart data={data} t={t} locale={locale} />
             )}
@@ -250,7 +250,7 @@ export const ActivityBlock = ({
 }) => (
     <div className={`veb-block veb-chart-panel veb-activity ${className}`}>
         <div className="veb-chart-header">
-            <Label>{t?.stakes?.history_title ?? 'Actividad de Stake (30 días)'}</Label>
+            <Label>{t?.stakes?.history_title ?? 'Stake Activity (30 days)'}</Label>
             <div className="veb-chart-legend">
                 <span className="veb-legend-item"><span className="veb-legend-dot veb-bg-stake" />{t?.stakes?.stake ?? 'Stake'}</span>
                 <span className="veb-legend-item"><span className="veb-legend-dot veb-bg-unstake" />{t?.stakes?.unstake ?? 'Unstake'}</span>
@@ -261,7 +261,7 @@ export const ActivityBlock = ({
             {loading && allHistory.length === 0 ? (
                 <div className="veb-chart-loading"><div className="veb-spinner" /></div>
             ) : allHistory.every(d => d.stake === 0 && d.unstake === 0 && d.claim === 0) ? (
-                <div className="veb-chart-empty">{t?.stakes?.no_activity ?? 'Sin actividad de stake'}</div>
+                <div className="veb-chart-empty">{t?.stakes?.no_activity ?? 'No stake activity'}</div>
             ) : (
                 <StakeHistoryChart data={thirtyDays} t={t} locale={locale} />
             )}
@@ -318,9 +318,9 @@ export const HistoryBlock: React.FC<HistoryBlockProps> = ({
                 <table className="veb-table">
                     <thead>
                         <tr className="veb-th-row">
-                            <th className="veb-th text-left">{dt?.details?.epoch ?? 'Época'}</th>
-                            <th className="veb-th text-center">{dt?.details?.proposals_made ?? 'Completadas'}</th>
-                            <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Perdidas'}</th>
+                            <th className="veb-th text-left">{dt?.details?.epoch ?? 'Epoch'}</th>
+                            <th className="veb-th text-center">{dt?.details?.proposals_made ?? 'Completed'}</th>
+                            <th className="veb-th text-center">{dt?.details?.proposals_missed ?? 'Missed'}</th>
                             <th className="veb-th text-right" title={dt?.details?.xrd_reward_fee_tooltip ?? 'Total XRD earned by the validator'}>
                                 {dt?.details?.xrd_reward_fee ?? 'Validator'}
                             </th>

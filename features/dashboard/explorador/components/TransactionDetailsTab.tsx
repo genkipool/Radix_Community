@@ -135,7 +135,7 @@ export function TransactionDetailsTab({
                         onCopy(addr);
                     }}
                     className={`shrink-0 p-0.5 rounded transition-colors ${copiedAddress === addr ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                    title="Copiar"
+                    title="Copy"
                 >
                     {copiedAddress === addr ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 </button>
@@ -220,7 +220,7 @@ export function TransactionDetailsTab({
                             onCopy(addr);
                         }}
                         className={`shrink-0 p-1 rounded-md transition-colors ${copiedAddress === addr ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
-                        title="Copiar"
+                        title="Copy"
                     >
                         {copiedAddress === addr ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
@@ -339,8 +339,8 @@ export function TransactionDetailsTab({
 
         // LockFee (Specific)
         if (name === 'LockFeeEvent') {
-            const titleText = tStr(te?.lock_fee, 'Tarifa máxima bloqueada');
-            const tooltip = tStr(te?.lock_fee_title, 'Maxima tarifa que el usuario esta dispuesto a pagar en esta transacción');
+            const titleText = tStr(te?.lock_fee, 'Locked Max Fee');
+            const tooltip = tStr(te?.lock_fee_title, 'Maximum fee the user is willing to pay in this transaction');
             return {
                 titleText,
                 tooltip,
@@ -371,7 +371,7 @@ export function TransactionDetailsTab({
                 description: (
                     <div className="flex flex-col gap-2">
                         <EventRow label={tStr(te?.at, 'at')}>{fAddress(emitter)}</EventRow>
-                        <EventRow label={tStr(te?.change, 'Cambio')}><b>Δx: {dx}</b> / <b>Δy: {dy}</b></EventRow>
+                        <EventRow label={tStr(te?.change, 'Change')}><b>Δx: {dx}</b> / <b>Δy: {dy}</b></EventRow>
                     </div>
                 ),
             };
@@ -524,7 +524,7 @@ export function TransactionDetailsTab({
                                                 onCopy(resource);
                                             }}
                                             className={`shrink-0 p-0.5 rounded transition-colors ${copiedAddress === resource ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                            title="Copiar"
+                                            title="Copy"
                                         >
                                             {copiedAddress === resource ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                                         </button>

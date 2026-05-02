@@ -383,9 +383,9 @@ export function AccountTransactionsTab({
         });
     }, [transactionsWithBalances]);
 
-    const txLoadingText = locale === 'es' ? 'Cargando transacciones...' : 'Loading transactions...';
-    const txErrorText = locale === 'es' ? 'Error al cargar las transacciones.' : 'Error loading transactions.';
-    const txNoTransactionsText = locale === 'es' ? 'No se encontraron transacciones para esta cuenta.' : 'No transactions found for this account.';
+    const txLoadingText = 'Loading transactions...';
+    const txErrorText = 'Error loading transactions.';
+    const txNoTransactionsText = 'No transactions found for this account.';
 
     const getTranslatedError = (rawMsg: string | undefined) => {
         if (!rawMsg) return txErrorText;

@@ -35,7 +35,6 @@ export function TransferFooter({
         symbol = 'LSU';
     }
 
-    const posReceivers = [...senders, ...receivers].filter(c => parseFloat(c.balance_change || '0') > 0);
     const burnedReceivers = isResourceBurned ? receivers.filter(c => parseFloat(c.balance_change || '0') < 0) : [];
 
     const greenCls = 'text-[#16a34a]';
@@ -45,16 +44,22 @@ export function TransferFooter({
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
 
                 {/* ── Fungible Senders ── */}
-                {senders.length > 0 && (
-                    <span className="flex items-center gap-2">
-                        <ArrowUp className="text-red-500 w-3.5 h-3.5" />
-                        {receivers.length > 0 ? tt?.sent_label || 'SENT' : ''}
-                        <span className="text-red-500 font-black">
-                            {senders.filter(c => parseFloat(c.balance_change || '0') < 0).reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                {(() => {
+                    const sentAmount = senders.filter(c => parseFloat(c.balance_change || '0') < 0).reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
+                    if (sentAmount <= 0 && receivers.length > 0) return null;
+                    if (senders.length === 0) return null;
+
+                    return (
+                        <span className="flex items-center gap-2">
+                            <ArrowUp className="text-red-500 w-3.5 h-3.5" />
+                            {receivers.length > 0 ? tt?.sent_label || 'SENT' : ''}
+                            <span className="text-red-500 font-black">
+                                {sentAmount.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                            </span>
+                            {receivers.length === 0 && <span className="opacity-80 lowercase italic">{tt?.burned_by_network_subtitle || 'burned or destroyed by system.'}</span>}
                         </span>
-                        {receivers.length === 0 && <span className="opacity-80 lowercase italic">{tt?.burned_by_network_subtitle || 'burned or destroyed by system.'}</span>}
-                    </span>
-                )}
+                    );
+                })()}
 
                 {/* ── Recipients Count ── */}
                 {senders.length > 0 && receivers.length > 0 && (
@@ -68,20 +73,66 @@ export function TransferFooter({
                     </>
                 )}
 
-                {/* ── Fungible Receivers (positive balance = actual receives) ── */}
-                {posReceivers.length > 0 && (
-                    <>
-                        <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
-                        <span className="flex items-center gap-2">
-                            <ArrowDown className={`${greenCls} w-3.5 h-3.5`} />
-                            {senders.length > 0 ? tt?.received_label || 'RECEIVED' : ''}
-                            <span className={`${greenCls} font-black`}>
-                                {posReceivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                {/* ── Fungible Receivers (positive balance = actual receives for SOURCE accounts) ── */}
+                {(() => {
+                    const sourceReceives = senders.filter(c => parseFloat(c.balance_change || '0') > 0);
+                    if (sourceReceives.length === 0) return null;
+
+                    const receivedAmount = sourceReceives.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
+
+                    return (
+                        <>
+                            <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
+                            <span className="flex items-center gap-2">
+                                <ArrowDown className={`${greenCls} w-3.5 h-3.5`} />
+                                {senders.length > 0 ? tt?.received_label || 'RECEIVED' : ''}
+                                <span className={`${greenCls} font-black`}>
+                                    {receivedAmount.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                                </span>
                             </span>
-                            {senders.length === 0 && <span className="opacity-80 lowercase italic">{tt?.validator_emissions_subtitle || 'generated or minted by system.'}</span>}
-                        </span>
-                    </>
-                )}
+                        </>
+                    );
+                })()}
+
+                {/* ── Destination Account RECEIVED ── */}
+                {(() => {
+                    const destAccounts = receivers.filter(c => c.entity_address.startsWith('account_'));
+                    const receivedAmount = destAccounts.filter(c => parseFloat(c.balance_change || '0') > 0).reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
+                    if (receivedAmount <= 0) return null;
+
+                    return (
+                        <>
+                            <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
+                            <span className="flex items-center gap-2">
+                                <ArrowDown className={`${greenCls} w-3.5 h-3.5 opacity-60`} />
+                                {tt?.received_label || 'RECEIVED'} (DEST)
+                                <span className={`${greenCls} font-black`}>
+                                    {receivedAmount.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                                </span>
+                            </span>
+                        </>
+                    );
+                })()}
+
+                {/* ── Destination Account SENT ── */}
+                {(() => {
+                    const destAccounts = receivers.filter(c => c.entity_address.startsWith('account_'));
+                    const sentAmount = destAccounts.filter(c => parseFloat(c.balance_change || '0') < 0).reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
+                    if (sentAmount <= 0) return null;
+
+                    return (
+                        <>
+                            <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
+                            <span className="flex items-center gap-2">
+                                <ArrowUp className="text-red-500/60 w-3.5 h-3.5" />
+                                {tt?.sent_label || 'SENT'} (DEST)
+                                <span className="text-red-500 font-black">
+                                    {sentAmount.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
+                                </span>
+                            </span>
+                        </>
+                    );
+                })()}
 
                 {/* ── Fungible Burned (negative balance in destination = vault burn) ── */}
                 {burnedReceivers.length > 0 && (

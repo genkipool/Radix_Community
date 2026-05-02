@@ -47,23 +47,22 @@ export function getConfigEntries(ra: unknown, tt?: Partial<TranslationsT['dashbo
         metadata_locker:                   tt?.role_desc_metadata_locker        || 'Can lock metadata fields to prevent future changes.',
         metadata_locker_updater:           tt?.role_desc_metadata_locker_updater|| 'Can update who has the metadata locker role.',
     };
-    const isEs = !!tt?.role_section_main && tt.role_section_main.toLowerCase().includes('principal');
     const getRoleDesc = (roleName: string, group: ConfigEntry['group']): string => {
         if (ROLE_DESC[roleName]) return ROLE_DESC[roleName];
         const baseName = roleName.replace('_updater', '').replace(/_/g, ' ');
         if (group === 'main') {
             return roleName.endsWith('_updater')
-                ? (isEs ? `Puede actualizar quién tiene el rol de ${baseName}.` : `Can update who has the ${baseName} role.`)
-                : (isEs ? `Rol principal que controla el acceso a ${baseName}.` : `Main role controlling access to ${baseName}.`);
+                ? `Can update who has the ${baseName} role.`
+                : `Main role controlling access to ${baseName}.`;
         }
         if (group === 'royalty') {
             return roleName.endsWith('_updater')
-                ? (isEs ? `Puede actualizar quién tiene el rol de regalías para ${baseName}.` : `Can update who has the royalty role for ${baseName}.`)
-                : (isEs ? `Gestiona la configuración y asignación de regalías para ${baseName}.` : `Manages royalty configuration and assignment for ${baseName}.`);
+                ? `Can update who has the royalty role for ${baseName}.`
+                : `Manages royalty configuration and assignment for ${baseName}.`;
         }
         return roleName.endsWith('_updater')
-            ? (isEs ? `Puede actualizar quién tiene el rol de ${baseName}.` : `Can update who has the ${baseName} role.`)
-            : (isEs ? `Controla el acceso a ${baseName}.` : `Controls access to ${baseName}.`);
+            ? `Can update who has the ${baseName} role.`
+            : `Controls access to ${baseName}.`;
     };
     const ROLE_GROUP: Record<string, ConfigEntry['group']> = {
         owner: 'admin',

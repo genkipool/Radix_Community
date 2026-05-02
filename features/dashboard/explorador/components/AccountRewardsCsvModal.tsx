@@ -255,11 +255,9 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                                 className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
                                                 dangerouslySetInnerHTML={{
                                                     __html: (tt?.account_rewards_summary_dream ?? (
-                                                        (locale && locale.startsWith('es'))
-                                                            ? "Si Radix valiera 1 {currency}, habrías ganado <b>{value}</b> con el staking este año."
-                                                            : "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
+                                                        "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
                                                     ))
-                                                        .replace('{currency}', summary.currency === 'EUR' ? ((locale && locale.startsWith('es')) ? 'Euro' : 'Euro') : ((locale && locale.startsWith('es')) ? 'Dólar' : 'Dollar'))
+                                                        .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
                                                         .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
                                                 }}
                                             />
