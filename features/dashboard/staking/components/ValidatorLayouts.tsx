@@ -175,7 +175,7 @@ export const Layout1Col = ({
 ==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv, _onStake
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -303,7 +303,7 @@ export const Layout2Col = ({
 ==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv, _onStake
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
