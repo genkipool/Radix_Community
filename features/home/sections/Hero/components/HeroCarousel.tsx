@@ -128,7 +128,7 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
           return (
             <div
               key={`slide-${idx}`}
-              className={`absolute inset-0 flex flex-col pt-4 ${isExiting ? 'animate-hero-out' : 'animate-hero-in'}`}
+              className={`absolute inset-0 flex flex-col pt-4 ${isExiting ? 'animate-hero-out' : (targetIdx !== null ? 'animate-hero-in' : '')}`}
               onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
               onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
             >
