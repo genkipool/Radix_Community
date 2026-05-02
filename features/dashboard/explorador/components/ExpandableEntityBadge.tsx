@@ -260,7 +260,7 @@ export function ExpandableEntityBadge({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
                         className={`p-1 rounded transition-colors ${copiedAddress === clean
-                            ? 'text-green-500'
+                            ? 'text-[var(--color-accent)]'
                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
                             }`}
                         title="Copy address"
@@ -523,7 +523,7 @@ function EntitySummaryTab({
                                 </span>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onCopy(address); }}
-                                    className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                    className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
                                     {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                 </button>
@@ -561,7 +561,7 @@ function EntitySummaryTab({
                             </span>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCopy(packageAddress); }}
-                                className={`p-0.5 rounded transition-colors ${copiedAddress === packageAddress ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                className={`p-0.5 rounded transition-colors ${copiedAddress === packageAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
                                 {copiedAddress === packageAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                             </button>
@@ -591,7 +591,7 @@ function EntitySummaryTab({
                             </span>
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCopy(poolUnit); }}
-                                className={`p-0.5 rounded transition-colors ${copiedAddress === poolUnit ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                className={`p-0.5 rounded transition-colors ${copiedAddress === poolUnit ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
                                 {copiedAddress === poolUnit ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                             </button>
@@ -624,7 +624,7 @@ function EntitySummaryTab({
                                             </span>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                                className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                             >
                                                 {copiedAddress === resAddr ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                             </button>
@@ -647,7 +647,7 @@ function EntitySummaryTab({
                                     </span>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                        className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {copiedAddress === resAddr ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                     </button>
@@ -732,7 +732,7 @@ function EntitySummaryTab({
                                     </span>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onCopy(ft.resource_address); }}
-                                        className={`p-0.5 rounded transition-colors ${copiedAddress === ft.resource_address ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`p-0.5 rounded transition-colors ${copiedAddress === ft.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {copiedAddress === ft.resource_address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                     </button>

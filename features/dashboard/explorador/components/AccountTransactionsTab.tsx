@@ -70,7 +70,7 @@ function TokenDisplay({
         ? flow.count?.toString()
         : formatNumber(Math.abs(Number(flow.amount)), 4, locale);
     
-    const colorClass = type === 'deposit' ? 'text-emerald-500' : 'text-red-500';
+    const colorClass = type === 'deposit' ? 'text-[var(--color-accent)]' : 'text-red-500';
     const sign = type === 'deposit' ? '+' : '-';
 
     return (
@@ -562,7 +562,7 @@ export function AccountTransactionsTab({
                                                     />
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
-                                                    <span className={`text-xs font-semibold ${isSuccess ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    <span className={`text-xs font-semibold ${isSuccess ? 'text-[var(--color-accent)]' : 'text-red-500'}`}>
                                                         {isSuccess ? (accT?.tx_success || 'Success') : (accT?.tx_failed || 'Failed')}
                                                     </span>
                                                 </td>

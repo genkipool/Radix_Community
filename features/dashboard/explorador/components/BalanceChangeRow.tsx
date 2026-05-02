@@ -190,7 +190,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                         </div>
                                         <div className="flex items-center gap-1 mt-0.5">
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[160px]" title={wellKnownTip || address}>{address.slice(0, 14)}...{address.slice(-6)}</span>
-                                            <button onClick={e => { e.stopPropagation(); onCopy(address); }} className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                            <button onClick={e => { e.stopPropagation(); onCopy(address); }} className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
                                                 {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                             </button>
                                             <a href={`https://dashboard.radixdlt.com/resource/${address}`} target="_blank" rel="noopener noreferrer" className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors" onClick={e => e.stopPropagation()}><ExternalLink className="w-2.5 h-2.5" /></a>
@@ -209,9 +209,9 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                                 <span>{resolvedPoolAddress}</span>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); onCopy(resolvedPoolAddress); }}
-                                                    className={`p-0.5 rounded transition-colors ${copiedAddress === resolvedPoolAddress ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                    className={`p-0.5 rounded transition-colors ${copiedAddress === resolvedPoolAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                                 >
-                                                    {copiedAddress === resolvedPoolAddress ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                                                    {copiedAddress === resolvedPoolAddress ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
                                                 </button>
                                             </dd>
                                         </div>
@@ -219,7 +219,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                     {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{resourceType}</dd></div>}
                                     {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{divisibility}</dd></div>}
                                     {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply)}{symbol ? ` ${symbol}` : ''}</dd></div>}
-                                    {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-green-600 font-mono">+{fmt(totalMinted)}{symbol ? ` ${symbol}` : ''}</dd></div>}
+                                    {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-[var(--color-accent)] font-mono">+{fmt(totalMinted)}{symbol ? ` ${symbol}` : ''}</dd></div>}
                                     {totalBurned && parseFloat(String(totalBurned)) > 0 && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_burned || 'Total Burned'}</dt><dd className="text-xs font-semibold text-red-400 font-mono">−{fmt(totalBurned)}{symbol ? ` ${symbol}` : ''}</dd></div>}
                                     {tagList.length > 0 && (
                                         <div className="flex items-start justify-between gap-4">
@@ -300,7 +300,7 @@ const BalanceChangeRow = ({
 
     const isPositive = parseFloat(change.balance_change || '0') > 0;
     const isNegative = parseFloat(change.balance_change || '0') < 0;
-    const color = colorOverride ?? (isPositive ? 'text-green-600' : isNegative ? 'text-red-500 dark:text-red-400' : 'text-[var(--color-text-main)]');
+    const color = colorOverride ?? (isPositive ? 'text-[var(--color-accent)]' : isNegative ? 'text-red-500 dark:text-red-400' : 'text-[var(--color-text-main)]');
     const sign = hideSign ? '' : isPositive ? '+' : '';
 
     const metaItems: MetadataItem[] = (metadata as GatewayEntityDetails | null)?.metadata?.items ?? [];
@@ -370,7 +370,7 @@ const BalanceChangeRow = ({
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={wellKnownTip || change.resource_address}>{change.resource_address.slice(0, 12)}...{change.resource_address.slice(-6)}</div>
-                            <button onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
+                            <button onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
                                 {copiedAddress === change.resource_address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                             </button>
                         </div>

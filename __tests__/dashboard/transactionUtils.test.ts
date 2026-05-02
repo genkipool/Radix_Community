@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTransactionType, getTransactionFlags } from '@/features/dashboard/explorador/utils/transactionUtils';
+import { resolveTransactionType, getTransactionFlags, buildSwapRoutingChart, extractMinAmount } from '@/features/dashboard/explorador/utils/transactionUtils';
 
 describe('transactionUtils', () => {
     const mockTt = {
@@ -88,6 +88,76 @@ describe('transactionUtils', () => {
 
             const unknownFlags = getTransactionFlags(['SomeOtherClass']);
             expect(unknownFlags.isStake).toBe(false);
+        });
+    });
+
+    describe('buildSwapRoutingChart', () => {
+        const mockFungibles = [
+            { entity_address: 'account_1', resource_address: 'resource_xrd', balance_change: '-100' },
+            { entity_address: 'component_dex', resource_address: 'resource_xrd', balance_change: '100' },
+            { entity_address: 'component_dex', resource_address: 'resource_tkn', balance_change: '-50' },
+            { entity_address: 'account_1', resource_address: 'resource_tkn', balance_change: '50' },
+        ];
+        const mockNames = new Map([['account_1', 'My Wallet'], ['component_dex', 'RadixDEX']]);
+        const mockSymbols = new Map([['resource_xrd', 'XRD'], ['resource_tkn', 'TKN']]);
+        const mockBlueprints = new Map();
+
+        it('includes spacer nodes to avoid subgraph title overlap', () => {
+            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            expect(chart).toContain('S_Spacer[" "]:::spacer');
+            expect(chart).toContain('R_Spacer[" "]:::spacer');
+        });
+
+        it('applies white-space: nowrap to node amount labels', () => {
+            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            expect(chart).toContain('white-space: nowrap');
+        });
+
+        it('applies white-space: nowrap to edge labels', () => {
+            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            // Verify edge label formatting
+            expect(chart).toContain('white-space: nowrap');
+        });
+
+        it('includes fee nodes with horizontal layout when fees are present', () => {
+            const mockFees = [{ entity_address: 'account_1', resource_address: 'resource_xrd', balance_change: '-1' }];
+            const feeDest = { to_burn: '0.5', to_proposer: '0.5' };
+            const chart = buildSwapRoutingChart(mockFungibles, mockFees, ['account_1'], mockNames, mockSymbols, mockBlueprints, {}, 1, feeDest, 'account_1');
+            
+            expect(chart).toContain('F_Spacer[" "]:::spacer');
+            expect(chart).toContain('Burn: <b>0.500000 XRD</b>');
+            expect(chart).toContain('Proposer: <b>0.500000 XRD</b>');
+        });
+    });
+
+    describe('extractMinAmount', () => {
+        it('extracts amount when Decimal is on the same or next lines', () => {
+            const manifest = `
+                ASSERT_WORKTOP_CONTAINS
+                    Address("resource_123")
+                    Decimal("99.5");
+            `;
+            expect(extractMinAmount(manifest)).toBe('99.5');
+        });
+
+        it('extracts amount when there are several lines in between', () => {
+            const manifest = `
+                ASSERT_WORKTOP_CONTAINS
+                    Address("resource_123")
+                    # some comment
+                    # another line
+                    Decimal("123.456");
+            `;
+            expect(extractMinAmount(manifest)).toBe('123.456');
+        });
+
+        it('returns undefined if ASSERT_WORKTOP_CONTAINS is not followed by Decimal', () => {
+            const manifest = `
+                TAKE_FROM_WORKTOP
+                    Address("resource_123")
+                    Decimal("100");
+            `;
+            expect(extractMinAmount(manifest)).toBeUndefined();
         });
     });
 });

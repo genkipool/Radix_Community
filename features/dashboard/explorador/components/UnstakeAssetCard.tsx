@@ -110,8 +110,8 @@ export function UnstakeAssetCard({
                 </div>
 
                 {/* ── DESTINATION ── */}
-                <div className="flex-1 p-3 bg-green-500/5">
-                    <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
+                <div className="flex-1 p-3 bg-[var(--color-accent)]/5">
+                    <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
                         <Landmark className="w-3 h-3" />
                         {tt?.to_address || 'Destination (Received)'}
                     </h5>

@@ -28,6 +28,7 @@ interface SwapSettlementCardProps {
     locale: string;
     tx: TransactionInfo;
     details: TransactionDetails;
+    minReceivedAmount?: string;
 }
 
 /* ── Helpers ── */
@@ -38,7 +39,7 @@ function trunc(addr: string, pre = 10, suf = 6): string {
 function CopyBtn({ addr, onCopy, copiedAddress }: { addr: string; onCopy: (v: string) => void; copiedAddress: string | null }) {
     return (
         <button type="button" onClick={(e) => { e.stopPropagation(); onCopy(addr); }} className="p-0.5 hover:bg-[var(--color-surface)] rounded transition-colors shrink-0">
-            {copiedAddress === addr ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5 text-[var(--color-text-muted)]/40" />}
+            {copiedAddress === addr ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5 text-[var(--color-text-muted)]/40" />}
         </button>
     );
 }
@@ -54,25 +55,29 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
     const name = meta?.name ?? '';
     const iconUrl = meta?.iconUrl;
     const isSold = side === 'sold';
-    const accent = isSold ? 'rose' : 'emerald';
+    const colorClass = isSold ? 'text-rose-500' : 'text-[var(--color-accent)]';
+    const bgClass = isSold ? 'bg-rose-500/10' : 'bg-[var(--color-accent)]/10';
+    const borderClass = isSold ? 'border-rose-500/40' : 'border-[var(--color-accent)]/40';
+    const textColorClass = isSold ? 'text-rose-500' : 'text-[var(--color-accent)]';
+
     const sign = isSold ? '−' : '+';
-    const clean = sanitizeText(resource);
     const fmtAmt = parseFloat(amount).toLocaleString(locale, { maximumFractionDigits: 8 });
+    const clean = sanitizeText(resource);
 
     return (
         <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
-            <span className={`text-[9px] uppercase font-black tracking-widest text-${accent}-500 opacity-80`}>
+            <span className={`text-[9px] uppercase font-black tracking-widest ${colorClass} opacity-80`}>
                 {isSold ? (tt?.swap_sold_label || 'Token Sold') : (tt?.swap_received_label || 'Token Received')}
             </span>
-            <div className={`w-10 h-10 rounded-full border-2 border-${accent}-500/40 bg-${accent}-500/10 flex items-center justify-center shrink-0 shadow-sm`}>
+            <div className={`w-10 h-10 rounded-full border-2 ${borderClass} ${bgClass} flex items-center justify-center shrink-0 shadow-sm`}>
                 {iconUrl ? (
                     <SafeImage src={iconUrl} alt={name || symbol || 'Token'} className="w-8 h-8 rounded-full object-cover" fallbackName={symbol || name || '?'} />
                 ) : (
-                    <span className={`text-xs font-black text-${accent}-500`}>{symbol ? symbol.slice(0, 3) : '?'}</span>
+                    <span className={`text-xs font-black ${textColorClass}`}>{symbol ? symbol.slice(0, 3) : '?'}</span>
                 )}
             </div>
             {(symbol || name) && <span className="text-xs font-bold text-[var(--color-text-main)] truncate max-w-full text-center">{symbol || name}</span>}
-            <span className={`text-sm font-mono font-black text-${accent}-500`}>{sign}{fmtAmt}</span>
+            <span className={`text-sm font-mono font-black ${textColorClass}`}>{sign}{fmtAmt}</span>
             <div className="flex items-center gap-1 min-w-0 max-w-full">
                 <span className={`text-[9px] font-mono text-[var(--color-text-muted)] truncate ${onResourceClick ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''}`} title={clean} onClick={() => onResourceClick?.(clean)}>{trunc(clean)}</span>
                 <CopyBtn addr={clean} onCopy={onCopy} copiedAddress={copiedAddress} />
@@ -198,7 +203,7 @@ function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAdd
                     {symbol ? <><span className="font-bold text-[var(--color-text-main)] font-sans mr-1">{symbol}</span>{trunc(resourceClean, 6, 4)}</> : trunc(resourceClean, 12, 6)}
                 </span>
             </td>
-            <td className={`px-3 py-2 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <td className={`px-3 py-2 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-[var(--color-accent)]' : 'text-rose-500'}`}>
                 {isPositive ? '+' : '−'}{fmtVal}
             </td>
         </tr>
@@ -211,7 +216,7 @@ function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAdd
 export function SwapSettlementCard({
     soldToken, receivedToken, dexComponent, initiatorAddress, routingHops,
     balanceChanges, initiators, tt, onCopy, copiedAddress, onResourceClick, network, locale,
-    tx, details,
+    tx, details, minReceivedAmount,
 }: SwapSettlementCardProps) {
     const dexMeta = useEntityData(dexComponent, network);
     const dexName = dexMeta?.name ?? '';
@@ -292,8 +297,16 @@ export function SwapSettlementCard({
                             </div>
                             <div className="flex justify-between px-3 py-1.5 gap-2">
                                 <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_received_label || 'Received'}</span>
-                                <span className="text-[10px] font-mono font-bold text-emerald-500 text-right truncate">+{fmtReceived} {receivedSymbol}</span>
+                                <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] text-right truncate">+{fmtReceived} {receivedSymbol}</span>
                             </div>
+                            {minReceivedAmount && (
+                                <div className="flex justify-between px-3 py-1.5 gap-2 bg-[var(--color-accent)]/5">
+                                    <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_min_received_label || 'Min. Expected'}</span>
+                                    <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] text-right truncate">
+                                        {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex justify-between px-3 py-1.5 gap-2">
                                 <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_rate_label || 'Rate'}</span>
                                 <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)] text-right">1:{fmtRate}</span>

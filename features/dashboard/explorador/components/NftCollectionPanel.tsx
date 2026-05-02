@@ -142,7 +142,7 @@ export function NftCollectionPanel({
                                                 </div>
                                                 <div className="flex items-center gap-1 mt-0.5">
                                                     <span className="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[100px]" title={id}>{shortId}</span>
-                                                    <button onClick={e => { e.stopPropagation(); onCopy?.(id); }} className={`p-0.5 rounded transition-colors ${copiedAddress === id ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                    <button onClick={e => { e.stopPropagation(); onCopy?.(id); }} className={`p-0.5 rounded transition-colors ${copiedAddress === id ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
                                                         {copiedAddress === id ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                                     </button>
                                                 </div>
@@ -176,7 +176,7 @@ export function NftCollectionPanel({
                                                         {claimXrd != null ? (
                                                             <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-green-700 dark:text-green-400">+1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-[var(--color-accent)]">+1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
                                                     </div>
                                                 ) : (isStakeClaim || claimXrd != null) ? (
@@ -185,11 +185,11 @@ export function NftCollectionPanel({
                                                         {claimXrd != null ? (
                                                             <div className="font-mono font-bold text-base tabular-nums text-amber-600">~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
-                                                            <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
+                                                            <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-[var(--color-accent)]' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <Pill color={isReceived ? 'green' : 'red'}>
+                                                    <Pill color={isReceived ? 'accent' : 'red'}>
                                                         {isReceived ? (tt?.nft_received || 'Received') : (tt?.nft_sent || 'Sent')}
                                                     </Pill>
                                                 )}
@@ -267,7 +267,7 @@ export function NftCollectionPanel({
                             {resourceType && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_type || 'Type'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)]">{String(resourceType)}</dd></div>}
                             {divisibility !== undefined && divisibility !== null && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_divisibility || 'Divisibility'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{String(divisibility)}</dd></div>}
                             {totalSupply && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.nft_panel_total_supply || 'Total Supply'}</dt><dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono">{fmt(totalSupply as number)}</dd></div>}
-                            {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-green-700 dark:text-green-400 font-mono">+{fmt(totalMinted as number)}</dd></div>}
+                            {totalMinted && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_minted || 'Total Minted'}</dt><dd className="text-xs font-semibold text-[var(--color-accent)] font-mono">+{fmt(totalMinted as number)}</dd></div>}
                             {totalBurned && parseFloat(String(totalBurned)) > 0 && <div className="flex items-center justify-between gap-4"><dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.resource_panel_total_burned || 'Total Burned'}</dt><dd className="text-xs font-semibold text-red-400 font-mono">−{fmt(totalBurned as number)}</dd></div>}
                             {(() => {
                                 const tagList = parseTags(metadataItems.find((m) => m.key === 'tags') || null);

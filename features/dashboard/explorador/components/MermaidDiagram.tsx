@@ -89,6 +89,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
     return (
         <div
+            data-testid="mermaid-container"
             className="flex justify-start overflow-x-auto w-full px-2 py-10
                 [&_svg]:max-w-none
                 [&_svg]:!-ml-4

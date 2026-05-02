@@ -22,6 +22,7 @@ export interface SwapData {
     dexComponent: string;
     initiatorAddress: string;
     routingHops: SwapHop[];
+    minReceivedAmount?: string;
 }
 
 export function resolveTransactionType(
@@ -61,10 +62,39 @@ export function isSwapTransaction(events: GatewayEvent[]): boolean {
     });
 }
 
+/**
+ * Extracts the "minimum expected amount" from manifest instructions.
+ * Looks for ASSERT_WORKTOP_CONTAINS followed by Decimal("...") a few lines below.
+ */
+export function extractMinAmount(manifest?: string): string | undefined {
+    if (!manifest) return undefined;
+
+    // Split into lines for easier processing
+    const lines = manifest.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Find the ASSERT_WORKTOP_CONTAINS instruction
+        if (line.includes('ASSERT_WORKTOP_CONTAINS')) {
+            // Look ahead up to 5 lines for a Decimal("...")
+            for (let j = i + 1; j <= i + 5 && j < lines.length; j++) {
+                const nextLine = lines[j].trim();
+                const match = nextLine.match(/Decimal\("([^"]+)"\)/);
+                if (match) {
+                    return match[1];
+                }
+            }
+        }
+    }
+
+    return undefined;
+}
+
 export function extractSwapData(
-    events: GatewayEvent[],
+    events: { name?: string; emitter?: { entity?: { entity_address?: string } } }[],
     balanceChanges: BalanceChanges | undefined,
-    initiators: Set<string>
+    initiators: Set<string>,
+    manifestInstructions?: string
 ): SwapData | null {
     if (!balanceChanges) return null;
 
@@ -124,6 +154,7 @@ export function extractSwapData(
         dexComponent,
         initiatorAddress,
         routingHops,
+        minReceivedAmount: extractMinAmount(manifestInstructions),
     };
 }
 
@@ -269,7 +300,7 @@ export function buildSwapRoutingChart(
         if (mode === 'receiver' || mode === 'other') {
             if (ii) {
                 for (const [r, a] of ii) {
-                    parts.push(`<div style='font-size:${fAmount}px; color:var(--color-accent) !important;'>+${fmtNum(a)} ${getSymbol(r)}</div>`);
+                    parts.push(`<div style='font-size:${fAmount}px; color:var(--color-accent) !important; white-space: nowrap;'>+${fmtNum(a)} ${getSymbol(r)}</div>`);
                 }
             }
         }
@@ -277,7 +308,7 @@ export function buildSwapRoutingChart(
         if (mode === 'sender' || mode === 'other') {
             if (oi) {
                 for (const [r, a] of oi) {
-                    parts.push(`<div style='font-size:${fAmount}px; color:#f43f5e !important;'>-${fmtNum(a)} ${getSymbol(r)}</div>`);
+                    parts.push(`<div style='font-size:${fAmount}px; color:#f43f5e !important; white-space: nowrap;'>-${fmtNum(a)} ${getSymbol(r)}</div>`);
                 }
             }
         }
@@ -305,6 +336,7 @@ export function buildSwapRoutingChart(
         const title = tt?.swap_routing_sender || 'Sender';
         L.push(`  subgraph SenderGroup["${title}"]`);
         L.push('    direction TB');
+        L.push('    S_Spacer[" "]:::spacer');
         for (const addr of senders) {
             const sid = `S${counter++}`;
             senderIds.set(addr, sid);
@@ -319,6 +351,7 @@ export function buildSwapRoutingChart(
         const title = tt?.swap_routing_receiver || 'Receiver';
         L.push(`  subgraph ReceiverGroup["${title}"]`);
         L.push('    direction TB');
+        L.push('    R_Spacer[" "]:::spacer');
         for (const addr of receivers) {
             const rid = `R${counter++}`;
             receiverIds.set(addr, rid);
@@ -333,6 +366,7 @@ export function buildSwapRoutingChart(
         const title = tt?.swap_dex_label || 'Intermediaries';
         L.push(`  subgraph DEXGroup["${title}"]`);
         L.push('    direction TB');
+        L.push('    D_Spacer[" "]:::spacer');
         for (const addr of intermediaries) {
             const id = nid(addr);
             const style = isDex(addr) ? 'vault' : 'user';
@@ -349,7 +383,7 @@ export function buildSwapRoutingChart(
         const feeTooltip = `Click to copy: ${feePayer}`;
 
         const rhombusText = tt?.swap_routing_network_fees || 'Comisiones de Red';
-        const feeHtml = `<div onclick='navigator.clipboard.writeText(&quot;${feePayer}&quot;)' title='${feeTooltip}' style='cursor:pointer; color:var(--color-text-main); font-size:${fTitle}px; padding: 8px;'>${rhombusText}<br/><b>${fmtNum(feePaid)} XRD</b></div>`;
+        const feeHtml = `<div onclick='navigator.clipboard.writeText(&quot;${feePayer}&quot;)' title='${feeTooltip}' style='cursor:pointer; color:var(--color-text-main); font-size:${fTitle}px; padding: 8px; white-space: nowrap;'>${rhombusText}: <b>${fmtNum(feePaid)} XRD</b></div>`;
 
         L.push(`  ${netFeeId}{"${feeHtml}"}:::fee`);
         feeLinks.push({ from: payerId, to: netFeeId, label: `${fmtNum(feePaid)} XRD` });
@@ -357,7 +391,8 @@ export function buildSwapRoutingChart(
         if (feeDest) {
             const breakdownText = tt?.swap_routing_fee_breakdown || 'Desglose de fees';
             L.push(`  subgraph FeesGroup["${breakdownText}"]`);
-            L.push('    direction LR');
+            L.push('    direction TB');
+            L.push('    F_Spacer[" "]:::spacer');
 
             const getVal = (v: string | { xrd_amount?: string; xrdAmount?: string;[key: string]: unknown } | undefined | null) =>
                 typeof v === 'string' ? v : (v as { xrd_amount?: string; xrdAmount?: string })?.xrd_amount || (v as { xrd_amount?: string; xrdAmount?: string })?.xrdAmount || '0';
@@ -373,22 +408,22 @@ export function buildSwapRoutingChart(
                 : 0;
 
             if (toBurn > 0) {
-                const burnHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px;'>${tt?.swap_routing_burn || 'Burned Tokens'}<br/><b>${fmtNum(toBurn)} XRD</b></div>`;
+                const burnHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px; white-space: nowrap;'>${tt?.swap_routing_burn || 'Burn'}: <b>${fmtNum(toBurn)} XRD</b></div>`;
                 L.push(`    BurnNode["${burnHtml}"]:::fee`);
                 feeLinks.push({ from: netFeeId, to: 'BurnNode', label: `${fmtNum(toBurn)} XRD` });
             }
             if (toProposer > 0) {
-                const propHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px;'>${tt?.swap_routing_proposer || 'Proposer Rewards'}<br/><b>${fmtNum(toProposer)} XRD</b></div>`;
+                const propHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px; white-space: nowrap;'>${tt?.swap_routing_proposer || 'Proposer'}: <b>${fmtNum(toProposer)} XRD</b></div>`;
                 L.push(`    ProposerNode["${propHtml}"]:::vault`);
                 feeLinks.push({ from: netFeeId, to: 'ProposerNode', label: `${fmtNum(toProposer)} XRD` });
             }
             if (toValSet > 0) {
-                const valHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px;'>${tt?.swap_routing_validators || 'Validator Rewards'}<br/><b>${fmtNum(toValSet)} XRD</b></div>`;
+                const valHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px; white-space: nowrap;'>${tt?.swap_routing_validators || 'Validators'}: <b>${fmtNum(toValSet)} XRD</b></div>`;
                 L.push(`    ValidatorNode["${valHtml}"]:::vault`);
                 feeLinks.push({ from: netFeeId, to: 'ValidatorNode', label: `${fmtNum(toValSet)} XRD` });
             }
             if (toRoyalties > 0) {
-                const royHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px;'>Royalties<br/><b>${fmtNum(toRoyalties)} XRD</b></div>`;
+                const royHtml = `<div style='color:var(--color-text-main); font-size:${fFee}px; white-space: nowrap;'>Royalties: <b>${fmtNum(toRoyalties)} XRD</b></div>`;
                 L.push(`    RoyaltiesNode["${royHtml}"]:::fee`);
                 feeLinks.push({ from: netFeeId, to: 'RoyaltiesNode', label: `${fmtNum(toRoyalties)} XRD` });
             }
@@ -439,8 +474,8 @@ export function buildSwapRoutingChart(
 
                 const edgeLabel = `${fmtNum(transferAmt)} ${getSymbol(res)}`;
 
-                // Usamos "==>" (conexión nativa gruesa) en lugar de "-->"
-                L.push(`  ${sNodeId} == "<span style='font-size:${fEdge}px;'>${edgeLabel}</span>" ==> ${tNodeId}`);
+                // Usamos "==>" (conexión nativa gruesa) en lugar de "-->" y forzamos nowrap
+                L.push(`  ${sNodeId} == "<span style='font-size:${fEdge}px; white-space: nowrap;'>${edgeLabel}</span>" ==> ${tNodeId}`);
 
                 if (isInit(t.id)) {
                     outputEdgeIndices.push(edgeIdx);
@@ -457,7 +492,7 @@ export function buildSwapRoutingChart(
     }
 
     for (const fl of feeLinks) {
-        const labelHtml = `<span style='font-size:${fFee}px;'>${fl.label}</span>`;
+        const labelHtml = `<span style='font-size:${fFee}px; white-space: nowrap;'>${fl.label}</span>`;
         // Usamos "==>" también para las fees
         const labelStr = fl.label ? ` == "${labelHtml}" ==> ` : ' ==> ';
         L.push(`  ${fl.from}${labelStr}${fl.to}`);

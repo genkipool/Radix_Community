@@ -60,7 +60,7 @@ export function ProtocolVoteCard({
                     </svg>
                     {tt?.protocol_vote_label || 'Protocol Update Vote'}
                 </span>
-                <Pill color="green" className="text-emerald-600 dark:text-emerald-300 border-emerald-400/60 bg-emerald-400/15 font-black tracking-widest uppercase px-3">
+                <Pill color="accent" className="font-black tracking-widest uppercase px-3">
                     {friendlyVersion}
                 </Pill>
             </h3>
@@ -69,7 +69,7 @@ export function ProtocolVoteCard({
 
                 {/* LEFT — Validator */}
                 <div className="flex-1 p-3 bg-[var(--color-accent)]/6">
-                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-emerald-800 dark:text-emerald-400 mb-3 flex items-center gap-1.5">
+                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5">
                         <Shield className="w-3 h-3" />
                         {tt?.protocol_vote_validator || 'Validator'}
                     </h5>
@@ -80,10 +80,10 @@ export function ProtocolVoteCard({
                     }
 
                     <div className="mt-3 flex items-center justify-between px-2.5 h-8 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30">
-                        <span className="text-[9px] uppercase font-bold text-emerald-700 dark:text-emerald-500 tracking-wide">
+                        <span className="text-[9px] uppercase font-bold text-[var(--color-accent)] opacity-80 tracking-wide">
                             {tt?.protocol_vote_for || 'Voting for'}
                         </span>
-                        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 font-mono translate-y-[0.5px]">
+                        <span className="text-xs font-bold text-[var(--color-accent)] font-mono translate-y-[0.5px]">
                             {friendlyVersion}
                         </span>
                     </div>

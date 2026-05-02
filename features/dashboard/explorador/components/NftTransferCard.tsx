@@ -52,7 +52,7 @@ const NftTransferCard = ({
     const tagList = parseTags(metadataItems.find((m) => m.key === 'tags') || null);
 
     const isReceived = type === 'added';
-    const color = isReceived ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+    const color = isReceived ? 'text-[var(--color-accent)]' : 'text-red-600 dark:text-red-400';
 
     const specializedTooltip = isClaimRedeemed || isBurned
         ? tt?.claim_nft_redeemed_tooltip || 'NFT Burned/Redeemed'
@@ -86,7 +86,7 @@ const NftTransferCard = ({
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={resourceAddress}>{resourceAddress.slice(0, 12)}...{resourceAddress.slice(-6)}</div>
-                            <button onClick={e => { e.stopPropagation(); onCopy?.(resourceAddress); }} className={`p-1 rounded-md transition-colors shrink-0 ${copiedAddress === resourceAddress ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Resource Address">
+                            <button onClick={e => { e.stopPropagation(); onCopy?.(resourceAddress); }} className={`p-1 rounded-md transition-colors shrink-0 ${copiedAddress === resourceAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Resource Address">
                                 {copiedAddress === resourceAddress ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                             </button>
                         </div>

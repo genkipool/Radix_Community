@@ -12,7 +12,7 @@
 
 import React from 'react';
 
-type PillColor = 'primary' | 'green' | 'red' | 'amber' | 'muted' | 'custom';
+type PillColor = 'primary' | 'green' | 'red' | 'amber' | 'muted' | 'custom' | 'accent';
 
 interface PillProps {
     children: React.ReactNode;
@@ -31,6 +31,7 @@ const COLOR_CLASSES: Record<PillColor, string> = {
     red:     'text-red-500    border-red-500/20    bg-red-500/10',
     amber:   'text-amber-400  border-amber-400/20  bg-amber-400/10',
     muted:   'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]',
+    accent:  'text-[var(--color-accent)] border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10',
     custom:  '',
 };
 

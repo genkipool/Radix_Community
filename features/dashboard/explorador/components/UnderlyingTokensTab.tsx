@@ -314,9 +314,9 @@ function PositionSummaryTable({
                                 <span className="font-mono text-[11px] leading-relaxed select-all">{poolAddress}</span>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onCopy(poolAddress); }}
-                                    className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === poolAddress ? 'text-green-600' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                    className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === poolAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
-                                    {copiedAddress === poolAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                    {copiedAddress === poolAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
                                 </button>
                             </div>
                         }
@@ -412,7 +412,7 @@ function ReserveRow({
             <span className="text-[11px] text-[var(--color-text-muted)] font-medium">
                 {labelText}
             </span>
-            <span className="text-xs font-mono font-black text-[var(--color-text-main)]">
+            <span className="text-xs font-mono font-black text-[var(--color-accent)]">
                 {fmtAmount(contributed, locale)} <span className="text-[10px] font-bold text-[var(--color-text-muted)]">{symbol}</span>
             </span>
         </div>
@@ -485,7 +485,7 @@ function UnderlyingTokenCard({
                                 onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                                 className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors shrink-0"
                             >
-                                {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                                {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
                             </button>
                         </div>
                     </div>
@@ -494,7 +494,7 @@ function UnderlyingTokenCard({
                 {/* Right: contributed amount + chevron */}
                 <div className="flex items-center gap-2 shrink-0">
                     <div className="flex items-baseline gap-1.5">
-                        <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight">
+                        <span className="text-xs font-mono font-black text-[var(--color-accent)] tracking-tight">
                             {fmtAmount(contributed, locale)}
                         </span>
                         <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right truncate max-w-[80px]" title={symbol || name}>

@@ -292,7 +292,7 @@ export function AccountSummaryTab({
                         )}
                         <button
                             onClick={(e) => { e.stopPropagation(); onCopy(address); }}
-                            className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
                             {copiedAddress === address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         </button>
@@ -315,7 +315,7 @@ export function AccountSummaryTab({
                             title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                             amount={xrdAmount}
                             symbol="XRD"
-                            valueColor="text-green-500 dark:text-green-400"
+                            valueColor="text-[var(--color-accent)]"
                             marketData={marketData}
                             locale={locale}
                         />
@@ -348,7 +348,7 @@ export function AccountSummaryTab({
                             title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
                             amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                             symbol="XRD"
-                            valueColor="text-green-500"
+                            valueColor="text-[var(--color-accent)]"
                             marketData={marketData}
                             locale={locale}
                         />
@@ -360,7 +360,7 @@ export function AccountSummaryTab({
                                 title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                                 amount={xrdAmount}
                                 symbol="XRD"
-                                valueColor="text-green-500 dark:text-green-400"
+                                valueColor="text-[var(--color-accent)]"
                                 marketData={marketData}
                                 locale={locale}
                             />
@@ -395,7 +395,7 @@ export function AccountSummaryTab({
                                 title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                                 symbol="XRD"
-                                valueColor="text-green-500"
+                                valueColor="text-[var(--color-accent)]"
                                 marketData={marketData}
                                 locale={locale}
                             />
@@ -419,7 +419,7 @@ export function AccountSummaryTab({
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all leading-relaxed whitespace-pre-wrap hidden sm:inline">{row.validatorAddress}</span>
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] sm:hidden">{truncateAddress(row.validatorAddress, 8, 8)}</span>
                                             <button onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] shrink-0 transition-all active:scale-95">
-                                                {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                                {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>
@@ -435,7 +435,7 @@ export function AccountSummaryTab({
                                     </div>
                                     <div className="flex flex-col items-center text-center">
                                         <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'Claim XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-green-500">{row.xrdInClaim > 0 ? formatNumber(row.xrdInClaim, 2, locale) : '0'} XRD</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-accent)]">{row.xrdInClaim > 0 ? formatNumber(row.xrdInClaim, 2, locale) : '0'} XRD</span>
                                     </div>
                                 </div>
                             </div>
@@ -585,7 +585,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale }: {
                         onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                         className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                     >
-                        {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                        {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
                     </button>
                 </div>
             </div>

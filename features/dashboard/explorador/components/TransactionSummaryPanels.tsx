@@ -411,7 +411,7 @@ function VaultCreationCard({
                                 className="p-1 hover:bg-amber-500/20 rounded transition-colors shrink-0"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === clean ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-amber-800/40 dark:text-amber-400/40" />}
+                                {copiedAddress === clean ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3 text-amber-800/40 dark:text-amber-400/40" />}
                             </button>
                         </div>
                     </div>
@@ -452,7 +452,7 @@ function VaultCreationCard({
                             className="hover:text-amber-600 transition-colors shrink-0 p-1"
                             title={tt?.copy_raw || 'Copy'}
                         >
-                            {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-amber-800/30 dark:text-amber-400/30" />}
+                            {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-amber-800/30 dark:text-amber-400/30" />}
                         </button>
                     </div>
                 </div>
@@ -608,7 +608,7 @@ function BetVoteCard({
                                     className="p-1 hover:bg-blue-500/20 rounded transition-colors shrink-0"
                                     title={tt?.copy_raw || 'Copy'}
                                 >
-                                    {copiedAddress === resourceAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-blue-800/40 dark:text-blue-400/40" />}
+                                    {copiedAddress === resourceAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3 text-blue-800/40 dark:text-blue-400/40" />}
                                 </button>
                             </div>
                         )}
@@ -657,7 +657,7 @@ function BetVoteCard({
                             className="hover:text-blue-600 transition-colors shrink-0 p-1"
                             title={tt?.copy_raw || 'Copy'}
                         >
-                            {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
+                            {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
                         </button>
                     </div>
                 </div>
@@ -878,7 +878,7 @@ function MetadataEntityBlock({
                         className="p-1 hover:bg-slate-500/10 rounded transition-colors shrink-0"
                         title={tt?.copy_raw || 'Copy'}
                     >
-                        {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                        {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
                     </button>
                 </div>
 
@@ -1010,7 +1010,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                                 className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === valAddress ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                {copiedAddress === valAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
                             </button>
                         )}
                     </div>

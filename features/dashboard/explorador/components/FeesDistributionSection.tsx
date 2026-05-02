@@ -214,8 +214,8 @@ export function FeesDistributionSection({
                 </div>
 
                 {/* ── RIGHT: distribution breakdown ── */}
-                <div className="flex-1 p-3 bg-green-500/3">
-                    <h5 className="text-[10px] uppercase font-black tracking-widest text-[#16a34a] mb-3 flex items-center gap-1.5 opacity-80">
+                <div className="flex-1 p-3 bg-[var(--color-accent)]/3">
+                    <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
                         <ChevronDown className="w-3 h-3" />
                         {tt?.fees_breakdown || 'Breakdown'}
                     </h5>
@@ -265,11 +265,11 @@ export function FeesDistributionSection({
 
                         {finalValidator > 0 && (
                             <div
-                                className="rounded-xl border border-green-500/40 bg-green-500/6 p-3"
+                                className="rounded-xl border-[var(--color-accent)]/40 bg-[var(--color-accent)]/6 p-3"
                                 title={String(tt?.fees_validator_title || '25% distributed among the active validator set.')}
                             >
                                 <FeeRowHeader
-                                    icon={<IconBolt className="w-4 h-4 text-green-700 dark:text-green-400 shrink-0" />}
+                                    icon={<IconBolt className="w-4 h-4 text-[var(--color-accent)] shrink-0" />}
                                     label={tt?.fees_validator_set || 'Validator Set'} pct="25%"
                                     amount={finalValidator} color="green"
                                 />
@@ -277,8 +277,8 @@ export function FeesDistributionSection({
                                     {tt?.fees_validator_set_desc || 'XRD distributed among the validator set'}
                                 </p>
                                 {fdValShares.length > 0 && (
-                                    <div className="mt-2.5 space-y-1.5 pl-2.5 border-l-2 border-green-500/40 bg-green-500/3 py-1.5 rounded-r-lg">
-                                        <span className="text-[8px] uppercase font-black text-green-700/70 dark:text-green-400/80 block mb-1">
+                                    <div className="mt-2.5 space-y-1.5 pl-2.5 border-l-2 border-[var(--color-accent)]/40 bg-[var(--color-accent)]/3 py-1.5 rounded-r-lg">
+                                        <span className="text-[8px] uppercase font-black text-[var(--color-accent)]/70 block mb-1">
                                             {tt?.fees_top_recipients || 'Top Recipients'}
                                         </span>
                                         {fdValShares.slice(0, 5).map((s, si: number) => {
@@ -289,7 +289,7 @@ export function FeesDistributionSection({
                                                 <div key={'vs' + si} className="flex items-center justify-between text-[10px] group/vs gap-2">
                                                     <ValidatorNameLabel address={addr} network={network} />
                                                     <div className="flex items-center gap-1 shrink-0">
-                                                        <span className="text-green-600 font-mono font-black">{fmtAmt(amt)} XRD</span>
+                                                        <span className="text-[var(--color-accent)] font-mono font-black">{fmtAmt(amt)} XRD</span>
                                                         <CopyIconBtn address={addr} onCopy={onCopy} copiedAddress={copiedAddress} groupHide />
                                                     </div>
                                                 </div>
@@ -372,7 +372,7 @@ export function FeesDistributionSection({
                     })}
                     {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt?.fees_burn || 'Burn'} />}
                     {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt?.fees_proposer || 'Proposer'} />}
-                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt?.fees_validator_set || 'Validator'} />}
+                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(finalValidator)} color="text-[var(--color-accent)]" label={tt?.fees_validator_set || 'Validator'} />}
                     {tippingAmt > 0 && <FooterItem icon={<IconTip className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt?.fees_tips || 'Tips'} />}
                     {royaltyAmt > 0 && <FooterItem icon={<IconGem className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt?.fees_royalty || 'Royalties'} />}
                     <div className="h-4 w-px bg-[var(--color-card-border)] mx-1 hidden md:block" />
@@ -404,7 +404,7 @@ function FeeRow({
 const COLOR_CLASSES: Record<string, { text: string; bg: string; border: string }> = {
     orange: { text: 'text-orange-600', bg: 'bg-orange-500/20', border: 'border-orange-500/30' },
     blue: { text: 'text-blue-600', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
-    green: { text: 'text-green-700 dark:text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
+    green: { text: 'text-[var(--color-accent)]', bg: 'bg-[var(--color-accent)]/20', border: 'border-[var(--color-accent)]/30' },
     purple: { text: 'text-purple-600', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
     pink: { text: 'text-[var(--color-accent)]', bg: 'bg-[var(--color-primary)]/10', border: 'border-[var(--color-primary)]/30' },
 };
@@ -441,7 +441,7 @@ function CopyIconBtn({
                 isGhost 
                 ? 'bg-transparent border-none' 
                 : 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm'
-            } ${copiedAddress === address ? 'text-green-500' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
+            } ${copiedAddress === address ? 'text-[var(--color-accent)]' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
                 }`}
         >
             {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}

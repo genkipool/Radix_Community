@@ -176,7 +176,7 @@ const TransactionTabs = ({
                             // ── SWAP: render dedicated settlement card ──
                             const receiptEvents = receipt?.events ?? [];
                             if (isSwapTransaction(receiptEvents)) {
-                                const swapData = extractSwapData(receiptEvents, balanceChanges, initiators);
+                                const swapData = extractSwapData(receiptEvents, balanceChanges, initiators, String(manifest_instructions || ''));
                                 if (swapData) {
                                     return (
                                         <SwapSettlementCard
@@ -195,6 +195,7 @@ const TransactionTabs = ({
                                             locale={locale}
                                             tx={tx}
                                             details={details}
+                                            minReceivedAmount={swapData.minReceivedAmount}
                                         />
                                     );
                                 }

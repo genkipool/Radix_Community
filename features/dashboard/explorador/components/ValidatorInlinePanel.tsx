@@ -70,7 +70,7 @@ export function ValidatorInlinePanel({
         : isUnstake ? (unstakeLsu ?? unstakeXrd)
             : claimXrd;
     const primaryUnit = isUnstake ? 'LSU' : 'XRD';
-    const amountColor = isStake ? 'text-green-700 dark:text-green-400' : isUnstake ? 'text-orange-600 dark:text-orange-400' : 'text-[var(--color-primary)]';
+    const amountColor = (isStake || isClaim) ? 'text-[var(--color-accent)]' : isUnstake ? 'text-orange-600 dark:text-orange-400' : 'text-[var(--color-text-main)]';
     const amountSign = isStake ? '+' : '−';
     const numericAmount = primaryAmount != null && primaryAmount > 0
         ? `${parseFloat(String(primaryAmount)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })}` : null;
@@ -209,7 +209,7 @@ export function ValidatorInlinePanel({
                                                                 <span className="hidden sm:inline">{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</span>
                                                                 <span className="inline sm:hidden">{validatorAddress.slice(0, 8)}...{validatorAddress.slice(-8)}</span>
                                                             </span>
-                                                            <button onClick={e => { e.stopPropagation(); onCopy(validatorAddress); }} className={`p-0.5 rounded transition-colors ${copiedAddress === validatorAddress ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                            <button onClick={e => { e.stopPropagation(); onCopy(validatorAddress); }} className={`p-0.5 rounded transition-colors ${copiedAddress === validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
                                                                 {copiedAddress === validatorAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                                                             </button>
                                                         </div>
@@ -226,7 +226,7 @@ export function ValidatorInlinePanel({
                                                     {isStake && stakeXrd != null && stakeXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_stake_amount || 'XRD Delegado'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-green-700 dark:text-green-400">+{parseFloat(String(stakeXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">+{parseFloat(String(stakeXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isUnstake && (unstakeLsu ?? 0) > 0 && (
@@ -241,13 +241,13 @@ export function ValidatorInlinePanel({
                                                     {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_xrd_expected || 'XRD a Reclamar'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {isClaim && claimXrd != null && claimXrd > 0 && (
                                                         <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60">
                                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{tt?.validator_info_claim_amount || 'XRD Reclamados'}</dt>
-                                                            <dd className="text-sm font-bold font-mono text-[var(--color-primary)]">+{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
+                                                            <dd className="text-sm font-bold font-mono text-[var(--color-accent)]">+{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</dd>
                                                         </div>
                                                     )}
                                                     {validator?.delegatedStake != null && (
