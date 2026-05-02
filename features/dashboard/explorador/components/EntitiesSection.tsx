@@ -16,7 +16,7 @@ import { EntitiesSectionProps } from '../types';
  * Entity badges are expandable — clicking shows detail tabs.
  */
 export function EntitiesSection({
-    variant, details, tt, onCopy, copiedAddress, onResourceClick, network, locale, marketData,
+    variant, details, tt, dt, onCopy, copiedAddress, onResourceClick, network, locale, marketData,
 }: EntitiesSectionProps) {
     const isCreated = variant === 'created';
 
@@ -69,6 +69,7 @@ export function EntitiesSection({
                                 network={network}
                                 locale={locale}
                                 marketData={marketData}
+                                dt={dt}
                             />
                         ))}
                     </div>

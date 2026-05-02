@@ -195,14 +195,14 @@ function AirdropRewardCard({
                 </span>
                 <EntityBadge address={airdropData?.account} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
-            <div className="pt-2 flex items-center justify-between">
-                <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-black text-purple-500 tracking-wider flex items-center gap-1.5 opacity-80">
-                        {tt?.airdrop_amount || 'Reward Amount'}
-                    </span>
-                    {airdropData?.resource && (
+            <div className="pt-2 flex flex-col gap-1">
+                <span className="text-[10px] uppercase font-black text-purple-500 tracking-wider opacity-80">
+                    {tt?.airdrop_amount || 'Reward Amount'}
+                </span>
+                <div className="flex items-center justify-between w-full">
+                    {airdropData?.resource ? (
                         <div
-                            className="flex items-center gap-1 mt-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
+                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
                             onClick={() => onResourceClick?.(airdropData?.resource!)}
                         >
                             {iconUrl && (
@@ -217,16 +217,16 @@ function AirdropRewardCard({
                                 {airdropData?.resource.slice(0, 8)}...{airdropData?.resource.slice(-6)}
                             </span>
                         </div>
-                    )}
+                    ) : <div />}
+                    <span className="text-base font-mono font-black text-purple-400 flex items-center gap-1.5">
+                        +{airdropData?.amount}
+                        {symbol && (
+                            <span className="text-xs font-bold text-[var(--color-text-main)] bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                                {symbol}
+                            </span>
+                        )}
+                    </span>
                 </div>
-                <span className="text-base font-mono font-black text-purple-400 flex items-center gap-1.5">
-                    +{airdropData?.amount}
-                    {symbol && (
-                        <span className="text-xs font-bold text-[var(--color-text-main)] bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
-                            {symbol}
-                        </span>
-                    )}
-                </span>
             </div>
             <div className="pt-2 mt-1">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
@@ -234,13 +234,15 @@ function AirdropRewardCard({
                 </span>
                 <EntityBadge address={airdropData?.component} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
             </div>
-            <div className="pt-2 mt-1 flex items-center justify-between">
+            <div className="pt-2 mt-1 flex flex-col gap-1">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">
-                    {tt?.airdrop_event_id || 'Event ID'}:
+                    {tt?.airdrop_event_id || 'Event ID'}
                 </span>
-                <span className="text-[10px] font-mono font-bold bg-white/5 px-2 py-0.5 rounded text-[var(--color-text-main)] border border-[var(--color-card-border)]">
-                    #{airdropData?.eventId}
-                </span>
+                <div className="pl-4 pt-1">
+                    <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded text-[var(--color-text-main)] border border-[var(--color-card-border)]">
+                        #{airdropData?.eventId}
+                    </span>
+                </div>
             </div>
         </div>
     );
@@ -439,12 +441,12 @@ function VaultCreationCard({
             <div className="pt-3 border-t border-amber-500/20">
                 <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <Landmark className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
+                        < Landmark className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
                         <span className="text-[9px] uppercase font-black text-amber-800/60 dark:text-amber-400/60 tracking-wider">
                             {te?.vault_id || 'Vault ID'}
                         </span>
                     </div>
-                    <div className="flex items-center gap-2 min-w-0 px-0.5">
+                    <div className="flex items-center gap-2 min-w-0 px-0.5 w-full pl-4 pt-1">
                         <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all" title={vaultId}>
                             {vaultId.length > 20 ? `${vaultId.slice(0, 12)}...${vaultId.slice(-6)}` : vaultId}
                         </span>
@@ -638,31 +640,33 @@ function BetVoteCard({
             {/* Bottom Row: Emitter (at) */}
             <div className="pt-3 border-t border-blue-500/20">
                 <div className="flex flex-col gap-1.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[9px] uppercase font-black text-blue-800/60 dark:text-blue-400/60 tracking-wider">
-                            {te?.at || 'at'}
-                        </span>
-                        {typeLabel && (
-                            <span
-                                className={`text-[8px] uppercase font-bold tracking-tight px-1 py-0.5 leading-none rounded border border-blue-500/40 text-blue-800 dark:text-blue-400 bg-blue-500/10 shrink-0 ${emitterTip ? 'cursor-help' : ''}`}
-                                title={emitterTip ?? undefined}
-                            >
-                                {typeLabel}
+                    <div className="flex flex-col gap-1 w-full">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] uppercase font-black text-blue-800/60 dark:text-blue-400/60 tracking-wider">
+                                {te?.at || 'at'}
                             </span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0 px-0.5">
-                        <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all" title={emitter}>
-                            {emitter.length > 20 ? `${emitter.slice(0, 12)}...${emitter.slice(-6)}` : emitter}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
-                            className="hover:text-blue-600 transition-colors shrink-0 p-1"
-                            title={tt?.copy_raw || 'Copy'}
-                        >
-                            {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
-                        </button>
+                            {typeLabel && (
+                                <span
+                                    className={`text-[8px] uppercase font-bold tracking-tight px-1 py-0.5 leading-none rounded border border-blue-500/40 text-blue-800 dark:text-blue-400 bg-blue-500/10 shrink-0 ${emitterTip ? 'cursor-help' : ''}`}
+                                    title={emitterTip ?? undefined}
+                                >
+                                    {typeLabel}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1 pl-4 pt-1">
+                            <span className="text-xs font-mono text-[var(--color-text-main)] truncate select-all" title={emitter}>
+                                {emitter.length > 20 ? `${emitter.slice(0, 12)}...${emitter.slice(-6)}` : emitter}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onCopy(emitter); }}
+                                className="hover:text-blue-600 transition-colors shrink-0 p-1"
+                                title={tt?.copy_raw || 'Copy'}
+                            >
+                                {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -889,21 +893,23 @@ function MetadataEntityBlock({
                 {/* The rest in specific order */}
                 <div className="flex flex-col gap-0.5 text-xs">
                     {displayUpdates.map((u, i) => (
-                        <div key={`param-${i}`} className="flex flex-col sm:flex-row sm:items-start sm:gap-1">
-                            <span className="font-semibold text-[var(--color-text-main)] capitalize shrink-0">
-                                {translateKey(u.key)}:
+                        <div key={`param-${i}`} className="flex flex-col gap-0.5 mb-2 last:mb-0">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
+                                {translateKey(u.key)}
                             </span>
                             {u.key === 'info_url' ? (
-                                <a 
-                                    href={u.value.startsWith('http') ? u.value : `https://${u.value}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="font-mono text-blue-500 hover:underline break-all mt-0.5 sm:mt-0"
-                                >
-                                    {u.value}
-                                </a>
+                                <div className="pl-4 pt-1">
+                                    <a 
+                                        href={u.value.startsWith('http') ? u.value : `https://${u.value}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="font-mono text-xs text-blue-500 hover:underline break-all"
+                                    >
+                                        {u.value}
+                                    </a>
+                                </div>
                             ) : (
-                                <span className="font-mono text-[var(--color-text-muted)] break-all mt-0.5 sm:mt-0" title={u.value}>
+                                <span className="font-mono text-xs text-[var(--color-text-main)] break-all pl-4 pt-1" title={u.value}>
                                     {u.value.length > 40 && (u.value.startsWith('resource_') || u.value.startsWith('account_') || u.value.startsWith('package_') || u.value.startsWith('component_'))
                                         ? `${u.value.slice(0, 12)}...${u.value.slice(-6)}`
                                         : u.value}

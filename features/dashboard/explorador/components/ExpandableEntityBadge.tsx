@@ -11,7 +11,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Copy, Download } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { Pill } from '@/components/ui/Pill';
@@ -43,10 +43,11 @@ import type {
     MetadataItem,
     MarketData,
     TranslationsT,
+    DashboardDict,
     Network,
     GatewayEntityDetails
 } from '@/features/dashboard/types';
-import { formatNumber } from '@/utils/formatters';
+import { formatNumber, formatXRD } from '@/utils/formatters';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -61,6 +62,7 @@ interface ExpandableEntityBadgeProps {
     network: Network;
     locale?: string;
     marketData?: MarketData | null;
+    dt?: Partial<DashboardDict>;
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -155,6 +157,7 @@ export function ExpandableEntityBadge({
     network,
     locale = 'en',
     marketData,
+    dt,
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
@@ -211,6 +214,12 @@ export function ExpandableEntityBadge({
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
+                    <span
+                        className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
+                        title={wellKnownTip ?? undefined}
+                    >
+                        {label}
+                    </span>
                     {iconUrl && (
                         <SafeImage
                             src={iconUrl}
@@ -219,12 +228,6 @@ export function ExpandableEntityBadge({
                             className="w-6 h-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
                         />
                     )}
-                    <span
-                        className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
-                        title={wellKnownTip ?? undefined}
-                    >
-                        {label}
-                    </span>
                     <div className="min-w-0 flex-1 flex flex-col">
                         {clean.startsWith('pool_') && blueprintName ? (
                             <span className={`text-[11px] font-semibold truncate ${color}`}>
@@ -338,6 +341,9 @@ export function ExpandableEntityBadge({
                                                     copiedAddress={copiedAddress}
                                                     onResourceClick={onResourceClick}
                                                     locale={locale}
+                                                    network={network}
+                                                    marketData={marketData}
+                                                    dt={dt}
                                                 />
                                             )
                                         )}
@@ -390,7 +396,32 @@ export function ExpandableEntityBadge({
 
                                         {/* ── METADATA ── */}
                                         {activeTab === 'metadata' && (
-                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt} />
+                                            <PanelMetadataTab
+                                                metadataItems={(() => {
+                                                    // For validators, the pool unit resource address is in details.state
+                                                    const details = entityData?.details as { state?: { pool_unit_resource_address?: string } } | undefined;
+                                                    const poolResourceAddr = address.startsWith('validator_') ? details?.state?.pool_unit_resource_address : undefined;
+
+                                                    if (poolResourceAddr) {
+                                                        return [
+                                                            ...metadataItems,
+                                                            {
+                                                                key: 'pool_resources',
+                                                                value: {
+                                                                    typed: {
+                                                                        type: 'String',
+                                                                        value: poolResourceAddr
+                                                                    }
+                                                                }
+                                                            } as MetadataItem
+                                                        ];
+                                                    }
+                                                    return metadataItems;
+                                                })()}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                            />
                                         )}
 
                                         {/* ── CONFIGURATION ── */}
@@ -437,6 +468,8 @@ function EntitySummaryTab({
     copiedAddress,
     onResourceClick,
     locale,
+    network,
+    dt,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -449,7 +482,11 @@ function EntitySummaryTab({
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;
     locale: string;
+    network: Network;
+    marketData?: MarketData | null;
+    dt?: Partial<DashboardDict>;
 }) {
+    const qc = useQueryClient();
     const entityType = getEntityDetailType(entityData, address);
     const description = getMeta('description');
     const infoUrl = getMeta('info_url');
@@ -484,7 +521,7 @@ function EntitySummaryTab({
     return (
         <div>
             {/* Header with icon + name */}
-            {!address.startsWith('pool_') && (
+            {!address.startsWith('pool_') && !address.startsWith('validator_') && (
                 <>
                     <div className="flex items-center gap-3 mb-3">
                         {iconUrl && (
@@ -508,10 +545,10 @@ function EntitySummaryTab({
                                     )}
                                 </p>
                             )}
-                            {entityData?.details?.blueprint_name && (
-                                <div className="inline-block bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-[var(--color-primary)] text-[10px] font-semibold px-2 py-0.5 rounded mt-1 mb-0.5 select-none">
+                            {!entityName && entityData?.details?.blueprint_name && (
+                                <p className="text-[10px] font-semibold text-[var(--color-primary)] mt-1 mb-0.5">
                                     {entityData.details.blueprint_name}
-                                </div>
+                                </p>
                             )}
                             <div className="flex items-center gap-1 mt-0.5">
                                 <span
@@ -535,7 +572,7 @@ function EntitySummaryTab({
                 </>
             )}
             {/* Description */}
-            {!address.startsWith('pool_') && description && (
+            {!address.startsWith('pool_') && !address.startsWith('validator_') && description && (
                 <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-3 italic border-l-2 border-[var(--color-primary)]/30 pl-3">
                     {description}
                 </p>
@@ -544,19 +581,18 @@ function EntitySummaryTab({
             {/* Detail rows */}
             <dl className="space-y-2.5">
                 {/* Type */}
-                <SummaryRow
-                    label={tt?.resource_panel_type || 'Type'}
-                    value={entityType.replace(/_/g, ' ')}
-                />
+                {!address.startsWith('validator_') && (
+                    <SummaryInlineRow
+                        label={tt?.resource_panel_type || 'Type'}
+                        value={entityType.replace(/_/g, ' ')}
+                    />
+                )}
 
                 {/* Parent Package */}
-                {packageAddress && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            Parent Package
-                        </dt>
-                        <dd className="flex items-center gap-1">
-                            <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={packageAddress}>
+                {packageAddress && !address.startsWith('validator_') && (
+                    <SummaryInlineRow label={tt?.resource_panel_package || 'Parent Package'}>
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs font-mono text-[var(--color-text-main)] truncate max-w-[120px] sm:max-w-none" title={packageAddress}>
                                 {packageAddress.length > 20 ? `${packageAddress.slice(0, 12)}...${packageAddress.slice(-6)}` : packageAddress}
                             </span>
                             <button
@@ -565,28 +601,78 @@ function EntitySummaryTab({
                             >
                                 {copiedAddress === packageAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                             </button>
-                        </dd>
-                    </div>
+                        </div>
+                    </SummaryInlineRow>
                 )}
 
                 {/* Blueprint Name */}
-                {blueprintName && (
-                    <SummaryRow label="Blueprint Name" value={blueprintName} />
+                {blueprintName && !address.startsWith('validator_') && (
+                    <SummaryInlineRow
+                        label={tt?.resource_panel_blueprint || 'Blueprint'}
+                        value={blueprintName}
+                    />
                 )}
 
                 {/* Blueprint Version */}
-                {blueprintVersion && (
-                    <SummaryRow label="Blueprint Version" value={blueprintVersion} />
+                {blueprintVersion && !address.startsWith('validator_') && (
+                    <SummaryInlineRow
+                        label={tt?.resource_panel_blueprint_version || 'Blueprint Version'}
+                        value={blueprintVersion}
+                    />
                 )}
 
+                {/* Validator Metrics */}
+                {(() => {
+                    if (!address.startsWith('validator_')) return null;
+                    const validatorsData = qc.getQueryData<{ validators: import('@/types/radix').Validator[] }>(['validators', network]);
+                    const validator = validatorsData?.validators?.find((v) => v.address === address);
+                    if (!validator) return null;
+
+                    const dd: Partial<DashboardDict['details']> = dt?.details || {};
+
+                    return (
+                        <>
+                            {validator.delegatedStake != null && (
+                                <SummaryInlineRow
+                                    label={dd.delegated_stake || 'Delegated Stake'}
+                                    value={`${formatXRD(validator.delegatedStake, locale)} XRD`}
+                                    mono
+                                />
+                            )}
+                            {validator.delegators != null && (
+                                <SummaryInlineRow
+                                    label={dt?.card?.delegators || 'Delegators'}
+                                    value={validator.delegators.toLocaleString(locale)}
+                                />
+                            )}
+                            {validator.nominalFee != null && (
+                                <SummaryInlineRow
+                                    label={dd.nominal_fee || 'Fee'}
+                                    value={`${validator.nominalFee.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+                                />
+                            )}
+                            {validator.apyProjection != null && (
+                                <SummaryInlineRow
+                                    label={dd.apy_projection || 'APY Projection'}
+                                    value={`${validator.apyProjection.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+                                />
+                            )}
+                            {validator.lsu2xrdFactor != null && validator.lsu2xrdFactor !== 1 && (
+                                <SummaryInlineRow
+                                    label={dd.lsu_factor || 'LSU → XRD Factor'}
+                                    value={`1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD`}
+                                    mono
+                                />
+                            )}
+                        </>
+                    );
+                })()}
+
                 {/* Pool Unit */}
-                {poolUnit && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            Pool Unit
-                        </dt>
-                        <dd className="flex items-center gap-1">
-                            <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={poolUnit}>
+                {poolUnit && !address.startsWith('validator_') && (
+                    <SummaryInlineRow label="Pool Unit">
+                        <div className="flex items-center gap-1">
+                            <span className="text-xs font-mono text-[var(--color-text-main)] truncate max-w-[120px] sm:max-w-none" title={poolUnit}>
                                 {poolUnit.length > 20 ? `${poolUnit.slice(0, 12)}...${poolUnit.slice(-6)}` : poolUnit}
                             </span>
                             <button
@@ -595,103 +681,38 @@ function EntitySummaryTab({
                             >
                                 {copiedAddress === poolUnit ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
                             </button>
-                        </dd>
-                    </div>
+                        </div>
+                    </SummaryInlineRow>
                 )}
-
-                {/* Pool Resources */}
-                {poolResourcesItems && poolResourcesItems.length > 0 ? (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            Pool Resources
-                        </dt>
-                        <dd className="flex flex-col items-end gap-2 flex-1">
-                            {poolResourcesItems.map((item) => {
-                                const resName = item.explicit_metadata?.items?.find((m) => m.key === 'name')?.value?.typed?.value || 'Unknown';
-                                const resIcon = item.explicit_metadata?.items?.find((m) => m.key === 'icon_url')?.value?.typed?.value;
-                                const resAddr = item.resource_address;
-                                return (
-                                    <div key={resAddr} className="flex flex-col items-end gap-1 mb-2 last:mb-0 w-full min-w-0">
-                                        <div className="flex items-center justify-end gap-2 w-full">
-                                            {resIcon && (
-                                                <SafeImage src={resIcon} alt={resName} fallbackName={resName} className="w-6 h-6 rounded-lg object-cover bg-white/10 shrink-0" />
-                                            )}
-                                            <span className="font-bold text-xs text-[var(--color-text-main)]">{resName}</span>
-                                        </div>
-                                        <div className="flex items-center justify-end gap-1 w-full">
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all text-right flex-1" title={resAddr}>
-                                                {resAddr.length > 20 ? `${resAddr.slice(0, 12)}...${resAddr.slice(-6)}` : resAddr}
-                                            </span>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                                className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                            >
-                                                {copiedAddress === resAddr ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </dd>
-                    </div>
-                ) : poolResourcesBackup.length > 0 ? (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            Pool Resources
-                        </dt>
-                        <dd className="flex flex-col items-end gap-1 flex-1">
-                            {poolResourcesBackup.map((resAddr) => (
-                                <div key={resAddr} className="flex items-center gap-1">
-                                    <span className="text-xs font-mono font-semibold text-[var(--color-text-main)] break-all text-right" title={resAddr}>
-                                        {resAddr.length > 20 ? `${resAddr.slice(0, 12)}...${resAddr.slice(-6)}` : resAddr}
-                                    </span>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
-                                        className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                    >
-                                        {copiedAddress === resAddr ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
-                                    </button>
-                                </div>
-                            ))}
-                        </dd>
-                    </div>
-                ) : null}
 
                 {/* Pool Vault Number */}
                 {poolVaultNumber && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            Pool Vault Number
-                        </dt>
-                        <dd className="text-xs font-semibold text-[var(--color-text-main)]">
-                            {poolVaultNumber}
-                        </dd>
-                    </div>
+                    <SummaryInlineRow label="Pool Vault Number" value={String(poolVaultNumber)} />
                 )}
 
                 {/* Resource-only fields */}
                 {divisibility !== undefined && divisibility !== null && (
-                    <SummaryRow
+                    <SummaryInlineRow
                         label={tt?.resource_panel_divisibility || 'Divisibility'}
                         value={String(divisibility)}
                     />
                 )}
                 {totalSupply !== undefined && totalSupply !== null && (
-                    <SummaryRow
+                    <SummaryInlineRow
                         label={tt?.resource_panel_total_supply || 'Total Supply'}
                         value={formatNumber(Number(totalSupply), 2, locale)}
                         mono
                     />
                 )}
                 {totalMinted !== undefined && totalMinted !== null && Number(totalMinted) > 0 && (
-                    <SummaryRow
+                    <SummaryInlineRow
                         label={tt?.resource_panel_total_minted || 'Total Minted'}
                         value={formatNumber(Number(totalMinted), 2, locale)}
                         mono
                     />
                 )}
                 {totalBurned !== undefined && totalBurned !== null && Number(totalBurned) > 0 && (
-                    <SummaryRow
+                    <SummaryInlineRow
                         label={tt?.resource_panel_total_burned || 'Total Burned'}
                         value={formatNumber(Number(totalBurned), 2, locale)}
                         mono
@@ -699,56 +720,87 @@ function EntitySummaryTab({
                 )}
 
                 {/* Info URL */}
-                {infoUrl && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0">
-                            {tt?.meta_key_info_url || 'Website'}
-                        </dt>
-                        <dd className="text-xs text-right">
-                            <a
-                                href={infoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[var(--color-primary)] hover:underline"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                {infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                            </a>
-                        </dd>
-                    </div>
+                {infoUrl && !address.startsWith('validator_') && (
+                    <SummaryInlineRow label={tt?.meta_key_info_url || 'Website'}>
+                        <a
+                            href={infoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[var(--color-primary)] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                        </a>
+                    </SummaryInlineRow>
                 )}
 
-                {/* Underlying Tokens (Pool only) */}
-                {address.startsWith('pool_') && entityData?.fungible_resources?.items && entityData.fungible_resources.items.length > 0 && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">
-                            {tt?.account_summary?.contributed_tokens || 'Underlying Tokens'}
+                {/* Multi-item fields (Vertical format) */}
+
+                {/* Pool Resources */}
+                {poolResourcesItems && poolResourcesItems.length > 0 && !address.startsWith('validator_') ? (
+                    <div className="flex flex-col gap-1">
+                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-1">
+                            Pool Resources
                         </dt>
-                        <dd className="flex flex-col items-end gap-1 flex-1">
-                            {entityData.fungible_resources.items.map((ft: { resource_address: string }) => (
-                                <div key={ft.resource_address} className="flex items-center gap-1 mt-0.5">
-                                    <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[120px] sm:max-w-[200px]" title={ft.resource_address}>
-                                        {ft.resource_address.slice(0, 10)}...{ft.resource_address.slice(-6)}
+                        <dd className="grid grid-cols-3 gap-x-2 gap-y-3 flex-1 pl-4 pt-1">
+                            {poolResourcesItems.map((item) => {
+                                const resName = item.explicit_metadata?.items?.find((m) => m.key === 'name')?.value?.typed?.value || 'Unknown';
+                                const resIcon = item.explicit_metadata?.items?.find((m) => m.key === 'icon_url')?.value?.typed?.value;
+                                const resAddr = item.resource_address;
+                                return (
+                                    <div key={resAddr} className="flex flex-col gap-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            {resIcon && (
+                                                <SafeImage src={resIcon} alt={resName} fallbackName={resName} className="w-5 h-5 rounded-lg object-cover bg-white/10 shrink-0" />
+                                            )}
+                                            <span className="text-[10px] text-[var(--color-text-main)] truncate" title={resName}>{resName}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 pl-4 pt-0.5">
+                                            <span className="text-[9px] font-mono text-[var(--color-text-muted)]" title={resAddr}>
+                                                {resAddr.length > 16 ? `${resAddr.slice(0, 16)}...${resAddr.slice(-4)}` : resAddr}
+                                            </span>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
+                                                className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                            >
+                                                {copiedAddress === resAddr ? <Check className="w-2 h-2" /> : <Copy className="w-2 h-2" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </dd>
+                    </div>
+                ) : poolResourcesBackup.length > 0 && !address.startsWith('validator_') ? (
+                    <div className="flex flex-col gap-1">
+                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
+                            Pool Resources
+                        </dt>
+                        <dd className="grid grid-cols-3 gap-x-2 gap-y-1 flex-1 pl-4 pt-1">
+                            {poolResourcesBackup.map((resAddr) => (
+                                <div key={resAddr} className="flex items-center gap-1">
+                                    <span className="text-[10px] font-mono text-[var(--color-text-main)]" title={resAddr}>
+                                        {resAddr.length > 16 ? `${resAddr.slice(0, 8)}...${resAddr.slice(-4)}` : resAddr}
                                     </span>
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); onCopy(ft.resource_address); }}
-                                        className={`p-0.5 rounded transition-colors ${copiedAddress === ft.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
+                                        className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
-                                        {copiedAddress === ft.resource_address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                        {copiedAddress === resAddr ? <Check className="w-2 h-2" /> : <Copy className="w-2 h-2" />}
                                     </button>
                                 </div>
                             ))}
                         </dd>
                     </div>
-                )}
+                ) : null}
 
                 {/* Tags */}
-                {tags.length > 0 && (
-                    <div className="flex items-start justify-between gap-4">
-                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0">
+                {tags.length > 0 && !address.startsWith('validator_') && (
+                    <div className="flex flex-col gap-1">
+                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
                             {tt?.resource_panel_tags || 'Tags'}
                         </dt>
-                        <dd className="flex flex-wrap gap-1 justify-end">
+                        <dd className="flex flex-wrap gap-1 pl-4 pt-1">
                             {tags.map((tag, i) => (
                                 <Pill key={i}>{tag}</Pill>
                             ))}
@@ -760,15 +812,16 @@ function EntitySummaryTab({
     );
 }
 
-/* ─── Small helper row ──────────────────────────── */
-function SummaryRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+
+
+function SummaryInlineRow({ label, value, mono, children }: { label: string; value?: string; mono?: boolean; children?: React.ReactNode }) {
     return (
-        <div className="flex items-center justify-between gap-4">
-            <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] shrink-0">
+        <div className="flex items-center justify-between gap-4 pb-3 border-b border-[var(--color-card-border)]/60 last:border-0 last:pb-0">
+            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">
                 {label}
             </dt>
-            <dd className={`text-xs font-semibold text-[var(--color-text-main)] capitalize ${mono ? 'font-mono' : ''}`}>
-                {value}
+            <dd className={`text-xs font-semibold text-[var(--color-text-main)] ${mono ? 'font-mono' : ''}`}>
+                {children ?? value}
             </dd>
         </div>
     );

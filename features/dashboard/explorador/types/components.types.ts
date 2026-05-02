@@ -4,7 +4,8 @@ import type {
     GatewayEntityDetails,
     TranslationsT,
     TransactionDetails,
-    MarketData
+    MarketData,
+    DashboardDict
 } from '@/features/dashboard/types';
 import type {
     TransactionInfo,
@@ -213,6 +214,7 @@ export interface EntitiesSectionProps {
     variant: 'created' | 'affected';
     details: TransactionDetails;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    dt?: Partial<DashboardDict>;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     onResourceClick?: (addr: string) => void;

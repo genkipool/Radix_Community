@@ -188,10 +188,12 @@ export function PanelLoadingState({ tt }: { tt?: Partial<TranslationsT['dashboar
    URLs as anchor links.
 ───────────────────────────────────────── */
 export function PanelMetadataTab({
-    metadataItems, tt,
+    metadataItems, tt, onCopy, copiedAddress,
 }: {
     metadataItems: MetadataItem[];
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    onCopy?: (v: string) => void;
+    copiedAddress?: string | null;
 }) {
     if (metadataItems.length === 0) {
         return (
@@ -247,12 +249,32 @@ export function PanelMetadataTab({
                             <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words space-y-1">
                                 {valueItems.map((vItem, vi) => {
                                     const isUrl = typeof vItem === 'string' && (vItem.startsWith('http') || vItem.startsWith('ipfs'));
+                                    const isAddress = typeof vItem === 'string' && (
+                                        vItem.startsWith('resource_') ||
+                                        vItem.startsWith('account_') ||
+                                        vItem.startsWith('validator_') ||
+                                        vItem.startsWith('component_') ||
+                                        vItem.startsWith('package_') ||
+                                        vItem.startsWith('pool_') ||
+                                        vItem.startsWith('internal_') ||
+                                        vItem.startsWith('global_')
+                                    );
+
                                     return (
-                                        <div key={vi}>
+                                        <div key={vi} className="flex items-center gap-1 group/meta-item">
                                             {isUrl && typeof vItem === 'string' ? (
                                                 <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
                                             ) : (
-                                                vItem
+                                                <span className={isAddress ? 'font-mono' : ''}>{vItem}</span>
+                                            )}
+
+                                            {isAddress && onCopy && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onCopy(vItem); }}
+                                                    className={`p-0.5 rounded transition-all opacity-0 group-hover/meta-item:opacity-100 ${copiedAddress === vItem ? 'text-[var(--color-accent)] opacity-100' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                >
+                                                    {copiedAddress === vItem ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                                </button>
                                             )}
                                         </div>
                                     );

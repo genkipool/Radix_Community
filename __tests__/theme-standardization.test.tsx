@@ -100,7 +100,7 @@ describe('Theme Standardization Colors', () => {
     });
 
     it('Mermaid chart does not contain var() in linkStyle', () => {
-        const chart = buildSwapRoutingChart([], [], [], new Map(), new Map(), new Map(), {}, 10, {}, 'payer');
+        const chart = buildSwapRoutingChart([], [], [], [], new Map(), new Map(), new Map(), {}, 10, {}, 'payer');
 
         // linkStyle should not contain var(
         const linkStyles = chart.split('\n').filter((l: string) => l.includes('linkStyle'));
