@@ -5,7 +5,7 @@
  * to avoid duplication across components.
  */
 
-import type { TranslationsT, GatewayEvent, FeeDestination, FungibleChange } from '@/features/dashboard/types';
+import type { TranslationsT, GatewayEvent, GatewayField, FeeDestination, FungibleChange } from '@/features/dashboard/types';
 import type { BalanceChanges } from '../types';
 import { sanitizeText } from '@/utils/sanitize';
 
@@ -81,7 +81,7 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
             const fields = ev.data?.fields || [];
 
             // Look for the field containing the resource address
-            const resField = fields.find((f: any) =>
+            const resField = fields.find((f: GatewayField) =>
                 f.field_name === 'resource_address' ||
                 f.type_name === 'ResourceAddress' ||
                 (typeof f.value === 'string' && f.value.startsWith('resource_'))
@@ -135,7 +135,7 @@ export function extractMinAmount(manifest?: string): string | undefined {
 }
 
 export function extractSwapData(
-    events: { name?: string; emitter?: { entity?: { entity_address?: string } }, data?: any }[],
+    events: GatewayEvent[],
     balanceChanges: BalanceChanges | undefined,
     initiators: Set<string>,
     manifestInstructions?: string
