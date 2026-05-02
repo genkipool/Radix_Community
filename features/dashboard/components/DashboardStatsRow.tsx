@@ -91,7 +91,7 @@ export const DashboardStatsRow = ({
                 icon={
                     <RadixIcon
                         className={`w-5 h-5 ${!isPositive ? 'scale-y-[-1]' : ''}`}
-                        strokeColor={isPositive ? '#22c55e' : '#ef4444'}
+                        strokeColor={isPositive ? 'var(--color-accent)' : '#ef4444'}
                         animate={false}
                     />
                 }
@@ -103,7 +103,7 @@ export const DashboardStatsRow = ({
                                 <span className="truncate">
                                     {price.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} {symbol}
                                 </span>
-                                <span className={`text-[10px] font-bold shrink-0 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                <span className={`text-[10px] font-bold shrink-0 ${isPositive ? 'text-[var(--color-accent)]' : 'text-red-500'}`}>
                                     {isPositive ? '+' : ''}{(marketData.priceChange24h ?? 0).toFixed(2)}%
                                 </span>
                             </div>

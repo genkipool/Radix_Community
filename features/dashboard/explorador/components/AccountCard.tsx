@@ -211,7 +211,7 @@ export function AccountCard({
                                         {accT?.total_xrd || 'TOTAL XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-green-500 font-mono">
+                                        <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                         </span>
                                         {renderFiatValue(parseFloat(xrdAmount))}
@@ -255,7 +255,7 @@ export function AccountCard({
                                         {accT?.claim_xrd || 'CLAIM XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-green-500 font-mono">
+                                        <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                         </span>
                                         {renderFiatValue(claimTotal)}
