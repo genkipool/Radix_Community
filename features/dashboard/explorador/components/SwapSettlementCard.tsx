@@ -106,7 +106,7 @@ function NameResolver({ address, network, onResolved }: {
 }
 
 /* ── Routing Mermaid diagram wrapper ── */
-function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details, onCopy }: {
+function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details, onCopy, copiedAddress }: {
     fungibles: FungibleChange[];
     feeEntries: { entity_address: string; resource_address: string; balance_change: string }[];
     initiatorAddrs: string[];
@@ -115,6 +115,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
     tx: TransactionInfo;
     details: TransactionDetails;
     onCopy: (v: string) => void;
+    copiedAddress: string | null;
 }) {
     const [names, setNames] = useState<Map<string, string>>(new Map());
     const [symbols, setSymbols] = useState<Map<string, string>>(new Map());
@@ -180,7 +181,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
                 <Route className="w-3 h-3 text-[var(--color-accent)]" />
                 {tt?.swap_routing_label || 'Routing Path'}
             </h4>
-            <MermaidDiagram chart={chart} />
+            <MermaidDiagram chart={chart} copiedAddress={copiedAddress} />
         </>
     );
 }
@@ -358,6 +359,7 @@ export function SwapSettlementCard({
                             tx={tx}
                             details={details}
                             onCopy={onCopy}
+                            copiedAddress={copiedAddress}
                         />
                     </div>
                 )}

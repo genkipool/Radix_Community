@@ -5,9 +5,10 @@ import { useTheme } from '@/context/ThemeContext';
 
 interface MermaidDiagramProps {
     chart: string;
+    copiedAddress?: string | null;
 }
 
-export function MermaidDiagram({ chart }: MermaidDiagramProps) {
+export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
     const rawId = useId().replace(/:/g, '');
     const [svg, setSvg] = useState('');
     const { theme } = useTheme();
@@ -27,6 +28,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 m.initialize({
                     startOnLoad: false,
                     theme: 'base',
+                    securityLevel: 'loose',
                     themeVariables: {
                         darkMode: isDark,
                         background: 'transparent',
@@ -79,6 +81,38 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         return () => { cancelled = true; };
     }, [chart, rawId, theme]);
 
+    useEffect(() => {
+        const sync = () => {
+            document.querySelectorAll('.mermaid-node-copied').forEach(el => {
+                el.classList.remove('mermaid-node-copied');
+                const inner = el.querySelector('rect, path, polygon, circle');
+                if (inner) {
+                    (inner as HTMLElement).style.removeProperty('stroke');
+                    (inner as HTMLElement).style.removeProperty('stroke-width');
+                }
+            });
+            if (copiedAddress) {
+                // Usamos un selector más permisivo por si hay caracteres especiales
+                const allCopies = document.querySelectorAll('[data-diag-copy]');
+                const container = Array.from(allCopies).find(c => c.getAttribute('data-diag-copy') === copiedAddress);
+                const node = container?.closest('.node');
+                if (node) {
+                    node.classList.add('mermaid-node-copied');
+                    const inner = node.querySelector('rect, path, polygon, circle');
+                    if (inner) {
+                        (inner as HTMLElement).style.setProperty('stroke', 'var(--color-accent)', 'important');
+                        (inner as HTMLElement).style.setProperty('stroke-width', '6px', 'important'); // Más grueso para que sea obvio
+                    }
+                }
+            }
+        };
+        sync();
+        const t1 = setTimeout(sync, 100);
+        const t2 = setTimeout(sync, 500);
+        const t3 = setTimeout(sync, 1000); // Uno más por si acaso
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }, [svg, copiedAddress]);
+
     if (!svg) {
         return (
             <div className="flex justify-center py-6">
@@ -119,8 +153,17 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
                 [&_.node.spacer_rect]:!pointer-events-none
                 [&_.node.spacer_.nodeLabel]:!opacity-0
                 [&_path.flowchart-link]:!stroke-[var(--color-text-muted)]
-                [&_path.flowchart-link]:!opacity-40"
-            dangerouslySetInnerHTML={{ __html: svg }}
-        />
+                [&_path.flowchart-link]:!opacity-40
+                [&_.mermaid-node-copied_rect]:!stroke-[var(--color-accent)]
+                [&_.mermaid-node-copied_path]:!stroke-[var(--color-accent)]
+                [&_.mermaid-node-copied_polygon]:!stroke-[var(--color-accent)]
+                [&_.mermaid-node-copied_circle]:!stroke-[var(--color-accent)]
+                [&_.mermaid-node-copied_rect]:![stroke-width:4px]
+                [&_.mermaid-node-copied_path]:![stroke-width:4px]
+                [&_.mermaid-node-copied_polygon]:![stroke-width:4px]
+                [&_.mermaid-node-copied_circle]:![stroke-width:4px]"
+        >
+            <div className="w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+        </div>
     );
 }

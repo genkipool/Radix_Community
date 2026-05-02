@@ -181,7 +181,7 @@ export default function DashboardClient({
   });
 
   /* ── Copy helper ── */
-  const { copiedText: copiedAddress, copy: copyAddress } = useCopyToClipboard(1000);
+  const { copiedText: copiedAddress, copy: copyAddress } = useCopyToClipboard(600);
 
   /* ══ React Query — Validators ============================== */
   const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(deferredNetwork);
