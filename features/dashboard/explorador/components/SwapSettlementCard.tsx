@@ -10,7 +10,8 @@ import type { TransactionInfo } from '@/types/radix';
 import type { SwapHop } from '../utils/transactionUtils';
 import { buildSwapRoutingChart } from '../utils/transactionUtils';
 import { MermaidDiagram } from './MermaidDiagram';
-import type { BalanceChanges, FungibleChange } from '../types';
+import { BalanceChanges, FungibleChange } from '../types';
+import { ExplorerTable } from './ExplorerTable';
 
 interface SwapSettlementCardProps {
     soldToken: { resource: string; amount: string };
@@ -170,7 +171,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
 }
 
 /* ── Balance change row ── */
-function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAddress, onResourceClick, network, locale, tt }: {
+function BalanceRow({ change, isUser, onCopy, copiedAddress, onResourceClick, network, locale, tt }: {
     change: FungibleChange; isUser: boolean; onCopy: (v: string) => void; copiedAddress: string | null;
     onResourceClick?: (a: string) => void; network: Network; locale: string; tt?: Partial<TranslationsT['dashboard']['transactions']>;
 }) {
@@ -185,26 +186,32 @@ function BalanceRow({ change, isUser, onCopy: _onCopy, copiedAddress: _copiedAdd
 
     // Determine role
     let role = 'DEX';
-    let badgeClass = 'bg-white/5 text-[var(--color-text-muted)] border-[var(--color-card-border)]';
-    if (isUser) { role = tt?.swap_account_label || 'Account'; badgeClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20'; }
-    else if (entityClean.includes('consensusmanager')) { role = 'Validators'; badgeClass = 'bg-violet-500/10 text-violet-400 border-violet-500/20'; }
-    else if (entityClean.startsWith('resource_')) { role = 'Burn'; badgeClass = 'bg-violet-500/10 text-violet-400 border-violet-500/20'; }
+    let roleColor = 'text-[var(--color-text-muted)]';
+    if (isUser) { role = tt?.swap_account_label || 'Account'; roleColor = 'text-[var(--color-primary)]'; }
+    else if (entityClean.includes('consensusmanager')) { role = 'Validators'; roleColor = 'text-violet-400/90'; }
+    else if (entityClean.startsWith('resource_')) { role = 'Burn'; roleColor = 'text-violet-400/90'; }
 
     return (
-        <tr className="group hover:bg-white/[0.02]">
-            <td className="px-3 py-2 text-[10px] font-mono text-[var(--color-text-muted)]">
-                <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={entityClean} onClick={() => onResourceClick?.(entityClean)}>
-                    {entityMeta?.name ? <><span className="font-bold text-[var(--color-text-main)] font-sans mr-1">{entityMeta.name}</span>{trunc(entityClean, 6, 4)}</> : trunc(entityClean, 12, 6)}
-                </span>
+        <tr className="border-b border-[var(--color-card-border)] hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-300 last:border-b-0 group">
+            <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors min-w-[240px]">
+                <div className="flex items-center gap-1.5">
+                    <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)]" title={entityClean} onClick={() => onResourceClick?.(entityClean)}>
+                        {entityMeta?.name ? <><span className="font-bold text-[var(--color-text-main)] font-sans mr-1">{entityMeta.name}</span>{trunc(entityClean, 12, 10)}</> : trunc(entityClean, 20, 16)}
+                    </span>
+                    <CopyBtn addr={entityClean} onCopy={onCopy} copiedAddress={copiedAddress} />
+                </div>
             </td>
-            <td className="px-3 py-2"><span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border font-sans ${badgeClass}`}>{role}</span></td>
-            <td className="px-3 py-2 text-[10px] font-mono text-[var(--color-text-muted)]">
-                <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={resourceClean} onClick={() => onResourceClick?.(resourceClean)}>
-                    {symbol ? <><span className="font-bold text-[var(--color-text-main)] font-sans mr-1">{symbol}</span>{trunc(resourceClean, 6, 4)}</> : trunc(resourceClean, 12, 6)}
-                </span>
+            <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors min-w-[140px]"><span className={`text-[9px] font-bold uppercase tracking-wider font-sans ${roleColor}`}>{role}</span></td>
+            <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
+                <div className="flex items-center gap-1.5">
+                    <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)]" title={resourceClean} onClick={() => onResourceClick?.(resourceClean)}>
+                        {trunc(resourceClean, 20, 36)}
+                    </span>
+                    <CopyBtn addr={resourceClean} onCopy={onCopy} copiedAddress={copiedAddress} />
+                </div>
             </td>
-            <td className={`px-3 py-2 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-[var(--color-accent)]' : 'text-rose-500'}`}>
-                {isPositive ? '+' : '−'}{fmtVal}
+            <td className={`py-3 px-4 text-right text-[10px] font-mono font-bold ${isPositive ? 'text-[var(--color-accent)]' : 'text-rose-500'} border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors`}>
+                {isPositive ? '+' : '−'}{fmtVal} {symbol && <span className="text-[9px] font-bold font-sans ml-1 opacity-70">{symbol}</span>}
             </td>
         </tr>
     );
@@ -342,29 +349,30 @@ export function SwapSettlementCard({
                 {/* ── Section 3: Balance Changes Table ── */}
                 {fungibles.length > 0 && (
                     <div className="px-4 sm:px-5 pb-4">
-                        <div className="bg-[var(--color-bg)]/50 rounded-lg border border-[var(--color-card-border)] overflow-hidden">
-                            <h4 className="px-3 py-2 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-1.5">
-                                <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
-                                {tt?.swap_settlements_label || 'Balance Changes'}
-                            </h4>
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse text-[10px]">
-                                    <thead>
-                                        <tr className="border-b border-[var(--color-card-border)]">
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_entity_label || 'Entity'}</th>
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_role_label || 'Role'}</th>
-                                            <th className="px-3 py-2 text-left text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_asset_label || 'Asset'}</th>
-                                            <th className="px-3 py-2 text-right text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">{tt?.swap_variation_label || 'Net'}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {fungibles.map((fc, i) => (
-                                            <BalanceRow key={`${fc.entity_address}-${fc.resource_address}-${i}`} change={fc} isUser={initiators.has(sanitizeText(fc.entity_address))} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} tt={tt} />
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <ExplorerTable
+                            title={tt?.swap_settlements_label || 'Balance Changes'}
+                            icon={<Table2 className="w-3 h-3 text-[var(--color-accent)]" />}
+                            headers={[
+                                { label: tt?.swap_entity_label || 'Entity', className: 'min-w-[240px]' },
+                                { label: tt?.swap_role_label || 'Role', className: 'min-w-[140px]' },
+                                tt?.swap_asset_label || 'Asset',
+                                tt?.swap_variation_label || 'Net'
+                            ]}
+                        >
+                            {fungibles.map((fc, i) => (
+                                <BalanceRow
+                                    key={`${fc.entity_address}-${fc.resource_address}-${i}`}
+                                    change={fc}
+                                    isUser={initiators.has(sanitizeText(fc.entity_address))}
+                                    onCopy={onCopy}
+                                    copiedAddress={copiedAddress}
+                                    onResourceClick={onResourceClick}
+                                    network={network}
+                                    locale={locale}
+                                    tt={tt}
+                                />
+                            ))}
+                        </ExplorerTable>
                     </div>
                 )}
             </div>
