@@ -50,9 +50,9 @@ describe('Theme Standardization Colors', () => {
                 ]
             } as any,
             initiators: new Set(['account_1']),
-            details: { 
+            details: {
                 receipt: { status: 'Succeeded' },
-                balance_changes: { 
+                balance_changes: {
                     fungible_fee_balance_changes: [],
                     fungible_balance_changes: [
                         { entity_address: 'account_1', resource_address: 'resource_received', balance_change: '90' }
@@ -61,7 +61,7 @@ describe('Theme Standardization Colors', () => {
             } as any,
             tx: { feePaid: '1' } as any,
             tt: mockTt as any,
-            onCopy: () => {},
+            onCopy: () => { },
             copiedAddress: null,
             network: 'mainnet' as const,
             locale: 'en-US'
@@ -78,7 +78,7 @@ describe('Theme Standardization Colors', () => {
         // The one in the flow should have the accent color
         const flowLabel = receivedLabels.find(el => el.className.includes('text-[var(--color-accent)]'));
         expect(flowLabel).toBeDefined();
-        
+
         // Check if the amount in the details mini-table has the accent color class
         const amounts = screen.getAllByText((content, element) => {
             return element?.tagName.toLowerCase() === 'span' && content.includes('+90');
@@ -97,7 +97,7 @@ describe('Theme Standardization Colors', () => {
 
     it('Mermaid chart does not contain var() in linkStyle', () => {
         const chart = buildSwapRoutingChart([], [], [], new Map(), new Map(), new Map(), {}, 10, {}, 'payer');
-        
+
         // linkStyle should not contain var(
         const linkStyles = chart.split('\n').filter((l: string) => l.includes('linkStyle'));
         linkStyles.forEach((l: string) => {
@@ -115,10 +115,10 @@ describe('Theme Standardization Colors', () => {
 
         render(
             <QueryClientProvider client={queryClient}>
-                <BalanceChangeRow 
-                    change={mockChange} 
+                <BalanceChangeRow
+                    change={mockChange}
                     tt={mockTt as any}
-                    onCopy={() => {}}
+                    onCopy={() => { }}
                     copiedAddress={null}
                     network="mainnet"
                     locale="en-US"

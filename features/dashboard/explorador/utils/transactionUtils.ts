@@ -73,7 +73,7 @@ export function extractMinAmount(manifest?: string): string | undefined {
     const lines = manifest.split('\n');
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
+
         // Find the ASSERT_WORKTOP_CONTAINS instruction
         if (line.includes('ASSERT_WORKTOP_CONTAINS')) {
             // Look ahead up to 5 lines for a Decimal("...")
@@ -275,9 +275,9 @@ export function buildSwapRoutingChart(
             cssInjected = true;
         }
 
-        const copyTooltip = `Click to copy: ${addr}`;
+        const copyTooltip = `${tt?.click_to_copy || 'Click to copy address'}: ${addr}`;
         const parts: string[] = [
-            `<div onclick='navigator.clipboard.writeText(&quot;${addr}&quot;)' title='${copyTooltip}' style='min-width: ${minWidth}px; padding: 0 ${padX}px; cursor: pointer;'>`,
+            `<div data-diag-copy="${addr}" title='${copyTooltip}' style='min-width: ${minWidth}px; padding: 0 ${padX}px; cursor: pointer;'>`,
             extraCss // Se inyecta invisiblemente en el primer nodo
         ];
 
@@ -380,10 +380,10 @@ export function buildSwapRoutingChart(
     if (feePaid > 0 && feePayer) {
         const netFeeId = 'NF_Rhombus';
         const payerId = senderIds.get(feePayer) || receiverIds.get(feePayer) || nid(feePayer);
-        const feeTooltip = `Click to copy: ${feePayer}`;
+        const feeTooltip = `${tt?.click_to_copy || 'Click to copy address'}: ${feePayer}`;
 
         const rhombusText = tt?.swap_routing_network_fees || 'Comisiones de Red';
-        const feeHtml = `<div onclick='navigator.clipboard.writeText(&quot;${feePayer}&quot;)' title='${feeTooltip}' style='cursor:pointer; color:var(--color-text-main); font-size:${fTitle}px; padding: 8px; white-space: nowrap;'>${rhombusText}: <b>${fmtNum(feePaid)} XRD</b></div>`;
+        const feeHtml = `<div data-diag-copy="${feePayer}" title='${feeTooltip}' style='cursor:pointer; color:var(--color-text-main); font-size:${fTitle}px; padding: 8px; white-space: nowrap;'>${rhombusText}: <b>${fmtNum(feePaid)} XRD</b></div>`;
 
         L.push(`  ${netFeeId}{"${feeHtml}"}:::fee`);
         feeLinks.push({ from: payerId, to: netFeeId, label: `${fmtNum(feePaid)} XRD` });

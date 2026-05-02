@@ -27,6 +27,7 @@
       "swap_dex_label": "Componente DEX",
       "swap_rate_label": "Tasa",
       "swap_routing_label": "Ruta de Enrutamiento",
+      "click_to_copy": "Click para copiar dirección",
       "swap_details_label": "Detalles del Swap",
       "swap_hops_label": "Saltos",
       "swap_min_received_label": "Min. Esperado",

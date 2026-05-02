@@ -27,6 +27,7 @@
       "swap_dex_label": "DEX Component",
       "swap_rate_label": "Rate",
       "swap_routing_label": "Routing Path",
+      "click_to_copy": "Click to copy address",
       "swap_details_label": "Swap Details",
       "swap_hops_label": "Hops",
       "swap_min_received_label": "Min. Expected",

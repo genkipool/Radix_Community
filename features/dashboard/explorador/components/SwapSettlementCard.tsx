@@ -106,7 +106,7 @@ function NameResolver({ address, network, onResolved }: {
 }
 
 /* ── Routing Mermaid diagram wrapper ── */
-function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details }: {
+function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details, onCopy }: {
     fungibles: FungibleChange[];
     feeEntries: { entity_address: string; resource_address: string; balance_change: string }[];
     initiatorAddrs: string[];
@@ -114,6 +114,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     tx: TransactionInfo;
     details: TransactionDetails;
+    onCopy: (v: string) => void;
 }) {
     const [names, setNames] = useState<Map<string, string>>(new Map());
     const [symbols, setSymbols] = useState<Map<string, string>>(new Map());
@@ -137,6 +138,20 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
         if (symbol) setSymbols(prev => { const s = new Map(prev); s.set(clean, symbol); return s; });
         if (blueprintName) setBlueprintNames(prev => { const b = new Map(prev); b.set(clean, blueprintName); return b; });
     };
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const container = target.closest('[data-diag-copy]');
+            if (container) {
+                e.stopPropagation();
+                const addr = container.getAttribute('data-diag-copy');
+                if (addr) onCopy(addr);
+            }
+        };
+        window.addEventListener('click', handleClick, true);
+        return () => window.removeEventListener('click', handleClick, true);
+    }, [onCopy]);
 
     // Build the Mermaid chart definition
     const feePaid = parseFloat(sanitizeText(String(tx.feePaid || '0')));
@@ -272,12 +287,12 @@ export function SwapSettlementCard({
                         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-2">
                             <TokenColumn resource={soldToken.resource} amount={soldToken.amount} side="sold" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                             <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
-                            <div className="flex flex-col items-center gap-1.5 shrink-0 px-3 py-2 rounded-lg border border-dashed border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                                <ArrowLeftRight className="w-4 h-4 text-[var(--color-accent)]" />
-                                <span className="text-[9px] uppercase font-black tracking-widest text-[var(--color-accent)]">Swap</span>
-                                {dexName && <span className="text-[10px] font-bold text-[var(--color-text-main)] truncate max-w-[120px]" title={dexName}>{dexName}</span>}
+                            <div className="flex flex-col items-center gap-2 shrink-0 px-6 py-4 rounded-xl border border-dashed border-[var(--color-card-border)] bg-[var(--color-bg)]/50 shadow-sm transition-all duration-300 hover:border-[var(--color-accent)]/50 group/swap">
+                                <ArrowLeftRight className="w-6 h-6 text-[var(--color-accent)] transition-transform duration-500 group-hover/swap:rotate-180" />
+                                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--color-accent)]">Swap</span>
+                                {dexName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]" title={dexName}>{dexName}</span>}
                                 <div className="flex items-center gap-1">
-                                    <span className="text-[8px] font-mono text-[var(--color-text-muted)] truncate max-w-[100px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 8, 4)}</span>
+                                    <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[110px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 10, 6)}</span>
                                     <CopyBtn addr={cleanDex} onCopy={onCopy} copiedAddress={copiedAddress} />
                                 </div>
                             </div>
@@ -305,8 +320,8 @@ export function SwapSettlementCard({
                                         <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">+{fmtReceived} {receivedSymbol}</span>
                                     </div>
                                     {minReceivedAmount && (
-                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-accent)]/20">
-                                            <span className="text-[10px] text-[var(--color-accent)]/70 font-bold italic">{tt?.swap_min_received_label || 'Min. Expected'}</span>
+                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_min_received_label || 'Min. Expected'}</span>
                                             <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">
                                                 {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
                                             </span>
@@ -319,7 +334,7 @@ export function SwapSettlementCard({
                                     {routingHops.length > 1 && (
                                         <div className="flex justify-between items-baseline gap-2">
                                             <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_hops_label || 'Hops'}</span>
-                                            <span className="text-[11px] font-mono font-bold text-[var(--color-accent)]">{routingHops.length}</span>
+                                            <span className="text-[11px] font-mono text-[var(--color-text-main)]">{routingHops.length}</span>
                                         </div>
                                     )}
                                 </div>
@@ -342,6 +357,7 @@ export function SwapSettlementCard({
                             tt={tt}
                             tx={tx}
                             details={details}
+                            onCopy={onCopy}
                         />
                     </div>
                 )}
