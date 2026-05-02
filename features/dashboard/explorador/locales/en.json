@@ -29,6 +29,7 @@
       "swap_routing_label": "Routing Path",
       "swap_details_label": "Swap Details",
       "swap_hops_label": "Hops",
+      "swap_min_received_label": "Min. Expected",
       "swap_account_label": "Account",
       "swap_settlements_label": "Balance Changes",
       "swap_entity_label": "Entity",

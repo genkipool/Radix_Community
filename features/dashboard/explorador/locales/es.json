@@ -29,6 +29,7 @@
       "swap_routing_label": "Ruta de Enrutamiento",
       "swap_details_label": "Detalles del Swap",
       "swap_hops_label": "Saltos",
+      "swap_min_received_label": "Min. Esperado",
       "swap_account_label": "Cuenta",
       "swap_settlements_label": "Cambios de Balance",
       "swap_entity_label": "Entidad",

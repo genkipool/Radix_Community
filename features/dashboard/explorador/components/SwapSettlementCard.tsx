@@ -261,7 +261,7 @@ export function SwapSettlementCard({
                 {/* ── Section 1: Token Flow + Swap Details side-by-side ── */}
                 <div className="p-4 sm:p-5 flex flex-col lg:flex-row gap-4">
                     {/* Left: Token flow */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-2">
                             <TokenColumn resource={soldToken.resource} amount={soldToken.amount} side="sold" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                             <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
@@ -277,46 +277,49 @@ export function SwapSettlementCard({
                             <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
                             <TokenColumn resource={receivedToken.resource} amount={receivedToken.amount} side="received" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                         </div>
-                        {/* Rate */}
-                        <div className="mt-4 pt-3 border-t border-[var(--color-card-border)] flex items-center justify-center gap-2">
-                            <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">{tt?.swap_rate_label || 'Rate'}:</span>
-                            <span className="text-[11px] font-mono font-bold text-[var(--color-text-main)]">1 {soldSymbol} = {fmtRate} {receivedSymbol}</span>
-                        </div>
+                        <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
                     </div>
 
-                    {/* Right: Swap Details mini-table */}
-                    <div className="lg:w-[240px] shrink-0 bg-[var(--color-bg)]/50 rounded-lg border border-[var(--color-card-border)] overflow-hidden self-start">
-                        <h4 className="px-3 py-2 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-1.5">
-                            <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
-                            {tt?.swap_details_label || 'Swap Details'}
-                        </h4>
-                        <div className="divide-y divide-[var(--color-card-border)]">
-                            <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_sold_label || 'Sold'}</span>
-                                <span className="text-[10px] font-mono font-bold text-rose-500 text-right truncate">−{fmtSold} {soldSymbol}</span>
-                            </div>
-                            <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_received_label || 'Received'}</span>
-                                <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] text-right truncate">+{fmtReceived} {receivedSymbol}</span>
-                            </div>
-                            {minReceivedAmount && (
-                                <div className="flex justify-between px-3 py-1.5 gap-2 bg-[var(--color-accent)]/5">
-                                    <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_min_received_label || 'Min. Expected'}</span>
-                                    <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] text-right truncate">
-                                        {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
-                                    </span>
+                    {/* Right: Swap Details (Minimalist Text Layout) */}
+                    <div className="lg:w-[300px] shrink-0 self-stretch border-l border-[var(--color-card-border)]/50 pl-4 flex flex-col justify-between">
+                        <div className="px-1 space-y-3">
+                            <div>
+                                <h4 className="text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
+                                    <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
+                                    {tt?.swap_details_label || 'Swap Details'}
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-baseline gap-2">
+                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_sold_label || 'Sold'}</span>
+                                        <span className="text-[11px] font-mono font-black text-rose-500 truncate">−{fmtSold} {soldSymbol}</span>
+                                    </div>
+                                    <div className="flex justify-between items-baseline gap-2">
+                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_received_label || 'Received'}</span>
+                                        <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">+{fmtReceived} {receivedSymbol}</span>
+                                    </div>
+                                    {minReceivedAmount && (
+                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-accent)]/20">
+                                            <span className="text-[10px] text-[var(--color-accent)]/70 font-bold italic">{tt?.swap_min_received_label || 'Min. Expected'}</span>
+                                            <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">
+                                                {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-[var(--color-card-border)]">
+                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_rate_label || 'Rate'}</span>
+                                        <span className="text-[11px] font-mono font-bold text-[var(--color-text-main)]">1:{fmtRate}</span>
+                                    </div>
+                                    {routingHops.length > 1 && (
+                                        <div className="flex justify-between items-baseline gap-2">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_hops_label || 'Hops'}</span>
+                                            <span className="text-[11px] font-mono font-bold text-[var(--color-accent)]">{routingHops.length}</span>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                            <div className="flex justify-between px-3 py-1.5 gap-2">
-                                <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_rate_label || 'Rate'}</span>
-                                <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)] text-right">1:{fmtRate}</span>
                             </div>
-                            {routingHops.length > 1 && (
-                                <div className="flex justify-between px-3 py-1.5 gap-2">
-                                    <span className="text-[9px] text-[var(--color-text-muted)] font-semibold">{tt?.swap_hops_label || 'Hops'}</span>
-                                    <span className="text-[10px] font-mono font-bold text-[var(--color-accent)]">{routingHops.length}</span>
-                                </div>
-                            )}
+                        </div>
+                        <div className="px-1">
+                            <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
                         </div>
                     </div>
                 </div>
