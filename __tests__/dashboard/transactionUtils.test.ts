@@ -103,18 +103,18 @@ describe('transactionUtils', () => {
         const mockBlueprints = new Map();
 
         it('includes spacer nodes to avoid subgraph title overlap', () => {
-            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            const chart = buildSwapRoutingChart([], mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
             expect(chart).toContain('S_Spacer[" "]:::spacer');
             expect(chart).toContain('R_Spacer[" "]:::spacer');
         });
 
         it('applies white-space: nowrap to node amount labels', () => {
-            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            const chart = buildSwapRoutingChart([], mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
             expect(chart).toContain('white-space: nowrap');
         });
 
         it('applies white-space: nowrap to edge labels', () => {
-            const chart = buildSwapRoutingChart(mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
+            const chart = buildSwapRoutingChart([], mockFungibles, [], ['account_1'], mockNames, mockSymbols, mockBlueprints);
             // Verify edge label formatting
             expect(chart).toContain('white-space: nowrap');
         });
@@ -122,11 +122,11 @@ describe('transactionUtils', () => {
         it('includes fee nodes with horizontal layout when fees are present', () => {
             const mockFees = [{ entity_address: 'account_1', resource_address: 'resource_xrd', balance_change: '-1' }];
             const feeDest = { to_burn: '0.5', to_proposer: '0.5' };
-            const chart = buildSwapRoutingChart(mockFungibles, mockFees, ['account_1'], mockNames, mockSymbols, mockBlueprints, {}, 1, feeDest, 'account_1');
-            
+            const chart = buildSwapRoutingChart([], mockFungibles, mockFees, ['account_1'], mockNames, mockSymbols, mockBlueprints, {}, 1, feeDest, 'account_1');
+
             expect(chart).toContain('F_Spacer[" "]:::spacer');
-            expect(chart).toContain('Burn: <b>0.500000 XRD</b>');
-            expect(chart).toContain('Proposer: <b>0.500000 XRD</b>');
+            expect(chart).toContain('Burn<br/><b>0.500000 XRD</b>');
+            expect(chart).toContain('Proposer<br/><b>0.500000 XRD</b>');
         });
     });
 

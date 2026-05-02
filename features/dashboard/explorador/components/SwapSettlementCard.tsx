@@ -8,7 +8,7 @@ import { sanitizeText } from '@/utils/sanitize';
 import type { Network, TranslationsT, TransactionDetails } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
 import type { SwapHop } from '../utils/transactionUtils';
-import { buildSwapRoutingChart } from '../utils/transactionUtils';
+import { buildSwapRoutingChart, detectSwapMode } from '../utils/transactionUtils';
 import { MermaidDiagram } from './MermaidDiagram';
 import { BalanceChanges, FungibleChange } from '../types';
 import { ExplorerTable } from './ExplorerTable';
@@ -160,6 +160,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
     const feePayer = details?.balance_changes?.fungible_fee_balance_changes?.find(f => parseFloat(f.balance_change) < 0)?.entity_address;
 
     const chart = buildSwapRoutingChart(
+        details?.receipt?.events || [],
         fungibles,
         feeEntries,
         initiatorAddrs,
@@ -263,6 +264,7 @@ export function SwapSettlementCard({
 
     // All fungible balance changes for routing diagram and table
     const fungibles = balanceChanges?.fungible_balance_changes ?? [];
+    const swapMode = detectSwapMode(details?.receipt?.events || [], Array.from(initiators));
 
     return (
         <div className="space-y-0">
@@ -278,7 +280,7 @@ export function SwapSettlementCard({
                 {/* ── Header ── */}
                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
                     <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
-                    {tt?.swap_settlement_title || 'DEX Settlement'}
+                    {swapMode === 'ARBITRAGE' ? 'Arbitrage Settlement' : (tt?.swap_settlement_title || 'DEX Settlement')}
                 </h3>
 
                 {/* ── Section 1: Token Flow + Swap Details side-by-side ── */}
