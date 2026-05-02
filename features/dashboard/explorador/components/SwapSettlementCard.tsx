@@ -322,6 +322,14 @@ export function SwapSettlementCard({
                                         <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_received_label || 'Received'}</span>
                                         <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">+{fmtReceived} {receivedSymbol}</span>
                                     </div>
+                                    {swapMode === 'ARBITRAGE' && soldToken.resource === receivedToken.resource && (
+                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">Beneficio</span>
+                                            <span className="text-[11px] font-mono font-black text-[var(--color-primary)] truncate">
+                                                +{parseFloat((receivedAmt - soldAmt).toString()).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
+                                            </span>
+                                        </div>
+                                    )}
                                     {minReceivedAmount && (
                                         <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
                                             <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_min_received_label || 'Min. Expected'}</span>

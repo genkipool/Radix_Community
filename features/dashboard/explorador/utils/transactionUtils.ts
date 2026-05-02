@@ -81,8 +81,9 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
             const fields = ev.data?.fields || [];
 
             // Look for the field containing the resource address
-            const resField = fields.find((f) =>
+            const resField = fields.find((f: any) =>
                 f.field_name === 'resource_address' ||
+                f.type_name === 'ResourceAddress' ||
                 (typeof f.value === 'string' && f.value.startsWith('resource_'))
             );
 
@@ -134,7 +135,7 @@ export function extractMinAmount(manifest?: string): string | undefined {
 }
 
 export function extractSwapData(
-    events: { name?: string; emitter?: { entity?: { entity_address?: string } } }[],
+    events: { name?: string; emitter?: { entity?: { entity_address?: string } }, data?: any }[],
     balanceChanges: BalanceChanges | undefined,
     initiators: Set<string>,
     manifestInstructions?: string
@@ -163,36 +164,84 @@ export function extractSwapData(
     const fungibles = balanceChanges.fungible_balance_changes ?? [];
     const initiatorAddrs = Array.from(initiators);
 
-    const soldChanges = fungibles.filter(c =>
-        initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
-        parseFloat(c.balance_change) < 0
-    );
+    const grossOut = new Map<string, number>();
+    const grossIn = new Map<string, number>();
 
-    const receivedChanges = fungibles.filter(c =>
-        initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
-        parseFloat(c.balance_change) > 0
-    );
+    for (const ev of events) {
+        const ent = sanitizeText(ev.emitter?.entity?.entity_address || '');
+        if (initiatorAddrs.includes(ent)) {
+            if (ev.name === 'DepositEvent' || ev.name === 'WithdrawEvent') {
+                const fields = ev.data?.fields || [];
+                let res = '';
+                let amt = 0;
+                for (const f of fields) {
+                    const val = f.value;
+                    if (typeof val === 'string' && (f.type_name === 'ResourceAddress' || f.field_name === 'resource_address' || val.startsWith('resource_'))) {
+                        res = sanitizeText(val);
+                    }
+                    if ((f.kind === 'Decimal' || f.field_name === 'amount') && (typeof val === 'string' || typeof val === 'number')) {
+                        amt = parseFloat(String(val));
+                    }
+                }
+                if (res && amt > 0) {
+                    if (ev.name === 'DepositEvent') grossIn.set(res, (grossIn.get(res) || 0) + amt);
+                    if (ev.name === 'WithdrawEvent') grossOut.set(res, (grossOut.get(res) || 0) + amt);
+                }
+            }
+        }
+    }
 
-    if (soldChanges.length === 0 || receivedChanges.length === 0) return null;
+    let soldResource = '';
+    let soldAmount = 0;
+    let receivedResource = '';
+    let receivedAmount = 0;
 
-    const sold = soldChanges.reduce((max, c) =>
-        Math.abs(parseFloat(c.balance_change)) > Math.abs(parseFloat(max.balance_change)) ? c : max
-        , soldChanges[0]);
+    if (grossOut.size > 0 && grossIn.size > 0) {
+        for (const [res, amt] of grossOut.entries()) {
+            if (amt > soldAmount) { soldAmount = amt; soldResource = res; }
+        }
+        for (const [res, amt] of grossIn.entries()) {
+            if (amt > receivedAmount) { receivedAmount = amt; receivedResource = res; }
+        }
+    } else {
+        const soldChanges = fungibles.filter(c =>
+            initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
+            parseFloat(c.balance_change) < 0
+        );
 
-    const received = receivedChanges.reduce((max, c) =>
-        parseFloat(c.balance_change) > parseFloat(max.balance_change) ? c : max
-        , receivedChanges[0]);
+        const receivedChanges = fungibles.filter(c =>
+            initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
+            parseFloat(c.balance_change) > 0
+        );
 
-    const initiatorAddress = sanitizeText(sold.entity_address);
+        if (soldChanges.length === 0 || receivedChanges.length === 0) return null;
+
+        const sold = soldChanges.reduce((max, c) =>
+            Math.abs(parseFloat(c.balance_change)) > Math.abs(parseFloat(max.balance_change)) ? c : max
+            , soldChanges[0]);
+
+        const received = receivedChanges.reduce((max, c) =>
+            parseFloat(c.balance_change) > parseFloat(max.balance_change) ? c : max
+            , receivedChanges[0]);
+
+        soldResource = sanitizeText(sold.resource_address);
+        soldAmount = Math.abs(parseFloat(sold.balance_change));
+        receivedResource = sanitizeText(received.resource_address);
+        receivedAmount = parseFloat(received.balance_change);
+    }
+
+    if (!soldResource || !receivedResource) return null;
+
+    const initiatorAddress = initiatorAddrs[0] || '';
 
     return {
         soldToken: {
-            resource: sanitizeText(sold.resource_address),
-            amount: Math.abs(parseFloat(sold.balance_change)).toString(),
+            resource: soldResource,
+            amount: soldAmount.toString(),
         },
         receivedToken: {
-            resource: sanitizeText(received.resource_address),
-            amount: parseFloat(received.balance_change).toString(),
+            resource: receivedResource,
+            amount: receivedAmount.toString(),
         },
         dexComponent,
         initiatorAddress,
@@ -207,11 +256,17 @@ function short(addr: string): string {
 }
 
 function fmtNum(n: number): string {
+    if (n === 0) return '0';
     const abs = Math.abs(n);
-    if (abs >= 1_000_000) return `${(abs / 1_000_000).toFixed(2)}M`;
-    if (abs >= 1_000) return `${(abs / 1_000).toFixed(2)}K`;
-    if (abs >= 1) return abs.toFixed(4);
-    return abs.toFixed(6);
+    let str = abs.toFixed(4);
+    if (str.includes('.')) {
+        str = str.replace(/0+$/, '').replace(/\.$/, '');
+    }
+    if (str === '0' || str === '') {
+        const [mantissa, exponent] = abs.toExponential().split('e');
+        return `${parseFloat(mantissa).toFixed(2).replace(/\.?0+$/, '')}x10^${exponent}`;
+    }
+    return str;
 }
 
 export function buildSwapRoutingChart(
@@ -272,16 +327,16 @@ export function buildSwapRoutingChart(
     };
 
     // ─────────────────────────────────────────────────────────
-    // 1. EXTRACT GROSS FLOWS ONLY FOR THE USER (AVOIDING ARBITRAGE NETTING)
+    // 1. EXTRACT GROSS FLOWS FOR EDGES (LINES)
     // ─────────────────────────────────────────────────────────
-    const processedInitiators = new Set<string>();
+    const processedFromEvents = new Set<string>();
     if (events && Array.isArray(events)) {
         for (const ev of events) {
             const ent = ev.emitter?.entity?.entity_address;
-            if (!ent || !isInit(ent)) continue;
+            if (!ent || isValidator(ent) || isBurn(ent)) continue;
 
             if (ev.name === 'DepositEvent' || ev.name === 'WithdrawEvent') {
-                processedInitiators.add(ent);
+                processedFromEvents.add(ent);
                 const fields = ev.data?.fields || [];
                 let res = '';
                 let amt = 0;
@@ -302,43 +357,75 @@ export function buildSwapRoutingChart(
         }
     }
 
-    // ─────────────────────────────────────────────────────────
-    // 2. EXTRACT NET FLOWS FOR DEXES AND POOLS
-    // ─────────────────────────────────────────────────────────
     for (const fc of allEntries) {
         const ent = sanitizeText(fc.entity_address);
-        // Ignore user account ONLY IF we already captured their GROSS flow above
-        if (processedInitiators.has(ent)) continue;
-        if (isInit(ent)) {
-             // If not processed via events, we still want to show them if they have balance changes
-             // (e.g. in tests where no events are provided)
-        } else {
-             // Pools/DEXes always use net flows
-        }
-
+        if (processedFromEvents.has(ent)) continue;
         const res = sanitizeText(fc.resource_address);
         const val = parseFloat(fc.balance_change);
-
         if (val > 0) addFlow(entityIn, ent, res, val);
         else if (val < 0) addFlow(entityOut, ent, res, Math.abs(val));
     }
 
-    const allEntities = new Set<string>();
-    // Add entities involved in gross flows (events), filtering out system entities
-    for (const addr of entityIn.keys()) {
-        if (!isValidator(addr) && !isBurn(addr)) allEntities.add(addr);
-    }
-    for (const addr of entityOut.keys()) {
-        if (!isValidator(addr) && !isBurn(addr)) allEntities.add(addr);
-    }
-    // Add entities from balance changes (net flows)
+    // ─────────────────────────────────────────────────────────
+    // 2. EXTRACT NET FLOWS FOR TEXT BOXES (ACCOUNT CARDS)
+    // ─────────────────────────────────────────────────────────
+    const netEntityIn = new Map<string, AmtMap>();
+    const netEntityOut = new Map<string, AmtMap>();
+
     for (const fc of allEntries) {
-        const addr = sanitizeText(fc.entity_address);
-        if (isValidator(addr) || isBurn(addr)) continue;
-        allEntities.add(addr);
+        const ent = sanitizeText(fc.entity_address);
+        const res = sanitizeText(fc.resource_address);
+        const val = parseFloat(fc.balance_change);
+
+        if (val > 0) addFlow(netEntityIn, ent, res, val);
+        else if (val < 0) addFlow(netEntityOut, ent, res, Math.abs(val));
     }
-    // Ensure fee payer is always included in the diagram
-    if (feePaid > 0 && feePayer) allEntities.add(feePayer);
+
+    // ─────────────────────────────────────────────────────────
+    // 3. PRECALCULATE EDGES TO ONLY SHOW CONNECTED ENTITIES
+    // ─────────────────────────────────────────────────────────
+    const allTokens = new Set<string>();
+    for (const outMap of entityOut.values()) for (const res of outMap.keys()) allTokens.add(res);
+    for (const inMap of entityIn.values()) for (const res of inMap.keys()) allTokens.add(res);
+
+    interface EdgeData { sourceAddr: string; targetAddr: string; res: string; amt: number; }
+    const rawEdges: EdgeData[] = [];
+
+    for (const res of allTokens) {
+        const sources: { id: string; amt: number }[] = [];
+        for (const [ent, outMap] of entityOut.entries()) {
+            if (outMap.has(res) && !isValidator(ent) && !isBurn(ent)) sources.push({ id: ent, amt: outMap.get(res)! });
+        }
+
+        const targets: { id: string; amt: number }[] = [];
+        for (const [ent, inMap] of entityIn.entries()) {
+            if (inMap.has(res) && !isValidator(ent) && !isBurn(ent)) targets.push({ id: ent, amt: inMap.get(res)! });
+        }
+
+        let sIdx = 0;
+        let tIdx = 0;
+        while (sIdx < sources.length && tIdx < targets.length) {
+            const s = sources[sIdx];
+            const t = targets[tIdx];
+            const transferAmt = Math.min(s.amt, t.amt);
+
+            if (transferAmt > 1e-8 && s.id !== t.id) {
+                rawEdges.push({ sourceAddr: s.id, targetAddr: t.id, res, amt: transferAmt });
+            }
+
+            s.amt -= transferAmt;
+            t.amt -= transferAmt;
+            if (s.amt <= 1e-8) sIdx++;
+            if (t.amt <= 1e-8) tIdx++;
+        }
+    }
+
+    const connectedEntities = new Set<string>();
+    for (const edge of rawEdges) {
+        connectedEntities.add(edge.sourceAddr);
+        connectedEntities.add(edge.targetAddr);
+    }
+    if (feePaid > 0 && feePayer) connectedEntities.add(feePayer);
 
     let cssInjected = false;
     const buildNodeHtml = (addr: string, mode: 'sender' | 'receiver' | 'other' = 'other') => {
@@ -373,26 +460,36 @@ export function buildSwapRoutingChart(
 
         parts.push(`<div style='height:1px; border-top:1px dashed rgba(var(--color-text-main-rgb),0.15); margin:4px 0;'></div>`);
 
-        const ii = entityIn.get(c);
-        const oi = entityOut.get(c);
+        const inMap = isAccount ? entityIn.get(c) : netEntityIn.get(c);
+        const outMap = isAccount ? entityOut.get(c) : netEntityOut.get(c);
 
         if (mode === 'receiver' || mode === 'other') {
-            if (ii) {
-                for (const [r, a] of ii) {
-                    parts.push(`<div style='font-size:${fAmount}px; color:var(--color-accent) !important; white-space: nowrap;'>+${fmtNum(a)} ${getSymbol(r)}</div>`);
+            if (inMap) {
+                for (const [r, a] of inMap) {
+                    parts.push(`<div style='font-size:${fAmount}px; font-weight:bold; color:var(--color-accent) !important; white-space: nowrap;'>+${fmtNum(a)} ${getSymbol(r)}</div>`);
+
+                    if (isAccount && mode === 'receiver') {
+                        const isArbitrageForToken = outMap && outMap.has(r);
+                        if (isArbitrageForToken) {
+                            const netAmt = netEntityIn.get(c)?.get(r) || 0;
+                            if (netAmt > 0) {
+                                parts.push(`<div style='font-size:${fAmount}px; font-weight:900; color:var(--color-primary) !important; white-space: nowrap; margin-top:4px;'>Beneficio: +${fmtNum(netAmt)} ${getSymbol(r)}</div>`);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         if (mode === 'sender' || mode === 'other') {
-            if (oi) {
-                for (const [r, a] of oi) {
-                    parts.push(`<div style='font-size:${fAmount}px; color:#f43f5e !important; white-space: nowrap;'>-${fmtNum(a)} ${getSymbol(r)}</div>`);
+            if (outMap) {
+                for (const [r, a] of outMap) {
+                    const fw = isAccount ? 'bold' : 'bold';
+                    parts.push(`<div style='font-size:${fAmount}px; font-weight:${fw}; color:#f43f5e !important; white-space: nowrap;'>-${fmtNum(a)} ${getSymbol(r)}</div>`);
                 }
             }
-            // Explicitly show fees in the card if this is the payer
             if (feePaid > 0 && c === feePayer) {
-                parts.push(`<div style='font-size:${fAmount}px; color:#f43f5e !important; white-space: nowrap;'>Fees: -${fmtNum(feePaid)} XRD</div>`);
+                parts.push(`<div style='font-size:${fAmount}px; font-weight:bold; color:#f43f5e !important; white-space: nowrap;'>Fees: -${fmtNum(feePaid)} XRD</div>`);
             }
         }
 
@@ -411,7 +508,7 @@ export function buildSwapRoutingChart(
     const senderIds = new Map<string, string>();
     const receiverIds = new Map<string, string>();
 
-    const senders = Array.from(allEntities).filter(a => isInit(a) && entityOut.has(a));
+    const senders = Array.from(connectedEntities).filter(a => isInit(a) && (entityOut.has(a) || a === feePayer));
     if (senders.length > 0) {
         L.push(`  subgraph SenderGroup["${tt?.swap_routing_sender || 'Sender'}"]`);
         L.push('    direction TB');
@@ -424,7 +521,7 @@ export function buildSwapRoutingChart(
         L.push('  end');
     }
 
-    const receivers = Array.from(allEntities).filter(a => isInit(a) && entityIn.has(a));
+    const receivers = Array.from(connectedEntities).filter(a => isInit(a) && entityIn.has(a));
     if (receivers.length > 0) {
         L.push(`  subgraph ReceiverGroup["${tt?.swap_routing_receiver || 'Receiver'}"]`);
         L.push('    direction TB');
@@ -437,7 +534,7 @@ export function buildSwapRoutingChart(
         L.push('  end');
     }
 
-    const intermediaries = Array.from(allEntities).filter(a => !isInit(a));
+    const intermediaries = Array.from(connectedEntities).filter(a => !isInit(a));
     if (intermediaries.length > 0) {
         L.push(`  subgraph DEXGroup["${tt?.swap_dex_label || 'Intermediaries'}"]`);
         L.push('    direction TB');
@@ -452,10 +549,6 @@ export function buildSwapRoutingChart(
 
     const feeLinks: { from: string; to: string; label: string }[] = [];
     if (feePaid > 0 && feePayer) {
-        if (!senderIds.has(feePayer) && !receiverIds.has(feePayer)) {
-            const pNodeId = nid(feePayer);
-            L.push(`  ${pNodeId}${buildNodeHtml(feePayer, 'other')}`);
-        }
         const netFeeId = 'NF_Rhombus';
         const payerId = senderIds.get(feePayer) || receiverIds.get(feePayer) || nid(feePayer);
         const feeTooltip = `${tt?.click_to_copy || 'Click to copy address'}: ${feePayer}`;
@@ -466,7 +559,6 @@ export function buildSwapRoutingChart(
         L.push(`  ${netFeeId}{"${feeHtml}"}:::fee`);
         feeLinks.push({ from: payerId, to: netFeeId, label: `${fmtNum(feePaid)} XRD` });
 
-        // Branch out into breakdown
         if (feeDest) {
             const breakdownText = tt?.swap_routing_fee_breakdown || 'Fee breakdown';
             L.push(`  subgraph FeesGroup["${breakdownText}"]`);
@@ -522,47 +614,15 @@ export function buildSwapRoutingChart(
     const feeEdgeIndices: number[] = [];
     const outputEdgeIndices: number[] = [];
 
-    const allTokens = new Set<string>();
-    for (const outMap of entityOut.values()) for (const res of outMap.keys()) allTokens.add(res);
-    for (const inMap of entityIn.values()) for (const res of inMap.keys()) allTokens.add(res);
+    for (const edge of rawEdges) {
+        const sNodeId = getSourceId(edge.sourceAddr);
+        const tNodeId = getTargetId(edge.targetAddr);
+        const edgeLabel = `${fmtNum(edge.amt)} ${getSymbol(edge.res)}`;
 
-    for (const res of allTokens) {
-        const sources: { id: string; amt: number }[] = [];
-        for (const [ent, outMap] of entityOut.entries()) {
-            if (outMap.has(res) && !isValidator(ent) && !isBurn(ent)) sources.push({ id: ent, amt: outMap.get(res)! });
-        }
+        L.push(`  ${sNodeId} == "<span style='font-size:${fEdge}px; white-space: nowrap;'>${edgeLabel}</span>" ==> ${tNodeId}`);
 
-        const targets: { id: string; amt: number }[] = [];
-        for (const [ent, inMap] of entityIn.entries()) {
-            if (inMap.has(res) && !isValidator(ent) && !isBurn(ent)) targets.push({ id: ent, amt: inMap.get(res)! });
-        }
-
-        let sIdx = 0;
-        let tIdx = 0;
-        while (sIdx < sources.length && tIdx < targets.length) {
-            const s = sources[sIdx];
-            const t = targets[tIdx];
-            const transferAmt = Math.min(s.amt, t.amt);
-
-            if (transferAmt > 1e-8) {
-                // AVOID SELF-LOOPS CAUSED BY ARBITRAGE
-                if (s.id !== t.id) {
-                    const sNodeId = getSourceId(s.id);
-                    const tNodeId = getTargetId(t.id);
-                    const edgeLabel = `${fmtNum(transferAmt)} ${getSymbol(res)}`;
-
-                    L.push(`  ${sNodeId} == "<span style='font-size:${fEdge}px; white-space: nowrap;'>${edgeLabel}</span>" ==> ${tNodeId}`);
-
-                    if (isInit(t.id)) outputEdgeIndices.push(edgeIdx);
-                    edgeIdx++;
-                }
-            }
-
-            s.amt -= transferAmt;
-            t.amt -= transferAmt;
-            if (s.amt <= 1e-8) sIdx++;
-            if (t.amt <= 1e-8) tIdx++;
-        }
+        if (isInit(edge.targetAddr)) outputEdgeIndices.push(edgeIdx);
+        edgeIdx++;
     }
 
     for (const fl of feeLinks) {

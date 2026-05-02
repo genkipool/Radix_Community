@@ -39,10 +39,10 @@ const formatAmount = (n: number, loc: string): string => {
 const RenderSymbol = ({ address, fallback, network, enrichedName }: { address: string; fallback?: string; network: string; enrichedName?: string }) => {
     // 1. Prioritize pre-enriched data from server/cache
     const displayName = enrichedName || fallback;
-    
+
     // 2. Fallback to client-side hook only if essential metadata is missing
     const meta = useEntityData((!displayName || displayName === address) ? address : '', network);
-    
+
     if (!address) return null;
     if (address === 'XRD') return 'XRD';
 
@@ -154,19 +154,19 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
     // Extracted to avoid duplicating the identical status+type label pair
     const renderStatusTypeLabels = () => {
-        const statusStyle = isSuccess 
-            ? { 
-                color: 'var(--color-accent)', 
-                borderColor: 'rgba(var(--color-accent-rgb), 0.2)', 
+        const statusStyle = isSuccess
+            ? {
+                color: 'var(--color-accent)',
+                borderColor: 'rgba(var(--color-accent-rgb), 0.2)',
                 boxShadow: '0 0 12px rgba(var(--color-accent-rgb), 0.1), inset 0 0 4px rgba(var(--color-accent-rgb), 0.05)',
                 textShadow: '0 0 8px rgba(var(--color-accent-rgb), 0.3)'
-              } 
-            : { 
-                color, 
-                borderColor: `${color}40`, 
-                boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`, 
-                textShadow: `0 0 8px ${color}40` 
-              };
+            }
+            : {
+                color,
+                borderColor: `${color}40`,
+                boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`,
+                textShadow: `0 0 8px ${color}40`
+            };
 
         return (
             <>
@@ -263,11 +263,11 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                         onCopy(tx.intentHash);
                                     }}>
                                     <span className="truncate">{truncateHash(tx.intentHash)}</span>
-                                    <CopyButton 
-                                        value={tx.intentHash} 
-                                        variant="card-inline" 
-                                        size="sm" 
-                                        forceCopied={copiedAddress === tx.intentHash} 
+                                    <CopyButton
+                                        value={tx.intentHash}
+                                        variant="card-inline"
+                                        size="sm"
+                                        forceCopied={copiedAddress === tx.intentHash}
                                         onClick={() => onCopy(tx.intentHash)}
                                         className="shrink-0 ml-1"
                                     />

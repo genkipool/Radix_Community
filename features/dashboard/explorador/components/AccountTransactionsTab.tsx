@@ -54,9 +54,9 @@ function TokenDisplay({
         const symbolItem = data.metadata.items.find((m: any) => m.key === 'symbol');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const nameItem = data.metadata.items.find((m: any) => m.key === 'name');
-        
+
         const rawSymbol = symbolItem?.value?.typed?.value || nameItem?.value?.typed?.value;
-        
+
         if (rawSymbol) {
             if (rawSymbol === 'Liquid Stake Units') {
                 symbol = 'LSU';
@@ -69,7 +69,7 @@ function TokenDisplay({
     const amountStr = flow.isNft
         ? flow.count?.toString()
         : formatNumber(Math.abs(Number(flow.amount)), 4, locale);
-    
+
     const colorClass = type === 'deposit' ? 'text-[var(--color-accent)]' : 'text-red-500';
     const sign = type === 'deposit' ? '+' : '-';
 
@@ -117,15 +117,15 @@ function StakingBalanceCell({
                     at_ledger_state: { state_version: tx.stateVersion }
                 })
             });
-            
+
             if (!res.ok) return 0;
             const data = await res.json();
-            
+
             const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
             if (!accountItem) return 0;
 
             const fungibles = accountItem.fungible_resources?.items || [];
-            
+
             const lsuToValidator = new Map<string, string>();
             if (validatorsData?.validators) {
                 validatorsData.validators.forEach((v: Validator) => {
@@ -178,7 +178,7 @@ function StakingBalanceCell({
                                 stake: string;
                             };
                         }>;
-                        
+
                         const itemsMap = new Map<string, typeof items[number]>();
                         items.forEach((item) => {
                             itemsMap.set(item.address, item);
@@ -192,8 +192,8 @@ function StakingBalanceCell({
                             let lsuSupply = 1;
                             if (lsuItem) {
                                 lsuSupply = parseFloat(
-                                    lsuItem.details?.total_supply ?? 
-                                    lsuItem.details?.total_minted ?? 
+                                    lsuItem.details?.total_supply ??
+                                    lsuItem.details?.total_minted ??
                                     '1'
                                 );
                                 if (lsuSupply === 0) lsuSupply = 1;
@@ -229,7 +229,7 @@ function StakingBalanceCell({
             for (const f of fungibles) {
                 if (lsuToValidator.has(f.resource_address)) {
                     const amount = parseFloat(f.amount || f.balance?.value || '0');
-                    
+
                     let factor = historicalRedemptionRates.get(f.resource_address);
                     if (factor === undefined) {
                         const currentVal = validatorsData?.validators.find(v => v.lsuResource === f.resource_address);
@@ -237,7 +237,7 @@ function StakingBalanceCell({
                         const apy = currentVal?.apyProjection || 5.76;
                         factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
                     }
-                    
+
                     totalStaking += amount * factor;
                 }
             }
@@ -446,13 +446,13 @@ export function AccountTransactionsTab({
                             <th className="py-3 px-4 font-semibold whitespace-nowrap" title={accT?.tx_withdraw_tooltip || 'Tokens leaving the account'}>{accT?.tx_withdraw || 'Withdraw'}</th>
                             <th className="py-3 px-4 font-semibold whitespace-nowrap" title={accT?.tx_deposit_tooltip || 'Tokens entering the account'}>{accT?.tx_deposit || 'Deposit'}</th>
                             <th className="py-3 px-4 font-semibold whitespace-nowrap text-right" title={accT?.tx_fee_tooltip || 'Transaction cost paid by this account'}>{accT?.tx_fee || 'Fee'}</th>
-                            <th 
+                            <th
                                 className="py-3 px-4 font-semibold whitespace-nowrap text-right"
                                 title={accT?.tx_balance_tooltip || 'Available XRD balance after the transaction'}
                             >
                                 {accT?.tx_balance || 'Balance'}
                             </th>
-                            <th 
+                            <th
                                 className="py-3 px-4 font-semibold whitespace-nowrap text-right"
                                 title={accT?.tx_staking_balance_tooltip || 'Estimated XRD value in staking after the transaction'}
                             >
@@ -463,7 +463,7 @@ export function AccountTransactionsTab({
                     </thead>
                     {processedTransactions.map((tx) => {
                         const isSuccess = tx.status === 'CommittedSuccess' || tx.status === 'Committed';
-                        
+
                         // Token movements
                         const fungibles = ((tx.balanceChanges?.fungible_balance_changes as FungibleChange[]) || []).filter(
                             (c) => c.entity_address === accountAddress
@@ -510,7 +510,7 @@ export function AccountTransactionsTab({
                             hour: '2-digit',
                             minute: '2-digit'
                         });
-                        
+
                         const shortHash = `${tx.intentHash.slice(0, 8)}...${tx.intentHash.slice(-6)}`;
                         const typeStr = resolveTransactionType(tx.manifestClasses || [], [], tt);
 
@@ -553,12 +553,12 @@ export function AccountTransactionsTab({
                                                     {formatNumber(tx.balanceXrd, 4, locale)} XRD
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
-                                                    <StakingBalanceCell 
-                                                        tx={tx} 
-                                                        accountAddress={accountAddress} 
-                                                        network={network} 
-                                                        locale={locale} 
-                                                        validatorsData={validatorsData} 
+                                                    <StakingBalanceCell
+                                                        tx={tx}
+                                                        accountAddress={accountAddress}
+                                                        network={network}
+                                                        locale={locale}
+                                                        validatorsData={validatorsData}
                                                     />
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
@@ -597,3 +597,4 @@ export function AccountTransactionsTab({
         </div>
     );
 }
+
