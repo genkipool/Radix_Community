@@ -26,12 +26,15 @@ import { getConfigEntries } from '../../utils/resourceUtils';
 import { parseTags } from '../../utils/resourceUtils';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import {
+    SummaryInlineRow,
     PanelTabBar,
     PanelLoadingState,
     PanelMetadataTab,
     PanelConfigurationTab,
     PanelRawTab,
 } from './EntityPanelShared';
+import { ValidatorSummaryMetrics } from './ValidatorSummaryMetrics';
+import { formatNumber } from '@/utils/formatters';
 import { AccountSummaryTab } from './AccountSummaryTab';
 import {
     AccountRewardsCsvModal
@@ -47,7 +50,6 @@ import type {
     Network,
     GatewayEntityDetails
 } from '@/features/dashboard/types';
-import { formatNumber, formatXRD } from '@/utils/formatters';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -628,139 +630,16 @@ function EntitySummaryTab({
                     const validator = validatorsData?.validators?.find((v) => v.address === address);
                     if (!validator) return null;
 
-                    const dd: Partial<DashboardDict['details']> = dt?.details || {};
-                    const cardTt: Partial<DashboardDict['card']> = dt?.card || {};
 
                     return (
-                        <>
-                            {/* Validator Base Info */}
-                            <SummaryInlineRow
-                                label={dd.address || 'Validator Address'}
-                                value={address.length > 24 ? `${address.slice(0, 12)}...${address.slice(-8)}` : address}
-                                mono
-                                copyable
-                                onCopy={() => onCopy(address)}
-                                isCopied={copiedAddress === address}
-                            />
-                            {validator.ownerAddress && (
-                                <SummaryInlineRow
-                                    label={dd.owner_address || 'Owner Address'}
-                                    value={validator.ownerAddress.length > 24 ? `${validator.ownerAddress.slice(0, 12)}...${validator.ownerAddress.slice(-8)}` : validator.ownerAddress}
-                                    mono
-                                    copyable
-                                    onCopy={() => onCopy(validator.ownerAddress)}
-                                    isCopied={copiedAddress === validator.ownerAddress}
-                                />
-                            )}
-                            {validator.ownerBadge && (
-                                <SummaryInlineRow
-                                    label={dd.owner_badge || 'Owner Badge'}
-                                    value={validator.ownerBadge.length > 24 ? `${validator.ownerBadge.slice(0, 12)}...${validator.ownerBadge.slice(-8)}` : validator.ownerBadge}
-                                    mono
-                                    copyable
-                                    onCopy={() => onCopy(validator.ownerBadge!)}
-                                    isCopied={copiedAddress === validator.ownerBadge}
-                                />
-                            )}
-                            {validator.lsuResource && (
-                                <SummaryInlineRow
-                                    label={dd.lsu_resource || 'LSU Resource'}
-                                    value={validator.lsuResource.length > 24 ? `${validator.lsuResource.slice(0, 12)}...${validator.lsuResource.slice(-8)}` : validator.lsuResource}
-                                    mono
-                                    copyable
-                                    onCopy={() => onCopy(validator.lsuResource)}
-                                    isCopied={copiedAddress === validator.lsuResource}
-                                />
-                            )}
-                            {validator.claimTokenResourceAddress && (
-                                <SummaryInlineRow
-                                    label={dd.nft_claim || 'NFT Claim'}
-                                    value={validator.claimTokenResourceAddress.length > 24 ? `${validator.claimTokenResourceAddress.slice(0, 12)}...${validator.claimTokenResourceAddress.slice(-8)}` : validator.claimTokenResourceAddress}
-                                    mono
-                                    copyable
-                                    onCopy={() => onCopy(validator.claimTokenResourceAddress!)}
-                                    isCopied={copiedAddress === validator.claimTokenResourceAddress}
-                                />
-                            )}
-                            {validator.publicKey && (
-                                <SummaryInlineRow
-                                    label={dd.public_key || 'Public Key'}
-                                    value={validator.publicKey.length > 24 ? `${validator.publicKey.slice(0, 12)}...${validator.publicKey.slice(-8)}` : validator.publicKey}
-                                    mono
-                                    copyable
-                                    onCopy={() => onCopy(validator.publicKey)}
-                                    isCopied={copiedAddress === validator.publicKey}
-                                />
-                            )}
-
-                            {validator.delegatedStake != null && (
-                                <SummaryInlineRow
-                                    label={dd.delegated_stake || 'Delegated Stake'}
-                                    value={`${formatXRD(validator.delegatedStake, locale)} XRD`}
-                                    secondaryValue={`${validator.delegatedStakePercent?.toFixed(2)}% of the network`}
-                                    mono
-                                />
-                            )}
-                            {validator.delegators != null && (
-                                <SummaryInlineRow
-                                    label={dd.delegators || 'Delegators'}
-                                    value={validator.delegators.toLocaleString(locale)}
-                                />
-                            )}
-                            {validator.ownerDelegation != null && (
-                                <SummaryInlineRow
-                                    label={dd.owner_delegation || 'Owner Stake'}
-                                    value={`${formatXRD(validator.ownerDelegation, locale)} XRD`}
-                                    mono
-                                />
-                            )}
-                            {validator.apyProjection != null && (
-                                <SummaryInlineRow
-                                    label={dd.apy_projection || 'APY Projection'}
-                                    value={`${validator.apyProjection.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
-                                />
-                            )}
-                            {validator.nominalFee != null && (
-                                <SummaryInlineRow
-                                    label={dd.nominal_fee || 'Fee'}
-                                    value={`${validator.nominalFee.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
-                                    secondaryValue={validator.effectiveFee != null ? `${validator.effectiveFee.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% effective` : undefined}
-                                />
-                            )}
-                            {validator.lsu2xrdFactor != null && (
-                                <SummaryInlineRow
-                                    label={dd.lsu_factor || 'LSU → XRD Factor'}
-                                    value={`1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD`}
-                                    mono
-                                />
-                            )}
-
-                            <SummaryInlineRow
-                                label={`${cardTt.uptime || 'Uptime'} (14d)`}
-                                value={`${(validator.recentUptime * 100).toFixed(2)}%`}
-                            />
-                            <SummaryInlineRow
-                                label={`${dd.proposals_made || 'Completed'} (14d)`}
-                                value={validator.recentProposalsMade.toLocaleString(locale)}
-                            />
-                            <SummaryInlineRow
-                                label={`${dd.proposals_missed || 'Missed'} (14d)`}
-                                value={validator.recentProposalsMissed.toLocaleString(locale)}
-                            />
-
-                            <SummaryInlineRow
-                                label={`${cardTt.uptime || 'Uptime'} (Total)`}
-                                value={`${(validator.totalUptime * 100).toFixed(2)}%`}
-                            />
-                            <SummaryInlineRow
-                                label={`${dd.proposals_made || 'Completed'} (Total)`}
-                                value={validator.totalProposalsMade.toLocaleString(locale)}
-                            />
-                            <SummaryInlineRow
-                                label={`${dd.proposals_missed || 'Missed'} (Total)`}
-                                value={validator.totalProposalsMissed.toLocaleString(locale)}
-                            />
-                        </>
+                        <ValidatorSummaryMetrics
+                            validator={validator}
+                            address={address}
+                            onCopy={onCopy}
+                            copiedAddress={copiedAddress}
+                            locale={locale}
+                            dt={dt}
+                        />
                     );
                 })()}
 
@@ -912,50 +791,7 @@ function EntitySummaryTab({
 
 
 
-function SummaryInlineRow({ 
-    label, 
-    value, 
-    mono, 
-    children, 
-    copyable, 
-    onCopy, 
-    isCopied, 
-    secondaryValue 
-}: { 
-    label: string; 
-    value?: string; 
-    mono?: boolean; 
-    children?: React.ReactNode;
-    copyable?: boolean;
-    onCopy?: () => void;
-    isCopied?: boolean;
-    secondaryValue?: string;
-}) {
-    return (
-        <div className="flex items-center justify-between gap-4 py-2 border-b border-[var(--color-card-border)]/60 last:border-0 last:pb-0">
-            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">
-                {label}
-            </dt>
-            <dd className="flex flex-col items-end gap-0.5 min-w-0">
-                <div className="flex items-center gap-2">
-                    <div className={`text-xs font-medium text-[var(--color-text-main)] truncate ${mono ? 'font-mono' : ''}`} title={value}>
-                        {children || value}
-                    </div>
-                    {copyable && onCopy && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onCopy(); }}
-                            className={`p-0.5 rounded transition-colors shrink-0 ${isCopied ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                        >
-                            {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        </button>
-                    )}
-                </div>
-                {secondaryValue && (
-                    <div className="text-[9px] text-[var(--color-text-muted)] font-medium">
-                        {secondaryValue}
-                    </div>
-                )}
-            </dd>
-        </div>
-    );
-}
+/**
+ * Helper row for metadata summary
+ */
+// SummaryInlineRow removed - now imported from EntityPanelShared

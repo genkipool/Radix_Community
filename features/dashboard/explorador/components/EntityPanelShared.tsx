@@ -23,6 +23,52 @@ export type { ConfigEntry };
 export { getConfigEntries, resolutionTooltip };
 
 /* ─────────────────────────────────────────
+   SummaryInlineRow
+   Reusable row for summary tabs.
+───────────────────────────────────────── */
+export function SummaryInlineRow({
+    label, value, secondaryValue, mono, accentValue, copyable, onCopy, isCopied, children,
+}: {
+    label: string;
+    value?: string;
+    secondaryValue?: string;
+    mono?: boolean;
+    accentValue?: boolean;
+    copyable?: boolean;
+    onCopy?: () => void;
+    isCopied?: boolean;
+    children?: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-4 py-2 border-b border-[var(--color-card-border)] last:border-0">
+            <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0">{label}</dt>
+            <dd className="text-right min-w-0">
+                <div className="flex items-center justify-end gap-1.5">
+                    {children ?? (
+                        <span className={`text-xs font-medium truncate ${mono ? 'font-mono' : ''} ${accentValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>
+                            {value}
+                        </span>
+                    )}
+                    {copyable && onCopy && (
+                        <button
+                            onClick={e => { e.stopPropagation(); onCopy(); }}
+                            className={`p-0.5 rounded transition-colors shrink-0 ${isCopied ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                        >
+                            {isCopied ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        </button>
+                    )}
+                </div>
+                {secondaryValue && (
+                    <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5 truncate leading-none">
+                        {secondaryValue}
+                    </div>
+                )}
+            </dd>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────
    PanelSectionHeader
    Thin divider row with a label, used to
    group roles inside the configuration tab.

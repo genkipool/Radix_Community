@@ -98,7 +98,7 @@ export const ValidatorExpandedBody = ({
     const grid1 = (
         <div className="veb-classic-grid">
             <div className="veb-top">
-                <ProfileBlock    {...profileProps} noTruncate={false} />
+                <ProfileBlock    {...profileProps} _noTruncate={false} />
                 <DelegationBlock {...delegationProps} />
                 <PerformanceBlock {...perfProps} />
             </div>
@@ -112,7 +112,7 @@ export const ValidatorExpandedBody = ({
 
     const grid2 = (
         <div className="veb-main-grid veb-grid-2">
-            <ProfileBlock    {...profileProps} className="col-span-2" noTruncate={true} />
+            <ProfileBlock    {...profileProps} className="col-span-2" _noTruncate={true} />
             <DelegationBlock {...delegationProps} />
             <PerformanceBlock {...perfProps} />
             <HistoryBlock    {...historyProps} className="col-span-2" />
@@ -123,7 +123,7 @@ export const ValidatorExpandedBody = ({
 
     const gridN = (
         <div className={`veb-main-grid veb-grid-${columns}`}>
-            <ProfileBlock    {...profileProps} noTruncate={false} />
+            <ProfileBlock    {...profileProps} _noTruncate={false} />
             <DelegationBlock {...delegationProps} />
             <PerformanceBlock {...perfProps} />
             <HistoryBlock    {...historyProps} />

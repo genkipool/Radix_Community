@@ -2,9 +2,8 @@
 import React from 'react';
 import { ExternalLink, Globe, Server } from 'lucide-react';
 import { type Validator, type StakeHistoryEntry } from '@/types/radix';
-import { formatXRD, formatNumber } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
-import { getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
+import { getUptimeColor } from '@/utils/validators';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge } from './ValidatorBadges';
 import { Label, DR, AR } from './ValidatorExpandedPrimitives';
@@ -14,16 +13,46 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 import { type MarketData } from '@/features/dashboard/types/core.types';
 import { RewardsCsvModal } from './RewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
+import {
+    ValidatorAddressMetrics,
+    ValidatorDelegationMetrics,
+    ValidatorPerformanceMetrics,
+    type MetricRowProps
+} from '@/features/dashboard/explorador/components/ValidatorSummaryMetrics';
 
 type LiveProposalsResult = ReturnType<typeof useLiveProposals>;
 
-const fp = (n: number, locale?: string, d = 2) => `${formatNumber(n, d, locale)}%`;
+/**
+ * Adapter for VEB style rows
+ */
+const renderVebRow = (props: MetricRowProps) => (
+    <DR
+        label={props.label}
+        value={props.children || props.value}
+        sub={props.secondaryValue}
+        tooltip={props.tooltip}
+    />
+);
+
+/**
+ * Adapter for VEB style address rows
+ */
+const renderVebAddrRow = (props: MetricRowProps) => (
+    <AR
+        label={props.label}
+        addr={props.rawAddress || ''}
+        onCopy={props.onCopy || (() => { })}
+        copied={!!props.isCopied}
+        brackets={props.label.toLowerCase().includes('badge') || props.label.toLowerCase().includes('key')}
+        noTruncate={false}
+    />
+);
 
 /* ─────────────────────────────────────────
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '', isModal, noTruncate = false, onDownloadCsv,
+    validator, dt, t, onCopy, copiedAddress, className = '', locale, _isModal, _noTruncate = false, _onDownloadCsv,
 }: {
     validator: Validator;
     dt?: Partial<DashboardDict>;
@@ -31,9 +60,10 @@ export const ProfileBlock = ({
     onCopy: (a: string) => void;
     copiedAddress: string | null;
     className?: string;
-    isModal?: boolean;
-    noTruncate?: boolean;
-    onDownloadCsv?: (address: string) => void;
+    locale?: string;
+    _isModal?: boolean;
+    _noTruncate?: boolean;
+    _onDownloadCsv?: (address: string) => void;
 }) => {
     const tech = [
         validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'Country', v: sanitizeText(validator.country) },
@@ -82,65 +112,15 @@ export const ProfileBlock = ({
             </div>
 
             <div className="veb-profile-addrs">
-                <AR
-                    label={dt?.details?.address ?? 'Validator Address'}
-                    addr={validator.address}
+                <ValidatorAddressMetrics
+                    validator={validator}
+                    address={validator.address}
                     onCopy={onCopy}
-                    copied={!!copiedAddress && copiedAddress === validator.address}
-                    isModal={isModal}
-                    noTruncate={noTruncate}
-                    onDownloadCsv={onDownloadCsv}
+                    copiedAddress={copiedAddress}
+                    locale={locale || ''}
+                    dt={dt}
+                    renderRow={renderVebAddrRow}
                 />
-                {validator.ownerAddress && (
-                    <AR
-                        label={dt?.details?.owner_address ?? 'Owner Address'}
-                        addr={validator.ownerAddress}
-                        onCopy={onCopy}
-                        copied={!!copiedAddress && copiedAddress === validator.ownerAddress}
-                        isModal={isModal}
-                        noTruncate={noTruncate}
-                    />
-                )}
-                {validator.ownerBadge && (
-                    <AR
-                        label={dt?.details?.owner_badge ?? 'Owner Badge'}
-                        addr={validator.ownerBadge}
-                        onCopy={onCopy}
-                        copied={!!copiedAddress && (copiedAddress === validator.ownerBadge || copiedAddress === `[${validator.ownerBadge}]`)}
-                        brackets={!validator.ownerBadge.startsWith('[')}
-                        isModal={isModal}
-                        noTruncate={noTruncate}
-                    />
-                )}
-                <AR
-                    label={dt?.details?.lsu_resource ?? 'LSU Resource'}
-                    addr={validator.lsuResource}
-                    onCopy={onCopy}
-                    copied={!!copiedAddress && copiedAddress === validator.lsuResource}
-                    isModal={isModal}
-                    noTruncate={noTruncate}
-                />
-                {validator.claimTokenResourceAddress && (
-                    <AR
-                        label={dt?.details?.nft_claim ?? 'NFT Claim'}
-                        addr={validator.claimTokenResourceAddress}
-                        onCopy={onCopy}
-                        copied={!!copiedAddress && copiedAddress === validator.claimTokenResourceAddress}
-                        isModal={isModal}
-                        noTruncate={noTruncate}
-                    />
-                )}
-                {validator.publicKey && (
-                    <AR 
-                        label={dt?.details?.public_key ?? 'Public Key'} 
-                        addr={validator.publicKey} 
-                        onCopy={onCopy}
-                        copied={!!copiedAddress && (copiedAddress === validator.publicKey || copiedAddress === `[${validator.publicKey}]`)}
-                        brackets
-                        isModal={isModal}
-                        noTruncate={noTruncate}
-                    />
-                )}
             </div>
         </div>
     );
@@ -160,12 +140,12 @@ export const DelegationBlock = ({
     <div className={`veb-block veb-delegation ${className}`}>
         <Label>{dt?.details?.delegation ?? 'Delegation Summary'}</Label>
         <div className="veb-drows">
-            <DR label={dt?.details?.delegated_stake ?? 'Delegated Stake'} value={formatXRD(validator.delegatedStake, locale)} sub={`${validator.delegatedStakePercent.toFixed(2)}% of the network`} />
-            <DR label={dt?.details?.delegators ?? 'Delegators'} value={validator.delegators.toLocaleString(locale)} />
-            <DR label={dt?.details?.owner_delegation ?? 'Owner Stake'} value={formatNumber(validator.ownerDelegation, 4, locale)} />
-            <DR label={dt?.details?.apy_projection ?? 'APY Projection'} value={fp(validator.apyProjection, locale)} />
-            <DR label={dt?.card?.fee ?? 'Fee'} value={fp(validator.nominalFee, locale)} sub={`${fp(validator.effectiveFee, locale)} effective`} />
-            <DR label={dt?.details?.lsu_factor ?? 'LSU → XRD Factor'} value={validator.lsu2xrdFactor > 0 ? `1 LSU = ${formatNumber(validator.lsu2xrdFactor, 8, locale)} XRD` : '—'} />
+            <ValidatorDelegationMetrics
+                validator={validator}
+                locale={locale || ''}
+                dt={dt}
+                renderRow={renderVebRow}
+            />
         </div>
     </div>
 );
@@ -182,26 +162,23 @@ export const PerformanceBlock = ({
     className?: string;
     locale?: string;
 }) => {
-    const uRC = getUptimeColor(validator.recentUptime);
-    const uTC = getUptimeColor(validator.totalUptime);
-
     return (
         <div className={`veb-block veb-uptimes ${className}`}>
             <div className="veb-perf-section">
-                <Label title={dt?.details?.performance_14d_tooltip}>{dt?.details?.performance_14d ?? 'Epoch Performance (14 days)'}</Label>
-                <div className="veb-drows">
-                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uRC }}>{validator.recentUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completed'} value={<span className="veb-made">{live.recentMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Missed'} value={<span className="veb-missed">{live.recentMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
-                </div>
-            </div>
-            <div className="veb-perf-section mt-4">
-                <Label title={dt?.details?.performance_total_tooltip}>{dt?.details?.performance_total ?? 'Epoch Performance (Total)'}</Label>
-                <div className="veb-drows">
-                    <DR label={dt?.card?.uptime ?? 'Uptime'} value={<span className="veb-u-pct" style={{ color: uTC }}>{validator.totalUptime.toFixed(2)}%</span>} tooltip={getUptimeTooltipText(validator.totalUptime, false, dt?.details)} />
-                    <DR label={dt?.details?.proposals_made ?? 'Completed'} value={<span className="veb-total-made">{live.totalMade.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_made_tooltip} />
-                    <DR label={dt?.details?.proposals_missed ?? 'Missed'} value={<span className="veb-total-missed">{live.totalMissed.toLocaleString(locale)}</span>} tooltip={dt?.details?.proposals_missed_tooltip} />
-                </div>
+                <ValidatorPerformanceMetrics
+                    validator={validator}
+                    locale={locale || ''}
+                    dt={dt}
+                    liveData={live}
+                    renderRow={(props) => (
+                        <DR
+                            label={props.label}
+                            value={props.value}
+                            tooltip={props.tooltip}
+                            hi={props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined}
+                        />
+                    )}
+                />
             </div>
         </div>
     );
