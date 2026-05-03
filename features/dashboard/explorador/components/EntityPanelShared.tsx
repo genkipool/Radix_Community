@@ -27,7 +27,7 @@ export { getConfigEntries, resolutionTooltip };
    Reusable row for summary tabs.
 ───────────────────────────────────────── */
 export function SummaryInlineRow({
-    label, value, secondaryValue, mono, accentValue, isDanger, isModal: _isModal, copyable, onCopy, isCopied, children,
+    label, value, secondaryValue, mono, accentValue, isDanger, isSuccess, isModal: _isModal, copyable, onCopy, isCopied, children,
 }: {
     label: string;
     value?: string;
@@ -35,6 +35,7 @@ export function SummaryInlineRow({
     mono?: boolean;
     accentValue?: boolean;
     isDanger?: boolean;
+    isSuccess?: boolean;
     isModal?: boolean;
     copyable?: boolean;
     onCopy?: () => void;
@@ -49,6 +50,7 @@ export function SummaryInlineRow({
                     {children ?? (
                         <span className={`text-xs font-medium truncate ${mono ? 'font-mono' : ''} ${
                             isDanger ? 'text-red-600 dark:text-red-400 font-bold' : 
+                            isSuccess ? 'text-green-600 dark:text-green-400 font-bold' :
                             accentValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'
                         }`}>
                             {value}

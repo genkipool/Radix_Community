@@ -19,6 +19,7 @@ export interface MetricRowProps {
     tooltip?: string;
     rawAddress?: string;
     isDanger?: boolean;
+    isSuccess?: boolean;
     isModal?: boolean;
 }
 
@@ -37,6 +38,9 @@ interface ValidatorMetricsProps {
         totalMissed: number;
     };
     isModal?: boolean;
+    stakeAmount?: number;
+    unstakeAmount?: number;
+    claimAmount?: number;
 }
 
 /**
@@ -139,6 +143,51 @@ export function ValidatorAddressMetrics({
                 />
             )}
         </>
+    );
+}
+
+/**
+ * User Position / Stake Metrics
+ */
+export function ValidatorPositionMetrics({
+    stakeAmount, unstakeAmount, claimAmount, locale, dt, renderRow
+}: Partial<ValidatorMetricsProps>) {
+    if (stakeAmount === undefined && unstakeAmount === undefined && claimAmount === undefined) return null;
+
+    const as = dt?.transactions?.account_summary;
+    const Row = (renderRow || SummaryInlineRow) as React.ComponentType<MetricRowProps>;
+    const labelPosition = as?.your_position || 'Tu Posición';
+
+    return (
+        <div className="flex-1 flex flex-col">
+            <SectionHeader label={labelPosition} />
+            <div className="veb-drows flex-1 flex flex-col justify-between">
+                {stakeAmount !== undefined && (
+                    <Row
+                        label={as?.stake_xrd || 'Stake XRD'}
+                        value={`${formatXRD(stakeAmount, locale)} XRD`}
+                        mono
+                        accentValue
+                    />
+                )}
+                {unstakeAmount !== undefined && (
+                    <Row
+                        label={as?.unstake_xrd || 'Unstake XRD'}
+                        value={`${formatXRD(unstakeAmount, locale)} XRD`}
+                        mono
+                        isDanger
+                    />
+                )}
+                {claimAmount !== undefined && (
+                    <Row
+                        label={as?.claim_xrd || 'Claim XRD'}
+                        value={`${formatXRD(claimAmount, locale)} XRD`}
+                        mono
+                        isSuccess
+                    />
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -395,6 +444,9 @@ export function ValidatorPerformanceMetrics({
 export function ValidatorSummaryMetrics(props: ValidatorMetricsProps) {
     return (
         <div className="space-y-4">
+            <div className="space-y-0">
+                <ValidatorPositionMetrics {...props} />
+            </div>
             <div className="space-y-0">
                 <ValidatorProfileMetrics {...props} />
             </div>

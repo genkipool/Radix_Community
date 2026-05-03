@@ -1,19 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Copy, Check, Info, Download } from 'lucide-react';
+import { Copy, Check, Info, Download, Landmark } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { PanelLoadingState } from './EntityPanelShared';
-import { apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
-import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
-import type { GatewayEntityDetails, TranslationsT, MetadataItem, MarketData } from '@/features/dashboard/types';
+import type { GatewayEntityDetails, TranslationsT, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
-import { parseProgrammaticJson } from '@/features/dashboard/utils/resourceUtils';
+import { useAccountStats } from '../hooks/useAccountStats';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -43,28 +40,6 @@ interface ParsedResource {
     isNft: boolean;
 }
 
-function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
-    const meta = items?.find((m) => m.key === key);
-    if (meta?.value?.typed?.value) {
-        return meta.value.typed.value;
-    }
-    return '';
-}
-
-// Function to safely extract tags
-function extractTags(items: MetadataItem[] | undefined): string[] {
-    const meta = items?.find((m) => m.key === 'tags');
-    if (meta?.value?.typed?.values) {
-        return meta.value.typed.values;
-    }
-    if (meta?.value?.programmatic_json) {
-        const parsed = parseProgrammaticJson(meta.value.programmatic_json);
-        if (Array.isArray(parsed)) {
-            return parsed.map(String);
-        }
-    }
-    return [];
-}
 
 export function AccountSummaryTab({
     address,
@@ -84,179 +59,21 @@ export function AccountSummaryTab({
     const { prefetchAccountRewards } = usePrefetchRewards();
 
     const description = getMeta('description');
-    const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
+    const {
+        isLoading,
+        xrdAmount,
+        tokens,
+        activeNfts,
+        burnedNfts,
+        poolUnits,
+        stakingRows,
+        totalLsuAmount,
+        totalLsuXrdEquivalent,
+    } = useAccountStats(address, network, entityData);
 
-    const xrdAddress = network === 'mainnet'
-        ? 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd'
-        : 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
-
-    // Parsing Logic
-    const fungibles = entityData?.fungible_resources?.items || [];
-    const nonFungibles = entityData?.non_fungible_resources?.items || [];
-
-    let xrdAmount = '0';
-    const tokens: ParsedResource[] = [];
-    const lsuTokens: ParsedResource[] = [];
-    const poolUnits: ParsedResource[] = [];
-    const activeNfts: ParsedResource[] = [];
-    const burnedNfts: ParsedResource[] = [];
-    const claimCollections: Record<string, string[]> = {};
-
-    // Process Fungibles
-    fungibles.forEach((ft: { resource_address: string; amount: string; explicit_metadata?: { items: MetadataItem[] } }) => {
-        if (ft.resource_address === xrdAddress) {
-            xrdAmount = ft.amount || '0';
-            return;
-        }
-
-        const meta = ft.explicit_metadata?.items || [];
-        const valByLsu = validatorsData?.validators.find((v: { lsuResource?: string; address: string }) => v.lsuResource === ft.resource_address);
-
-        const r: ParsedResource = {
-            address: ft.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown Token',
-            symbol: extractMetadata(meta, 'symbol') || '',
-            iconUrl: extractMetadata(meta, 'icon_url') || '',
-            amount: ft.amount || '0',
-            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit') || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
-            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
-            validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
-            isClaim: false,
-            isNft: false
-        };
-
-        if (r.isLsu) lsuTokens.push(r);
-        else if (r.isPoolUnit) poolUnits.push(r);
-        else tokens.push(r);
-    });
-
-    // Add XRD as first token if balance > 0
-    if (parseFloat(xrdAmount) > 0) {
-        tokens.unshift({
-            address: xrdAddress,
-            name: 'Radix',
-            symbol: 'XRD',
-            iconUrl: 'https://assets.coingecko.com/coins/images/4374/standard/Radix.png',
-            amount: xrdAmount,
-            isPoolUnit: false,
-            isLsu: false,
-            isClaim: false,
-            isNft: false
-        });
-    }
-
-    // Process Non-Fungibles
-    nonFungibles.forEach((nft: { resource_address: string; amount?: number; explicit_metadata?: { items: MetadataItem[] }; vaults?: { items: Array<{ items: string[] }> } }) => {
-        const meta = nft.explicit_metadata?.items || [];
-        const valByClaim = validatorsData?.validators.find((v: { claimTokenResourceAddress?: string; address: string }) => v.claimTokenResourceAddress === nft.resource_address);
-        const nftItems = nft.vaults?.items?.[0]?.items || [];
-        const nftAmount = nft.amount !== undefined ? nft.amount : nftItems.length;
-
-        const r: ParsedResource = {
-            address: nft.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown NFT',
-            symbol: extractMetadata(meta, 'symbol') || '',
-            iconUrl: extractMetadata(meta, 'icon_url') || '',
-            amount: String(nftAmount),
-            isPoolUnit: false,
-            isLsu: false,
-            validatorAddress: extractMetadata(meta, 'validator') || valByClaim?.address,
-            isClaim: !!meta.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator') || !!valByClaim,
-            ids: nftItems,
-            isNft: true
-        };
-
-        if (r.isClaim && r.validatorAddress && r.ids && r.ids.length > 0) {
-            claimCollections[r.address] = r.ids;
-        } else if (nftAmount === 0) {
-            burnedNfts.push(r);
-        } else {
-            activeNfts.push(r);
-        }
-    });
-
-    const claimCollectionAddresses = Object.keys(claimCollections);
-    const { data: claimsData, isLoading: isLoadingClaims } = useQuery({
-        queryKey: ['account-claim-nfts', address, network, claimCollectionAddresses.sort().join(',')],
-        queryFn: async () => {
-            const results: Record<string, Record<string, unknown>[]> = {};
-            for (const resAddr of claimCollectionAddresses) {
-                results[resAddr] = await apiFetchNonFungibleData(resAddr, claimCollections[resAddr], network);
-            }
-            return results;
-        },
-        enabled: claimCollectionAddresses.length > 0,
-        staleTime: Infinity,
-    });
-
-    if (isLoadingValidators || (claimCollectionAddresses.length > 0 && isLoadingClaims)) {
+    if (isLoading) {
         return <PanelLoadingState tt={tt} />;
     }
-
-    // Staking Aggregation
-    const stakingMap = new Map<string, {
-        validatorName: string;
-        validatorIcon: string;
-        validatorAddress: string;
-        xrdInStake: number;
-        xrdInUnstake: number;
-        xrdInClaim: number;
-    }>();
-
-    const getStakingEntry = (vAddr: string) => {
-        if (!stakingMap.has(vAddr)) {
-            const val = validatorsData?.validators.find(v => v.address === vAddr);
-            stakingMap.set(vAddr, {
-                validatorName: val?.name || 'Unknown Validator',
-                validatorIcon: val?.iconUrl || '',
-                validatorAddress: vAddr,
-                xrdInStake: 0,
-                xrdInUnstake: 0,
-                xrdInClaim: 0
-            });
-        }
-        return stakingMap.get(vAddr)!;
-    };
-
-    lsuTokens.forEach(lsu => {
-        if (!lsu.validatorAddress) return;
-        const entry = getStakingEntry(lsu.validatorAddress);
-        const val = validatorsData?.validators.find(v => v.address === lsu.validatorAddress);
-        const lsuFactor = val?.lsu2xrdFactor || 1;
-        entry.xrdInStake += parseFloat(lsu.amount) * lsuFactor;
-    });
-
-    if (claimsData) {
-        Object.entries(claimsData).forEach(([resAddr, items]) => {
-            const nftEntity = nonFungibles.find((n: { resource_address: string }) => n.resource_address === resAddr);
-            const rValidatorAddr = nftEntity?.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.value?.typed?.value;
-            const valByClaim = validatorsData?.validators.find((v: { claimTokenResourceAddress?: string; address: string }) => v.claimTokenResourceAddress === resAddr);
-            const validatorAddress = rValidatorAddr || valByClaim?.address;
-
-            if (!validatorAddress) return;
-            const entry = getStakingEntry(validatorAddress);
-
-            items.forEach((nft) => {
-                const nftData = nft as { data?: Array<{ field: string; value: string | boolean }> };
-                const claimXrd = nftData.data?.find((d) => d.field === 'claim_amount')?.value as string || '0';
-                const isLiquid = nftData.data?.find((d) => d.field === 'is_liquid')?.value ?? true;
-
-                if (isLiquid) {
-                    entry.xrdInClaim += parseFloat(claimXrd);
-                } else {
-                    entry.xrdInUnstake += parseFloat(claimXrd);
-                }
-            });
-        });
-    }
-
-    const stakingRows = Array.from(stakingMap.values()).filter(r => r.xrdInStake > 0 || r.xrdInUnstake > 0 || r.xrdInClaim > 0);
-
-    const totalLsuAmount = lsuTokens.reduce((acc, lsu) => acc + parseFloat(lsu.amount), 0);
-    const totalLsuXrdEquivalent = lsuTokens.reduce((acc, lsu) => {
-        const val = validatorsData?.validators.find(v => v.address === lsu.validatorAddress);
-        return acc + (parseFloat(lsu.amount) * (val?.lsu2xrdFactor || 1));
-    }, 0);
 
     return (
         <div className="space-y-6">
@@ -403,39 +220,52 @@ export function AccountSummaryTab({
                     </div>
                 )}
             </div>
-
-            {/* Staking */}
+            
+            {/* Staking Section */}
             {stakingRows.length > 0 && (
-                <div>
-                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt?.account_summary?.staking || 'Staking'}</h4>
-                    <div className="space-y-3">
+                <div className="mb-8">
+                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-4 tracking-wider">
+                        {tt?.account_summary?.staking_validators_title || 'STAKING'} ({stakingRows.length})
+                    </h4>
+                    <div className="space-y-4">
                         {stakingRows.map((row) => (
-                            <div key={row.validatorAddress} className="py-5 border-b border-[var(--color-card-border)] last:border-0">
-                                <div className="flex items-start gap-3 mb-5">
-                                    <SafeImage src={row.validatorIcon} alt={row.validatorName} fallbackName={row.validatorName} className="w-8 h-8 rounded-full bg-black/10 shrink-0 mt-0.5" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-bold text-sm text-[var(--color-text-main)] truncate leading-none mb-1">{row.validatorName}</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] break-all leading-relaxed whitespace-pre-wrap hidden sm:inline">{row.validatorAddress}</span>
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)] sm:hidden">{truncateAddress(row.validatorAddress, 8, 8)}</span>
-                                            <button onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] shrink-0 transition-all active:scale-95">
+                            <div key={row.validatorAddress} className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
+                                {/* Validator Header */}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
+                                        {row.validatorIcon ? (
+                                            <SafeImage src={row.validatorIcon} alt={row.validatorName || 'Validator'} fallbackName={row.validatorName || 'Validator'} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Landmark className="w-5 h-5 text-[var(--color-text-muted)]" />
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="font-black text-sm text-[var(--color-text-main)] truncate">{row.validatorName || 'Unknown Validator'}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{row.validatorAddress}</span>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} 
+                                                className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                                            >
                                                 {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+                                {/* Staking Grid */}
+                                <div className="grid grid-cols-3 gap-4 py-2 border-t border-[var(--color-card-border)]/50">
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'Stake XRD'}</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'STAKE XRD'}</span>
                                         <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'Unstake XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-orange-500">{row.xrdInUnstake > 0 ? formatNumber(row.xrdInUnstake, 2, locale) : '0'} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-orange-500">{formatNumber(row.xrdInUnstake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'Claim XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-[var(--color-accent)]">{row.xrdInClaim > 0 ? formatNumber(row.xrdInClaim, 2, locale) : '0'} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'CLAIM XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(row.xrdInClaim, 2, locale)} XRD</span>
                                     </div>
                                 </div>
                             </div>
@@ -443,6 +273,7 @@ export function AccountSummaryTab({
                     </div>
                 </div>
             )}
+
 
             {/* Assets */}
             <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
@@ -459,7 +290,6 @@ export function AccountSummaryTab({
                     locale={locale}
                 />
             )}
-
             <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {/* Account Rewards CSV Modal */}

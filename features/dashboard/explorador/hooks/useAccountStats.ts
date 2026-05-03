@@ -159,7 +159,15 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                     const data = item.data as { programmatic_json?: { fields?: { field_name: string; value: string }[] } } | undefined;
                     const fields = data?.programmatic_json?.fields;
                     const amt = parseFloat(fields?.find(f => f.field_name === 'claim_amount')?.value || '0');
-                    entry.xrdInUnstake += amt; // Assuming all belong to unstake in simpler terms
+                    const unbondingEpoch = fields?.find(f => f.field_name === 'unbonding_end_epoch')?.value;
+
+                    // If unbonding_end_epoch is present, it's still in the waiting period (Unstake)
+                    // If it's missing but claim_amount is there, it's typically ready to claim.
+                    if (unbondingEpoch) {
+                        entry.xrdInUnstake += amt;
+                    } else if (amt > 0) {
+                        entry.xrdInClaim += amt;
+                    }
                 });
             }
         });

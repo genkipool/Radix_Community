@@ -13,6 +13,7 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
 import { apiFetchEntityDetails, apiFetchTransactions } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
@@ -34,7 +35,7 @@ import { getMetaValue } from '../utils/metadataUtils';
 import type { AccountCardProps } from '../types/components.types';
 import type { MetadataItem } from '@/features/dashboard/types';
 
-type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 export function AccountCard({
     address,
     columns,
@@ -75,6 +76,7 @@ export function AccountCard({
         stakedTotal,
         unstakeTotal,
         claimTotal,
+        stakingRows,
     } = useAccountStats(address, network as 'mainnet' | 'stokenet', entityData || null);
 
     const { prefetchAccountRewards } = usePrefetchRewards();
@@ -132,6 +134,7 @@ export function AccountCard({
     // Construct Tabs
     const tabsData: { key: EntityTab; label: string; tooltip?: string }[] = [
         { key: 'summary', label: tt?.resource_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
+        { key: 'staking', label: accT?.staking_tab || 'Staking', tooltip: tt?.tab_staking_tooltip },
         { key: 'tokens', label: accT?.tokens_tab || 'Tokens', tooltip: tt?.tab_tokens_tooltip },
         { key: 'nfts', label: accT?.nfts_tab || 'NFTs', tooltip: tt?.tab_nfts_tooltip },
         { key: 'pool_units', label: accT?.pool_units || 'Pool Units', tooltip: tt?.tab_pool_units_tooltip },
@@ -336,6 +339,19 @@ export function AccountCard({
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 marketData={marketData}
                                                 locale={locale}
+                                            />
+                                        )}
+                                        
+                                        {/* ── STAKING ── */}
+                                        {activeTab === 'staking' && (
+                                            <AccountStakingTab
+                                                stakingRows={stakingRows}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network as 'mainnet' | 'stokenet'}
+                                                locale={locale}
+                                                marketData={marketData}
                                             />
                                         )}
 

@@ -49,6 +49,13 @@ export interface AccountRewardsCsvModalDict {
     account_rewards_error_retries?: string;
     account_rewards_error_no_data?: string;
     account_rewards_modal_select_another?: string;
+    staking_validators_title?: string;
+    staking_tab?: string;
+    stake_xrd?: string;
+    unstake_xrd?: string;
+    claim_xrd?: string;
+    your_position?: string;
+    no_staking?: string;
 }
 
 export interface AssetTransferGroupProps {

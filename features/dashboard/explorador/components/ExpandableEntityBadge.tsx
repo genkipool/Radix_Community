@@ -8,7 +8,7 @@
  * Configuration, Raw) for the entity, fetched lazily from the Gateway.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Copy, Download } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,7 +41,9 @@ import {
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
+import { AccountStakingTab } from './AccountStakingTab';
 import { AccountTransactionsTab } from './AccountTransactionsTab';
+import { useAccountStats } from '../hooks/useAccountStats';
 import type {
     MetadataItem,
     MarketData,
@@ -53,7 +55,7 @@ import type {
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 /* ─── Types ─────────────────────────────────────────── */
-type EntityTab = 'summary' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
+type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 
 interface ExpandableEntityBadgeProps {
     address: string;
@@ -65,6 +67,9 @@ interface ExpandableEntityBadgeProps {
     locale?: string;
     marketData?: MarketData | null;
     dt?: Partial<DashboardDict>;
+    stakeAmount?: number;
+    unstakeAmount?: number;
+    claimAmount?: number;
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -86,6 +91,11 @@ function getTabsForEntity(
     ];
 
     if (isAccountAddr) {
+        base.push({
+            key: 'staking',
+            label: accT?.staking_tab || 'Staking',
+            tooltip: tt?.tab_staking_tooltip
+        });
         base.push({
             key: 'tokens',
             label: accT?.tokens_tab || 'Tokens',
@@ -160,9 +170,13 @@ export function ExpandableEntityBadge({
     locale = 'en',
     marketData,
     dt,
+    stakeAmount,
+    unstakeAmount,
+    claimAmount,
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
+    const instanceId = useId();
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
 
@@ -188,7 +202,6 @@ export function ExpandableEntityBadge({
         queryKey: entityKeys.full(clean, network),
         queryFn: () => apiFetchEntityDetails(clean, network as 'mainnet' | 'stokenet'),
         enabled: expanded || clean.startsWith('pool_'),
-        staleTime: Infinity,
         gcTime: 10 * 60_000,
         retry: 1,
         retryOnMount: false,
@@ -200,6 +213,8 @@ export function ExpandableEntityBadge({
     const tabs = getTabsForEntity(clean, tt);
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
+
+    const { stakingRows } = useAccountStats(clean, network as 'mainnet' | 'stokenet', isAccountAddr ? (entityData ?? null) : null);
 
     /* ── Click handler (prevents text selection from collapsing) ── */
     const handleToggle = (e: React.MouseEvent) => {
@@ -216,12 +231,14 @@ export function ExpandableEntityBadge({
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
-                    <span
-                        className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
-                        title={wellKnownTip ?? undefined}
-                    >
-                        {label}
-                    </span>
+                    {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined) ? null : (
+                        <span
+                            className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
+                            title={wellKnownTip ?? undefined}
+                        >
+                            {label}
+                        </span>
+                    )}
                     {iconUrl && (
                         <SafeImage
                             src={iconUrl}
@@ -250,6 +267,40 @@ export function ExpandableEntityBadge({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                    {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined) && (
+                        <div className="flex items-center gap-3 mr-3">
+                            {stakeAmount !== undefined && (
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                        {tt?.stake_history?.stake || tt?.account_summary?.stake_xrd || 'Stake'}
+                                    </span>
+                                    <span className="text-[11px] font-mono font-black text-[var(--color-text-main)] leading-none mt-1">
+                                        {formatNumber(stakeAmount, 2, locale)}
+                                    </span>
+                                </div>
+                            )}
+                            {unstakeAmount !== undefined && (
+                                <div className="flex flex-col items-end border-l border-white/10 pl-3">
+                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                        {tt?.stake_history?.unstake || tt?.account_summary?.unstake_xrd || 'Unstake'}
+                                    </span>
+                                    <span className="text-[11px] font-mono font-black text-[var(--color-warning)] leading-none mt-1">
+                                        {formatNumber(unstakeAmount, 2, locale)}
+                                    </span>
+                                </div>
+                            )}
+                            {claimAmount !== undefined && (
+                                <div className="flex flex-col items-end border-l border-white/10 pl-3">
+                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                        {tt?.stake_history?.claim || tt?.account_summary?.claim_xrd || 'Claim'}
+                                    </span>
+                                    <span className="text-[11px] font-mono font-black text-[var(--color-success)] leading-none mt-1">
+                                        {formatNumber(claimAmount, 2, locale)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {isAccountAddr && (
                         <button
                             type="button"
@@ -306,7 +357,7 @@ export function ExpandableEntityBadge({
                             className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityBadgeTabs-${address}`} />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityTabs-${instanceId}`} />
 
                             <div className="px-4 py-3">
                                 {isLoading ? (
@@ -346,8 +397,25 @@ export function ExpandableEntityBadge({
                                                     network={network}
                                                     marketData={marketData}
                                                     dt={dt}
+                                                    stakeAmount={stakeAmount}
+                                                    unstakeAmount={unstakeAmount}
+                                                    claimAmount={claimAmount}
                                                 />
                                             )
+                                        )}
+
+                                        {/* ── STAKING ── */}
+                                        {activeTab === 'staking' && (
+                                            <AccountStakingTab
+                                                stakingRows={stakingRows}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
+                                                network={network}
+                                                locale={locale}
+                                                marketData={marketData}
+                                                dt={dt}
+                                            />
                                         )}
 
                                         {/* ── TOKENS ── */}
@@ -472,6 +540,9 @@ function EntitySummaryTab({
     locale,
     network,
     dt,
+    stakeAmount,
+    unstakeAmount,
+    claimAmount,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;
@@ -487,6 +558,9 @@ function EntitySummaryTab({
     network: Network;
     marketData?: MarketData | null;
     dt?: Partial<DashboardDict>;
+    stakeAmount?: number;
+    unstakeAmount?: number;
+    claimAmount?: number;
 }) {
     const qc = useQueryClient();
     const entityType = getEntityDetailType(entityData, address);
@@ -640,6 +714,9 @@ function EntitySummaryTab({
                             locale={locale}
                             dt={dt}
                             isModal={true}
+                            stakeAmount={stakeAmount}
+                            unstakeAmount={unstakeAmount}
+                            claimAmount={claimAmount}
                         />
                     );
                 })()}
