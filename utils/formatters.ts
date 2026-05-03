@@ -34,3 +34,15 @@ export function truncateAddress(address: string, start: number = 12, end: number
     if (address.length <= (start + end + 2)) return address;
     return `${address.slice(0, start)}...${address.slice(-end)}`;
 }
+
+export function formatDisplayUrl(url: string): string {
+    if (!url) return '';
+    try {
+        // Use native URL API to extract hostname reliably
+        const { hostname } = new URL(url.includes('://') ? url : `https://${url}`);
+        return hostname.replace(/^www\./, '');
+    } catch {
+        // Fallback to regex if URL is malformed
+        return url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+    }
+}

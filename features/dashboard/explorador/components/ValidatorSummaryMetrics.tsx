@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
-import { Activity, ShieldCheck, Users, Shield } from 'lucide-react';
+import { Activity, ShieldCheck, Users, Shield, Globe, Server, ExternalLink } from 'lucide-react';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { formatXRD, formatPercent } from '@/utils/formatters';
+import { formatXRD, formatPercent, formatDisplayUrl } from '@/utils/formatters';
 
 export interface MetricRowProps {
     label: string;
@@ -129,7 +129,7 @@ export function ValidatorAddressMetrics({
             {validator.publicKey && (
                 <Row
                     label={dd.public_key || 'Public Key'}
-                    value={trunc(validator.publicKey)}
+                    value={`[${trunc(validator.publicKey)}]`}
                     rawAddress={validator.publicKey}
                     mono
                     copyable
@@ -194,25 +194,48 @@ export function ValidatorProfileMetrics({
     return (
         <div className={`flex-1 flex flex-col ${className}`}>
             <SectionHeader label={profileLabel} />
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-2">
                 {validator.description && (
-                    <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
+                    <p className="text-[13px] text-[var(--color-text-muted)] leading-normal">
                         &quot;{validator.description}&quot;
                     </p>
                 )}
                 {validator.website && (
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dd.profile_url || 'Website'}:</span>
                         <a
                             href={validator.website}
-                            target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] text-[var(--color-primary)] hover:underline truncate font-semibold"
+                            target="_blank"
+                            className="text-[13px] text-[var(--color-primary)] hover:underline truncate font-medium flex items-center gap-1.5"
                         >
-                            {validator.website.replace(/^https?:\/\//, '')}
+                            {formatDisplayUrl(validator.website)}
+                            <ExternalLink size={14} className="opacity-70" />
                         </a>
                     </div>
                 )}
+                
+                {(() => {
+                    type TechItem = { icon?: React.ReactNode; k: string; v: string; hi?: string };
+                    const techItems = ([
+                        validator.country ? { icon: <Globe className="w-3 h-3" />, k: dd.country ?? 'Country', v: validator.country } : null,
+                        validator.provider ? { icon: <Server className="w-3 h-3" />, k: dd.provider ?? 'Provider', v: validator.provider } : null,
+                        validator.version ? { k: dd.version ?? 'Version', v: validator.version, hi: 'var(--color-primary)' } : null
+                    ] as (TechItem | null)[]).filter((f): f is TechItem => !!f);
+
+                    if (techItems.length === 0) return null;
+
+                    return (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                            {techItems.map((f) => (
+                                <span key={f.k} className="inline-flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] bg-[var(--color-surface-hover)]/50 px-2 py-0.5 rounded-md border border-[var(--color-card-border)]/50">
+                                    {f.icon && <span className="opacity-70">{f.icon}</span>}
+                                    <span className="font-bold uppercase tracking-tight opacity-50">{f.k}:</span>
+                                    <span className="font-semibold text-[var(--color-text-main)]" style={f.hi ? { color: f.hi } : undefined}>{f.v}</span>
+                                </span>
+                            ))}
+                        </div>
+                    );
+                })()}
                 <div className="flex flex-wrap gap-2 pt-1">
                     <StatusPill
                         icon={Activity}
@@ -267,7 +290,7 @@ export function ValidatorDelegationMetrics({
                     <Row
                         label={dd.validator_delegated_stake || dd.delegated_stake || 'Delegated Stake'}
                         value={`${formatXRD(validator.delegatedStake, locale)} XRD`}
-                        secondaryValue={validator.delegatedStakePercent != null ? `${formatPercent(validator.delegatedStakePercent, 2, locale)} of the network` : undefined}
+                        secondaryValue={validator.delegatedStakePercent != null ? `${formatPercent(validator.delegatedStakePercent, 2, locale)} ${dd.of_the_network || 'of the network'}` : undefined}
                         mono
                     />
                 )}
@@ -295,7 +318,7 @@ export function ValidatorDelegationMetrics({
                     <Row
                         label={dd.validator_nominal_fee || dd.nominal_fee || 'Fee'}
                         value={formatPercent(validator.nominalFee, 1, locale)}
-                        secondaryValue={validator.effectiveFee != null ? `${formatPercent(validator.effectiveFee, 1, locale)} effective` : undefined}
+                        secondaryValue={validator.effectiveFee != null ? `${formatPercent(validator.effectiveFee, 1, locale)} ${dd.effective || 'effective'}` : undefined}
                     />
                 )}
                 {validator.lsu2xrdFactor != null && (

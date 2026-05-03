@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
-import { formatXRD, formatNumber, truncateAddress, formatPercent } from '@/utils/formatters';
+import { formatXRD, formatNumber, truncateAddress, formatPercent, formatDisplayUrl } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -138,7 +138,7 @@ export const Layout1Col = ({
                                 <a href={validator.website} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors truncate max-w-[200px] cursor-pointer">
                                     <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="truncate" title={sanitizeText(validator.website)}>{sanitizeText(validator.website)}</span>
+                                    <span className="truncate" title={sanitizeText(validator.website)}>{formatDisplayUrl(validator.website)}</span>
                                 </a>
                             )}
                             <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.provider)} (${validator.providerPercent}%)`}>
@@ -475,7 +475,7 @@ export const Layout6Col = ({
             >
                 <div className={`flex items-center ${columns >= 8 ? 'gap-1' : 'gap-2'}`}>
                     {validator.website && isValidUrl(validator.website) ? (
-                        <a href={validator.website} target="_blank" rel="noopener noreferrer" title={sanitizeText(validator.website)}>
+                        <a href={validator.website} target="_blank" rel="noopener noreferrer" title={formatDisplayUrl(validator.website)}>
                             <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
                         </a>
                     ) : (

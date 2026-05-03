@@ -1,8 +1,6 @@
 'use client';
 import React from 'react';
-import { Globe, Server } from 'lucide-react';
 import { type Validator, type StakeHistoryEntry } from '@/types/radix';
-import { sanitizeText } from '@/utils/sanitize';
 import { getUptimeColor } from '@/utils/validators';
 import { Label, DR, AR } from './ValidatorExpandedPrimitives';
 import { StakeEvolutionChart, StakeHistoryChart } from './ValidatorStakeCharts';
@@ -66,34 +64,13 @@ export const ProfileBlock = ({
     _noTruncate?: boolean;
     _onDownloadCsv?: (address: string) => void;
 }) => {
-    const tech = [
-        validator.country && { icon: <Globe className="w-3 h-3" />, k: dt?.details?.country ?? 'Country', v: sanitizeText(validator.country) },
-        validator.provider && { icon: <Server className="w-3 h-3" />, k: dt?.details?.provider ?? 'Provider', v: sanitizeText(validator.provider) },
-        validator.version && { k: dt?.details?.version ?? 'Version', v: sanitizeText(validator.version), hi: 'var(--color-primary)' as string },
-    ].filter(Boolean) as { icon?: React.ReactNode; k: string; v: string; hi?: string }[];
-
     return (
         <div className={`veb-block veb-profile ${className}`}>
-            <ValidatorProfileMetrics 
-                validator={validator} 
-                dt={dt} 
-                className="mb-4"
+            <ValidatorProfileMetrics
+                validator={validator}
+                dt={dt}
+                className="mb-2"
             />
-
-            <div className="veb-meta mt-2">
-                {tech.length > 0 && (
-                    <>
-                        <div className="veb-meta-sep" />
-                        {tech.map(f => (
-                            <span key={f.k} className="veb-techpill">
-                                {f.icon && <span className="veb-techpill-icon">{f.icon}</span>}
-                                <span className="veb-techpill-k">{f.k}</span>
-                                <span className="veb-techpill-v" style={f.hi ? { color: f.hi } : undefined}>{f.v}</span>
-                            </span>
-                        ))}
-                    </>
-                )}
-            </div>
 
             <div className="veb-profile-addrs">
                 <ValidatorAddressMetrics

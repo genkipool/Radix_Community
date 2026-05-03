@@ -6,6 +6,7 @@ import { getStatusColor } from '@/utils/validators';
 import { Button } from '@/components/ui/Button';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { isValidUrl, sanitizeText } from '@/utils/sanitize';
+import { formatDisplayUrl } from '@/utils/formatters';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
@@ -115,7 +116,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     className="inline-flex items-center gap-[5px] text-xs font-medium text-[var(--color-primary)] no-underline w-fit max-w-[220px] sm:max-w-none transition-opacity hover:opacity-80 hover:underline"
                                     onClick={e => e.stopPropagation()}
                                 >
-                                    <span className="truncate sm:whitespace-normal">{sanitizeText(validator.website)}</span>
+                                    <span className="truncate sm:whitespace-normal">{formatDisplayUrl(validator.website)}</span>
                                     <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                                 </a>
                             )}

@@ -624,7 +624,9 @@
       "rewards_modal_no_data": "No reward data available yet. The cron job needs to run first.",
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Close",
-      "rewards_modal_loading": "Loading..."
+      "rewards_modal_loading": "Loading...",
+      "of_the_network": "of the network",
+      "effective": "effective"
     },
     "calendar": {
       "title": "Filter",

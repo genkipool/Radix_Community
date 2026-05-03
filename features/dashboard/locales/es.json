@@ -624,7 +624,9 @@
       "rewards_modal_no_data": "Aún no hay datos de recompensas.",
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Cerrar",
-      "rewards_modal_loading": "Cargando..."
+      "rewards_modal_loading": "Cargando...",
+      "of_the_network": "de la red",
+      "effective": "efectiva"
     },
     "calendar": {
       "title": "Filtrar",
