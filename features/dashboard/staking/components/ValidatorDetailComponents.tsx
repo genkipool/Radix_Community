@@ -5,6 +5,7 @@ import { XPBar } from '@/components/ui/XPBar';
 import { Pill } from '@/components/ui/Pill';
 import { type Validator } from '@/types/radix';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
+import { formatPercent } from '@/utils/formatters';
 import { useLiveProposals } from './LiveProposals';
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
@@ -16,9 +17,9 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
 ───────────────────────────────────────── */
 
 /** Animated uptime progress bar */
-export const UptimeBar = ({ percent, size = 'md', t }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: Partial<TranslationsT> }) => {
+export const UptimeBar = ({ percent, size = 'md', t, locale = 'en' }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: Partial<TranslationsT>; locale?: string }) => {
     const color = getUptimeColor(percent);
-    const label = `${percent.toFixed(1)}%`;
+    const label = formatPercent(percent, 1, locale);
     const title = getUptimeTooltipText(percent, false, t?.dashboard?.details);
     
     return (

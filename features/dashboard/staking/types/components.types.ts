@@ -276,6 +276,7 @@ export interface DelegateButtonProps {
     small?: boolean;
     tiny?: boolean;
     title?: string;
+    compact?: boolean;
 }
 
 /**

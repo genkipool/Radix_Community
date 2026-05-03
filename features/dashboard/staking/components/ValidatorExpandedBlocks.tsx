@@ -1,11 +1,9 @@
 'use client';
 import React from 'react';
-import { ExternalLink, Globe, Server } from 'lucide-react';
+import { Globe, Server } from 'lucide-react';
 import { type Validator, type StakeHistoryEntry } from '@/types/radix';
-import { sanitizeText, isValidUrl } from '@/utils/sanitize';
+import { sanitizeText } from '@/utils/sanitize';
 import { getUptimeColor } from '@/utils/validators';
-import { StatusLabel } from './ValidatorDetailComponents';
-import { OnlineBadge, ConnectBadge, VoteBadge } from './ValidatorBadges';
 import { Label, DR, AR } from './ValidatorExpandedPrimitives';
 import { StakeEvolutionChart, StakeHistoryChart } from './ValidatorStakeCharts';
 import { useLiveProposals } from './LiveProposals';
@@ -17,6 +15,7 @@ import {
     ValidatorAddressMetrics,
     ValidatorDelegationMetrics,
     ValidatorPerformanceMetrics,
+    ValidatorProfileMetrics,
     type MetricRowProps
 } from '@/features/dashboard/explorador/components/ValidatorSummaryMetrics';
 
@@ -31,7 +30,7 @@ const renderVebRow = (props: MetricRowProps) => (
         value={props.children || props.value}
         sub={props.secondaryValue}
         tooltip={props.tooltip}
-        hi={props.isDanger ? '#ef4444' : (props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined)}
+        hi={props.isDanger ? '#dc2626' : (props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined)}
     />
 );
 
@@ -54,7 +53,7 @@ const renderVebAddrRow = (props: MetricRowProps) => (
    ProfileBlock
 ───────────────────────────────────────── */
 export const ProfileBlock = ({
-    validator, dt, t, onCopy, copiedAddress, className = '', locale, isModal, _noTruncate = false, _onDownloadCsv,
+    validator, dt, t: _t, onCopy, copiedAddress, className = '', locale, isModal, _noTruncate = false, _onDownloadCsv,
 }: {
     validator: Validator;
     dt?: Partial<DashboardDict>;
@@ -75,30 +74,13 @@ export const ProfileBlock = ({
 
     return (
         <div className={`veb-block veb-profile ${className}`}>
-            <div className="veb-desc-wrap">
-                <Label>{dt?.details?.profile ?? 'Validator Profile'}</Label>
-                <p className={`veb-desc-text ${validator.description ? 'veb-desc-has' : 'veb-desc-empty'}`}>
-                    {validator.description
-                        ? `"${sanitizeText(validator.description)}"`
-                        : (dt?.details?.no_description ?? 'No description provided.')}
-                </p>
-                {validator.website && isValidUrl(validator.website) && (
-                    <a href={validator.website} target="_blank" rel="noopener noreferrer"
-                        className="veb-link w-fit max-w-[220px] sm:max-w-none" onClick={e => e.stopPropagation()}>
-                        <span className="truncate sm:whitespace-normal">{sanitizeText(validator.website)}</span>
-                        <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                    </a>
-                )}
-            </div>
+            <ValidatorProfileMetrics 
+                validator={validator} 
+                dt={dt} 
+                className="mb-4"
+            />
 
-            <div className="veb-meta">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <StatusLabel status={validator.status} t={t} />
-                    <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} />
-                    <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} />
-                    <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Accepts Connection'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} />
-                    <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
-                </div>
+            <div className="veb-meta mt-2">
                 {tech.length > 0 && (
                     <>
                         <div className="veb-meta-sep" />
@@ -177,7 +159,7 @@ export const PerformanceBlock = ({
                             label={props.label}
                             value={props.value}
                             tooltip={props.tooltip}
-                            hi={props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined}
+                            hi={props.isDanger ? '#dc2626' : (props.label.toLowerCase().includes('uptime') ? getUptimeColor(parseFloat(props.value || '0')) : undefined)}
                         />
                     )}
                 />

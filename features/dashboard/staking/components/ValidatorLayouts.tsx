@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download } from 'lucide-react';
+import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
-import { formatXRD, formatNumber, truncateAddress } from '@/utils/formatters';
+import { formatXRD, formatNumber, truncateAddress, formatPercent } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -96,7 +96,7 @@ export const Layout1Col = ({
                                             className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                                         >
-                                            ({validator.delegatedStakePercent.toFixed(2)}%)
+                                            ({formatPercent(validator.delegatedStakePercent, 2, locale)})
                                         </span>
                                     </div>
                                 )
@@ -106,19 +106,19 @@ export const Layout1Col = ({
                                 tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
                                 value: (
                                     <div className="flex items-center gap-1">
-                                        <span>{formatNumber(validator.nominalFee, 2, locale)}%</span>
+                                        <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
                                         {validator.hasPendingFeeChange && (
                                             <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
-                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: formatPercent(validator.apyProjection, 2, locale) },
+                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: formatPercent(validator.effectiveFee, 2, locale) },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
-                                value: `${validator.recentUptime.toFixed(2)}%`,
+                                value: formatPercent(validator.recentUptime, 2, locale),
                                 accent: getUptimeColor(validator.recentUptime)
                             },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
@@ -194,7 +194,7 @@ export const Layout2Col = ({
                             className={`${columns === 3 ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-24 h-24 sm:w-28 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
                     </div>
-                    <div className="w-full mt-auto pt-1.5"><UptimeBar percent={validator.uptimePercent} t={t} size="md" /></div>
+                    <div className="w-full mt-auto pt-1.5"><UptimeBar percent={validator.uptimePercent} t={t} size="md" locale={locale} /></div>
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
@@ -227,7 +227,7 @@ export const Layout2Col = ({
                                             className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
                                             title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                                         >
-                                            ({validator.delegatedStakePercent.toFixed(2)}%)
+                                            ({formatPercent(validator.delegatedStakePercent, 2, locale)})
                                         </span>
                                     </div>
                                 )
@@ -237,21 +237,21 @@ export const Layout2Col = ({
                                 tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
                                 value: (
                                     <div className="flex items-center gap-1">
-                                        <span>{formatNumber(validator.nominalFee, 2, locale)}%</span>
+                                        <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
                                         {validator.hasPendingFeeChange && (
                                             <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
                             },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: `${formatNumber(validator.apyProjection, 2, locale)}%` },
+                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: formatPercent(validator.apyProjection, 2, locale) },
                         ]} />
                         <StatDivider items={[
-                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: `${formatNumber(validator.effectiveFee, 2, locale)}%` },
+                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: formatPercent(validator.effectiveFee, 2, locale) },
                             {
                                 label: dt?.card?.uptime_14d ?? 'Uptime 14d',
                                 tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
-                                value: `${validator.recentUptime.toFixed(2)}%`,
+                                value: formatPercent(validator.recentUptime, 2, locale),
                                 accent: getUptimeColor(validator.recentUptime)
                             },
                             { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
@@ -335,27 +335,27 @@ export const Layout4Col = ({
                 <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Total Stake'}</span>
                     <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
-                        {formatXRD(validator.delegatedStake, locale)} {validator.delegatedStakePercent > 2 && `(${validator.delegatedStakePercent.toFixed(1)}%)`}
+                        {formatXRD(validator.delegatedStake, locale)} {validator.delegatedStakePercent > 2 && `(${formatPercent(validator.delegatedStakePercent, 1, locale)})`}
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Fee'}</span>
                     <div className="flex items-center gap-1 text-[12px] font-black text-[var(--color-text-main)] truncate">
-                        <span>{formatNumber(validator.nominalFee, 1, locale)}%</span>
+                        <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
                         {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
                     </div>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.apy ?? 'APY'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.apyProjection, 2, locale)}%</span>
+                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatPercent(validator.apyProjection, 2, locale)}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Effective Fee'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.effectiveFee, 1, locale)}%</span>
+                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatPercent(validator.effectiveFee, 1, locale)}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.uptime_14d ?? 'Uptime 14d'}</span>
-                    <span className="text-[12px] font-black" style={{ color: '#16a34a' }}>{validator.recentUptime.toFixed(1)}%</span>
+                    <span className="text-[12px] font-black" style={{ color: getUptimeColor(validator.recentUptime) }}>{formatPercent(validator.recentUptime, 1, locale)}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegators'}</span>
@@ -438,18 +438,29 @@ export const Layout6Col = ({
                 <BizRow
                     label={dt?.card?.stake ?? 'Stake'}
                     value={validator.delegatedStakePercent > 2
-                        ? `${formatXRD(validator.delegatedStake, locale)} (${validator.delegatedStakePercent.toFixed(1)}%)`
+                        ? `${formatXRD(validator.delegatedStake, locale)} (${formatPercent(validator.delegatedStakePercent, 1, locale)})`
                         : formatXRD(validator.delegatedStake, locale)
                     }
                     accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-text-main)'}
                     tooltip={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
                     vertical={columns >= 8}
                 />
-                <BizRow label={dt?.card?.apy ?? 'APY'} value={`${formatNumber(validator.apyProjection, 1, locale)}%`} vertical={columns >= 8} />
-                <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={`${formatNumber(validator.effectiveFee, 1, locale)}%`} vertical={columns >= 8} />
+                <BizRow label={dt?.card?.apy ?? 'APY'} value={formatPercent(validator.apyProjection, 1, locale)} vertical={columns >= 8} />
+                <BizRow
+                    label={dt?.card?.fee ?? 'Fee'}
+                    value={
+                        <div className="flex items-center gap-1">
+                            <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
+                            {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
+                        </div>
+                    }
+                    tooltip={validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee}
+                    vertical={columns >= 8}
+                />
+                <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={formatPercent(validator.effectiveFee, 1, locale)} vertical={columns >= 8} />
                 <BizRow
                     label={dt?.card?.uptime_14d ?? 'Uptime'}
-                    value={`${validator.recentUptime.toFixed(1)}%`}
+                    value={formatPercent(validator.recentUptime, 1, locale)}
                     accent={getUptimeColor(validator.recentUptime)}
                     tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)}
                     vertical={columns >= 8}
@@ -484,6 +495,7 @@ export const Layout6Col = ({
                     <DelegateButton
                         label={dt?.card?.stake_button ?? 'Delegate'}
                         small
+                        compact={columns >= 8}
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
                 </div>
@@ -583,7 +595,7 @@ const CopyAddressButton = ({
 
 /** Stake/Delegate CTA button */
 const DelegateButton = ({
-    label, small = false, tiny = false, title,
+    label, small = false, tiny = false, title, compact = false,
 }: DelegateButtonProps) => {
     const { setShowUnderConstruction } = useLayout();
 
@@ -591,16 +603,16 @@ const DelegateButton = ({
         <button
             title={title}
             className={`rounded-xl font-bold text-white whitespace-nowrap hover:opacity-90 transition-opacity duration-300 ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
-                small ? 'px-4 py-1.5 text-[10px]' :
+                small ? (compact ? 'w-8 h-7 flex items-center justify-center p-0' : 'px-4 py-1.5 text-[10px]') :
                     'px-5 py-1.5 text-[11px] shadow-lg'
                 }`}
-            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
+            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))' }}
             onClick={e => {
                 e.stopPropagation();
                 setShowUnderConstruction(true);
             }}
         >
-            {label}
+            {compact ? <Plus className="w-3.5 h-3.5" /> : label}
         </button>
     );
 };

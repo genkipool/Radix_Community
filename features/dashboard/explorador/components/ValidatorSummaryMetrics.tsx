@@ -1,9 +1,10 @@
 'use client';
 import React from 'react';
+import { Activity, ShieldCheck, Users, Shield } from 'lucide-react';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { formatXRD } from '@/utils/formatters';
+import { formatXRD, formatPercent } from '@/utils/formatters';
 
 export interface MetricRowProps {
     label: string;
@@ -62,8 +63,8 @@ export function ValidatorAddressMetrics({
 
     const Row = renderRow || SummaryInlineRow;
     const trunc = (a: string) => isModal
-        ? (a.length > 40 ? `${a.slice(0, 32)}...${a.slice(-24)}` : a)
-        : (a.length > 24 ? `${a.slice(0, 12)}...${a.slice(-8)}` : a);
+        ? (a.length > 20 ? `${a.slice(0, 12)}...${a.slice(-8)}` : a)
+        : (a.length > 16 ? `${a.slice(0, 8)}...${a.slice(-6)}` : a);
 
     return (
         <>
@@ -142,6 +143,111 @@ export function ValidatorAddressMetrics({
 }
 
 /**
+ * Status Pill Helper (Internal to match Staking design)
+ */
+function StatusPill({
+    label,
+    color,
+    icon: Icon
+}: {
+    label: string;
+    color: string;
+    icon: React.ElementType
+}) {
+    return (
+        <span
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-bold leading-none align-middle transition-all duration-300"
+            style={{
+                color,
+                borderColor: `${color}45`,
+                backgroundColor: `${color}15`,
+            }}
+        >
+            <Icon size={12} className="shrink-0" />
+            <span className="mt-[1px]">{label}</span>
+        </span>
+    );
+}
+
+/**
+ * Profile / Social Metrics
+ */
+export function ValidatorProfileMetrics({
+    validator, dt, className = ""
+}: Partial<ValidatorMetricsProps> & { className?: string }) {
+    if (!validator) return null;
+    const dd: Partial<DashboardDict['details']> = dt?.details || {};
+    const st: Partial<DashboardDict['status']> = dt?.status || {};
+
+    const profileLabel = dd.profile || 'Perfil de Staking';
+
+    // Design Colors from Staking Primitives
+    const colorSuccess = '#16a34a';
+    const colorWarning = '#d97706';
+    const colorPrimary = 'var(--color-primary)';
+    const colorMuted = '#71717a';
+
+    // Vote Logic
+    const voteValue = validator.protocolUpdateVote;
+    const isSignaled = voteValue && voteValue.toLowerCase() !== 'none';
+
+    return (
+        <div className={`flex-1 flex flex-col ${className}`}>
+            <SectionHeader label={profileLabel} />
+            <div className="flex flex-col space-y-4">
+                {validator.description && (
+                    <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
+                        &quot;{validator.description}&quot;
+                    </p>
+                )}
+                {validator.website && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{dd.profile_url || 'Website'}:</span>
+                        <a
+                            href={validator.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-[var(--color-primary)] hover:underline truncate font-semibold"
+                        >
+                            {validator.website.replace(/^https?:\/\//, '')}
+                        </a>
+                    </div>
+                )}
+                <div className="flex flex-wrap gap-2 pt-1">
+                    <StatusPill
+                        icon={Activity}
+                        label={validator.status === 'active' ? (st.active || 'Activo') : (st.inactive || 'Inactivo')}
+                        color={validator.status === 'active' ? colorSuccess : colorWarning}
+                    />
+                    <StatusPill
+                        icon={ShieldCheck}
+                        label={validator.onlineStatus ? (dd.online || 'En línea') : (dd.offline || 'Desconectado')}
+                        color={validator.onlineStatus ? colorSuccess : colorWarning}
+                    />
+                    <StatusPill
+                        icon={Users}
+                        label={validator.externalStakeAccepted ? (dd.accepts_stake || 'Acepta Stake') : (dd.no_accepts_stake || 'Cerrado')}
+                        color={validator.externalStakeAccepted ? colorSuccess : colorWarning}
+                    />
+                    <StatusPill
+                        icon={Users}
+                        label={validator.acceptsConnect ? (dd.accepts_connect || 'Acepta Conexión') : (dd.no_accepts_connect || 'Privado')}
+                        color={validator.acceptsConnect ? colorSuccess : colorWarning}
+                    />
+                    {voteValue && (
+                        <StatusPill
+                            icon={Shield}
+                            label={voteValue}
+                            color={isSignaled ? colorPrimary : colorMuted}
+                        />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
  * Delegation Metrics
  */
 export function ValidatorDelegationMetrics({
@@ -161,7 +267,7 @@ export function ValidatorDelegationMetrics({
                     <Row
                         label={dd.validator_delegated_stake || dd.delegated_stake || 'Delegated Stake'}
                         value={`${formatXRD(validator.delegatedStake, locale)} XRD`}
-                        secondaryValue={`${validator.delegatedStakePercent?.toFixed(2)}% of the network`}
+                        secondaryValue={validator.delegatedStakePercent != null ? `${formatPercent(validator.delegatedStakePercent, 2, locale)} of the network` : undefined}
                         mono
                     />
                 )}
@@ -181,15 +287,15 @@ export function ValidatorDelegationMetrics({
                 {validator.apy != null && (
                     <Row
                         label={dd.validator_apy_projection || dd.apy_projection || 'APY Projection'}
-                        value={`${(validator.apy * 100).toFixed(2)}%`}
+                        value={formatPercent(validator.apy, 2, locale)}
                         accentValue
                     />
                 )}
                 {validator.nominalFee != null && (
                     <Row
                         label={dd.validator_nominal_fee || dd.nominal_fee || 'Fee'}
-                        value={`${(validator.nominalFee * 100).toFixed(1)}%`}
-                        secondaryValue={validator.effectiveFee != null ? `${(validator.effectiveFee * 100).toFixed(2)}% effective` : undefined}
+                        value={formatPercent(validator.nominalFee, 1, locale)}
+                        secondaryValue={validator.effectiveFee != null ? `${formatPercent(validator.effectiveFee, 1, locale)} effective` : undefined}
                     />
                 )}
                 {validator.lsu2xrdFactor != null && (
@@ -224,7 +330,7 @@ export function ValidatorPerformanceMetrics({
             <div className="veb-drows flex-1 flex flex-col justify-between mb-4">
                 <Row
                     label={dd.validator_uptime || dd.uptime_recent || 'Uptime'}
-                    value={`${(validator.recentUptime * 100).toFixed(2)}%`}
+                    value={formatPercent(validator.recentUptime, 2, locale)}
                     accentValue
                 />
                 <Row
@@ -243,7 +349,7 @@ export function ValidatorPerformanceMetrics({
             <div className="veb-drows flex-1 flex flex-col justify-between">
                 <Row
                     label={dd.validator_uptime || dd.uptime_total || 'Uptime'}
-                    value={validator.totalUptime != null ? `${(validator.totalUptime * 100).toFixed(2)}%` : '—'}
+                    value={validator.totalUptime != null ? formatPercent(validator.totalUptime, 2, locale) : '—'}
                     accentValue
                 />
                 <Row
@@ -266,6 +372,9 @@ export function ValidatorPerformanceMetrics({
 export function ValidatorSummaryMetrics(props: ValidatorMetricsProps) {
     return (
         <div className="space-y-4">
+            <div className="space-y-0">
+                <ValidatorProfileMetrics {...props} />
+            </div>
             <div className="space-y-0">
                 <ValidatorAddressMetrics {...props} />
             </div>

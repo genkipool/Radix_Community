@@ -4,6 +4,17 @@ export function formatNumber(n: number, decimals: number = 8, locale: string = '
     });
 }
 
+/**
+ * Formats a 0-100 value as a localized percentage (e.g., 99.5 -> "99,50%")
+ */
+export function formatPercent(n: number, decimals: number = 2, locale: string = 'en'): string {
+    return (n / 100).toLocaleString(locale, {
+        style: 'percent',
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
+
 export function formatXRD(n: number, locale: string = 'en'): string {
     if (n >= 1_000_000_000) return (n / 1_000_000_000).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'B';
     if (n >= 1_000_000) return (n / 1_000_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';

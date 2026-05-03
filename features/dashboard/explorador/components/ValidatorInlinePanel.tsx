@@ -165,11 +165,6 @@ export function ValidatorInlinePanel({
                                     {!isUnstake && amountSign}
                                     {numericAmount} <span className="text-xs font-semibold opacity-70">{primaryUnit}</span>
                                 </span>
-                                {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
-                                    <div className="font-mono font-semibold text-[var(--color-primary)] tabular-nums mt-0.5">
-                                        ~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs opacity-70">XRD</span>
-                                    </div>
-                                )}
                             </>
                         )}
                     </div>
@@ -215,10 +210,6 @@ export function ValidatorInlinePanel({
                                                     </div>
                                                 </div>
 
-                                                {getMeta('description') && (
-                                                    <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-4 italic border-l-2 border-[var(--color-primary)]/30 pl-3">{getMeta('description')}</p>
-                                                )}
-
                                                 <div className="border-t border-[var(--color-card-border)] mb-4" />
 
                                                 <div className="space-y-0">
@@ -227,23 +218,6 @@ export function ValidatorInlinePanel({
                                                             label={tt?.validator_info_stake_amount || 'Staked XRD'}
                                                         >
                                                             <span className="text-sm font-bold font-mono text-[var(--color-accent)]">+{parseFloat(String(stakeXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</span>
-                                                        </SummaryInlineRow>
-                                                    )}
-                                                    {isUnstake && (unstakeLsu ?? 0) > 0 && (
-                                                        <SummaryInlineRow
-                                                            label={tt?.validator_info_lsu_burned || 'Burned LSU'}
-                                                        >
-                                                            <div className="text-sm font-bold font-mono text-orange-600 dark:text-orange-400 flex items-center gap-1 justify-end">
-                                                                <IconFlame className="w-3.5 h-3.5" />
-                                                                {parseFloat(String(unstakeLsu)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} LSU
-                                                            </div>
-                                                        </SummaryInlineRow>
-                                                    )}
-                                                    {isUnstake && unstakeXrdExpected != null && unstakeXrdExpected > 0 && (
-                                                        <SummaryInlineRow
-                                                            label={tt?.validator_info_xrd_expected || 'XRD to Claim'}
-                                                        >
-                                                            <span className="text-sm font-bold font-mono text-[var(--color-accent)]">~{parseFloat(String(unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</span>
                                                         </SummaryInlineRow>
                                                     )}
                                                     {isClaim && claimXrd != null && claimXrd > 0 && (

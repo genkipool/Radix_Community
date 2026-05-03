@@ -402,6 +402,19 @@ export function buildSwapRoutingChart(
             if (inMap.has(res) && !isValidator(ent) && !isBurn(ent)) targets.push({ id: ent, amt: inMap.get(res)! });
         }
 
+        // ==========================================
+        // LA MAGIA ESTÁ AQUÍ: ORDENAR (SORTING)
+        // Evita el cruce de cables en arbitrajes
+        // ==========================================
+
+        // Sources: Los Initiators (Usuarios) deben gastar su dinero primero, luego los DEXes.
+        sources.sort((a, b) => (isInit(a.id) === isInit(b.id) ? 0 : isInit(a.id) ? -1 : 1));
+
+        // Targets: Los DEXes deben recibir el dinero primero, luego los Initiators (Usuarios).
+        targets.sort((a, b) => (isInit(a.id) === isInit(b.id) ? 0 : !isInit(a.id) ? -1 : 1));
+
+        // ==========================================
+
         let sIdx = 0;
         let tIdx = 0;
         while (sIdx < sources.length && tIdx < targets.length) {
