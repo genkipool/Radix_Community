@@ -18,6 +18,7 @@
     },
     "transactions": {
       "title": "Explorador",
+      "swap_arbitrage_title": "Liquidación de Arbitraje",
       "toggle_validators": "Staking",
       "toggle_transactions": "Explorador",
       "no_transactions": "No se encontraron transacciones",

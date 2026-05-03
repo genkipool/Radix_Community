@@ -114,7 +114,7 @@ function NameResolver({ address, network, onResolved }: {
 }
 
 /* ── Routing Mermaid diagram wrapper ── */
-function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details, onCopy, copiedAddress }: {
+function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx, details, onCopy, copiedAddress, swapMode }: {
     fungibles: FungibleChange[];
     feeEntries: { entity_address: string; resource_address: string; balance_change: string }[];
     initiatorAddrs: string[];
@@ -124,6 +124,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
     details: TransactionDetails;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
+    swapMode: 'NORMAL_SWAP' | 'ARBITRAGE' | 'NOT_SWAP';
 }) {
     const [names, setNames] = useState<Map<string, string>>(new Map());
     const [symbols, setSymbols] = useState<Map<string, string>>(new Map());
@@ -178,7 +179,8 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
         tt,
         feePaid,
         feeDest,
-        feePayer
+        feePayer,
+        swapMode
     );
 
     return (
@@ -272,49 +274,52 @@ export function SwapSettlementCard({
 
     // All fungible balance changes for routing diagram and table
     const fungibles = balanceChanges?.fungible_balance_changes ?? [];
-    const swapMode = detectSwapMode(details?.receipt?.events || [], Array.from(initiators));
+    const rawSwapMode = detectSwapMode(details?.receipt?.events || [], Array.from(initiators));
+    const swapMode = (rawSwapMode === 'ARBITRAGE' && soldToken.resource !== receivedToken.resource) ? 'NORMAL_SWAP' : rawSwapMode;
 
     return (
         <div className="space-y-0">
-            {/* ── Account address badge (OUTSIDE the card, top-left) ── */}
-            <div className="flex items-center gap-1.5 mb-2 pl-1">
-                <Wallet className="w-3 h-3 text-[var(--color-text-muted)]" />
-                {accountName && <span className="text-[10px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]">{accountName}</span>}
-                <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanAccount} onClick={() => onResourceClick?.(cleanAccount)}>{trunc(cleanAccount, 12, 6)}</span>
-                <CopyBtn addr={cleanAccount} onCopy={onCopy} copiedAddress={copiedAddress} />
-            </div>
 
             <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
                 {/* ── Header ── */}
                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
                     <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
-                    {swapMode === 'ARBITRAGE' ? 'Arbitrage Settlement' : (tt?.swap_settlement_title || 'DEX Settlement')}
+                    {swapMode === 'ARBITRAGE' ? (tt?.swap_arbitrage_title || 'Arbitrage Settlement') : (tt?.swap_settlement_title || 'DEX Settlement')}
                 </h3>
 
-                {/* ── Section 1: Token Flow + Swap Details side-by-side ── */}
-                <div className="p-4 sm:p-5 flex flex-col lg:flex-row gap-4">
-                    {/* Left: Token flow */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-2">
-                            <TokenColumn resource={soldToken.resource} amount={soldToken.amount} side="sold" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
-                            <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
-                            <div className="flex flex-col items-center gap-2 shrink-0 px-6 py-4 rounded-xl border border-dashed border-[var(--color-card-border)] bg-[var(--color-bg)]/50 shadow-sm transition-all duration-300 hover:border-[var(--color-accent)]/50 group/swap">
-                                <ArrowLeftRight className="w-6 h-6 text-[var(--color-accent)] transition-transform duration-500 group-hover/swap:rotate-180" />
-                                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--color-accent)]">Swap</span>
-                                {dexName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]" title={dexName}>{dexName}</span>}
-                                <div className="flex items-center gap-1">
-                                    <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[110px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 10, 6)}</span>
-                                    <CopyBtn addr={cleanDex} onCopy={onCopy} copiedAddress={copiedAddress} />
-                                </div>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
-                            <TokenColumn resource={receivedToken.resource} amount={receivedToken.amount} side="received" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
-                        </div>
-                        <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
+                {/* ── Section 1: Token Flow + Swap Details ── */}
+                <div className="p-4 sm:p-5 flex flex-col gap-6">
+                    {/* Account address badge at the top */}
+                    <div className="flex items-center gap-2.5 opacity-80 hover:opacity-100 transition-opacity border-b border-dashed border-[var(--color-card-border)] pb-3">
+                        <Wallet className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        {accountName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[160px]">{accountName}</span>}
+                        <span className="text-[12px] font-mono text-[var(--color-text-muted)] truncate cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanAccount} onClick={() => onResourceClick?.(cleanAccount)}>{trunc(cleanAccount, 12, 12)}</span>
+                        <CopyBtn addr={cleanAccount} onCopy={onCopy} copiedAddress={copiedAddress} />
                     </div>
 
-                    {/* Right: Swap Details (Minimalist Text Layout) */}
-                    <div className="lg:w-[300px] shrink-0 self-stretch border-l border-[var(--color-card-border)]/50 pl-4 flex flex-col justify-between">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        {/* Left: Token flow */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-2">
+                                <TokenColumn resource={soldToken.resource} amount={soldToken.amount} side="sold" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
+                                <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
+                                <div className="flex flex-col items-center gap-2 shrink-0 px-6 py-4 rounded-xl border border-dashed border-[var(--color-card-border)] bg-[var(--color-bg)]/50 shadow-sm transition-all duration-300 hover:border-[var(--color-accent)]/50 group/swap">
+                                    <ArrowLeftRight className="w-6 h-6 text-[var(--color-accent)] transition-transform duration-500 group-hover/swap:rotate-180" />
+                                    <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--color-accent)]">Swap</span>
+                                    {dexName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]" title={dexName}>{dexName}</span>}
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[110px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 10, 6)}</span>
+                                        <CopyBtn addr={cleanDex} onCopy={onCopy} copiedAddress={copiedAddress} />
+                                    </div>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
+                                <TokenColumn resource={receivedToken.resource} amount={receivedToken.amount} side="received" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
+                            </div>
+                            <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
+                        </div>
+
+                        {/* Right: Swap Details (Minimalist Text Layout) */}
+                        <div className="lg:w-[300px] shrink-0 self-stretch border-l border-[var(--color-card-border)]/50 pl-4 flex flex-col justify-between">
                         <div className="px-1 space-y-3">
                             <div>
                                 <h4 className="text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
@@ -364,6 +369,7 @@ export function SwapSettlementCard({
                         </div>
                     </div>
                 </div>
+            </div>
 
                 {/* ── Section 2: Routing Diagram (Mermaid) ── */}
                 {fungibles.length > 0 && (
@@ -378,6 +384,7 @@ export function SwapSettlementCard({
                             details={details}
                             onCopy={onCopy}
                             copiedAddress={copiedAddress}
+                            swapMode={swapMode}
                         />
                     </div>
                 )}

@@ -270,7 +270,8 @@ export function buildSwapRoutingChart(
     tt?: Partial<TranslationsT['dashboard']['transactions']>,
     feePaid: number = 0,
     feeDest?: FeeDestination,
-    feePayer?: string
+    feePayer?: string,
+    swapMode: 'NORMAL_SWAP' | 'ARBITRAGE' | 'NOT_SWAP' = 'NORMAL_SWAP'
 ): string {
     const isInit = (a: string) => initiatorAddrs.includes(a);
     const isBurn = (a: string) => a.startsWith('resource_');
@@ -334,12 +335,12 @@ export function buildSwapRoutingChart(
         for (const ev of events) {
             if (ev.name === 'MintFungibleResourceEvent') {
                 const res = ev.emitter?.global_emitter || ev.emitter?.entity?.entity_address;
-                const amtField = (ev.data?.fields || []).find((f: any) => f.field_name === 'amount' || f.kind === 'Decimal');
+                const amtField = (ev.data?.fields || []).find((f: GatewayField) => f.field_name === 'amount' || f.kind === 'Decimal');
                 if (res && amtField) mintedTokens.push({ res: sanitizeText(res), amt: parseFloat(String(amtField.value)) });
             }
             if (ev.name === 'BurnFungibleResourceEvent') {
                 const res = ev.emitter?.global_emitter || ev.emitter?.entity?.entity_address;
-                const amtField = (ev.data?.fields || []).find((f: any) => f.field_name === 'amount' || f.kind === 'Decimal');
+                const amtField = (ev.data?.fields || []).find((f: GatewayField) => f.field_name === 'amount' || f.kind === 'Decimal');
                 if (res && amtField) burnedTokens.push({ res: sanitizeText(res), amt: parseFloat(String(amtField.value)) });
             }
         }
@@ -504,7 +505,7 @@ export function buildSwapRoutingChart(
                 for (const [r, a] of inMap) {
                     parts.push(`<div style='font-size:${fAmount}px; font-weight:bold; color:var(--color-accent) !important; white-space: nowrap;'>+${fmtNum(a)} ${getSymbol(r)}</div>`);
 
-                    if (isAccount && mode === 'receiver') {
+                    if (isAccount && mode === 'receiver' && swapMode === 'ARBITRAGE') {
                         const isArbitrageForToken = outMap && outMap.has(r);
                         if (isArbitrageForToken) {
                             const netAmt = netEntityIn.get(c)?.get(r) || 0;
