@@ -248,7 +248,10 @@ export interface GatewayField {
 
 export interface GatewayEvent {
   name?: string;
-  emitter?: { entity?: { entity_address: string; entity_type: string } };
+  emitter?: { 
+    entity?: { entity_address: string; entity_type: string };
+    global_emitter?: string;
+  };
   data?: { fields?: GatewayField[]; kind?: string; variant_name?: string };
   [key: string]: unknown;
 }

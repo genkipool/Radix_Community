@@ -75,12 +75,10 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
             hasSwap = true;
         }
 
-        // Analyze if the user account emitted deposits or withdrawals
         const ent = ev.emitter?.entity?.entity_address;
         if (ent && initiatorAddrs.includes(ent)) {
             const fields = ev.data?.fields || [];
 
-            // Look for the field containing the resource address
             const resField = fields.find((f: GatewayField) =>
                 f.field_name === 'resource_address' ||
                 f.type_name === 'ResourceAddress' ||
@@ -96,7 +94,6 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
 
     if (!hasSwap) return 'NOT_SWAP';
 
-    // If any token that left came back into the same account, it's an ARBITRAGE
     for (const token of Array.from(tokensOut)) {
         if (tokensIn.has(token)) {
             return 'ARBITRAGE';
@@ -106,21 +103,14 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
     return 'NORMAL_SWAP';
 }
 
-/**
- * Extracts the "minimum expected amount" from manifest instructions.
- * Looks for ASSERT_WORKTOP_CONTAINS followed by Decimal("...") a few lines below.
- */
 export function extractMinAmount(manifest?: string): string | undefined {
     if (!manifest) return undefined;
 
-    // Split into lines for easier processing
     const lines = manifest.split('\n');
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
 
-        // Find the ASSERT_WORKTOP_CONTAINS instruction
         if (line.includes('ASSERT_WORKTOP_CONTAINS')) {
-            // Look ahead up to 5 lines for a Decimal("...")
             for (let j = i + 1; j <= i + 5 && j < lines.length; j++) {
                 const nextLine = lines[j].trim();
                 const match = nextLine.match(/Decimal\("([^"]+)"\)/);
@@ -303,7 +293,13 @@ export function buildSwapRoutingChart(
 
     const getSymbol = (r: string) => {
         const c = sanitizeText(r);
-        return symbols.get(c) || (c.includes('radxrd') ? 'XRD' : `TKN_${c.slice(-4).toUpperCase()}`);
+        if (c.includes('radxrd')) return 'XRD';
+        if (symbols.has(c)) return symbols.get(c)!;
+
+        const name = names.get(c)?.toLowerCase() || '';
+        if (name.includes('liquid stake') || name.includes('lsu')) return 'LSU';
+
+        return `TKN_${c.slice(-4).toUpperCase()}`;
     };
 
     const allEntries = [...fungibles, ...feeEntries];
@@ -320,6 +316,8 @@ export function buildSwapRoutingChart(
     type AmtMap = Map<string, number>;
     const entityIn = new Map<string, AmtMap>();
     const entityOut = new Map<string, AmtMap>();
+    const netEntityIn = new Map<string, AmtMap>();
+    const netEntityOut = new Map<string, AmtMap>();
 
     const addFlow = (map: Map<string, AmtMap>, ent: string, res: string, amt: number) => {
         if (!map.has(ent)) map.set(ent, new Map());
@@ -327,62 +325,88 @@ export function buildSwapRoutingChart(
     };
 
     // ─────────────────────────────────────────────────────────
-    // 1. EXTRACT GROSS FLOWS FOR EDGES (LINES)
+    // 1. RASTREO EXHAUSTIVO DE MINTS Y BURNS OCURRIDOS EN WORKTOP
     // ─────────────────────────────────────────────────────────
-    const processedFromEvents = new Set<string>();
+    const mintedTokens: { res: string, amt: number }[] = [];
+    const burnedTokens: { res: string, amt: number }[] = [];
+
     if (events && Array.isArray(events)) {
         for (const ev of events) {
-            const ent = ev.emitter?.entity?.entity_address;
-            if (!ent || isValidator(ent) || isBurn(ent)) continue;
+            if (ev.name === 'MintFungibleResourceEvent') {
+                const res = ev.emitter?.global_emitter || ev.emitter?.entity?.entity_address;
+                const amtField = (ev.data?.fields || []).find((f: any) => f.field_name === 'amount' || f.kind === 'Decimal');
+                if (res && amtField) mintedTokens.push({ res: sanitizeText(res), amt: parseFloat(String(amtField.value)) });
+            }
+            if (ev.name === 'BurnFungibleResourceEvent') {
+                const res = ev.emitter?.global_emitter || ev.emitter?.entity?.entity_address;
+                const amtField = (ev.data?.fields || []).find((f: any) => f.field_name === 'amount' || f.kind === 'Decimal');
+                if (res && amtField) burnedTokens.push({ res: sanitizeText(res), amt: parseFloat(String(amtField.value)) });
+            }
+        }
+    }
 
-            if (ev.name === 'DepositEvent' || ev.name === 'WithdrawEvent') {
-                processedFromEvents.add(ent);
+    const findTokenByAmt = (amt: number, list: { res: string, amt: number }[]) => {
+        for (const item of list) {
+            // Alta tolerancia relativa para evitar fallos por decimales imprecisos
+            if (Math.abs(item.amt - amt) < 0.001 || (Math.abs(item.amt - amt) / Math.max(amt, 1e-6)) < 0.0001) return item.res;
+        }
+        return null;
+    };
+
+    // ─────────────────────────────────────────────────────────
+    // 2. INYECCIÓN DE FLUJOS OCULTOS DE LOS PROTOCOLOS
+    // ─────────────────────────────────────────────────────────
+    if (events && Array.isArray(events)) {
+        for (const ev of events) {
+            const ent = sanitizeText(ev.emitter?.global_emitter || ev.emitter?.entity?.entity_address || '');
+            if (!ent || isBurn(ent) || isValidator(ent)) continue;
+
+            if (ev.name === 'AddLiquidityEvent') {
                 const fields = ev.data?.fields || [];
-                let res = '';
-                let amt = 0;
-                for (const f of fields) {
-                    const val = f.value;
-                    if (typeof val === 'string' && (f.type_name === 'ResourceAddress' || f.field_name === 'resource_address' || val.startsWith('resource_'))) {
-                        res = sanitizeText(val);
-                    }
-                    if ((f.kind === 'Decimal' || f.field_name === 'amount') && (typeof val === 'string' || typeof val === 'number')) {
-                        amt = parseFloat(String(val));
+                const lsuAmtStr = fields.find((f: GatewayField) => f.field_name === 'liquidity_token_amount_change')?.value as string;
+                if (lsuAmtStr) {
+                    const amt = Math.abs(parseFloat(lsuAmtStr));
+                    const lsuRes = findTokenByAmt(amt, mintedTokens);
+                    if (lsuRes && amt > 0) {
+                        addFlow(entityOut, ent, lsuRes, amt);
+                        addFlow(netEntityOut, ent, lsuRes, amt); // Reflejar en la tarjeta
                     }
                 }
-                if (res && amt > 0) {
-                    if (ev.name === 'DepositEvent') addFlow(entityIn, ent, res, amt);
-                    if (ev.name === 'WithdrawEvent') addFlow(entityOut, ent, res, amt);
+            }
+            if (ev.name === 'RemoveLiquidityEvent') {
+                const fields = ev.data?.fields || [];
+                const lsuAmtStr = fields.find((f: GatewayField) => f.field_name === 'liquidity_token_amount_change')?.value as string;
+                if (lsuAmtStr) {
+                    const amt = Math.abs(parseFloat(lsuAmtStr));
+                    const lsuRes = findTokenByAmt(amt, burnedTokens);
+                    if (lsuRes && amt > 0) {
+                        addFlow(entityIn, ent, lsuRes, amt);
+                        addFlow(netEntityIn, ent, lsuRes, amt); // Reflejar en la tarjeta
+                    }
                 }
             }
         }
     }
 
-    for (const fc of allEntries) {
-        const ent = sanitizeText(fc.entity_address);
-        if (processedFromEvents.has(ent)) continue;
-        const res = sanitizeText(fc.resource_address);
-        const val = parseFloat(fc.balance_change);
-        if (val > 0) addFlow(entityIn, ent, res, val);
-        else if (val < 0) addFlow(entityOut, ent, res, Math.abs(val));
-    }
-
     // ─────────────────────────────────────────────────────────
-    // 2. EXTRACT NET FLOWS FOR TEXT BOXES (ACCOUNT CARDS)
+    // 3. COMBINACIÓN CON LOS BALANCE CHANGES DE LA RED
     // ─────────────────────────────────────────────────────────
-    const netEntityIn = new Map<string, AmtMap>();
-    const netEntityOut = new Map<string, AmtMap>();
-
     for (const fc of allEntries) {
         const ent = sanitizeText(fc.entity_address);
         const res = sanitizeText(fc.resource_address);
         const val = parseFloat(fc.balance_change);
 
-        if (val > 0) addFlow(netEntityIn, ent, res, val);
-        else if (val < 0) addFlow(netEntityOut, ent, res, Math.abs(val));
+        if (val > 0) {
+            addFlow(entityIn, ent, res, val);
+            addFlow(netEntityIn, ent, res, val);
+        } else if (val < 0) {
+            addFlow(entityOut, ent, res, Math.abs(val));
+            addFlow(netEntityOut, ent, res, Math.abs(val));
+        }
     }
 
     // ─────────────────────────────────────────────────────────
-    // 3. PRECALCULATE EDGES TO ONLY SHOW CONNECTED ENTITIES
+    // 4. GENERACIÓN DE CONEXIONES (PRIORITY EDGE MATCHING)
     // ─────────────────────────────────────────────────────────
     const allTokens = new Set<string>();
     for (const outMap of entityOut.values()) for (const res of outMap.keys()) allTokens.add(res);
@@ -390,6 +414,15 @@ export function buildSwapRoutingChart(
 
     interface EdgeData { sourceAddr: string; targetAddr: string; res: string; amt: number; }
     const rawEdges: EdgeData[] = [];
+
+    // Prioriza conectar Componentes con Componentes, Sender con Componente, etc.
+    const getPriority = (sId: string, tId: string) => {
+        if (isInit(sId) && !isInit(tId)) return 1; // Sender -> DEX/Componente
+        if (!isInit(sId) && !isInit(tId)) return 2; // DEX -> DEX (¡La conexión perdida!)
+        if (!isInit(sId) && isInit(tId)) return 3; // DEX -> Receiver
+        if (isInit(sId) && isInit(tId)) return 4; // Sender -> Receiver (si no hay intermediarios)
+        return 5;
+    };
 
     for (const res of allTokens) {
         const sources: { id: string; amt: number }[] = [];
@@ -402,34 +435,24 @@ export function buildSwapRoutingChart(
             if (inMap.has(res) && !isValidator(ent) && !isBurn(ent)) targets.push({ id: ent, amt: inMap.get(res)! });
         }
 
-        // ==========================================
-        // LA MAGIA ESTÁ AQUÍ: ORDENAR (SORTING)
-        // Evita el cruce de cables en arbitrajes
-        // ==========================================
-
-        // Sources: Los Initiators (Usuarios) deben gastar su dinero primero, luego los DEXes.
-        sources.sort((a, b) => (isInit(a.id) === isInit(b.id) ? 0 : isInit(a.id) ? -1 : 1));
-
-        // Targets: Los DEXes deben recibir el dinero primero, luego los Initiators (Usuarios).
-        targets.sort((a, b) => (isInit(a.id) === isInit(b.id) ? 0 : !isInit(a.id) ? -1 : 1));
-
-        // ==========================================
-
-        let sIdx = 0;
-        let tIdx = 0;
-        while (sIdx < sources.length && tIdx < targets.length) {
-            const s = sources[sIdx];
-            const t = targets[tIdx];
-            const transferAmt = Math.min(s.amt, t.amt);
-
-            if (transferAmt > 1e-8 && s.id !== t.id) {
-                rawEdges.push({ sourceAddr: s.id, targetAddr: t.id, res, amt: transferAmt });
+        const possibleEdges = [];
+        for (const s of sources) {
+            for (const t of targets) {
+                if (s.id !== t.id) {
+                    possibleEdges.push({ s, t, prio: getPriority(s.id, t.id) });
+                }
             }
+        }
 
-            s.amt -= transferAmt;
-            t.amt -= transferAmt;
-            if (s.amt <= 1e-8) sIdx++;
-            if (t.amt <= 1e-8) tIdx++;
+        possibleEdges.sort((a, b) => a.prio - b.prio);
+
+        for (const edge of possibleEdges) {
+            const transferAmt = Math.min(edge.s.amt, edge.t.amt);
+            if (transferAmt > 1e-8) {
+                rawEdges.push({ sourceAddr: edge.s.id, targetAddr: edge.t.id, res, amt: transferAmt });
+                edge.s.amt -= transferAmt;
+                edge.t.amt -= transferAmt;
+            }
         }
     }
 
@@ -473,8 +496,8 @@ export function buildSwapRoutingChart(
 
         parts.push(`<div style='height:1px; border-top:1px dashed rgba(var(--color-text-main-rgb),0.15); margin:4px 0;'></div>`);
 
-        const inMap = isAccount ? entityIn.get(c) : netEntityIn.get(c);
-        const outMap = isAccount ? entityOut.get(c) : netEntityOut.get(c);
+        const inMap = netEntityIn.get(c);
+        const outMap = netEntityOut.get(c);
 
         if (mode === 'receiver' || mode === 'other') {
             if (inMap) {

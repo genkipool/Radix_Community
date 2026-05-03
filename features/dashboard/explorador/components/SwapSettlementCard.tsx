@@ -5,7 +5,7 @@ import { ArrowRight, Check, Copy, ArrowLeftRight, Wallet, Route, Table2 } from '
 import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { sanitizeText } from '@/utils/sanitize';
-import type { Network, TranslationsT, TransactionDetails } from '@/features/dashboard/types';
+import type { Network, TranslationsT, TransactionDetails, EntityMeta } from '@/features/dashboard/types';
 import type { TransactionInfo } from '@/types/radix';
 import type { SwapHop } from '../utils/transactionUtils';
 import { buildSwapRoutingChart, detectSwapMode } from '../utils/transactionUtils';
@@ -43,6 +43,14 @@ function CopyBtn({ addr, onCopy, copiedAddress }: { addr: string; onCopy: (v: st
             {copiedAddress === addr ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5 text-[var(--color-text-muted)]/40" />}
         </button>
     );
+}
+
+function resolveTokenSymbol(meta: EntityMeta | null, resourceAddress: string): string {
+    if (meta?.symbol) return meta.symbol;
+    const name = (meta?.name || '').toLowerCase();
+    if (name.includes('liquid stake') || name.includes('lsu')) return 'LSU';
+    if (resourceAddress.toLowerCase().includes('radxrd')) return 'XRD';
+    return resourceAddress.slice(-6).toUpperCase();
 }
 
 /* ── Token column (sold/received) ── */
@@ -199,7 +207,7 @@ function BalanceRow({ change, isUser, onCopy, copiedAddress, onResourceClick, ne
     const val = parseFloat(change.balance_change);
     const isPositive = val > 0;
     const fmtVal = Math.abs(val).toLocaleString(locale, { maximumFractionDigits: 8 });
-    const symbol = resourceMeta?.symbol ?? '';
+    const symbol = resolveTokenSymbol(resourceMeta, resourceClean);
 
     // Determine role
     let role = 'DEX';
@@ -252,8 +260,8 @@ export function SwapSettlementCard({
 
     const soldMeta = useEntityData(soldToken.resource, network);
     const receivedMeta = useEntityData(receivedToken.resource, network);
-    const soldSymbol = soldMeta?.symbol ?? soldToken.resource.slice(-6);
-    const receivedSymbol = receivedMeta?.symbol ?? receivedToken.resource.slice(-6);
+    const soldSymbol = resolveTokenSymbol(soldMeta, soldToken.resource);
+    const receivedSymbol = resolveTokenSymbol(receivedMeta, receivedToken.resource);
     const fmtRate = rate > 0 ? rate.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 8 }) : '—';
     const fmtSold = parseFloat(soldToken.amount).toLocaleString(locale, { maximumFractionDigits: 8 });
     const fmtReceived = parseFloat(receivedToken.amount).toLocaleString(locale, { maximumFractionDigits: 8 });
@@ -333,7 +341,7 @@ export function SwapSettlementCard({
                                     {minReceivedAmount && (
                                         <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
                                             <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_min_received_label || 'Min. Expected'}</span>
-                                            <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">
+                                            <span className="text-[11px] font-mono font-black text-[var(--color-text-main)] truncate">
                                                 {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
                                             </span>
                                         </div>
