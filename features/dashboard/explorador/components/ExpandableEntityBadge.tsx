@@ -70,6 +70,7 @@ interface ExpandableEntityBadgeProps {
     stakeAmount?: number;
     unstakeAmount?: number;
     claimAmount?: number;
+    variant?: 'default' | 'resource-card';
 }
 
 /* ─── Helpers ───────────────────────────────────────── */
@@ -173,6 +174,7 @@ export function ExpandableEntityBadge({
     stakeAmount,
     unstakeAmount,
     claimAmount,
+    variant = 'default',
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
@@ -187,7 +189,10 @@ export function ExpandableEntityBadge({
     const meta = useEntityData(clean, network);
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;
-    const short = clean.length > 20 ? `${clean.slice(0, 12)}...${clean.slice(-6)}` : clean;
+    const isResourceCard = variant === 'resource-card';
+    const short = clean.length > 20 
+        ? (isResourceCard ? `${clean.slice(0, 10)}...${clean.slice(-6)}` : `${clean.slice(0, 12)}...${clean.slice(-6)}`) 
+        : clean;
 
     const wellKnownKey = getWellKnownKey(clean, network);
     const genericKey = !wellKnownKey ? getGenericTooltipKey(clean) : null;
@@ -224,10 +229,10 @@ export function ExpandableEntityBadge({
     };
 
     return (
-        <div className={`rounded-xl border ${bg} overflow-hidden transition-shadow ${expanded ? 'shadow-lg shadow-black/10' : ''}`}>
+        <div className={`flex flex-col ${isResourceCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm' : `border ${bg}`} rounded-xl overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`}>
             {/* ── Clickable header ─────────────────────── */}
             <div
-                className="flex items-center justify-between gap-2 p-2.5 cursor-pointer hover:bg-white/5 transition-colors group/entity"
+                className={`flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5'} cursor-pointer hover:bg-white/5 transition-colors group/entity`}
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
@@ -240,63 +245,91 @@ export function ExpandableEntityBadge({
                         </span>
                     )}
                     {iconUrl && (
-                        <SafeImage
-                            src={iconUrl}
-                            alt={entityName || 'Token'}
-                            fallbackName={entityName || 'Token'}
-                            className="w-6 h-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
-                        />
+                        <div className={`${isResourceCard ? 'w-8 h-8' : 'w-6 h-6'} rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)] shadow-sm`}>
+                            <SafeImage
+                                src={iconUrl}
+                                alt={entityName || 'Token'}
+                                fallbackName={entityName || 'Token'}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
                     )}
                     <div className="min-w-0 flex-1 flex flex-col">
                         {clean.startsWith('pool_') && blueprintName ? (
-                            <span className={`text-[11px] font-semibold truncate ${color}`}>
+                            <span className={`${isResourceCard ? 'text-sm font-bold' : 'text-[11px] font-semibold'} truncate ${color}`}>
                                 {blueprintName}
                             </span>
                         ) : entityName ? (
-                            <span className={`text-[11px] font-semibold truncate ${color}`}>
+                            <span className={`${isResourceCard ? 'text-sm font-bold' : 'text-[11px] font-semibold'} truncate ${color}`}>
                                 {entityName}
                             </span>
                         ) : null}
-                        <span
-                            className={`font-mono text-xs truncate ${(entityName || (clean.startsWith('pool_') && blueprintName)) ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)]'}`}
-                            title={wellKnownTip || clean}
-                        >
-                            {short}
-                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                                className={`font-mono ${isResourceCard ? 'text-[10px]' : 'text-xs'} truncate ${(entityName || (clean.startsWith('pool_') && blueprintName)) ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)]'}`}
+                                title={wellKnownTip || clean}
+                            >
+                                {short}
+                            </span>
+                            {isResourceCard && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
+                                    className={`p-0.5 rounded transition-colors ${copiedAddress === clean
+                                        ? 'text-[var(--color-accent)]'
+                                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
+                                        }`}
+                                    title="Copy address"
+                                >
+                                    {copiedAddress === clean
+                                        ? <Check className="w-2.5 h-2.5" />
+                                        : <Copy className="w-2.5 h-2.5" />}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
                     {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined) && (
-                        <div className="flex items-center gap-3 mr-3">
+                        <div className="flex items-center gap-4 mr-3">
                             {stakeAmount !== undefined && (
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
                                         {tt?.stake_history?.stake || tt?.account_summary?.stake_xrd || 'Stake'}
                                     </span>
-                                    <span className="text-[11px] font-mono font-black text-[var(--color-text-main)] leading-none mt-1">
-                                        {formatNumber(stakeAmount, 2, locale)}
-                                    </span>
+                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
+                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-text-main)] leading-none tracking-tight`}>
+                                            {formatNumber(stakeAmount, 2, locale)}
+                                        </span>
+                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
+                                    </div>
                                 </div>
                             )}
                             {unstakeAmount !== undefined && (
-                                <div className="flex flex-col items-end border-l border-white/10 pl-3">
-                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                <div className={`flex flex-col items-end border-l ${isResourceCard ? 'border-[var(--color-card-border)]' : 'border-white/10'} pl-3`}>
+                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
                                         {tt?.stake_history?.unstake || tt?.account_summary?.unstake_xrd || 'Unstake'}
                                     </span>
-                                    <span className="text-[11px] font-mono font-black text-[var(--color-warning)] leading-none mt-1">
-                                        {formatNumber(unstakeAmount, 2, locale)}
-                                    </span>
+                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
+                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-warning)] leading-none tracking-tight`}>
+                                            {formatNumber(unstakeAmount, 2, locale)}
+                                        </span>
+                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
+                                    </div>
                                 </div>
                             )}
                             {claimAmount !== undefined && (
-                                <div className="flex flex-col items-end border-l border-white/10 pl-3">
-                                    <span className="text-[8px] text-[var(--color-text-muted)] uppercase font-black leading-none tracking-tighter">
+                                <div className={`flex flex-col items-end border-l ${isResourceCard ? 'border-[var(--color-card-border)]' : 'border-white/10'} pl-3`}>
+                                    <span className={`${isResourceCard ? 'text-[9px] tracking-wider' : 'text-[8px] tracking-tighter'} text-[var(--color-text-muted)] uppercase font-black leading-none opacity-60`}>
                                         {tt?.stake_history?.claim || tt?.account_summary?.claim_xrd || 'Claim'}
                                     </span>
-                                    <span className="text-[11px] font-mono font-black text-[var(--color-success)] leading-none mt-1">
-                                        {formatNumber(claimAmount, 2, locale)}
-                                    </span>
+                                    <div className={`flex items-baseline gap-1 ${isResourceCard ? 'mt-1' : 'mt-0.5'}`}>
+                                        <span className={`${isResourceCard ? 'text-xs' : 'text-[11px]'} font-mono font-black text-[var(--color-success)] leading-none tracking-tight`}>
+                                            {formatNumber(claimAmount, 2, locale)}
+                                        </span>
+                                        {isResourceCard && <span className="text-[9px] font-bold text-[var(--color-text-muted)]">XRD</span>}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -312,21 +345,23 @@ export function ExpandableEntityBadge({
                             <Download className="w-3 h-3" />
                         </button>
                     )}
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
-                        className={`p-1 rounded transition-colors ${copiedAddress === clean
-                            ? 'text-[var(--color-accent)]'
-                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
-                            }`}
-                        title="Copy address"
-                    >
-                        {copiedAddress === clean
-                            ? <Check className="w-3 h-3" />
-                            : <Copy className="w-3 h-3" />}
-                    </button>
+                    {!isResourceCard && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
+                            className={`p-1 rounded transition-colors ${copiedAddress === clean
+                                ? 'text-[var(--color-accent)]'
+                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                                }`}
+                            title="Copy address"
+                        >
+                            {copiedAddress === clean
+                                ? <Check className="w-3 h-3" />
+                                : <Copy className="w-3 h-3" />}
+                        </button>
+                    )}
                     <ChevronDown
-                        className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
+                        className={`${isResourceCard ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
                     />
                 </div>
             </div>
