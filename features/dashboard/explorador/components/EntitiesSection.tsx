@@ -57,7 +57,7 @@ export function EntitiesSection({
             </h3>
             <div className="p-3">
                 {entities.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-stretch">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
                         {entities.map((addr, i) => (
                             <ExpandableEntityBadge
                                 key={variant + i}
