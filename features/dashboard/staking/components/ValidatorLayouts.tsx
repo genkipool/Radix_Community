@@ -150,7 +150,7 @@ export const Layout1Col = ({
                                 {sanitizeText(validator.country)} ({validator.countryPercent}%)
                             </span>
                             <div className="flex items-center gap-2 min-w-0">
-                                <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} noTruncate />
+                                <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
                             </div>
                         </div>

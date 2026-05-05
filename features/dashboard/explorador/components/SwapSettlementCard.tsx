@@ -70,7 +70,8 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
     const textColorClass = isSold ? 'text-rose-500' : 'text-[var(--color-accent)]';
 
     const sign = isSold ? '−' : '+';
-    const fmtAmt = parseFloat(amount).toLocaleString(locale, { maximumFractionDigits: 8 });
+    const truncated = Math.trunc(parseFloat(amount) * 10000) / 10000;
+    const fmtAmt = truncated.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
     const clean = sanitizeText(resource);
 
     return (
@@ -208,7 +209,8 @@ function BalanceRow({ change, isUser, onCopy, copiedAddress, onResourceClick, ne
     const resourceClean = sanitizeText(change.resource_address);
     const val = parseFloat(change.balance_change);
     const isPositive = val > 0;
-    const fmtVal = Math.abs(val).toLocaleString(locale, { maximumFractionDigits: 8 });
+    const truncatedVal = Math.trunc(Math.abs(val) * 10000) / 10000;
+    const fmtVal = truncatedVal.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
     const symbol = resolveTokenSymbol(resourceMeta, resourceClean);
 
     // Determine role
@@ -265,8 +267,10 @@ export function SwapSettlementCard({
     const soldSymbol = resolveTokenSymbol(soldMeta, soldToken.resource);
     const receivedSymbol = resolveTokenSymbol(receivedMeta, receivedToken.resource);
     const fmtRate = rate > 0 ? rate.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 8 }) : '—';
-    const fmtSold = parseFloat(soldToken.amount).toLocaleString(locale, { maximumFractionDigits: 8 });
-    const fmtReceived = parseFloat(receivedToken.amount).toLocaleString(locale, { maximumFractionDigits: 8 });
+    const truncatedSold = Math.trunc(parseFloat(soldToken.amount) * 10000) / 10000;
+    const fmtSold = truncatedSold.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    const truncatedReceived = Math.trunc(parseFloat(receivedToken.amount) * 10000) / 10000;
+    const fmtReceived = truncatedReceived.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 
     const accountMeta = useEntityData(initiatorAddress, network);
     const accountName = accountMeta?.name;

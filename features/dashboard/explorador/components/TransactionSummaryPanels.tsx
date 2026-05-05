@@ -83,7 +83,7 @@ export function OraclePriceUpdateCard({
     const symbol = meta?.symbol ?? '';
 
     return (
-        <div className="p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-col gap-2.5 shadow-sm">
+        <div className="p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-col gap-2.5 shadow-sm h-full">
             <div className="flex flex-col gap-1.5 min-w-0">
                 <EntityBadge
                     address={update?.baseToken}
@@ -151,7 +151,7 @@ export function OracleUpdateSection({
                         {tt?.oracle_update_desc}
                     </p>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
                     {updates.map((update, idx: number) => (
                         <OraclePriceUpdateCard
                             key={idx}
@@ -188,7 +188,7 @@ function AirdropRewardCard({
     const iconUrl = meta?.iconUrl;
 
     return (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-3 shadow-sm divide-y divide-[var(--color-card-border)]">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-3 shadow-sm divide-y divide-[var(--color-card-border)] h-full">
             <div className="pb-2">
                 <span className="text-[9px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider block mb-1.5">
                     {tt?.airdrop_winner || 'Winner Account'}
@@ -373,7 +373,7 @@ function VaultCreationCard({
     const isClickable = !!_onResourceClick && isResource;
 
     return (
-        <div className="bg-amber-500/10 border border-amber-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5">
+        <div className="bg-amber-500/10 border border-amber-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5 h-full">
             {/* Top Row: Resource Identity & Amount */}
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -575,7 +575,7 @@ function BetVoteCard({
     const typeLabel = entityType ? getEntityTypeLabel(entityType) : '';
 
     return (
-        <div className="bg-blue-500/10 border border-blue-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5">
+        <div className="bg-blue-500/10 border border-blue-500/60 rounded-xl p-3.5 shadow-sm flex flex-col gap-3.5 h-full">
             {/* Top Row: Option & Amount */}
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">

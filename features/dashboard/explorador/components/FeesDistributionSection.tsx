@@ -22,8 +22,6 @@ import type {
 } from '../types/gateway.types';
 
 /* ─── Helper ─────────────────────────────── */
-const fmtAmt = (v: number) => (Math.trunc(v * 10000) / 10000).toFixed(4);
-
 import { useQueryClient } from '@tanstack/react-query';
 import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
 
@@ -39,6 +37,11 @@ import { FeesDistributionSectionProps } from '../types';
 export function FeesDistributionSection({
     details, tx, tt, onCopy, copiedAddress, onResourceClick, readingMode, network, columns, locale,
 }: FeesDistributionSectionProps) {
+    const fmtAmt = (v: number) => {
+        const truncated = Math.trunc(v * 10000) / 10000;
+        return truncated.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    };
+
     const allFeeChanges = details.balance_changes?.fungible_fee_balance_changes ?? [];
 
     const accountPayers = allFeeChanges.filter(
@@ -193,7 +196,7 @@ export function FeesDistributionSection({
                     </div>
 
                     {feeSummary && (
-                        <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="mt-3 grid grid-cols-2 gap-2 items-stretch">
                             {[
                                 { label: tt?.fee_execution || 'Execution', value: execCost, color: 'text-cyan-600', border: 'border-cyan-500/30', bg: 'bg-cyan-500/6', title: tt?.fee_execution_title || 'Computational cost of processing the transaction logic.' },
                                 { label: tt?.fee_storage || 'Storage', value: storageCost, color: 'text-amber-600', border: 'border-amber-500/30', bg: 'bg-amber-500/6', title: tt?.fee_storage_title || `Cost of storing data on-ledger.${xrdUsdPrice > 0 ? ` XRD/USD: $${xrdUsdPrice.toFixed(2)}` : ''}` },
@@ -202,7 +205,7 @@ export function FeesDistributionSection({
                                 ...(tippingAmt > 0 ? [{ label: tt?.fee_tipping || 'Tips', value: tippingAmt, color: 'text-[var(--color-accent)]', border: 'border-[var(--color-primary)]/30', bg: 'bg-[var(--color-primary)]/5', title: tt?.fee_tips_cost_title || '100% goes to the block proposer validator.' }] : []),
                             ].map(item => (
                                 <div key={item.label}
-                                    className={`flex flex-col gap-0.5 px-2.5 py-2 rounded-lg border ${item.border} ${item.bg}`}
+                                    className={`flex flex-col gap-0.5 px-2.5 py-2 rounded-lg border ${item.border} ${item.bg} h-full`}
                                     title={item.title}
                                 >
                                     <span className={`text-[10px] uppercase font-black tracking-widest ${item.color}`}>{item.label}</span>
@@ -229,6 +232,7 @@ export function FeesDistributionSection({
                                 title={tt?.fees_burn_title || 'XRD permanently removed from total supply.'}
                                 desc={tt?.fees_burn_desc || 'XRD permanently removed from supply'}
                                 border="border-orange-500/40" bg="bg-orange-500/10"
+                                fmtAmt={fmtAmt}
                             />
                         )}
 
@@ -241,6 +245,7 @@ export function FeesDistributionSection({
                                     icon={<IconMedal className="w-4 h-4 text-blue-600 shrink-0" />}
                                     label={tt?.fees_proposer || 'Proposer'} pct="25%"
                                     amount={finalProposer} color="blue"
+                                    fmtAmt={fmtAmt}
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
                                     {tt?.fees_proposer_desc || 'XRD awarded to the block proposer validator'}
@@ -272,6 +277,7 @@ export function FeesDistributionSection({
                                     icon={<IconBolt className="w-4 h-4 text-green-700 dark:text-green-400 shrink-0" />}
                                     label={tt?.fees_validator_set || 'Validator Set'} pct="25%"
                                     amount={finalValidator} color="green"
+                                    fmtAmt={fmtAmt}
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
                                     {tt?.fees_validator_set_desc || 'XRD distributed among the validator set'}
@@ -314,6 +320,7 @@ export function FeesDistributionSection({
                                     icon={<IconGem className="w-4 h-4 text-purple-600 shrink-0" />}
                                     label={tt?.fees_royalty || 'Royalties'} pct="100%"
                                     amount={royaltyAmt} color="purple"
+                                    fmtAmt={fmtAmt}
                                 />
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
                                     {tt?.fees_royalty_desc || 'XRD distributed to royalty recipients'}
@@ -385,14 +392,15 @@ export function FeesDistributionSection({
 /* ─── Internal atoms ─────────────────────── */
 
 function FeeRow({
-    icon, label, pct, amount, color, title, desc, border, bg,
+    icon, label, pct, amount, color, title, desc, border, bg, fmtAmt,
 }: {
     icon: React.ReactNode; label: string; pct: string; amount: number;
     color: string; title: string; desc: string; border: string; bg: string;
+    fmtAmt: (v: number) => string;
 }) {
     return (
         <div className={`rounded-xl border ${border} ${bg} p-3`} title={title}>
-            <FeeRowHeader icon={icon} label={label} pct={pct} amount={amount} color={color} />
+            <FeeRowHeader icon={icon} label={label} pct={pct} amount={amount} color={color} fmtAmt={fmtAmt} />
             <p className="text-[10px] text-[var(--color-text-muted)] italic">{desc}</p>
         </div>
     );
@@ -407,9 +415,10 @@ const COLOR_CLASSES: Record<string, { text: string; bg: string; border: string }
 };
 
 function FeeRowHeader({
-    icon, label, pct, amount, color,
+    icon, label, pct, amount, color, fmtAmt,
 }: {
     icon: React.ReactNode; label: string; pct: string; amount: number; color: string;
+    fmtAmt: (v: number) => string;
 }) {
     const cc = COLOR_CLASSES[color] ?? COLOR_CLASSES.orange;
     return (

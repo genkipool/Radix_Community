@@ -193,7 +193,7 @@ export function EntityBadge({
 
     return (
         <div
-            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border ${bg} group/entity`}
+            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border ${bg} group/entity h-full min-h-[52px]`}
         >
             <div className="flex items-center gap-2 min-w-0">
                 {iconUrl && (

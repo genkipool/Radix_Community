@@ -47,7 +47,7 @@ export const AR = ({
         : isMobile
             ? truncateAddress(addr, 10, 10)
             : isModal
-                ? truncateAddress(addr, 32, 24)
+                ? truncateAddress(addr, 32, 22)
                 : truncateAddress(addr, 16, 25);
 
     return (
@@ -99,17 +99,19 @@ export const VEB_STYLES = `
     .veb { background: var(--color-bg); border-top: 1px solid var(--color-card-border); display: flex; flex-direction: column; min-height: 100%; height: 100%; }
     .veb-main-grid { display: grid; grid-template-columns: 1fr; flex: 1; }
     .veb-classic-grid { flex: 1; display: flex; flex-direction: column; }
-    .veb-block { border-bottom: 1px solid var(--color-card-border); }
+    .veb-block { border-bottom: 1px solid var(--color-card-border); display: flex; flex-direction: column; justify-content: center; height: 100%; }
 
     /* GRID 1: Classic 3-column */
     .veb-classic-grid .veb-top {
         display: grid;
         grid-template-columns: 1fr;
         border-bottom: 1px solid var(--color-card-border);
+        align-items: stretch;
     }
     .veb-classic-grid .veb-history-grid {
         display: grid;
         grid-template-columns: 1fr;
+        align-items: stretch;
     }
     @media (min-width: 900px) {
         .veb-classic-grid .veb-top { grid-template-columns: 1fr 340px; }
@@ -172,7 +174,7 @@ export const VEB_STYLES = `
     .veb-chart-content { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 200px; }
     .veb-chart-loading { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; }
     .veb-chart-empty { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 200px; font-size: 12px; color: var(--color-text-muted); opacity: 0.5; font-style: italic; }
-    .veb-chart-recharts { width: 100%; flex: 1; position: relative; min-height: 0; }
+    .veb-chart-recharts { width: 100%; flex: 1; position: relative; min-height: 220px; min-width: 0; }
     .veb-spinner { width: 24px; height: 24px; border: 2.5px solid color-mix(in srgb, var(--color-primary) 10%, transparent); border-top-color: var(--color-primary); border-radius: 50%; animation: veb-spin 0.8s linear infinite; }
     @keyframes veb-spin { to { transform: rotate(360deg); } }
 
@@ -249,11 +251,11 @@ export const VEB_STYLES = `
     .veb-num-zero   { font-size: 13px; font-weight: 500; color: var(--color-text-muted); opacity: 0.3; font-variant-numeric: tabular-nums; }
 
     /* ADDRESSES */
-    .veb-ar { display: flex; flex-direction: column; gap: 4px; }
+    .veb-ar { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .veb-ar-label { font-size: 12.5px; font-weight: 500; color: var(--color-text-muted); line-height: 1.2; }
-    .veb-ar-content { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+    .veb-ar-content { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; min-width: 0; }
     .veb-ar-code { flex: 1; min-width: 0; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: var(--color-text-muted); opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .veb-ar-code.no-truncate { white-space: normal; word-break: break-all; text-overflow: clip; line-height: 1.4; color: var(--color-text-main); opacity: 0.9; }
+    .veb-ar-code.no-truncate { color: var(--color-text-main); opacity: 0.9; }
     .veb-ar-content:hover .veb-ar-code { color: var(--color-primary); opacity: 1; }
 
     /* CTA */

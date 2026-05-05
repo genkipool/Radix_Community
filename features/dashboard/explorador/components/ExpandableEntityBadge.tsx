@@ -229,10 +229,10 @@ export function ExpandableEntityBadge({
     };
 
     return (
-        <div className={`flex flex-col ${isResourceCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm' : `border ${bg}`} rounded-xl overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`}>
+        <div className={`flex flex-col h-full self-stretch ${isResourceCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm' : `border ${bg}`} rounded-xl overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`}>
             {/* ── Clickable header ─────────────────────── */}
             <div
-                className={`flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5'} cursor-pointer hover:bg-white/5 transition-colors group/entity`}
+                className={`flex-1 flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5'} min-h-[52px] cursor-pointer hover:bg-white/5 transition-colors group/entity`}
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">

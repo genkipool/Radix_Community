@@ -48,7 +48,7 @@ export function AccountStakingTab({
             <h4 className="text-[11px] font-black uppercase mb-3 tracking-wider text-[var(--color-text-muted)] mt-4">
                 {tt?.account_summary?.staking_validators_title || 'Validators'} <span className="ml-1 opacity-50">({stakingRows.length})</span>
             </h4>
-            <div className="grid grid-cols-1 gap-2 items-start">
+            <div className="grid grid-cols-1 gap-2 items-stretch">
             {stakingRows.map((row) => (
                 <ExpandableEntityBadge
                     key={row.validatorAddress}

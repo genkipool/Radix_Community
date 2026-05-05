@@ -106,7 +106,7 @@ export const StakeEvolutionChart = ({
 
     return (
         <div className="veb-chart-recharts">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height={220} debounce={100}>
                 <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 4 }}>
                     <defs>
                         <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
@@ -151,7 +151,7 @@ export const StakeHistoryChart = ({
 
     return (
         <div className="veb-chart-recharts">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height={220} debounce={100}>
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 4 }} barCategoryGap="15%" barGap={25}>
                     <defs>
                         <linearGradient id="stakeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22c55e" stopOpacity={0.95} /><stop offset="100%" stopColor="#16a34a" stopOpacity={0.75} /></linearGradient>

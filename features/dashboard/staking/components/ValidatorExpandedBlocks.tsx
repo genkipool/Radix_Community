@@ -35,14 +35,14 @@ const renderVebRow = (props: MetricRowProps) => (
 /**
  * Adapter for VEB style address rows
  */
-const renderVebAddrRow = (props: MetricRowProps) => (
+const renderVebAddrRow = (props: MetricRowProps & { noTruncate?: boolean }) => (
     <AR
         label={props.label}
         addr={props.rawAddress || ''}
         onCopy={props.onCopy || (() => { })}
         copied={!!props.isCopied}
         brackets={props.label.toLowerCase().includes('badge') || props.label.toLowerCase().includes('key')}
-        noTruncate={false}
+        noTruncate={props.noTruncate ?? false}
         isModal={props.isModal}
     />
 );
@@ -80,7 +80,7 @@ export const ProfileBlock = ({
                     copiedAddress={copiedAddress}
                     locale={locale || ''}
                     dt={dt}
-                    renderRow={renderVebAddrRow}
+                    renderRow={(p) => renderVebAddrRow({ ...p, noTruncate: _noTruncate })}
                     isModal={isModal}
                 />
             </div>

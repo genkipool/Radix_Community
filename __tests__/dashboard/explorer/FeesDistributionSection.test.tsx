@@ -42,6 +42,7 @@ const mockProps = {
     readingMode: false,
     network: 'mainnet' as const,
     columns: 2,
+    locale: 'en-US',
 };
 
 describe('FeesDistributionSection', () => {
@@ -85,9 +86,9 @@ describe('FeesDistributionSection', () => {
         
         // Assert the exact parsed strings
         // Burn is 0.5000 -> 0.5
-        expect(screen.getByText('0.5 XRD')).toBeInTheDocument();
+        expect(screen.getByText('0.5000 XRD')).toBeInTheDocument();
         // Proposer/Validator is 0.25
-        expect(screen.getAllByText('0.25 XRD')).toHaveLength(2);
+        expect(screen.getAllByText('0.2500 XRD')).toHaveLength(2);
     });
 
     it('falls back to splitting cmAmount if fee_destination is missing (stokenet fallback test)', () => {
@@ -111,7 +112,7 @@ describe('FeesDistributionSection', () => {
         );
 
         expect(screen.getByText('Fees Distributed')).toBeInTheDocument();
-        expect(screen.getByText('2 XRD')).toBeInTheDocument(); // Burn (cmAmount)
-        expect(screen.getAllByText('1 XRD')).toHaveLength(2); // Proposer/Validator
+        expect(screen.getByText('2.0000 XRD')).toBeInTheDocument(); // Burn (cmAmount)
+        expect(screen.getAllByText('1.0000 XRD')).toHaveLength(2); // Proposer/Validator
     });
 });

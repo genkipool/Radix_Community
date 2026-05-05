@@ -127,7 +127,7 @@ export function AccountSummaryTab({
             <div>
                 <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt?.account_summary?.principal_balance || 'Principal Balance'}</h4>
                 {!isBadge ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
                         <BalanceCard
                             title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                             amount={xrdAmount}
@@ -172,7 +172,7 @@ export function AccountSummaryTab({
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
                             <BalanceCard
                                 title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                                 amount={xrdAmount}
@@ -191,7 +191,7 @@ export function AccountSummaryTab({
                                 rawFiatAmount={totalLsuXrdEquivalent}
                             />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
                             <BalanceCard
                                 title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
@@ -326,7 +326,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2, locale) : formatNumber(parsedAmount, 4, locale);
 
     return (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full">
             {/* Row 1: Title (left) */}
             <div className="flex justify-start">
                 <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider">
@@ -369,7 +369,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
             <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider ${titleClassName}`}>
                 {title}
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch">
                 {items.map((item) => (
                     <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} />
                 ))}

@@ -85,7 +85,7 @@ describe('Theme Standardization Colors', () => {
 
         // Check if the amount in the details mini-table has the accent color class
         const amounts = screen.getAllByText((content, element) => {
-            return element?.tagName.toLowerCase() === 'span' && content.includes('+90');
+            return element?.tagName.toLowerCase() === 'span' && content.includes('+90.0000');
         });
         expect(amounts.length).toBeGreaterThan(0);
         amounts.forEach(el => {
@@ -130,7 +130,7 @@ describe('Theme Standardization Colors', () => {
             </QueryClientProvider>
         );
 
-        const amount = screen.getByText('+10');
+        const amount = screen.getByText('+10.0000');
         // The color class is on the grand-parent div (the one with font-mono font-bold lg:text-lg)
         expect(amount.parentElement?.parentElement?.className).toContain('text-[var(--color-accent)]');
     });

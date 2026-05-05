@@ -68,7 +68,13 @@ const TransactionTabs = ({
     const parsed = parseManifest(String(manifest_instructions || ''));
     const balanceChanges = details?.balance_changes as BalanceChanges | undefined;
     const airdropData = resolveAirdropData(parsed.candiesMatch, balanceChanges);
-    const actualFeePaid = parseFloat(sanitizeText(String(tx.feePaid || '0'))).toFixed(4).replace(/\.?0+$/, '');
+    const actualFeePaid = (Math.trunc(parseFloat(sanitizeText(String(tx.feePaid || '0'))) * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+    const lockFeeAmountFormatted = parsed.lockFeeAmount
+        ? (Math.trunc(parseFloat(parsed.lockFeeAmount) * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+        : null;
+    const badgeAmountFormatted = parsed.badgeAmount
+        ? (Math.trunc(parseFloat(parsed.badgeAmount) * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+        : null;
 
     /* ── Resource groups for asset transfer cards ── */
     const resourceGroups = getResourceGroups(balanceChanges, network);
@@ -279,13 +285,13 @@ const TransactionTabs = ({
 
 
                         {/* Lock Fee */}
-                        {parsed.lockFeeAmount && (
-                            <LockFeePanel lockFeeAmount={parsed.lockFeeAmount} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
+                        {lockFeeAmountFormatted && (
+                            <LockFeePanel lockFeeAmount={lockFeeAmountFormatted} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
                         )}
 
                         {/* Auth Badge */}
-                        {parsed.badgeResource && parsed.badgeAmount && (
-                            <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={parsed.badgeAmount} badgeOrigin={parsed.badgeOrigin} t={t as TranslationsT} readingMode={readingMode} {...shared} />
+                        {parsed.badgeResource && badgeAmountFormatted && (
+                            <AuthBadgePanel badgeResource={parsed.badgeResource} badgeAmount={badgeAmountFormatted} badgeOrigin={parsed.badgeOrigin} t={t as TranslationsT} readingMode={readingMode} {...shared} />
                         )}
 
 
