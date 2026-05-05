@@ -117,7 +117,7 @@ export function TransferFooter({
                         <span className="flex items-center gap-2">
                             <Shield className="text-amber-500 w-3.5 h-3.5" />
                             {tt?.fee_label?.toUpperCase() || 'FEE'}
-                            <span className="text-amber-600 font-black">{parseFloat(actualFeePaid).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD</span>
+                            <span className="text-amber-600 font-black">{(Math.trunc(parseFloat(actualFeePaid) * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XRD</span>
                         </span>
                     </>
                 )}

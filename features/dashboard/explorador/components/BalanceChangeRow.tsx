@@ -390,7 +390,7 @@ const BalanceChangeRow = ({
                             {(() => {
                                 const val = hideSign ? Math.abs(parseFloat(change.balance_change)) : parseFloat(change.balance_change);
                                 const truncated = Math.trunc(val * 10000) / 10000;
-                                return truncated.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+                                return truncated.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
                             })()}
                         </span>
 

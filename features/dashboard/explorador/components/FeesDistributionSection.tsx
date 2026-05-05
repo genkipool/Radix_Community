@@ -22,7 +22,7 @@ import type {
 } from '../types/gateway.types';
 
 /* ─── Helper ─────────────────────────────── */
-const fmtAmt = (v: number) => v.toFixed(4).replace(/\.?0+$/, '');
+const fmtAmt = (v: number) => (Math.trunc(v * 10000) / 10000).toFixed(4);
 
 import { useQueryClient } from '@tanstack/react-query';
 import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
@@ -366,10 +366,7 @@ export function FeesDistributionSection({
             {/* Summary footer */}
             <div className="p-4 bg-[var(--color-surface)] border-t border-[var(--color-card-border)] text-xs text-[var(--color-text-muted)] font-mono uppercase tracking-tight">
                 <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-6">
-                    {accountPayers.map((fc, i: number) => {
-                        const amt = Math.abs(parseFloatSafe(fc.balance_change));
-                        return <span key={'fs' + i} className="flex items-center gap-1.5"><span className="text-red-500 font-black">-{fmtAmt(amt)}</span> {tt?.sent_label || 'sent'}</span>;
-                    })}
+
                     {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt?.fees_burn || 'Burn'} />}
                     {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt?.fees_proposer || 'Proposer'} />}
                     {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt?.fees_validator_set || 'Validator'} />}

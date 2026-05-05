@@ -547,7 +547,7 @@ export function AccountTransactionsTab({
                                         {index === 0 && (
                                             <>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-muted)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
-                                                    {feePaidByAccount > 0 ? `${formatNumber(feePaidByAccount, 4, locale)} XRD` : '-'}
+                                                    {feePaidByAccount > 0 ? `${(Math.trunc(feePaidByAccount * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XRD` : '-'}
                                                 </td>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-main)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     {formatNumber(tx.balanceXrd, 4, locale)} XRD
