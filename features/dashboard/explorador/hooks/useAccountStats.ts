@@ -4,6 +4,7 @@ import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValida
 import type { GatewayEntityDetails, MetadataItem } from '@/features/dashboard/types';
 import type { Validator } from '@/types/radix';
 import type { ParsedResource, StakingEntry, FungibleItem, NonFungibleItem } from '../types/models.types';
+import { getXrdAddress } from '../constants';
 
 // Function to safely extract explicit metadata
 export function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
@@ -18,9 +19,7 @@ export function extractMetadata(items: MetadataItem[] | undefined, key: string):
 export function useAccountStats(address: string, network: 'mainnet' | 'stokenet', entityData: GatewayEntityDetails | null) {
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
 
-    const xrdAddress = network === 'mainnet'
-        ? 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd'
-        : 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
+    const xrdAddress = getXrdAddress(network);
 
     // Parsing Logic
     const fungibles = entityData?.fungible_resources?.items || [];

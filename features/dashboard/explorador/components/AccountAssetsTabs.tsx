@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Copy, Check, Info, ChevronDown } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { extractMetadata } from '../hooks/useAccountStats';
+import { getXrdAddress } from '../constants';
 import { truncateAddress } from '@/utils/formatters';
 import { ResourceInlinePanel } from './BalanceChangeRow';
 import { NftCollectionPanel } from './NftCollectionPanel';
@@ -30,13 +32,6 @@ interface ParsedResource {
     metadataItems?: MetadataItem[];
 }
 
-function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
-    const meta = items?.find((m) => m.key === key);
-    if (meta?.value?.typed?.value) {
-        return meta.value.typed.value;
-    }
-    return '';
-}
 
 // Function to safely extract tags
 function extractTags(items: MetadataItem[] | undefined): string[] {
@@ -107,9 +102,7 @@ interface ValidatorItem {
 }
 
 function parseTokensAndNfts(entityData: GatewayEntityDetails | null, network: 'mainnet' | 'stokenet' = 'mainnet', validatorsData?: { validators?: ValidatorItem[] }) {
-    const xrdAddress = network === 'mainnet'
-        ? 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd'
-        : 'resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
+    const xrdAddress = getXrdAddress(network);
 
     const fungibles = entityData?.fungible_resources?.items || [];
     const nonFungibles = entityData?.non_fungible_resources?.items || [];

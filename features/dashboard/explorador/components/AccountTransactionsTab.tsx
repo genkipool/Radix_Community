@@ -228,7 +228,7 @@ function StakingBalanceCell({
 
             for (const f of fungibles) {
                 if (lsuToValidator.has(f.resource_address)) {
-                    const amount = parseFloat(f.amount || f.balance?.value || '0');
+                    const amount = Number(f.amount);
 
                     let factor = historicalRedemptionRates.get(f.resource_address);
                     if (factor === undefined) {
@@ -466,7 +466,7 @@ export function AccountTransactionsTab({
 
                         // Token movements
                         const fungibles = ((tx.balanceChanges?.fungible_balance_changes as FungibleChange[]) || []).filter(
-                            (c) => c.entity_address === accountAddress
+                            (c) => c.entity_address === accountAddress && !c.is_fee
                         );
                         const nonFungibles = ((tx.balanceChanges?.non_fungible_balance_changes as NonFungibleChange[]) || []).filter(
                             (c) => c.entity_address === accountAddress
