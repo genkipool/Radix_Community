@@ -11,7 +11,7 @@ export function ForumHeroWidgets() {
     return (
         <div className="w-full">
             {/* Points Header - Compact & Highlighted */}
-            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 py-3 px-6 mb-4 bg-[var(--color-surface)]/40 backdrop-blur-sm rounded-2xl border border-[var(--color-card-border)]/30 mx-auto w-fit shadow-inner">
+            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 py-3 px-6 mb-2 mx-auto w-fit">
                 <div className="flex items-center gap-1.5">
                     <span className="text-[var(--color-text-muted)] text-[10px] font-bold uppercase tracking-wider">{t.forum.header.points.post}</span>
                     <span className="text-[var(--color-primary)] font-black text-base">+3 {t.forum.header.points.xp}</span>
@@ -38,7 +38,7 @@ export function ForumHeroWidgets() {
             </div>
 
             {/* Ranks Grid - Responsive */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-3 gap-x-2 py-3 mb-4 w-full bg-[var(--color-bg)]/20 backdrop-blur-[2px] rounded-2xl border border-[var(--color-card-border)]/40 p-3 shadow-lg max-w-4xl mx-auto">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-4 gap-x-2 py-4 mb-4 w-full max-w-4xl mx-auto">
                 {RANKS.map((r) => (
                     <div key={r.name} className="flex flex-col items-center gap-1 cursor-help p-2 rounded-xl border border-transparent">
                         <RankIcon name={r.name} color={r.color} className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_0_5px_rgba(0,0,0,0.1)]" />
