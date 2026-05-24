@@ -4,6 +4,7 @@ import { LanguageProvider } from '@/context/LanguageContext';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { translations } from '@/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RadixWalletContext } from '@/features/wallet/context/RadixWalletProvider';
 
 /**
  * Mock ThemeProvider that works without next-themes in test environment.
@@ -46,7 +47,9 @@ function AllProviders({ children, locale = 'en', theme = 'radix-dark' }: { child
             <MockThemeProvider theme={theme}>
                 <LanguageProvider language={locale} dictionary={dictionary}>
                     <LayoutProvider>
-                        {children}
+                        <RadixWalletContext.Provider value={{ isConnected: false, isLoading: false, isExtensionAvailable: true, accounts: [], personaData: [], error: null, activeNetworkId: null, connect: () => {}, disconnect: () => {} }}>
+                            {children}
+                        </RadixWalletContext.Provider>
                     </LayoutProvider>
                 </LanguageProvider>
             </MockThemeProvider>

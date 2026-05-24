@@ -53,7 +53,7 @@ export function RadixLogo({
       {/* ─── Radix Mark (Zigzag) ─── */}
       <g transform={`translate(${logoTranslateX}, ${logoTranslateY}) scale(${logoScale})`}>
         <path
-          d="M0,91.1 L27.35,91.1 L82.85,168.1 L156.45,0 L223.9,0"
+          d="M0,91.1 L38.35,91.1 L85.85,158.1 L155.45,11 L223.9,11"
           fill="none"
           stroke={strokeColor}
           strokeWidth={strokeWidth}

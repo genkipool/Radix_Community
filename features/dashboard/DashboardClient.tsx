@@ -43,6 +43,8 @@ import { useExpandedCards } from './hooks/useExpandedCards';
 import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { useDashboardUrlSync, useDashboardUrlEffects } from './hooks/useDashboardUrlSync';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useConnectedStakes } from './staking/hooks/useConnectedStakes';
 
 /* Context */
 import { useLanguage } from '@/context/LanguageContext';
@@ -217,6 +219,10 @@ export default function DashboardClient({
   const loadingTxs = isTxLoading && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
+  const { isConnected, accounts } = useRadixWallet();
+  const connectedAccountAddress = isConnected && accounts.length > 0 ? accounts[0].address : null;
+  const { pinnedValidatorAddresses } = useConnectedStakes(connectedAccountAddress, deferredNetwork as 'mainnet' | 'stokenet');
+
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
     activeTags: deferredActiveTag,
@@ -225,6 +231,7 @@ export default function DashboardClient({
     network: deferredNetwork,
     activeView: 'staking',
     randomSeed,
+    pinnedValidatorAddresses,
   });
 
   /* ── Infinite scroll effects ─────────────────────────────── */

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { AnimationProvider } from '@/context/AnimationContext';
+import { RadixWalletProvider } from '@/features/wallet/context/RadixWalletProvider';
 import { getQueryClient } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
 import type { Locale } from '@/i18n/dictionaries';
@@ -37,7 +38,9 @@ export function Providers({
         <LanguageProvider language={locale} dictionary={dictionary}>
           <LayoutProvider>
             <AnimationProvider>
-              {children}
+              <RadixWalletProvider>
+                {children}
+              </RadixWalletProvider>
             </AnimationProvider>
           </LayoutProvider>
         </LanguageProvider>

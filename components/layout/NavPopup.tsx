@@ -15,6 +15,7 @@ interface NavPopupProps {
    * after a language switch the popup stays visible without needing re-hover).
    */
   keepOpenOnTriggerClick?: boolean;
+  offsetClass?: string;
 }
 
 /**
@@ -49,6 +50,7 @@ export default function NavPopup({
   width = 'w-72',
   prefetchHrefs = [],
   keepOpenOnTriggerClick = false,
+  offsetClass = 'absolute top-[calc(100%-12px)]',
 }: NavPopupProps) {
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -94,10 +96,10 @@ export default function NavPopup({
     >
       {trigger}
       {/* Invisible bridge prevents losing hover while cursor moves from nav to popup */}
-      <div className="absolute bottom-0 left-0 right-0 h-2 pointer-events-auto" />
+      <div className="absolute top-full left-0 right-0 h-6 pointer-events-auto" />
       <div
         className={[
-          'absolute top-[calc(100%-12px)]',
+          offsetClass,
           alignClass,
           width,
           'bg-[var(--color-card-bg)] border border-[var(--color-card-border)]',

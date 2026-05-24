@@ -20,6 +20,7 @@ interface UseValidatorFiltersOptions {
   network:     string;
   activeView:  'staking' | 'transactions';
   randomSeed:  number;
+  pinnedValidatorAddresses?: string[];
 }
 
 interface UseValidatorFiltersReturn {
@@ -29,7 +30,7 @@ interface UseValidatorFiltersReturn {
 }
 
 export function useValidatorFilters({
-  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed,
+  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses
 }: UseValidatorFiltersOptions): UseValidatorFiltersReturn {
 
   // React Compiler automatically memoizes this derived calculation.
@@ -81,54 +82,60 @@ export function useValidatorFilters({
     // 3. Sort
     if (activeTags.includes('Low Fee') && sortMode === 'random') {
       result.sort((a, b) => a.nominalFee - b.nominalFee);
-      return result;
+    } else {
+      if (sortMode === 'newest') result.sort((a, b) => b.totalStakeXRD - a.totalStakeXRD);
+      if (sortMode === 'oldest') result.sort((a, b) => a.totalStakeXRD - b.totalStakeXRD);
+      if (sortMode === 'date')   result.sort((a, b) => b.apy - a.apy);
+
+      // Deterministic Random Sorting (using stable seed)
+      if (sortMode === 'random') {
+        // Mulberry32 PRNG — simple, fast, and deterministic
+        const mulberry32 = (seed: number) => {
+          return () => {
+            let t = (seed += 0x6D2B79F5);
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        };
+
+        const rand = mulberry32(randomSeed);
+
+        // 1. Assign random 'eligibility' (Lottery only in 'All' view)
+        const isMixedView = activeTags.includes('All') && !searchQuery.trim();
+
+        const scored = result.map(v => {
+          let p = 1.0;
+          if (isMixedView) {
+            if (v.status !== 'active') p = 0.05;
+            else if (v.delegatedStakePercent > 2) p = 0.25;
+          }
+
+          // Lottery winner (deterministic based on seed + validator address)
+          const vSeed = v.address.split('').reduce((acc, char) => acc + char.charCodeAt(0), randomSeed);
+          const vRand = mulberry32(vSeed)();
+
+          const lotteryWinner = vRand < p;
+          return { v, lotteryWinner, tieBreaker: rand() };
+        });
+
+        // 2. Sort by lottery victory, then by random tie-breaker
+        scored.sort((a, b) => {
+          if (a.lotteryWinner !== b.lotteryWinner) {
+            return a.lotteryWinner ? -1 : 1;
+          }
+          return b.tieBreaker - a.tieBreaker;
+        });
+
+        result = scored.map(s => s.v);
+      }
     }
 
-    if (sortMode === 'newest') result.sort((a, b) => b.totalStakeXRD - a.totalStakeXRD);
-    if (sortMode === 'oldest') result.sort((a, b) => a.totalStakeXRD - b.totalStakeXRD);
-    if (sortMode === 'date')   result.sort((a, b) => b.apy - a.apy);
-
-    // Deterministic Random Sorting (using stable seed)
-    if (sortMode === 'random') {
-      // Mulberry32 PRNG — simple, fast, and deterministic
-      const mulberry32 = (seed: number) => {
-        return () => {
-          let t = (seed += 0x6D2B79F5);
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-      };
-
-      const rand = mulberry32(randomSeed);
-
-      // 1. Assign random 'eligibility' (Lottery only in 'All' view)
-      const isMixedView = activeTags.includes('All') && !searchQuery.trim();
-
-      const scored = result.map(v => {
-        let p = 1.0;
-        if (isMixedView) {
-          if (v.status !== 'active') p = 0.05;
-          else if (v.delegatedStakePercent > 2) p = 0.25;
-        }
-
-        // Lottery winner (deterministic based on seed + validator address)
-        const vSeed = v.address.split('').reduce((acc, char) => acc + char.charCodeAt(0), randomSeed);
-        const vRand = mulberry32(vSeed)();
-
-        const lotteryWinner = vRand < p;
-        return { v, lotteryWinner, tieBreaker: rand() };
-      });
-
-      // 2. Sort by lottery victory, then by random tie-breaker
-      scored.sort((a, b) => {
-        if (a.lotteryWinner !== b.lotteryWinner) {
-          return a.lotteryWinner ? -1 : 1;
-        }
-        return b.tieBreaker - a.tieBreaker;
-      });
-
-      return scored.map(s => s.v);
+    // 4. Pin Delegated Validators (if provided)
+    if (pinnedValidatorAddresses && pinnedValidatorAddresses.length > 0) {
+      const pinned = result.filter(v => pinnedValidatorAddresses.includes(v.address));
+      const others = result.filter(v => !pinnedValidatorAddresses.includes(v.address));
+      return [...pinned, ...others];
     }
 
     return result;

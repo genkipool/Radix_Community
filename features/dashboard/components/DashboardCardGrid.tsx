@@ -14,6 +14,7 @@ import { Shield } from 'lucide-react';
 import { ValidatorCard } from '../staking';
 import { TransactionCard, AccountCard } from '../explorador';
 import { isRadixAddress } from '@/features/dashboard/utils/radixAddress';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -40,8 +41,11 @@ export const DashboardCardGrid = ({
   onCopy,
   marketData,
 }: DashboardCardGridProps) => {
+  const { isConnected, accounts } = useRadixWallet();
   const trimmedQuery = searchQuery.trim();
   const isAccountSearch = isRadixAddress(trimmedQuery) && trimmedQuery.startsWith('account_');
+  const connectedAccountAddress = accounts[0]?.address;
+  const accountToShow = isAccountSearch ? trimmedQuery : (isConnected && connectedAccountAddress ? connectedAccountAddress : null);
 
   return (
     <>
@@ -78,11 +82,11 @@ export const DashboardCardGrid = ({
           </>
         ) : (
           <>
-            {isAccountSearch && (
+            {accountToShow && (
               <AccountCard
-                address={trimmedQuery}
+                address={accountToShow}
                 columns={columns}
-                isExpanded={expandedPosts.has(trimmedQuery) && !readingMode}
+                isExpanded={expandedPosts.has(accountToShow) && !readingMode}
                 onExpand={onExpand}
                 onCopy={onCopy}
                 copiedAddress={copiedAddress}

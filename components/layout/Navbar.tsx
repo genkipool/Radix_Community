@@ -17,6 +17,9 @@ import { usePrefetchDashboard } from '@/features/dashboard/hooks/usePrefetchDash
 import { GoldPlatinumIcon } from '@/components/ui/GoldPlatinumIcon';
 import { RadixCircleIcon } from '@/components/ui/RadixCircleIcon';
 import { RadixLogo } from '@/components/shared/RadixLogo';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { RadixNetworkId } from '@/features/wallet/constants/network';
+import type { Dictionary } from '@/i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PopupItem {
@@ -345,6 +348,56 @@ function LanguagePopupContent({
   );
 }
 
+function WalletPopupContent({ connect, t }: { connect: (networkId: RadixNetworkId) => void, t: Dictionary }) {
+  return (
+    <div className="p-4 w-[280px]">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 px-1">
+        {t.nav?.wallet_select_network ?? 'Select Network'}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => connect(RadixNetworkId.Mainnet)}
+          className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
+        >
+          <Globe className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
+          <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_mainnet ?? 'Mainnet'}</span>
+        </button>
+        <button
+          onClick={() => connect(RadixNetworkId.Stokenet)}
+          className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
+        >
+          <Server className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
+          <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_stokenet ?? 'Stokenet'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ConnectedWalletPopupContent({ disconnect, personaName, address, t }: { disconnect: () => void, personaName?: string, address?: string, t: Dictionary }) {
+  return (
+    <div className="p-4 w-[240px]">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 px-1">
+        {t.nav?.wallet_connected ?? 'Connected'}
+      </p>
+      <div className="mb-4 px-1">
+        {personaName && <p className="text-sm font-semibold text-[var(--color-text-main)]">{personaName}</p>}
+        {address && (
+          <p className="text-xs text-[var(--color-text-muted)] truncate" title={address}>
+             {address.slice(0, 12)}...{address.slice(-6)}
+          </p>
+        )}
+      </div>
+      <button
+        onClick={disconnect}
+        className="w-full text-center py-2 text-sm font-semibold text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+      >
+        {t.nav?.wallet_disconnect ?? 'Disconnect'}
+      </button>
+    </div>
+  );
+}
+
 // ─── Mobile sub-link item ─────────────────────────────────────────────────────
 function _MobileSubLink({
   item,
@@ -388,7 +441,8 @@ function _MobileSubLink({
 
 // ─── Main Navbar ─────────────────────────────────────────────────────────────
 export default function Navbar() {
-  const { theaterMode, setShowUnderConstruction } = useLayout();
+  const { theaterMode } = useLayout();
+  const { isConnected, isLoading, persona, accounts, connect, disconnect } = useRadixWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<'theme' | 'lang' | null>(null);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -560,7 +614,7 @@ export default function Navbar() {
             <div className="hidden md:flex items-stretch gap-1">
 
               {/* Language: click = toggle, hover = popup */}
-              <NavPopup align="right" width="w-44" keepOpenOnTriggerClick trigger={
+              <NavPopup align="right" width="w-44" keepOpenOnTriggerClick offsetClass="absolute top-[calc(100%+4px)]" trigger={
                 <button onClick={toggleLanguage} className={iconBtnClass} aria-label="Select language">
                   <Globe className="w-4 h-4" />
                   {currentLangDisplay.toUpperCase()}
@@ -570,7 +624,7 @@ export default function Navbar() {
               </NavPopup>
 
               {/* Theme: click = cycle, hover = popup */}
-              <NavPopup align="right" width="w-[440px]" trigger={
+              <NavPopup align="right" width="w-[440px]" offsetClass="absolute top-[calc(100%+4px)]" trigger={
                 <button onClick={cycleTheme} className={iconBtnClass} aria-label="Select theme" suppressHydrationWarning>
                   {renderThemeIcon()}
                 </button>
@@ -578,31 +632,54 @@ export default function Navbar() {
                 <ThemePopupContent currentTheme={theme} onSelect={setTheme} t={t} />
               </NavPopup>
 
-              {/* CTA */}
+              {/* Desktop CTA */}
               <div className="self-center ml-2">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowUnderConstruction(true);
-                  }}
-                  aria-label={t.nav.connectWallet as string}
-                  className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                <NavPopup
+                  align="right"
+                  width="w-auto"
+                  offsetClass="absolute top-full"
+                  trigger={
+                    <button
+                      aria-label={isConnected ? 'Wallet Settings' : (t.nav.connectWallet as string)}
+                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                    >
+                      <RadixLogo
+                        label={
+                          isLoading 
+                            ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
+                            : isConnected && persona 
+                              ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
+                              : isConnected && accounts.length > 0 
+                                ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                                : (t.nav?.connectWallet as string)
+                        }
+                        showBeta={false}
+                        width="160"
+                        height="32"
+                        viewBox="0 0 210 40"
+                        fontSize={18}
+                        textX={32}
+                        logoScale={0.12}
+                        logoTranslateY={8}
+                        logoTranslateX={5}
+                        strokeColor="white"
+                        textColor="white"
+                        className={isLoading ? "animate-pulse" : ""}
+                      />
+                    </button>
+                  }
                 >
-                  <RadixLogo
-                    label={t.nav.connectWallet}
-                    showBeta={false}
-                    width="160"
-                    height="32"
-                    viewBox="0 0 210 40"
-                    fontSize={18}
-                    textX={32}
-                    logoScale={0.12}
-                    logoTranslateY={8}
-                    logoTranslateX={5}
-                    strokeColor="white"
-                    textColor="white"
-                  />
-                </button>
+                  {isConnected ? (
+                    <ConnectedWalletPopupContent 
+                      disconnect={disconnect} 
+                      personaName={persona?.label} 
+                      address={accounts[0]?.address}
+                      t={t}
+                    />
+                  ) : (
+                    <WalletPopupContent connect={connect} t={t} />
+                  )}
+                </NavPopup>
               </div>
             </div>
 
@@ -706,31 +783,52 @@ export default function Navbar() {
                   </div>
                 );
               })}
-              <div className="pt-3 pb-1">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowUnderConstruction(true);
-                    setIsOpen(false);
-                  }}
-                  aria-label={t.nav.connectWallet as string}
-                  className="flex items-center justify-center w-full h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4"
+              <div className="pt-3 pb-1 flex justify-center">
+                <NavPopup
+                  align="center"
+                  width="w-[280px]"
+                  trigger={
+                    <button
+                      aria-label={isConnected ? 'Wallet Settings' : (t.nav.connectWallet as string)}
+                      className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
+                    >
+                      <RadixLogo
+                        label={
+                          isLoading 
+                            ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
+                            : isConnected && persona 
+                              ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
+                              : isConnected && accounts.length > 0 
+                                ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                                : (t.nav?.connectWallet as string)
+                        }
+                        showBeta={false}
+                        width="170"
+                        height="32"
+                        viewBox="0 0 210 40"
+                        fontSize={18}
+                        textX={36}
+                        logoScale={0.12}
+                        logoTranslateY={8}
+                        logoTranslateX={10}
+                        strokeColor="white"
+                        textColor="white"
+                        className={isLoading ? "animate-pulse" : ""}
+                      />
+                    </button>
+                  }
                 >
-                  <RadixLogo
-                    label={t.nav.connectWallet}
-                    showBeta={false}
-                    width="170"
-                    height="32"
-                    viewBox="0 0 210 40"
-                    fontSize={18}
-                    textX={36}
-                    logoScale={0.12}
-                    logoTranslateY={8}
-                    logoTranslateX={10}
-                    strokeColor="white"
-                    textColor="white"
-                  />
-                </button>
+                  {isConnected ? (
+                    <ConnectedWalletPopupContent 
+                      disconnect={() => { disconnect(); setIsOpen(false); }} 
+                      personaName={persona?.label} 
+                      address={accounts[0]?.address}
+                      t={t}
+                    />
+                  ) : (
+                    <WalletPopupContent connect={(netId) => { connect(netId); setIsOpen(false); }} t={t} />
+                  )}
+                </NavPopup>
               </div>
             </div>
           </div>

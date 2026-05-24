@@ -64,7 +64,14 @@
     "theme_gold_light": "Gold Light",
     "theme_gold_dark": "Gold Dark",
     "theme_radix_original_light": "Radix Original Light",
-    "theme_radix_original_dark": "Radix Original Dark"
+    "theme_radix_original_light": "Radix Original Light",
+    "theme_radix_original_dark": "Radix Original Dark",
+    "wallet_select_network": "Select Network",
+    "wallet_mainnet": "Mainnet",
+    "wallet_stokenet": "Stokenet",
+    "wallet_connecting": "Connecting...",
+    "wallet_connected": "Connected",
+    "wallet_disconnect": "Disconnect"
   },
   "roadmap_status": {
     "done": "Done",
