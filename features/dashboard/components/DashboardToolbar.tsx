@@ -11,6 +11,7 @@ import { DASHBOARD_TAGS } from '@/constants/dashboard';
 import { TRANSACTION_TAGS } from '../explorador/constants';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/services/apiClient';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { DashboardToolbarProps } from '../types';
 
 /**
@@ -39,6 +40,7 @@ export const DashboardToolbar = ({
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
+    const { isConnected } = useRadixWallet();
 
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
         // Prefetch validators
@@ -116,7 +118,7 @@ export const DashboardToolbar = ({
                                 tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                 activeTag={activeTags.includes('All') ? null : activeTags}
                                 onSelect={tag => onActiveTagChange(tag || 'All')}
-                                allLabel={dt?.tags?.['All'] || 'All'}
+                                allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.tags?.['All'] || 'All')}
                                 tagLabels={dt?.tags}
                             />
                         ) : (
@@ -125,7 +127,7 @@ export const DashboardToolbar = ({
                                     tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                     activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
                                     onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                    allLabel={isConnected ? ((dt?.transaction_tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.transaction_tags?.['All'] || 'All')}
                                     tagLabels={dt?.transaction_tags}
                                 />
                                 <SearchableTagFilter
@@ -149,7 +151,7 @@ export const DashboardToolbar = ({
                                 tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                 activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
                                 onSelect={tag => onActiveTagChange(tag || 'All')}
-                                allLabel={dt?.tags?.['All'] || 'All'}
+                                allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.tags?.['All'] || 'All')}
                                 tagLabels={dt?.tags}
                                 placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
                             />
@@ -159,7 +161,7 @@ export const DashboardToolbar = ({
                                     tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                     activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
                                     onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                    allLabel={isConnected ? ((dt?.transaction_tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.transaction_tags?.['All'] || 'All')}
                                     tagLabels={dt?.transaction_tags}
                                     placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
                                 />

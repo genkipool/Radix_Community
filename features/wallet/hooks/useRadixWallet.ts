@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { RadixWalletContext } from '../context/RadixWalletProvider';
+import { RadixWalletContext } from '@/features/wallet/context/RadixWalletProvider';
 
 export function useRadixWallet() {
   const context = useContext(RadixWalletContext);

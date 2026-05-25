@@ -2,7 +2,8 @@
 import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
-  Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles
+  Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
+  User, RefreshCcw, LogOut
 } from 'lucide-react';
 import { useState, useEffect, useTransition, useRef, ReactNode } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -19,6 +20,7 @@ import { RadixCircleIcon } from '@/components/ui/RadixCircleIcon';
 import { RadixLogo } from '@/components/shared/RadixLogo';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { WalletProfileModal } from '@/features/wallet/components/WalletProfileModal';
 import type { Dictionary } from '@/i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -374,26 +376,70 @@ function WalletPopupContent({ connect, t }: { connect: (networkId: RadixNetworkI
   );
 }
 
-function ConnectedWalletPopupContent({ disconnect, personaName, address, t }: { disconnect: () => void, personaName?: string, address?: string, t: Dictionary }) {
+function ConnectedWalletPopupContent({ 
+  disconnect, 
+  connect,
+  networkId,
+  personaName, 
+  t,
+  onOpenProfileModal
+}: { 
+  disconnect: () => void, 
+  connect: (networkId: RadixNetworkId) => void,
+  networkId: RadixNetworkId | null,
+  personaName?: string, 
+  t: Dictionary,
+  onOpenProfileModal: () => void
+}) {
   return (
-    <div className="p-4 w-[240px]">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 px-1">
-        {t.nav?.wallet_connected ?? 'Connected'}
-      </p>
-      <div className="mb-4 px-1">
-        {personaName && <p className="text-sm font-semibold text-[var(--color-text-main)]">{personaName}</p>}
-        {address && (
-          <p className="text-xs text-[var(--color-text-muted)] truncate" title={address}>
-             {address.slice(0, 12)}...{address.slice(-6)}
-          </p>
-        )}
+    <div className="p-4 w-[280px]">
+      {/* Network Tabs Header */}
+      <div className="flex items-center gap-1 mb-4 p-1 bg-[var(--color-bg)] rounded-lg border border-[var(--color-card-border)]">
+        <div className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Mainnet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}>
+          {t.nav?.wallet_mainnet ?? 'Mainnet'}
+        </div>
+        <div className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Stokenet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}>
+          {t.nav?.wallet_stokenet ?? 'Stokenet'}
+        </div>
       </div>
-      <button
-        onClick={disconnect}
-        className="w-full text-center py-2 text-sm font-semibold text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+
+      {/* Row 1: Photo and Name (Clickable) */}
+      <button 
+        onClick={onOpenProfileModal}
+        className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--color-surface)] transition-colors text-left mb-4 group border border-transparent hover:border-[var(--color-card-border)]"
       >
-        {t.nav?.wallet_disconnect ?? 'Disconnect'}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-0.5 shrink-0">
+            <div className="w-full h-full bg-[var(--color-surface)] rounded-full flex items-center justify-center overflow-hidden">
+                <User className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
+            </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-[var(--color-text-main)] truncate group-hover:text-[var(--color-primary)] transition-colors">
+            {personaName || t.nav?.wallet_connected || 'Persona'}
+          </p>
+          <p className="text-[10px] text-[var(--color-text-muted)] truncate">
+            {((t.nav || {}) as Record<string, string>).view_profile ?? 'Ver perfil completo'}
+          </p>
+        </div>
       </button>
+
+      {/* Row 2: Actions */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => networkId && connect(networkId)}
+          className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
+        >
+          <RefreshCcw className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+          <span className="truncate">{((t.nav || {}) as Record<string, string>).update_wallet ?? 'Actualizar'}</span>
+        </button>
+        <button
+          onClick={disconnect}
+          className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -439,11 +485,11 @@ function _MobileSubLink({
   return <Link href={subHref} onClick={onClose}>{inner}</Link>;
 }
 
-// ─── Main Navbar ─────────────────────────────────────────────────────────────
 export default function Navbar() {
   const { theaterMode } = useLayout();
-  const { isConnected, isLoading, persona, accounts, connect, disconnect } = useRadixWallet();
+  const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId } = useRadixWallet();
   const [isOpen, setIsOpen] = useState(false);
+  const [isWalletProfileModalOpen, setIsWalletProfileModalOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<'theme' | 'lang' | null>(null);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { theme, setTheme } = useTheme();
@@ -672,9 +718,14 @@ export default function Navbar() {
                   {isConnected ? (
                     <ConnectedWalletPopupContent 
                       disconnect={disconnect} 
+                      connect={connect}
+                      networkId={networkId}
                       personaName={persona?.label} 
-                      address={accounts[0]?.address}
                       t={t}
+                      onOpenProfileModal={() => {
+                        setIsOpen(false);
+                        setIsWalletProfileModalOpen(true);
+                      }}
                     />
                   ) : (
                     <WalletPopupContent connect={connect} t={t} />
@@ -821,9 +872,14 @@ export default function Navbar() {
                   {isConnected ? (
                     <ConnectedWalletPopupContent 
                       disconnect={() => { disconnect(); setIsOpen(false); }} 
+                      connect={(netId) => { connect(netId); setIsOpen(false); }}
+                      networkId={networkId}
                       personaName={persona?.label} 
-                      address={accounts[0]?.address}
                       t={t}
+                      onOpenProfileModal={() => {
+                        setIsOpen(false);
+                        setIsWalletProfileModalOpen(true);
+                      }}
                     />
                   ) : (
                     <WalletPopupContent connect={(netId) => { connect(netId); setIsOpen(false); }} t={t} />
@@ -834,6 +890,15 @@ export default function Navbar() {
           </div>
         )}
       </nav>
+
+      {isWalletProfileModalOpen && (
+        <WalletProfileModal
+          isOpen={isWalletProfileModalOpen}
+          onClose={() => setIsWalletProfileModalOpen(false)}
+          t={t}
+          locale={language}
+        />
+      )}
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (

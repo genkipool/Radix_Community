@@ -433,7 +433,7 @@ export default function DashboardClient({
           columns={columns}
           onColumnsChange={setColumns}
           activeRanking={activeRanking}
-          onRankingChange={(val) => {
+          onRankingChange={(val: string | null) => {
             if (val) {
               setShowUnderConstruction(true);
             } else {

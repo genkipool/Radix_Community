@@ -96,7 +96,7 @@ export default function NavPopup({
     >
       {trigger}
       {/* Invisible bridge prevents losing hover while cursor moves from nav to popup */}
-      <div className="absolute top-full left-0 right-0 h-6 pointer-events-auto" />
+      <div className="absolute top-full left-0 right-0 h-8 pointer-events-auto z-[45]" />
       <div
         className={[
           offsetClass,
