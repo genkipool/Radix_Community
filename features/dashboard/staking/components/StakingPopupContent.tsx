@@ -285,10 +285,12 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             <div className="flex gap-2 mt-1">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
+                    const hasTxError = Boolean((error && error.includes('txid_tdx_2_1')) || (actionError && actionError.includes('txid_tdx_2_1')));
                     const isDisabled = 
                         isTransacting || 
                         !activeAccount || 
                         isSuperiorToBoth ||
+                        hasTxError ||
                         (action === 'Unstake' && stakedXrd <= 0) ||
                         (action === 'Claim' && stakingData.claimableXrd <= 0) ||
                         (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||

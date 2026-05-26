@@ -8,6 +8,9 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { AccountSummaryTab } from '@/features/dashboard/explorador/components/AccountSummaryTab';
 import { UnderConstructionModal } from '@/components/shared/UnderConstructionModal';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
 import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
@@ -20,6 +23,48 @@ interface WalletProfileModalProps {
 }
 
 type TabType = 'profile' | 'accounts' | 'notifications';
+
+function WalletAccountSummaryWrapper({
+    address,
+    entityName,
+    tt,
+    onCopy,
+    copiedAddress,
+    network,
+    locale
+}: {
+    address: string;
+    entityName: string;
+    tt: Parameters<typeof AccountSummaryTab>[0]['tt'];
+    onCopy: (v: string) => void;
+    copiedAddress: string | null;
+    network: 'mainnet' | 'stokenet';
+    locale: string;
+}) {
+    const { data: entityData } = useQuery({
+        queryKey: entityKeys.detail(address, network),
+        queryFn: () => apiFetchEntityDetails(address, network),
+        enabled: true,
+        staleTime: Infinity,
+        gcTime: 10 * 60_000,
+    });
+
+    return (
+        <AccountSummaryTab
+            address={address}
+            entityData={entityData || null}
+            entityName={entityName}
+            iconUrl={undefined}
+            getMeta={() => ''}
+            tt={tt}
+            onCopy={onCopy}
+            copiedAddress={copiedAddress}
+            network={network}
+            locale={locale}
+            isBadge={true}
+        />
+    );
+}
 
 export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfileModalProps) {
     const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork } = useRadixWallet();
@@ -169,18 +214,14 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                             const originalIndex = accounts.findIndex(a => a.address === acc.address);
                                                             return (
                                                                 <div key={acc.address} className="pb-8 border-b border-[var(--color-card-border)]/30 last:border-0 last:pb-0">
-                                                                    <AccountSummaryTab
+                                                                    <WalletAccountSummaryWrapper
                                                                         address={acc.address}
-                                                                        entityData={null}
                                                                         entityName={acc.label || `${navT.account ?? 'Cuenta'} ${originalIndex + 1}`}
-                                                                        iconUrl={undefined}
-                                                                        getMeta={() => ''}
                                                                         tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
                                                                         onCopy={copy}
                                                                         copiedAddress={copiedText}
                                                                         network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
                                                                         locale={locale}
-                                                                        isBadge={true}
                                                                     />
                                                                 </div>
                                                             );
