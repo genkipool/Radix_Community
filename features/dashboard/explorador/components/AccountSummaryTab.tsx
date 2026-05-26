@@ -13,7 +13,7 @@ import { type AccountRewardsCsvModalDict } from '../types/components.types';
 import { useAccountStats } from '../hooks/useAccountStats';
 
 interface AccountSummaryTabProps {
-    _address: string;
+    address: string;
     entityData: GatewayEntityDetails | null;
     entityName: string | null | undefined;
     iconUrl: string | null | undefined;
@@ -27,7 +27,7 @@ interface AccountSummaryTabProps {
 }
 
 interface ParsedResource {
-    _address: string;
+    address: string;
     name: string;
     symbol: string;
     iconUrl: string;
