@@ -15,7 +15,22 @@ export function extractMetadata(items: MetadataItem[] | undefined, key: string):
     return '';
 }
 
+import { parseProgrammaticJson } from '@/features/dashboard/utils/resourceUtils';
 
+// Function to safely extract tags
+function extractTags(items: MetadataItem[] | undefined): string[] {
+    const meta = items?.find((m) => m.key === 'tags');
+    if (meta?.value?.typed?.values) {
+        return meta.value.typed.values;
+    }
+    if (meta?.value?.programmatic_json) {
+        const parsed = parseProgrammaticJson(meta.value.programmatic_json);
+        if (Array.isArray(parsed)) {
+            return parsed.map(String);
+        }
+    }
+    return [];
+}
 export function useAccountStats(address: string, network: 'mainnet' | 'stokenet', entityData: GatewayEntityDetails | null) {
     const { data: validatorsData, isLoading: isLoadingValidators } = useValidatorsQuery(network);
 
@@ -42,10 +57,19 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         return '0';
     };
 
-    const getNonFungibleAmount = (res: NonFungibleItem & { vaults?: { items?: { total_count?: number }[] } }, defaultItemsLength: number) => {
+    const getNonFungibleAmount = (res: NonFungibleItem & { vaults?: { items?: { total_count?: number, items?: unknown[] }[] } }, defaultItemsLength: number) => {
         if (res.amount !== undefined) return Number(res.amount);
         if (res.vaults?.items?.length && res.vaults.items.length > 0) {
-            return res.vaults.items.reduce((acc: number, v: { total_count?: number }) => acc + (v.total_count || 0), 0);
+            let totalCount = 0;
+            res.vaults.items.forEach((vaultObj) => {
+                const v = vaultObj as { total_count?: number; items?: unknown[] };
+                if (v.total_count) {
+                    totalCount += v.total_count;
+                } else if (v.items && Array.isArray(v.items)) {
+                    totalCount += v.items.length;
+                }
+            });
+            if (totalCount > 0) return totalCount;
         }
         return defaultItemsLength;
     };
@@ -66,9 +90,10 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             symbol: extractMetadata(meta, 'symbol') || '',
             iconUrl: extractMetadata(meta, 'icon_url') || '',
             amount: getFungibleAmount(ft),
-            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit'),
-            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu,
+            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit') || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
+            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
             validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
+            validatorName: valByLsu?.name,
             isClaim: false,
             isNft: false
         };
@@ -97,9 +122,25 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     nonFungibles.forEach((nft: NonFungibleItem) => {
         const meta = nft.explicit_metadata?.items || [];
         const valByClaim = validatorsData?.validators.find((v: Validator) => v.claimTokenResourceAddress === nft.resource_address);
-        const nftWithVaults = nft as NonFungibleItem & { vaults?: { items?: { items?: unknown[] }[] } };
-        const nftItems = nftWithVaults.vaults?.items?.[0]?.items || [];
-        const nftAmount = getNonFungibleAmount(nftWithVaults, nftItems.length);
+        const nftWithVaults = nft as NonFungibleItem & { vaults?: { items?: { items?: string[], total_count?: number }[] } };
+        
+        let allIds: string[] = [];
+        let totalCount = 0;
+        const vaults = nftWithVaults.vaults?.items || [];
+        
+        vaults.forEach((vaultObj) => {
+            const v = vaultObj as { total_count?: number; items?: string[] };
+            if (v.total_count) {
+                totalCount += v.total_count;
+            } else if (v.items && Array.isArray(v.items)) {
+                totalCount += v.items.length;
+            }
+            if (v.items && Array.isArray(v.items)) {
+                allIds = [...allIds, ...v.items];
+            }
+        });
+
+        const nftAmount = getNonFungibleAmount(nftWithVaults, totalCount);
 
         const r: ParsedResource = {
             address: nft.resource_address,
@@ -110,14 +151,17 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             isPoolUnit: false,
             isLsu: false,
             validatorAddress: extractMetadata(meta, 'validator') || valByClaim?.address,
+            validatorName: valByClaim?.name,
             isClaim: !!meta.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator') || !!valByClaim,
-            ids: nftItems,
+            ids: allIds,
             isNft: true
         };
 
         if (r.isClaim && r.validatorAddress && r.ids && r.ids.length > 0) {
             claimCollections[r.address] = r.ids;
-        } else if (nftAmount === 0) {
+        }
+        
+        if (nftAmount === 0) {
             burnedNfts.push(r);
         } else {
             activeNfts.push(r);

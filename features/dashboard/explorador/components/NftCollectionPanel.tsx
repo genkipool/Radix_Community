@@ -20,7 +20,7 @@ export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | '
 export function NftCollectionPanel({
     resourceAddress: _resourceAddress, meta, nftData, nftLoading, ids, type,
     onCopy, copiedAddress, tt, claimXrdTotal, isClaim, isStakeClaimOverride, isClaimRedeemed, isClaimAuthorized, unstakeXrdExpected, network: _network,
-    locale,
+    locale, validatorAddress, validatorName
 }: NftCollectionPanelProps) {
     const [activeTab, setActiveTab] = useState<NftPanelTab>(ids.length > 0 ? 'items' : 'summary');
     const [expandedNfts, setExpandedNfts] = useState<Set<string>>(new Set());
@@ -219,12 +219,20 @@ export function NftCollectionPanel({
                                                                 <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full object-cover" />
                                                             </div>
                                                         )}
-                                                        {fields.length > 0 && (
+                                                        {(fields.length > 0 || ((isStakeClaim || isClaim) && validatorAddress)) && (
                                                             <div>
                                                                 <p className="text-[9px] uppercase tracking-widest font-black text-[var(--color-text-muted)] opacity-60 mb-2 flex items-center gap-1">
                                                                     <FileJson className="w-3 h-3" />{tt?.nft_data_fields || 'NFT Data Fields'}
                                                                 </p>
                                                                 <div className="space-y-2">
+                                                                    {(isStakeClaim || isClaim) && validatorAddress && (
+                                                                        <div>
+                                                                            <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{((tt as unknown) as Record<string, string>)?.staking_validator || 'validator'}</p>
+                                                                            <p className="text-xs text-[var(--color-primary)] break-words leading-relaxed truncate">
+                                                                                {validatorName || validatorAddress}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
                                                                     {fields.map((f, fi) => {
                                                                         const isUrl = typeof f.value === 'string' && (f.value.startsWith('http') || f.value.startsWith('ipfs'));
                                                                         return (

@@ -336,4 +336,6 @@ export interface NftCollectionPanelProps {
     unstakeXrdExpected?: number;
     network: Network;
     locale: string;
+    validatorAddress?: string;
+    validatorName?: string;
 }

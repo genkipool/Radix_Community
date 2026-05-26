@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Copy, Check, Info, ChevronDown } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { extractMetadata } from '../hooks/useAccountStats';
-import { getXrdAddress } from '../constants';
 import { truncateAddress } from '@/utils/formatters';
 import { ResourceInlinePanel } from './BalanceChangeRow';
 import { NftCollectionPanel } from './NftCollectionPanel';
@@ -13,7 +11,7 @@ import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import type { GatewayEntityDetails, TranslationsT, MetadataItem } from '@/features/dashboard/types';
-import { parseProgrammaticJson } from '@/features/dashboard/utils/resourceUtils';
+import { useAccountStats } from '../hooks/useAccountStats';
 
 interface ParsedResource {
     address: string;
@@ -24,6 +22,7 @@ interface ParsedResource {
     isPoolUnit: boolean;
     isLsu: boolean;
     validatorAddress?: string;
+    validatorName?: string;
     poolAddress?: string;
     isClaim: boolean;
     ids?: string[];
@@ -31,157 +30,6 @@ interface ParsedResource {
     rawResourceData?: unknown;
     metadataItems?: MetadataItem[];
 }
-
-
-// Function to safely extract tags
-function extractTags(items: MetadataItem[] | undefined): string[] {
-    const meta = items?.find((m) => m.key === 'tags');
-    if (meta?.value?.typed?.values) {
-        return meta.value.typed.values;
-    }
-    if (meta?.value?.programmatic_json) {
-        const parsed = parseProgrammaticJson(meta.value.programmatic_json);
-        if (Array.isArray(parsed)) {
-            return parsed.map(String);
-        }
-    }
-    return [];
-}
-
-/**
- * Extracts the pool component address from LP token metadata.
- * Checks: pool, pool_address keys, dapp_definitions, or component_ pattern in info_url.
- */
-function extractPoolAddress(items: MetadataItem[] | undefined): string | undefined {
-    if (!items) return undefined;
-
-    // Direct pool or pool_address metadata key
-    const poolMeta = items.find((m) => m.key === 'pool' || m.key === 'pool_address');
-    if (poolMeta?.value?.typed?.value) return poolMeta.value.typed.value;
-
-    // Check dapp_definitions for component addresses
-    const dappDefs = items.find((m) => m.key === 'dapp_definitions');
-    if (dappDefs?.value?.typed?.values) {
-        const componentAddr = dappDefs.value.typed.values.find(
-            (v: string) => v.startsWith('component_')
-        );
-        if (componentAddr) return componentAddr;
-    }
-    if (dappDefs?.value?.typed?.value && (dappDefs.value.typed.value as string).startsWith('component_')) {
-        return dappDefs.value.typed.value;
-    }
-
-    // Single dapp_definition
-    const dappDef = items.find((m) => m.key === 'dapp_definition');
-    if (dappDef?.value?.typed?.value && (dappDef.value.typed.value as string).startsWith('component_')) {
-        return dappDef.value.typed.value;
-    }
-
-    // Extract from info_url (e.g. https://app.ociswap.com/pool/component_rdx1...)
-    const infoUrl = items.find((m) => m.key === 'info_url');
-    const urlStr = infoUrl?.value?.typed?.value ?? infoUrl?.value?.typed?.url ?? '';
-    const componentMatch = urlStr.match(/(component_[a-z0-9]+)/i);
-    if (componentMatch) return componentMatch[1];
-
-    return undefined;
-}
-
-interface ResourceItem {
-    resource_address: string;
-    amount?: string;
-    explicit_metadata?: { items: MetadataItem[] };
-    vaults?: { items: { items: string[] }[] };
-    [key: string]: unknown;
-}
-
-interface ValidatorItem {
-    address: string;
-    lsuResource: string;
-    claimTokenResourceAddress: string;
-    [key: string]: unknown;
-}
-
-function parseTokensAndNfts(entityData: GatewayEntityDetails | null, network: 'mainnet' | 'stokenet' = 'mainnet', validatorsData?: { validators?: ValidatorItem[] }) {
-    const xrdAddress = getXrdAddress(network);
-
-    const fungibles = entityData?.fungible_resources?.items || [];
-    const nonFungibles = entityData?.non_fungible_resources?.items || [];
-
-    const tokens: ParsedResource[] = [];
-    const poolUnits: ParsedResource[] = [];
-    const activeNfts: ParsedResource[] = [];
-    const burnedNfts: ParsedResource[] = [];
-
-    // Filter out XRD if needed, or keep it. We'll keep all tokens here.
-    fungibles.forEach((ft: ResourceItem | unknown) => {
-        const ftItem = ft as ResourceItem;
-        const meta = ftItem.explicit_metadata?.items || [];
-        const valByLsu = validatorsData?.validators?.find((v: ValidatorItem) => v.lsuResource === ftItem.resource_address);
-
-        const r: ParsedResource = {
-            address: ftItem.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown Token',
-            symbol: extractMetadata(meta, 'symbol') || '',
-            iconUrl: extractMetadata(meta, 'icon_url') || '',
-            amount: ftItem.amount || '0',
-            isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit') || extractTags(meta).some((tag: string) => ['lp', 'liquidity-pool', 'pool_unit'].includes(tag.toLowerCase())),
-            isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu || extractTags(meta).some((tag: string) => tag.toLowerCase() === 'lsu'),
-            validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
-            poolAddress: undefined,
-            isClaim: false,
-            isNft: false,
-            rawResourceData: ftItem,
-            metadataItems: meta
-        };
-
-        if (r.isPoolUnit) {
-            r.poolAddress = extractPoolAddress(meta);
-            poolUnits.push(r);
-        } else {
-            tokens.push(r);
-        }
-    });
-
-    // Ensure XRD is always first if present
-    const xrdIndex = tokens.findIndex(t => t.address === xrdAddress);
-    if (xrdIndex > -1) {
-        const [xrd] = tokens.splice(xrdIndex, 1);
-        tokens.unshift(xrd);
-    }
-
-    nonFungibles.forEach((nft: ResourceItem | unknown) => {
-        const nftItem = nft as ResourceItem;
-        const meta = nftItem.explicit_metadata?.items || [];
-        const valByClaim = validatorsData?.validators?.find((v: ValidatorItem) => v.claimTokenResourceAddress === nftItem.resource_address);
-        const nftItems = nftItem.vaults?.items?.[0]?.items || [];
-        const nftAmount = nftItem.amount !== undefined ? nftItem.amount : nftItems.length;
-
-        const r: ParsedResource = {
-            address: nftItem.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown NFT',
-            symbol: extractMetadata(meta, 'symbol') || '',
-            iconUrl: extractMetadata(meta, 'icon_url') || '',
-            amount: String(nftAmount),
-            isPoolUnit: false,
-            isLsu: false,
-            validatorAddress: extractMetadata(meta, 'validator') || valByClaim?.address,
-            isClaim: !!meta.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator') || !!valByClaim,
-            ids: nftItems,
-            isNft: true,
-            rawResourceData: nftItem,
-            metadataItems: meta
-        };
-
-        if (nftAmount === 0) {
-            burnedNfts.push(r);
-        } else {
-            activeNfts.push(r);
-        }
-    });
-
-    return { tokens, poolUnits, activeNfts, burnedNfts };
-}
-
 export function AccountTokensTab({
     address: _address,
     entityData,
@@ -199,7 +47,7 @@ export function AccountTokensTab({
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
-    const { tokens } = parseTokensAndNfts(entityData, network);
+    const { tokens } = useAccountStats(_address, network, entityData);
 
     return (
         <div className="space-y-6">
@@ -228,7 +76,7 @@ export function AccountPoolUnitsTab({
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
-    const { poolUnits } = parseTokensAndNfts(entityData, network);
+    const { poolUnits } = useAccountStats(_address, network, entityData);
 
     return (
         <div className="space-y-6">
@@ -257,7 +105,7 @@ export function AccountNftsTab({
     network?: 'mainnet' | 'stokenet';
     locale?: string;
 }) {
-    const { activeNfts, burnedNfts } = parseTokensAndNfts(entityData, network);
+    const { activeNfts, burnedNfts } = useAccountStats(_address, network, entityData);
 
     return (
         <div className="space-y-6">
@@ -410,6 +258,8 @@ function ExpandableResourceCard({
                                 tt={tt}
                                 network={network}
                                 locale={locale || 'en-US'}
+                                validatorAddress={item.validatorAddress}
+                                validatorName={item.validatorName}
                             />
                         ) : (
                             <ResourceInlinePanel 
