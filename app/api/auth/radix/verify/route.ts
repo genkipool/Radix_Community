@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Rola } from '@radixdlt/rola';
 import { isValidChallenge } from '../challenge/route';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     
     // We are just finding the user for now to demonstrate the flow.
     // Real implementation requires Custom Auth token generation using supabase admin.
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
         .from('profiles') // Assuming a profiles table exists
         .select('*')
         .eq('radix_address', identityAddress)
@@ -71,8 +71,8 @@ export async function POST(req: Request) {
 
     // If user doesn't exist, we could insert them here.
     if (!user && userError?.code === 'PGRST116') {
-         console.log("User not found, would create new profile for:", identityAddress);
-         // await supabase.from('profiles').insert({ radix_address: identityAddress })
+         console.log("User not found, creating new profile for:", identityAddress);
+         await supabaseAdmin.from('profiles').insert({ radix_address: identityAddress });
     }
 
     // Generate a secure session cookie here (JWT or NextAuth session)

@@ -50,16 +50,21 @@ export const handlers = [
         });
     }),
 
-    // GET /api/entity/:address
-    http.get('/api/entity/:address', () => {
+    // POST https://mainnet.radixdlt.com/state/entity/details
+    http.post('https://mainnet.radixdlt.com/state/entity/details', () => {
         return HttpResponse.json({
-            metadata: {
-                items: [
-                    { key: 'name', value: { typed: { value: 'Test Token' } } },
-                    { key: 'symbol', value: { typed: { value: 'TST' } } },
-                    { key: 'icon_url', value: { typed: { value: 'https://example.com/icon.png' } } },
-                ],
-            },
+            items: [
+                {
+                    metadata: {
+                        items: [
+                            { key: 'name', value: { typed: { value: 'Test Token' } } },
+                            { key: 'symbol', value: { typed: { value: 'TST' } } },
+                            { key: 'icon_url', value: { typed: { value: 'https://example.com/icon.png' } } },
+                        ],
+                    },
+                }
+            ],
+            ledger_state: { epoch: 100 }
         });
     }),
 
@@ -95,14 +100,14 @@ export const handlers = [
         return HttpResponse.json('validator_rdx1proposer');
     }),
 
-    // POST /api/nft-data
-    http.post('/api/nft-data', async ({ request }) => {
-        const body = (await request.json()) as { resourceAddress: string; localIds: string[] };
-        return HttpResponse.json(
-            (body.localIds || []).map((id: string) => ({
+    // POST https://mainnet.radixdlt.com/state/non-fungible/data
+    http.post('https://mainnet.radixdlt.com/state/non-fungible/data', async ({ request }) => {
+        const body = (await request.json()) as { resource_address: string; non_fungible_ids: string[] };
+        return HttpResponse.json({
+            non_fungible_ids: (body.non_fungible_ids || []).map((id: string) => ({
                 non_fungible_id: id,
                 data: { programmatic_json: { fields: [{ field_name: 'name', value: `NFT #${id}` }] } },
-            })),
-        );
+            }))
+        });
     }),
 ];

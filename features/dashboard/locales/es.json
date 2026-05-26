@@ -646,6 +646,23 @@
       "start_date": "Fecha Inicio",
       "end_date": "Fecha Fin",
       "range_placeholder": "Seleccionar rango..."
+    },
+    "staking": {
+      "delegator": "Delegador",
+      "validator": "Validador",
+      "available": "Disponible",
+      "staked": "Stakeado",
+      "unstaking": "Desvinculando",
+      "claimable": "Reclamable",
+      "amount_to": "Cantidad a",
+      "max": "MÁX",
+      "stake": "Stake",
+      "unstake": "Unstake",
+      "claim": "Claim",
+      "owner_warning": "Advertencia: La cuenta seleccionada no parece ser la propietaria de este validador. Las acciones de propietario podrían fallar.",
+      "errors": {
+        "failedToPrepareTransaction": "Error al preparar la transacción. Revisa tu saldo, el manifiesto y la conexión de tu wallet Radix."
+      }
     }
   },
   "stakes": {

@@ -11,8 +11,8 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
+import { StakingPopup } from './StakingPopup';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { useLayout } from '@/context/LayoutContext';
 import { type ValidatorDetailViewProps } from '../types';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
@@ -30,7 +30,6 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     setDirection,
     marketData,
 }) => {
-    const { setShowUnderConstruction } = useLayout();
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
@@ -145,16 +144,14 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                             className="pointer-events-none shrink-0"
                                         />
                                     </div>
-                                    <button
-                                        className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
-                                        style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
-                                        onClick={e => {
-                                            e.stopPropagation();
-                                            setShowUnderConstruction(true);
-                                        }}
-                                    >
-                                        {dt?.card?.stake_button ?? 'Stake'}
-                                    </button>
+                                    <StakingPopup validator={validator} t={t}>
+                                        <button
+                                            className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
+                                            style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
+                                        >
+                                            {dt?.card?.stake_button ?? 'Stake'}
+                                        </button>
+                                    </StakingPopup>
                                 </div>
 
                             </div>
@@ -187,16 +184,14 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                         </p>
                         <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                             <EntityTagsGrid tags={validator.tags} t={t} />
-                            <Button
-                                variant="primary"
-                                className="!h-[38px] !px-6 sm:!px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-fit sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
-                                onClick={e => {
-                                    e.stopPropagation();
-                                    setShowUnderConstruction(true);
-                                }}
-                            >
-                                {dt?.card?.stake_button ?? 'Stake'}
-                            </Button>
+                            <StakingPopup validator={validator} t={t}>
+                                <Button
+                                    variant="primary"
+                                    className="!h-[38px] !px-6 sm:!px-8 !rounded-[10px] !text-[13px] !font-bold whitespace-nowrap shrink-0 !transition-all duration-200 w-fit sm:w-auto justify-center hover:!opacity-90 active:!scale-[0.97]"
+                                >
+                                    {dt?.card?.stake_button ?? 'Stake'}
+                                </Button>
+                            </StakingPopup>
                         </div>
                     </div>
                 </SwipeableContainer>

@@ -30,6 +30,7 @@ export interface StakingEntry {
     xrdInStake: number;
     xrdInUnstake: number;
     xrdInClaim: number;
+    unstakes: { amount: number; epoch: number }[];
 }
 
 export interface OracleUpdate {

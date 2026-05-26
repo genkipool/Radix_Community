@@ -273,6 +273,8 @@ export interface CopyAddressButtonProps {
  */
 export interface DelegateButtonProps {
     label: string;
+    validator: Validator;
+    t?: Partial<TranslationsT>;
     small?: boolean;
     tiny?: boolean;
     title?: string;

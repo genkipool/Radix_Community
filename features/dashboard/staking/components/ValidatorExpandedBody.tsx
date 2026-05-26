@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 // import removed
 import { apiFetchStakeHistory } from '@/features/dashboard/services/apiClient';
 import { Button } from '@/components/ui/Button';
+import { StakingPopup } from './StakingPopup';
 import { useLiveProposals } from './LiveProposals';
 import { useLanguage } from '@/context/LanguageContext';
-import { useLayout } from '@/context/LayoutContext';
 import { VEB_STYLES } from './ValidatorExpandedPrimitives';
 import { useEpochRewards } from '../hooks/useEpochRewards';
 import {
@@ -29,7 +29,6 @@ export const ValidatorExpandedBody = ({
     locale,
 }: ValidatorExpandedBodyProps) => {
     const { language } = useLanguage();
-    const { setShowUnderConstruction } = useLayout();
     const dt = t?.dashboard;
     const live = useLiveProposals(validator);
     const activeLocale = locale || language;
@@ -141,16 +140,14 @@ export const ValidatorExpandedBody = ({
                     <p className="veb-cta-hint">
                         {dt?.card?.stake_hint ?? 'Delegate your XRD to this validator and start earning rewards.'}
                     </p>
-                    <Button
-                        variant="primary"
-                        className="veb-cta-btn"
-                        onClick={e => {
-                            e.stopPropagation();
-                            setShowUnderConstruction(true);
-                        }}
-                    >
-                        {dt?.card?.stake_button ?? 'Stake'}
-                    </Button>
+                    <StakingPopup validator={validator} t={t}>
+                        <Button
+                            variant="primary"
+                            className="veb-cta-btn"
+                        >
+                            {dt?.card?.stake_button ?? 'Stake'}
+                        </Button>
+                    </StakingPopup>
                 </div>
             )}
 

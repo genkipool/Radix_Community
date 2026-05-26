@@ -11,8 +11,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const cursor = validateCursor(searchParams.get('cursor'));
     const limit = validateLimit(searchParams.get('limit'));
-    const rawAddress = searchParams.get('address') || '';
-    const address = rawAddress ? (validateAddress(rawAddress) ?? '') : '';
+    const addressParam = searchParams.get('address');
+    let address: string | string[] | undefined = undefined;
+    if (addressParam) {
+        if (addressParam.includes(',')) {
+            address = addressParam.split(',').map(a => validateAddress(a)).filter((a): a is string => Boolean(a));
+        } else {
+            const validated = validateAddress(addressParam);
+            if (validated) address = validated;
+        }
+    }
     const network = validateNetwork(searchParams.get('network'));
     const tag = searchParams.get('tag') || 'All';
     const start = searchParams.get('start') || undefined;

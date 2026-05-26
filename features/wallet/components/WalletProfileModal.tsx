@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, ShieldCheck, LogOut, RefreshCcw, Wallet } from 'lucide-react';
+import { X, User, LogOut, RefreshCcw, Wallet } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -10,6 +10,7 @@ import { UnderConstructionModal } from '@/components/shared/UnderConstructionMod
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
+import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 
 interface WalletProfileModalProps {
     isOpen: boolean;
@@ -24,12 +25,11 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
     const { persona, accounts, activeNetworkId: networkId, connect, disconnect } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
+    const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(null);
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;
 
-    // Default to a connected network text
-    const networkName = networkId === RadixNetworkId.Mainnet ? 'Mainnet' : 'Stokenet';
     const personaName = persona?.label || navT.wallet_connected || 'Persona';
     const personaIcon = ''; // Replace with persona icon if available in future
 
@@ -65,11 +65,19 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-4 border-b border-[var(--color-card-border)]/50">
-                                <div className="flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-[var(--color-accent)]" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-[var(--color-text-main)]">
-                                        {networkName}
-                                    </span>
+                                <div className="flex items-center gap-1 p-1 bg-[var(--color-bg)] rounded-lg border border-[var(--color-card-border)]">
+                                    <button 
+                                        onClick={() => connect(RadixNetworkId.Mainnet)}
+                                        className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Mainnet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                    >
+                                        Mainnet
+                                    </button>
+                                    <button 
+                                        onClick={() => connect(RadixNetworkId.Stokenet)}
+                                        className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Stokenet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                    >
+                                        Stokenet
+                                    </button>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -127,30 +135,56 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             {/* Tab Content */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                 {activeTab === 'accounts' && (
-                                    <div className="space-y-8">
+                                    <div className="space-y-6">
                                         {accounts.length === 0 ? (
                                             <div className="text-center py-12 text-[var(--color-text-muted)]">
                                                 <Wallet className="w-12 h-12 mx-auto mb-3 opacity-20" />
                                                 <p>{navT.no_accounts ?? 'No hay cuentas conectadas'}</p>
                                             </div>
                                         ) : (
-                                            accounts.map((acc, index) => (
-                                                <div key={acc.address} className="pb-8 border-b border-[var(--color-card-border)]/30 last:border-0">
-                                                    <AccountSummaryTab
-                                                        address={acc.address}
-                                                        entityData={null}
-                                                        entityName={acc.label || `${navT.account ?? 'Cuenta'} ${index + 1}`}
-                                                        iconUrl={undefined}
-                                                        getMeta={() => ''}
-                                                        tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
-                                                        onCopy={copy}
-                                                        copiedAddress={copiedText}
-                                                        network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
-                                                        locale={locale}
-                                                        isBadge={true}
-                                                    />
+                                            <>
+                                                {accounts.length > 1 && (
+                                                    <div className="flex justify-center mb-4">
+                                                        <SearchableTagFilter
+                                                            tags={accounts.map(acc => acc.address)}
+                                                            activeTag={selectedAccountAddress}
+                                                            onSelect={(tag) => setSelectedAccountAddress(tag)}
+                                                            allLabel={navT.all_accounts ?? 'Todas las cuentas'}
+                                                            tagLabels={accounts.reduce((acc, account, idx) => ({
+                                                                ...acc,
+                                                                [account.address]: account.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
+                                                            }), {})}
+                                                            placeholder={navT.search_account ?? 'Buscar cuenta...'}
+                                                            width="w-full"
+                                                        />
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="space-y-8">
+                                                    {accounts
+                                                        .filter(acc => !selectedAccountAddress || acc.address === selectedAccountAddress)
+                                                        .map((acc, _index) => {
+                                                            const originalIndex = accounts.findIndex(a => a.address === acc.address);
+                                                            return (
+                                                                <div key={acc.address} className="pb-8 border-b border-[var(--color-card-border)]/30 last:border-0 last:pb-0">
+                                                                    <AccountSummaryTab
+                                                                        address={acc.address}
+                                                                        entityData={null}
+                                                                        entityName={acc.label || `${navT.account ?? 'Cuenta'} ${originalIndex + 1}`}
+                                                                        iconUrl={undefined}
+                                                                        getMeta={() => ''}
+                                                                        tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                        onCopy={copy}
+                                                                        copiedAddress={copiedText}
+                                                                        network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
+                                                                        locale={locale}
+                                                                        isBadge={true}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })}
                                                 </div>
-                                            ))
+                                            </>
                                         )}
                                     </div>
                                 )}

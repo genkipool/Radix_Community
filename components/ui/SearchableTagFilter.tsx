@@ -37,10 +37,11 @@ export function SearchableTagFilter({
         const allOptions = hideAll ? tags : [null, ...tags];
         let nextIdx;
 
-        if (activeTag === null) {
+        const currentIdx = allOptions.indexOf(activeTag as string | null);
+
+        if (currentIdx === -1) {
             nextIdx = direction === 'next' ? 0 : allOptions.length - 1;
         } else {
-            const currentIdx = allOptions.indexOf(activeTag);
             nextIdx = direction === 'next'
                 ? (currentIdx + 1) % allOptions.length
                 : (currentIdx - 1 + allOptions.length) % allOptions.length;

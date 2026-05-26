@@ -7,7 +7,7 @@ export async function apiFetchTransactions(
     options: {
         cursor?: string;
         limit?: number;
-        address?: string;
+        address?: string | string[];
         network?: 'mainnet' | 'stokenet';
         tag?: string;
         start?: string;
@@ -18,7 +18,13 @@ export async function apiFetchTransactions(
     const params = new URLSearchParams();
     if (cursor) params.set('cursor', cursor);
     params.set('limit', String(limit));
-    if (address) params.set('address', address);
+    if (address) {
+        if (Array.isArray(address)) {
+            params.set('address', address.join(','));
+        } else {
+            params.set('address', address);
+        }
+    }
     params.set('network', network);
     if (tag !== 'All') params.set('tag', tag);
     if (start) params.set('start', start);
@@ -52,20 +58,53 @@ export async function apiFetchTransactionDetails(intentHash: string, network: 'm
     return res.json();
 }
 
-export async function apiFetchEntityDetails(address: string, network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<GatewayEntityDetails> {
-    const res = await fetch(`/api/entity/${encodeURIComponent(address)}?network=${network}`);
+export async function apiFetchEntityDetails(address: string, network: 'mainnet' | 'stokenet' = 'mainnet', refresh = false): Promise<GatewayEntityDetails> {
+    const baseUrl = network === 'stokenet' ? 'https://babylon-stokenet-gateway.radixdlt.com' : 'https://mainnet.radixdlt.com';
+    const res = await fetch(`${baseUrl}/state/entity/details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            addresses: [address],
+            opt_ins: {
+                explicit_metadata: [
+                    'name', 'symbol', 'icon_url', 'description', 'tags',
+                    'info_url', 'validator_fee_factor', 'claim_epoch_delay',
+                    'dapp_definition', 'dapp_definitions', 'pool', 'pool_address'
+                ],
+                ancestor_identities: false,
+                component_royalty_vault_balance: false,
+                package_royalty_vault_balance: false,
+                non_fungible_include_nfids: false,
+            }
+        }),
+        cache: refresh ? 'no-store' : 'default',
+    });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) throw new Error("Entity not found");
+    
+    // Inject ledger_state into the returned item for epoch calculations
+    const item = data.items[0];
+    item.ledger_state = data.ledger_state;
+    return item as GatewayEntityDetails;
 }
 
 export async function apiFetchNonFungibleData(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, unknown>[]> {
-    const res = await fetch('/api/nft-data', {
+    const baseUrl = network === 'stokenet' ? 'https://babylon-stokenet-gateway.radixdlt.com' : 'https://mainnet.radixdlt.com';
+    const res = await fetch(`${baseUrl}/state/non-fungible/data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resourceAddress, localIds, network }),
+        body: JSON.stringify({
+            resource_address: resourceAddress,
+            non_fungible_ids: localIds.slice(0, 10)
+        }),
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
+    const data = await res.json();
+    
+    // The gateway returns an array in `non_fungible_ids`
+    // We can also inject ledger_state into each NFT if needed, but we injected it in entity details already.
+    return (data.non_fungible_ids || []) as Record<string, unknown>[];
 }
 
 export async function apiFetchStakeHistory(

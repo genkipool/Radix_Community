@@ -132,7 +132,8 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                 validatorAddress: vAddr,
                 xrdInStake: 0,
                 xrdInUnstake: 0,
-                xrdInClaim: 0
+                xrdInClaim: 0,
+                unstakes: []
             });
         }
         return stakingMap.get(vAddr)!;
@@ -158,12 +159,15 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                     const data = item.data as { programmatic_json?: { fields?: { field_name: string; value: string }[] } } | undefined;
                     const fields = data?.programmatic_json?.fields;
                     const amt = parseFloat(fields?.find(f => f.field_name === 'claim_amount')?.value || '0');
-                    const unbondingEpoch = fields?.find(f => f.field_name === 'unbonding_end_epoch')?.value;
+                    // The claim_epoch indicates when the tokens will be unlocked
+                    const claimEpochStr = fields?.find(f => f.field_name === 'claim_epoch')?.value;
+                    const claimEpoch = claimEpochStr ? parseInt(claimEpochStr, 10) : 0;
+                    
+                    const currentEpoch = (entityData as any)?.ledger_state?.epoch || 0;
 
-                    // If unbonding_end_epoch is present, it's still in the waiting period (Unstake)
-                    // If it's missing but claim_amount is there, it's typically ready to claim.
-                    if (unbondingEpoch) {
+                    if (claimEpoch > currentEpoch) {
                         entry.xrdInUnstake += amt;
+                        entry.unstakes.push({ amount: amt, epoch: claimEpoch });
                     } else if (amt > 0) {
                         entry.xrdInClaim += amt;
                     }
@@ -200,5 +204,6 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         stakedTotal,
         unstakeTotal,
         claimTotal,
+        currentEpoch: (entityData as any)?.ledger_state?.epoch || 0,
     };
 }

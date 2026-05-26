@@ -41,6 +41,8 @@ interface ValidatorMetricsProps {
     stakeAmount?: number;
     unstakeAmount?: number;
     claimAmount?: number;
+    unstakes?: { amount: number; epoch: number }[];
+    currentEpoch?: number;
 }
 
 /**
@@ -150,13 +152,31 @@ export function ValidatorAddressMetrics({
  * User Position / Stake Metrics
  */
 export function ValidatorPositionMetrics({
-    stakeAmount, unstakeAmount, claimAmount, locale, dt, renderRow
+    stakeAmount, unstakeAmount, claimAmount, unstakes, currentEpoch, locale, dt, renderRow
 }: Partial<ValidatorMetricsProps>) {
     if (stakeAmount === undefined && unstakeAmount === undefined && claimAmount === undefined) return null;
 
     const as = dt?.transactions?.account_summary;
     const Row = (renderRow || SummaryInlineRow) as React.ComponentType<MetricRowProps>;
     const labelPosition = as?.your_position || 'Tu Posición';
+
+    // Helper to format remaining time based on epochs
+    const formatRemainingTime = (targetEpoch: number, current: number) => {
+        if (!current || targetEpoch <= current) return 'Ready to claim';
+        const epochsRemaining = targetEpoch - current;
+        const totalMinutes = epochsRemaining * 5;
+        
+        if (totalMinutes < 60) return `~${totalMinutes}m remaining`;
+        
+        const hours = Math.floor(totalMinutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (days > 0) {
+            const remainingHours = hours % 24;
+            return `~${days}d ${remainingHours}h remaining`;
+        }
+        return `~${hours}h remaining`;
+    };
 
     return (
         <div className="flex-1 flex flex-col">
@@ -171,12 +191,26 @@ export function ValidatorPositionMetrics({
                     />
                 )}
                 {unstakeAmount !== undefined && (
-                    <Row
-                        label={as?.unstake_xrd || 'Unstake XRD'}
-                        value={`${formatXRD(unstakeAmount, locale)} XRD`}
-                        mono
-                        isDanger
-                    />
+                    <div className="flex flex-col gap-1">
+                        <Row
+                            label={as?.unstake_xrd || 'Unstake XRD'}
+                            value={`${formatXRD(unstakeAmount, locale)} XRD`}
+                            mono
+                            isDanger
+                        />
+                        {unstakes && unstakes.length > 0 && currentEpoch !== undefined && (
+                            <div className="pl-4 pr-1 mt-1 flex flex-col gap-1.5 border-l-2 border-[var(--color-card-border)]/50 ml-1">
+                                {unstakes.map((u, i) => (
+                                    <div key={i} className="flex justify-between items-center text-[10px]">
+                                        <span className="text-[var(--color-text-muted)] font-mono">{formatXRD(u.amount, locale)} XRD</span>
+                                        <span className="text-[var(--color-warning)]/80 text-[9px] font-medium tracking-wide">
+                                            {formatRemainingTime(u.epoch, currentEpoch)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
                 {claimAmount !== undefined && (
                     <Row

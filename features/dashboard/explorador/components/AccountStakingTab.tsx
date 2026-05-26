@@ -7,6 +7,7 @@ import type { TranslationsT, MarketData, Network, DashboardDict } from '@/featur
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
 
 interface AccountStakingTabProps {
+    address: string;
     stakingRows: StakingEntry[];
     tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
     onCopy: (v: string) => void;
@@ -15,6 +16,7 @@ interface AccountStakingTabProps {
     locale: string;
     marketData?: MarketData | null;
     dt?: Partial<DashboardDict>;
+    currentEpoch?: number;
 }
 
 /**
@@ -24,6 +26,7 @@ interface AccountStakingTabProps {
  * Uses ExpandableEntityBadge to maintain UI consistency with Affected Entities.
  */
 export function AccountStakingTab({
+    address,
     stakingRows,
     tt,
     onCopy,
@@ -32,6 +35,7 @@ export function AccountStakingTab({
     locale,
     marketData,
     dt,
+    currentEpoch,
 }: AccountStakingTabProps) {
     if (stakingRows.length === 0) {
         return (
@@ -53,9 +57,12 @@ export function AccountStakingTab({
                 <ExpandableEntityBadge
                     key={row.validatorAddress}
                     address={row.validatorAddress}
+                    accountAddress={address}
                     stakeAmount={row.xrdInStake}
                     unstakeAmount={row.xrdInUnstake}
                     claimAmount={row.xrdInClaim}
+                    unstakes={row.unstakes}
+                    currentEpoch={currentEpoch}
                     tt={tt}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}

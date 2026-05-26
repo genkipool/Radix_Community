@@ -23,6 +23,7 @@ interface UseTransactionsQueryOptions {
   searchQuery: string;
   tag:         string;
   dateRange:   { start: string | null; end: string | null };
+  addresses?:  string[];
   /**
    * Whether the explorer view is currently active.
    *
@@ -40,10 +41,10 @@ interface UseTransactionsQueryOptions {
   enabled:     boolean;
 }
 
-export function useTransactionsQuery({ network, searchQuery, tag, dateRange, enabled }: UseTransactionsQueryOptions) {
+export function useTransactionsQuery({ network, searchQuery, tag, dateRange, addresses, enabled }: UseTransactionsQueryOptions) {
   const trimmedQuery   = searchQuery.trim();
   const isAddress      = isRadixAddress(trimmedQuery);
-  const serverSideAddr = isAddress ? trimmedQuery : undefined;
+  const serverSideAddr = isAddress ? trimmedQuery : (addresses && addresses.length > 0 ? addresses : undefined);
   const hasDateFilter  = !!(dateRange.start || dateRange.end);
 
   return useInfiniteQuery<TransactionsPage>({

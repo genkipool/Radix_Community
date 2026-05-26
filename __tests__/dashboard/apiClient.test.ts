@@ -112,7 +112,7 @@ describe('apiFetchEntityDetails', () => {
     it('throws on 500 error', async () => {
         // Arrange
         server.use(
-            http.get('/api/entity/:address', () => {
+            http.post('https://mainnet.radixdlt.com/state/entity/details', () => {
                 return HttpResponse.json({ error: 'Server Error' }, { status: 500 });
             }),
         );
@@ -136,16 +136,16 @@ describe('apiFetchNonFungibleData', () => {
         // Arrange
         let capturedBody: Record<string, unknown> | null = null;
         server.use(
-            http.post('/api/nft-data', async ({ request }) => {
+            http.post('https://mainnet.radixdlt.com/state/non-fungible/data', async ({ request }) => {
                 capturedBody = (await request.json()) as Record<string, unknown>;
-                return HttpResponse.json([]);
+                return HttpResponse.json({ non_fungible_ids: [] });
             }),
         );
         // Act
         // By default network='mainnet' if not provided
         await apiFetchNonFungibleData('resource_abc', ['#99#']);
         // Assert
-        expect(capturedBody).toEqual({ resourceAddress: 'resource_abc', localIds: ['#99#'], network: 'mainnet' });
+        expect(capturedBody).toEqual({ resource_address: 'resource_abc', non_fungible_ids: ['#99#'] });
     });
 
     it('handles empty localIds array', async () => {

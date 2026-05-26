@@ -183,6 +183,7 @@ function parseTokensAndNfts(entityData: GatewayEntityDetails | null, network: 'm
 }
 
 export function AccountTokensTab({
+    address,
     entityData,
     tt,
     onCopy,
@@ -190,6 +191,7 @@ export function AccountTokensTab({
     network = 'mainnet',
     locale
 }: {
+    address: string;
     entityData: GatewayEntityDetails | null;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
@@ -210,6 +212,7 @@ export function AccountTokensTab({
 }
 
 export function AccountPoolUnitsTab({
+    address,
     entityData,
     tt,
     onCopy,
@@ -217,6 +220,7 @@ export function AccountPoolUnitsTab({
     network = 'mainnet',
     locale
 }: {
+    address: string;
     entityData: GatewayEntityDetails | null;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
@@ -237,6 +241,7 @@ export function AccountPoolUnitsTab({
 }
 
 export function AccountNftsTab({
+    address,
     entityData,
     tt,
     onCopy,
@@ -244,6 +249,7 @@ export function AccountNftsTab({
     network = 'mainnet',
     locale
 }: {
+    address: string;
     entityData: GatewayEntityDetails | null;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;

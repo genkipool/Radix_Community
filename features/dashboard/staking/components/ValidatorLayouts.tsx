@@ -13,7 +13,7 @@ import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './Validato
 import { StatDivider, BizRow } from './ValidatorLayoutPrimitives';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { useLayout } from '@/context/LayoutContext';
+import { StakingPopup } from './StakingPopup';
 
 /* ─── Shared expand animation config ─────────── */
 const EXPAND_TRANSITION = { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const };
@@ -158,6 +158,8 @@ export const Layout1Col = ({
                             <EntityTagsGrid tags={validator.tags} t={t} />
                             <DelegateButton
                                 label={dt?.card?.stake_button ?? 'Delegate'}
+                                validator={validator}
+                                t={t}
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
@@ -285,6 +287,8 @@ export const Layout2Col = ({
                             <EntityTagsGrid tags={validator.tags} t={t} compact={columns === 3} />
                             <DelegateButton
                                 label={dt?.card?.stake_button ?? 'Delegate'}
+                                validator={validator}
+                                t={t}
                                 small
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
@@ -389,6 +393,8 @@ export const Layout4Col = ({
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
                     <DelegateButton
                         label={dt?.card?.stake_button ?? 'Delegate'}
+                        validator={validator}
+                        t={t}
                         small
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
@@ -494,6 +500,8 @@ export const Layout6Col = ({
                     <EntityTagsGrid tags={validator.tags} t={t} compact />
                     <DelegateButton
                         label={dt?.card?.stake_button ?? 'Delegate'}
+                        validator={validator}
+                        t={t}
                         small
                         compact={columns >= 8}
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
@@ -593,26 +601,23 @@ const CopyAddressButton = ({
     );
 };
 
-/** Stake/Delegate CTA button */
+/** Stake/Delegate CTA button wrapped in StakingPopup */
 const DelegateButton = ({
-    label, small = false, tiny = false, title, compact = false,
+    label, validator, t, small = false, tiny = false, title, compact = false,
 }: DelegateButtonProps) => {
-    const { setShowUnderConstruction } = useLayout();
-
     return (
-        <button
-            title={title}
-            className={`rounded-xl font-bold text-white whitespace-nowrap hover:opacity-90 transition-opacity duration-300 ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
-                small ? (compact ? 'w-8 h-7 flex items-center justify-center p-0' : 'px-4 py-1.5 text-[10px]') :
-                    'px-5 py-1.5 text-[11px] shadow-lg'
-                }`}
-            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))' }}
-            onClick={e => {
-                e.stopPropagation();
-                setShowUnderConstruction(true);
-            }}
-        >
-            {compact ? <Plus className="w-3.5 h-3.5" /> : label}
-        </button>
+        <StakingPopup validator={validator} t={t}>
+            <button
+                title={title}
+                className={`rounded-xl font-bold text-white whitespace-nowrap hover:opacity-90 transition-opacity duration-300 ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
+                    small ? (compact ? 'w-8 h-7 flex items-center justify-center p-0' : 'px-4 py-1.5 text-[10px]') :
+                        'px-5 py-1.5 text-[11px] shadow-lg'
+                    }`}
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))' }}
+                onClick={e => e.stopPropagation()}
+            >
+                {compact ? <Plus className="w-3.5 h-3.5" /> : label}
+            </button>
+        </StakingPopup>
     );
 };

@@ -680,57 +680,83 @@ export default function Navbar() {
 
               {/* Desktop CTA */}
               <div className="self-center ml-2">
-                <NavPopup
-                  align="right"
-                  width="w-auto"
-                  offsetClass="absolute top-full"
-                  trigger={
-                    <button
-                      aria-label={isConnected ? 'Wallet Settings' : (t.nav.connectWallet as string)}
-                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
-                    >
-                      <RadixLogo
-                        label={
-                          isLoading 
-                            ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
-                            : isConnected && persona 
-                              ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
-                              : isConnected && accounts.length > 0 
-                                ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
-                                : (t.nav?.connectWallet as string)
-                        }
-                        showBeta={false}
-                        width="160"
-                        height="32"
-                        viewBox="0 0 210 40"
-                        fontSize={18}
-                        textX={32}
-                        logoScale={0.12}
-                        logoTranslateY={8}
-                        logoTranslateX={5}
-                        strokeColor="white"
-                        textColor="white"
-                        className={isLoading ? "animate-pulse" : ""}
+                {isConnected ? (
+                  <NavPopup
+                    align="right"
+                    width="w-auto"
+                    offsetClass="absolute top-full"
+                    trigger={
+                      <button
+                        onClick={() => setIsWalletProfileModalOpen(true)}
+                        aria-label="Wallet Settings"
+                        className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                      >
+                        <RadixLogo
+                          label={
+                            isLoading 
+                              ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
+                              : persona 
+                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
+                                : accounts.length > 0 
+                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                                  : (t.nav?.connectWallet as string)
+                          }
+                          showBeta={false}
+                          width="160"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={32}
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={5}
+                          strokeColor="white"
+                          textColor="white"
+                          className={isLoading ? "animate-pulse" : ""}
+                        />
+                      </button>
+                    }
+                  >
+                      <ConnectedWalletPopupContent 
+                        disconnect={disconnect} 
+                        connect={connect}
+                        networkId={networkId}
+                        personaName={persona?.label} 
+                        t={t}
+                        onOpenProfileModal={() => setIsWalletProfileModalOpen(true)}
                       />
-                    </button>
-                  }
-                >
-                  {isConnected ? (
-                    <ConnectedWalletPopupContent 
-                      disconnect={disconnect} 
-                      connect={connect}
-                      networkId={networkId}
-                      personaName={persona?.label} 
-                      t={t}
-                      onOpenProfileModal={() => {
-                        setIsOpen(false);
-                        setIsWalletProfileModalOpen(true);
-                      }}
-                    />
-                  ) : (
+                    </NavPopup>
+                ) : (
+                  <NavPopup
+                    align="right"
+                    width="w-auto"
+                    offsetClass="absolute top-full"
+                    trigger={
+                      <button
+                        aria-label={t.nav.connectWallet as string}
+                        className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                      >
+                        <RadixLogo
+                          label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
+                          showBeta={false}
+                          width="160"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={32}
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={5}
+                          strokeColor="white"
+                          textColor="white"
+                          className={isLoading ? "animate-pulse" : ""}
+                        />
+                      </button>
+                    }
+                  >
                     <WalletPopupContent connect={connect} t={t} />
-                  )}
-                </NavPopup>
+                  </NavPopup>
+                )}
               </div>
             </div>
 
@@ -835,41 +861,45 @@ export default function Navbar() {
                 );
               })}
               <div className="pt-3 pb-1 flex justify-center">
-                <NavPopup
-                  align="center"
-                  width="w-[280px]"
-                  trigger={
-                    <button
-                      aria-label={isConnected ? 'Wallet Settings' : (t.nav.connectWallet as string)}
-                      className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
-                    >
-                      <RadixLogo
-                        label={
-                          isLoading 
-                            ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
-                            : isConnected && persona 
-                              ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
-                              : isConnected && accounts.length > 0 
-                                ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
-                                : (t.nav?.connectWallet as string)
-                        }
-                        showBeta={false}
-                        width="170"
-                        height="32"
-                        viewBox="0 0 210 40"
-                        fontSize={18}
-                        textX={36}
-                        logoScale={0.12}
-                        logoTranslateY={8}
-                        logoTranslateX={10}
-                        strokeColor="white"
-                        textColor="white"
-                        className={isLoading ? "animate-pulse" : ""}
-                      />
-                    </button>
-                  }
-                >
-                  {isConnected ? (
+                {isConnected ? (
+                  <NavPopup
+                    align="center"
+                    width="w-[280px]"
+                    trigger={
+                      <button
+                        onClick={() => {
+                          setIsOpen(false);
+                          setIsWalletProfileModalOpen(true);
+                        }}
+                        aria-label="Wallet Settings"
+                        className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
+                      >
+                        <RadixLogo
+                          label={
+                            isLoading 
+                              ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
+                              : persona 
+                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
+                                : accounts.length > 0 
+                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                                  : (t.nav?.connectWallet as string)
+                          }
+                          showBeta={false}
+                          width="170"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={36}
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={10}
+                          strokeColor="white"
+                          textColor="white"
+                          className={isLoading ? "animate-pulse" : ""}
+                        />
+                      </button>
+                    }
+                  >
                     <ConnectedWalletPopupContent 
                       disconnect={() => { disconnect(); setIsOpen(false); }} 
                       connect={(netId) => { connect(netId); setIsOpen(false); }}
@@ -881,24 +911,49 @@ export default function Navbar() {
                         setIsWalletProfileModalOpen(true);
                       }}
                     />
-                  ) : (
+                  </NavPopup>
+                ) : (
+                  <NavPopup
+                    align="center"
+                    width="w-[280px]"
+                    trigger={
+                      <button
+                        aria-label={t.nav.connectWallet as string}
+                        className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
+                      >
+                        <RadixLogo
+                          label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
+                          showBeta={false}
+                          width="170"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={36}
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={10}
+                          strokeColor="white"
+                          textColor="white"
+                          className={isLoading ? "animate-pulse" : ""}
+                        />
+                      </button>
+                    }
+                  >
                     <WalletPopupContent connect={(netId) => { connect(netId); setIsOpen(false); }} t={t} />
-                  )}
-                </NavPopup>
+                  </NavPopup>
+                )}
               </div>
             </div>
           </div>
         )}
       </nav>
 
-      {isWalletProfileModalOpen && (
-        <WalletProfileModal
-          isOpen={isWalletProfileModalOpen}
-          onClose={() => setIsWalletProfileModalOpen(false)}
-          t={t}
-          locale={language}
-        />
-      )}
+      <WalletProfileModal
+        isOpen={isWalletProfileModalOpen}
+        onClose={() => setIsWalletProfileModalOpen(false)}
+        t={t}
+        locale={language}
+      />
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (

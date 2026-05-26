@@ -737,20 +737,21 @@ export async function fetchTransactionDetails(
 // natively to the Gateway.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function searchTransactionsByAddress(
-    address: string,
+    address: string | string[],
     cursor?: string,
     limit = 15,
     network: Network = 'mainnet',
     dateRange?: { start?: string | null; end?: string | null; timezone?: string },
 ): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
     // Defensive network check: Prevent 400 errors by identifying mismatch before calling Gateway
-    if (!isValidAddressForNetwork(address, network)) {
+    const addressToValidate = Array.isArray(address) ? address[0] : address;
+    if (addressToValidate && !isValidAddressForNetwork(addressToValidate, network)) {
         logger.warn({ address, network }, '[TransactionsService] Address does not belong to the requested network. Returning empty result.');
         return { transactions: [], nextCursor: undefined };
     }
 
     // Fast path: a txid_ is a direct detail lookup, not a stream query
-    if (address.startsWith('txid_')) {
+    if (typeof address === 'string' && address.startsWith('txid_')) {
         const item = await fetchTransactionDetails(address, network);
         if (!item) return { transactions: [], nextCursor: undefined };
         return {
@@ -760,8 +761,10 @@ export async function searchTransactionsByAddress(
     }
 
     const gateway = getGateway(network);
-    const isValidator = address.startsWith('validator_');
+    const isValidator = typeof address === 'string' && address.startsWith('validator_');
     const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
+
+    const affectedEntities = Array.isArray(address) ? address : [address];
 
     try {
         const res = await withRetry(() =>
@@ -769,7 +772,7 @@ export async function searchTransactionsByAddress(
                 streamTransactionsRequest: {
                     limit_per_page: limit,
                     cursor,
-                    affected_global_entities_filter: [address],
+                    affected_global_entities_filter: affectedEntities,
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
                     ...dateParams,
                 },
@@ -777,12 +780,12 @@ export async function searchTransactionsByAddress(
         );
 
         const transactions = (res.items || []).map((item) =>
-            parseTransactionItem(item as unknown as GatewayItem, isValidator ? address : undefined, network),
+            parseTransactionItem(item as unknown as GatewayItem, isValidator ? (address as string) : undefined, network),
         );
 
         logger.info({
             network,
-            address: address.slice(0, 16) + '...',
+            address: typeof address === 'string' ? address.slice(0, 16) + '...' : address.length + ' addresses',
             count: transactions.length
         }, '[TransactionsService] Transactions by address fetched');
 
@@ -794,7 +797,7 @@ export async function searchTransactionsByAddress(
             'Error fetching txs by address: %s',
             message,
         );
-        throw new Error(`Failed to fetch transactions for address ${address}: ${message}`);
+        throw new Error(`Failed to fetch transactions for address(es): ${message}`);
     }
 }
 
@@ -821,7 +824,7 @@ async function fetchFilteredTransactionsRaw(options: {
     end: string | null;
     cursor: string | undefined;
     limit: number;
-    address: string | undefined;
+    address: string | string[] | undefined;
     network: Network;
     timezone: string;
 }): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {
@@ -878,7 +881,7 @@ async function getFilteredTransactionsFromDataCache(
         end: string | null;
         cursor: string | undefined;
         limit: number;
-        address: string | undefined;
+        address: string | string[] | undefined;
         network: Network;
         timezone: string;
     },
@@ -917,7 +920,7 @@ export async function fetchFilteredTransactions(options: {
     end?: string | null;
     cursor?: string;
     limit?: number;
-    address?: string;
+    address?: string | string[];
     network?: Network;
     timezone?: string;
 }): Promise<{ transactions: TransactionInfo[]; nextCursor: string | undefined }> {

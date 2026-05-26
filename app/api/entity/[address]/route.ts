@@ -10,15 +10,25 @@ export async function GET(
     const { address: rawAddress } = await params;
     const { searchParams } = new URL(request.url);
     const network = validateNetwork(searchParams.get('network'));
+    const isRefresh = searchParams.get('refresh') === 'true';
     const address = validateAddress(rawAddress);
+    
     if (!address) return NextResponse.json(null, { status: 400 });
+
+    if (isRefresh) {
+        const { revalidateTag } = await import('next/cache');
+        // @ts-expect-error Next.js 16 type mismatch for revalidateTag
+        revalidateTag(`entity-${address}`);
+    }
 
     try {
         const details = await fetchEntityDetails(address, network);
         
         return NextResponse.json(details, {
             headers: {
-                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                'Cache-Control': isRefresh 
+                    ? 'no-cache, no-store, must-revalidate'
+                    : 'public, s-maxage=300, stale-while-revalidate=600',
             },
         });
     } catch (error) {

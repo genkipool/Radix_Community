@@ -70,6 +70,9 @@ interface ExpandableEntityBadgeProps {
     stakeAmount?: number;
     unstakeAmount?: number;
     claimAmount?: number;
+    unstakes?: { amount: number; epoch: number }[];
+    currentEpoch?: number;
+    accountAddress?: string;
     variant?: 'default' | 'resource-card';
 }
 
@@ -174,6 +177,8 @@ export function ExpandableEntityBadge({
     stakeAmount,
     unstakeAmount,
     claimAmount,
+    unstakes,
+    currentEpoch,
     variant = 'default',
 }: ExpandableEntityBadgeProps) {
     const [expanded, setExpanded] = useState(false);
@@ -435,6 +440,8 @@ export function ExpandableEntityBadge({
                                                     stakeAmount={stakeAmount}
                                                     unstakeAmount={unstakeAmount}
                                                     claimAmount={claimAmount}
+                                                    unstakes={unstakes}
+                                                    currentEpoch={currentEpoch}
                                                 />
                                             )
                                         )}
@@ -442,6 +449,7 @@ export function ExpandableEntityBadge({
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
                                             <AccountStakingTab
+                                                address={address}
                                                 stakingRows={stakingRows}
                                                 tt={tt}
                                                 onCopy={onCopy}
@@ -456,6 +464,7 @@ export function ExpandableEntityBadge({
                                         {/* ── TOKENS ── */}
                                         {activeTab === 'tokens' && (
                                             <AccountTokensTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -468,6 +477,7 @@ export function ExpandableEntityBadge({
                                         {/* ── NFTS ── */}
                                         {activeTab === 'nfts' && (
                                             <AccountNftsTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -480,6 +490,7 @@ export function ExpandableEntityBadge({
                                         {/* ── POOL UNITS ── */}
                                         {activeTab === 'pool_units' && (
                                             <AccountPoolUnitsTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -596,6 +607,8 @@ function EntitySummaryTab({
     stakeAmount?: number;
     unstakeAmount?: number;
     claimAmount?: number;
+    unstakes?: { amount: number; epoch: number }[];
+    currentEpoch?: number;
 }) {
     const qc = useQueryClient();
     const entityType = getEntityDetailType(entityData, address);
@@ -749,9 +762,6 @@ function EntitySummaryTab({
                             locale={locale}
                             dt={dt}
                             isModal={true}
-                            stakeAmount={stakeAmount}
-                            unstakeAmount={unstakeAmount}
-                            claimAmount={claimAmount}
                         />
                     );
                 })()}

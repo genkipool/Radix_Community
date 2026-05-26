@@ -77,6 +77,7 @@ export function AccountCard({
         unstakeTotal,
         claimTotal,
         stakingRows,
+        currentEpoch,
     } = useAccountStats(address, network as 'mainnet' | 'stokenet', entityData || null);
 
     const { prefetchAccountRewards } = usePrefetchRewards();
@@ -345,6 +346,7 @@ export function AccountCard({
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
                                             <AccountStakingTab
+                                                address={address}
                                                 stakingRows={stakingRows}
                                                 tt={tt}
                                                 onCopy={onCopy}
@@ -352,12 +354,14 @@ export function AccountCard({
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
                                                 marketData={marketData}
+                                                currentEpoch={currentEpoch}
                                             />
                                         )}
 
                                         {/* ── TOKENS ── */}
                                         {activeTab === 'tokens' && (
                                             <AccountTokensTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 onCopy={onCopy}
@@ -370,6 +374,7 @@ export function AccountCard({
                                         {/* ── NFTS ── */}
                                         {activeTab === 'nfts' && (
                                             <AccountNftsTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 onCopy={onCopy}
@@ -382,6 +387,7 @@ export function AccountCard({
                                         {/* ── POOL UNITS ── */}
                                         {activeTab === 'pool_units' && (
                                             <AccountPoolUnitsTab
+                                                address={address}
                                                 entityData={entityData ?? null}
                                                 tt={tt}
                                                 onCopy={onCopy}
