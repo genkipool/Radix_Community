@@ -72,6 +72,9 @@ export function RadixWalletProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Connection Timeout Ref ──
+  const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   // ── Initialize RDT for networks that have active sessions ──
   const hasInitialized = React.useRef(false);
 
@@ -91,6 +94,14 @@ export function RadixWalletProvider({
   // ── Connect flow ──────────────────────────────────────────────────────────
 
   function connect(networkId: RadixNetworkId) {
+    // If a connection is already in progress, cancel the previous one
+    if (isLoading) {
+      disconnectToolkit(networkId);
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+    }
+
     setIsLoading(true);
     setError(null);
     const netName = networkNameFromId(networkId);
@@ -115,6 +126,7 @@ export function RadixWalletProvider({
       // Provide connect response callback — this is where ROLA verification happens
       rdt.walletApi.provideConnectResponseCallback(async (result) => {
         if (result.isErr()) {
+          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
           setIsLoading(false);
           setError('Connection rejected or failed.');
           return;
@@ -124,6 +136,7 @@ export function RadixWalletProvider({
         const proofs = walletData.proofs;
 
         if (!proofs || proofs.length === 0) {
+          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
           setIsLoading(false);
           setError('No ROLA proof provided by wallet.');
           return;
@@ -161,9 +174,11 @@ export function RadixWalletProvider({
             [netName]: newSession,
           }));
 
+          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
           setIsLoading(false);
           setError(null);
         } catch (err) {
+          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
           setIsLoading(false);
           setError(err instanceof Error ? err.message : 'Identity verification failed.');
         }
@@ -173,10 +188,15 @@ export function RadixWalletProvider({
       rdt.walletApi.sendRequest();
 
       // Timeout after 60 seconds
-      setTimeout(() => {
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+      
+      connectionTimeoutRef.current = setTimeout(() => {
         setIsLoading(prev => {
           if (prev) {
             setError('Connection timed out. Please try again.');
+            disconnectToolkit(networkId); // Cancel the pending request in the wallet
             return false;
           }
           return prev;
