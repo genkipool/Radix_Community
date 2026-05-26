@@ -22,7 +22,7 @@ interface WalletProfileModalProps {
 type TabType = 'profile' | 'accounts' | 'notifications';
 
 export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfileModalProps) {
-    const { persona, accounts, activeNetworkId: networkId, connect, disconnect } = useRadixWallet();
+    const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(null);
@@ -64,19 +64,21 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             className="fixed top-0 right-0 h-full w-full sm:w-[450px] bg-[var(--color-surface)]/95 backdrop-blur-xl border-l border-[var(--color-card-border)] shadow-2xl z-[9001] pointer-events-auto flex flex-col overflow-hidden"
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-4 border-b border-[var(--color-card-border)]/50">
-                                <div className="flex items-center gap-1 p-1 bg-[var(--color-bg)] rounded-lg border border-[var(--color-card-border)]">
-                                    <button 
-                                        onClick={() => connect(RadixNetworkId.Mainnet)}
-                                        className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Mainnet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            <div className="flex items-center justify-between px-6 pt-4 border-b border-[var(--color-card-border)]/50">
+                                <div className="flex items-center gap-6">
+                                    <button
+                                        onClick={() => sessions['mainnet'] ? switchNetwork('mainnet') : connect(RadixNetworkId.Mainnet)}
+                                        className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
                                         Mainnet
+                                        {activeNetwork === 'mainnet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
                                     </button>
-                                    <button 
-                                        onClick={() => connect(RadixNetworkId.Stokenet)}
-                                        className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Stokenet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                    <button
+                                        onClick={() => sessions['stokenet'] ? switchNetwork('stokenet') : connect(RadixNetworkId.Stokenet)}
+                                        className={`pb-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
                                         Stokenet
+                                        {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
                                     </button>
                                 </div>
                                 <button

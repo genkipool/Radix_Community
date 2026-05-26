@@ -71,7 +71,8 @@
     "wallet_stokenet": "Stokenet",
     "wallet_connecting": "Connecting...",
     "wallet_connected": "Connected",
-    "wallet_disconnect": "Disconnect"
+    "wallet_disconnect": "Disconnect",
+    "wallet_cancel_connection": "Cancel connection"
   },
   "roadmap_status": {
     "done": "Done",

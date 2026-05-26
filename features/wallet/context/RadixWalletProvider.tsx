@@ -6,7 +6,7 @@ import type {
   NetworkSessions,
   NetworkSession,
 } from '../types/wallet';
-import { getOrCreateToolkit, destroyToolkit } from '../lib/radix-toolkit';
+import { getOrCreateToolkit, disconnectToolkit } from '../lib/radix-toolkit';
 import { RadixNetworkId } from '../constants/network';
 import type { SessionPayload } from '@/lib/auth/session';
 
@@ -190,11 +190,11 @@ export function RadixWalletProvider({
   async function disconnect(network?: 'mainnet' | 'stokenet' | 'all') {
     const target = network || 'all';
 
-    // Destroy RDT instance(s)
+    // Disconnect RDT instance(s)
     if (target === 'all') {
-      destroyToolkit();
+      disconnectToolkit();
     } else {
-      destroyToolkit(networkIdFromName(target));
+      disconnectToolkit(networkIdFromName(target));
     }
 
     // Call logout API to update cookie
@@ -225,6 +225,7 @@ export function RadixWalletProvider({
     }
 
     setError(null);
+    setIsLoading(false);
   }
 
   // ── Switch network (UI only, no reconnection) ─────────────────────────────

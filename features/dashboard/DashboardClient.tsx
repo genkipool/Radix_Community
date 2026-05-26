@@ -19,7 +19,7 @@
 
 import {
   useState,
-  useDeferredValue, useEffect,
+  useDeferredValue, useEffect, useRef
 } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -113,6 +113,27 @@ export default function DashboardClient({
       setTempDateRange(dateRange);
   }
 
+  const { isConnected, accounts, activeNetwork, switchNetwork } = useRadixWallet();
+
+  const isMounted = useRef(false);
+
+  // Synchronize dashboard network with wallet activeNetwork
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      // On initial mount, if URL network differs from default wallet network, sync wallet TO url.
+      if (network && activeNetwork && activeNetwork !== network) {
+        switchNetwork(network as 'mainnet' | 'stokenet');
+      }
+      return;
+    }
+
+    // On subsequent changes, if wallet network changes (e.g., from modal), sync dashboard TO wallet.
+    if (activeNetwork && network && activeNetwork !== network) {
+      handleNetworkChange(activeNetwork);
+    }
+  }, [activeNetwork, network, handleNetworkChange, switchNetwork]);
+
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
     setTempDateRange(range);
     if (range.start && range.end) {
@@ -191,7 +212,6 @@ export default function DashboardClient({
   const networkStats = validatorsData?.networkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
-  const { isConnected, accounts } = useRadixWallet();
   const connectedAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : undefined;
   const isWalletScopedTag = ['Staking', 'Unstaking', 'Claim'].includes(deferredTransactionActiveTag);
   const txAddresses = isWalletScopedTag && connectedAddresses ? connectedAddresses : undefined;
@@ -369,7 +389,12 @@ export default function DashboardClient({
           activeView={activeView}
           onViewChange={handleViewChange}
           network={network}
-          onNetworkChange={handleNetworkChange}
+          onNetworkChange={(net) => {
+            handleNetworkChange(net);
+            if (net !== activeNetwork) {
+              switchNetwork(net);
+            }
+          }}
           activeTags={prefs.activeTag}
           onActiveTagChange={(tag) => {
             setSearchQuery('');

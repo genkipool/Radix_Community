@@ -42,6 +42,24 @@ export const getOrCreateToolkit = (networkId: RadixNetworkId) => {
 };
 
 /**
+ * Disconnect a specific network's toolkit instance (Logout).
+ */
+export const disconnectToolkit = (networkId?: RadixNetworkId) => {
+  if (networkId !== undefined) {
+    const rdt = rdtInstances.get(networkId);
+    if (rdt) {
+      rdt.disconnect();
+    }
+    return;
+  }
+
+  // Disconnect all instances
+  for (const [, rdt] of rdtInstances) {
+    rdt.disconnect();
+  }
+};
+
+/**
  * Destroy a specific network's toolkit instance.
  */
 export const destroyToolkit = (networkId?: RadixNetworkId) => {

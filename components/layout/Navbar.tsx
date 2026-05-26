@@ -350,7 +350,29 @@ function LanguagePopupContent({
   );
 }
 
-function WalletPopupContent({ connect, t }: { connect: (networkId: RadixNetworkId) => void, t: Dictionary }) {
+function WalletPopupContent({ 
+  connect, 
+  t,
+  sessions,
+  switchNetwork,
+  isLoading,
+  disconnect
+}: { 
+  connect: (networkId: RadixNetworkId) => void, 
+  t: Dictionary,
+  sessions: Record<'mainnet' | 'stokenet', unknown>,
+  switchNetwork: (network: 'mainnet' | 'stokenet') => void,
+  isLoading: boolean,
+  disconnect: () => void
+}) {
+  const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
+    if (sessions[netName]) {
+      switchNetwork(netName);
+    } else {
+      connect(netId);
+    }
+  };
+
   return (
     <div className="p-4 w-[280px]">
       <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 px-1">
@@ -358,20 +380,30 @@ function WalletPopupContent({ connect, t }: { connect: (networkId: RadixNetworkI
       </p>
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => connect(RadixNetworkId.Mainnet)}
+          onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
           className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
+          disabled={isLoading}
         >
           <Globe className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
           <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_mainnet ?? 'Mainnet'}</span>
         </button>
         <button
-          onClick={() => connect(RadixNetworkId.Stokenet)}
+          onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
           className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
+          disabled={isLoading}
         >
           <Server className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
           <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_stokenet ?? 'Stokenet'}</span>
         </button>
       </div>
+      {isLoading && (
+        <button
+          onClick={() => disconnect()}
+          className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center"
+        >
+          {t.nav?.wallet_cancel_connection ?? 'Cancelar conexión'}
+        </button>
+      )}
     </div>
   );
 }
@@ -382,25 +414,47 @@ function ConnectedWalletPopupContent({
   networkId,
   personaName, 
   t,
-  onOpenProfileModal
+  onOpenProfileModal,
+  sessions,
+  activeNetwork,
+  switchNetwork
 }: { 
   disconnect: () => void, 
   connect: (networkId: RadixNetworkId) => void,
   networkId: RadixNetworkId | null,
   personaName?: string, 
   t: Dictionary,
-  onOpenProfileModal: () => void
+  onOpenProfileModal: () => void,
+  sessions: Record<'mainnet' | 'stokenet', unknown>,
+  activeNetwork: 'mainnet' | 'stokenet',
+  switchNetwork: (network: 'mainnet' | 'stokenet') => void
 }) {
+  const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
+    if (sessions[netName]) {
+      switchNetwork(netName);
+    } else {
+      connect(netId);
+    }
+  };
+
   return (
     <div className="p-4 w-[280px]">
       {/* Network Tabs Header */}
-      <div className="flex items-center gap-1 mb-4 p-1 bg-[var(--color-bg)] rounded-lg border border-[var(--color-card-border)]">
-        <div className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Mainnet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}>
+      <div className="flex items-center gap-6 mb-4 border-b border-[var(--color-card-border)]/50">
+        <button
+          onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+        >
           {t.nav?.wallet_mainnet ?? 'Mainnet'}
-        </div>
-        <div className={`flex-1 text-center py-1.5 rounded-md text-xs font-bold transition-colors ${networkId === RadixNetworkId.Stokenet ? 'bg-[var(--color-surface)] text-[var(--color-text-main)] shadow-sm' : 'text-[var(--color-text-muted)]'}`}>
+          {activeNetwork === 'mainnet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
+        </button>
+        <button
+          onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+        >
           {t.nav?.wallet_stokenet ?? 'Stokenet'}
-        </div>
+          {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
+        </button>
       </div>
 
       {/* Row 1: Photo and Name (Clickable) */}
@@ -433,7 +487,7 @@ function ConnectedWalletPopupContent({
           <span className="truncate">{((t.nav || {}) as Record<string, string>).update_wallet ?? 'Actualizar'}</span>
         </button>
         <button
-          onClick={disconnect}
+          onClick={() => disconnect()}
           className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" />
@@ -487,7 +541,7 @@ function _MobileSubLink({
 
 export default function Navbar() {
   const { theaterMode } = useLayout();
-  const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId } = useRadixWallet();
+  const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [isWalletProfileModalOpen, setIsWalletProfileModalOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<'theme' | 'lang' | null>(null);
@@ -724,6 +778,9 @@ export default function Navbar() {
                         personaName={persona?.label} 
                         t={t}
                         onOpenProfileModal={() => setIsWalletProfileModalOpen(true)}
+                        sessions={sessions}
+                        activeNetwork={activeNetwork}
+                        switchNetwork={switchNetwork}
                       />
                     </NavPopup>
                 ) : (
@@ -754,7 +811,7 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletPopupContent connect={connect} t={t} />
+                    <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
                   </NavPopup>
                 )}
               </div>
@@ -910,6 +967,9 @@ export default function Navbar() {
                         setIsOpen(false);
                         setIsWalletProfileModalOpen(true);
                       }}
+                      sessions={sessions}
+                      activeNetwork={activeNetwork}
+                      switchNetwork={switchNetwork}
                     />
                   </NavPopup>
                 ) : (
@@ -939,7 +999,14 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletPopupContent connect={(netId) => { connect(netId); setIsOpen(false); }} t={t} />
+                    <WalletPopupContent 
+                      connect={(netId) => { connect(netId); setIsOpen(false); }} 
+                      t={t} 
+                      sessions={sessions}
+                      switchNetwork={switchNetwork}
+                      isLoading={isLoading}
+                      disconnect={disconnect}
+                    />
                   </NavPopup>
                 )}
               </div>
