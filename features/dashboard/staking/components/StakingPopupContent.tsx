@@ -198,6 +198,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     // Error is shown in real-time only if it exceeds BOTH available and staked
     const isSuperiorToBoth = parsedAmount > stakingData.xrdBalance && parsedAmount > stakedXrd;
 
+    const hasTxError = Boolean((error && error.includes('txid_tdx_2_1')) || (actionError && actionError.includes('txid_tdx_2_1')));
+    const isNotOwnerWarning = Boolean(activeTab === 'validator' && !stakingData.isOwner && !isLoadingData && activeAccount);
+
     const renderError = (err: string) => {
         if (err === 'failedToPrepareTransaction') return stakingT?.errors?.failedToPrepareTransaction ?? 'Failed to prepare transaction. Check your manifest.';
         if (err === 'rejectedByUser') return stakingT?.errors?.rejectedByUser ?? 'Transaction rejected by user.';
@@ -270,12 +273,14 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
-                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}`}
+                        disabled={isNotOwnerWarning || hasTxError}
+                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
                     <button 
                         onClick={(e) => { e.stopPropagation(); handleSetMax(); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded hover:bg-[var(--color-primary)]/20 transition-colors"
+                        disabled={isNotOwnerWarning || hasTxError}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${(isNotOwnerWarning || hasTxError) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
                     >
                         {stakingT?.max ?? 'MAX'}
                     </button>
@@ -285,12 +290,12 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             <div className="flex gap-2 mt-1">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
-                    const hasTxError = Boolean((error && error.includes('txid_tdx_2_1')) || (actionError && actionError.includes('txid_tdx_2_1')));
                     const isDisabled = 
                         isTransacting || 
                         !activeAccount || 
                         isSuperiorToBoth ||
                         hasTxError ||
+                        isNotOwnerWarning ||
                         (action === 'Unstake' && stakedXrd <= 0) ||
                         (action === 'Claim' && stakingData.claimableXrd <= 0) ||
                         (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||
