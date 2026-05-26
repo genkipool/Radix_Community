@@ -105,6 +105,7 @@ export default function DashboardClient({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
+  const [isWalletFilterActive, setIsWalletFilterActive] = useState(false);
 
   // Sync temp state with committed state if URL changes externally (e.g., reset)
   const [prevDateRange, setPrevDateRange] = useState(dateRange);
@@ -133,6 +134,14 @@ export default function DashboardClient({
       handleNetworkChange(activeNetwork);
     }
   }, [activeNetwork, network, handleNetworkChange, switchNetwork]);
+
+  useEffect(() => {
+    if (isConnected && accounts.length > 0) {
+      setIsWalletFilterActive(true);
+    } else {
+      setIsWalletFilterActive(false);
+    }
+  }, [isConnected, accounts.length]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
     setTempDateRange(range);
@@ -213,8 +222,7 @@ export default function DashboardClient({
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
   const connectedAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : undefined;
-  const isWalletScopedTag = ['Staking', 'Unstaking', 'Claim'].includes(deferredTransactionActiveTag);
-  const txAddresses = isWalletScopedTag && connectedAddresses ? connectedAddresses : undefined;
+  const txAddresses = isWalletFilterActive && connectedAddresses ? connectedAddresses : undefined;
 
   const {
     data: txPages,
@@ -470,6 +478,8 @@ export default function DashboardClient({
               setActiveRanking(null);
             }
           }}
+          isWalletFilterActive={isWalletFilterActive}
+          onWalletFilterChange={setIsWalletFilterActive}
           dt={dt}
         />
 

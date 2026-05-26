@@ -59,6 +59,8 @@ export interface DashboardToolbarProps {
     onColumnsChange: (cols: number) => void;
     activeRanking: string | null;
     onRankingChange: (ranking: string | null) => void;
+    isWalletFilterActive: boolean;
+    onWalletFilterChange: (v: boolean) => void;
     dt?: Partial<TranslationsT['dashboard']>;
 }
 

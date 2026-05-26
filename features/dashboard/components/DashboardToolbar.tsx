@@ -37,6 +37,7 @@ export const DashboardToolbar = ({
     columns, onColumnsChange,
     activeRanking, onRankingChange,
     isReadingModeManual,
+    isWalletFilterActive, onWalletFilterChange,
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
@@ -114,20 +115,38 @@ export const DashboardToolbar = ({
                     {/* Tag filter bar - Desktop */}
                     <div className="hidden 2xl:block w-full">
                         {activeView === 'staking' ? (
-                            <TagFilterBar
-                                tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                activeTag={activeTags.includes('All') ? null : activeTags}
-                                onSelect={tag => onActiveTagChange(tag || 'All')}
-                                allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.tags?.['All'] || 'All')}
-                                tagLabels={dt?.tags}
-                            />
+                            <div className="flex items-center justify-center gap-3">
+                                {isConnected && (
+                                    <button
+                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                    >
+                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
+                                    </button>
+                                )}
+                                <TagFilterBar
+                                    tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                    activeTag={activeTags.includes('All') ? null : activeTags}
+                                    onSelect={tag => onActiveTagChange(tag || 'All')}
+                                    allLabel={dt?.tags?.['All'] || 'All'}
+                                    tagLabels={dt?.tags}
+                                />
+                            </div>
                         ) : (
                             <div className="flex items-center justify-center gap-3">
+                                {isConnected && (
+                                    <button
+                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                    >
+                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
+                                    </button>
+                                )}
                                 <TagFilterBar
                                     tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                     activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
                                     onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.transaction_tags?.['All'] || 'All')}
+                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
                                     tagLabels={dt?.transaction_tags}
                                 />
                                 {isConnected ? (
@@ -160,25 +179,43 @@ export const DashboardToolbar = ({
                     {/* Tag filter dropdown - Mobile / Tablet */}
                     <div className="block 2xl:hidden w-full max-w-sm">
                         {activeView === 'staking' ? (
-                            <SearchableTagFilter
-                                tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
-                                onSelect={tag => onActiveTagChange(tag || 'All')}
-                                allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.tags?.['All'] || 'All')}
-                                tagLabels={dt?.tags}
-                                placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
-                            />
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
+                                {isConnected && (
+                                    <button
+                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
+                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                    >
+                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
+                                    </button>
+                                )}
+                                <SearchableTagFilter
+                                    tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                    activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
+                                    onSelect={tag => onActiveTagChange(tag || 'All')}
+                                    allLabel={dt?.tags?.['All'] || 'All'}
+                                    tagLabels={dt?.tags}
+                                    placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
+                                />
+                            </div>
                         ) : (
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
+                                {isConnected && (
+                                    <button
+                                        onClick={() => onWalletFilterChange(!isWalletFilterActive)}
+                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                    >
+                                        {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
+                                    </button>
+                                )}
                                 <SearchableTagFilter
                                     tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
                                     activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
                                     onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={isConnected ? ((dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera') : (dt?.transaction_tags?.['All'] || 'All')}
+                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
                                     tagLabels={dt?.transaction_tags}
                                     placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
                                 />
-                                <div className="sm:shrink-0">
+                                <div className="sm:shrink-0 w-full sm:w-auto">
                                     {isConnected ? (
                                         <SearchableTagFilter
                                             tags={accounts.map(acc => `account_${acc.address}`)}
@@ -187,7 +224,7 @@ export const DashboardToolbar = ({
                                             allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
                                             tagLabels={accounts.reduce((acc, a) => ({ ...acc, [`account_${a.address}`]: a.label }), {})}
                                             hideAll={false}
-                                            width="w-[240px]"
+                                            width="w-full sm:w-[240px]"
                                             placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
                                         />
                                     ) : (
@@ -198,7 +235,7 @@ export const DashboardToolbar = ({
                                             allLabel={dt?.rankings?.['filter_by'] || 'Filtrar por...'}
                                             tagLabels={dt?.rankings}
                                             hideAll={true}
-                                            width="w-[240px]"
+                                            width="w-full sm:w-[240px]"
                                             placeholder={dt?.rankings?.search_placeholder || 'Filtrar rankings...'}
                                         />
                                     )}
