@@ -24,7 +24,8 @@ export const useStakingTransaction = () => {
             tab: StakingTab,
             amount: number,
             lsuResourceAddress: string,
-            claimNftIds?: string[]
+            claimNftIds?: string[],
+            claimNftResourceAddress?: string
         ) => {
             if (!activeNetworkId) {
                 setError('No active network');
@@ -55,8 +56,7 @@ export const useStakingTransaction = () => {
                     } else if (action === 'Unstake') {
                         manifest = buildUnstakeManifest(accountAddress, validatorAddress, amount, lsuResourceAddress);
                     } else if (action === 'Claim') {
-                        // Assuming claimNftResourceAddress is passed in place of lsuResourceAddress for Claim
-                        manifest = buildClaimManifest(accountAddress, validatorAddress, claimNftIds || [], lsuResourceAddress);
+                        manifest = buildClaimManifest(accountAddress, validatorAddress, claimNftIds || [], claimNftResourceAddress || '');
                     }
                 } else if (tab === 'validator') {
                     if (action === 'Stake') {
@@ -64,7 +64,7 @@ export const useStakingTransaction = () => {
                     } else if (action === 'Unstake') {
                         manifest = buildOwnerUnstakeManifest(accountAddress, validatorAddress, amount);
                     } else if (action === 'Claim') {
-                        manifest = buildOwnerClaimManifest(accountAddress, validatorAddress, claimNftIds || [], lsuResourceAddress);
+                        manifest = buildOwnerClaimManifest(accountAddress, validatorAddress, claimNftIds || [], claimNftResourceAddress || '');
                     }
                 }
 

@@ -154,7 +154,28 @@
     "validator_rewards_modal_generating_desc": "Querying rewards database. This process may take a few seconds.",
     "validator_rewards_summary_title": "Download Complete!",
     "validator_rewards_summary_total": "Total generated",
-    "validator_rewards_summary_dream": "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> in rewards this year."
+    "validator_rewards_summary_dream": "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> in rewards this year.",
+    "staking": {
+      "delegator": "Delegator",
+      "validator": "Validator",
+      "available": "Balance",
+      "staked": "Staked",
+      "unstaking": "Unstaking",
+      "claimable": "Claimable",
+      "amount_to": "Amount to",
+      "amount_placeholder": "Amount of XRD",
+      "max": "MAX",
+      "stake": "Stake",
+      "unstake": "Unstake",
+      "claim": "Claim",
+      "owner_warning": "Warning: The selected account does not appear to be the owner of this validator. Owner actions may fail.",
+      "errors": {
+        "failedToPrepareTransaction": "Failed to prepare transaction. Check your manifest.",
+        "rejectedByUser": "Transaction rejected by user.",
+        "insufficient_balance": "Insufficient balance for this action.",
+        "superior_to_both": "The entered amount exceeds both the available balance and the staked amount, so neither stake nor unstake operations can be performed."
+      }
+    }
   },
   "stakes": {
     "history_title": "30-Day Stake Activity",

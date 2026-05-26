@@ -124,9 +124,14 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         }
     });
 
-    const claimCollectionAddresses = Object.keys(claimCollections);
+    const claimCollectionAddresses = Object.keys(claimCollections).sort();
+    // Include the actual IDs in the query key so it refetches when new claim NFTs are minted
+    const claimCollectionIds = claimCollectionAddresses
+        .map(addr => `${addr}:${[...claimCollections[addr]].sort().join('|')}`)
+        .join('||');
+
     const { data: claimsData, isLoading: isLoadingClaims } = useQuery({
-        queryKey: ['account-claim-nfts', address, network, claimCollectionAddresses.sort().join(',')],
+        queryKey: ['account-claim-nfts', address, network, claimCollectionIds],
         queryFn: async () => {
             const results: Record<string, Record<string, unknown>[]> = {};
             for (const resAddr of claimCollectionAddresses) {

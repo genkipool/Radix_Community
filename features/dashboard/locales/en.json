@@ -646,23 +646,6 @@
       "start_date": "Start Date",
       "end_date": "End Date",
       "range_placeholder": "Select range..."
-    },
-    "staking": {
-      "delegator": "Delegator",
-      "validator": "Validator",
-      "available": "Available",
-      "staked": "Staked",
-      "unstaking": "Unstaking",
-      "claimable": "Claimable",
-      "amount_to": "Amount to",
-      "max": "MAX",
-      "stake": "Stake",
-      "unstake": "Unstake",
-      "claim": "Claim",
-      "owner_warning": "Warning: The selected account does not appear to be the owner of this validator. Owner actions may fail.",
-      "errors": {
-        "failedToPrepareTransaction": "Failed to prepare transaction. Check your manifest or Radix Wallet connection."
-      }
     }
   },
   "stakes": {
