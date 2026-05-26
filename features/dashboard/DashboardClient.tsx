@@ -196,9 +196,18 @@ export default function DashboardClient({
   const isWalletScopedTag = ['Staking', 'Unstaking', 'Claim'].includes(deferredTransactionActiveTag);
   const txAddresses = isWalletScopedTag && connectedAddresses ? connectedAddresses : undefined;
 
+  const lastActiveNetworkId = React.useRef<number | undefined | null>(undefined);
+
   useEffect(() => {
-    if (activeNetworkId !== undefined) {
+    if (activeNetworkId === undefined || activeNetworkId === null) {
+      lastActiveNetworkId.current = activeNetworkId;
+      return;
+    }
+
+    if (activeNetworkId !== lastActiveNetworkId.current) {
       const walletNetwork = activeNetworkId === 1 ? 'mainnet' : 'stokenet';
+      lastActiveNetworkId.current = activeNetworkId;
+      
       if (walletNetwork !== network) {
         handleNetworkChange(walletNetwork);
       }

@@ -12,7 +12,6 @@ import { TRANSACTION_TAGS } from '../explorador/constants';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { RadixNetworkId } from '@/features/wallet/constants/network';
 import type { DashboardToolbarProps } from '../types';
 
 /**
@@ -41,7 +40,7 @@ export const DashboardToolbar = ({
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
-    const { isConnected, accounts, connect } = useRadixWallet();
+    const { isConnected, accounts } = useRadixWallet();
 
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
         // Prefetch validators
@@ -88,10 +87,7 @@ export const DashboardToolbar = ({
                     {/* Network toggle */}
                     <div className="flex bg-[var(--color-surface)] p-1 rounded-xl border border-[var(--color-card-border)] shrink-0">
                         <button
-                            onClick={() => {
-                                onNetworkChange('mainnet');
-                                if (isConnected && network !== 'mainnet') connect(RadixNetworkId.Mainnet);
-                            }}
+                            onClick={() => onNetworkChange('mainnet')}
                             onMouseEnter={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'mainnet'
                                 ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
@@ -101,10 +97,7 @@ export const DashboardToolbar = ({
                             {dt?.network?.mainnet || 'Mainnet'}
                         </button>
                         <button
-                            onClick={() => {
-                                onNetworkChange('stokenet');
-                                if (isConnected && network !== 'stokenet') connect(RadixNetworkId.Stokenet);
-                            }}
+                            onClick={() => onNetworkChange('stokenet')}
                             onMouseEnter={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'stokenet'
                                 ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
@@ -142,11 +135,11 @@ export const DashboardToolbar = ({
                                         tags={accounts.map(acc => `account_${acc.address}`)}
                                         activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
                                         onSelect={tag => onSearchChange(tag ? tag : '')}
-                                        allLabel={(dt?.tags as any)?.my_wallet || 'Todas las cuentas'}
+                                        allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
                                         tagLabels={accounts.reduce((acc, a) => ({ ...acc, [`account_${a.address}`]: a.label }), {})}
                                         hideAll={false}
                                         width="w-[240px]"
-                                        placeholder={(dt?.search as any)?.accounts_placeholder || 'Filtrar cuentas...'}
+                                        placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
                                     />
                                 ) : (
                                     <SearchableTagFilter
@@ -191,11 +184,11 @@ export const DashboardToolbar = ({
                                             tags={accounts.map(acc => `account_${acc.address}`)}
                                             activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
                                             onSelect={tag => onSearchChange(tag ? tag : '')}
-                                            allLabel={(dt?.tags as any)?.my_wallet || 'Todas las cuentas'}
+                                            allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
                                             tagLabels={accounts.reduce((acc, a) => ({ ...acc, [`account_${a.address}`]: a.label }), {})}
                                             hideAll={false}
                                             width="w-[240px]"
-                                            placeholder={(dt?.search as any)?.accounts_placeholder || 'Filtrar cuentas...'}
+                                            placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
                                         />
                                     ) : (
                                         <SearchableTagFilter

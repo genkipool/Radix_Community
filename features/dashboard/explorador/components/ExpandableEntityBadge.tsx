@@ -586,9 +586,9 @@ function EntitySummaryTab({
     locale,
     network,
     dt,
-    stakeAmount,
-    unstakeAmount,
-    claimAmount,
+    stakeAmount: _stakeAmount,
+    unstakeAmount: _unstakeAmount,
+    claimAmount: _claimAmount,
 }: {
     address: string;
     entityData: GatewayEntityDetails | null;

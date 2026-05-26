@@ -183,7 +183,7 @@ function parseTokensAndNfts(entityData: GatewayEntityDetails | null, network: 'm
 }
 
 export function AccountTokensTab({
-    address,
+    address: _address,
     entityData,
     tt,
     onCopy,
@@ -212,7 +212,7 @@ export function AccountTokensTab({
 }
 
 export function AccountPoolUnitsTab({
-    address,
+    address: _address,
     entityData,
     tt,
     onCopy,
@@ -241,7 +241,7 @@ export function AccountPoolUnitsTab({
 }
 
 export function AccountNftsTab({
-    address,
+    address: _address,
     entityData,
     tt,
     onCopy,

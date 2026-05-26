@@ -33,10 +33,27 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     const burnedNfts: ParsedResource[] = [];
     const claimCollections: Record<string, string[]> = {};
 
+    const getFungibleAmount = (res: FungibleItem & { vaults?: { items?: { amount?: string }[] } }) => {
+        if (res.amount !== undefined) return String(res.amount);
+        if (res.vaults?.items?.length === 1) return String(res.vaults.items[0].amount || '0');
+        if (res.vaults?.items?.length && res.vaults.items.length > 1) {
+            return res.vaults.items.reduce((acc: number, v: { amount?: string }) => acc + parseFloat(v.amount || '0'), 0).toString();
+        }
+        return '0';
+    };
+
+    const getNonFungibleAmount = (res: NonFungibleItem & { vaults?: { items?: { total_count?: number }[] } }, defaultItemsLength: number) => {
+        if (res.amount !== undefined) return Number(res.amount);
+        if (res.vaults?.items?.length && res.vaults.items.length > 0) {
+            return res.vaults.items.reduce((acc: number, v: { total_count?: number }) => acc + (v.total_count || 0), 0);
+        }
+        return defaultItemsLength;
+    };
+
     // Process Fungibles
     fungibles.forEach((ft: FungibleItem) => {
         if (ft.resource_address === xrdAddress) {
-            xrdAmount = ft.amount || '0';
+            xrdAmount = getFungibleAmount(ft);
             return;
         }
 
@@ -48,7 +65,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             name: extractMetadata(meta, 'name') || 'Unknown Token',
             symbol: extractMetadata(meta, 'symbol') || '',
             iconUrl: extractMetadata(meta, 'icon_url') || '',
-            amount: ft.amount || '0',
+            amount: getFungibleAmount(ft),
             isPoolUnit: !!meta.find((m: MetadataItem) => m.key === 'pool_unit'),
             isLsu: !!meta.find((m: MetadataItem) => m.key === 'validator') || !!valByLsu,
             validatorAddress: extractMetadata(meta, 'validator') || valByLsu?.address,
@@ -80,8 +97,9 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     nonFungibles.forEach((nft: NonFungibleItem) => {
         const meta = nft.explicit_metadata?.items || [];
         const valByClaim = validatorsData?.validators.find((v: Validator) => v.claimTokenResourceAddress === nft.resource_address);
-        const nftItems = nft.vaults?.items?.[0]?.items || [];
-        const nftAmount = nft.amount !== undefined ? nft.amount : nftItems.length;
+        const nftWithVaults = nft as NonFungibleItem & { vaults?: { items?: { items?: unknown[] }[] } };
+        const nftItems = nftWithVaults.vaults?.items?.[0]?.items || [];
+        const nftAmount = getNonFungibleAmount(nftWithVaults, nftItems.length);
 
         const r: ParsedResource = {
             address: nft.resource_address,
@@ -163,7 +181,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                     const claimEpochStr = fields?.find(f => f.field_name === 'claim_epoch')?.value;
                     const claimEpoch = claimEpochStr ? parseInt(claimEpochStr, 10) : 0;
                     
-                    const currentEpoch = (entityData as any)?.ledger_state?.epoch || 0;
+                    const currentEpoch = (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch || 0;
 
                     if (claimEpoch > currentEpoch) {
                         entry.xrdInUnstake += amt;
@@ -204,6 +222,6 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         stakedTotal,
         unstakeTotal,
         claimTotal,
-        currentEpoch: (entityData as any)?.ledger_state?.epoch || 0,
+        currentEpoch: (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch || 0,
     };
 }
