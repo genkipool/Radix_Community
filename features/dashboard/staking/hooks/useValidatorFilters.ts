@@ -21,6 +21,7 @@ interface UseValidatorFiltersOptions {
   activeView:  'staking' | 'transactions';
   randomSeed:  number;
   pinnedValidatorAddresses?: string[];
+  isWalletFilterActive?: boolean;
 }
 
 interface UseValidatorFiltersReturn {
@@ -30,7 +31,7 @@ interface UseValidatorFiltersReturn {
 }
 
 export function useValidatorFilters({
-  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses
+  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses, isWalletFilterActive
 }: UseValidatorFiltersOptions): UseValidatorFiltersReturn {
 
   // React Compiler automatically memoizes this derived calculation.
@@ -131,11 +132,13 @@ export function useValidatorFilters({
       }
     }
 
-    // 4. Pin Delegated Validators (if provided)
-    if (pinnedValidatorAddresses && pinnedValidatorAddresses.length > 0) {
-      const pinned = result.filter(v => pinnedValidatorAddresses.includes(v.address));
-      const others = result.filter(v => !pinnedValidatorAddresses.includes(v.address));
-      return [...pinned, ...others];
+    // 4. Wallet Exclusive Filter
+    if (isWalletFilterActive) {
+      if (pinnedValidatorAddresses && pinnedValidatorAddresses.length > 0) {
+        return result.filter(v => pinnedValidatorAddresses.includes(v.address));
+      }
+      // If the wallet filter is active but there are no pinned validators, return empty
+      return [];
     }
 
     return result;
@@ -144,15 +147,16 @@ export function useValidatorFilters({
   const [visibleValCount, setVisibleValCount] = useState(VALIDATOR_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const [prevDeps, setPrevDeps] = useState({ activeTags, searchQuery, sortMode, network, randomSeed });
+  const [prevDeps, setPrevDeps] = useState({ activeTags, searchQuery, sortMode, network, randomSeed, isWalletFilterActive });
   if (
     activeTags !== prevDeps.activeTags ||
     searchQuery !== prevDeps.searchQuery ||
     sortMode !== prevDeps.sortMode ||
     network !== prevDeps.network ||
-    randomSeed !== prevDeps.randomSeed
+    randomSeed !== prevDeps.randomSeed ||
+    isWalletFilterActive !== prevDeps.isWalletFilterActive
   ) {
-    setPrevDeps({ activeTags, searchQuery, sortMode, network, randomSeed });
+    setPrevDeps({ activeTags, searchQuery, sortMode, network, randomSeed, isWalletFilterActive });
     setVisibleValCount(VALIDATOR_PAGE_SIZE);
   }
 

@@ -770,7 +770,7 @@ export async function searchTransactionsByAddress(
         if (cursor) {
             try {
                 cursors = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
-            } catch (e) {
+            } catch (_e) {
                 logger.warn('Failed to parse composite cursor');
             }
         }

@@ -44,7 +44,13 @@ export function TagFilterBar({ tags, activeTag, onSelect, allLabel, tagLabels, h
             {tags.map(tag => (
                 <button
                     key={tag}
-                    onClick={() => onSelect(tag)}
+                    onClick={() => {
+                        if (Array.isArray(activeTag)) {
+                            onSelect(tag);
+                        } else {
+                            isActive(tag) ? onSelect(null) : onSelect(tag);
+                        }
+                    }}
                     className={`${btnBase} ${isActive(tag) ? btnActive : btnInactive}`}
                 >
                     {tagLabels?.[tag] ?? tag}

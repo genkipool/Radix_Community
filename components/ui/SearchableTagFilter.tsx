@@ -150,7 +150,7 @@ export function SearchableTagFilter({
                                 <button
                                     key={tag}
                                     type="button"
-                                    onClick={() => { onSelect(tag); setIsOpen(false); }}
+                                    onClick={() => { if (activeTag === tag) { onSelect(null); } else { onSelect(tag); } setIsOpen(false); }}
                                     className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${activeTag === tag ? 'bg-[var(--color-primary)] text-white font-bold' : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'}`}
                                 >
                                     {getLabel(tag)}

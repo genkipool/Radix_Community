@@ -137,6 +137,7 @@ export default function DashboardClient({
 
   useEffect(() => {
     if (isConnected && accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsWalletFilterActive(true);
     } else {
       setIsWalletFilterActive(false);
@@ -253,8 +254,8 @@ export default function DashboardClient({
   const loadingTxs = isTxLoading && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
-  const connectedAccountAddress = isConnected && accounts.length > 0 ? accounts[0].address : null;
-  const { pinnedValidatorAddresses } = useConnectedStakes(connectedAccountAddress, deferredNetwork as 'mainnet' | 'stokenet');
+  const connectedAccountAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : [];
+  const { pinnedValidatorAddresses } = useConnectedStakes(connectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet');
 
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
@@ -265,6 +266,7 @@ export default function DashboardClient({
     activeView: 'staking',
     randomSeed,
     pinnedValidatorAddresses,
+    isWalletFilterActive,
   });
 
   /* ── Infinite scroll effects ─────────────────────────────── */
@@ -422,11 +424,8 @@ export default function DashboardClient({
               newTags.push(tag);
             }
 
-            // 3. Check if all functional tags are selected
-            const functionalTags = ['Active', 'Inactive', 'Low Fee', 'High Uptime', 'Foundation', 'Community'];
-            const allSelected = functionalTags.every(ft => newTags.includes(ft));
-
-            if (newTags.length === 0 || allSelected) {
+            // 3. Update tags
+            if (newTags.length === 0) {
               prefs.setActiveTag(['All']);
             } else {
               prefs.setActiveTag(newTags);
@@ -500,6 +499,7 @@ export default function DashboardClient({
             copiedAddress={copiedAddress}
             searchQuery={deferredSearch}
             network={deferredNetwork}
+            isWalletFilterActive={isWalletFilterActive}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}

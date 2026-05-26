@@ -153,11 +153,11 @@ export const DashboardToolbar = ({
                                 />
                                 {isConnected ? (
                                     <SearchableTagFilter
-                                        tags={accounts.map(acc => `account_${acc.address}`)}
+                                        tags={accounts.map(acc => acc.address)}
                                         activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
                                         onSelect={tag => onSearchChange(tag ? tag : '')}
                                         allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
-                                        tagLabels={accounts.reduce((acc, a) => ({ ...acc, [`account_${a.address}`]: a.label }), {})}
+                                        tagLabels={accounts.reduce((acc, a) => ({ ...acc, [a.address]: a.label }), {})}
                                         hideAll={false}
                                         width="w-[240px]"
                                         placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
@@ -222,11 +222,11 @@ export const DashboardToolbar = ({
                                 <div className="sm:shrink-0 w-full sm:w-auto">
                                     {isConnected ? (
                                         <SearchableTagFilter
-                                            tags={accounts.map(acc => `account_${acc.address}`)}
+                                            tags={accounts.map(acc => acc.address)}
                                             activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
                                             onSelect={tag => onSearchChange(tag ? tag : '')}
                                             allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
-                                            tagLabels={accounts.reduce((acc, a) => ({ ...acc, [`account_${a.address}`]: a.label }), {})}
+                                            tagLabels={accounts.reduce((acc, a) => ({ ...acc, [a.address]: a.label }), {})}
                                             hideAll={false}
                                             width="w-full sm:w-[240px]"
                                             placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}

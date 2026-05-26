@@ -40,11 +40,12 @@ export const DashboardCardGrid = ({
   onExpand,
   onCopy,
   marketData,
+  isWalletFilterActive,
 }: DashboardCardGridProps) => {
   const { isConnected, accounts } = useRadixWallet();
   const trimmedQuery = searchQuery.trim();
   const isAccountSearch = isRadixAddress(trimmedQuery) && trimmedQuery.startsWith('account_');
-  const accountsToShow = isAccountSearch ? [trimmedQuery] : (isConnected && accounts.length > 0 ? accounts.map(a => a.address) : []);
+  const accountsToShow = isAccountSearch ? [trimmedQuery] : (isWalletFilterActive && isConnected && accounts.length > 0 ? accounts.map(a => a.address) : []);
 
   return (
     <>
