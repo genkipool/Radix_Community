@@ -17,7 +17,7 @@
  * in useExpandedCards.
  */
 
-import React, {
+import {
   useState,
   useDeferredValue, useEffect,
 } from 'react';
@@ -191,28 +191,10 @@ export default function DashboardClient({
   const networkStats = validatorsData?.networkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
-  const { isConnected, accounts, activeNetworkId } = useRadixWallet();
+  const { isConnected, accounts } = useRadixWallet();
   const connectedAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : undefined;
   const isWalletScopedTag = ['Staking', 'Unstaking', 'Claim'].includes(deferredTransactionActiveTag);
   const txAddresses = isWalletScopedTag && connectedAddresses ? connectedAddresses : undefined;
-
-  const lastActiveNetworkId = React.useRef<number | undefined | null>(undefined);
-
-  useEffect(() => {
-    if (activeNetworkId === undefined || activeNetworkId === null) {
-      lastActiveNetworkId.current = activeNetworkId;
-      return;
-    }
-
-    if (activeNetworkId !== lastActiveNetworkId.current) {
-      const walletNetwork = activeNetworkId === 1 ? 'mainnet' : 'stokenet';
-      lastActiveNetworkId.current = activeNetworkId;
-      
-      if (walletNetwork !== network) {
-        handleNetworkChange(walletNetwork);
-      }
-    }
-  }, [activeNetworkId, network, handleNetworkChange]);
 
   const {
     data: txPages,

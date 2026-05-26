@@ -10,6 +10,7 @@ import { getQueryClient } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
 import type { Locale } from '@/i18n/dictionaries';
 import type { Theme } from '@/context/ThemeContext';
+import type { SessionPayload } from '@/lib/auth/session';
 import { translations } from '@/i18n';
 
 /**
@@ -24,11 +25,13 @@ export function Providers({
   locale,
   dictionary,
   theme,
+  walletSession,
 }: {
   children: ReactNode;
   locale: Locale;
   dictionary: typeof translations.en;
   theme: Theme;
+  walletSession?: SessionPayload | null;
 }) {
   const queryClient = getQueryClient();
 
@@ -38,7 +41,7 @@ export function Providers({
         <LanguageProvider language={locale} dictionary={dictionary}>
           <LayoutProvider>
             <AnimationProvider>
-              <RadixWalletProvider>
+              <RadixWalletProvider initialSession={walletSession}>
                 {children}
               </RadixWalletProvider>
             </AnimationProvider>

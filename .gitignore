@@ -44,3 +44,5 @@ events_dump.json
 
 # wrangler
 wrangler.toml
+.dev.vars
+.dev.vars.example

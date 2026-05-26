@@ -9,6 +9,7 @@ import { buildAlternates } from '@/lib/seo';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import type { Theme } from '@/context/ThemeContext';
+import { verifySessionJWT } from '@/lib/auth/session';
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -66,6 +67,10 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const theme = parseTheme(cookieStore.get('theme')?.value);
 
+  // Read and verify wallet session from HttpOnly cookie
+  const sessionToken = cookieStore.get('radix-session')?.value;
+  const walletSession = sessionToken ? await verifySessionJWT(sessionToken) : null;
+
   return (
     <html lang={locale} className={`${inter.variable} ${theme}`} suppressHydrationWarning>
       <head>
@@ -83,7 +88,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        <Providers locale={locale} dictionary={dictionary} theme={theme}>
+        <Providers locale={locale} dictionary={dictionary} theme={theme} walletSession={walletSession}>
           <AppShell>{children}</AppShell>
         </Providers>
         <Analytics />

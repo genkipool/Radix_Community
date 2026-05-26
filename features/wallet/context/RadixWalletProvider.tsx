@@ -1,59 +1,135 @@
 'use client';
 
-import React, { createContext, useEffect, useState, ReactNode } from 'react';
-import { RadixWalletContextValue, RadixWalletState } from '../types/wallet';
-import { getOrCreateToolkit } from '../lib/radix-toolkit';
+import React, { createContext, useEffect, useState, type ReactNode } from 'react';
+import type {
+  RadixWalletContextValue,
+  NetworkSessions,
+  NetworkSession,
+} from '../types/wallet';
+import { getOrCreateToolkit, destroyToolkit } from '../lib/radix-toolkit';
 import { RadixNetworkId } from '../constants/network';
-import { Subscription } from 'rxjs';
+import type { SessionPayload } from '@/lib/auth/session';
+
+// ─── Context ────────────────────────────────────────────────────────────────────
 
 export const RadixWalletContext = createContext<RadixWalletContextValue | undefined>(undefined);
 
-export function RadixWalletProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<RadixWalletState>({
-    isConnected: false,
-    isLoading: false,
-    isExtensionAvailable: true,
-    accounts: [],
-    persona: undefined,
-    personaData: [],
-    error: null,
-    activeNetworkId: null,
-  });
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 
-  // Effect to handle RDT initialization when a network is selected
+function networkIdFromName(name: 'mainnet' | 'stokenet'): RadixNetworkId {
+  return name === 'mainnet' ? RadixNetworkId.Mainnet : RadixNetworkId.Stokenet;
+}
+
+function networkNameFromId(id: RadixNetworkId): 'mainnet' | 'stokenet' {
+  return id === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+}
+
+/** Convert server session payload into client-side NetworkSessions. */
+function sessionsFromPayload(payload: SessionPayload | null): NetworkSessions {
+  if (!payload) return { mainnet: null, stokenet: null };
+  return {
+    mainnet: payload.mainnet
+      ? {
+          identityAddress: payload.mainnet.identityAddress,
+          personaLabel: payload.mainnet.personaLabel,
+          accounts: payload.mainnet.accounts,
+        }
+      : null,
+    stokenet: payload.stokenet
+      ? {
+          identityAddress: payload.stokenet.identityAddress,
+          personaLabel: payload.stokenet.personaLabel,
+          accounts: payload.stokenet.accounts,
+        }
+      : null,
+  };
+}
+
+// ─── Provider ───────────────────────────────────────────────────────────────────
+
+interface RadixWalletProviderProps {
+  children: ReactNode;
+  /** Server-side session data passed from layout via cookie verification. */
+  initialSession?: SessionPayload | null;
+}
+
+export function RadixWalletProvider({
+  children,
+  initialSession = null,
+}: RadixWalletProviderProps) {
+  const [sessions, setSessions] = useState<NetworkSessions>(
+    () => sessionsFromPayload(initialSession),
+  );
+  const [activeNetwork, setActiveNetwork] = useState<'mainnet' | 'stokenet'>(
+    // Default to mainnet, unless only stokenet has a session
+    () => {
+      const initial = sessionsFromPayload(initialSession);
+      if (initial.mainnet) return 'mainnet';
+      if (initial.stokenet) return 'stokenet';
+      return 'mainnet';
+    },
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Initialize RDT for networks that have active sessions ──
+  const hasInitialized = React.useRef(false);
+
   useEffect(() => {
-    if (!state.activeNetworkId) return;
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-    const rdt = getOrCreateToolkit(state.activeNetworkId);
-    if (!rdt) return;
-
-    // Provide the challenge generator for ROLA
-    rdt.walletApi.provideChallengeGenerator(async () => {
-      try {
-        const response = await fetch('/api/auth/radix/challenge');
-        const data = await response.json();
-        return data.challenge;
-      } catch (error) {
-        console.error('Failed to get ROLA challenge', error);
-        throw error;
+    // For each network with a session, ensure the toolkit is initialized
+    // so walletData$ can pick up reconnections from the extension
+    for (const net of ['mainnet', 'stokenet'] as const) {
+      if (sessions[net]) {
+        getOrCreateToolkit(networkIdFromName(net));
       }
-    });
+    }
+  }, [sessions]);
 
-    // Provide response callback to verify the signature on backend
-    rdt.walletApi.provideConnectResponseCallback(async (result) => {
-      if (result.isErr()) {
-        setState(prev => ({ ...prev, isLoading: false, error: 'Connection rejected or failed.' }));
+  // ── Connect flow ──────────────────────────────────────────────────────────
+
+  function connect(networkId: RadixNetworkId) {
+    setIsLoading(true);
+    setError(null);
+    const netName = networkNameFromId(networkId);
+    setActiveNetwork(netName);
+
+    // Small delay to allow React state to settle before RDT init
+    setTimeout(() => {
+      const rdt = getOrCreateToolkit(networkId);
+      if (!rdt) {
+        setIsLoading(false);
+        setError('Wallet toolkit failed to initialize. Check dApp address configuration.');
         return;
       }
 
-      const walletData = result.value;
-      const proofs = walletData.proofs;
+      // Provide challenge generator
+      rdt.walletApi.provideChallengeGenerator(async () => {
+        const response = await fetch('/api/auth/radix/challenge');
+        const data = await response.json();
+        return data.challenge;
+      });
 
-      if (!proofs || proofs.length === 0) {
-         console.warn("No ROLA proof provided by wallet.");
-         // Fallback if we decide to allow without proof, but for now we expect it
-      } else {
-        // Send proof to backend to verify
+      // Provide connect response callback — this is where ROLA verification happens
+      rdt.walletApi.provideConnectResponseCallback(async (result) => {
+        if (result.isErr()) {
+          setIsLoading(false);
+          setError('Connection rejected or failed.');
+          return;
+        }
+
+        const walletData = result.value;
+        const proofs = walletData.proofs;
+
+        if (!proofs || proofs.length === 0) {
+          setIsLoading(false);
+          setError('No ROLA proof provided by wallet.');
+          return;
+        }
+
+        // Verify via backend — this also creates session + sets cookie
         try {
           const verifyResponse = await fetch('/api/auth/radix/verify', {
             method: 'POST',
@@ -61,103 +137,133 @@ export function RadixWalletProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({
               challenge: proofs[0].challenge,
               proof: proofs[0].proof,
-              identityAddress: walletData.persona?.identityAddress
+              identityAddress: walletData.persona?.identityAddress,
+              networkId,
+              accounts: walletData.accounts,
+              personaLabel: walletData.persona?.label,
             }),
           });
-          
+
           if (!verifyResponse.ok) {
-             throw new Error('Verification failed');
+            const errBody = await verifyResponse.json().catch(() => ({}));
+            throw new Error((errBody as Record<string, string>).error || 'Verification failed');
           }
-        } catch (error) {
-          console.error("ROLA Verification error", error);
-          setState(prev => ({ ...prev, isLoading: false, error: 'Identity verification failed.' }));
-          return;
+
+          // Update local state with verified session
+          const newSession: NetworkSession = {
+            identityAddress: walletData.persona?.identityAddress || '',
+            personaLabel: walletData.persona?.label || '',
+            accounts: walletData.accounts,
+          };
+
+          setSessions(prev => ({
+            ...prev,
+            [netName]: newSession,
+          }));
+
+          setIsLoading(false);
+          setError(null);
+        } catch (err) {
+          setIsLoading(false);
+          setError(err instanceof Error ? err.message : 'Identity verification failed.');
         }
-      }
+      });
 
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        isConnected: true,
-        accounts: walletData.accounts,
-        persona: walletData.persona,
-        personaData: walletData.personaData,
-        error: null,
-      }));
-    });
+      // Fire the wallet connection request
+      rdt.walletApi.sendRequest();
 
-    const subscription = new Subscription();
-
-    // Subscribe to state changes from the wallet
-    subscription.add(
-      rdt.walletApi.walletData$.subscribe((walletData) => {
-        // Only update UI state if we already connected and verified, 
-        // or if wallet extension disconnects us.
-        if (walletData.accounts.length === 0 && walletData.persona === undefined) {
-             setState(prev => ({
-                ...prev,
-                isConnected: false,
-                accounts: [],
-                persona: undefined,
-                personaData: []
-             }));
-        }
-      })
-    );
-
-    return () => {
-      subscription.unsubscribe();
-      // We don't destroy toolkit here because we want it to persist across re-renders
-      // It is only destroyed when switching networks or unmounting the entire app
-    };
-  }, [state.activeNetworkId]);
-
-  const connect = (networkId: RadixNetworkId) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null, activeNetworkId: networkId }));
-    
-    // Slight delay to allow state and RDT to initialize
-    setTimeout(() => {
-        const rdt = getOrCreateToolkit(networkId);
-        if (rdt) {
-            rdt.walletApi.sendRequest();
-            
-            // Add a timeout for the wallet connection (e.g. 60 seconds)
-            setTimeout(() => {
-                setState(prev => {
-                    // Only reset if we are still loading
-                    if (prev.isLoading) {
-                        return { ...prev, isLoading: false, error: 'Connection timed out. Please try again.' };
-                    }
-                    return prev;
-                });
-            }, 60000); // 60 seconds timeout
-            
-        } else {
-            setState(prev => ({ ...prev, isLoading: false, error: 'Toolkit failed to initialize.' }));
-        }
+      // Timeout after 60 seconds
+      setTimeout(() => {
+        setIsLoading(prev => {
+          if (prev) {
+            setError('Connection timed out. Please try again.');
+            return false;
+          }
+          return prev;
+        });
+      }, 60000);
     }, 100);
-  };
+  }
 
-  const disconnect = () => {
-    const rdt = getOrCreateToolkit(state.activeNetworkId || RadixNetworkId.Stokenet);
-    if (rdt) {
-       // Clear session on backend if needed, for now just disconnect client
-       rdt.disconnect();
+  // ── Disconnect flow ───────────────────────────────────────────────────────
+
+  async function disconnect(network?: 'mainnet' | 'stokenet' | 'all') {
+    const target = network || 'all';
+
+    // Destroy RDT instance(s)
+    if (target === 'all') {
+      destroyToolkit();
+    } else {
+      destroyToolkit(networkIdFromName(target));
     }
-    setState({
-      isConnected: false,
-      isLoading: false,
-      isExtensionAvailable: true,
-      accounts: [],
-      persona: undefined,
-      personaData: [],
-      error: null,
-      activeNetworkId: null,
-    });
+
+    // Call logout API to update cookie
+    try {
+      await fetch('/api/auth/radix/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ network: target }),
+      });
+    } catch {
+      // Cookie clear is best-effort; local state will still be cleaned
+    }
+
+    // Update local state
+    if (target === 'all') {
+      setSessions({ mainnet: null, stokenet: null });
+    } else {
+      setSessions(prev => ({ ...prev, [target]: null }));
+
+      // If we disconnected the active network and the other has a session, switch
+      setActiveNetwork(prev => {
+        if (prev === target) {
+          const other = target === 'mainnet' ? 'stokenet' : 'mainnet';
+          return other;
+        }
+        return prev;
+      });
+    }
+
+    setError(null);
+  }
+
+  // ── Switch network (UI only, no reconnection) ─────────────────────────────
+
+  function switchNetwork(network: 'mainnet' | 'stokenet') {
+    setActiveNetwork(network);
+  }
+
+  // ── Derive backward-compatible values from active session ─────────────────
+
+  const activeSession = sessions[activeNetwork];
+
+  const contextValue: RadixWalletContextValue = {
+    // Multi-session state
+    sessions,
+    activeNetwork,
+    isLoading,
+    isExtensionAvailable: true,
+    error,
+
+    // Backward-compatible derived values
+    isConnected: activeSession !== null,
+    accounts: activeSession?.accounts ?? [],
+    persona: activeSession
+      ? { identityAddress: activeSession.identityAddress, label: activeSession.personaLabel }
+      : undefined,
+    personaData: [],
+    activeNetworkId: activeSession
+      ? networkIdFromName(activeNetwork)
+      : null,
+
+    // Actions
+    connect,
+    disconnect,
+    switchNetwork,
   };
 
   return (
-    <RadixWalletContext.Provider value={{ ...state, connect, disconnect }}>
+    <RadixWalletContext.Provider value={contextValue}>
       {children}
     </RadixWalletContext.Provider>
   );
