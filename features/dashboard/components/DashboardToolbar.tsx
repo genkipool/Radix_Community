@@ -130,6 +130,7 @@ export const DashboardToolbar = ({
                                     onSelect={tag => onActiveTagChange(tag || 'All')}
                                     allLabel={dt?.tags?.['All'] || 'All'}
                                     tagLabels={dt?.tags}
+                                    hideAll={true}
                                 />
                             </div>
                         ) : (
@@ -148,6 +149,7 @@ export const DashboardToolbar = ({
                                     onSelect={tag => onTransactionTagChange(tag || 'All')}
                                     allLabel={dt?.transaction_tags?.['All'] || 'All'}
                                     tagLabels={dt?.transaction_tags}
+                                    hideAll={true}
                                 />
                                 {isConnected ? (
                                     <SearchableTagFilter
@@ -195,6 +197,7 @@ export const DashboardToolbar = ({
                                     allLabel={dt?.tags?.['All'] || 'All'}
                                     tagLabels={dt?.tags}
                                     placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
+                                    hideAll={true}
                                 />
                             </div>
                         ) : (
@@ -214,6 +217,7 @@ export const DashboardToolbar = ({
                                     allLabel={dt?.transaction_tags?.['All'] || 'All'}
                                     tagLabels={dt?.transaction_tags}
                                     placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
+                                    hideAll={true}
                                 />
                                 <div className="sm:shrink-0 w-full sm:w-auto">
                                     {isConnected ? (

@@ -764,6 +764,82 @@ export async function searchTransactionsByAddress(
     const isValidator = typeof address === 'string' && address.startsWith('validator_');
     const dateParams = buildLedgerDateParams(dateRange?.start, dateRange?.end, dateRange?.timezone);
 
+    if (Array.isArray(address) && address.length > 1) {
+        // Implement OR logic with composite cursors
+        let cursors: Record<string, string | undefined> = {};
+        if (cursor) {
+            try {
+                cursors = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
+            } catch (e) {
+                logger.warn('Failed to parse composite cursor');
+            }
+        }
+
+        const fetchPromises = address.map(async (addr) => {
+            // If we have a cursor object and this address is explicitly set to null, it means it has reached the end
+            if (cursor && cursors[addr] === null) return { addr, transactions: [], nextCursor: null };
+            
+            try {
+                const res = await withRetry(() =>
+                    gateway.stream.innerClient.streamTransactions({
+                        streamTransactionsRequest: {
+                            limit_per_page: limit,
+                            cursor: cursors[addr],
+                            affected_global_entities_filter: [addr],
+                            opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
+                            ...dateParams,
+                        },
+                    }),
+                );
+                const transactions = (res.items || []).map((item) =>
+                    parseTransactionItem(item as unknown as GatewayItem, undefined, network)
+                );
+                return { addr, transactions, nextCursor: res.next_cursor || null };
+            } catch (err) {
+                logger.error({ err, addr }, 'Error fetching transactions for address in composite');
+                return { addr, transactions: [], nextCursor: null };
+            }
+        });
+
+        const results = await Promise.all(fetchPromises);
+        let allTransactions = results.flatMap(r => r.transactions);
+        
+        // Deduplicate by intentHash
+        const seen = new Set<string>();
+        allTransactions = allTransactions.filter(tx => {
+            if (seen.has(tx.intentHash)) return false;
+            seen.add(tx.intentHash);
+            return true;
+        });
+
+        // Sort by confirmedAt descending
+        allTransactions.sort((a, b) => b.confirmedAt.getTime() - a.confirmedAt.getTime());
+
+        // We fetched 'limit' for EACH address. We only return top 'limit' overall to maintain page size.
+        // But doing so strictly requires keeping track of exactly which txs were consumed to generate the right cursors,
+        // which is impossible since Gateway cursors are opaque (we can't generate a cursor for the middle of a page).
+        // Therefore, we return ALL fetched transactions (up to address.length * limit) 
+        // and advance the cursors for ALL addresses that returned data.
+        // The frontend will deduplicate and display them.
+        
+        const nextCursors: Record<string, string | null> = {};
+        let hasMore = false;
+        results.forEach(r => {
+            nextCursors[r.addr] = r.nextCursor;
+            if (r.nextCursor) hasMore = true;
+        });
+
+        const compositeCursor = hasMore ? Buffer.from(JSON.stringify(nextCursors)).toString('base64') : undefined;
+
+        logger.info({
+            network,
+            addressCount: address.length,
+            count: allTransactions.length
+        }, '[TransactionsService] Composite OR transactions fetched');
+
+        return { transactions: allTransactions, nextCursor: compositeCursor };
+    }
+
     const affectedEntities = Array.isArray(address) ? address : [address];
 
     try {
