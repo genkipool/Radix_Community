@@ -87,7 +87,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Providers locale={locale} dictionary={dictionary} theme={theme} walletSession={walletSession}>
           <AppShell>{children}</AppShell>
         </Providers>

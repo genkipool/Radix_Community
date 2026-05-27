@@ -137,6 +137,8 @@ export function AccountSummaryTab({
                             valueColor="text-[var(--color-accent)]"
                             marketData={marketData}
                             locale={locale}
+                            rawFiatAmount={Number(xrdAmount) || 0}
+                            isModal={isModal}
                         />
                         <BalanceCard
                             title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
@@ -146,6 +148,7 @@ export function AccountSummaryTab({
                             marketData={marketData}
                             locale={locale}
                             rawFiatAmount={totalLsuXrdEquivalent}
+                            isModal={isModal}
                         />
                         <BalanceCard
                             title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
@@ -154,6 +157,8 @@ export function AccountSummaryTab({
                             valueColor="text-[var(--color-text-main)]"
                             marketData={marketData}
                             locale={locale}
+                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
+                            isModal={isModal}
                         />
                         <BalanceCard
                             title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
@@ -162,6 +167,8 @@ export function AccountSummaryTab({
                             valueColor="text-orange-500"
                             marketData={marketData}
                             locale={locale}
+                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
+                            isModal={isModal}
                         />
                         <BalanceCard
                             title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
@@ -170,6 +177,8 @@ export function AccountSummaryTab({
                             valueColor="text-[var(--color-accent)]"
                             marketData={marketData}
                             locale={locale}
+                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
+                            isModal={isModal}
                         />
                     </div>
                 ) : (
@@ -278,8 +287,8 @@ export function AccountSummaryTab({
 
 
             {/* Assets */}
-            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
-            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
             {burnedNfts.length > 0 && (
                 <AssetSection
@@ -290,9 +299,10 @@ export function AccountSummaryTab({
                     burned
                     titleClassName="text-red-500/80"
                     locale={locale}
+                    isModal={isModal}
                 />
             )}
-            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
             {/* Account Rewards CSV Modal */}
             {isCsvModalOpen && (
@@ -309,7 +319,7 @@ export function AccountSummaryTab({
     );
 }
 
-function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount }: {
+function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isModal = false }: {
     title: string;
     amount: string;
     symbol: string;
@@ -317,6 +327,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     marketData?: MarketData | null;
     locale: string;
     rawFiatAmount?: number;
+    isModal?: boolean;
 }) {
     const currency = getCurrencyForLocale(locale);
     const price = currency === 'EUR' ? marketData?.priceEur : marketData?.priceUsd;
@@ -328,7 +339,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2, locale) : formatNumber(parsedAmount, 4, locale);
 
     return (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full">
+        <div className={isModal ? "flex flex-col gap-1 w-full h-full py-1" : "bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full"}>
             {/* Row 1: Title (left) */}
             <div className="flex justify-start">
                 <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider">
@@ -356,7 +367,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     );
 }
 
-function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale }: {
+function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale, isModal = false }: {
     title: string;
     items: ParsedResource[];
     onCopy: (v: string) => void;
@@ -364,6 +375,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
     burned?: boolean;
     titleClassName?: string;
     locale: string;
+    isModal?: boolean;
 }) {
     if (items.length === 0) return null;
     return (
@@ -371,26 +383,27 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
             <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider ${titleClassName}`}>
                 {title}
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch">
+            <div className={isModal ? "grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
                 {items.map((item) => (
-                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} />
+                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} />
                 ))}
             </div>
         </div>
     );
 }
 
-function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale }: {
+function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isModal = false }: {
     item: ParsedResource;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
     locale: string;
+    isModal?: boolean;
 }) {
     const { address, name, symbol, iconUrl, amount, isNft } = item;
 
     return (
-        <div className={`flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full`}>
+        <div className={isModal ? `flex flex-col h-full py-1 ${burned ? 'opacity-70' : ''}` : `flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full`}>
             <div className="flex items-center gap-2 mb-2 min-w-0">
                 <div className="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center">
                     {iconUrl ? (
