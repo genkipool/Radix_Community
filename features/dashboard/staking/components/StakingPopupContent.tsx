@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { Validator } from '@/types/radix';
@@ -44,6 +44,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const queryClient = useQueryClient();
     const { accounts, activeNetworkId } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<StakingTab>('delegator');
+    const inputRef = useRef<HTMLInputElement>(null);
     const [amountStr, setAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
@@ -97,6 +98,15 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
         return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        // Auto-focus the input when the popup opens
+        // We use a small timeout to ensure the element is rendered and not blocked by transition
+        const focusTimer = setTimeout(() => {
+            inputRef.current?.focus();
+        }, 50);
+        return () => clearTimeout(focusTimer);
+    }, []);
+
     const fiatRate = isEUR ? price?.eur : price?.usd;
     const fiatSymbol = isEUR ? '€' : '$';
 
@@ -110,23 +120,35 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
         if (!activeAccount) return;
         setActionError(null);
         
-        const amount = parseFloat(amountStr || '0');
+        let amount = parseFloat(amountStr || '0');
         
         if (actionToPerform === 'Stake' && amount > stakingData.xrdBalance) {
-            setActionError(stakingT?.errors?.insufficient_balance ?? 'Saldo insuficiente para esta acción.');
-            return;
+            if (amount - stakingData.xrdBalance <= 0.01) {
+                amount = stakingData.xrdBalance;
+            } else {
+                setActionError(stakingT?.errors?.insufficient_balance ?? 'Saldo insuficiente para esta acción.');
+                return;
+            }
         }
         
         if (actionToPerform === 'Unstake' && amount > stakedXrd) {
-            setActionError(stakingT?.errors?.insufficient_balance ?? 'Saldo insuficiente para esta acción.');
-            return;
+            if (amount - stakedXrd <= 0.01) {
+                amount = stakedXrd;
+            } else {
+                setActionError(stakingT?.errors?.insufficient_balance ?? 'Saldo insuficiente para esta acción.');
+                return;
+            }
         }
 
         setTransactingAction(actionToPerform);
 
         let txAmount = amount;
         if (actionToPerform === 'Unstake') {
-            txAmount = amount / xrdPerLsu;
+            if (amount === stakedXrd) {
+                txAmount = stakingData.lsuBalance; // Use exact LSU balance if max
+            } else {
+                txAmount = amount / xrdPerLsu;
+            }
         }
 
         const hash = await submitTransaction(
@@ -195,8 +217,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     };
 
     const parsedAmount = parseFloat(amountStr || '0');
-    // Error is shown in real-time only if it exceeds BOTH available and staked
-    const isSuperiorToBoth = parsedAmount > stakingData.xrdBalance && parsedAmount > stakedXrd;
+    // Error is shown in real-time only if it exceeds BOTH available and staked (with a small margin for floating point rounding)
+    const isSuperiorToBoth = parsedAmount > (stakingData.xrdBalance + 0.01) && parsedAmount > (stakedXrd + 0.01);
 
     const hasTxError = Boolean((error && error.includes('txid_tdx_2_1')) || (actionError && actionError.includes('txid_tdx_2_1')));
     const isNotOwnerWarning = Boolean(activeTab === 'validator' && !stakingData.isOwner && !isLoadingData && activeAccount);
@@ -269,6 +291,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             <div className="relative flex flex-col">
                 <div className="relative">
                     <input 
+                        ref={inputRef}
                         type="number" 
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}

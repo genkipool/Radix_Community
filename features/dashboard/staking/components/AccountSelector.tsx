@@ -54,10 +54,10 @@ export const AccountSelector = ({ accounts, selectedAccount, onSelect }: Account
                                 onSelect(acc);
                                 setIsOpen(false);
                             }}
-                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--color-background)] transition-colors border-b border-[var(--color-border)] last:border-0"
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--color-background)] transition-colors border-b border-[var(--color-border)] last:border-0 group"
                         >
                             <div className="flex flex-col items-start text-left">
-                                <span className="font-medium text-[var(--color-text)] text-sm">{acc.label}</span>
+                                <span className="font-medium text-[var(--color-text)] text-sm transition-colors group-hover:text-[var(--color-accent)]">{acc.label}</span>
                                 <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{truncateAddress(acc.address)}</span>
                             </div>
                             {selectedAccount?.address === acc.address && <Check className="w-4 h-4 text-[var(--color-primary)]" />}
