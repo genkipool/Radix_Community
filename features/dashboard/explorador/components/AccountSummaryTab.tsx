@@ -127,60 +127,124 @@ export function AccountSummaryTab({
 
             {/* Principal Balance */}
             <div>
-                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{isModal ? 'Balance' : (tt?.account_summary?.principal_balance || 'Principal Balance')}</h4>
+                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3 ${isModal ? 'pb-2 border-b border-[var(--color-border)]' : ''}`}>{isModal ? 'Balance' : (tt?.account_summary?.principal_balance || 'Principal Balance')}</h4>
                 {!isBadge ? (
-                    <div className={isModal ? "grid grid-cols-2 gap-3 items-stretch" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch"}>
-                        <BalanceCard
-                            title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
-                            amount={xrdAmount}
-                            symbol="XRD"
-                            valueColor="text-[var(--color-accent)]"
-                            marketData={marketData}
-                            locale={locale}
-                            rawFiatAmount={Number(xrdAmount) || 0}
-                            isModal={isModal}
-                        />
-                        <BalanceCard
-                            title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
-                            amount={String(totalLsuAmount)}
-                            symbol="LSU"
-                            valueColor="text-blue-500 dark:text-blue-400"
-                            marketData={marketData}
-                            locale={locale}
-                            rawFiatAmount={totalLsuXrdEquivalent}
-                            isModal={isModal}
-                        />
-                        <BalanceCard
-                            title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
-                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
-                            symbol="XRD"
-                            valueColor="text-[var(--color-text-main)]"
-                            marketData={marketData}
-                            locale={locale}
-                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
-                            isModal={isModal}
-                        />
-                        <BalanceCard
-                            title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
-                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
-                            symbol="XRD"
-                            valueColor="text-orange-500"
-                            marketData={marketData}
-                            locale={locale}
-                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
-                            isModal={isModal}
-                        />
-                        <BalanceCard
-                            title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
-                            amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
-                            symbol="XRD"
-                            valueColor="text-[var(--color-accent)]"
-                            marketData={marketData}
-                            locale={locale}
-                            rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
-                            isModal={isModal}
-                        />
-                    </div>
+                    isModal ? (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3 items-stretch">
+                                <BalanceCard
+                                    title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
+                                    amount={xrdAmount}
+                                    symbol="XRD"
+                                    valueColor="text-[var(--color-accent)]"
+                                    marketData={marketData}
+                                    locale={locale}
+                                    rawFiatAmount={Number(xrdAmount) || 0}
+                                    isModal={isModal}
+                                    align="left"
+                                />
+                                <BalanceCard
+                                    title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
+                                    amount={String(totalLsuAmount)}
+                                    symbol="LSU"
+                                    valueColor="text-blue-500 dark:text-blue-400"
+                                    marketData={marketData}
+                                    locale={locale}
+                                    rawFiatAmount={totalLsuXrdEquivalent}
+                                    isModal={isModal}
+                                    align="right"
+                                />
+                            </div>
+                            <div className="grid grid-cols-3 gap-3 items-stretch">
+                                <BalanceCard
+                                    title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
+                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                    symbol="XRD"
+                                    valueColor="text-[var(--color-text-main)]"
+                                    marketData={marketData}
+                                    locale={locale}
+                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
+                                    isModal={isModal}
+                                    align="left"
+                                />
+                                <BalanceCard
+                                    title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                    symbol="XRD"
+                                    valueColor="text-orange-500"
+                                    marketData={marketData}
+                                    locale={locale}
+                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
+                                    isModal={isModal}
+                                    align="center"
+                                />
+                                <BalanceCard
+                                    title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                    amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                    symbol="XRD"
+                                    valueColor="text-[var(--color-accent)]"
+                                    marketData={marketData}
+                                    locale={locale}
+                                    rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
+                                    isModal={isModal}
+                                    align="right"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
+                            <BalanceCard
+                                title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
+                                amount={xrdAmount}
+                                symbol="XRD"
+                                valueColor="text-[var(--color-accent)]"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={Number(xrdAmount) || 0}
+                                isModal={isModal}
+                            />
+                            <BalanceCard
+                                title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
+                                amount={String(totalLsuAmount)}
+                                symbol="LSU"
+                                valueColor="text-blue-500 dark:text-blue-400"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={totalLsuXrdEquivalent}
+                                isModal={isModal}
+                            />
+                            <BalanceCard
+                                title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
+                                symbol="XRD"
+                                valueColor="text-[var(--color-text-main)]"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
+                                isModal={isModal}
+                            />
+                            <BalanceCard
+                                title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
+                                symbol="XRD"
+                                valueColor="text-orange-500"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
+                                isModal={isModal}
+                            />
+                            <BalanceCard
+                                title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
+                                symbol="XRD"
+                                valueColor="text-[var(--color-accent)]"
+                                marketData={marketData}
+                                locale={locale}
+                                rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0)}
+                                isModal={isModal}
+                            />
+                        </div>
+                    )
                 ) : (
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
@@ -231,16 +295,16 @@ export function AccountSummaryTab({
                     </div>
                 )}
             </div>
-            
+
             {/* Staking Section */}
             {stakingRows.length > 0 && (
                 <div className="mb-8">
-                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-4 tracking-wider">
+                    <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
                         {tt?.account_summary?.staking_validators_title || 'STAKING'} ({stakingRows.length})
                     </h4>
                     <div className="space-y-4">
                         {stakingRows.map((row) => (
-                            <div key={row.validatorAddress} className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
+                            <div key={row.validatorAddress} className={isModal ? "flex flex-col gap-4 py-2" : "flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm"}>
                                 {/* Validator Header */}
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
@@ -252,13 +316,13 @@ export function AccountSummaryTab({
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <span className="font-black text-sm text-[var(--color-text-main)] truncate">{row.validatorName || 'Unknown Validator'}</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{row.validatorAddress}</span>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} 
-                                                className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">{row.validatorAddress}</span>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }}
+                                                className={`p-1 rounded transition-colors ${copiedAddress === row.validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                             >
-                                                {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
+                                                {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                                             </button>
                                         </div>
                                     </div>
@@ -319,7 +383,7 @@ export function AccountSummaryTab({
     );
 }
 
-function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isModal = false }: {
+function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isModal = false, align = 'left' }: {
     title: string;
     amount: string;
     symbol: string;
@@ -328,6 +392,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     locale: string;
     rawFiatAmount?: number;
     isModal?: boolean;
+    align?: 'left' | 'center' | 'right';
 }) {
     const currency = getCurrencyForLocale(locale);
     const price = currency === 'EUR' ? marketData?.priceEur : marketData?.priceUsd;
@@ -338,8 +403,33 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     const parsedAmount = parseFloat(amount);
     const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2, locale) : formatNumber(parsedAmount, 4, locale);
 
+    if (isModal) {
+        const alignClass = align === 'right' ? 'items-end text-right' : align === 'center' ? 'items-center text-center' : 'items-start text-left';
+        
+        return (
+            <div className={`flex flex-col gap-0.5 w-full py-2 ${alignClass}`}>
+                <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider mb-0.5">
+                    {title}
+                </span>
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                    <span className={`text-2xl font-black font-mono tracking-tight ${valueColor} truncate`} title={amount}>
+                        {formattedAmount}
+                    </span>
+                    <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase shrink-0">
+                        {symbol}
+                    </span>
+                </div>
+                {fiatValue !== null && fiatValue > 0 && (
+                    <span className="text-[11px] font-bold text-[var(--color-text-muted)]/70 truncate">
+                        {formatCurrency(fiatValue, currency, locale)}
+                    </span>
+                )}
+            </div>
+        );
+    }
+
     return (
-        <div className={isModal ? "flex flex-col gap-1 w-full h-full py-1" : "bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full"}>
+        <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full">
             {/* Row 1: Title (left) */}
             <div className="flex justify-start">
                 <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider">
@@ -358,11 +448,15 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
             </div>
 
             {/* Row 3: Fiat Value (right) */}
-            <div className="flex justify-end min-w-0">
-                <span className="text-xs font-bold text-[var(--color-text-muted)] truncate">
-                    {fiatValue !== null ? formatCurrency(fiatValue, currency, locale) : '—'}
-                </span>
-            </div>
+            {fiatValue !== null && fiatValue > 0 ? (
+                <div className="flex justify-end min-w-0">
+                    <span className="text-xs font-bold text-[var(--color-text-muted)] truncate">
+                        {formatCurrency(fiatValue, currency, locale)}
+                    </span>
+                </div>
+            ) : (
+                <div className="flex justify-end min-w-0 h-[18px]"></div>
+            )}
         </div>
     );
 }
@@ -380,7 +474,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
     if (items.length === 0) return null;
     return (
         <div>
-            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider ${titleClassName}`}>
+            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName} ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-3'}`}>
                 {title}
             </h4>
             <div className={isModal ? "grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
@@ -425,7 +519,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
 
             <div className="flex items-center justify-between mt-auto pt-2 border-t border-[var(--color-card-border)]">
                 <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{truncateAddress(address, 4, 4)}</span>
+                    <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{truncateAddress(address, 13, 12)}</span>
                     <button
                         onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                         className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
