@@ -77,11 +77,11 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
     const personaName = persona?.label || navT.wallet_connected || 'Persona';
     const personaIcon = ''; // Replace with persona icon if available in future
 
-    const handleTabClick = (tab: TabType) => {
-        if (tab === 'profile' || tab === 'notifications') {
+    const handleTabClick = (tab: TabType | 'full_profile') => {
+        if (tab === 'profile' || tab === 'notifications' || tab === 'full_profile') {
             setIsConstructionOpen(true);
         } else {
-            setActiveTab(tab);
+            setActiveTab(tab as TabType);
         }
     };
 
@@ -118,6 +118,12 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             {activeNetwork === 'stokenet' && (
                                                 <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
                                             )}
+                                        </button>
+                                        <button
+                                            onClick={() => setIsConstructionOpen(true)}
+                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+                                        >
+                                            {navT.full_profile ?? 'Perfil Completo'}
                                         </button>
                                     </div>
                                     <button
@@ -171,13 +177,14 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)]">
+                                <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)] overflow-x-auto custom-scrollbar">
                                     <button
                                         onClick={() => handleTabClick('profile')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'profile' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
+                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === 'profile' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.profile ?? 'Perfil'}
                                     </button>
+
                                     <button
                                         onClick={() => handleTabClick('accounts')}
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}

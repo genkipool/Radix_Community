@@ -8,6 +8,7 @@ import {
 import { useState, useEffect, useTransition, useRef, ReactNode } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { UnderConstructionModal } from '@/components/shared/UnderConstructionModal';
 import { setCookie } from '@/utils/cookies';
 import { useLayout } from '@/context/LayoutContext';
 import { NAV_LINKS } from '@/constants/navigation';
@@ -408,27 +409,31 @@ function WalletPopupContent({
   );
 }
 
+interface ConnectedWalletPopupContentProps {
+  t: Dictionary;
+  activeNetwork: 'mainnet' | 'stokenet';
+  personaName?: string;
+  onOpenProfileModal: () => void;
+  onOpenUnderConstruction?: () => void;
+  networkId: RadixNetworkId | null;
+  connect: (networkId: RadixNetworkId) => void;
+  disconnect: () => void;
+  sessions: Record<'mainnet' | 'stokenet', unknown>;
+  switchNetwork: (network: 'mainnet' | 'stokenet') => void;
+}
+
 function ConnectedWalletPopupContent({ 
-  disconnect, 
-  connect,
-  networkId,
+  t, 
+  activeNetwork, 
   personaName, 
-  t,
   onOpenProfileModal,
+  onOpenUnderConstruction,
+  networkId,
+  connect,
+  disconnect,
   sessions,
-  activeNetwork,
   switchNetwork
-}: { 
-  disconnect: () => void, 
-  connect: (networkId: RadixNetworkId) => void,
-  networkId: RadixNetworkId | null,
-  personaName?: string, 
-  t: Dictionary,
-  onOpenProfileModal: () => void,
-  sessions: Record<'mainnet' | 'stokenet', unknown>,
-  activeNetwork: 'mainnet' | 'stokenet',
-  switchNetwork: (network: 'mainnet' | 'stokenet') => void
-}) {
+}: ConnectedWalletPopupContentProps) {
   const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
     if (sessions[netName]) {
       switchNetwork(netName);
@@ -436,11 +441,10 @@ function ConnectedWalletPopupContent({
       connect(netId);
     }
   };
-
   return (
     <div className="p-4 w-[280px]">
       {/* Network Tabs Header */}
-      <div className="flex items-center gap-6 mb-4 border-b border-[var(--color-card-border)]/50">
+      <div className="flex items-center justify-around mb-4 border-b border-[var(--color-card-border)]/50">
         <button
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
@@ -455,11 +459,17 @@ function ConnectedWalletPopupContent({
           {t.nav?.wallet_stokenet ?? 'Stokenet'}
           {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
         </button>
+        <button
+          onClick={onOpenProfileModal}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+        >
+          {((t.nav || {}) as Record<string, string>).profile ?? 'Perfil'}
+        </button>
       </div>
 
       {/* Row 1: Photo and Name (Clickable) */}
       <button 
-        onClick={onOpenProfileModal}
+        onClick={() => onOpenUnderConstruction?.()}
         className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--color-surface)] transition-colors text-left mb-4 group border border-transparent hover:border-[var(--color-card-border)]"
       >
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-0.5 shrink-0">
@@ -544,6 +554,7 @@ export default function Navbar() {
   const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [isWalletProfileModalOpen, setIsWalletProfileModalOpen] = useState(false);
+  const [isUnderConstructionModalOpen, setIsUnderConstructionModalOpen] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<'theme' | 'lang' | null>(null);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { theme, setTheme } = useTheme();
@@ -760,7 +771,8 @@ export default function Navbar() {
                           height="32"
                           viewBox="0 0 210 40"
                           fontSize={18}
-                          textX={32}
+                          textX={122}
+                          textAnchor="middle"
                           logoScale={0.12}
                           logoTranslateY={8}
                           logoTranslateX={5}
@@ -778,41 +790,50 @@ export default function Navbar() {
                         personaName={persona?.label} 
                         t={t}
                         onOpenProfileModal={() => setIsWalletProfileModalOpen(true)}
+                        onOpenUnderConstruction={() => setIsUnderConstructionModalOpen(true)}
                         sessions={sessions}
                         activeNetwork={activeNetwork}
                         switchNetwork={switchNetwork}
                       />
                     </NavPopup>
                 ) : (
-                  <NavPopup
-                    align="right"
-                    width="w-auto"
-                    offsetClass="absolute top-full"
-                    trigger={
-                      <button
-                        aria-label={t.nav.connectWallet as string}
-                        className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
-                      >
-                        <RadixLogo
-                          label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
-                          showBeta={false}
-                          width="160"
-                          height="32"
-                          viewBox="0 0 210 40"
-                          fontSize={18}
-                          textX={32}
-                          logoScale={0.12}
-                          logoTranslateY={8}
-                          logoTranslateX={5}
-                          strokeColor="white"
-                          textColor="white"
-                          className={isLoading ? "animate-pulse" : ""}
-                        />
-                      </button>
-                    }
-                  >
-                    <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
-                  </NavPopup>
+                    <NavPopup
+                      align="right"
+                      width="w-auto"
+                      offsetClass="absolute top-full"
+                      trigger={
+                        <button
+                          onClick={() => {
+                            if (sessions['mainnet']) {
+                              switchNetwork('mainnet');
+                            } else {
+                              connect(RadixNetworkId.Mainnet);
+                            }
+                          }}
+                          aria-label={t.nav.connectWallet as string}
+                          className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                        >
+                          <RadixLogo
+                            label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
+                            showBeta={false}
+                            width="160"
+                            height="32"
+                            viewBox="0 0 210 40"
+                            fontSize={18}
+                            textX={122}
+                            textAnchor="middle"
+                            logoScale={0.12}
+                            logoTranslateY={8}
+                            logoTranslateX={5}
+                            strokeColor="white"
+                            textColor="white"
+                            className={isLoading ? "animate-pulse" : ""}
+                          />
+                        </button>
+                      }
+                    >
+                      <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                    </NavPopup>
                 )}
               </div>
             </div>
@@ -946,7 +967,8 @@ export default function Navbar() {
                           height="32"
                           viewBox="0 0 210 40"
                           fontSize={18}
-                          textX={36}
+                          textX={122}
+                          textAnchor="middle"
                           logoScale={0.12}
                           logoTranslateY={8}
                           logoTranslateX={10}
@@ -967,6 +989,10 @@ export default function Navbar() {
                         setIsOpen(false);
                         setIsWalletProfileModalOpen(true);
                       }}
+                      onOpenUnderConstruction={() => {
+                        setIsOpen(false);
+                        setIsUnderConstructionModalOpen(true);
+                      }}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
                       switchNetwork={switchNetwork}
@@ -978,6 +1004,14 @@ export default function Navbar() {
                     width="w-[280px]"
                     trigger={
                       <button
+                        onClick={() => {
+                          if (sessions['mainnet']) {
+                            switchNetwork('mainnet');
+                          } else {
+                            connect(RadixNetworkId.Mainnet);
+                          }
+                          setIsOpen(false);
+                        }}
                         aria-label={t.nav.connectWallet as string}
                         className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
                       >
@@ -988,7 +1022,8 @@ export default function Navbar() {
                           height="32"
                           viewBox="0 0 210 40"
                           fontSize={18}
-                          textX={36}
+                          textX={122}
+                          textAnchor="middle"
                           logoScale={0.12}
                           logoTranslateY={8}
                           logoTranslateX={10}
@@ -1020,6 +1055,12 @@ export default function Navbar() {
         onClose={() => setIsWalletProfileModalOpen(false)}
         t={t}
         locale={language}
+      />
+
+      <UnderConstructionModal
+        isOpen={isUnderConstructionModalOpen}
+        onClose={() => setIsUnderConstructionModalOpen(false)}
+        t={t}
       />
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}

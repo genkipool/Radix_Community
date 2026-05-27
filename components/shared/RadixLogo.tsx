@@ -18,6 +18,7 @@ interface RadixLogoProps {
   logoScale?: number;
   logoTranslateX?: number;
   logoTranslateY?: number;
+  textAnchor?: "start" | "middle" | "end";
 }
 
 /**
@@ -40,6 +41,7 @@ export function RadixLogo({
   logoScale = 0.16,
   logoTranslateX = 10,
   logoTranslateY = 4.5,
+  textAnchor = "start",
 }: RadixLogoProps) {
   return (
     <svg
@@ -68,6 +70,7 @@ export function RadixLogo({
       <text
         x={textX}
         y="28"
+        textAnchor={textAnchor}
         fontFamily="Inter, sans-serif"
         fontWeight="bold"
         fontSize={fontSize}
