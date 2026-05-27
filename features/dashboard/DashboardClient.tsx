@@ -82,6 +82,8 @@ export default function DashboardClient({
   randomSeed = 0,
   initialMarketData,
   dictionary,
+  initialIsWalletConnected = false,
+  initialConnectedAccounts = [],
 }: DashboardInitialProps) {
 
   const { t: dict, language } = useLanguage();
@@ -105,7 +107,9 @@ export default function DashboardClient({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
-  const [isWalletFilterActive, setIsWalletFilterActive] = useState(false);
+  
+  // Initialize wallet filter state using server session knowledge to prevent flicker
+  const [isWalletFilterActive, setIsWalletFilterActive] = useState(initialIsWalletConnected);
 
   // Sync temp state with committed state if URL changes externally (e.g., reset)
   const [prevDateRange, setPrevDateRange] = useState(dateRange);
@@ -222,8 +226,11 @@ export default function DashboardClient({
   const networkStats = validatorsData?.networkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
-  const connectedAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : undefined;
-  const txAddresses = isWalletFilterActive && connectedAddresses ? connectedAddresses : undefined;
+  const connectedAddresses = (isConnected && accounts.length > 0) 
+    ? accounts.map(a => a.address) 
+    : (initialIsWalletConnected ? initialConnectedAccounts : undefined);
+    
+  const txAddresses = isWalletFilterActive && connectedAddresses && connectedAddresses.length > 0 ? connectedAddresses : undefined;
 
   const {
     data: txPages,
@@ -254,7 +261,10 @@ export default function DashboardClient({
   const loadingTxs = isTxLoading && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
-  const connectedAccountAddresses = isConnected && accounts.length > 0 ? accounts.map(a => a.address) : [];
+  const connectedAccountAddresses = (isConnected && accounts.length > 0) 
+    ? accounts.map(a => a.address) 
+    : (initialIsWalletConnected ? initialConnectedAccounts : []);
+    
   const { pinnedValidatorAddresses } = useConnectedStakes(connectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet');
 
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({

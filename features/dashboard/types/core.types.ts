@@ -44,5 +44,7 @@ export interface DashboardInitialProps {
   randomSeed: number;
   initialMarketData?: MarketData | null;
   dictionary?: Partial<Dictionary>;
+  initialIsWalletConnected?: boolean;
+  initialConnectedAccounts?: string[];
 }
 

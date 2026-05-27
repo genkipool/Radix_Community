@@ -110,6 +110,12 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
   const headerStore = await headers();
   const c = makeCookieReader(cookieStore);
 
+  // Read wallet session to avoid initial UI flicker
+  const { getSessionFromCookies } = await import('@/lib/auth/session');
+  const session = await getSessionFromCookies();
+  const isServerWalletConnected = !!session?.[network];
+  const initialConnectedAccounts = session?.[network]?.accounts?.map(a => a.address) || [];
+
   // Timezone resolution: Cookie > Geo Fallback > UTC
   const clientTz = c.decoded('client-tz');
   const country = headerStore.get('cf-ipcountry') || headerStore.get('x-vercel-ip-country');
@@ -244,6 +250,8 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
         randomSeed={randomSeed}
         initialMarketData={marketData}
         dictionary={t}
+        initialIsWalletConnected={isServerWalletConnected}
+        initialConnectedAccounts={initialConnectedAccounts}
       />
 
     </ReactQueryHydrate>
