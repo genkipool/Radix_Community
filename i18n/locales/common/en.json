@@ -72,7 +72,12 @@
     "wallet_connecting": "Connecting...",
     "wallet_connected": "Connected",
     "wallet_disconnect": "Disconnect",
-    "wallet_cancel_connection": "Cancel connection"
+    "wallet_cancel_connection": "Cancel connection",
+    "full_profile": "Full Profile",
+    "update_wallet": "Update",
+    "profile": "Profile",
+    "accounts": "Accounts",
+    "notifications": "Notifications"
   },
   "roadmap_status": {
     "done": "Done",
