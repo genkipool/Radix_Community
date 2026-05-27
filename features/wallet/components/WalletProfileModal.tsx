@@ -196,7 +196,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.notifications ?? 'Notificaciones'}
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
                                     </button>
                                 </div>
 
