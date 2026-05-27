@@ -24,6 +24,7 @@ interface AccountSummaryTabProps {
     network: 'mainnet' | 'stokenet';
     marketData?: MarketData | null;
     locale: string;
+    isModal?: boolean;
 }
 
 interface ParsedResource {
@@ -53,7 +54,8 @@ export function AccountSummaryTab({
     network,
     marketData,
     locale,
-    isBadge = false
+    isBadge = false,
+    isModal = false
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
@@ -125,9 +127,9 @@ export function AccountSummaryTab({
 
             {/* Principal Balance */}
             <div>
-                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{tt?.account_summary?.principal_balance || 'Principal Balance'}</h4>
+                <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider">{isModal ? 'Balance' : (tt?.account_summary?.principal_balance || 'Principal Balance')}</h4>
                 {!isBadge ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
+                    <div className={isModal ? "grid grid-cols-2 gap-3 items-stretch" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch"}>
                         <BalanceCard
                             title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
                             amount={xrdAmount}
@@ -180,7 +182,6 @@ export function AccountSummaryTab({
                                 valueColor="text-[var(--color-accent)]"
                                 marketData={marketData}
                                 locale={locale}
-                                isBadge={isBadge}
                             />
                             <BalanceCard
                                 title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
@@ -190,7 +191,6 @@ export function AccountSummaryTab({
                                 marketData={marketData}
                                 locale={locale}
                                 rawFiatAmount={totalLsuXrdEquivalent}
-                                isBadge={isBadge}
                             />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
@@ -201,7 +201,6 @@ export function AccountSummaryTab({
                                 valueColor="text-[var(--color-text-main)]"
                                 marketData={marketData}
                                 locale={locale}
-                                isBadge={isBadge}
                             />
                             <BalanceCard
                                 title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
@@ -210,7 +209,6 @@ export function AccountSummaryTab({
                                 valueColor="text-orange-500"
                                 marketData={marketData}
                                 locale={locale}
-                                isBadge={isBadge}
                             />
                             <BalanceCard
                                 title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
@@ -219,7 +217,6 @@ export function AccountSummaryTab({
                                 valueColor="text-[var(--color-accent)]"
                                 marketData={marketData}
                                 locale={locale}
-                                isBadge={isBadge}
                             />
                         </div>
                     </div>
@@ -229,15 +226,15 @@ export function AccountSummaryTab({
             {/* Staking Section */}
             {stakingRows.length > 0 && (
                 <div className="mb-8">
-                    <h4 className="text-xs font-bold uppercase text-[var(--color-text-muted)] mb-4 tracking-wider">
+                    <h4 className="text-xs font-black uppercase text-[var(--color-text-muted)] mb-4 tracking-wider">
                         {tt?.account_summary?.staking_validators_title || 'STAKING'} ({stakingRows.length})
                     </h4>
                     <div className="space-y-4">
                         {stakingRows.map((row) => (
-                            <div key={row.validatorAddress} className={`flex flex-col gap-4 ${isBadge ? 'py-2' : 'p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 shadow-sm'} transition-all`}>
+                            <div key={row.validatorAddress} className="flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm">
                                 {/* Validator Header */}
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full shrink-0 overflow-hidden ${isBadge ? 'bg-transparent border border-[var(--color-text-muted)]/10' : 'bg-[var(--color-card-border)] shadow-inner'} flex items-center justify-center`}>
+                                    <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
                                         {row.validatorIcon ? (
                                             <SafeImage src={row.validatorIcon} alt={row.validatorName || 'Validator'} fallbackName={row.validatorName || 'Validator'} className="w-full h-full object-cover" />
                                         ) : (
@@ -245,12 +242,12 @@ export function AccountSummaryTab({
                                         )}
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <span className={`font-bold text-sm ${isBadge ? 'text-[var(--color-text-main)] font-medium' : 'text-[var(--color-text-main)] font-black'} truncate`}>{row.validatorName || 'Unknown Validator'}</span>
+                                        <span className="font-black text-sm text-[var(--color-text-main)] truncate">{row.validatorName || 'Unknown Validator'}</span>
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)]">{row.validatorAddress}</span>
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }} 
-                                                className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors opacity-60 hover:opacity-100"
+                                                className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                                             >
                                                 {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
                                             </button>
@@ -259,18 +256,18 @@ export function AccountSummaryTab({
                                 </div>
 
                                 {/* Staking Grid */}
-                                <div className={`grid grid-cols-3 gap-4 py-2 ${isBadge ? '' : 'border-t border-[var(--color-card-border)]/50'}`}>
+                                <div className="grid grid-cols-3 gap-4 py-2 border-t border-[var(--color-card-border)]/50">
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'STAKE XRD'}</span>
-                                        <span className="text-sm font-mono font-bold text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'STAKE XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}</span>
-                                        <span className="text-sm font-mono font-bold text-orange-500">{formatNumber(row.xrdInUnstake, 2, locale)} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-orange-500">{formatNumber(row.xrdInUnstake, 2, locale)} XRD</span>
                                     </div>
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'CLAIM XRD'}</span>
-                                        <span className="text-sm font-mono font-bold text-[var(--color-accent)]">{formatNumber(row.xrdInClaim, 2, locale)} XRD</span>
+                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'CLAIM XRD'}</span>
+                                        <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(row.xrdInClaim, 2, locale)} XRD</span>
                                     </div>
                                 </div>
                             </div>
@@ -281,8 +278,8 @@ export function AccountSummaryTab({
 
 
             {/* Assets */}
-            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isBadge={isBadge} />
-            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isBadge={isBadge} />
+            <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
+            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {burnedNfts.length > 0 && (
                 <AssetSection
@@ -293,10 +290,9 @@ export function AccountSummaryTab({
                     burned
                     titleClassName="text-red-500/80"
                     locale={locale}
-                    isBadge={isBadge}
                 />
             )}
-            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isBadge={isBadge} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} />
 
             {/* Account Rewards CSV Modal */}
             {isCsvModalOpen && (
@@ -313,7 +309,7 @@ export function AccountSummaryTab({
     );
 }
 
-function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount, isBadge = false }: {
+function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, rawFiatAmount }: {
     title: string;
     amount: string;
     symbol: string;
@@ -321,7 +317,6 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     marketData?: MarketData | null;
     locale: string;
     rawFiatAmount?: number;
-    isBadge?: boolean;
 }) {
     const currency = getCurrencyForLocale(locale);
     const price = currency === 'EUR' ? marketData?.priceEur : marketData?.priceUsd;
@@ -331,29 +326,6 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     // Apply exact formatting to the amount
     const parsedAmount = parseFloat(amount);
     const formattedAmount = parsedAmount >= 1000 ? formatNumber(parsedAmount, 2, locale) : formatNumber(parsedAmount, 4, locale);
-
-    if (isBadge) {
-        return (
-            <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">
-                    {title}
-                </span>
-                <div className="flex items-baseline gap-1.5">
-                    <span className={`text-base font-semibold font-mono tracking-tight ${valueColor} truncate`} title={amount}>
-                        {formattedAmount}
-                    </span>
-                    <span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase shrink-0">
-                        {symbol}
-                    </span>
-                </div>
-                <div className="flex">
-                    <span className="text-xs text-[var(--color-text-muted)] truncate">
-                        {fiatValue !== null ? formatCurrency(fiatValue, currency, locale) : '—'}
-                    </span>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl p-4 flex flex-col gap-1 w-full shadow-sm hover:shadow-md transition-shadow h-full">
@@ -384,7 +356,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
     );
 }
 
-function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale, isBadge = false }: {
+function AssetSection({ title, items, onCopy, copiedAddress, burned = false, titleClassName = "", locale }: {
     title: string;
     items: ParsedResource[];
     onCopy: (v: string) => void;
@@ -392,68 +364,30 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
     burned?: boolean;
     titleClassName?: string;
     locale: string;
-    isBadge?: boolean;
 }) {
     if (items.length === 0) return null;
     return (
         <div>
-            <h4 className={`text-xs font-bold uppercase text-[var(--color-text-muted)] mb-3 tracking-wider ${titleClassName}`}>
+            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] mb-3 tracking-wider ${titleClassName}`}>
                 {title}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch">
                 {items.map((item) => (
-                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isBadge={isBadge} />
+                    <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} />
                 ))}
             </div>
         </div>
     );
 }
 
-function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isBadge = false }: {
+function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale }: {
     item: ParsedResource;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
     burned?: boolean;
     locale: string;
-    isBadge?: boolean;
 }) {
     const { address, name, symbol, iconUrl, amount, isNft } = item;
-
-    if (isBadge) {
-        return (
-            <div className="flex items-center gap-3 py-1 group">
-                <div className="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-transparent flex items-center justify-center border border-[var(--color-text-muted)]/10">
-                    {iconUrl ? (
-                        <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className={`w-full h-full object-cover ${burned ? 'grayscale opacity-60' : ''}`} />
-                    ) : (
-                        <Info className="w-3 h-3 text-[var(--color-text-muted)]" />
-                    )}
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[13px] font-medium truncate ${burned ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)]'}`} title={name}>
-                            {name}
-                        </span>
-                        {!isNft && amount && amount !== '0' && (
-                            <span className="text-[13px] font-mono font-medium text-[var(--color-text-main)] shrink-0">
-                                {formatNumber(parseFloat(amount), 4, locale)}
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide truncate">{symbol || truncateAddress(address)}</span>
-                        <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(address); }}
-                            className={`p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                            title={copiedAddress === address ? 'Copied' : 'Copy address'}
-                        >
-                            {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className={`flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full`}>

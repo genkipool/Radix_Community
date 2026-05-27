@@ -13,7 +13,6 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
-import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 
 interface WalletProfileModalProps {
     isOpen: boolean;
@@ -61,7 +60,7 @@ function WalletAccountSummaryWrapper({
             copiedAddress={copiedAddress}
             network={network}
             locale={locale}
-            isBadge={true}
+            isModal={true}
         />
     );
 }
@@ -96,11 +95,11 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-[var(--color-background)]/95 backdrop-blur-xl shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)]"
+                            className="fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] bg-[var(--color-background)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden"
                         >
                             <div className="flex flex-col h-full">
                                 {/* Header */}
-                                <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                                <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[var(--color-surface)]/85 mb-2">
                                     <div className="flex items-center gap-6">
                                         <button
                                             onClick={() => sessions['mainnet'] ? switchNetwork('mainnet') : connect(RadixNetworkId.Mainnet)}
@@ -108,7 +107,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         >
                                             Mainnet
                                             {activeNetwork === 'mainnet' && (
-                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
+                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
                                             )}
                                         </button>
                                         <button
@@ -117,7 +116,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         >
                                             Stokenet
                                             {activeNetwork === 'stokenet' && (
-                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
+                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
                                             )}
                                         </button>
                                     </div>
@@ -129,40 +128,65 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                     </button>
                                 </div>
 
-                                {/* User Info */}
-                                <div className="px-6 pt-4 pb-4 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center">
-                                        {personaIcon ? (
-                                            <SafeImage src={personaIcon} alt={personaName} fallbackName={personaName} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <User strokeWidth={1.5} className="w-7 h-7 text-[var(--color-primary)]" />
-                                        )}
+                                {/* User Info & Actions */}
+                                <div className="px-6 pt-2 pb-6 flex items-center justify-between gap-6">
+                                    <div className="flex items-center gap-5 min-w-0 flex-1">
+                                        <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-transparent">
+                                            {personaIcon ? (
+                                                <SafeImage src={personaIcon} alt={personaName} fallbackName={personaName} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User strokeWidth={1.5} className="w-10 h-10 text-[var(--color-primary)]" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="text-2xl font-semibold tracking-tight truncate text-[var(--color-text-main)]">{personaName}</h2>
+                                            <p className="text-sm text-[var(--color-text-muted)] mt-1 tracking-wide truncate">
+                                                {accounts.length} {navT.accounts ?? 'Cuentas'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <h2 className="text-xl font-medium tracking-tight truncate text-[var(--color-text-main)]">{personaName}</h2>
-                                        <p className="text-xs text-[var(--color-text-muted)] mt-0.5 tracking-wide truncate">
-                                            {accounts.length} {navT.accounts ?? 'Cuentas'}
-                                        </p>
+
+                                    {/* Action Buttons Right Side */}
+                                    <div className="flex flex-col items-end justify-center gap-3 shrink-0 pl-2">
+                                        <button
+                                            onClick={() => {
+                                                connect(networkId || RadixNetworkId.Stokenet);
+                                            }}
+                                            className="flex items-center justify-end gap-2 text-[12px] font-medium text-[var(--color-primary)] opacity-80 hover:opacity-100 transition-all duration-300"
+                                        >
+                                            <span>{navT.update_wallet ?? 'Actualizar'}</span>
+                                            <RefreshCcw strokeWidth={2} className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                disconnect();
+                                                onClose();
+                                            }}
+                                            className="flex items-center justify-end gap-2 text-[12px] font-medium text-red-500 opacity-80 hover:opacity-100 transition-all duration-300"
+                                        >
+                                            <span>{navT.wallet_disconnect ?? 'Desconectar'}</span>
+                                            <LogOut strokeWidth={2} className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
 
                                 {/* Tabs */}
-                                <div className="px-6 flex items-center gap-6 mt-1 mb-2">
+                                <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)]">
                                     <button
                                         onClick={() => handleTabClick('profile')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative ${activeTab === 'profile' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'profile' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.profile ?? 'Perfil'}
                                     </button>
                                     <button
                                         onClick={() => handleTabClick('accounts')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative ${activeTab === 'accounts' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.accounts ?? 'Cuentas'}
                                     </button>
                                     <button
                                         onClick={() => handleTabClick('notifications')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 ${activeTab === 'notifications' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.notifications ?? 'Notificaciones'}
                                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
@@ -181,22 +205,25 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             ) : (
                                                 <>
                                                     {accounts.length > 1 && (
-                                                        <div className="mb-4">
-                                                            <SearchableTagFilter
-                                                                tags={accounts.map(acc => acc.address)}
-                                                                activeTag={selectedAccountAddress}
-                                                                onSelect={(tag) => setSelectedAccountAddress(tag)}
-                                                                allLabel={navT.all_accounts ?? 'Todas'}
-                                                                tagLabels={accounts.reduce((acc, account, idx) => ({
-                                                                    ...acc,
-                                                                    [account.address]: account.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
-                                                                }), {})}
-                                                                placeholder={navT.search_account ?? 'Buscar cuenta...'}
-                                                                width="w-full"
-                                                            />
+                                                        <div className="mb-4 flex gap-4 overflow-x-auto custom-scrollbar pb-2">
+                                                            <button
+                                                                onClick={() => setSelectedAccountAddress(null)}
+                                                                className={`text-[12px] whitespace-nowrap font-medium transition-colors ${!selectedAccountAddress ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                            >
+                                                                {navT.all_accounts ?? 'Todas'}
+                                                            </button>
+                                                            {accounts.map((acc, idx) => (
+                                                                <button
+                                                                    key={acc.address}
+                                                                    onClick={() => setSelectedAccountAddress(acc.address)}
+                                                                    className={`text-[12px] whitespace-nowrap font-medium transition-colors ${selectedAccountAddress === acc.address ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                                                >
+                                                                    {acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`}
+                                                                </button>
+                                                            ))}
                                                         </div>
                                                     )}
-                                                    
+
                                                     <div className="space-y-6">
                                                         {accounts
                                                             .filter(acc => !selectedAccountAddress || acc.address === selectedAccountAddress)
@@ -223,29 +250,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                     )}
                                 </div>
 
-                                {/* Footer / Action buttons */}
-                                <div className="px-6 py-4 flex items-center justify-between mt-auto">
-                                    <button
-                                        onClick={() => {
-                                            connect(networkId || RadixNetworkId.Stokenet);
-                                            onClose();
-                                        }}
-                                        className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-primary)] opacity-80 hover:opacity-100 transition-all duration-300"
-                                    >
-                                        <RefreshCcw strokeWidth={2} className="w-4 h-4" />
-                                        <span>{navT.update_wallet ?? 'Actualizar'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            disconnect();
-                                            onClose();
-                                        }}
-                                        className="flex items-center gap-2 text-[13px] font-medium text-red-500 opacity-80 hover:opacity-100 transition-all duration-300"
-                                    >
-                                        <LogOut strokeWidth={2} className="w-4 h-4" />
-                                        <span>{navT.wallet_disconnect ?? 'Desconectar'}</span>
-                                    </button>
-                                </div>
                             </div>
                         </motion.div>
                     </>
