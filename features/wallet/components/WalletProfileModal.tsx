@@ -266,8 +266,8 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                 isOpen={isConstructionOpen}
                 onClose={() => setIsConstructionOpen(false)}
                 t={t}
-                overlayClassName="sm:right-[420px]"
-                contentClassName="sm:pr-[420px]"
+                overlayClassName={isOpen ? "sm:right-[420px]" : ""}
+                contentClassName={isOpen ? "sm:pr-[420px]" : ""}
             />
         </Portal>
     );
