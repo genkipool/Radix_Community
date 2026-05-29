@@ -19,7 +19,7 @@ export function XPBar({
     title,
 }: XPBarProps) {
     const trackH = size === 'sm' ? 'h-2' : size === 'lg' ? 'h-8' : 'h-6';
-    const dotSize = size === 'sm' ? 'w-0.5 h-0.5' : 'w-1 h-1';
+    const dotSize = size === 'sm' ? 'w-0.5 h-0.5' : 'size-1';
     const dotCount = size === 'sm' ? 4 : 5;
 
     return (

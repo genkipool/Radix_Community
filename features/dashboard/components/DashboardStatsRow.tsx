@@ -29,7 +29,7 @@ export const DashboardStatsRow = ({
         return (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
                 <StatCard
-                    icon={<Coins className="w-5 h-5" />}
+                    icon={<Coins className="size-5" />}
                     label={dt?.network?.total_staked ?? ''}
                     value={`${formatXRD(stats.totalStaked, locale)} ${dt?.network?.xrd ?? 'XRD'}`}
                     accent
@@ -37,14 +37,14 @@ export const DashboardStatsRow = ({
                     isLoading={isLoading}
                 />
                 <StatCard
-                    icon={<Shield className="w-5 h-5" />}
+                    icon={<Shield className="size-5" />}
                     label={dt?.network?.active_validators ?? ''}
                     value={`${stats.activeValidators} / ${stats.totalValidators}`}
                     fullValue={`${stats.activeValidators} active out of ${stats.totalValidators} total validators`}
                     isLoading={isLoading}
                 />
                 <StatCard
-                    icon={<RadixIcon className="w-5 h-5 text-[var(--color-primary)]" strokeColor="currentColor" animate={false} />}
+                    icon={<RadixIcon className="size-5 text-[var(--color-primary)]" strokeColor="currentColor" animate={false} />}
                     label={dt?.network?.avg_apy ?? ''}
                     value={`${formatNumber(stats.avgApy, 2, locale)}%`}
                     accent
@@ -52,7 +52,7 @@ export const DashboardStatsRow = ({
                     isLoading={isLoading}
                 />
                 <StatCard
-                    icon={<Activity className="w-5 h-5" />}
+                    icon={<Activity className="size-5" />}
                     label={dt?.network?.avg_uptime ?? ''}
                     value={`${formatNumber(stats.avgUptime, 2, locale)}%`}
                     fullValue={`${stats.avgUptime.toLocaleString(locale)}%`}
@@ -72,7 +72,7 @@ export const DashboardStatsRow = ({
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
             <StatCard
-                icon={<Activity className="w-5 h-5" />}
+                icon={<Activity className="size-5" />}
                 label={dt?.explorer?.ledger_txs || 'Total Transactions'}
                 value={stats.stateVersion ? stats.stateVersion.toLocaleString(locale) : '---'}
                 accent
@@ -81,7 +81,7 @@ export const DashboardStatsRow = ({
                 isLoading={isLoading}
             />
             <StatCard
-                icon={<Shield className="w-5 h-5" />}
+                icon={<Shield className="size-5" />}
                 label={dt?.explorer?.ledger_epoch_round || 'Epoch / Round'}
                 value={stats.epoch ? `${stats.epoch} / ${stats.round}` : '---'}
                 description={dt?.explorer?.desc_epoch_round}
@@ -90,7 +90,7 @@ export const DashboardStatsRow = ({
             <StatCard
                 icon={
                     <RadixIcon
-                        className={`w-5 h-5 ${!isPositive ? 'scale-y-[-1]' : ''}`}
+                        className={`size-5 ${!isPositive ? 'scale-y-[-1]' : ''}`}
                         strokeColor={isPositive ? 'var(--color-accent)' : '#ef4444'}
                         animate={false}
                     />
@@ -116,7 +116,7 @@ export const DashboardStatsRow = ({
                 isLoading={isLoading}
             />
             <StatCard
-                icon={<Coins className="w-5 h-5" />}
+                icon={<Coins className="size-5" />}
                 label={dt?.explorer?.market_cap || 'Market Cap'}
                 value={marketData ? `${formatCompact(cap, locale)} ${symbol}` : '---'}
                 description={dt?.explorer?.desc_market_cap}
@@ -124,7 +124,7 @@ export const DashboardStatsRow = ({
                 isLoading={isLoading}
             />
             <StatCard
-                icon={<RadixIcon className="w-5 h-5" strokeColor="currentColor" animate={false} />}
+                icon={<RadixIcon className="size-5" strokeColor="currentColor" animate={false} />}
                 label={dt?.explorer?.circulating_supply || 'Suministro'}
                 value={marketData ? `${(marketData.circulatingSupply / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })}B XRD` : '---'}
                 accent
@@ -133,7 +133,7 @@ export const DashboardStatsRow = ({
                 isLoading={isLoading}
             />
             <StatCard
-                icon={<Lock className="w-5 h-5" />}
+                icon={<Lock className="size-5" />}
                 label={dt?.explorer?.ledger_tvl || 'TVL'}
                 value={marketData ? `${formatCompact(tvl, locale)} ${symbol}` : '---'}
                 description={dt?.explorer?.desc_tvl}

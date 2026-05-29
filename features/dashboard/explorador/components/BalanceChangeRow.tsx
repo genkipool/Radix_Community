@@ -20,11 +20,13 @@ import {
 
 
 
-import { BalanceChangeRowProps, ResourceInlinePanelProps } from '../types';
+import { BalanceChangeRowProps, ResourceInlinePanelProps } from '../types/components.types';
 import type { MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 import { UnderlyingTokensTab } from './UnderlyingTokensTab';
-import { ExpandableEntityBadge } from './ExpandableEntityBadge';
+const ExpandableEntityBadge = React.lazy(() =>
+    import('./ExpandableEntityBadge').then(m => ({ default: m.ExpandableEntityBadge }))
+);
 
 /* ═══════ Pool Address Resolution ═══════ */
 
@@ -36,15 +38,16 @@ function resolvePoolAddressFromEntity(entity: GatewayEntityDetails | null): stri
     if (!entity) return undefined;
 
     const meta = entity.metadata?.items ?? [];
+    const metaByKey = new Map(meta.map((m: MetadataItem) => [m.key, m] as const));
 
     // 1. Check metadata keys: pool, pool_address
     for (const key of ['pool', 'pool_address']) {
-        const item = meta.find((m: MetadataItem) => m.key === key);
+        const item = metaByKey.get(key);
         if (item?.value?.typed?.value) return item.value.typed.value;
     }
 
     // 2. Check dapp_definitions for pool_ or component_ addresses
-    const dappDefs = meta.find((m: MetadataItem) => m.key === 'dapp_definitions');
+    const dappDefs = metaByKey.get('dapp_definitions');
     if (dappDefs?.value?.typed?.values) {
         const poolAddr = dappDefs.value.typed.values.find(
             (v: string) => v.startsWith('pool_')
@@ -154,13 +157,13 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
         label: key === 'contributed_tokens'
             ? (accT?.contributed_tokens || 'Contributed Tokens')
             : key === 'pool'
-            ? (accT?.pool_tab || 'Pool')
-            : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
+                ? (accT?.pool_tab || 'Pool')
+                : (tt as Record<string, string | undefined>)?.[`resource_panel_${key}`] || (key.charAt(0).toUpperCase() + key.slice(1)),
         tooltip: key === 'contributed_tokens'
             ? tt?.tab_tokens_tooltip
             : key === 'pool'
-            ? tt?.tab_pool_units_tooltip
-            : (tt as Record<string, string | undefined>)?.[`tab_${key}_tooltip`],
+                ? tt?.tab_pool_units_tooltip
+                : (tt as Record<string, string | undefined>)?.[`tab_${key}_tooltip`],
     }));
 
     return (
@@ -180,8 +183,8 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
                                     {iconUrl
-                                        ? <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
-                                        : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-xs border border-[var(--color-primary)]/20 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
+                                        ? <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className="size-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
+                                        : <div className="size-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-xs border border-[var(--color-primary)]/20 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
                                     }
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -190,10 +193,10 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                         </div>
                                         <div className="flex items-center gap-1 mt-0.5">
                                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate max-w-[160px]" title={wellKnownTip || address}>{address.slice(0, 14)}...{address.slice(-6)}</span>
-                                            <button onClick={e => { e.stopPropagation(); onCopy(address); }} className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
-                                                {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                            <button type="button" onClick={e => { e.stopPropagation(); onCopy(address); }} className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                {copiedAddress === address ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                             </button>
-                                            <a href={`https://dashboard.radixdlt.com/resource/${address}`} target="_blank" rel="noopener noreferrer" className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors" onClick={e => e.stopPropagation()}><ExternalLink className="w-2.5 h-2.5" /></a>
+                                            <a href={`https://dashboard.radixdlt.com/resource/${address}`} target="_blank" rel="noopener noreferrer" className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors" onClick={e => e.stopPropagation()}><ExternalLink className="size-2.5" /></a>
                                         </div>
                                     </div>
                                 </div>
@@ -208,10 +211,11 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                             <dd className="text-xs font-semibold text-[var(--color-text-main)] font-mono flex items-center gap-2 select-all break-all">
                                                 <span>{resolvedPoolAddress}</span>
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => { e.stopPropagation(); onCopy(resolvedPoolAddress); }}
                                                     className={`p-0.5 rounded transition-colors ${copiedAddress === resolvedPoolAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                                 >
-                                                    {copiedAddress === resolvedPoolAddress ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
+                                                    {copiedAddress === resolvedPoolAddress ? <Check className="size-2.5 text-[var(--color-accent)]" /> : <Copy className="size-2.5" />}
                                                 </button>
                                             </dd>
                                         </div>
@@ -225,7 +229,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                         <div className="flex items-start justify-between gap-4">
                                             <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">{tt?.resource_panel_tags || 'Tags'}</dt>
                                             <dd className="flex items-center gap-1.5 flex-wrap justify-end">
-                                                {tagList.map((tag: string, i: number) => <Pill key={i}>{tag}</Pill>)}
+                                                {tagList.map((tag: string) => <Pill key={tag}>{tag}</Pill>)}
                                             </dd>
                                         </div>
                                     )}
@@ -235,7 +239,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                         <div className="border-t border-[var(--color-card-border)] mt-4 mb-3" />
                                         <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt?.resource_panel_behavior || 'Behavior'}</p>
                                         <ul className="space-y-1.5">
-                                            {behaviors.map((b, i) => <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="w-1 h-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}
+                                            {behaviors.map((b, i) => <li key={`behavior-${i}`} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}
                                         </ul>
                                     </>
                                 )}
@@ -258,23 +262,25 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                         )}
                         {activeTab === 'pool' && isPoolUnit && resolvedPoolAddress && (
                             <div className="space-y-4">
-                                <ExpandableEntityBadge
-                                    address={resolvedPoolAddress}
-                                    tt={tt}
-                                    onCopy={onCopy}
-                                    copiedAddress={copiedAddress}
-                                    network={network || 'mainnet'}
-                                    locale={locale}
-                                />
+                                <React.Suspense fallback={<div className="p-4 text-xs text-[var(--color-text-muted)]">Loading…</div>}>
+                                    <ExpandableEntityBadge
+                                        address={resolvedPoolAddress}
+                                        tt={tt}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                        network={network || 'mainnet'}
+                                        locale={locale}
+                                    />
+                                </React.Suspense>
                             </div>
                         )}
                         {activeTab === 'configuration' && <PanelConfigurationTab configEntries={configEntries} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
                         {activeTab === 'raw' && (
-                            <PanelRawTab 
-                                data={details} 
-                                tt={tt} 
-                                onCopy={onCopy} 
-                                copiedAddress={copiedAddress} 
+                            <PanelRawTab
+                                data={details}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
                             />
                         )}
                     </>
@@ -359,19 +365,19 @@ const BalanceChangeRow = ({
             >
                 <div className="flex items-center gap-3 min-w-0">
                     {iconUrl
-                        ? <SafeImage src={iconUrl} alt={symbol || name} fallbackName={symbol || name} className="w-10 h-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" />
-                        : <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
+                        ? <SafeImage src={iconUrl} alt={symbol || name} fallbackName={symbol || name} className="size-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0" />
+                        : <div className="size-10 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center font-bold text-sm shadow-inner border border-[var(--color-primary)]/30 shrink-0">{(symbol || name).slice(0, 2).toUpperCase()}</div>
                     }
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0 flex-nowrap">
                             <div className={`font-bold text-sm sm:text-base text-[var(--color-text-main)] ${!isFee ? 'group-hover:text-[var(--color-primary)]' : ''} transition-colors truncate min-w-0`}>{name}</div>
                             {symbol && <TokenBadge className="shrink-0">{symbol}</TokenBadge>}
-                            {!isFee && <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
+                            {!isFee && <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={wellKnownTip || change.resource_address}>{change.resource_address.slice(0, 12)}...{change.resource_address.slice(-6)}</div>
-                            <button onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
-                                {copiedAddress === change.resource_address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            <button type="button" onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
+                                {copiedAddress === change.resource_address ? <Check className="size-3" /> : <Copy className="size-3" />}
                             </button>
                         </div>
                     </div>

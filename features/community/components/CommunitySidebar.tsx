@@ -7,12 +7,12 @@ import { Area, AdminView } from '../types/data.types';
 import { CommunityDictionary } from '../types/i18n.types';
 
 const ICON_MAP: Record<string, ReactNode> = {
-    Code: <Code className="w-5 h-5" />,
-    Megaphone: <Megaphone className="w-5 h-5" />,
-    GraduationCap: <GraduationCap className="w-5 h-5" />,
-    Server: <Server className="w-5 h-5" />,
-    Scale: <Scale className="w-5 h-5" />,
-    Shield: <Shield className="w-5 h-5" />,
+    Code: <Code className="size-5" />,
+    Megaphone: <Megaphone className="size-5" />,
+    GraduationCap: <GraduationCap className="size-5" />,
+    Server: <Server className="size-5" />,
+    Scale: <Scale className="size-5" />,
+    Shield: <Shield className="size-5" />,
 };
 
 interface CommunitySidebarProps {
@@ -68,7 +68,7 @@ export default function CommunitySidebar({
                 {/* ── Admin card ── */}
                 <SidebarCard
                     id="admin"
-                    icon={<ShieldCheck className="w-5 h-5" />}
+                    icon={<ShieldCheck className="size-5" />}
                     gradient="from-violet-600 to-indigo-500"
                     title={t.admin_card_title ?? 'Administrator'}
                     isExpanded={false}
@@ -97,7 +97,7 @@ export default function CommunitySidebar({
                         <SidebarCard
                             key={area.id}
                             id={area.id}
-                            icon={ICON_MAP[area.icon] ?? <Code className="w-5 h-5" />}
+                            icon={ICON_MAP[area.icon] ?? <Code className="size-5" />}
                             gradient={area.gradient}
                             title={areaNames[area.id] ?? area.id}
                             isExpanded={false}

@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, use, useMemo, useState, ReactNode } from 'react';
 
 interface LayoutContextType {
     showFooter: boolean;
@@ -36,27 +36,37 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         setDeleteDocModal(prev => ({ ...prev, isOpen: false }));
     };
 
+    const value = useMemo(() => ({
+        showFooter,
+        setShowFooter,
+        theaterMode,
+        setTheaterMode,
+        showUnderConstruction,
+        setShowUnderConstruction,
+        showInstitutionalPilot,
+        setShowInstitutionalPilot,
+        deleteDocModal,
+        openDeleteDocModal,
+        closeDeleteDocModal
+    }), [
+        showFooter,
+        theaterMode,
+        showUnderConstruction,
+        showInstitutionalPilot,
+        deleteDocModal,
+        openDeleteDocModal,
+        closeDeleteDocModal
+    ]);
+
     return (
-        <LayoutContext.Provider value={{
-            showFooter,
-            setShowFooter,
-            theaterMode,
-            setTheaterMode,
-            showUnderConstruction,
-            setShowUnderConstruction,
-            showInstitutionalPilot,
-            setShowInstitutionalPilot,
-            deleteDocModal,
-            openDeleteDocModal,
-            closeDeleteDocModal
-        }}>
+        <LayoutContext.Provider value={value}>
             {children}
         </LayoutContext.Provider>
     );
 }
 
 export function useLayout() {
-    const context = useContext(LayoutContext);
+    const context = use(LayoutContext);
     if (context === undefined) {
         throw new Error('useLayout must be used within a LayoutProvider');
     }

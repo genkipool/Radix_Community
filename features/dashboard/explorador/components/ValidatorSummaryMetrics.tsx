@@ -151,7 +151,7 @@ export function ValidatorAddressMetrics({
 /**
  * User Position / Stake Metrics
  */
-export function ValidatorPositionMetrics({
+function ValidatorPositionMetrics({
     stakeAmount, unstakeAmount, claimAmount, unstakes, currentEpoch, locale, dt, renderRow
 }: Partial<ValidatorMetricsProps>) {
     if (stakeAmount === undefined && unstakeAmount === undefined && claimAmount === undefined) return null;
@@ -165,12 +165,12 @@ export function ValidatorPositionMetrics({
         if (!current || targetEpoch <= current) return 'Ready to claim';
         const epochsRemaining = targetEpoch - current;
         const totalMinutes = epochsRemaining * 5;
-        
+
         if (totalMinutes < 60) return `~${totalMinutes}m remaining`;
-        
+
         const hours = Math.floor(totalMinutes / 60);
         const days = Math.floor(hours / 24);
-        
+
         if (days > 0) {
             const remainingHours = hours % 24;
             return `~${days}d ${remainingHours}h remaining`;
@@ -201,7 +201,7 @@ export function ValidatorPositionMetrics({
                         {unstakes && unstakes.length > 0 && currentEpoch !== undefined && (
                             <div className="pl-4 pr-1 mt-1 flex flex-col gap-1.5 border-l-2 border-[var(--color-card-border)]/50 ml-1">
                                 {unstakes.map((u, i) => (
-                                    <div key={i} className="flex justify-between items-center text-[10px]">
+                                    <div key={`unstake-${i}`} className="flex justify-between items-center text-[10px]">
                                         <span className="text-[var(--color-text-muted)] font-mono">{formatXRD(u.amount, locale)} XRD</span>
                                         <span className="text-[var(--color-warning)]/80 text-[9px] font-medium tracking-wide">
                                             {formatRemainingTime(u.epoch, currentEpoch)}
@@ -277,7 +277,7 @@ export function ValidatorProfileMetrics({
     return (
         <div className={`flex-1 flex flex-col ${className}`}>
             <SectionHeader label={profileLabel} />
-            <div className="flex flex-col space-y-2">
+            <div className="flex flex-col gap-y-2">
                 {validator.description && (
                     <p className="text-[13px] text-[var(--color-text-muted)] leading-normal">
                         &quot;{validator.description}&quot;
@@ -296,12 +296,12 @@ export function ValidatorProfileMetrics({
                         </a>
                     </div>
                 )}
-                
+
                 {(() => {
                     type TechItem = { icon?: React.ReactNode; k: string; v: string; hi?: string };
                     const techItems = ([
-                        validator.country ? { icon: <Globe className="w-3 h-3" />, k: dd.country ?? 'Country', v: validator.country } : null,
-                        validator.provider ? { icon: <Server className="w-3 h-3" />, k: dd.provider ?? 'Provider', v: validator.provider } : null,
+                        validator.country ? { icon: <Globe className="size-3" />, k: dd.country ?? 'Country', v: validator.country } : null,
+                        validator.provider ? { icon: <Server className="size-3" />, k: dd.provider ?? 'Provider', v: validator.provider } : null,
                         validator.version ? { k: dd.version ?? 'Version', v: validator.version, hi: 'var(--color-primary)' } : null
                     ] as (TechItem | null)[]).filter((f): f is TechItem => !!f);
 

@@ -4,7 +4,7 @@
  * Reusable across the whole application.
  */
 
-import { XRDPrice } from '../types';
+import { XRDPrice } from '../types/data.types';
 
 /** EUR/USD approximation fallback when no direct EUR feed is available */
 const EUR_USD_APPROX = 0.92;
@@ -79,15 +79,9 @@ export function formatUSD(amount: number, decimals = 2): string {
 }
 
 /**
- * Formats a EUR amount as a readable string, e.g. "€1,234.56"
- */
-export function formatEUR(amount: number, decimals = 2): string {
-  return `€${amount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
-}
-
-/**
  * Formats an XRD amount as a readable string, e.g. "1,234.56 XRD"
  */
-export function formatXRD(amount: number, decimals = 2): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function formatXRD(amount: number, decimals = 2): string {
   return `${amount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} XRD`;
 }

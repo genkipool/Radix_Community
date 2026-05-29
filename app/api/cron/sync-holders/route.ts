@@ -61,12 +61,12 @@ export async function GET(request: Request) {
         }
 
         // 3. Ensure all active LSUs are in the ZSET (with score 0 if missing, strictly to process them ASAP)
-        for (const address of activeLsuAddresses) {
+        await Promise.all(activeLsuAddresses.map(async (address) => {
             const score = await redis.zscore(HOLDER_ZSET, address);
             if (score === null) {
                 await redis.zadd(HOLDER_ZSET, { score: 0, member: address });
             }
-        }
+        }));
 
         // 4. Fetch the N oldest updated LSUs from the Queue (score = timestamp)
         const oldestLsus = await redis.zrange(HOLDER_ZSET, 0, BATCH_SIZE - 1);
@@ -86,6 +86,7 @@ export async function GET(request: Request) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ resource_address: addr, limit_per_page: 100 }),
+                    cache: 'no-store',
                 });
 
                 if (res.status === 429) {

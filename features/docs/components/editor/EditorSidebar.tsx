@@ -3,13 +3,13 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown, FileText, Tag, User } from 'lucide-react';
-import { TOPICS } from '../DocsSidebar';
+import { TOPICS } from '../../data/docsTopics';
 
 import type { DocsEditorDictionary } from '../../types/i18n.types';
 
 /* ─── SidebarLabel ──────────────────────────────────────────────────────── */
 
-export function SidebarLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
+function SidebarLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <p
       className="text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5"
@@ -29,7 +29,7 @@ interface ToggleSwitchProps {
   label: string;
 }
 
-export function ToggleSwitch({ checked, onChange, label }: ToggleSwitchProps) {
+function ToggleSwitch({ checked, onChange, label }: ToggleSwitchProps) {
   return (
     <button
       type="button"
@@ -121,11 +121,12 @@ export function EditorSidebar({
         {/* Category */}
         <div>
           <SidebarLabel
-            icon={<FileText className="w-3 h-3" />}
+            icon={<FileText className="size-3" />}
             label={t.topic_label ?? 'Category'}
           />
           <div className="relative">
             <button
+              type="button"
               onClick={() => setTopicOpen(!topicOpen)}
               className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
               style={{
@@ -136,7 +137,7 @@ export function EditorSidebar({
             >
               <span>{topicLabels?.[selectedTopic] ?? selectedTopic}</span>
               <ChevronDown
-                className="w-4 h-4 transition-transform duration-150"
+                className="size-4 transition-transform duration-150"
                 style={{
                   color: 'var(--color-text-muted)',
                   transform: topicOpen ? 'rotate(180deg)' : 'none',
@@ -160,6 +161,7 @@ export function EditorSidebar({
                     const active = selectedTopic === topic.id;
                     return (
                       <button
+                        type="button"
                         key={topic.id}
                         onClick={() => {
                           onTopicChange(topic.id);
@@ -190,12 +192,13 @@ export function EditorSidebar({
 
         {/* Tags */}
         <div>
-          <SidebarLabel icon={<Tag className="w-3 h-3" />} label={t.tags_label ?? 'Tags'} />
+          <SidebarLabel icon={<Tag className="size-3" />} label={t.tags_label ?? 'Tags'} />
           <input
             type="text"
             value={tags}
             onChange={e => onTagsChange(e.target.value)}
             placeholder={t.tags_placeholder ?? 'tag1, tag2…'}
+            aria-label={t.tags_label ?? 'Tags'}
             className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors focus:outline-none"
             style={{
               background: 'var(--color-surface)',
@@ -207,7 +210,7 @@ export function EditorSidebar({
 
         {/* Author Settings */}
         <div className="space-y-4">
-          <SidebarLabel icon={<User className="w-3 h-3" />} label="Autor" />
+          <SidebarLabel icon={<User className="size-3" />} label="Autor" />
           <ToggleSwitch
             checked={showAuthor}
             onChange={onShowAuthorChange}
@@ -226,6 +229,7 @@ export function EditorSidebar({
                   value={authorName}
                   onChange={e => onAuthorNameChange(e.target.value)}
                   placeholder={t.author_name_placeholder ?? 'Your name…'}
+                  aria-label={t.show_author_label ?? 'Show author name'}
                   className="w-full px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors focus:outline-none"
                   style={{
                     background: 'var(--color-surface)',
@@ -244,9 +248,9 @@ export function EditorSidebar({
             {[
               [t.word_count ?? 'Words', counts.words],
               [t.char_count ?? 'Characters', counts.chars],
-            ].map(([label, val], idx) => (
+            ].map(([label, val]) => (
               <div
-                key={idx}
+                key={label}
                 className="px-3 py-2.5 rounded-xl text-center"
                 style={{ background: 'var(--color-surface)' }}
               >
@@ -265,6 +269,7 @@ export function EditorSidebar({
       {/* Actions */}
       <div className="p-5 space-y-3 bg-inherit">
         <button
+          type="button"
           onClick={onImportMd}
           className="w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-90 flex items-center justify-center gap-2"
           style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)', color: 'var(--color-text-main)' }}
@@ -272,6 +277,7 @@ export function EditorSidebar({
           {t.import_md_title ?? 'Import .md'}
         </button>
         <button
+          type="button"
           onClick={onSaveDraft}
           className="w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:opacity-90 flex items-center justify-center gap-2"
           style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)', color: 'var(--color-text-main)' }}
@@ -279,6 +285,7 @@ export function EditorSidebar({
           {t.save_draft ?? 'Save Draft'}
         </button>
         <button
+          type="button"
           onClick={onPublish}
           className="w-full px-4 py-1.5 min-h-[44px] rounded-xl text-sm font-bold transition-all hover:opacity-90 shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
           style={{ background: 'var(--color-primary)', color: 'var(--color-bg)' }}

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import ForumClient from '@/features/forum/ForumClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
@@ -44,7 +45,7 @@ export default async function ForumPage({ params }: ForumPageProps) {
   const t = await getFeatureDictionary(locale as Locale, ['forum']);
 
   return (
-    <>
+    <Suspense fallback={null}>
       <DictionaryEnricher partial={t} />
       <ForumClient
         t={t}
@@ -52,6 +53,6 @@ export default async function ForumPage({ params }: ForumPageProps) {
         initialPosts={forumPosts}
         initialUsers={users}
       />
-    </>
+    </Suspense>
   );
 }

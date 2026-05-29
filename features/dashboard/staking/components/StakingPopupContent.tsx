@@ -10,7 +10,7 @@ import { WalletAccount } from '@/features/wallet/types/wallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { Loader2 } from 'lucide-react';
 import { TranslationsT } from '@/features/dashboard/types';
-import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
+import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useXrdPrice } from '@/features/games/hooks/useXrdPrice';
 
 interface StakingPopupContentProps {
@@ -119,9 +119,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const handleAction = async (actionToPerform: StakingAction) => {
         if (!activeAccount) return;
         setActionError(null);
-        
+
         let amount = parseFloat(amountStr || '0');
-        
+
         if (actionToPerform === 'Stake' && amount > stakingData.xrdBalance) {
             if (amount - stakingData.xrdBalance <= 0.01) {
                 amount = stakingData.xrdBalance;
@@ -130,7 +130,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                 return;
             }
         }
-        
+
         if (actionToPerform === 'Unstake' && amount > stakedXrd) {
             if (amount - stakedXrd <= 0.01) {
                 amount = stakedXrd;
@@ -176,18 +176,23 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const pollTransactionStatus = async (hash: string) => {
         const networkName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
         const maxAttempts = 15; // 15 attempts * 2s = 30s max
-        let attempts = 0;
 
-        const interval = setInterval(async () => {
-            attempts++;
+        const pollOnce = async (attempt: number) => {
+            if (attempt > maxAttempts) {
+                // Fallback invalidation just in case
+                queryClient.invalidateQueries({ queryKey: ['entity'] });
+                queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
+                queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
+                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                return;
+            }
+
             try {
                 const details = await apiFetchTransactionDetails(hash, networkName);
-                
+
                 // If the transaction is committed successfully, update the UI
                 if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
-                    clearInterval(interval);
                     try {
-                        const { apiFetchEntityDetails } = await import('@/features/dashboard/services/apiClient');
                         if (activeAccount) {
                             await apiFetchEntityDetails(activeAccount.address, networkName, true);
                         }
@@ -198,22 +203,18 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                     queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
                     queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                    return;
                 } else if (details && (details.transaction_status === 'CommittedFailure' || details.transaction_status === 'Rejected')) {
-                    clearInterval(interval);
+                    return;
                 }
             } catch (_error) {
                 // If it returns 404, it might still be pending in the network, so we keep polling
             }
 
-            if (attempts >= maxAttempts) {
-                clearInterval(interval);
-                // Fallback invalidation just in case
-                queryClient.invalidateQueries({ queryKey: ['entity'] });
-                queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
-                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
-            }
-        }, 2000);
+            setTimeout(() => pollOnce(attempt + 1), 2000);
+        };
+
+        pollOnce(1);
     };
 
     const parsedAmount = parseFloat(amountStr || '0');
@@ -230,19 +231,21 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     };
 
     return (
-        <div 
-            className="flex flex-col gap-3 w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl backdrop-blur-md" 
+        <div
+            className="flex flex-col gap-3 w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl backdrop-blur-md"
             onClick={e => e.stopPropagation()}
             onMouseEnter={e => e.stopPropagation()}
         >
             <div className="flex border-b border-[var(--color-border)] mb-2">
-                <button 
+                <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); setActiveTab('delegator'); }}
                     className={`flex-1 pb-2 text-xs font-semibold transition-colors border-b-2 -mb-[1px] ${activeTab === 'delegator' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}`}
                 >
                     {stakingT?.delegator ?? 'Delegator'}
                 </button>
-                <button 
+                <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); setActiveTab('validator'); }}
                     className={`flex-1 pb-2 text-xs font-semibold transition-colors border-b-2 -mb-[1px] ${activeTab === 'validator' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}`}
                 >
@@ -250,15 +253,15 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                 </button>
             </div>
 
-            <AccountSelector 
-                accounts={accounts} 
-                selectedAccount={activeAccount} 
-                onSelect={handleAccountSelect} 
+            <AccountSelector
+                accounts={accounts}
+                selectedAccount={activeAccount}
+                onSelect={handleAccountSelect}
             />
 
             <div className="bg-[var(--color-background)] rounded-lg p-3 flex justify-between text-xs">
                 {isLoadingData ? (
-                    <div className="w-full flex justify-center py-2"><Loader2 className="w-4 h-4 animate-spin text-[var(--color-primary)]" /></div>
+                    <div className="w-full flex justify-center py-2"><Loader2 className="size-4 animate-spin text-[var(--color-primary)]" /></div>
                 ) : (
                     <>
                         <div className="flex flex-col items-center">
@@ -290,17 +293,19 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
             <div className="relative flex flex-col">
                 <div className="relative">
-                    <input 
+                    <input
                         ref={inputRef}
-                        type="number" 
+                        type="number"
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
                         disabled={isNotOwnerWarning || hasTxError}
+                        aria-label={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
                         className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
-                    <button 
+                    <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); handleSetMax(); }}
                         disabled={isNotOwnerWarning || hasTxError}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${(isNotOwnerWarning || hasTxError) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
@@ -309,13 +314,13 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     </button>
                 </div>
             </div>
-            
+
             <div className="flex gap-2 mt-1">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
-                    const isDisabled = 
-                        isTransacting || 
-                        !activeAccount || 
+                    const isDisabled =
+                        isTransacting ||
+                        !activeAccount ||
                         isSuperiorToBoth ||
                         hasTxError ||
                         isNotOwnerWarning ||
@@ -326,6 +331,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
                     return (
                         <button
+                            type="button"
                             key={action}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -349,14 +355,14 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
             {(error || actionError || isSuperiorToBoth) && (
                 <div className="text-xs text-red-500 bg-red-500/10 p-2 rounded-lg break-words mt-1">
-                    {isSuperiorToBoth 
+                    {isSuperiorToBoth
                         ? (stakingT?.errors?.superior_to_both ?? 'La cantidad ingresada supera la cantidad de saldo y de staking por lo que no puede realizar las operaciones de stake o unstake.')
-                        : actionError 
-                            ? actionError 
+                        : actionError
+                            ? actionError
                             : renderError(error!)}
                 </div>
             )}
-            
+
             {activeTab === 'validator' && !stakingData.isOwner && !isLoadingData && activeAccount && (
                 <div className="text-[10px] text-amber-500 bg-amber-500/10 p-2 rounded-lg text-center mt-1">
                     {stakingT?.owner_warning ?? 'Warning: The selected account does not appear to be the owner of this validator.'}

@@ -34,7 +34,7 @@ export function FloatingNav({
   zIndex = 60,
 }: FloatingNavProps) {
   return (
-    <div 
+    <div
       className={`fixed inset-0 pointer-events-none flex items-center justify-between px-4 sm:px-10 ${className || ''}`}
       style={{ zIndex }}
     >
@@ -47,7 +47,7 @@ export function FloatingNav({
             exit={{ opacity: 0, x: -20, scale: 0.8 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md text-[var(--color-text-main)] shadow-2xl transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] group"
+            className="pointer-events-auto flex items-center justify-center size-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md text-[var(--color-text-main)] shadow-2xl transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] group"
             onClick={(e) => {
               e.stopPropagation();
               onPrev();
@@ -55,7 +55,7 @@ export function FloatingNav({
             title={prevLabel}
             aria-label={prevLabel}
           >
-            <ChevronLeft className="w-6 h-6 transition-transform group-hover:-translate-x-0.5" />
+            <ChevronLeft className="size-6 transition-transform group-hover:-translate-x-0.5" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -71,7 +71,7 @@ export function FloatingNav({
             exit={{ opacity: 0, x: 20, scale: 0.8 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md text-[var(--color-text-main)] shadow-2xl transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] group"
+            className="pointer-events-auto flex items-center justify-center size-12 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/80 backdrop-blur-md text-[var(--color-text-main)] shadow-2xl transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] group"
             onClick={(e) => {
               e.stopPropagation();
               onNext();
@@ -79,7 +79,7 @@ export function FloatingNav({
             title={nextLabel}
             aria-label={nextLabel}
           >
-            <ChevronRight className="w-6 h-6 transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="size-6 transition-transform group-hover:translate-x-0.5" />
           </motion.button>
         )}
       </AnimatePresence>

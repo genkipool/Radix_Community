@@ -30,6 +30,7 @@ export function StatButton({
 
     return (
         <button
+            type="button"
             onClick={onClick}
             title={title}
             className={`flex items-center gap-1.5 transition-all duration-200 py-1 px-2 rounded-lg shrink-0 font-bold text-[10px] sm:text-xs ${isActive ? activeClassName : inactiveClassName} ${className}`}
@@ -48,7 +49,8 @@ interface BadgeStatProps {
     className?: string;
 }
 
-export function BadgeStat({ icon, count, title, className = '' }: BadgeStatProps) {
+ 
+function _BadgeStat({ icon, count, title, className = '' }: BadgeStatProps) {
     return (
         <span className={`flex items-center gap-1.5 shrink-0 text-xs text-[var(--color-text-muted)] ${className}`} title={title}>
             {icon}

@@ -16,6 +16,7 @@ import { makeQueryClient } from '@/lib/queryClient';
 import logger from '@/lib/logger';
 import { validateTxHash, validateAddress } from '@/utils/apiValidation';
 import { COOKIE_KEYS } from '@/constants/dashboard';
+import { getSessionFromCookies } from '@/lib/auth/session';
 
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
@@ -93,9 +94,10 @@ interface DashboardPageProps {
  * so the server render matches the user's last session exactly.
  */
 export default async function DashboardPage({ searchParams, params }: DashboardPageProps) {
-  const { locale } = await params;
+  const [{ locale }, searchParamsResolved, cookieStore, headerStore] = await Promise.all([
+    params, searchParams, cookies(), headers()
+  ]);
   const t = await getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador']);
-  const searchParamsResolved = await searchParams;
   const initialView = (searchParamsResolved.view === 'transactions' || searchParamsResolved.tx) ? 'transactions' : 'staking';
   const network = (searchParamsResolved.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
 
@@ -103,15 +105,9 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
   const start = searchParamsResolved.start || null;
   const end = searchParamsResolved.end || null;
   const initialDateRange = { start, end };
-
-
-  // Read all persisted UI state from cookies
-  const cookieStore = await cookies();
-  const headerStore = await headers();
   const c = makeCookieReader(cookieStore);
 
   // Read wallet session to avoid initial UI flicker
-  const { getSessionFromCookies } = await import('@/lib/auth/session');
   const session = await getSessionFromCookies();
   const isServerWalletConnected = !!session?.[network];
   const initialConnectedAccounts = session?.[network]?.accounts?.map(a => a.address) || [];

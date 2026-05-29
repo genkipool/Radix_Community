@@ -10,7 +10,7 @@ import type { TransactionInfo } from '@/types/radix';
 import type { SwapHop } from '../utils/transactionUtils';
 import { buildSwapRoutingChart, detectSwapMode } from '../utils/transactionUtils';
 import { MermaidDiagram } from './MermaidDiagram';
-import { BalanceChanges, FungibleChange } from '../types';
+import { BalanceChanges, FungibleChange } from '../types/gateway.types';
 import { ExplorerTable } from './ExplorerTable';
 
 interface SwapSettlementCardProps {
@@ -40,7 +40,7 @@ function trunc(addr: string, pre = 10, suf = 6): string {
 function CopyBtn({ addr, onCopy, copiedAddress }: { addr: string; onCopy: (v: string) => void; copiedAddress: string | null }) {
     return (
         <button type="button" onClick={(e) => { e.stopPropagation(); onCopy(addr); }} className="p-0.5 hover:bg-[var(--color-surface)] rounded transition-colors shrink-0">
-            {copiedAddress === addr ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5 text-[var(--color-text-muted)]/40" />}
+            {copiedAddress === addr ? <Check className="size-2.5 text-[var(--color-accent)]" /> : <Copy className="size-2.5 text-[var(--color-text-muted)]/40" />}
         </button>
     );
 }
@@ -79,9 +79,9 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
             <span className={`text-[9px] uppercase font-black tracking-widest ${colorClass} opacity-80`}>
                 {isSold ? (tt?.swap_sold_label || 'Token Sold') : (tt?.swap_received_label || 'Token Received')}
             </span>
-            <div className={`w-10 h-10 rounded-full border-2 ${borderClass} ${bgClass} flex items-center justify-center shrink-0 shadow-sm`}>
+            <div className={`size-10 rounded-full border-2 ${borderClass} ${bgClass} flex items-center justify-center shrink-0 shadow-sm`}>
                 {iconUrl ? (
-                    <SafeImage src={iconUrl} alt={name || symbol || 'Token'} className="w-8 h-8 rounded-full object-cover" fallbackName={symbol || name || '?'} />
+                    <SafeImage src={iconUrl} alt={name || symbol || 'Token'} className="size-8 rounded-full object-cover" fallbackName={symbol || name || '?'} />
                 ) : (
                     <span className={`text-xs font-black ${textColorClass}`}>{symbol ? symbol.slice(0, 3) : '?'}</span>
                 )}
@@ -107,9 +107,12 @@ function NameResolver({ address, network, onResolved }: {
     const symbol = meta?.symbol || '';
     const blueprintName = meta?.blueprintName || '';
 
-    useEffect(() => {
+    const prevRef = React.useRef('');
+    const key = `${address}:${name}:${symbol}:${blueprintName}`;
+    if (key !== prevRef.current) {
+        prevRef.current = key;
         onResolved(address, name, symbol, blueprintName);
-    }, [address, name, symbol, blueprintName, onResolved]);
+    }
 
     return null;
 }
@@ -190,7 +193,7 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
                 <NameResolver key={addr} address={addr} network={network} onResolved={handleResolved} />
             ))}
             <h4 className="px-4 sm:px-5 text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-3 flex items-center gap-1.5">
-                <Route className="w-3 h-3 text-[var(--color-accent)]" />
+                <Route className="size-3 text-[var(--color-accent)]" />
                 {tt?.swap_routing_label || 'Routing Path'}
             </h4>
             <MermaidDiagram chart={chart} copiedAddress={copiedAddress} />
@@ -287,7 +290,7 @@ export function SwapSettlementCard({
             <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
                 {/* ── Header ── */}
                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
-                    <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
+                    <ArrowLeftRight className="size-3.5 text-[var(--color-accent)] shrink-0" />
                     {swapMode === 'ARBITRAGE' ? (tt?.swap_arbitrage_title || 'Arbitrage Settlement') : (tt?.swap_settlement_title || 'DEX Settlement')}
                 </h3>
 
@@ -295,7 +298,7 @@ export function SwapSettlementCard({
                 <div className="p-4 sm:p-5 flex flex-col gap-6">
                     {/* Account address badge at the top */}
                     <div className="flex items-center gap-2.5 opacity-80 hover:opacity-100 transition-opacity border-b border-dashed border-[var(--color-card-border)] pb-3">
-                        <Wallet className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        <Wallet className="size-4 text-[var(--color-text-muted)]" />
                         {accountName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[160px]">{accountName}</span>}
                         <span className="text-[12px] font-mono text-[var(--color-text-muted)] truncate cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanAccount} onClick={() => onResourceClick?.(cleanAccount)}>{trunc(cleanAccount, 12, 12)}</span>
                         <CopyBtn addr={cleanAccount} onCopy={onCopy} copiedAddress={copiedAddress} />
@@ -306,9 +309,9 @@ export function SwapSettlementCard({
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-2">
                                 <TokenColumn resource={soldToken.resource} amount={soldToken.amount} side="sold" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
-                                <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
+                                <ArrowRight className="size-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
                                 <div className="flex flex-col items-center gap-2 shrink-0 px-6 py-4 rounded-xl border border-dashed border-[var(--color-card-border)] bg-[var(--color-bg)]/50 shadow-sm transition-all duration-300 hover:border-[var(--color-accent)]/50 group/swap">
-                                    <ArrowLeftRight className="w-6 h-6 text-[var(--color-accent)] transition-transform duration-500 group-hover/swap:rotate-180" />
+                                    <ArrowLeftRight className="size-6 text-[var(--color-accent)] transition-transform duration-500 group-hover/swap:rotate-180" />
                                     <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--color-accent)]">Swap</span>
                                     {dexName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]" title={dexName}>{dexName}</span>}
                                     <div className="flex items-center gap-1">
@@ -316,7 +319,7 @@ export function SwapSettlementCard({
                                         <CopyBtn addr={cleanDex} onCopy={onCopy} copiedAddress={copiedAddress} />
                                     </div>
                                 </div>
-                                <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
+                                <ArrowRight className="size-4 text-[var(--color-text-muted)] opacity-50 rotate-90 sm:rotate-0 shrink-0" />
                                 <TokenColumn resource={receivedToken.resource} amount={receivedToken.amount} side="received" tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                             </div>
                             <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
@@ -324,56 +327,56 @@ export function SwapSettlementCard({
 
                         {/* Right: Swap Details (Minimalist Text Layout) */}
                         <div className="lg:w-[300px] shrink-0 self-stretch border-l border-[var(--color-card-border)]/50 pl-4 flex flex-col justify-between">
-                        <div className="px-1 space-y-3">
-                            <div>
-                                <h4 className="text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
-                                    <Table2 className="w-3 h-3 text-[var(--color-accent)]" />
-                                    {tt?.swap_details_label || 'Swap Details'}
-                                </h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-baseline gap-2">
-                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_sold_label || 'Sold'}</span>
-                                        <span className="text-[11px] font-mono font-black text-rose-500 truncate">−{fmtSold} {soldSymbol}</span>
-                                    </div>
-                                    <div className="flex justify-between items-baseline gap-2">
-                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_received_label || 'Received'}</span>
-                                        <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">+{fmtReceived} {receivedSymbol}</span>
-                                    </div>
-                                    {swapMode === 'ARBITRAGE' && soldToken.resource === receivedToken.resource && (
-                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
-                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">Beneficio</span>
-                                            <span className="text-[11px] font-mono font-black text-[var(--color-primary)] truncate">
-                                                +{parseFloat((receivedAmt - soldAmt).toString()).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {minReceivedAmount && (
-                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
-                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_min_received_label || 'Min. Expected'}</span>
-                                            <span className="text-[11px] font-mono font-black text-[var(--color-text-main)] truncate">
-                                                {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-[var(--color-card-border)]">
-                                        <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_rate_label || 'Rate'}</span>
-                                        <span className="text-[11px] font-mono font-bold text-[var(--color-text-main)]">1:{fmtRate}</span>
-                                    </div>
-                                    {routingHops.length > 1 && (
+                            <div className="px-1 space-y-3">
+                                <div>
+                                    <h4 className="text-[9px] uppercase font-black tracking-widest text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
+                                        <Table2 className="size-3 text-[var(--color-accent)]" />
+                                        {tt?.swap_details_label || 'Swap Details'}
+                                    </h4>
+                                    <div className="space-y-2">
                                         <div className="flex justify-between items-baseline gap-2">
-                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_hops_label || 'Hops'}</span>
-                                            <span className="text-[11px] font-mono text-[var(--color-text-main)]">{routingHops.length}</span>
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_sold_label || 'Sold'}</span>
+                                            <span className="text-[11px] font-mono font-black text-rose-500 truncate">−{fmtSold} {soldSymbol}</span>
                                         </div>
-                                    )}
+                                        <div className="flex justify-between items-baseline gap-2">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_received_label || 'Received'}</span>
+                                            <span className="text-[11px] font-mono font-black text-[var(--color-accent)] truncate">+{fmtReceived} {receivedSymbol}</span>
+                                        </div>
+                                        {swapMode === 'ARBITRAGE' && soldToken.resource === receivedToken.resource && (
+                                            <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
+                                                <span className="text-[10px] text-[var(--color-text-muted)] font-medium">Beneficio</span>
+                                                <span className="text-[11px] font-mono font-black text-[var(--color-primary)] truncate">
+                                                    +{parseFloat((receivedAmt - soldAmt).toString()).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {minReceivedAmount && (
+                                            <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-dashed border-[var(--color-card-border)]">
+                                                <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_min_received_label || 'Min. Expected'}</span>
+                                                <span className="text-[11px] font-mono font-black text-[var(--color-text-main)] truncate">
+                                                    {parseFloat(minReceivedAmount).toLocaleString(locale, { maximumFractionDigits: 8 })} {receivedSymbol}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-baseline gap-2 pt-1 border-t border-[var(--color-card-border)]">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_rate_label || 'Rate'}</span>
+                                            <span className="text-[11px] font-mono font-bold text-[var(--color-text-main)]">1:{fmtRate}</span>
+                                        </div>
+                                        {routingHops.length > 1 && (
+                                            <div className="flex justify-between items-baseline gap-2">
+                                                <span className="text-[10px] text-[var(--color-text-muted)] font-medium">{tt?.swap_hops_label || 'Hops'}</span>
+                                                <span className="text-[11px] font-mono text-[var(--color-text-main)]">{routingHops.length}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="px-1">
-                            <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
+                            <div className="px-1">
+                                <div className="mt-4 border-t-2 border-[var(--color-card-border)]/40" />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
                 {/* ── Section 2: Routing Diagram (Mermaid) ── */}
                 {fungibles.length > 0 && (
@@ -398,7 +401,7 @@ export function SwapSettlementCard({
                     <div className="px-4 sm:px-5 pb-4">
                         <ExplorerTable
                             title={tt?.swap_settlements_label || 'Balance Changes'}
-                            icon={<Table2 className="w-3 h-3 text-[var(--color-accent)]" />}
+                            icon={<Table2 className="size-3 text-[var(--color-accent)]" />}
                             headers={[
                                 { label: tt?.swap_entity_label || 'Entity', className: 'min-w-[240px]' },
                                 { label: tt?.swap_role_label || 'Role', className: 'min-w-[140px]' },

@@ -23,19 +23,22 @@ import {
 } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
+const EMPTY_ACCOUNTS: string[] = [];
+
 /* Services & types */
 import type { NetworkStats } from '@/types/radix';
 import type { Dictionary } from '@/i18n';
-import type { DashboardInitialProps } from '@/features/dashboard/types';
+import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
 
 /* React Query hooks */
-import { setLiveNetwork, stopPolling } from '@/services/liveDataStore';
-import { useValidatorsQuery, useValidatorFilters } from './staking';
+import { stopPolling } from '@/services/liveDataStore';
+import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
+import { useValidatorFilters } from './staking/hooks/useValidatorFilters';
 import {
   useTransactionsQuery,
   flattenTransactionPages,
-  useInfiniteScrollTx,
-} from './explorador';
+} from './explorador/hooks/useTransactionsQuery';
+import { useInfiniteScrollTx } from './explorador/hooks/useDashboardTxEffects';
 
 /* Feature hooks */
 import { useDashboardPreferences } from './hooks/useDashboardPreferences';
@@ -83,17 +86,17 @@ export default function DashboardClient({
   initialMarketData,
   dictionary,
   initialIsWalletConnected = false,
-  initialConnectedAccounts = [],
+  initialConnectedAccounts = EMPTY_ACCOUNTS,
 }: DashboardInitialProps) {
 
   const { t: dict, language } = useLanguage();
-  const { setShowFooter, setShowUnderConstruction } = useLayout();
+  const { setShowUnderConstruction } = useLayout();
   const t = (dictionary || dict || {}) as Dictionary;
   const dt = t.dashboard ?? {};
 
   /* View / Network / Search (URL Sync) / Date Range */
   const {
-    activeView, network, deferredNetwork,
+    activeView, network, setNetwork, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
     dateRange, handleDateRangeChange,
     handleViewChange, handleNetworkChange,
@@ -103,22 +106,16 @@ export default function DashboardClient({
   });
 
   /* Date Range Filter (Temporal state while picking dates) */
-  const [tempDateRange, setTempDateRange] = useState<{ start: string | null; end: string | null }>(dateRange);
+  const [pendingRange, setPendingRange] = useState<{ start: string | null; end: string | null } | null>(null);
+  const tempDateRange = pendingRange ?? dateRange;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
   
-  // Initialize wallet filter state using server session knowledge to prevent flicker
-  const [isWalletFilterActive, setIsWalletFilterActive] = useState(initialIsWalletConnected);
-
-  // Sync temp state with committed state if URL changes externally (e.g., reset)
-  const [prevDateRange, setPrevDateRange] = useState(dateRange);
-  if (dateRange !== prevDateRange) {
-      setPrevDateRange(dateRange);
-      setTempDateRange(dateRange);
-  }
-
   const { isConnected, accounts, activeNetwork, switchNetwork } = useRadixWallet();
+
+  // Derive wallet filter from connection state (avoid useEffect sync anti-pattern)
+  const [isWalletFilterActive, setIsWalletFilterActive] = useState(isConnected && accounts.length > 0);
 
   const isMounted = useRef(false);
 
@@ -135,21 +132,15 @@ export default function DashboardClient({
 
     // On subsequent changes, if wallet network changes (e.g., from modal), sync dashboard TO wallet.
     if (activeNetwork && network && activeNetwork !== network) {
-      handleNetworkChange(activeNetwork);
+      setNetwork(activeNetwork);
+      const url = new URL(window.location.href);
+      url.searchParams.set('network', activeNetwork);
+      window.history.replaceState({}, '', url.toString());
     }
-  }, [activeNetwork, network, handleNetworkChange, switchNetwork]);
-
-  useEffect(() => {
-    if (isConnected && accounts.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsWalletFilterActive(true);
-    } else {
-      setIsWalletFilterActive(false);
-    }
-  }, [isConnected, accounts.length]);
+  }, [activeNetwork, network, switchNetwork, setNetwork]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
-    setTempDateRange(range);
+    setPendingRange(range);
     if (range.start && range.end) {
       setCalendarOpen(false);
       handleDateRangeChange(range);
@@ -161,7 +152,7 @@ export default function DashboardClient({
     // When closing with only start selected, treat as single-day filter
     if (!isOpen && tempDateRange.start && !tempDateRange.end) {
       const singleDay = { start: tempDateRange.start, end: tempDateRange.start };
-      setTempDateRange(singleDay);
+      setPendingRange(singleDay);
       handleDateRangeChange(singleDay);
     }
   };
@@ -188,8 +179,23 @@ export default function DashboardClient({
 
   const setSortMode = (m: typeof sortMode) =>
     activeView === 'staking' ? prefs.setValSortMode(m) : prefs.setTxSortMode(m);
-  const setColumns = (c: number) =>
-    activeView === 'staking' ? prefs.setValColumns(c) : prefs.setTxColumns(c);
+  const setColumns = (c: number) => {
+    if (activeView === 'staking') {
+      prefs.setValColumns(c);
+      if (c >= VALIDATOR_MODAL_THRESHOLD && !prefs.valReadingMode) {
+        prefs.setValReadingMode(true);
+      } else if (c < VALIDATOR_MODAL_THRESHOLD && prefs.valReadingMode && !wasValReadingModeManual) {
+        prefs.setValReadingMode(false);
+      }
+    } else {
+      prefs.setTxColumns(c);
+      if (c >= VALIDATOR_MODAL_THRESHOLD && !prefs.txReadingMode) {
+        prefs.setTxReadingMode(true);
+      } else if (c < VALIDATOR_MODAL_THRESHOLD && prefs.txReadingMode && !wasTxReadingModeManual) {
+        prefs.setTxReadingMode(false);
+      }
+    }
+  };
 
   const setReadingMode = (v: boolean) => {
     if (activeView === 'staking') {
@@ -317,44 +323,6 @@ export default function DashboardClient({
     searchQuery, activeView, network, setExpandedTxs: expanded.setExpandedTxs
   });
 
-  // Forced Reading Mode for high columns (Grid 3+)
-  useEffect(() => {
-    const isManual = activeView === 'staking' ? wasValReadingModeManual : wasTxReadingModeManual;
-
-    if (columns >= VALIDATOR_MODAL_THRESHOLD) {
-      if (!readingMode) {
-        // Auto-enable but don't set manual flag
-        if (activeView === 'staking') prefs.setValReadingMode(true);
-        else prefs.setTxReadingMode(true);
-      }
-    } else {
-      // Deactivate if it was auto-enabled and we are back to Grid 1/2
-      if (readingMode && !isManual) {
-        if (activeView === 'staking') prefs.setValReadingMode(false);
-        else prefs.setTxReadingMode(false);
-      }
-    }
-  }, [columns, readingMode, activeView, wasValReadingModeManual, wasTxReadingModeManual, prefs]);
-
-  // Keep footer visible whenever the view changes
-  useEffect(() => { setShowFooter(true); }, [activeView, setShowFooter]);
-  useEffect(() => {
-    setShowFooter(true);
-    return () => setShowFooter(true);
-  }, [setShowFooter]);
-
-  // Synchronize LiveStore network targeting
-  useEffect(() => {
-    setLiveNetwork(deferredNetwork as 'mainnet' | 'stokenet');
-  }, [deferredNetwork]);
-
-  // Stop liveDataStore polling when in the explorer view
-  useEffect(() => {
-    if (activeView === 'transactions') {
-      stopPolling();
-    }
-  }, [activeView]);
-
   /* ===============═══════════ RENDER ===============═════════ */
   return (
     <div className="pb-20">
@@ -382,7 +350,7 @@ export default function DashboardClient({
               className="h-full w-1/2"
               style={{
                 background: 'linear-gradient(to right, transparent, var(--color-primary), var(--color-accent), transparent)',
-                animation: 'loading-bar 1.4s ease-in-out infinite',
+                animation: 'loading-bar 0.8s ease-in-out infinite',
               }}
             />
           </motion.div>
@@ -407,7 +375,10 @@ export default function DashboardClient({
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           activeView={activeView}
-          onViewChange={handleViewChange}
+          onViewChange={(view) => {
+            if (view === 'transactions') stopPolling();
+            handleViewChange(view);
+          }}
           network={network}
           onNetworkChange={(net) => {
             handleNetworkChange(net);
@@ -471,7 +442,7 @@ export default function DashboardClient({
           onSelectRange={handleSelectRange}
           onResetRange={() => {
             const empty = { start: null, end: null };
-            setTempDateRange(empty);
+            setPendingRange(null);
             handleDateRangeChange(empty); // Reset commits immediately
             setCalendarOpen(false);
           }}

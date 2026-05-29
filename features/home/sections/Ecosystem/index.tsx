@@ -47,10 +47,6 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
     return phases.filter(p => p.tag === activeTag);
   })();
 
-  const renderGraphic = (num: number) => (
-    <LazyPhaseGraphic num={num} t={t} />
-  );
-
   return (
     <section id="ecosistema" className="py-24 bg-[var(--color-bg)] relative overflow-hidden">
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[var(--color-border)] to-transparent opacity-20" />
@@ -100,7 +96,7 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
                 </div>
 
                 <div className="my-6 h-[140px] flex items-center justify-center w-full relative z-0">
-                  {renderGraphic(phase.num)}
+                  <LazyPhaseGraphic num={phase.num} t={t} />
                 </div>
 
                 <p className="text-[var(--color-text-muted)] text-base leading-relaxed mt-auto pt-4 border-t border-[var(--color-border)]/40 relative z-10 min-h-[160px]">

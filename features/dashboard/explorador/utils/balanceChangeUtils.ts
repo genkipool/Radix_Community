@@ -16,8 +16,7 @@ export function getResourceGroups(
         .filter(f => !isConsensusManager(sanitizeText(f.entity_address)));
 
     const fees = (balanceChanges?.fungible_fee_balance_changes ?? [])
-        .filter(f => !isConsensusManager(sanitizeText(f.entity_address)))
-        .map(f => ({ ...f, is_fee: true, type: f.type } as FungibleChange));
+        .flatMap(f => !isConsensusManager(sanitizeText(f.entity_address)) ? [{ ...f, is_fee: true, type: f.type } as FungibleChange] : []);
 
     const changes = [...fungibles, ...fees];
 

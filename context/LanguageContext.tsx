@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import { createContext, use, ReactNode, useState, useEffect } from "react";
 import { mergeTranslations, type Dictionary } from "@/i18n";
 
 type Language = "en" | "es";
@@ -21,11 +21,10 @@ export function LanguageProvider({
   language: Language;
   dictionary: Dictionary;
 }) {
-  const [prevDictionaryProp, setPrevDictionaryProp] = useState(dictionary);
   const [dict, setDict] = useState<Dictionary>(dictionary);
-
-  if (dictionary !== prevDictionaryProp) {
-    setPrevDictionaryProp(dictionary);
+  const [prevDict, setPrevDict] = useState(dictionary);
+  if (dictionary !== prevDict) {
+    setPrevDict(dictionary);
     setDict(dictionary);
   }
 
@@ -57,20 +56,20 @@ export function LanguageProvider({
 }
 
 export function DictionaryEnricher({ partial }: { partial: Partial<Dictionary> }) {
-  const context = useContext(LanguageContext);
+  const context = use(LanguageContext);
   if (!context) throw new Error("DictionaryEnricher must be used within LanguageProvider");
-  
+
   useEffect(() => {
     if (partial) {
       context.enrich(partial);
     }
   }, [partial, context]);
-  
+
   return null;
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext);
+  const context = use(LanguageContext);
   if (context === undefined) {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }

@@ -1,18 +1,7 @@
 'use client';
 
 import { ChevronDown, AlertCircle } from 'lucide-react';
-
-export const inputStyle = {
-    background: 'var(--color-surface)',
-    color: 'var(--color-text-main)',
-    border: '1px solid var(--color-card-border)',
-    borderRadius: '12px',
-    padding: '10px 14px',
-    fontSize: '13px',
-    width: '100%',
-    outline: 'none',
-    transition: 'border-color 0.15s',
-} as const;
+import { inputStyle } from './adminStyles';
 
 export function AdminFormField({ label, required, error, children, hint }: {
     label: string; required?: boolean; error?: string; children: React.ReactNode; hint?: string;
@@ -29,7 +18,7 @@ export function AdminFormField({ label, required, error, children, hint }: {
             )}
             {error && (
                 <p className="flex items-center gap-1.5 text-xs font-medium" style={{ color: '#ef4444' }}>
-                    <AlertCircle className="w-3 h-3" />{error}
+                    <AlertCircle className="size-3" />{error}
                 </p>
             )}
         </div>
@@ -50,7 +39,7 @@ export function AdminSelectInput({ value, onChange, children, className = '', ..
             >
                 {children}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
                 style={{ color: 'var(--color-text-muted)' }} />
         </div>
     );
@@ -60,7 +49,7 @@ export function AdminTextInput({ prefix, className = '', ...props }: Omit<React.
     return (
         <div className="relative">
             {prefix && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
                     style={{ color: 'var(--color-text-muted)' }}>{prefix}</span>
             )}
             <input

@@ -12,7 +12,7 @@ const FETCHABLE_PREFIXES = ['resource_', 'component_', 'validator_', 'package_',
  * Normalizes a Radix address for use in cache keys.
  * Ensures consistent lookups between server and client.
  */
-export function normalizeAddress(addr: string | undefined | null): string {
+function normalizeAddress(addr: string | undefined | null): string {
   if (!addr) return '';
   return sanitizeText(addr).trim();
 }

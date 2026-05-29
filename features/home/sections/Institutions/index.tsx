@@ -20,14 +20,14 @@ import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import InfraReadButton from './components/InfraReadButton';
 
 const ICONS = [
-  <Landmark key={19} className="w-7 h-7 text-[var(--color-primary)]" />,
-  <ScrollText key={20} className="w-7 h-7 text-[var(--color-secondary)]" />,
-  <Globe key={21} className="w-7 h-7 text-[var(--color-primary)]" />,
-  <Lock key={22} className="w-7 h-7 text-[var(--color-accent)]" />,
-  <BarChart3 key={23} className="w-7 h-7 text-[var(--color-primary)]" />,
-  <Zap key={24} className="w-7 h-7 text-[var(--color-secondary)]" />,
-  <Building2 key={25} className="w-7 h-7 text-[var(--color-primary)]" />,
-  <Search key={26} className="w-7 h-7 text-[var(--color-accent)]" />
+  <Landmark key={19} className="size-7 text-[var(--color-primary)]" />,
+  <ScrollText key={20} className="size-7 text-[var(--color-secondary)]" />,
+  <Globe key={21} className="size-7 text-[var(--color-primary)]" />,
+  <Lock key={22} className="size-7 text-[var(--color-accent)]" />,
+  <BarChart3 key={23} className="size-7 text-[var(--color-primary)]" />,
+  <Zap key={24} className="size-7 text-[var(--color-secondary)]" />,
+  <Building2 key={25} className="size-7 text-[var(--color-primary)]" />,
+  <Search key={26} className="size-7 text-[var(--color-accent)]" />
 ];
 
 export default function Institutions({ t }: BaseSectionProps) {
@@ -35,7 +35,7 @@ export default function Institutions({ t }: BaseSectionProps) {
     <section id="para-ceos" className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          icon={<Building2 className="w-4 h-4 mr-1" />}
+          icon={<Building2 className="size-4 mr-1" />}
           badge={t.instituciones.label}
           badgeClassName="bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
           title={t.instituciones.h2a}
@@ -46,8 +46,8 @@ export default function Institutions({ t }: BaseSectionProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-16">
           {t.instituciones.features.map((feature, i: number) => (
-            <FadeIn key={i} delay={i * 0.05} className="flex gap-6">
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] shadow-md">
+            <FadeIn key={`feature-${i}`} delay={i * 0.05} className="flex gap-6">
+              <div className="flex-shrink-0 size-14 rounded-2xl flex items-center justify-center text-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] shadow-md">
                 {ICONS[i]}
               </div>
               <div>
@@ -56,7 +56,7 @@ export default function Institutions({ t }: BaseSectionProps) {
                   {feature.desc}{'tooltip' in feature && feature.tooltip && (
                     <span className="inline-flex items-center ml-1.5 align-baseline translate-y-[1px]">
                       <InfoTooltip content={t.instituciones[feature.tooltip as keyof typeof t.instituciones] as string}>
-                        <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                        <Info className="size-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
                       </InfoTooltip>
                     </span>
                   )}
@@ -76,7 +76,7 @@ export default function Institutions({ t }: BaseSectionProps) {
             href="/infrastructure"
             className="inline-flex justify-center items-center gap-2.5 px-8 py-4 rounded-full bg-[var(--color-bg)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] active:scale-[0.98] transition-all border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/50"
           >
-            <ExternalLink className="w-5 h-5 shrink-0" />
+            <ExternalLink className="size-5 shrink-0" />
             {t.instituciones.btnInfraWeb}
           </Link>
         </div>

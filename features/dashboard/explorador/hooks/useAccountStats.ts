@@ -7,7 +7,7 @@ import type { ParsedResource, StakingEntry, FungibleItem, NonFungibleItem } from
 import { getXrdAddress } from '../constants';
 
 // Function to safely extract explicit metadata
-export function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
+function extractMetadata(items: MetadataItem[] | undefined, key: string): string {
     const meta = items?.find((m) => m.key === key);
     if (meta?.value?.typed?.value) {
         return meta.value.typed.value;
@@ -171,16 +171,16 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
     const claimCollectionAddresses = Object.keys(claimCollections).sort();
     // Include the actual IDs in the query key so it refetches when new claim NFTs are minted
     const claimCollectionIds = claimCollectionAddresses
-        .map(addr => `${addr}:${[...claimCollections[addr]].sort().join('|')}`)
+        .map(addr => `${addr}:${claimCollections[addr].toSorted().join('|')}`)
         .join('||');
 
     const { data: claimsData, isLoading: isLoadingClaims } = useQuery({
         queryKey: ['account-claim-nfts', address, network, claimCollectionIds],
         queryFn: async () => {
             const results: Record<string, Record<string, unknown>[]> = {};
-            for (const resAddr of claimCollectionAddresses) {
+            await Promise.all(claimCollectionAddresses.map(async (resAddr) => {
                 results[resAddr] = await apiFetchNonFungibleData(resAddr, claimCollections[resAddr], network);
-            }
+            }));
             return results;
         },
         enabled: claimCollectionAddresses.length > 0,
@@ -243,7 +243,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         });
     }
 
-    const stakingRows = Array.from(stakingMap.values()).sort((a, b) => b.xrdInStake - a.xrdInStake);
+    const stakingRows = Array.from(stakingMap.values()).toSorted((a, b) => b.xrdInStake - a.xrdInStake);
     const totalLsuAmount = lsuTokens.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const totalLsuXrdEquivalent = lsuTokens.reduce((acc, lsu) => {
         if (!lsu.validatorAddress) return acc;

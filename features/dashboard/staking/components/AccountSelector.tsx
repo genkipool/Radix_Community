@@ -27,6 +27,7 @@ export const AccountSelector = ({ accounts, selectedAccount, onSelect }: Account
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <button
+                type="button"
                 onClick={(e) => {
                     e.stopPropagation();
                     setIsOpen(!isOpen);
@@ -41,13 +42,14 @@ export const AccountSelector = ({ accounts, selectedAccount, onSelect }: Account
                 ) : (
                     <span className="text-[var(--color-text-muted)]">Select an account</span>
                 )}
-                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
                 <div className="absolute z-50 w-full mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl max-h-48 overflow-y-auto overflow-x-hidden">
                     {accounts.map(acc => (
                         <button
+                            type="button"
                             key={acc.address}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -60,7 +62,7 @@ export const AccountSelector = ({ accounts, selectedAccount, onSelect }: Account
                                 <span className="font-medium text-[var(--color-text)] text-sm transition-colors group-hover:text-[var(--color-accent)]">{acc.label}</span>
                                 <span className="text-[10px] text-[var(--color-text-muted)] font-mono">{truncateAddress(acc.address)}</span>
                             </div>
-                            {selectedAccount?.address === acc.address && <Check className="w-4 h-4 text-[var(--color-primary)]" />}
+                            {selectedAccount?.address === acc.address && <Check className="size-4 text-[var(--color-primary)]" />}
                         </button>
                     ))}
                     {accounts.length === 0 && (

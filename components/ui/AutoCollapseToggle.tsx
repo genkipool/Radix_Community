@@ -25,7 +25,7 @@ export function AutoCollapseToggle({
     disabledTitle,
 }: AutoCollapseToggleProps) {
     const isMd = size === 'md';
-    
+
     const style: React.CSSProperties = {
         display: 'flex',
         alignItems: 'center',
@@ -44,6 +44,7 @@ export function AutoCollapseToggle({
 
     return (
         <button
+            type="button"
             onClick={disabled ? undefined : (e) => {
                 e.stopPropagation();
                 onToggle(!autoCollapse);
@@ -54,7 +55,7 @@ export function AutoCollapseToggle({
             title={disabled ? (disabledTitle || (autoCollapse ? activeTitle : inactiveTitle)) : (autoCollapse ? activeTitle : inactiveTitle)}
             aria-pressed={autoCollapse}
         >
-            <Magnet className={isMd ? "w-4 h-4" : "w-3.5 h-3.5"} />
+            <Magnet className={isMd ? "size-4" : "size-3.5"} />
         </button>
     );
 }

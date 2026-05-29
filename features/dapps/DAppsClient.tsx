@@ -20,12 +20,12 @@ export default function DAppsClient({ t, initialDapps }: DAppsClientProps) {
   const { setShowUnderConstruction } = useLayout();
   const dt = t.dapps_page;
 
-  const [dappList,         setDappList]        = useState<DApp[]>(initialDapps);
-  const [activeTag,        setActiveTag]        = useState<string | null>(null);
-  const [searchQuery,      setSearchQuery]      = useState('');
-  const [columns,          setColumns]          = useState(3);
-  const [likedIds,         setLikedIds]         = useState<Set<number>>(new Set());
-  const [dislikedIds,      setDislikedIds]      = useState<Set<number>>(new Set());
+  const [dappList, setDappList] = useState<DApp[]>(initialDapps);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [columns, setColumns] = useState(3);
+  const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
+  const [dislikedIds, setDislikedIds] = useState<Set<number>>(new Set());
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   const filtered = (() => {
@@ -139,7 +139,7 @@ export default function DAppsClient({ t, initialDapps }: DAppsClientProps) {
                 variant="primary"
                 size="sm"
                 className="!rounded-xl"
-                leftIcon={<Plus className="w-4 h-4" />}
+                leftIcon={<Plus className="size-4" />}
               >
                 {dt.controls.publish}
               </Button>

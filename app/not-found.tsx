@@ -1,6 +1,7 @@
 'use client';
 
 import '@/app/globals.css';
+import Script from 'next/script';
 import { useMounted } from '@/hooks/useMounted';
 import { translations } from '@/i18n';
 import { Providers } from '@/components/layout/Providers';
@@ -26,7 +27,9 @@ export default function NotFound() {
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {

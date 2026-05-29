@@ -35,6 +35,17 @@ import { getMetaValue } from '../utils/metadataUtils';
 import type { AccountCardProps } from '../types/components.types';
 import type { MetadataItem } from '@/features/dashboard/types';
 
+function FiatValueDisplay({ amount, marketData, statsLoading, locale }: { amount: number; marketData: AccountCardProps['marketData']; statsLoading: boolean; locale: string }) {
+    if (!marketData || statsLoading) return null;
+    const currency = getCurrencyForLocale(locale);
+    const price = currency === 'EUR' ? marketData.priceEur : marketData.priceUsd;
+    return (
+        <span className="text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
+            ({formatCurrency(amount * price, currency, locale)})
+        </span>
+    );
+}
+
 type EntityTab = 'summary' | 'staking' | 'tokens' | 'nfts' | 'pool_units' | 'transactions' | 'metadata' | 'configuration' | 'raw';
 export function AccountCard({
     address,
@@ -84,17 +95,6 @@ export function AccountCard({
     const { data: validatorsData } = useValidatorsQuery(network);
 
     const isCopied = copiedAddress === address;
-
-    const renderFiatValue = (amount: number) => {
-        if (!marketData || statsLoading) return null;
-        const currency = getCurrencyForLocale(locale);
-        const price = currency === 'EUR' ? marketData.priceEur : marketData.priceUsd;
-        return (
-            <span className="text-[10px] text-[var(--color-text-muted)] font-mono whitespace-nowrap">
-                ({formatCurrency(amount * price, currency, locale)})
-            </span>
-        );
-    };
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -156,11 +156,11 @@ export function AccountCard({
             >
                 <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
                     {/* ── AVATAR / SIDEBAR (Matching TransactionCard) ── */}
-                    <div onClick={() => undefined}
+                    <div aria-hidden="true"
                         className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
                         <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
                         <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
-                            <Landmark className="w-8 h-8" style={{ color: 'var(--color-accent)' }} />
+                            <Landmark className="size-8" style={{ color: 'var(--color-accent)' }} />
                         </div>
                     </div>
 
@@ -187,12 +187,13 @@ export function AccountCard({
                                 </div>
                                 <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
                                     <button
+                                        type="button"
                                         onClick={handleDownloadClick}
                                         onMouseEnter={handleDownloadMouseEnter}
                                         className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
                                         title={accT?.download_rewards_tooltip}
                                     >
-                                        <Download className="w-3 h-3" />
+                                        <Download className="size-3" />
                                         <span className="mt-[0.5px]">CSV</span>
                                     </button>
 
@@ -218,7 +219,7 @@ export function AccountCard({
                                         <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                         </span>
-                                        {renderFiatValue(parseFloat(xrdAmount))}
+                                        <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -229,7 +230,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-blue-500 font-mono">
                                             {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
                                         </span>
-                                        {renderFiatValue(totalLsuXrdEquivalent)}
+                                        <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -240,7 +241,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
                                             {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
                                         </span>
-                                        {renderFiatValue(stakedTotal)}
+                                        <FiatValueDisplay amount={stakedTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -251,7 +252,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-orange-500 font-mono">
                                             {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
                                         </span>
-                                        {renderFiatValue(unstakeTotal)}
+                                        <FiatValueDisplay amount={unstakeTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -262,7 +263,7 @@ export function AccountCard({
                                         <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                         </span>
-                                        {renderFiatValue(claimTotal)}
+                                        <FiatValueDisplay amount={claimTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                             </div>
@@ -279,11 +280,11 @@ export function AccountCard({
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                             className="overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)]"
                         >
-                            <div onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
-                                <PanelTabBar 
-                                    tabs={tabsData} 
-                                    activeTab={activeTab} 
-                                    onTabChange={(t) => setActiveTab(t as EntityTab)} 
+                            <div role="presentation" onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
+                                <PanelTabBar
+                                    tabs={tabsData}
+                                    activeTab={activeTab}
+                                    onTabChange={(t) => setActiveTab(t as EntityTab)}
                                     onTabHover={(t) => {
                                         if (t === 'transactions') {
                                             handleTransactionsMouseEnter();
@@ -342,7 +343,7 @@ export function AccountCard({
                                                 locale={locale}
                                             />
                                         )}
-                                        
+
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
                                             <AccountStakingTab
@@ -424,11 +425,11 @@ export function AccountCard({
 
                                         {/* ── RAW ── */}
                                         {activeTab === 'raw' && (
-                                            <PanelRawTab 
-                                                data={entityData} 
-                                                tt={tt} 
-                                                onCopy={onCopy} 
-                                                copiedAddress={copiedAddress} 
+                                            <PanelRawTab
+                                                data={entityData}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
                                             />
                                         )}
                                     </div>

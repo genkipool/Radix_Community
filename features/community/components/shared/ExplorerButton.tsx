@@ -16,6 +16,7 @@ export function ExplorerButton({ target, label, size = 'sm', onClick }: Explorer
 
     return (
         <button
+            type="button"
             onClick={() => onClick?.(target)}
             className={`inline-flex items-center gap-1.5 ${px} rounded-lg font-semibold ${textSize} transition-all duration-200 shrink-0`}
             style={{
@@ -26,7 +27,7 @@ export function ExplorerButton({ target, label, size = 'sm', onClick }: Explorer
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(99,102,241,0.16)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(99,102,241,0.08)'; }}
         >
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="size-3" />
             {label}
         </button>
     );

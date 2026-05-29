@@ -80,8 +80,8 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
           <div className="p-5 flex items-center justify-between border-b border-[var(--color-card-border)] relative overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-[var(--color-accent)]/5 pointer-events-none" />
             <div className="flex items-center gap-3 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-lg shrink-0">
-                <Sparkles className="w-5 h-5" />
+              <div className="size-10 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-lg shrink-0">
+                <Sparkles className="size-5" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-[var(--color-text-main)] tracking-tight">
@@ -93,11 +93,12 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
               aria-label={t.dapps_page.modal.close_aria}
-              className="w-9 h-9 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-transparent hover:border-[var(--color-card-border)] relative z-10"
+              className="size-9 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-transparent hover:border-[var(--color-card-border)] relative z-10"
             >
-              <X className="w-5 h-5" />
+              <X className="size-5" />
             </button>
           </div>
 
@@ -109,7 +110,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-4"
               >
-                <CheckCircle className="w-16 h-16 text-[var(--color-primary)]" />
+                <CheckCircle className="size-16 text-[var(--color-primary)]" />
                 <p className="text-lg font-bold text-[var(--color-text-main)]">
                   {t.dapps_page.modal.success}
                 </p>
@@ -119,13 +120,12 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Name */}
                 <div className="space-y-1.5">
                   <label htmlFor={`${formId}-name`} className="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <FileText className="size-3.5 text-[var(--color-primary)]" />
                     {t.dapps_page.modal.field_name}
                   </label>
                   <input
                     id={`${formId}-name`}
                     type="text"
-                    autoFocus
                     value={name}
                     onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
                     placeholder={t.dapps_page.modal.placeholder_name}
@@ -137,7 +137,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Description */}
                 <div className="space-y-1.5">
                   <label htmlFor={`${formId}-desc`} className="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <Layers className="size-3.5 text-[var(--color-primary)]" />
                     {t.dapps_page.modal.field_description}
                   </label>
                   <textarea
@@ -158,7 +158,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Logo URL */}
                 <div className="space-y-1.5">
                   <label htmlFor={`${formId}-logo`} className="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                    <ImageIcon className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <ImageIcon className="size-3.5 text-[var(--color-primary)]" />
                     {t.dapps_page.modal.field_logo}
                     <span className="text-[9px] normal-case tracking-normal font-normal opacity-60">
                       {t.dapps_page.modal.optional}
@@ -177,7 +177,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Website */}
                 <div className="space-y-1.5">
                   <label htmlFor={`${formId}-url`} className="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <Globe className="size-3.5 text-[var(--color-primary)]" />
                     {t.dapps_page.modal.field_website}
                   </label>
                   <input
@@ -194,7 +194,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Tags */}
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <Tag className="size-3.5 text-[var(--color-primary)]" />
                     {t.dapps_page.modal.field_tags}
                     <span className="text-[9px] normal-case tracking-normal font-normal opacity-60">
                       {t.dapps_page.modal.tags_max}
@@ -208,11 +208,10 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                           key={tag}
                           type="button"
                           onClick={() => toggleTag(tag)}
-                          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
-                            isSelected
-                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
-                              : 'text-[var(--color-text-main)] bg-[var(--color-bg-alt)] border-[var(--color-border)] opacity-70 hover:opacity-100'
-                          }`}
+                          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${isSelected
+                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/20'
+                            : 'text-[var(--color-text-main)] bg-[var(--color-bg-alt)] border-[var(--color-border)] opacity-70 hover:opacity-100'
+                            }`}
                         >
                           {tag}
                         </button>
@@ -225,8 +224,8 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 {/* Wallet notice */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-accent)]/5 border border-[var(--color-primary)]/20">
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-white/10">
-                      <Wallet className="w-5 h-5" />
+                    <div className="size-9 rounded-xl bg-white/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-white/10">
+                      <Wallet className="size-5" />
                     </div>
                     <div>
                       <button
@@ -255,7 +254,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
               <Button
                 variant="primary"
                 onClick={handleSubmit}
-                leftIcon={<Sparkles className="w-4 h-4" />}
+                leftIcon={<Sparkles className="size-4" />}
               >
                 {t.dapps_page.modal.publish}
               </Button>

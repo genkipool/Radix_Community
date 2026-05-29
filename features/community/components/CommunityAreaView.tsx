@@ -10,11 +10,11 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import Link from 'next/link';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { 
-    Task, 
-    TaskType, 
+import {
+    Task,
+    TaskType,
     TaskStatus,
-    ExplorerTarget 
+    ExplorerTarget
 } from '../types/data.types';
 import { CommunityDictionary } from '../types/i18n.types';
 import { CommunityAreaViewProps } from '../types/components.types';
@@ -25,9 +25,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 /* ─── Formatters ─────────────────────────────────────────────────────────── */
-function fmtXrd(n: number) { return new Intl.NumberFormat('es-ES').format(n) + ' XRD'; }
+const _xrdFmt = new Intl.NumberFormat('es-ES');
+const _usdFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function fmtXrd(n: number) { return _xrdFmt.format(n) + ' XRD'; }
 function fmtUsd(n: number) {
-    return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+    return '$' + _usdFmt.format(n);
 }
 function fmtDate(s: string) {
     return new Date(s).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -42,6 +44,7 @@ function ExplorerButton({ target, label, size = 'sm', onClick }: {
 
     return (
         <button
+            type="button"
             onClick={() => onClick?.(target)}
             className={`inline-flex items-center gap-1.5 ${px} rounded-lg font-semibold ${textSize} transition-all duration-200 shrink-0`}
             style={{
@@ -50,7 +53,7 @@ function ExplorerButton({ target, label, size = 'sm', onClick }: {
                 border: '1px solid rgba(99,102,241,0.2)',
             }}
         >
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="size-3" />
             {label}
         </button>
     );
@@ -94,9 +97,9 @@ function TaskCard({ task, t }: { task: Task; t: CommunityDictionary }) {
         ?? (task.deliverableKey ? (taskDeliverables[task.deliverableKey as keyof typeof taskDeliverables] ?? task.deliverableKey) : null);
     const StatusIconComp = task.status === 'completed' ? CheckCircle2
         : task.status === 'in_progress' ? Clock
-        : task.status === 'paused' ? PauseCircle
-        : task.status === 'cancelled' ? XCircle
-        : Calendar;
+            : task.status === 'paused' ? PauseCircle
+                : task.status === 'cancelled' ? XCircle
+                    : Calendar;
 
     return (
         <div className="rounded-2xl p-5"
@@ -126,7 +129,7 @@ function TaskCard({ task, t }: { task: Task; t: CommunityDictionary }) {
                                 (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--color-card-border)';
                             }}
                         >
-                            <Github className="w-3.5 h-3.5" />
+                            <Github className="size-3.5" />
                             GitHub
                         </Link>
                     )}
@@ -140,20 +143,20 @@ function TaskCard({ task, t }: { task: Task; t: CommunityDictionary }) {
             <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
                     style={{ background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}30` }}>
-                    <StatusIconComp className="w-3 h-3" />
+                    <StatusIconComp className="size-3" />
                     {statusLabels[task.status] ?? task.status}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
                     style={{ background: typeStyle.bg, color: typeStyle.text, border: `1px solid ${typeStyle.border}` }}>
-                    {task.type === 'service' ? <Wrench className="w-3 h-3" />
-                        : task.type === 'personnel' ? <Users className="w-3 h-3" />
-                            : <UserCheck className="w-3 h-3" />}
+                    {task.type === 'service' ? <Wrench className="size-3" />
+                        : task.type === 'personnel' ? <Users className="size-3" />
+                            : <UserCheck className="size-3" />}
                     {typeLabels[task.type]}
                 </span>
                 {task.tags.slice(0, 2).map(tag => (
                     <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
                         style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-card-border)' }}>
-                        <Tag className="w-2.5 h-2.5" />{tag}
+                        <Tag className="size-2.5" />{tag}
                     </span>
                 ))}
             </div>
@@ -161,7 +164,7 @@ function TaskCard({ task, t }: { task: Task; t: CommunityDictionary }) {
             {/* Cost + dates */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
                 <div className="flex items-center gap-1.5">
-                    <Coins className="w-3.5 h-3.5" style={{ color: task.cost === 0 ? '#10b981' : 'var(--color-primary)' }} />
+                    <Coins className="size-3.5" style={{ color: task.cost === 0 ? '#10b981' : 'var(--color-primary)' }} />
                     <span className="text-xs font-semibold" style={{ color: task.cost === 0 ? '#10b981' : 'var(--color-text-main)' }}>
                         {task.cost === 0 ? (t.voluntary_free ?? 'Voluntary (free)') : fmtXrd(task.cost)}
                     </span>
@@ -172,7 +175,7 @@ function TaskCard({ task, t }: { task: Task; t: CommunityDictionary }) {
                     )}
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3" style={{ color: 'var(--color-text-muted)' }} />
+                    <Calendar className="size-3" style={{ color: 'var(--color-text-muted)' }} />
                     <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                         {fmtDate(task.startDate)}{task.endDate ? ` → ${fmtDate(task.endDate)}` : ` → ${t.ongoing_label ?? 'Ongoing'}`}
                     </span>
@@ -217,10 +220,10 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                 style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}
             >
                 <div className={`h-1 w-full bg-gradient-to-r ${area.gradient}`} />
-                <div className="px-8 py-8">
+                <div className="p-8">
                     <div className="flex items-center gap-4 mb-5">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${area.gradient} shadow-lg`}>
-                            <Icon className="w-6 h-6 text-white" />
+                        <div className={`size-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${area.gradient} shadow-lg`}>
+                            <Icon className="size-6 text-white" />
                         </div>
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--color-text-main)' }}>
@@ -237,7 +240,7 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                         style={{ border: '1px solid var(--color-card-border)' }}>
                         <div className="px-4 py-2.5 flex items-center gap-2"
                             style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-card-border)' }}>
-                            <Globe className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+                            <Globe className="size-3.5 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
                             <span className="text-xs font-semibold uppercase tracking-wide"
                                 style={{ color: 'var(--color-text-muted)' }}>
                                 {t.area_address_label ?? 'Area XRD Address'}
@@ -247,13 +250,13 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                             <code className="flex-1 text-xs font-mono break-all" style={{ color: 'var(--color-text-main)' }}>
                                 {area.radixAddress}
                             </code>
-                        <div className="flex gap-2 shrink-0">
-                            <CopyButton value={area.radixAddress} label={t.copy_address} />
-                            <ExplorerButton
-                                target={{ kind: 'address', address: area.radixAddress }}
-                                label={t.explorer_view ?? 'Explorer'}
-                                onClick={onShowExplorer}
-                            />
+                            <div className="flex gap-2 shrink-0">
+                                <CopyButton value={area.radixAddress} label={t.copy_address} />
+                                <ExplorerButton
+                                    target={{ kind: 'address', address: area.radixAddress }}
+                                    label={t.explorer_view ?? 'Explorer'}
+                                    onClick={onShowExplorer}
+                                />
                             </div>
                         </div>
                     </div>
@@ -291,10 +294,10 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                     // Fixed: voluntary contributions = volunteer members count
                     { labelKey: 'voluntary_contributions', value: String(voluntaryMembers), Icon: UserCheck, color: '#f59e0b' },
                     { labelKey: 'remaining_budget', value: fmtXrd(remainingBudget), Icon: DollarSign, color: '#6366f1' },
-                ] as const).map((s, i) => (
-                    <div key={i} className="rounded-2xl p-5"
+                ] as const).map((s) => (
+                    <div key={`stats-${s.labelKey}`} className="rounded-2xl p-5"
                         style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}>
-                        <s.Icon className="w-4 h-4 mb-2" style={{ color: s.color }} />
+                        <s.Icon className="size-4 mb-2" style={{ color: s.color }} />
                         <p className="text-xl font-bold tabular-nums" style={{ color: 'var(--color-text-main)' }}>{s.value}</p>
                         <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                             {t[s.labelKey as keyof CommunityDictionary] as string ?? s.labelKey}
@@ -307,7 +310,7 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                 {/* Tasks (2/3) */}
                 <div className="lg:col-span-2">
                     <h2 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--color-text-main)' }}>
-                        <BarChart3 className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                        <BarChart3 className="size-5" style={{ color: 'var(--color-primary)' }} />
                         {t.tasks_and_expenses ?? 'Tasks & Expenses'}
                     </h2>
                     <div className="space-y-4">
@@ -320,7 +323,7 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                 {/* Members (1/3) */}
                 <div>
                     <h2 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--color-text-main)' }}>
-                        <Users className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                        <Users className="size-5" style={{ color: 'var(--color-primary)' }} />
                         {t.team_title ?? 'Team'} ({area.members.length})
                     </h2>
                     <div className="space-y-3">
@@ -330,7 +333,7 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                                 className="rounded-2xl p-4 flex items-center gap-3"
                                 style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${area.gradient} text-white font-bold text-sm shadow-sm`}>
+                                <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${area.gradient} text-white font-bold text-sm shadow-sm`}>
                                     {member.name.charAt(0)}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -374,7 +377,7 @@ export function CommunityAreaView({ area, onShowExplorer }: CommunityAreaViewPro
                             ].map(s => (
                                 <div key={s.labelKey} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                                        <s.Icon className="size-3.5" style={{ color: s.color }} />
                                         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                                             {t[s.labelKey as keyof CommunityDictionary] as string ?? s.labelKey}
                                         </span>

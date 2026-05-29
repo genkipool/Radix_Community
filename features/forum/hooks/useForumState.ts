@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ForumPost, ForumReply, ForumClientProps } from '../types';
+import { ForumPost, ForumReply } from '../types/data.types';
+import { ForumClientProps } from '../types/components.types';
 import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
 
 const formatForumContent = (text: string) => {
@@ -81,8 +82,8 @@ export function useForumState({ t, initialPosts, initialUsers }: ForumClientProp
     const allPosts = [...localizedPosts, ...customPosts];
 
     const filteredPosts = allPosts
-        .filter(p => activeTag === 'General' || p.tags.includes(activeTag))
         .filter(p => {
+            if (!(activeTag === 'General' || p.tags.includes(activeTag))) return false;
             if (!searchQuery.trim()) return true;
             const q = searchQuery.toLowerCase();
             return (p.title?.toLowerCase().includes(q) ?? false) ||

@@ -116,7 +116,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     onClick={e => e.stopPropagation()}
                                 >
                                     <span className="truncate sm:whitespace-normal">{formatDisplayUrl(validator.website)}</span>
-                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                    <ExternalLink className="size-3.5 shrink-0" />
                                 </a>
                             )}
 
@@ -146,6 +146,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                     </div>
                                     <StakingPopup validator={validator} t={t}>
                                         <button
+                                            type="button"
                                             className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
                                             style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
                                         >

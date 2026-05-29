@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { 
-    Star, BookOpen, Activity, ShieldCheck, Eye, Zap, Medal, Award, Diamond, Crown, Trophy 
+import {
+    Star, BookOpen, Activity, ShieldCheck, Eye, Zap, Medal, Award, Diamond, Crown, Trophy
 } from 'lucide-react';
-import { RankIconProps } from '../types';
+import { RankIconProps } from '../types/components.types';
 
 export const RankIcon = ({ name, color, className }: RankIconProps) => {
-    const c = className || "w-3 h-3";
+    const c = className || "size-3";
     switch (name) {
         case 'Novato': return <Star className={c} style={{ color }} />;
         case 'Profesional': return <BookOpen className={c} style={{ color }} />;

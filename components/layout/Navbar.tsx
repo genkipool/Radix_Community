@@ -33,30 +33,37 @@ interface PopupItem {
   isHashLink?: boolean;
 }
 
+// ─── ThemeIcon component ──────────────────────────────────────────────────
+function ThemeIcon({ theme, isLightTheme }: { theme: Theme; isLightTheme: boolean }) {
+    if (theme === 'oro-light' || theme === 'oro-dark') return <GoldPlatinumIcon className="size-4" />;
+    if (theme === 'radix-original-light' || theme === 'radix-original-dark') return <RadixCircleIcon className="size-[18px]" />;
+    return isLightTheme ? <Sun className="size-4" /> : <Moon className="size-4" />;
+}
+
 // ─── Nav popup items per section ────────────────────────────────────────────
 const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ecosystem: [
-    { key: 'infrastructure', href: '/infrastructure', icon: <Server className="w-4 h-4" />, descKey: 'popup_eco_infra_desc' },
-    { key: 'dapps', href: '/dapps', icon: <Layers className="w-4 h-4" />, descKey: 'popup_eco_dapps_desc' },
-    { key: 'games', href: '/games', icon: <Gamepad2 className="w-4 h-4" />, descKey: 'popup_dev_games_desc' },
-    { key: 'dashboard', href: '/dashboard', icon: <BarChart2 className="w-4 h-4" />, descKey: 'popup_eco_dashboard_desc' },
-    { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="w-4 h-4" />, descKey: 'popup_eco_astro_desc' },
+    { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
+    { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
+    { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },
+    { key: 'dashboard', href: '/dashboard', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
+    { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="size-4" />, descKey: 'popup_eco_astro_desc' },
   ],
   developers: [
-    { key: 'doc', href: '/docs', icon: <BookOpen className="w-4 h-4" />, descKey: 'popup_dev_docs_desc' },
-    { key: 'academy', href: '/academy', icon: <GraduationCap className="w-4 h-4" />, descKey: 'popup_dev_academy_desc' },
+    { key: 'doc', href: '/docs', icon: <BookOpen className="size-4" />, descKey: 'popup_dev_docs_desc' },
+    { key: 'academy', href: '/academy', icon: <GraduationCap className="size-4" />, descKey: 'popup_dev_academy_desc' },
   ],
   wallet: [
-    { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="w-4 h-4" />, descKey: 'popup_wallet_ios_desc' },
-    { key: 'wallet_android', href: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android', icon: <Smartphone className="w-4 h-4" />, descKey: 'popup_wallet_android_desc' },
-    { key: 'wallet_chrome', href: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm', icon: <Globe className="w-4 h-4" />, descKey: 'popup_wallet_chrome_desc' },
-    { key: 'radquest', href: 'https://radquest.io/home/basic', icon: <Sparkles className="w-4 h-4" />, descKey: 'popup_wallet_radquest_desc' },
-    { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="w-4 h-4" />, descKey: 'popup_wallet_gumball_desc' },
+    { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_ios_desc' },
+    { key: 'wallet_android', href: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_android_desc' },
+    { key: 'wallet_chrome', href: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm', icon: <Globe className="size-4" />, descKey: 'popup_wallet_chrome_desc' },
+    { key: 'radquest', href: 'https://radquest.io/home/basic', icon: <Sparkles className="size-4" />, descKey: 'popup_wallet_radquest_desc' },
+    { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="size-4" />, descKey: 'popup_wallet_gumball_desc' },
   ],
   community: [
-    { key: 'blog', href: '/blog', icon: <FileText className="w-4 h-4" />, descKey: 'popup_com_blog_desc' },
-    { key: 'forum', href: '/forum', icon: <MessageSquare className="w-4 h-4" />, descKey: 'popup_com_forum_desc' },
-    { key: 'community_transparency', href: '/community', icon: <Eye className="w-4 h-4" />, descKey: 'popup_com_transparency_desc' },
+    { key: 'blog', href: '/blog', icon: <FileText className="size-4" />, descKey: 'popup_com_blog_desc' },
+    { key: 'forum', href: '/forum', icon: <MessageSquare className="size-4" />, descKey: 'popup_com_forum_desc' },
+    { key: 'community_transparency', href: '/community', icon: <Eye className="size-4" />, descKey: 'popup_com_transparency_desc' },
   ],
 };
 
@@ -165,6 +172,7 @@ function ThemeCard({
   return (
     <div className={opt.key}>
       <button
+        type="button"
         onClick={onClick}
         className={[
           'relative flex flex-col gap-2.5 p-3 rounded-xl text-left transition-[transform,box-shadow] duration-150 cursor-pointer overflow-hidden w-full',
@@ -181,7 +189,7 @@ function ThemeCard({
         >
           <div className="absolute top-2 left-2 flex gap-1">
             {opt.preview.map((c, i) => (
-              <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c }} />
+              <div key={i} className="size-2.5 rounded-full" style={{ backgroundColor: c }} />
             ))}
           </div>
           <div className="absolute bottom-1.5 left-2 right-2 h-1.5 rounded-full opacity-40" style={{ backgroundColor: opt.preview[0] }} />
@@ -190,13 +198,13 @@ function ThemeCard({
         {/* Label row */}
         <div className="flex items-center gap-1.5">
           {opt.key === 'oro-light' || opt.key === 'oro-dark' ? (
-            <GoldPlatinumIcon className="w-3 h-3 flex-shrink-0" />
+            <GoldPlatinumIcon className="size-3 flex-shrink-0" />
           ) : opt.key === 'radix-original-light' || opt.key === 'radix-original-dark' ? (
-            <RadixCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />
+            <RadixCircleIcon className="size-3.5 flex-shrink-0" />
           ) : opt.isDark ? (
-            <Moon className="w-3 h-3 flex-shrink-0" style={{ color: opt.colors.icon }} />
+            <Moon className="size-3 flex-shrink-0" style={{ color: opt.colors.icon }} />
           ) : (
-            <Sun className="w-3 h-3 flex-shrink-0" style={{ color: opt.colors.icon }} />
+            <Sun className="size-3 flex-shrink-0" style={{ color: opt.colors.icon }} />
           )}
           <span className="text-[10px] font-bold leading-tight" style={{ color: opt.colors.text }}>
             {nav[opt.labelKey]}
@@ -237,7 +245,7 @@ function NavLinkList({
 
         const inner = (
           <div className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--color-surface)] transition-colors group/item cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center flex-shrink-0 mt-0.5 text-[var(--color-accent)] group-hover/item:bg-[var(--color-accent)] group-hover/item:text-white group-hover/item:border-transparent transition-colors duration-150">
+            <div className="size-8 rounded-lg bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center flex-shrink-0 mt-0.5 text-[var(--color-accent)] group-hover/item:bg-[var(--color-accent)] group-hover/item:text-white group-hover/item:border-transparent transition-colors duration-150">
               {item.icon}
             </div>
             <div className="min-w-0">
@@ -332,6 +340,7 @@ function LanguagePopupContent({
         const isActive = currentLang === code;
         return (
           <button
+            type="button"
             key={code}
             onClick={() => onSwitch(code)}
             className={[
@@ -343,7 +352,7 @@ function LanguagePopupContent({
           >
             <span className="text-lg leading-none">{flag}</span>
             <span className="flex-1 text-left">{label}</span>
-            {isActive && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+            {isActive && <Check className="size-3.5 flex-shrink-0" />}
           </button>
         );
       })}
@@ -351,15 +360,15 @@ function LanguagePopupContent({
   );
 }
 
-function WalletPopupContent({ 
-  connect, 
+function WalletPopupContent({
+  connect,
   t,
   sessions,
   switchNetwork,
   isLoading,
   disconnect
-}: { 
-  connect: (networkId: RadixNetworkId) => void, 
+}: {
+  connect: (networkId: RadixNetworkId) => void,
   t: Dictionary,
   sessions: Record<'mainnet' | 'stokenet', unknown>,
   switchNetwork: (network: 'mainnet' | 'stokenet') => void,
@@ -381,24 +390,27 @@ function WalletPopupContent({
       </p>
       <div className="grid grid-cols-2 gap-2">
         <button
+          type="button"
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
           className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
           disabled={isLoading}
         >
-          <Globe className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
+          <Globe className="size-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
           <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_mainnet ?? 'Mainnet'}</span>
         </button>
         <button
+          type="button"
           onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
           className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
           disabled={isLoading}
         >
-          <Server className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
+          <Server className="size-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
           <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_stokenet ?? 'Stokenet'}</span>
         </button>
       </div>
       {isLoading && (
         <button
+          type="button"
           onClick={() => disconnect()}
           className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center"
         >
@@ -422,10 +434,10 @@ interface ConnectedWalletPopupContentProps {
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
 }
 
-function ConnectedWalletPopupContent({ 
-  t, 
-  activeNetwork, 
-  personaName, 
+function ConnectedWalletPopupContent({
+  t,
+  activeNetwork,
+  personaName,
   onOpenProfileModal,
   onOpenUnderConstruction,
   networkId,
@@ -446,6 +458,7 @@ function ConnectedWalletPopupContent({
       {/* Network Tabs Header */}
       <div className="flex items-center justify-around mb-4 border-b border-[var(--color-card-border)]/50">
         <button
+          type="button"
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
@@ -453,6 +466,7 @@ function ConnectedWalletPopupContent({
           {activeNetwork === 'mainnet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
         </button>
         <button
+          type="button"
           onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
@@ -460,6 +474,7 @@ function ConnectedWalletPopupContent({
           {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
         </button>
         <button
+          type="button"
           onClick={onOpenProfileModal}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
         >
@@ -468,14 +483,15 @@ function ConnectedWalletPopupContent({
       </div>
 
       {/* Row 1: Photo and Name (Clickable) */}
-      <button 
+      <button
+        type="button"
         onClick={() => onOpenUnderConstruction?.()}
         className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--color-surface)] transition-colors text-left mb-4 group border border-transparent hover:border-[var(--color-card-border)]"
       >
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-0.5 shrink-0">
-            <div className="w-full h-full bg-[var(--color-surface)] rounded-full flex items-center justify-center overflow-hidden">
-                <User className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
-            </div>
+        <div className="size-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-0.5 shrink-0">
+          <div className="w-full h-full bg-[var(--color-surface)] rounded-full flex items-center justify-center overflow-hidden">
+            <User className="size-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-[var(--color-text-main)] truncate group-hover:text-[var(--color-primary)] transition-colors">
@@ -490,17 +506,19 @@ function ConnectedWalletPopupContent({
       {/* Row 2: Actions */}
       <div className="grid grid-cols-2 gap-2">
         <button
+          type="button"
           onClick={() => networkId && connect(networkId)}
-          className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
+          className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
         >
-          <RefreshCcw className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+          <RefreshCcw className="size-3.5 text-[var(--color-text-muted)]" />
           <span className="truncate">{((t.nav || {}) as Record<string, string>).update_wallet ?? 'Actualizar'}</span>
         </button>
         <button
+          type="button"
           onClick={() => disconnect()}
-          className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
+          className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="size-3.5" />
           <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
         </button>
       </div>
@@ -523,7 +541,7 @@ function _MobileSubLink({
     : item.href;
 
   const inner = (
-    <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l-2 border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
+    <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
       <span className="opacity-60">{item.icon}</span>
       {item.key}
     </div>
@@ -549,18 +567,102 @@ function _MobileSubLink({
   return <Link href={subHref} onClick={onClose}>{inner}</Link>;
 }
 
+// ─── UI State Reducer ──────────────────────────────────────────────
+type UiState = {
+  isOpen: boolean;
+  isWalletProfileModalOpen: boolean;
+  isUnderConstructionModalOpen: boolean;
+  mobileSheet: 'theme' | 'lang' | null;
+  optimisticLang: string | null;
+};
+
+type UiAction =
+  | { type: 'TOGGLE_MENU' }
+  | { type: 'SET_MENU'; value: boolean }
+  | { type: 'SET_PROFILE_MODAL'; value: boolean }
+  | { type: 'SET_UNDER_CONSTRUCTION_MODAL'; value: boolean }
+  | { type: 'SET_MOBILE_SHEET'; value: 'theme' | 'lang' | null }
+  | { type: 'SET_OPTIMISTIC_LANG'; value: string | null };
+
+function uiReducer(state: UiState, action: UiAction): UiState {
+  switch (action.type) {
+    case 'TOGGLE_MENU': return { ...state, isOpen: !state.isOpen };
+    case 'SET_MENU': return { ...state, isOpen: action.value };
+    case 'SET_PROFILE_MODAL': return { ...state, isWalletProfileModalOpen: action.value };
+    case 'SET_UNDER_CONSTRUCTION_MODAL': return { ...state, isUnderConstructionModalOpen: action.value };
+    case 'SET_MOBILE_SHEET': return { ...state, mobileSheet: action.value };
+    case 'SET_OPTIMISTIC_LANG': return { ...state, optimisticLang: action.value };
+    default: return state;
+  }
+}
+
+const INITIAL_UI: UiState = {
+  isOpen: false,
+  isWalletProfileModalOpen: false,
+  isUnderConstructionModalOpen: false,
+  mobileSheet: null,
+  optimisticLang: null,
+};
+
+// ─── Mobile Menu ──────────────────────────────────────────────────
+function MobileMenu({
+  isOpen, language, pathname, t, onClose, onHashClick
+}: {
+  isOpen: boolean; language: string; pathname: string;
+  t: ReturnType<typeof useLanguage>['t']; onClose: () => void;
+  onHashClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
+}) {
+  if (!isOpen) return null;
+  const localizeNavHref = (path: string, isHashLink: boolean) =>
+    isHashLink ? `/${language}${path.slice(1)}` : path.startsWith('/') ? `/${language}${path === '/' ? '' : path}` : path;
+
+  return (
+    <div className="md:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg">
+      <div className="px-4 py-3 space-y-0.5">
+        {NAV_LINKS.map((link) => {
+          const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
+          const popupItems = NAV_POPUP_ITEMS[link.key];
+          const isHashLink = link.path.startsWith('/#');
+          const linkHref = localizeNavHref(link.path, isHashLink);
+          return (
+            <div key={link.key}>
+              <Link href={linkHref}
+                className="block px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-accent)] rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                onClick={(e) => { if (isHashLink) onHashClick(e, linkHref); else if (!popupItems) onClose(); }}
+              >{label}</Link>
+              {popupItems && (
+                <div className="pl-4 mt-0.5 space-y-0.5 mb-1.5">
+                  {popupItems.map((sub) => {
+                    const subLabel = (t.nav as Record<string, string>)[sub.key] ?? sub.key;
+                    const subHref = sub.href.startsWith('/') ? `/${language}${sub.href === '/' ? '' : sub.href}` : sub.href;
+                    return (
+                      <Link key={sub.key} href={subHref} onClick={() => onClose()}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer"
+                      >
+                        <span className="opacity-60">{sub.icon}</span>
+                        {subLabel}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Navbar() {
   const { theaterMode } = useLayout();
   const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isWalletProfileModalOpen, setIsWalletProfileModalOpen] = useState(false);
-  const [isUnderConstructionModalOpen, setIsUnderConstructionModalOpen] = useState(false);
-  const [mobileSheet, setMobileSheet] = useState<'theme' | 'lang' | null>(null);
+  const [ui, dispatch] = useReducer(uiReducer, INITIAL_UI);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { theme, setTheme } = useTheme();
   const { language, t } = useLanguage();
   const pathname = usePathname();
-  const router = useRouter();
+  const { prefetch, push, replace } = useRouter();
   // NOTE: useSearchParams() has been intentionally removed from this component.
   // It caused the entire Navbar to suspend on every hard-reload (especially
   // noticeable on the explorer view where the URL has search params like
@@ -569,14 +671,15 @@ export default function Navbar() {
   // directly inside effects and event handlers, which are client-only and
   // therefore never run during SSR — no Suspense needed.
   const { prefetch: prefetchDashboard } = usePrefetchDashboard();
-  const [optimisticLang, setOptimisticLang] = useState<string | null>(null);
   const [, startLangTransition] = useTransition();
 
-    const [prevLanguage, setPrevLanguage] = useState(language);
-  if (language !== prevLanguage) {
-    setPrevLanguage(language);
-    setOptimisticLang(null);
-  }
+  const prevLanguageRef = useRef(language);
+  useEffect(() => {
+    if (language !== prevLanguageRef.current) {
+      prevLanguageRef.current = language;
+      dispatch({ type: 'SET_OPTIMISTIC_LANG', value: null });
+    }
+  }, [language]);
 
   // Prefetch the alternate language path so language switches feel instant.
   // Uses window.location.search instead of useSearchParams() to avoid Suspense.
@@ -586,8 +689,8 @@ export default function Navbar() {
     const altPath = (pathname.startsWith(`/${language}/`) || pathname === `/${language}`)
       ? pathname.replace(`/${language}`, `/${altLang}`) + search
       : `/${altLang}${search}`;
-    router.prefetch(altPath);
-  }, [language, pathname, router]);
+    prefetch(altPath);
+  }, [language, pathname, prefetch]);
 
   const handleHashClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
@@ -603,16 +706,16 @@ export default function Navbar() {
         history.replaceState(null, '', `/${language}${hash}`);
       }
     } else {
-      router.push(`/${language}${hash}`);
+      push(`/${language}${hash}`);
     }
     setIsOpen(false);
   };
 
   const switchToLanguage = (targetLang: string) => {
     if (targetLang === language) return;
-    setOptimisticLang(targetLang);
+    (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(targetLang);
     setCookie('lang', targetLang);
-    const timeout = setTimeout(() => { setOptimisticLang(null); }, 5000);
+    const timeout = setTimeout(() => { (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(null); }, 5000);
     // Read current search string directly — this handler only runs on user
     // interaction (client-side), so window is always available here.
     const search = window.location.search;
@@ -620,8 +723,8 @@ export default function Navbar() {
       const nextPath = (pathname.startsWith(`/${language}/`) || pathname === `/${language}`)
         ? pathname.replace(`/${language}`, `/${targetLang}`) + search
         : `/${targetLang}${search}`;
-      startLangTransition(() => { router.replace(nextPath, { scroll: false }); });
-    } catch { clearTimeout(timeout); setOptimisticLang(null); }
+      startLangTransition(() => { replace(nextPath, { scroll: false }); });
+    } catch { clearTimeout(timeout); (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(null); }
   };
 
   const cycleTheme = () => {
@@ -645,15 +748,9 @@ export default function Navbar() {
 
   // Collect internal hrefs from a popup group for prefetching
   const getPopupPrefetchHrefs = (items: PopupItem[], lang: string) =>
-    items
-      .filter((item) => !item.href.startsWith('http') && item.href !== '#')
-      .map((item) => `/${lang}${item.href}`);
-
-  const renderThemeIcon = () => {
-    if (theme === 'oro-light' || theme === 'oro-dark') return <GoldPlatinumIcon className="w-4 h-4" />;
-    if (theme === 'radix-original-light' || theme === 'radix-original-dark') return <RadixCircleIcon className="w-[18px] h-[18px]" />;
-    return isLightTheme ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />;
-  };
+    items.flatMap((item) =>
+      item.href.startsWith('http') || item.href === '#' ? [] : [`/${lang}${item.href}`]
+    );
 
   const handleLogoClick = (e: React.MouseEvent) => {
     // Check if we are already on the home page (with or without locale prefix)
@@ -726,8 +823,8 @@ export default function Navbar() {
 
               {/* Language: click = toggle, hover = popup */}
               <NavPopup align="right" width="w-44" keepOpenOnTriggerClick offsetClass="absolute top-[calc(100%+4px)]" trigger={
-                <button onClick={toggleLanguage} className={iconBtnClass} aria-label="Select language">
-                  <Globe className="w-4 h-4" />
+                <button type="button" onClick={toggleLanguage} className={iconBtnClass} aria-label="Select language">
+                  <Globe className="size-4" />
                   {currentLangDisplay.toUpperCase()}
                 </button>
               }>
@@ -736,8 +833,8 @@ export default function Navbar() {
 
               {/* Theme: click = cycle, hover = popup */}
               <NavPopup align="right" width="w-[440px]" offsetClass="absolute top-[calc(100%+4px)]" trigger={
-                <button onClick={cycleTheme} className={iconBtnClass} aria-label="Select theme" suppressHydrationWarning>
-                  {renderThemeIcon()}
+                <button type="button" onClick={cycleTheme} className={iconBtnClass} aria-label="Select theme" suppressHydrationWarning>
+                  <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
                 </button>
               }>
                 <ThemePopupContent currentTheme={theme} onSelect={setTheme} t={t} />
@@ -752,18 +849,19 @@ export default function Navbar() {
                     offsetClass="absolute top-full"
                     trigger={
                       <button
-                        onClick={() => setIsWalletProfileModalOpen(true)}
+                        type="button"
+                        onClick={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true)}
                         aria-label="Wallet Settings"
                         className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
                       >
                         <RadixLogo
                           label={
-                            isLoading 
+                            isLoading
                               ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
-                              : persona 
-                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
-                                : accounts.length > 0 
-                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                              : persona
+                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label)
+                                : accounts.length > 0
+                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}`
                                   : (t.nav?.connectWallet as string)
                           }
                           showBeta={false}
@@ -783,57 +881,58 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                      <ConnectedWalletPopupContent 
-                        disconnect={disconnect} 
-                        connect={connect}
-                        networkId={networkId}
-                        personaName={persona?.label} 
-                        t={t}
-                        onOpenProfileModal={() => setIsWalletProfileModalOpen(true)}
-                        onOpenUnderConstruction={() => setIsUnderConstructionModalOpen(true)}
-                        sessions={sessions}
-                        activeNetwork={activeNetwork}
-                        switchNetwork={switchNetwork}
-                      />
-                    </NavPopup>
+                    <ConnectedWalletPopupContent
+                      disconnect={disconnect}
+                      connect={connect}
+                      networkId={networkId}
+                      personaName={persona?.label}
+                      t={t}
+                      onOpenProfileModal={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true)}
+                      onOpenUnderConstruction={() => (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(true)}
+                      sessions={sessions}
+                      activeNetwork={activeNetwork}
+                      switchNetwork={switchNetwork}
+                    />
+                  </NavPopup>
                 ) : (
-                    <NavPopup
-                      align="right"
-                      width="w-auto"
-                      offsetClass="absolute top-full"
-                      trigger={
-                        <button
-                          onClick={() => {
-                            if (sessions['mainnet']) {
-                              switchNetwork('mainnet');
-                            } else {
-                              connect(RadixNetworkId.Mainnet);
-                            }
-                          }}
-                          aria-label={t.nav.connectWallet as string}
-                          className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
-                        >
-                          <RadixLogo
-                            label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
-                            showBeta={false}
-                            width="160"
-                            height="32"
-                            viewBox="0 0 210 40"
-                            fontSize={18}
-                            textX={122}
-                            textAnchor="middle"
-                            logoScale={0.12}
-                            logoTranslateY={8}
-                            logoTranslateX={5}
-                            strokeColor="white"
-                            textColor="white"
-                            className={isLoading ? "animate-pulse" : ""}
-                          />
-                        </button>
-                      }
-                    >
-                      <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
-                    </NavPopup>
+                  <NavPopup
+                    align="right"
+                    width="w-auto"
+                    offsetClass="absolute top-full"
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (sessions['mainnet']) {
+                            switchNetwork('mainnet');
+                          } else {
+                            connect(RadixNetworkId.Mainnet);
+                          }
+                        }}
+                        aria-label={t.nav.connectWallet as string}
+                        className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
+                      >
+                        <RadixLogo
+                          label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
+                          showBeta={false}
+                          width="160"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={122}
+                          textAnchor="middle"
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={5}
+                          strokeColor="white"
+                          textColor="white"
+                          className={isLoading ? "animate-pulse" : ""}
+                        />
+                      </button>
+                    }
+                  >
+                    <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                  </NavPopup>
                 )}
               </div>
             </div>
@@ -841,36 +940,38 @@ export default function Navbar() {
             {/* Mobile controls */}
             <div className="md:hidden flex items-center gap-1">
               <button
+                type="button"
                 onClick={toggleLanguage}
                 onTouchStart={(e) => {
                   longPressRef.current = setTimeout(() => {
                     e.preventDefault();
-                    setMobileSheet('lang');
+                    (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })('lang');
                   }, 450);
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 className={`${iconBtnClass} px-2`} aria-label="Toggle language"
               >
-                <Globe className="w-4 h-4" />
+                <Globe className="size-4" />
                 {currentLangDisplay.toUpperCase()}
               </button>
               <button
+                type="button"
                 onClick={cycleTheme}
                 onTouchStart={(e) => {
                   longPressRef.current = setTimeout(() => {
                     e.preventDefault();
-                    setMobileSheet('theme');
+                    (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })('theme');
                   }, 450);
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 className={`${iconBtnClass} px-2`} aria-label="Toggle theme" suppressHydrationWarning
               >
-                {renderThemeIcon()}
+                <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
               </button>
-              <button onClick={() => setIsOpen(!isOpen)} className="text-[var(--color-text-main)] p-1 ml-1" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
-                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <button type="button" onClick={() => setIsOpen(!isOpen)} className="text-[var(--color-text-main)] p-1 ml-1" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
+                {isOpen ? <X className="size-6" /> : <Menu className="size-6" />}
               </button>
             </div>
           </div>
@@ -907,7 +1008,7 @@ export default function Navbar() {
                             : sub.href;
 
                           const inner = (
-                            <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l-2 border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
+                            <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
                               <span className="opacity-60">{sub.icon}</span>
                               {subLabel}
                             </div>
@@ -945,21 +1046,22 @@ export default function Navbar() {
                     width="w-[280px]"
                     trigger={
                       <button
+                        type="button"
                         onClick={() => {
                           setIsOpen(false);
-                          setIsWalletProfileModalOpen(true);
+                          (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true);
                         }}
                         aria-label="Wallet Settings"
                         className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
                       >
                         <RadixLogo
                           label={
-                            isLoading 
+                            isLoading
                               ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
-                              : persona 
-                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label) 
-                                : accounts.length > 0 
-                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}` 
+                              : persona
+                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label)
+                                : accounts.length > 0
+                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}`
                                   : (t.nav?.connectWallet as string)
                           }
                           showBeta={false}
@@ -979,19 +1081,19 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <ConnectedWalletPopupContent 
-                      disconnect={() => { disconnect(); setIsOpen(false); }} 
+                    <ConnectedWalletPopupContent
+                      disconnect={() => { disconnect(); setIsOpen(false); }}
                       connect={(netId) => { connect(netId); setIsOpen(false); }}
                       networkId={networkId}
-                      personaName={persona?.label} 
+                      personaName={persona?.label}
                       t={t}
                       onOpenProfileModal={() => {
                         setIsOpen(false);
-                        setIsWalletProfileModalOpen(true);
+                        (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true);
                       }}
                       onOpenUnderConstruction={() => {
                         setIsOpen(false);
-                        setIsUnderConstructionModalOpen(true);
+                        (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(true);
                       }}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
@@ -1004,6 +1106,7 @@ export default function Navbar() {
                     width="w-[280px]"
                     trigger={
                       <button
+                        type="button"
                         onClick={() => {
                           if (sessions['mainnet']) {
                             switchNetwork('mainnet');
@@ -1034,9 +1137,9 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletPopupContent 
-                      connect={(netId) => { connect(netId); setIsOpen(false); }} 
-                      t={t} 
+                    <WalletPopupContent
+                      connect={(netId) => { connect(netId); setIsOpen(false); }}
+                      t={t}
                       sessions={sessions}
                       switchNetwork={switchNetwork}
                       isLoading={isLoading}
@@ -1052,20 +1155,20 @@ export default function Navbar() {
 
       <WalletProfileModal
         isOpen={isWalletProfileModalOpen}
-        onClose={() => setIsWalletProfileModalOpen(false)}
+        onClose={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(false)}
         t={t}
         locale={language}
       />
 
       <UnderConstructionModal
         isOpen={isUnderConstructionModalOpen}
-        onClose={() => setIsUnderConstructionModalOpen(false)}
+        onClose={() => (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(false)}
         t={t}
       />
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (
-        <div className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden" onClick={() => setMobileSheet(null)}>
+        <div aria-label="Close" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden" onClick={() => (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             className="relative bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-3xl shadow-2xl mt-[20vh] mx-4 overflow-hidden"
@@ -1087,7 +1190,7 @@ export default function Navbar() {
                       key={opt.key}
                       opt={opt}
                       isActive={theme === opt.key}
-                      onClick={() => { setTheme(opt.key); setMobileSheet(null); }}
+                      onClick={() => { setTheme(opt.key); (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null); }}
                       nav={t.nav as Record<string, string>}
                     />
                   ))}
@@ -1104,8 +1207,9 @@ export default function Navbar() {
                   const isActive = currentLangDisplay === code;
                   return (
                     <button
+                      type="button"
                       key={code}
-                      onClick={() => { switchToLanguage(code); setMobileSheet(null); }}
+                      onClick={() => { switchToLanguage(code); (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null); }}
                       className={[
                         'w-full flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-colors mb-1',
                         isActive
@@ -1115,7 +1219,7 @@ export default function Navbar() {
                     >
                       <span className="text-2xl leading-none">{flag}</span>
                       <span className="flex-1 text-left text-base">{label}</span>
-                      {isActive && <Check className="w-4 h-4 flex-shrink-0" />}
+                      {isActive && <Check className="size-4 flex-shrink-0" />}
                     </button>
                   );
                 })}

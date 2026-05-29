@@ -3,16 +3,16 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { AlertCircle, Link2 } from 'lucide-react';
-import { 
-    LinkDialogProps, 
-    DiscardDialogProps, 
-    ModalShellProps, 
-    BtnProps, 
-    FieldInputProps 
+import {
+    LinkDialogProps,
+    DiscardDialogProps,
+    ModalShellProps,
+    BtnProps,
+    FieldInputProps
 } from './types';
 
 /* ─── Shared modal shell ─── */
-export function ModalShell({ children, onBackdropClick }: ModalShellProps) {
+function ModalShell({ children, onBackdropClick }: ModalShellProps) {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             <div
@@ -37,7 +37,7 @@ export function ModalShell({ children, onBackdropClick }: ModalShellProps) {
 }
 
 /* ─── Label ─── */
-export function FieldLabel({ children }: { children: React.ReactNode }) {
+function FieldLabel({ children }: { children: React.ReactNode }) {
     return (
         <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
             {children}
@@ -46,7 +46,7 @@ export function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 /* ─── Input ─── */
-export function FieldInput(props: FieldInputProps) {
+function FieldInput(props: FieldInputProps) {
     return (
         <input
             {...props}
@@ -64,7 +64,7 @@ export function FieldInput(props: FieldInputProps) {
 }
 
 /* ─── Btn primary / secondary ─── */
-export function Btn({ variant = 'primary', children, ...rest }: BtnProps) {
+function Btn({ variant = 'primary', children, ...rest }: BtnProps) {
     const styles: Record<string, React.CSSProperties> = {
         primary: { background: 'var(--color-primary)', color: 'var(--color-bg)' },
         secondary: {
@@ -76,6 +76,7 @@ export function Btn({ variant = 'primary', children, ...rest }: BtnProps) {
     };
     return (
         <button
+            type="button"
             {...rest}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85"
             style={styles[variant]}
@@ -98,10 +99,10 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
         <ModalShell onBackdropClick={onClose}>
             <div className="flex items-center gap-3 mb-5">
                 <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    className="size-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', color: 'var(--color-primary)' }}
                 >
-                    <Link2 className="w-4 h-4" />
+                    <Link2 className="size-4" />
                 </div>
                 <h3 className="font-bold text-base" style={{ color: 'var(--color-text-main)' }}>
                     {t?.insert_link ?? 'Insert link'}
@@ -116,7 +117,6 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
                         placeholder="https://..."
                         value={url}
                         onChange={e => setUrl(e.target.value)}
-                        autoFocus
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
                     />
                 </div>
@@ -143,11 +143,12 @@ export function LinkDialog({ onInsert, onClose, t }: LinkDialogProps) {
 /* =============================================═════════ */
 /*  DiscardDialog                                         */
 /* =============================================═════════ */
-export function DiscardDialog({ onConfirm, onClose, t }: DiscardDialogProps) {
+
+function _DiscardDialog({ onConfirm, onClose, t }: DiscardDialogProps) {
     return (
         <ModalShell onBackdropClick={onClose}>
             <div className="flex items-center gap-3 mb-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                <AlertCircle className="size-5 text-amber-400 shrink-0" />
                 <h3 className="font-bold text-base" style={{ color: 'var(--color-text-main)' }}>
                     {t?.confirm_discard ?? 'Discard changes?'}
                 </h3>

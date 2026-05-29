@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useState, type ReactNode } from 'react';
 import type {
   RadixWalletContextValue,
   NetworkSessions,
@@ -76,12 +76,7 @@ export function RadixWalletProvider({
   const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // ── Initialize RDT for networks that have active sessions ──
-  const hasInitialized = React.useRef(false);
-
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
+  React.useEffect(() => {
     // For each network with a session, ensure the toolkit is initialized
     // so walletData$ can pick up reconnections from the extension
     for (const net of ['mainnet', 'stokenet'] as const) {
@@ -89,7 +84,7 @@ export function RadixWalletProvider({
         getOrCreateToolkit(networkIdFromName(net));
       }
     }
-  }, [sessions]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 
@@ -118,7 +113,7 @@ export function RadixWalletProvider({
 
       // Provide challenge generator
       rdt.walletApi.provideChallengeGenerator(async () => {
-        const response = await fetch('/api/auth/radix/challenge');
+        const response = await fetch('/api/auth/radix/challenge', { method: 'POST' });
         const data = await response.json();
         return data.challenge;
       });
@@ -159,7 +154,10 @@ export function RadixWalletProvider({
 
           if (!verifyResponse.ok) {
             const errBody = await verifyResponse.json().catch(() => ({}));
-            throw new Error((errBody as Record<string, string>).error || 'Verification failed');
+            if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+            setIsLoading(false);
+            setError((errBody as Record<string, string>).error || 'Verification failed');
+            return;
           }
 
           // Update local state with verified session

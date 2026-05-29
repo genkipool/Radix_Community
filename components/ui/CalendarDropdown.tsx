@@ -31,6 +31,8 @@ interface CalendarDropdownProps {
 
 // Helpers
 
+const _monthFmt = new Intl.DateTimeFormat(undefined, { month: 'long' });
+
 function toDateStr(year: number, month: number, day: number): string {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
@@ -64,18 +66,10 @@ export function CalendarDropdown({
         return new Date();
     });
 
-    const [prevOpen, setPrevOpen] = useState(open);
-    if (open !== prevOpen) {
-        setPrevOpen(open);
-        if (open && !dateRange.start) {
-            setViewDate(new Date());
-        }
-    }
-
     const currentMonth = viewDate.getMonth();
     const currentYear = viewDate.getFullYear();
 
-    const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(viewDate);
+    const monthName = _monthFmt.format(viewDate);
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     // Sunday=0 → shift so Monday=0 for a Mon-first grid
     const rawFirstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -143,6 +137,7 @@ export function CalendarDropdown({
                     {/* Month navigation */}
                     <div className="flex items-center justify-between mb-4 px-1">
                         <button
+                            type="button"
                             onClick={handlePrevMonth}
                             className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold"
                         >
@@ -152,6 +147,7 @@ export function CalendarDropdown({
                             {monthName} {currentYear}
                         </div>
                         <button
+                            type="button"
                             onClick={handleNextMonth}
                             className="text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors text-lg font-bold"
                         >
@@ -161,8 +157,8 @@ export function CalendarDropdown({
 
                     {/* Weekday headers (Mon-first) */}
                     <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-[var(--color-text-muted)] mb-3">
-                        {weekdaysMonFirst.map((d, i) => (
-                            <div key={i} className="py-1">{d}</div>
+                        {weekdaysMonFirst.map((d) => (
+                            <div key={d} className="py-1">{d}</div>
                         ))}
                     </div>
 
@@ -180,6 +176,7 @@ export function CalendarDropdown({
 
                             return (
                                 <button
+                                    type="button"
                                     key={day}
                                     onClick={() => handleDayClick(day)}
                                     className={[
@@ -201,6 +198,7 @@ export function CalendarDropdown({
                     {/* Reset */}
                     <div className="mt-4 pt-3 border-t border-[var(--color-card-border)]/30 flex justify-center">
                         <button
+                            type="button"
                             onClick={onReset}
                             className="text-red-500 hover:text-red-400 text-[13px] font-semibold transition-colors px-2"
                         >

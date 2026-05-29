@@ -13,14 +13,14 @@ import { SidebarControls } from '@/components/ui/SidebarControls';
 import { SidebarCard, type SidebarCardItem } from '@/components/ui/SidebarCard';
 
 const ICON_MAP: Record<string, ReactNode> = {
-    Zap: <Zap className="w-5 h-5" />,
-    Layers: <Layers className="w-5 h-5" />,
-    Brain: <Brain className="w-5 h-5" />,
-    Trophy: <Trophy className="w-5 h-5" />,
-    Car: <Car className="w-5 h-5" />,
-    Map: <Map className="w-5 h-5" />,
-    Sword: <Sword className="w-5 h-5" />,
-    Puzzle: <Puzzle className="w-5 h-5" />,
+    Zap: <Zap className="size-5" />,
+    Layers: <Layers className="size-5" />,
+    Brain: <Brain className="size-5" />,
+    Trophy: <Trophy className="size-5" />,
+    Car: <Car className="size-5" />,
+    Map: <Map className="size-5" />,
+    Sword: <Sword className="size-5" />,
+    Puzzle: <Puzzle className="size-5" />,
 };
 
 
@@ -43,15 +43,15 @@ export default function GamesSidebar({
     const filteredCategories = (() => {
         if (!searchQuery.trim()) return GAME_CATEGORIES;
         const q = searchQuery.toLowerCase();
-        return GAME_CATEGORIES.map(cat => {
+        return GAME_CATEGORIES.flatMap(cat => {
             const catLabel = (categoriesT[cat.labelKey] ?? cat.labelKey).toLowerCase();
             const matchingGames = cat.games.filter(g =>
                 (titles[g.titleKey] ?? g.titleKey).toLowerCase().includes(q)
             );
-            if (catLabel.includes(q)) return cat;
-            if (matchingGames.length > 0) return { ...cat, games: matchingGames };
-            return null;
-        }).filter(Boolean) as GameCategory[];
+            if (catLabel.includes(q)) return [cat];
+            if (matchingGames.length > 0) return [{ ...cat, games: matchingGames }];
+            return [];
+        }) as GameCategory[];
     })();
 
     // All games flat for grid view
@@ -108,41 +108,36 @@ export default function GamesSidebar({
             {gridView ? (
                 /* Grid view: all games as cards */
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, paddingTop: 4 }}>
-                    {allGames
-                        .filter(g => !searchQuery.trim() || (titles[g.titleKey] ?? g.titleKey).toLowerCase().includes(searchQuery.toLowerCase()))
-                        .map(game => {
-                            const label = titles[game.titleKey] ?? game.titleKey;
-                            const isSelected = game.id === selectedGameId;
-                            return (
-                                <button
+                    {allGames.flatMap(game => {
+                        if (searchQuery.trim() && !(titles[game.titleKey] ?? game.titleKey).toLowerCase().includes(searchQuery.toLowerCase())) {
+                            return [];
+                        }
+                        const label = titles[game.titleKey] ?? game.titleKey;
+                        const isSelected = game.id === selectedGameId;
+                        return [(
+                            <button
+                                    type="button"
                                     key={game.id}
                                     onClick={() => onSelectGame(game.id)}
-                                    style={{
-                                        background: isSelected ? 'var(--color-primary)' : 'var(--color-surface)',
-                                        border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-card-border)'}`,
-                                        borderRadius: 10,
-                                        padding: '10px 8px',
-                                        cursor: 'pointer',
-                                        textAlign: 'center',
-                                        transition: 'all 0.15s ease',
-                                    }}
+                                    className={`rounded-[10px] p-[10px_8px] cursor-pointer text-center transition-[background,border-color] duration-150 ${isSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'bg-[var(--color-surface)] border-[var(--color-card-border)]'}`}
+                                    style={{ borderWidth: 1 }}
                                     onMouseEnter={e => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-primary)'; } }}
                                     onMouseLeave={e => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-card-border)'; } }}
                                 >
-                                    <div className={`w-8 h-8 mx-auto mb-1.5 rounded-lg bg-gradient-to-br ${game.thumbnailGradient} flex items-center justify-center`}>
-                                        <Zap className="w-4 h-4 text-white opacity-80" />
+                                    <div className={`size-8 mx-auto mb-1.5 rounded-lg bg-gradient-to-br ${game.thumbnailGradient} flex items-center justify-center`}>
+                                        <Zap className="size-4 text-white opacity-80" />
                                     </div>
-                                    <p style={{ fontSize: 11, fontWeight: 600, color: isSelected ? 'var(--color-bg)' : 'var(--color-text-main)', lineHeight: 1.2, margin: 0 }}>
+                                    <p className="text-xs font-semibold leading-tight m-0" style={{ color: isSelected ? 'var(--color-bg)' : 'var(--color-text-main)' }}>
                                         {label}
                                     </p>
                                     {game.featured && (
-                                        <span style={{ display: 'inline-block', marginTop: 3, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', borderRadius: 4, background: isSelected ? 'rgba(0,0,0,0.2)' : 'var(--color-primary)', color: isSelected ? 'white' : 'white', opacity: 0.85 }}>
+                                        <span className="inline-block mt-[3px] text-[10px] font-bold px-[5px] py-[1px] rounded-[4px] opacity-85" style={{ color: 'white', background: isSelected ? 'rgba(0,0,0,0.2)' : 'var(--color-primary)' }}>
                                             TOP
                                         </span>
                                     )}
                                 </button>
-                            );
-                        })}
+                        )];
+                    })}
                 </div>
             ) : (
                 /* Normal category list */
@@ -170,7 +165,7 @@ export default function GamesSidebar({
                             <SidebarCard
                                 key={cat.id}
                                 id={cat.id}
-                                icon={ICON_MAP[cat.iconName] ?? <Zap className="w-5 h-5" />}
+                                icon={ICON_MAP[cat.iconName] ?? <Zap className="size-5" />}
                                 gradient={cat.gradient}
                                 title={catLabel}
                                 searchQuery={searchQuery}

@@ -7,7 +7,8 @@ import { HighlightText } from '@/components/ui/HighlightText';
 import { Card } from '@/components/ui/Card';
 import { PostContent } from '../PostContent';
 import { LabelBadge } from '@/components/ui/LabelBadge';
-import { BlogPost, BlogDictionary } from '../types';
+import { BlogPost } from '../types/data.types';
+import { BlogDictionary } from '../types/i18n.types';
 import { getPostSpanStyle, getPostDisplayTag } from '../utils/blogUtils';
 
 interface BlogPostCardProps {
@@ -56,7 +57,7 @@ export function BlogPostCard({
         mouseDownPos.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handlePostExpand = (e: React.MouseEvent) => {
         // If there is an active text selection, ignore the click
         const selection = window.getSelection();
         if (selection && selection.toString().length > 0) {
@@ -81,7 +82,7 @@ export function BlogPostCard({
         <Card
             layoutId={readingMode ? `post-${post.id}` : undefined}
             onMouseDown={handleMouseDown}
-            onClick={handleClick}
+            onClick={handlePostExpand}
             className="overflow-hidden shadow-md hover:shadow-lg hover:border-[var(--color-primary)]/30 group cursor-pointer border-[var(--color-card-border)] h-full select-text"
             innerClassName="h-full flex flex-col"
             style={{ ...spanStyle, position: 'relative' as const, zIndex: isSelected ? 50 : isExpanded ? 40 : 1 }}
@@ -126,23 +127,24 @@ export function BlogPostCard({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-card-border)] mt-auto">
                     <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--color-text-muted)] font-medium">
                         <span className="flex items-center gap-1.5 shrink-0" title={blogT.calendar.title}>
-                            <Calendar className="w-3.5 h-3.5" />
+                            <Calendar className="size-3.5" />
                             {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' })}
                         </span>
                         <span className="flex items-center gap-1.5 shrink-0" title={blogT.author}>
-                            <User className="w-3.5 h-3.5" />
+                            <User className="size-3.5" />
                             {post.author}
                         </span>
                         <span className="flex items-center gap-1.5 shrink-0" title={blogT.views}>
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="size-3.5" />
                             {post.views.toLocaleString()}
                         </span>
                         <button
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); onToggleLike(post.id); }}
                             title={blogT.like}
                             className={`flex items-center gap-1.5 shrink-0 transition-colors ${likedPosts.has(post.id) ? 'text-red-400' : 'hover:text-red-400'}`}
                         >
-                            <Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-400' : ''}`} />
+                            <Heart className={`size-3.5 ${likedPosts.has(post.id) ? 'fill-red-400' : ''}`} />
                             {getLikes(post)}
                         </button>
                     </div>

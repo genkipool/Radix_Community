@@ -88,7 +88,7 @@ export function ForumPublishModal() {
             onSubmit={handleSubmit}
             title={isReply ? t.forum.modal.reply_title.replace('{{name}}', authorName) : t.forum.modal.new_post_title}
             subtitle={t.forum.modal.subtitle}
-            icon={<MessageSquarePlus className="w-6 h-6" />}
+            icon={<MessageSquarePlus className="size-6" />}
             isPublishing={false}
             canPublish={canPublish}
             publishLabel={isReply ? (t.forum.modal.send || 'Enviar') : t.forum.modal.publish}
@@ -96,8 +96,8 @@ export function ForumPublishModal() {
             footerExtra={
                 <div className="p-6 rounded-2xl bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-accent)]/5 border border-[var(--color-primary)]/20 shadow-inner">
                     <div className="flex items-start gap-5">
-                        <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-white/20 shadow-lg">
-                            <Wallet className="w-6 h-6" />
+                        <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center text-[var(--color-primary)] shrink-0 border border-white/20 shadow-lg">
+                            <Wallet className="size-6" />
                         </div>
                         <div className="flex-1 space-y-1.5">
                             <p className="text-sm font-black text-[var(--color-text-main)] uppercase tracking-wider">
@@ -151,8 +151,8 @@ export function ForumPublishModal() {
                 ) : (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
-                                <FileText className="w-4 h-4 text-[var(--color-primary)]" />
+                            <label htmlFor="forum-title" className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
+                                <FileText className="size-4 text-[var(--color-primary)]" />
                                 {t.forum.modal.title_label}
                             </label>
                             <span className={`text-[10px] font-bold ${title.length > 60 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
@@ -161,7 +161,7 @@ export function ForumPublishModal() {
                         </div>
                         <input
                             type="text"
-                            autoFocus
+                            id="forum-title"
                             maxLength={70}
                             value={title}
                             onChange={e => setTitle(e.target.value)}
@@ -174,7 +174,7 @@ export function ForumPublishModal() {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
-                            <MessageSquare className="w-4 h-4 text-[var(--color-primary)]" />
+                            <MessageSquare className="size-4 text-[var(--color-primary)]" />
                             {t.forum.modal.message_label}
                         </label>
                         <span className={`text-[10px] font-bold ${message.length > 1900 ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
@@ -197,7 +197,7 @@ export function ForumPublishModal() {
                 {!isReply && (
                     <div className="space-y-4">
                         <label className="text-xs font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-3">
-                            <Filter className="w-4 h-4 text-[var(--color-primary)]" />
+                            <Filter className="size-4 text-[var(--color-primary)]" />
                             {t.forum.modal.tag_label}
                         </label>
                         <div className="flex flex-row gap-2 overflow-x-auto custom-scrollbar pb-1">
@@ -231,7 +231,6 @@ export function ForumPublishModal() {
                                 {isEditingCustom ? (
                                     <div className="inline-flex items-center px-4 py-2 rounded-full border border-[var(--color-primary)] bg-[var(--color-bg-alt)] shadow-lg shadow-[var(--color-primary)]/10">
                                         <input
-                                            autoFocus
                                             className="bg-transparent border-none outline-none text-[9px] uppercase font-bold tracking-wider text-[var(--color-text-main)] w-[100px]"
                                             value={customTagValue}
                                             onChange={(e) => setCustomTagValue(e.target.value.slice(0, 16))}

@@ -14,7 +14,7 @@ import { FloatingNav } from '@/components/ui/FloatingNav';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 import { RadixIcon } from '@/components/shared/RadixIcon';
 
-import { TransactionDetailModalProps } from '../types';
+import { TransactionDetailModalProps } from '../types/components.types';
 
 export function TransactionDetailModal({
     tx, onClose, onPrev, onNext,
@@ -78,12 +78,12 @@ export function TransactionDetailModal({
                                 {/* Status Icon — Replicated from TransactionCard */}
                                 <div className="relative shrink-0 hidden sm:flex">
                                     <div className="absolute inset-0 opacity-20 blur-xl rounded-full" style={{ backgroundColor: statusColor }} />
-                                    <div className="relative z-10 w-16 h-16 rounded-2xl border-2 flex items-center justify-center bg-[var(--color-surface)] shadow-lg"
+                                    <div className="relative z-10 size-16 rounded-2xl border-2 flex items-center justify-center bg-[var(--color-surface)] shadow-lg"
                                         style={{ borderColor: statusColor, boxShadow: `0 0 20px ${statusColor}30` }}>
                                         {isSuccess ? (
-                                            <RadixIcon className="w-8 h-8" strokeColor={statusColor} />
+                                            <RadixIcon className="size-8" strokeColor={statusColor} />
                                         ) : (
-                                            <RadixIcon className="w-8 h-8" strokeColor={statusColor} />
+                                            <RadixIcon className="size-8" strokeColor={statusColor} />
                                         )}
                                     </div>
                                 </div>
@@ -92,6 +92,7 @@ export function TransactionDetailModal({
                                     {/* Intent hash + Close Button */}
                                     <div className="flex flex-row items-start justify-between gap-4 mb-2">
                                         <button
+                                            type="button"
                                             className="flex items-center gap-2 group text-left min-w-0"
                                             onClick={() => copyAddress(tx.intentHash)}
                                         >
@@ -99,7 +100,7 @@ export function TransactionDetailModal({
                                                 {tx.intentHash}
                                             </h2>
                                             <span className={`shrink-0 transition-colors ${copiedAddress === tx.intentHash ? 'text-green-500' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-main)]'}`}>
-                                                {copiedAddress === tx.intentHash ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                                {copiedAddress === tx.intentHash ? <Check className="size-4" /> : <Copy className="size-4" />}
                                             </span>
                                         </button>
 
@@ -185,7 +186,7 @@ export function TransactionDetailModal({
                         <div className="flex-1 overflow-y-auto touch-pan-y custom-scrollbar">
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--color-text-muted)]">
-                                    <Activity className="w-7 h-7 animate-spin text-[var(--color-primary)]" />
+                                    <Activity className="size-7 animate-spin text-[var(--color-primary)]" />
                                     <p className="text-xs uppercase tracking-wider font-bold">{tt?.loading_details || 'Loading transaction details...'}</p>
                                 </div>
                             ) : (

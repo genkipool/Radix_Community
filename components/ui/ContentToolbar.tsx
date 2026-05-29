@@ -91,17 +91,13 @@ export function ContentToolbar({
     // ── Alignment: open left or right depending on available space ───────────
     const [calendarAlign, setCalendarAlign] = React.useState<'left' | 'right'>('left');
 
-    useEffect(() => {
-        if (calendarOpen && buttonRef.current && mounted) {
-            const { left } = buttonRef.current.getBoundingClientRect();
-            // 280 px = calendar width; if not enough space to the right → open left
-            const alignment = left + 280 > window.innerWidth ? 'right' : 'left';
-            setCalendarAlign(alignment);
-        }
-    }, [calendarOpen, mounted]);
-
     const handleToggleCalendar = () => {
-        setCalendarOpen?.(!calendarOpen);
+        const next = !calendarOpen;
+        if (next && buttonRef.current) {
+            const { left } = buttonRef.current.getBoundingClientRect();
+            setCalendarAlign(left + 280 > window.innerWidth ? 'right' : 'left');
+        }
+        setCalendarOpen?.(next);
     };
 
     // ── Click-outside: if exactly start is set (no end), treat as single-day ─
@@ -129,22 +125,24 @@ export function ContentToolbar({
             {/* Sort newest button (with previously "menor stake" icon/position) */}
             {showSortButtons !== false && (
                 <button
+                    type="button"
                     onClick={() => setSortMode(sortMode === 'newest' ? 'random' : 'newest')}
                     title={toolbarT?.newest || 'Sort Newest'}
                     className={`${btnBase} ${sortMode === 'newest' ? btnActive : btnInactive}`}
                 >
-                    <SortAsc className="w-4 h-4" />
+                    <SortAsc className="size-4" />
                 </button>
             )}
 
             {/* Sort oldest button (with previously "mayor stake" icon/position) */}
             {showSortButtons !== false && (
                 <button
+                    type="button"
                     onClick={() => setSortMode(sortMode === 'oldest' ? 'random' : 'oldest')}
                     title={toolbarT?.oldest || 'Sort Oldest'}
                     className={`${btnBase} ${sortMode === 'oldest' ? btnActive : btnInactive}`}
                 >
-                    <SortDesc className="w-4 h-4" />
+                    <SortDesc className="size-4" />
                 </button>
             )}
 
@@ -152,16 +150,18 @@ export function ContentToolbar({
             {showCalendar && setCalendarOpen && calendarT && (
                 <div className="relative calendar-dropdown-container" ref={containerRef}>
                     <button
+                        type="button"
                         ref={buttonRef}
                         onClick={handleToggleCalendar}
                         title={calendarButtonTitle || toolbarT?.by_date || 'By Date'}
                         className={`${btnBase} ${calendarOpen || hasDateFilter ? btnActive : btnInactive}`}
                     >
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="size-4" />
                     </button>
 
                     {onSelectRange && (
                         <CalendarDropdown
+                            key={String(calendarOpen)}
                             open={!!calendarOpen}
                             align={calendarAlign}
                             calendarT={calendarT}
@@ -178,18 +178,20 @@ export function ContentToolbar({
 
             {/* Reading mode */}
             <button
+                type="button"
                 onClick={isReadingModeDisabled ? undefined : () => setReadingMode(!readingMode)}
                 title={toolbarT?.reading_mode || 'Reading Mode'}
                 disabled={isReadingModeDisabled}
                 className={`${btnBase} ${readingMode ? btnActive : btnInactive} ${isReadingModeDisabled ? (readingMode ? 'cursor-default' : 'cursor-default opacity-80') : ''}`}
             >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="size-4" />
             </button>
 
             {/* Expand / Collapse all */}
             <button
+                type="button"
                 onClick={isCollapseDisabled ? undefined : onToggleAll}
-                title={isCollapseDisabled 
+                title={isCollapseDisabled
                     ? (isReadingModeManual && readingMode ? toolbarT?.disabled_reading_mode : toolbarT?.disabled_grid_density)
                     : (expandedCount > 0 ? (toolbarT?.collapse_all || 'Collapse All') : (toolbarT?.expand_all || 'Expand All'))
                 }
@@ -197,8 +199,8 @@ export function ContentToolbar({
                 className={`${btnBase} ${expandedCount === filteredCount && filteredCount > 0 ? btnActive : btnInactive} ${isCollapseDisabled ? 'opacity-30 cursor-default border-dashed' : ''}`}
             >
                 {expandedCount > 0
-                    ? <FoldVertical className="w-4 h-4" />
-                    : <UnfoldVertical className="w-4 h-4" />}
+                    ? <FoldVertical className="size-4" />
+                    : <UnfoldVertical className="size-4" />}
             </button>
 
             <AutoCollapseToggle

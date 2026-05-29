@@ -48,20 +48,20 @@ export function SummaryInlineRow({
             <dd className="text-right min-w-0">
                 <div className="flex items-center justify-end gap-1.5">
                     {children ?? (
-                        <span className={`text-xs font-medium truncate ${mono ? 'font-mono' : ''} ${
-                            isDanger ? 'text-red-600 dark:text-red-400 font-bold' : 
+                        <span className={`text-xs font-medium truncate ${mono ? 'font-mono' : ''} ${isDanger ? 'text-red-600 dark:text-red-400 font-bold' :
                             isSuccess ? 'text-green-600 dark:text-green-400 font-bold' :
-                            accentValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'
-                        }`}>
+                                accentValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'
+                            }`}>
                             {value}
                         </span>
                     )}
                     {copyable && onCopy && (
                         <button
+                            type="button"
                             onClick={e => { e.stopPropagation(); onCopy(); }}
                             className={`p-0.5 rounded transition-colors shrink-0 ${isCopied ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
-                            {isCopied ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                            {isCopied ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                         </button>
                     )}
                 </div>
@@ -80,7 +80,7 @@ export function SummaryInlineRow({
    Thin divider row with a label, used to
    group roles inside the configuration tab.
 ───────────────────────────────────────── */
-export function PanelSectionHeader({ label }: { label: string }) {
+function PanelSectionHeader({ label }: { label: string }) {
     return (
         <div className="flex items-center gap-2 pt-3 pb-1">
             <span className="text-[9px] uppercase tracking-widest font-black text-[var(--color-text-muted)] opacity-60">
@@ -95,7 +95,7 @@ export function PanelSectionHeader({ label }: { label: string }) {
    PanelRoleRow
    Single role assignment display row.
 ───────────────────────────────────────── */
-export function PanelRoleRow({
+function PanelRoleRow({
     entry, tt, onCopy, copiedAddress,
 }: {
     entry: ConfigEntry;
@@ -104,9 +104,9 @@ export function PanelRoleRow({
     copiedAddress: string | null;
 }) {
     const resolutionColor = (r: string) =>
-        r === (tt?.role_resolution_deny_all || 'Deny All')    ? 'text-[var(--color-text-muted)]'
-        : r === (tt?.role_resolution_allow_all || 'Allow All') ? 'text-green-700 dark:text-green-400'
-        : 'text-[var(--color-primary)]';
+        r === (tt?.role_resolution_deny_all || 'Deny All') ? 'text-[var(--color-text-muted)]'
+            : r === (tt?.role_resolution_allow_all || 'Allow All') ? 'text-green-700 dark:text-green-400'
+                : 'text-[var(--color-primary)]';
 
     return (
         <div className="flex items-start justify-between gap-4 py-2.5">
@@ -131,12 +131,13 @@ export function PanelRoleRow({
                             {entry.ruleAddress}
                         </span>
                         <button
+                            type="button"
                             onClick={e => { e.stopPropagation(); onCopy(entry.ruleAddress!); }}
                             className={`p-0.5 rounded transition-colors ${copiedAddress === entry.ruleAddress ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
                             {copiedAddress === entry.ruleAddress
-                                ? <Check className="w-2.5 h-2.5" />
-                                : <Copy  className="w-2.5 h-2.5" />}
+                                ? <Check className="size-2.5" />
+                                : <Copy className="size-2.5" />}
                         </button>
                     </div>
                 )}
@@ -187,16 +188,15 @@ export function PanelTabBar<T extends string>({
                     onClick={e => { e.stopPropagation(); onTabChange(tab.key); }}
                     onMouseEnter={() => onTabHover?.(tab.key)}
                     title={tab.tooltip}
-                    className={`px-4 py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${
-                        activeTab === tab.key
-                            ? 'text-[var(--color-primary)]'
-                            : 'text-[var(--color-text-muted)]'
-                    }`}
+                    className={`px-4 py-2.5 text-[10px] font-bold transition-all relative whitespace-nowrap tracking-wide ${activeTab === tab.key
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-[var(--color-text-muted)]'
+                        }`}
                 >
                     <span className="relative z-10 transition-colors group-hover:text-[var(--color-text-main)]">
                         {tab.label}
                     </span>
-                    
+
                     {/* Hover Background */}
                     <motion.div
                         className="absolute inset-x-1 inset-y-1.5 rounded-lg bg-white/5 -z-0"
@@ -209,7 +209,7 @@ export function PanelTabBar<T extends string>({
                     />
 
                     {activeTab === tab.key && (
-                        <motion.div 
+                        <motion.div
                             layoutId={layoutId}
                             className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)]"
                             initial={false}
@@ -228,7 +228,7 @@ export function PanelTabBar<T extends string>({
 export function PanelLoadingState({ tt }: { tt?: Partial<TranslationsT['dashboard']['transactions']> }) {
     return (
         <div className="flex items-center gap-2 py-3 text-[var(--color-text-muted)]">
-            <Activity className="w-3.5 h-3.5 animate-spin text-[var(--color-primary)]" />
+            <Activity className="size-3.5 animate-spin text-[var(--color-primary)]" />
             <span className="text-xs">{tt?.resource_panel_loading || 'Loading details...'}</span>
         </div>
     );
@@ -260,7 +260,7 @@ export function PanelMetadataTab({
             {metadataItems.map((meta: MetadataItem, idx: number) => {
                 const tagValues = parseTags(meta);
                 const isTags = meta.key === 'tags' || (meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray';
-                
+
                 const rawVal = isTags ? null : (
                     meta.value.typed?.values ??
                     meta.value.typed?.value ??
@@ -296,7 +296,7 @@ export function PanelMetadataTab({
                         </dt>
                         {isTags ? (
                             <dd className="flex flex-wrap gap-1.5">
-                                {tagValues.map((tag: string, ti: number) => <Pill key={ti}>{tag}</Pill>)}
+                                {tagValues.map((tag: string) => <Pill key={tag}>{tag}</Pill>)}
                             </dd>
                         ) : (
                             <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words space-y-1">
@@ -314,7 +314,7 @@ export function PanelMetadataTab({
                                     );
 
                                     return (
-                                        <div key={vi} className="flex items-center gap-1 group/meta-item">
+                                        <div key={`vitem-${vi}`} className="flex items-center gap-1 group/meta-item">
                                             {isUrl && typeof vItem === 'string' ? (
                                                 <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
                                             ) : (
@@ -323,10 +323,11 @@ export function PanelMetadataTab({
 
                                             {isAddress && onCopy && (
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => { e.stopPropagation(); onCopy(vItem); }}
                                                     className={`p-0.5 rounded transition-all opacity-0 group-hover/meta-item:opacity-100 ${copiedAddress === vItem ? 'text-[var(--color-accent)] opacity-100' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                                 >
-                                                    {copiedAddress === vItem ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                                    {copiedAddress === vItem ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                                 </button>
                                             )}
                                         </div>
@@ -361,11 +362,11 @@ export function PanelConfigurationTab({
             </p>
         );
     }
-    const adminEntries       = configEntries.filter(e => e.group === 'admin');
-    const mainRoleEntries    = configEntries.filter(e => e.group === 'main');
+    const adminEntries = configEntries.filter(e => e.group === 'admin');
+    const mainRoleEntries = configEntries.filter(e => e.group === 'main');
     const royaltyRoleEntries = configEntries.filter(e => e.group === 'royalty');
-    const roleEntries        = configEntries.filter(e => e.group === 'roles');
-    const metaRoleEntries    = configEntries.filter(e => e.group === 'metadata');
+    const roleEntries = configEntries.filter(e => e.group === 'roles');
+    const metaRoleEntries = configEntries.filter(e => e.group === 'metadata');
     const rowProps = { tt, onCopy, copiedAddress };
     return (
         <dl>
@@ -373,7 +374,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_admin || 'Role Administrator'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {adminEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                        {adminEntries.map((e, i) => <PanelRoleRow key={`admin-${i}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -381,7 +382,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_main || 'Main Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {mainRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                        {mainRoleEntries.map((e, i) => <PanelRoleRow key={`main-role-${i}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -389,7 +390,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_royalty || 'Royalty Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {royaltyRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                        {royaltyRoleEntries.map((e, i) => <PanelRoleRow key={`royalty-role-${i}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -397,7 +398,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_roles || 'Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {roleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                        {roleEntries.map((e, i) => <PanelRoleRow key={`role-${i}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -405,7 +406,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_metadata || 'Metadata Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {metaRoleEntries.map((e, i) => <PanelRoleRow key={i} entry={e} {...rowProps} />)}
+                        {metaRoleEntries.map((e, i) => <PanelRoleRow key={`meta-role-${i}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -432,14 +433,13 @@ export function PanelRawTab({
             <motion.button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onCopy(rawJson); }}
-                className={`absolute top-3 right-3 transition-colors flex items-center z-10 ${
-                    copiedAddress === rawJson
-                        ? 'text-green-500'
-                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
-                }`}
+                className={`absolute top-3 right-3 transition-colors flex items-center z-10 ${copiedAddress === rawJson
+                    ? 'text-green-500'
+                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'
+                    }`}
                 title={copiedAddress === rawJson ? tt?.copied_json || 'JSON Copied!' : tt?.copy_json || 'Copy JSON'}
             >
-                {copiedAddress === rawJson ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedAddress === rawJson ? <Check className="size-4" /> : <Copy className="size-4" />}
             </motion.button>
             <pre className="p-3 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-[10px] font-mono text-green-400/90 overflow-x-auto overflow-y-auto max-h-56 custom-scrollbar whitespace-pre-wrap break-all">
                 {rawJson}

@@ -1,8 +1,8 @@
 'use client';
 
-import { Book, Code, FileText, Server, Layers, Settings, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { SidebarGraphic } from '@/components/ui/SidebarGraphic';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { DOCS_MAP } from '../data/docsData';
 import type { Topic, DocItem } from '../types/data.types';
@@ -13,80 +13,9 @@ import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SidebarControls } from '@/components/ui/SidebarControls';
 import { SidebarCard, HighlightText, type SidebarCardItem } from '@/components/ui/SidebarCard';
+import { TOPICS } from '../data/docsTopics';
 
 export { HighlightText as Highlight } from '@/components/ui/SidebarCard';
-
-/* ── Module-level cache for expensive search index ── */
-// Search index cache — keyed by locale. Lives outside the component so
-// React Compiler does not flag the write as a side-effect in render.
-const _searchIndexCache: Record<string, unknown> = {};
-
-
-export const TOPICS: Topic[] = [
-    {
-        id: 'admin',
-        topicKey: 'admin',
-        icon: <Settings className="w-5 h-5" />,
-        gradient: 'from-slate-500 to-slate-400',
-        docs: [],
-    },
-    {
-        id: 'developers',
-        topicKey: 'developers',
-        icon: <Code className="w-5 h-5" />,
-        gradient: 'from-violet-600 to-fuchsia-500',
-        docs: [
-            { id: 'scrypto-basics', titleKey: 'scrypto_basics' },
-            { id: 'asset-paradigm', titleKey: 'asset_paradigm' },
-            { id: 'blueprints', titleKey: 'blueprints' },
-            { id: 'frontend-sdk', titleKey: 'frontend_sdk' },
-            { id: 'tx-manifests', titleKey: 'tx_manifests' },
-        ],
-    },
-    {
-        id: 'whitepapers',
-        topicKey: 'whitepapers',
-        icon: <Book className="w-5 h-5" />,
-        gradient: 'from-blue-600 to-cyan-500',
-        docs: [
-            { id: 'ledger-architecture', titleKey: 'ledger_architecture' },
-            { id: 'atomic-composability', titleKey: 'atomic_composability' },
-            { id: 'cerberus', titleKey: 'cerberus' },
-            { id: 'cerberus-braiding', titleKey: 'cerberus_braiding' },
-        ],
-    },
-    {
-        id: 'guides',
-        topicKey: 'guides',
-        icon: <FileText className="w-5 h-5" />,
-        gradient: 'from-emerald-500 to-teal-400',
-        docs: [
-            { id: 'babylon-guide', titleKey: 'babylon_guide' },
-            { id: 'epochs', titleKey: 'epochs' },
-        ],
-    },
-    {
-        id: 'node_operators',
-        topicKey: 'node_operators',
-        icon: <Server className="w-5 h-5" />,
-        gradient: 'from-amber-500 to-orange-400',
-        docs: [
-            { id: 'babylon-guide', titleKey: 'babylon_guide' },
-            { id: 'epochs', titleKey: 'epochs' },
-        ],
-    },
-    {
-        id: 'defi',
-        topicKey: 'defi',
-        icon: <Layers className="w-5 h-5" />,
-        gradient: 'from-rose-500 to-pink-400',
-        docs: [
-            { id: 'defi-overview', titleKey: 'defi_overview' },
-            { id: 'flash-loans', titleKey: 'flash_loans' },
-            { id: 'atomic-composability', titleKey: 'atomic_composability' },
-        ],
-    },
-];
 
 /* ─── Content snippet helper ─── */
 function getSnippet(text: string, query: string): string {
@@ -99,20 +28,14 @@ function getSnippet(text: string, query: string): string {
 
 /* ─── Props ─── */
 
+const EMPTY_DOCS: import('../../types/data.types').UserDoc[] = [];
+
 export default function DocsSidebar({
-    selectedDocId,
-    onSelectDoc,
-    expandedTopics,
-    onTopicToggle,
-    onExpandAll,
-    onCollapseAll,
-    autoCollapse,
-    onAutoCollapseChange,
     searchQuery,
     onSearchQueryChange,
     onAdminClick,
     isEditorOpen = false,
-    userDocs = [],
+    userDocs = EMPTY_DOCS,
     onEditUserDoc,
     onDeleteUserDoc,
     searchValue = '',
@@ -150,19 +73,16 @@ export default function DocsSidebar({
         return idx;
     })();
 
-    // Update global cache outside of render
-    useEffect(() => {
-        if (!_searchIndexCache[language] && searchIndex) {
-            _searchIndexCache[language] = searchIndex;
-        }
-    }, [language, searchIndex]);
+    // Cache at module level during render
+    if (!_searchIndexCache[language] && searchIndex) {
+        _searchIndexCache[language] = searchIndex;
+    }
 
     /* 1. Build topics including user docs — React Compiler handles memoization */
     const topicsWithUserDocs = (() => {
         return TOPICS.map(topic => {
             const communityDocs = userDocs
-                .filter(d => d.topic === topic.id)
-                .map(d => ({ id: d.id, titleKey: d.id, _userTitle: d.title }));
+                .flatMap(d => d.topic === topic.id ? [{ id: d.id, titleKey: d.id, _userTitle: d.title }] : []);
             return communityDocs.length > 0
                 ? { ...topic, docs: [...topic.docs, ...communityDocs] }
                 : topic;
@@ -176,7 +96,7 @@ export default function DocsSidebar({
             res = topicsWithUserDocs;
         } else {
             const q = searchQuery.toLowerCase();
-            res = topicsWithUserDocs.map(topic => {
+            res = topicsWithUserDocs.flatMap(topic => {
                 const topicLabel = topicLabels?.[topic.topicKey] ?? topic.topicKey;
                 const topicMatches = topicLabel.toLowerCase().includes(q);
                 const matchingDocs = topic.docs.filter(doc => {
@@ -187,10 +107,10 @@ export default function DocsSidebar({
                     if (indexed.title.toLowerCase().includes(q)) return true;
                     return indexed.bodyTexts.some((b: { text: string }) => b.text.toLowerCase().includes(q));
                 });
-                if (topicMatches) return { ...topic };
-                if (matchingDocs.length > 0) return { ...topic, docs: matchingDocs };
-                return null;
-            }).filter(Boolean) as Topic[];
+                if (topicMatches) return [{ ...topic }];
+                if (matchingDocs.length > 0) return [{ ...topic, docs: matchingDocs }];
+                return [];
+            }) as Topic[];
         }
 
         return res;
@@ -277,12 +197,12 @@ export default function DocsSidebar({
                             isSelected: doc.id === selectedDocId,
                             actions: isUserDoc ? [
                                 ...(onEditUserDoc ? [{
-                                    icon: <Pencil className="w-3.5 h-3.5" />,
+                                    icon: <Pencil className="size-3.5" />,
                                     onClick: () => onEditUserDoc(doc.id),
                                     title: t.edit ?? 'Edit'
                                 }] : []),
                                 ...(onDeleteUserDoc ? [{
-                                    icon: <Trash2 className="w-3.5 h-3.5" />,
+                                    icon: <Trash2 className="size-3.5" />,
                                     onClick: () => onDeleteUserDoc(doc.id),
                                     title: t.delete ?? 'Delete',
                                     color: 'var(--color-primary)'
@@ -293,9 +213,9 @@ export default function DocsSidebar({
 
                     /* Admin badge: stable container to avoid layout shift */
                     const adminBadge = isAdmin ? (
-                        <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                        <div className="size-6 flex items-center justify-center shrink-0">
                             {isAdminActive
-                                ? <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-primary)' }} />
+                                ? <span className="size-2.5 rounded-full" style={{ background: 'var(--color-primary)' }} />
                                 : <span
                                     className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
                                     style={{

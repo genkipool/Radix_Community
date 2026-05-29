@@ -217,15 +217,15 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
           <span className="text-[var(--code-keyword)]">import</span> <span className="text-[var(--code-punct)]">{" {"}</span> <span className="text-[var(--code-type)]">ManifestBuilder</span>, <span className="text-[var(--code-keyword)]">address</span>, <span className="text-[var(--code-keyword)]">bucket</span>, <span className="text-[var(--code-keyword)]">decimal</span> <span className="text-[var(--code-punct)]">{"} "}</span> <span className="text-[var(--code-keyword)]">from</span> <span className="text-[var(--code-string)]">&quot;@radixdlt/radix-engine-toolkit&quot;</span>;<br /><br />
           <span className="text-[var(--code-keyword)]">const</span> manifest <span className="text-[var(--code-punct)]">=</span> <span className="text-[var(--code-keyword)]">new</span> <span className="text-[var(--code-type)]">ManifestBuilder</span>()<br />
           &nbsp;&nbsp;.<span className="text-[var(--color-secondary)]">callMethod</span>(<br />
-          &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;account_sim1c9ye...v64gahs&quot;</span>,<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;account_sim1c9ye…v64gahs&quot;</span>,<br />
           &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;withdraw&quot;</span>,<br />
           &nbsp;&nbsp;&nbsp;&nbsp;[<br />
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-keyword)]">address</span>(<span className="text-[var(--code-string)]">&quot;resource_sim1thzv...y0y0exq&quot;</span>),<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-keyword)]">address</span>(<span className="text-[var(--code-string)]">&quot;resource_sim1thzv…y0y0exq&quot;</span>),<br />
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-keyword)]">decimal</span>(<span className="text-[var(--code-string)]">10</span>),<br />
           &nbsp;&nbsp;&nbsp;&nbsp;]<br />
           &nbsp;&nbsp;)<br />
           &nbsp;&nbsp;.<span className="text-[var(--color-secondary)]">takeAllFromWorktop</span>(<br />
-          &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;resource_sim1thzv...y0y0exq&quot;</span>,<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;resource_sim1thzv…y0y0exq&quot;</span>,<br />
           &nbsp;&nbsp;&nbsp;&nbsp;(builder, bucketId) =&gt;<br />
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;builder.<span className="text-[var(--color-secondary)]">callMethod</span>(<br />
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[var(--code-string)]">&quot;account_sim1cxt6...fpm3sj&quot;</span>,<br />
@@ -269,7 +269,7 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
       <div className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-8 rounded-xl shadow-sm h-full flex flex-col min-w-0">
         <div className="mb-6 flex-none">
           <h3 className="text-[var(--color-text-main)] font-bold text-xl flex items-center gap-2">
-            <Terminal className="w-5 h-5 text-[var(--color-primary)]" />
+            <Terminal className="size-5 text-[var(--color-primary)]" />
             {activeTool.name}
           </h3>
           <p className="text-sm text-[var(--color-text-muted)] mt-2">
@@ -289,7 +289,7 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
       <div className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-8 rounded-xl shadow-sm h-full flex flex-col min-w-0">
         <div className="mb-6">
           <h3 className="text-[var(--color-text-main)] font-bold text-xl flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-[var(--color-primary)]" />
+            <BookOpen className="size-5 text-[var(--color-primary)]" />
             {dict.devTools}
           </h3>
         </div>
@@ -299,7 +299,7 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
             const isActive = activeIdx === i;
             return (
               <div
-                key={i}
+                key={tool.name}
                 onClick={() => setActiveIdx(i)}
                 className={`group w-full border-b border-[var(--color-card-border)] pb-4 flex items-center justify-between cursor-pointer transition-all ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'
                   }`}
@@ -317,7 +317,7 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
                     onClick={(e) => e.stopPropagation()}
                     className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-opacity opacity-0 group-hover:opacity-100 p-1"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="size-3.5" />
                   </a>
                 </div>
               </div>

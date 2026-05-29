@@ -82,7 +82,7 @@ export function AccountSummaryTab({
             {/* Header: Name + Icon */}
             <div className="flex items-center gap-3">
                 {iconUrl && (
-                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
+                    <div className="size-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
                         <SafeImage
                             src={iconUrl}
                             alt={entityName || address}
@@ -101,19 +101,21 @@ export function AccountSummaryTab({
                         </span>
                         {address.startsWith('account_') && (
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                                 onPointerEnter={() => prefetchAccountRewards(address)}
                                 className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                                 title={tt?.account_summary?.download_rewards_tooltip || 'Download Rewards'}
                             >
-                                <Download className="w-3 h-3" />
+                                <Download className="size-3" />
                             </button>
                         )}
                         <button
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                             className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
-                            {copiedAddress === address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copiedAddress === address ? <Check className="size-3" /> : <Copy className="size-3" />}
                         </button>
                     </div>
                 </div>
@@ -307,11 +309,11 @@ export function AccountSummaryTab({
                             <div key={row.validatorAddress} className={isModal ? "flex flex-col gap-4 py-2" : "flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm"}>
                                 {/* Validator Header */}
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
+                                    <div className="size-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
                                         {row.validatorIcon ? (
                                             <SafeImage src={row.validatorIcon} alt={row.validatorName || 'Validator'} fallbackName={row.validatorName || 'Validator'} className="w-full h-full object-cover" />
                                         ) : (
-                                            <Landmark className="w-5 h-5 text-[var(--color-text-muted)]" />
+                                            <Landmark className="size-5 text-[var(--color-text-muted)]" />
                                         )}
                                     </div>
                                     <div className="flex flex-col min-w-0">
@@ -319,10 +321,11 @@ export function AccountSummaryTab({
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">{row.validatorAddress}</span>
                                             <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }}
                                                 className={`p-1 rounded transition-colors ${copiedAddress === row.validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                             >
-                                                {copiedAddress === row.validatorAddress ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                {copiedAddress === row.validatorAddress ? <Check className="size-3" /> : <Copy className="size-3" />}
                                             </button>
                                         </div>
                                     </div>
@@ -405,7 +408,7 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
 
     if (isModal) {
         const alignClass = align === 'right' ? 'items-end text-right' : align === 'center' ? 'items-center text-center' : 'items-start text-left';
-        
+
         return (
             <div className={`flex flex-col gap-0.5 w-full py-2 ${alignClass}`}>
                 <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider mb-0.5">
@@ -499,11 +502,11 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
     return (
         <div className={isModal ? `flex flex-col h-full py-1 ${burned ? 'opacity-70' : ''}` : `flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl p-3 hover:border-[var(--color-primary)] transition-colors h-full`}>
             <div className="flex items-center gap-2 mb-2 min-w-0">
-                <div className="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center">
+                <div className="size-6 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center">
                     {iconUrl ? (
                         <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className={`w-full h-full object-cover ${burned ? 'grayscale' : ''}`} />
                     ) : (
-                        <Info className="w-3 h-3 text-[var(--color-text-muted)]" />
+                        <Info className="size-3 text-[var(--color-text-muted)]" />
                     )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
@@ -521,10 +524,11 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
                 <div className="flex items-center gap-1">
                     <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{truncateAddress(address, 13, 12)}</span>
                     <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                         className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                     >
-                        {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
+                        {copiedAddress === address ? <Check className="size-2.5 text-[var(--color-accent)]" /> : <Copy className="size-2.5" />}
                     </button>
                 </div>
             </div>

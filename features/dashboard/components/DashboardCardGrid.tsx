@@ -11,8 +11,9 @@
 
 import React from 'react';
 import { Shield } from 'lucide-react';
-import { ValidatorCard } from '../staking';
-import { TransactionCard, AccountCard } from '../explorador';
+import { ValidatorCard } from '../staking/components/ValidatorCard';
+import { TransactionCard } from '../explorador/components/TransactionCard';
+import { AccountCard } from '../explorador/components/AccountCard';
 import { isRadixAddress } from '@/features/dashboard/utils/radixAddress';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 
@@ -76,7 +77,7 @@ export const DashboardCardGrid = ({
                 className="col-span-full h-12 flex items-center justify-center my-4"
                 aria-hidden="true"
               >
-                <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin opacity-50" />
+                <div className="size-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin opacity-50" />
               </div>
             )}
           </>
@@ -130,7 +131,7 @@ export const DashboardCardGrid = ({
       {/* ── Empty states ── */}
       {activeView === 'staking' && filteredValidators.length === 0 && (
         <div className="text-center py-20 text-[var(--color-text-muted)]">
-          <Shield className="w-16 h-16 mx-auto mb-4 opacity-30" />
+          <Shield className="size-16 mx-auto mb-4 opacity-30" />
           <p className="text-lg font-bold">
             {searchQuery
               ? dt?.search?.no_results ?? 'No results found'

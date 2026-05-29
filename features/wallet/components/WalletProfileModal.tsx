@@ -102,6 +102,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                 <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[var(--color-surface)]/85 mb-2">
                                     <div className="flex items-center gap-6">
                                         <button
+                                            type="button"
                                             onClick={() => sessions['mainnet'] ? switchNetwork('mainnet') : connect(RadixNetworkId.Mainnet)}
                                             className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                         >
@@ -111,6 +112,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             )}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => sessions['stokenet'] ? switchNetwork('stokenet') : connect(RadixNetworkId.Stokenet)}
                                             className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                         >
@@ -120,6 +122,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             )}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => setIsConstructionOpen(true)}
                                             className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
                                         >
@@ -127,21 +130,22 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         </button>
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={onClose}
                                         className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors opacity-80 hover:opacity-100 duration-300"
                                     >
-                                        <X strokeWidth={2} className="w-5 h-5" />
+                                        <X strokeWidth={2} className="size-5" />
                                     </button>
                                 </div>
 
                                 {/* User Info & Actions */}
                                 <div className="px-6 pt-2 pb-6 flex items-center justify-between gap-6">
                                     <div className="flex items-center gap-5 min-w-0 flex-1">
-                                        <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-transparent">
+                                        <div className="size-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-transparent">
                                             {personaIcon ? (
                                                 <SafeImage src={personaIcon} alt={personaName} fallbackName={personaName} className="w-full h-full object-cover" />
                                             ) : (
-                                                <User strokeWidth={1.5} className="w-10 h-10 text-[var(--color-primary)]" />
+                                                <User strokeWidth={1.5} className="size-10 text-[var(--color-primary)]" />
                                             )}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -155,15 +159,17 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                     {/* Action Buttons Right Side */}
                                     <div className="flex flex-col items-end justify-center gap-3 shrink-0 pl-2">
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 connect(networkId || RadixNetworkId.Stokenet);
                                             }}
                                             className="flex items-center justify-end gap-2 text-[12px] font-medium text-[var(--color-primary)] opacity-80 hover:opacity-100 transition-all duration-300"
                                         >
                                             <span>{navT.update_wallet ?? 'Actualizar'}</span>
-                                            <RefreshCcw strokeWidth={2} className="w-4 h-4" />
+                                            <RefreshCcw strokeWidth={2} className="size-4" />
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 disconnect();
                                                 onClose();
@@ -171,7 +177,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             className="flex items-center justify-end gap-2 text-[12px] font-medium text-red-500 opacity-80 hover:opacity-100 transition-all duration-300"
                                         >
                                             <span>{navT.wallet_disconnect ?? 'Desconectar'}</span>
-                                            <LogOut strokeWidth={2} className="w-4 h-4" />
+                                            <LogOut strokeWidth={2} className="size-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -179,6 +185,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                 {/* Tabs */}
                                 <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)] overflow-x-auto custom-scrollbar">
                                     <button
+                                        type="button"
                                         onClick={() => handleTabClick('profile')}
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === 'profile' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
@@ -186,12 +193,14 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                     </button>
 
                                     <button
+                                        type="button"
                                         onClick={() => handleTabClick('accounts')}
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.accounts ?? 'Cuentas'}
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => handleTabClick('notifications')}
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
@@ -205,7 +214,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         <div className="space-y-6">
                                             {accounts.length === 0 ? (
                                                 <div className="flex flex-col items-center justify-center h-full py-10 text-[var(--color-text-muted)] opacity-60">
-                                                    <Wallet strokeWidth={1.5} className="w-10 h-10 mb-3 opacity-50" />
+                                                    <Wallet strokeWidth={1.5} className="size-10 mb-3 opacity-50" />
                                                     <p className="text-sm font-medium">{navT.no_accounts ?? 'No hay cuentas conectadas'}</p>
                                                 </div>
                                             ) : (
@@ -213,6 +222,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                     {accounts.length > 1 && (
                                                         <div className="mb-4 flex gap-4 overflow-x-auto custom-scrollbar pb-2">
                                                             <button
+                                                                type="button"
                                                                 onClick={() => setSelectedAccountAddress(null)}
                                                                 className={`text-[12px] whitespace-nowrap font-medium transition-colors ${!selectedAccountAddress ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                                             >
@@ -220,6 +230,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                             </button>
                                                             {accounts.map((acc, idx) => (
                                                                 <button
+                                                                    type="button"
                                                                     key={acc.address}
                                                                     onClick={() => setSelectedAccountAddress(acc.address)}
                                                                     className={`text-[12px] whitespace-nowrap font-medium transition-colors ${selectedAccountAddress === acc.address ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
@@ -231,24 +242,21 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                     )}
 
                                                     <div className="space-y-6">
-                                                        {accounts
-                                                            .filter(acc => !selectedAccountAddress || acc.address === selectedAccountAddress)
-                                                            .map((acc, _index) => {
-                                                                const originalIndex = accounts.findIndex(a => a.address === acc.address);
-                                                                return (
-                                                                    <div key={acc.address} className="relative group">
-                                                                        <WalletAccountSummaryWrapper
-                                                                            address={acc.address}
-                                                                            entityName={acc.label || `${navT.account ?? 'Cuenta'} ${originalIndex + 1}`}
-                                                                            tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
-                                                                            onCopy={copy}
-                                                                            copiedAddress={copiedText}
-                                                                            network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
-                                                                            locale={locale}
-                                                                        />
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                        {accounts.flatMap(account =>
+                                                            !selectedAccountAddress || account.address === selectedAccountAddress
+                                                                ? [<div key={account.address} className="relative group">
+                                                                    <WalletAccountSummaryWrapper
+                                                                        address={account.address}
+                                                                        entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
+                                                                        tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                        onCopy={copy}
+                                                                        copiedAddress={copiedText}
+                                                                        network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
+                                                                        locale={locale}
+                                                                    />
+                                                                </div>]
+                                                                : []
+                                                        )}
                                                     </div>
                                                 </>
                                             )}

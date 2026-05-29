@@ -21,6 +21,21 @@ type ComparisonCategory = {
   rows: ComparisonRow[];
 };
 
+function WinnerCell({ content, colKey, row, explanations }: { content: string; colKey: string; row: ComparisonRow; explanations: Record<string, string> }) {
+    const isWinner = row.winner === colKey || (row.winner === 'shared' && (colKey === 'radix' || colKey === 'bce'));
+
+    return (
+      <div className="flex items-center justify-end md:justify-start gap-2">
+        <span className="leading-tight">{content}</span>
+        {isWinner && row.expKey && (
+          <InfoTooltip content={explanations[row.expKey as keyof typeof explanations]}>
+            <CheckCircle2 className="size-4 text-green-500 shrink-0 cursor-help" />
+          </InfoTooltip>
+        )}
+      </div>
+    );
+}
+
 export default function Comparison({ t }: BaseSectionProps) {
   const categories: ComparisonCategory[] = t.comparativa.categories || [];
 
@@ -30,26 +45,11 @@ export default function Comparison({ t }: BaseSectionProps) {
     { key: 'bce', label: 'Appia / Pontes (BCE)' },
   ] as const;
 
-  const renderWinnerCell = (content: string, colKey: string, row: ComparisonRow) => {
-    const isWinner = row.winner === colKey || (row.winner === 'shared' && (colKey === 'radix' || colKey === 'bce'));
-
-    return (
-      <div className="flex items-center justify-end md:justify-start gap-2">
-        <span className="leading-tight">{content}</span>
-        {isWinner && row.expKey && (
-          <InfoTooltip content={t.comparativa.explanations[row.expKey as keyof typeof t.comparativa.explanations]}>
-            <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 cursor-help" />
-          </InfoTooltip>
-        )}
-      </div>
-    );
-  };
-
   return (
     <section id="comparativa" className="py-24 bg-[var(--color-bg)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          icon={<BarChart3 className="w-4 h-4" />}
+          icon={<BarChart3 className="size-4" />}
           badge={t.comparativa.label}
           title={t.comparativa.h2a}
           titleAccent={t.comparativa.h2b}
@@ -78,25 +78,25 @@ export default function Comparison({ t }: BaseSectionProps) {
                       {cat.title}
                     </td>
                   </tr>
-                  {cat.rows.map((row, i) => (
-                    <tr key={i} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)]/50 transition-colors">
+                  {cat.rows.map((row) => (
+                    <tr key={row.feature} className="border-b border-[var(--color-card-border)] hover:bg-[var(--color-bg)]/50 transition-colors">
                       <td className="px-5 py-3.5 font-semibold text-sm">
                         <div className="flex items-center gap-2">
                           <span>{row.feature}</span>
                           {row.featKey && (
                             <InfoTooltip content={t.comparativa.featureDefinitions[row.featKey as keyof typeof t.comparativa.featureDefinitions]}>
-                              <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                              <Info className="size-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
                             </InfoTooltip>
                           )}
                         </div>
                       </td>
                       {competitors.map((c) => (
                         <td key={c.key} className="px-5 py-3.5 text-sm">
-                          {renderWinnerCell(row[c.key as keyof ComparisonRow] as string, c.key, row)}
+                          <WinnerCell content={row[c.key as keyof ComparisonRow] as string} colKey={c.key} row={row} explanations={t.comparativa.explanations} />
                         </td>
                       ))}
                       <td className="px-5 py-3.5 font-bold text-sm bg-[var(--color-secondary)]/5">
-                        {renderWinnerCell(row.radix, 'radix', row)}
+                        <WinnerCell content={row.radix} colKey="radix" row={row} explanations={t.comparativa.explanations} />
                       </td>
                     </tr>
                   ))}
@@ -116,9 +116,9 @@ export default function Comparison({ t }: BaseSectionProps) {
                 </h3>
               </div>
 
-              {cat.rows.map((row, i) => (
+              {cat.rows.map((row) => (
                 <FadeIn
-                  key={i}
+                  key={row.feature}
                   className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shadow-xl overflow-hidden"
                 >
                   <div className="px-5 py-3 bg-[var(--color-bg)] border-b border-[var(--color-card-border)]">
@@ -126,7 +126,7 @@ export default function Comparison({ t }: BaseSectionProps) {
                       <p className="text-sm font-bold text-[var(--color-text-main)]">{row.feature}</p>
                       {row.featKey && (
                         <InfoTooltip content={t.comparativa.featureDefinitions[row.featKey as keyof typeof t.comparativa.featureDefinitions]}>
-                          <Info className="w-3.5 h-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
+                          <Info className="size-3.5 text-[var(--color-primary)] cursor-help shrink-0" />
                         </InfoTooltip>
                       )}
                     </div>
@@ -137,7 +137,7 @@ export default function Comparison({ t }: BaseSectionProps) {
                       <div key={c.key} className="flex items-center justify-between gap-4 px-5 py-3.5">
                         <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">{c.label}</span>
                         <div className="text-sm">
-                          {renderWinnerCell(row[c.key as keyof ComparisonRow] as string, c.key, row)}
+                          <WinnerCell content={row[c.key as keyof ComparisonRow] as string} colKey={c.key} row={row} explanations={t.comparativa.explanations} />
                         </div>
                       </div>
                     ))}
@@ -145,7 +145,7 @@ export default function Comparison({ t }: BaseSectionProps) {
                     <div className="flex items-center justify-between gap-4 px-5 py-4 bg-[var(--color-secondary)]/5">
                       <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase tracking-wider shrink-0">Radix DLT</span>
                       <div className="text-sm font-bold">
-                        {renderWinnerCell(row.radix, 'radix', row)}
+                        <WinnerCell content={row.radix} colKey="radix" row={row} explanations={t.comparativa.explanations} />
                       </div>
                     </div>
                   </div>

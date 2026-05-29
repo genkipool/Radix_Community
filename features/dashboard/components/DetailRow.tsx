@@ -15,11 +15,12 @@ const DetailRow = ({ label, value, copyable, onCopy, copiedAddress }: DetailRowP
             <span className="mr-2">{value}</span>
             {copyable && onCopy && (
                 <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); onCopy(copyable); }}
                     className={`p-1.5 rounded-md transition-colors shrink-0 ${copiedAddress === copyable ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] opacity-0 group-hover/row:opacity-100 hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
                     title="Copy"
                 >
-                    {copiedAddress === copyable ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedAddress === copyable ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                 </button>
             )}
         </div>

@@ -37,12 +37,12 @@ export function NotFoundContent({
       </div>
 
       {/* Decorative Glow */}
-      <div className="absolute left-1/2 top-1/2 -z-20 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-primary)]/10 blur-[120px]" />
+      <div className="absolute left-1/2 top-1/2 -z-20 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-primary)]/10 blur-[120px]" />
 
       {/* Large Inverted "Failed" Radix Icon (No animation as requested) */}
       <div className="mb-12">
         <RadixIcon
-          className="w-[140px] h-[140px] drop-shadow-[0_0_30px_rgba(239,68,68,0.4)] -scale-y-100"
+          className="size-[140px] drop-shadow-[0_0_30px_rgba(239,68,68,0.4)] -scale-y-100"
           strokeColor="#ef4444"
           animate={false}
         />
@@ -66,6 +66,7 @@ export function NotFoundContent({
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
         {onRetry && retryText && (
           <button
+            type="button"
             onClick={onRetry}
             className="group relative flex items-center justify-center overflow-hidden rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] px-10 py-5 text-sm font-black uppercase tracking-widest text-[var(--color-text-main)] transition-all hover:scale-105 hover:bg-[var(--color-card-border)] active:scale-95 shadow-lg"
           >
@@ -74,7 +75,7 @@ export function NotFoundContent({
         )}
 
         <Link href={homePath} className="group transition-all active:scale-95">
-          <button className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[56px] rounded-full font-black text-sm uppercase tracking-widest text-white hover:opacity-90 transition-all shrink-0 px-10 shadow-xl hover:shadow-[var(--color-primary)]/20">
+          <button type="button" className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[56px] rounded-full font-black text-sm uppercase tracking-widest text-white hover:opacity-90 transition-all shrink-0 px-10 shadow-xl hover:shadow-[var(--color-primary)]/20">
             {ctaText}
           </button>
         </Link>

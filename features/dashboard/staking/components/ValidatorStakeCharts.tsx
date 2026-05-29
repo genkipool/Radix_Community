@@ -1,18 +1,18 @@
 'use client';
 import React from 'react';
 import { useMounted } from '@/hooks/useMounted';
-import {
-    ResponsiveContainer,
-    ComposedChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ReferenceLine,
-    AreaChart,
-    Area,
-} from 'recharts';
+import dynamic from 'next/dynamic';
+
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false });
+const ComposedChart = dynamic(() => import('recharts').then(m => m.ComposedChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false });
+const ReferenceLine = dynamic(() => import('recharts').then(m => m.ReferenceLine), { ssr: false });
+const AreaChart = dynamic(() => import('recharts').then(m => m.AreaChart), { ssr: false });
+const Area = dynamic(() => import('recharts').then(m => m.Area), { ssr: false });
 import { formatShortXRD } from '@/utils/formatters';
 import {
     type StakeTooltipProps,

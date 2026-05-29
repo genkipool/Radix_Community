@@ -28,11 +28,12 @@ import {
 const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; showText?: boolean; title?: string }) => {
     return (
         <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             className={`flex items-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors group shrink-0 ${showText ? 'gap-1.5 px-2 py-1 rounded-lg' : 'p-1 rounded-md'}`}
             title={title}
         >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="size-3.5" />
             {showText && <span className="text-[10px] font-black uppercase tracking-tight">CSV</span>}
         </button>
     );
@@ -108,7 +109,7 @@ export const Layout1Col = ({
                                     <div className="flex items-center gap-1">
                                         <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
                                         {validator.hasPendingFeeChange && (
-                                            <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
+                                            <AlertCircle className="size-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
@@ -137,16 +138,16 @@ export const Layout1Col = ({
                             {validator.website && isValidUrl(validator.website) && (
                                 <a href={validator.website} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors truncate max-w-[200px] cursor-pointer">
-                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                    <ExternalLink className="size-3.5 shrink-0" />
                                     <span className="truncate" title={sanitizeText(validator.website)}>{formatDisplayUrl(validator.website)}</span>
                                 </a>
                             )}
                             <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.provider)} (${validator.providerPercent}%)`}>
-                                <Server className="w-3.5 h-3.5 shrink-0" />
+                                <Server className="size-3.5 shrink-0" />
                                 {sanitizeText(validator.provider)} ({validator.providerPercent}%)
                             </span>
                             <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.country)} (${validator.countryPercent}%)`}>
-                                <Globe className="w-3.5 h-3.5 shrink-0" />
+                                <Globe className="size-3.5 shrink-0" />
                                 {sanitizeText(validator.country)} ({validator.countryPercent}%)
                             </span>
                             <div className="flex items-center gap-2 min-w-0">
@@ -193,7 +194,7 @@ export const Layout2Col = ({
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
                     <div className="relative z-10 py-4 sm:py-6">
                         <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
-                            className={`${columns === 3 ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-24 h-24 sm:w-28 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
+                            className={`${columns === 3 ? 'size-16 sm:w-20 sm:h-20' : 'size-24 sm:w-28 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
                     </div>
                     <div className="w-full mt-auto pt-1.5"><UptimeBar percent={validator.uptimePercent} t={t} size="md" locale={locale} /></div>
@@ -241,7 +242,7 @@ export const Layout2Col = ({
                                     <div className="flex items-center gap-1">
                                         <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
                                         {validator.hasPendingFeeChange && (
-                                            <AlertCircle className="w-3 h-3 text-amber-500 animate-pulse" />
+                                            <AlertCircle className="size-3 text-amber-500 animate-pulse" />
                                         )}
                                     </div>
                                 )
@@ -266,7 +267,7 @@ export const Layout2Col = ({
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
                             <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
-                                <Globe className="w-3 h-3 shrink-0" />
+                                <Globe className="size-3 shrink-0" />
                                 <span className="truncate">{sanitizeText(validator.country)}</span>
                             </span>
                             <div className="flex items-center gap-2 min-w-0">
@@ -318,7 +319,7 @@ export const Layout4Col = ({
             {/* Row 1: Image and Name with Labels */}
             <div className="flex gap-2.5 p-3 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
-                    className="w-12 h-12 rounded-xl object-cover shadow-md shrink-0 transition-transform duration-300"
+                    className="size-12 rounded-xl object-cover shadow-md shrink-0 transition-transform duration-300"
                     style={{ border: `1.5px solid ${statusColor}90` }} />
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-black text-[var(--color-text-main)] truncate">
@@ -346,7 +347,7 @@ export const Layout4Col = ({
                     <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Fee'}</span>
                     <div className="flex items-center gap-1 text-[12px] font-black text-[var(--color-text-main)] truncate">
                         <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
-                        {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
+                        {validator.hasPendingFeeChange && <AlertCircle className="size-2.5 text-amber-500 animate-pulse shrink-0" />}
                     </div>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -374,7 +375,7 @@ export const Layout4Col = ({
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
                     <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
-                        <Globe className="w-3.5 h-3.5" />
+                        <Globe className="size-3.5" />
                     </span>
                     <div className="flex items-center gap-2 min-w-0">
                         <CopyAddressButton
@@ -423,7 +424,7 @@ export const Layout6Col = ({
             {/* Row 1: Photo and Name (2 columns) */}
             <div className="flex gap-2 p-2 items-center">
                 <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
-                    className="w-8 h-8 rounded-lg object-cover shrink-0 transition-transform duration-300"
+                    className="size-8 rounded-lg object-cover shrink-0 transition-transform duration-300"
                     style={{ border: `1px solid ${statusColor}80` }} />
                 <h3 className="text-[11px] font-black text-[var(--color-text-main)] truncate leading-tight flex-1">
                     <HighlightText text={safeName} query={searchQuery} />
@@ -457,7 +458,7 @@ export const Layout6Col = ({
                     value={
                         <div className="flex items-center gap-1">
                             <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
-                            {validator.hasPendingFeeChange && <AlertCircle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />}
+                            {validator.hasPendingFeeChange && <AlertCircle className="size-2.5 text-amber-500 animate-pulse shrink-0" />}
                         </div>
                     }
                     tooltip={validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee}
@@ -482,11 +483,11 @@ export const Layout6Col = ({
                 <div className={`flex items-center ${columns >= 8 ? 'gap-1' : 'gap-2'}`}>
                     {validator.website && isValidUrl(validator.website) ? (
                         <a href={validator.website} target="_blank" rel="noopener noreferrer" title={formatDisplayUrl(validator.website)}>
-                            <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
+                            <Globe className="size-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
                         </a>
                     ) : (
                         <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
-                            <Globe className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                            <Globe className="size-3.5 text-[var(--color-text-muted)]" />
                         </span>
                     )}
                     <CopyStampIcon
@@ -552,7 +553,7 @@ const CopyStampIcon = ({
     const [localCopied, setLocalCopied] = useState(false);
     const isCopied = localCopied || (!!copiedAddress && copiedAddress === address);
 
-    const handleClick = () => {
+    const handleAddressCopy = () => {
         onCopy(address);
         setLocalCopied(true);
         setTimeout(() => setLocalCopied(false), 2000);
@@ -561,17 +562,17 @@ const CopyStampIcon = ({
     return (
         <div
             className="p-1 hover:bg-[var(--color-primary)]/10 rounded-md transition-colors cursor-pointer shrink-0"
-            onClick={handleClick}
+            onClick={handleAddressCopy}
             title={address}
         >
             <AnimatePresence mode="wait" initial={false}>
                 {isCopied ? (
                     <motion.div key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <Check className="w-3.5 h-3.5 text-green-500" />
+                        <Check className="size-3.5 text-green-500" />
                     </motion.div>
                 ) : (
                     <motion.div key="stamp" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <Stamp className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                        <Stamp className="size-3.5 text-[var(--color-primary)]" />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -592,7 +593,7 @@ const CopyAddressButton = ({
             onClick={() => onCopy(address)}
             title={address}
         >
-            <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
+            <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'size-3' : 'size-3.5'}`} />
             <span className={`block translate-y-[0.5px] ${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
                 {sanitizeText(displayText)}
             </span>
@@ -608,6 +609,7 @@ const DelegateButton = ({
     return (
         <StakingPopup validator={validator} t={t}>
             <button
+                type="button"
                 title={title}
                 className={`rounded-xl font-bold text-white whitespace-nowrap hover:opacity-90 transition-opacity duration-300 ${tiny ? 'px-3 py-1 text-[9px] rounded-lg' :
                     small ? (compact ? 'w-8 h-7 flex items-center justify-center p-0' : 'px-4 py-1.5 text-[10px]') :
@@ -616,7 +618,7 @@ const DelegateButton = ({
                 style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))' }}
                 onClick={e => e.stopPropagation()}
             >
-                {compact ? <Plus className="w-3.5 h-3.5" /> : label}
+                {compact ? <Plus className="size-3.5" /> : label}
             </button>
         </StakingPopup>
     );

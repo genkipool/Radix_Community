@@ -5,7 +5,7 @@
  * Centralises the prefix list so it's not duplicated across the codebase.
  */
 
-export const RADIX_ADDRESS_PREFIXES = [
+const RADIX_ADDRESS_PREFIXES = [
     'account_',
     'component_',
     'resource_',

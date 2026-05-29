@@ -21,7 +21,7 @@ export const UptimeBar = ({ percent, size = 'md', t, locale = 'en' }: { percent:
     const color = getUptimeColor(percent);
     const label = formatPercent(percent, 1, locale);
     const title = getUptimeTooltipText(percent, false, t?.dashboard?.details);
-    
+
     return (
         <XPBar
             progress={percent}
@@ -42,9 +42,8 @@ export const StatusLabel = ({ status, t, compact = false }: { status: Validator[
     const label = t?.dashboard?.status?.[status as keyof NonNullable<NonNullable<typeof t>["dashboard"]>["status"]] ?? status;
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-all duration-300 align-middle box-border leading-none ${
-                compact ? 'px-1.5 py-1 text-[9px]' : 'px-2 py-1 text-[10px]'
-            }`}
+            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-all duration-300 align-middle box-border leading-none ${compact ? 'px-1.5 py-1 text-[9px]' : 'px-2 py-1 text-[10px]'
+                }`}
             style={{
                 color,
                 borderColor: `${color}45`,
@@ -90,7 +89,7 @@ export const DetailSection = ({
 }) => (
     <div className={`space-y-4 ${className}`}>
         <div className="flex items-center gap-2 pb-2 border-b border-[var(--color-card-border)]">
-            <Icon className="w-5 h-5 text-[var(--color-primary)]" />
+            <Icon className="size-5 text-[var(--color-primary)]" />
             <h3 className="text-sm font-black uppercase tracking-widest text-[var(--color-text-main)]">{title}</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -142,7 +141,7 @@ export const AddressItem = ({
     className?: string;
     brackets?: boolean;
 }) => (
-    <div 
+    <div
         className={`col-span-full group/addr cursor-pointer flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors ${className}`}
         onClick={() => onCopy(brackets ? `[${address}]` : address)}
     >
@@ -168,10 +167,12 @@ export const AddressItem = ({
    - All older finalized rows show their SSR-computed deltas unchanged.
 ───────────────────────────────────────── */
 
+const EMPTY_EPOCH_REWARDS: Record<number, { fee: number; pool: number }> = {};
+
 export const EpochPerformanceTable = ({
     validator,
     dt,
-    epochRewards = {},
+    epochRewards = EMPTY_EPOCH_REWARDS,
     locale,
 }: {
     validator: Validator;

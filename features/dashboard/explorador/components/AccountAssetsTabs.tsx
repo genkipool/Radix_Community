@@ -178,7 +178,7 @@ function ExpandableResourceCard({
         retry: 1,
     });
 
-    const idsKey = ids ? [...ids].sort().join(',') : '';
+    const idsKey = ids ? ids.toSorted().join(',') : '';
     const { data: nftData = [], isLoading: isLoadingNft } = useQuery({
         queryKey: ['nft-data', address, idsKey, network],
         queryFn: () => apiFetchNonFungibleData(address, ids || [], network as 'mainnet' | 'stokenet'),
@@ -197,11 +197,11 @@ function ExpandableResourceCard({
             >
                 {/* Left side: Icon + Name + Address */}
                 <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-                    <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
+                    <div className="size-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
                         {iconUrl ? (
                             <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className={`w-full h-full object-cover ${burned ? 'grayscale' : ''}`} />
                         ) : (
-                            <Info className="w-4 h-4 text-[var(--color-text-muted)]" />
+                            <Info className="size-4 text-[var(--color-text-muted)]" />
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
@@ -212,10 +212,11 @@ function ExpandableResourceCard({
                         <div className="flex items-center gap-1 mt-0.5">
                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate select-all">{truncateAddress(address, 6, 6)}</span>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                                 className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors shrink-0"
                             >
-                                {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                                {copiedAddress === address ? <Check className="size-2.5 text-green-500" /> : <Copy className="size-2.5" />}
                             </button>
                         </div>
                     </div>
@@ -231,7 +232,7 @@ function ExpandableResourceCard({
                             {symbol || name}
                         </span>
                     </div>
-                    <ChevronDown className={`w-4 h-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                    <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                 </div>
             </div>
 
@@ -248,13 +249,13 @@ function ExpandableResourceCard({
                         {isNft ? (
                             <NftCollectionPanel
                                 resourceAddress={address}
-                                meta={entityData} 
-                                nftData={nftData as Record<string, unknown>[]} 
+                                meta={entityData}
+                                nftData={nftData as Record<string, unknown>[]}
                                 nftLoading={isLoadingNft || isLoadingEntity}
-                                ids={ids || []} 
+                                ids={ids || []}
                                 type="neutral"
-                                onCopy={onCopy} 
-                                copiedAddress={copiedAddress} 
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
                                 tt={tt}
                                 network={network}
                                 locale={locale || 'en-US'}
@@ -262,13 +263,13 @@ function ExpandableResourceCard({
                                 validatorName={item.validatorName}
                             />
                         ) : (
-                            <ResourceInlinePanel 
-                                address={address} 
-                                details={entityData || null} 
-                                loading={isLoadingEntity} 
-                                onCopy={onCopy} 
-                                copiedAddress={copiedAddress} 
-                                tt={tt} 
+                            <ResourceInlinePanel
+                                address={address}
+                                details={entityData || null}
+                                loading={isLoadingEntity}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                tt={tt}
                                 locale={locale || 'en-US'}
                                 isPoolUnit={item.isPoolUnit}
                                 userBalance={parseFloat(item.amount) || 0}

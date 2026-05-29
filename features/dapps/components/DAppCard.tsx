@@ -51,7 +51,7 @@ export function DAppCard({
               src={dapp.logoUrl}
               alt={dapp.name}
               fallbackName={dapp.name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-[var(--color-card-border)] shadow-lg z-10 group-hover:border-[var(--color-primary)]/40 transition-all"
+              className="size-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-[var(--color-card-border)] shadow-lg z-10 group-hover:border-[var(--color-primary)]/40 transition-all"
             />
           </div>
 
@@ -60,14 +60,14 @@ export function DAppCard({
             <StatButton
               onClick={onLike}
               title={t.dapps_page.like}
-              icon={<Heart className={`w-3.5 h-3.5 ${liked ? 'fill-red-500' : ''}`} />}
+              icon={<Heart className={`size-3.5 ${liked ? 'fill-red-500' : ''}`} />}
               count={likes}
               isActive={liked}
             />
             <StatButton
               onClick={onDislike}
               title={t.dapps_page.dislike}
-              icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${disliked ? 'fill-red-500' : ''}`} />}
+              icon={<ArrowUp className={`size-3.5 rotate-180 ${disliked ? 'fill-red-500' : ''}`} />}
               count={dislikes}
               isActive={disliked}
             />
@@ -104,18 +104,17 @@ export function DAppCard({
               className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors font-medium min-w-0 truncate"
               title={dapp.websiteUrl}
             >
-              <Globe className="w-3.5 h-3.5 shrink-0" />
+              <Globe className="size-3.5 shrink-0" />
               <span className="truncate">
                 {dapp.websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
               </span>
-              <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
+              <ExternalLink className="size-3 shrink-0 opacity-60" />
             </a>
 
             {/* Tags — CSS grid for uniform alignment */}
             <div
-              className={`grid gap-1.5 shrink-0 ${
-                displayedTags.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
-              }`}
+              className={`grid gap-1.5 shrink-0 ${displayedTags.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
+                }`}
             >
               {displayedTags.map((tag: string) => (
                 <TagBadge key={tag} tag={tag} />

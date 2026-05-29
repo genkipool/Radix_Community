@@ -2,7 +2,7 @@
 import React from 'react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { truncateAddress } from '@/utils/formatters';
-import type { LabelProps, DRProps, ARProps } from '../types/components.types';
+import type { LabelProps, ARProps } from '../types/components.types';
 
 /* ─────────────────────────────────────────
    Label — section heading
@@ -12,32 +12,19 @@ export const Label = ({ children, title }: LabelProps) => (
 );
 
 /* ─────────────────────────────────────────
-   DR — data row (label / value)
-───────────────────────────────────────── */
-export const DR = ({
-    label, value, sub, hi, vertical, tooltip,
-}: DRProps) => (
-    <div className={`veb-dr ${vertical ? 'veb-dr-v' : ''}`} title={tooltip}>
-        <span className="veb-dr-label">{label}</span>
-        <div className="veb-dr-right">
-            <span className="veb-dr-val" style={hi ? { color: hi } : undefined}>{value}</span>
-            {sub && <span className="veb-dr-sub">{sub}</span>}
-        </div>
-    </div>
-);
-
-/* ─────────────────────────────────────────
    AR — address row with copy
 ───────────────────────────────────────── */
 import { Download } from 'lucide-react';
 
-export const AR = ({
+export const AddressRow = ({
     label, addr, onCopy, copied, brackets, extra, isModal, noTruncate, onDownloadCsv,
 }: ARProps) => {
-    const [isMobile, setIsMobile] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(() => {
+        if (typeof window !== 'undefined') return window.innerWidth < 640;
+        return false;
+    });
     React.useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 640);
-        check();
         window.addEventListener('resize', check);
         return () => window.removeEventListener('resize', check);
     }, []);
@@ -74,6 +61,7 @@ export const AR = ({
                         />
                         {onDownloadCsv && (
                             <button
+                                type="button"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onDownloadCsv(addr);

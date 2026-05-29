@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
-import { BlogPost } from '../types';
+import { BlogPost } from '../types/data.types';
 import { filterPosts } from '../utils/blogUtils';
 
 export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[]) {
@@ -10,7 +10,10 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
 
     // Deferred: selectedPost is computed after allPosts is assembled (see below)
 
-    const [columns, setColumns] = useState(3);
+    const [columns, setColumns] = useState(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 640) return 1;
+        return 3;
+    });
     const [visibleCount, setVisibleCount] = useState(9);
     const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +32,6 @@ export function useBlogState(initialPosts: BlogPost[], localizedPosts: BlogPost[
         const checkMobile = () => {
             if (window.innerWidth < 640) setColumns(1);
         };
-        checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);

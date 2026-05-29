@@ -92,15 +92,16 @@ export function AssetTransferGroup({
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mb-4 last:mb-0">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                    <Wallet className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <Wallet className="size-3.5 text-[var(--color-primary)]" />
                     {tt?.asset_transfer || 'Asset Transfers'}
                 </div>
                 <button
+                    type="button"
                     onClick={() => setIsInfoModalOpen(true)}
                     className="p-1 rounded-full hover:bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border border-transparent group"
                     title={tt?.tx_flow_info_title || 'How to read our transaction flow'}
                 >
-                    <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                    <Info className="size-3.5 group-hover:scale-110 transition-transform" />
                 </button>
             </h3>
 
@@ -109,7 +110,7 @@ export function AssetTransferGroup({
                 {/* ── ORIGIN column ── */}
                 <div className="flex-1 p-3 bg-blue-500/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-blue-600 mb-3 flex items-center gap-1.5 opacity-80">
-                        <Landmark className="w-3 h-3" />
+                        <Landmark className="size-3" />
                         {tt?.from_address || 'Origin (Sent)'}
                     </h5>
                     <div className="space-y-3">
@@ -156,7 +157,7 @@ export function AssetTransferGroup({
                                                 side="sender"
                                                 locale={locale}
                                                 hideSign={fungibleBurned}
-                                                iconOverride={fungibleBurned ? <IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" /> : undefined}
+                                                iconOverride={fungibleBurned ? <IconFlame className="text-orange-600 dark:text-orange-400 size-3.5" /> : undefined}
                                                 colorOverride={fungibleBurned ? "text-orange-600 dark:text-orange-400" : undefined}
                                             />
 
@@ -227,7 +228,7 @@ export function AssetTransferGroup({
                 {/* ── DESTINATION column ── */}
                 <div className="flex-1 p-3 bg-[var(--color-accent)]/5">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
-                        <Landmark className="w-3 h-3" />
+                        <Landmark className="size-3" />
                         {tt?.to_address || 'Destination (Received)'}
                     </h5>
                     <div className="space-y-3">
@@ -271,7 +272,7 @@ export function AssetTransferGroup({
                                                 side="receiver"
                                                 locale={locale}
                                                 hideSign={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address)}
-                                                iconOverride={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address) ? <IconFlame className="text-orange-600 dark:text-orange-400 w-3.5 h-3.5" /> : undefined}
+                                                iconOverride={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address) ? <IconFlame className="text-orange-600 dark:text-orange-400 size-3.5" /> : undefined}
                                                 colorOverride={!change.entity_address.startsWith('account_') && !change.is_fee && parseFloat(change.balance_change || '0') < 0 && isFungibleBurned(change.resource_address) ? "text-orange-600 dark:text-orange-400" : undefined}
                                             />
                                             {recipientFee && !change.is_fee && (
@@ -330,14 +331,14 @@ export function AssetTransferGroup({
                         {/* Orphan NFT deposits (no matching fungible receiver) — exclude initiator addresses */}
                         {(() => {
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
-                            return (balanceChanges.non_fungible_balance_changes ?? [])
-                                .filter((nft) => (nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !initiators.has(sanitizeText(nft.entity_address)))
-                                .map((nft, ni: number) => {
+                            const items = balanceChanges.non_fungible_balance_changes ?? [];
+                            const result: JSX.Element[] = [];
+                            for (const nft of items) {
+                                if ((nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !initiators.has(sanitizeText(nft.entity_address))) {
                                     const resourceSenders = group.filter(c => c.resource_address === nft.resource_address && parseFloat(c.balance_change || '0') < 0 && !c.is_fee);
                                     const { method, title, color, bg } = classifySource(resourceSenders, tt, { isStakingTx: isStakingInferred });
-
-                                    return (
-                                        <div key={'nft-orphan-r-' + ni}>
+                                    result.push(
+                                        <div key={'nft-orphan-r-' + result.length}>
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <div className="pl-2">
                                                     <AddressDisplay label={tt?.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
@@ -347,18 +348,21 @@ export function AssetTransferGroup({
                                             <div className="mt-2"><NftTransferCard resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} /></div>
                                         </div>
                                     );
-                                });
+                                }
+                            }
+                            return result;
                         })()}
                         {/* Orphan NFT burns from non-account entities (component vaults) */}
                         {(() => {
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
-                            return (balanceChanges.non_fungible_balance_changes ?? [])
-                                .filter((nft) => (nft.removed?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !sanitizeText(nft.entity_address).startsWith('account_'))
-                                .map((nft, ni: number) => {
+                            const items = balanceChanges.non_fungible_balance_changes ?? [];
+                            const result: JSX.Element[] = [];
+                            for (const nft of items) {
+                                if ((nft.removed?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !sanitizeText(nft.entity_address).startsWith('account_')) {
                                     const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
                                     const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
-                                    return (
-                                        <div key={'nft-orphan-burn-' + ni}>
+                                    result.push(
+                                        <div key={'nft-orphan-burn-' + result.length}>
                                             <div className="pl-2 mb-2">
                                                 <AddressDisplay label={tt?.to_address || 'To'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                             </div>
@@ -367,7 +371,9 @@ export function AssetTransferGroup({
                                             </div>
                                         </div>
                                     );
-                                });
+                                }
+                            }
+                            return result;
                         })()}
                     </div>
                 </div>

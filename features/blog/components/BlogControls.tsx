@@ -5,7 +5,7 @@ import { ContentToolbar } from '@/components/ui/ContentToolbar';
 import { SearchableTagFilter } from '@/components/ui/SearchableTagFilter';
 import { GridToggle } from '@/components/ui/GridToggle';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { BlogDictionary } from '../types';
+import { BlogDictionary } from '../types/i18n.types';
 
 interface BlogControlsProps {
     searchQuery: string;

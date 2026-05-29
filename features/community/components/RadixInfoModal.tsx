@@ -89,7 +89,7 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                 <h2 className="text-2xl md:text-3xl font-bold leading-tight"
                                     style={{ color: 'var(--color-text-main)' }}>
                                     {m.title}
-                                    <span className="ml-2 text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]">
+                                    <span className="ml-2 text-white">
                                         {m.title_accent}
                                     </span>
                                 </h2>
@@ -98,14 +98,15 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                 </p>
                             </div>
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="absolute top-7 right-7 w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200"
+                                className="absolute top-7 right-7 size-9 flex items-center justify-center rounded-full transition-all duration-200"
                                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)', color: 'var(--color-text-muted)' }}
                                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-main)'; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; }}
                                 aria-label="Close"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="size-4" />
                             </button>
                         </div>
 
@@ -124,8 +125,8 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                     >
                                         <div className="px-5 py-4 flex items-center gap-3"
                                             style={{ borderBottom: '1px solid var(--color-card-border)' }}>
-                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-br ${SECTION_GRADIENTS[idx]} shrink-0`}>
-                                                <Icon className="w-4 h-4 text-white" />
+                                            <div className={`size-8 rounded-xl flex items-center justify-center bg-gradient-to-br ${SECTION_GRADIENTS[idx]} shrink-0`}>
+                                                <Icon className="size-4 text-white" />
                                             </div>
                                             <h3 className="font-semibold text-sm leading-tight"
                                                 style={{ color: 'var(--color-text-main)' }}>
@@ -134,7 +135,7 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                         </div>
                                         <div className="px-5 py-4 space-y-4">
                                             {section.content.map((item, i) => (
-                                                <div key={i}>
+                                                <div key={`content-${i}`}>
                                                     <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide"
                                                         style={{ color: 'var(--color-primary)' }}>
                                                         {item.subtitle}
@@ -162,6 +163,7 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                 </a>
                             </p>
                             <button
+                                type="button"
                                 onClick={onClose}
                                 className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
                                 style={{ background: 'var(--color-primary)', color: '#fff' }}

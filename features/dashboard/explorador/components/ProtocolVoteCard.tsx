@@ -6,7 +6,7 @@ import { sanitizeText } from '@/utils/sanitize';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
 
-import { ProtocolVoteCardProps } from '../types';
+import { ProtocolVoteCardProps } from '../types/components.types';
 
 /**
  * ProtocolVoteCard
@@ -25,7 +25,7 @@ export function ProtocolVoteCard({
     /* ── Protocol version ── */
     const fields: Record<string, unknown>[] = (voteEvent?.data as Record<string, unknown>)?.fields as Record<string, unknown>[] ?? [];
     const protocolVersion = sanitizeText(
-        (fields.find((f) => (f as Record<string,string>).field_name === 'protocol_version_name') as Record<string,string>)?.value ?? '',
+        (fields.find((f) => (f as Record<string, string>).field_name === 'protocol_version_name') as Record<string, string>)?.value ?? '',
     );
 
     /* ── Validator address ── */
@@ -43,7 +43,7 @@ export function ProtocolVoteCard({
     const proofMatch = proofNFMatch ?? proofFungibleMatch ?? null;
 
     const presenterAccount = sanitizeText(proofMatch?.[1] ?? '');
-    const badgeResource    = sanitizeText(proofMatch?.[2] ?? '');
+    const badgeResource = sanitizeText(proofMatch?.[2] ?? '');
 
     const friendlyVersion = protocolVersion.includes('cuttlefish')
         ? (tt?.protocol_cuttlefish || 'Cuttlefish')
@@ -54,7 +54,7 @@ export function ProtocolVoteCard({
             {/* Header */}
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-accent)]/40 bg-[var(--color-accent)]/12 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <svg className="w-3.5 h-3.5 text-[var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="size-3.5 text-[var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         <path d="m9 12 2 2 4-4" />
                     </svg>
@@ -70,7 +70,7 @@ export function ProtocolVoteCard({
                 {/* LEFT — Validator */}
                 <div className="flex-1 p-3 bg-[var(--color-accent)]/6">
                     <h5 className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5">
-                        <Shield className="w-3 h-3" />
+                        <Shield className="size-3" />
                         {tt?.protocol_vote_validator || 'Validator'}
                     </h5>
 
@@ -92,7 +92,7 @@ export function ProtocolVoteCard({
                 {/* RIGHT — Badge presenter */}
                 <div className="flex-1 p-3 bg-[var(--color-secondary)]/5">
                     <h5 className="text-[10px] uppercase font-bold tracking-widest text-indigo-800 dark:text-indigo-400 mb-3 flex items-center gap-1.5">
-                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg className="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                         </svg>

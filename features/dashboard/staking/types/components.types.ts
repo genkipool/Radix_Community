@@ -163,10 +163,10 @@ export interface LabelProps {
 }
 
 /**
- * DRProps
- * Data row (label/value) in ValidatorExpandedPrimitives.tsx
+ * DataRowProps
+ * Data row (label/value) in DataRow.tsx
  */
-export interface DRProps {
+export interface DataRowProps {
     label: string;
     value: React.ReactNode;
     sub?: React.ReactNode;

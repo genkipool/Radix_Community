@@ -26,17 +26,17 @@ export function ShareButton({ url, title, copiedLabel }: ShareButtonProps) {
       whileTap={{ scale: 0.9 }}
       onClick={handleShare}
       title={copied ? copiedLabel : title}
-      className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/40 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30 transition-colors shadow-sm relative"
+      className="size-8 flex items-center justify-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)]/40 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30 transition-colors shadow-sm relative"
     >
       <AnimatePresence mode="wait">
         {copied ? (
           <motion.div
             key="check"
-            initial={{ scale: 0, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
+            exit={{ scale: 0.95, opacity: 0 }}
           >
-            <Check className="w-4 h-4 text-green-500" />
+            <Check className="size-4 text-green-500" />
           </motion.div>
         ) : (
           <motion.div
@@ -45,7 +45,7 @@ export function ShareButton({ url, title, copiedLabel }: ShareButtonProps) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.5, opacity: 0 }}
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="size-4" />
           </motion.div>
         )}
       </AnimatePresence>

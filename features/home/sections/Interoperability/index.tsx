@@ -12,7 +12,7 @@ export default function Interoperability({ t }: BaseSectionProps) {
     <section id="interoperabilidad" className="py-24 bg-[var(--color-bg)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          icon={<Route className="w-4 h-4 mr-1" />}
+          icon={<Route className="size-4 mr-1" />}
           badge={t.interoperabilidad?.label}
           badgeClassName="bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 text-[var(--color-primary)]"
           title={t.interoperabilidad?.h2a}
@@ -27,8 +27,8 @@ export default function Interoperability({ t }: BaseSectionProps) {
             <p className="text-[var(--color-text-muted)] mb-8 leading-relaxed">{t.interoperabilidad?.whatDesc}</p>
             <div className="space-y-6">
               {(t.interoperabilidad?.features as Array<{ title: string; desc: string }> || []).map((feature: { title: string; desc: string }, i: number) => (
-                <div key={i} className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-[var(--color-primary)] font-bold flex items-center justify-center">
+                <div key={`feature-${i}`} className="flex gap-4">
+                  <div className="flex-shrink-0 size-10 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-[var(--color-primary)] font-bold flex items-center justify-center">
                     ✓
                   </div>
                   <div>
@@ -38,15 +38,15 @@ export default function Interoperability({ t }: BaseSectionProps) {
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-10">
-              <Link 
-                href={t.interoperabilidad?.urlAstrolescent || '#'} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <Link
+                href={t.interoperabilidad?.urlAstrolescent || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center px-6 py-3 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-[var(--color-primary)] font-bold hover:bg-[var(--color-primary)]/20 transition-all gap-2"
               >
-                <Route className="w-4 h-4" />
+                <Route className="size-4" />
                 {t.interoperabilidad?.btnAstrolescent}
               </Link>
             </div>

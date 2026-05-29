@@ -71,7 +71,7 @@ export async function getAvailableYearsForAccount(accountAddress: string): Promi
         }
 
         const sortedYears = [...systemYears]
-            .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+            .toSorted((a, b) => parseInt(b, 10) - parseInt(a, 10));
 
         logger.info({ accountAddress, count: sortedYears.length, years: sortedYears }, '[AccountRewards] Found available years');
         return sortedYears;

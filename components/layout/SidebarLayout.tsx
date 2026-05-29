@@ -36,12 +36,10 @@ export default function SidebarLayout({
             {/* Sticky Header Section */}
             <div className="sticky top-0 z-20" style={{ background: 'var(--color-bg)' }}>
                 {header && (
-                    <div
-                        className="w-full relative overflow-hidden cursor-pointer active:scale-100 transition-transform duration-200"
+                    <button
+                        type="button"
+                        className="w-full relative overflow-hidden cursor-pointer active:scale-100 transition-transform duration-200 text-left"
                         onClick={onHeaderClick}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && onHeaderClick?.()}
                         aria-label={headerAriaLabel}
                     >
                         {header}
@@ -49,7 +47,7 @@ export default function SidebarLayout({
                             className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
                             style={{ background: 'linear-gradient(to top, var(--color-bg), transparent)' }}
                         />
-                    </div>
+                    </button>
                 )}
 
                 {/* Search & Controls */}

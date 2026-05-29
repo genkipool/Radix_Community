@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useLayout } from '@/context/LayoutContext';
 import { getCookie, setCookie } from '@/utils/cookies';
@@ -172,9 +172,9 @@ function SpeakerOffIcon() {
 // ── Subcomponents ──────────────────────────────────────────────────
 function DateChip({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.15em', marginBottom: 2 }}>{label.toUpperCase()}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{value}</div>
+    <div className="text-center">
+      <div className="text-[10px] text-white/40 tracking-[0.05em] mb-0.5">{label.toUpperCase()}</div>
+      <div className="text-sm font-bold text-white">{value}</div>
     </div>
   );
 }
@@ -185,15 +185,14 @@ function StatBox({ icon, label, value, sub, color, note }: {
 }) {
   const rgbVar = color.includes('primary') ? '--ri-primary-rgb' : color.includes('gold') ? '--ri-gold-rgb' : '--ri-accent-rgb';
   return (
-    <div style={{
+    <div className="rounded-xl p-3 text-center" style={{
       background: `rgba(var(${rgbVar}),0.06)`, border: `1px solid rgba(var(${rgbVar}),0.2)`,
-      borderRadius: 12, padding: '12px 14px', textAlign: 'center',
     }}>
-      <div style={{ marginBottom: 4, color, display: 'flex', justifyContent: 'center' }}>{icon}</div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.15em', marginBottom: 4 }}>{label.toUpperCase()}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
-      {sub && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{sub}</div>}
-      {note && <div style={{ fontSize: 9, color: '#ff8800', marginTop: 2 }}>{note}</div>}
+      <div className="mb-1 flex justify-center" style={{ color }}>{icon}</div>
+      <div className="text-[10px] text-white/45 tracking-[0.05em] mb-1">{label.toUpperCase()}</div>
+      <div className="text-base font-bold" style={{ color }}>{value}</div>
+      {sub && <div className="text-[10px] text-white/50 mt-0.5">{sub}</div>}
+      {note && <div className="text-[10px] text-[#ff8800] mt-0.5">{note}</div>}
     </div>
   );
 }
@@ -205,17 +204,18 @@ function GameButton({ label, icon, color, onClick, primary: _primary = false }: 
   const rgbVar = color.includes('gold') ? '--ri-gold-rgb' : '--ri-primary-rgb';
   return (
     <button
+      type="button"
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         flex: 1, minWidth: 180, padding: '14px 20px',
         fontFamily: '"Courier New", monospace', fontWeight: 700,
-        fontSize: 'clamp(12px, 2.5vw, 15px)', letterSpacing: '0.1em',
+        fontSize: 'clamp(12px, 2.5vw, 15px)', letterSpacing: '0.05em',
         color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         background: hovered ? `rgba(var(${rgbVar}),0.12)` : `rgba(var(${rgbVar}),0.05)`,
         border: `2px solid ${color}`, borderRadius: 12, cursor: 'pointer',
-        transition: 'all 0.15s ease',
+        transition: 'background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
         boxShadow: hovered ? `0 0 20px var(${rgbVar}), 0 0 40px rgba(var(${rgbVar}),0.3)` : `0 0 8px rgba(var(${rgbVar}),0.2)`,
         transform: hovered ? 'translateY(-2px) scale(1.02)' : 'none',
       }}
@@ -279,15 +279,21 @@ function UFOSvg({ size = 50 }: { size?: number }) {
 
 // ── Alien Intro Screen ─────────────────────────────────────────────
 function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: () => void }) {
-  const [phase, setPhase] = useState(0); // 0=show, 1=fade out
-  const [visible, setVisible] = useState(false);
+  const [state, dispatch] = useReducer(
+    (s: { phase: number; visible: boolean }, a: { type: 'SHOW' } | { type: 'FADE' }) => {
+      switch (a.type) {
+        case 'SHOW': return { ...s, visible: true };
+        case 'FADE': return { ...s, phase: 1 };
+        default: return s;
+      }
+    },
+    { phase: 0, visible: false }
+  );
 
   useEffect(() => {
-    // Brief delay then show
-    const t1 = setTimeout(() => setVisible(true), 100);
-    // Auto-proceed after 3.5s
+    const t1 = setTimeout(() => dispatch({ type: 'SHOW' }), 100);
     const t2 = setTimeout(() => {
-      setPhase(1);
+      dispatch({ type: 'FADE' });
       setTimeout(onReady, 400);
     }, 3500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
@@ -311,7 +317,7 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
         alignItems: 'center', justifyContent: 'center',
         gap: 0, padding: '20px 16px',
         cursor: 'pointer',
-        opacity: phase === 1 ? 0 : visible ? 1 : 0,
+        opacity: state.phase === 1 ? 0 : state.visible ? 1 : 0,
         transition: 'opacity 0.4s ease',
         position: 'relative', overflow: 'hidden',
       }}
@@ -334,7 +340,7 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
 
-        <h2 style={{ fontSize: 'clamp(18px,4vw,30px)', fontWeight: 900, letterSpacing: '0.12em', color: '#00e5ff', margin: 0, animation: 'si-glow 2s ease-in-out infinite', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'clamp(18px,4vw,30px)', fontWeight: 900, letterSpacing: '0.05em', color: '#00e5ff', margin: 0, animation: 'si-glow 0.8s ease-in-out infinite', textAlign: 'center' }}>
           {t.alien_intro_title ?? '= SCORE ADVANCE TABLE ='}
         </h2>
 
@@ -349,14 +355,14 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
                 animation: `si-alien-in 0.4s ease ${i * 0.15}s both`,
               }}
             >
-              <div style={{ animation: 'si-float 2s ease-in-out infinite', animationDelay: `${i * 0.3}s` }}>
+              <div style={{ animation: 'si-float 0.8s ease-in-out infinite', animationDelay: `${i * 0.3}s` }}>
                 {drawAlienSvg(type, 44)}
               </div>
               <div style={{ minWidth: 80, textAlign: 'left' }}>
                 <div style={{ fontSize: 'clamp(18px,3vw,26px)', fontWeight: 900, color: ['var(--ri-alien0)', 'var(--ri-alien1)', 'var(--ri-alien2)'][type], fontFamily: '"Courier New",monospace' }}>
                   {pts} {t.alien_pts ?? 'PTS'}
                 </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em' }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>
                   {label}
                 </div>
               </div>
@@ -369,21 +375,21 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
             justifyContent: 'center',
             animation: `si-alien-in 0.4s ease ${aliens.length * 0.15}s both`,
           }}>
-            <div style={{ animation: 'si-float 2s ease-in-out infinite', animationDelay: '0.9s' }}>
+            <div style={{ animation: 'si-float 0.8s ease-in-out infinite', animationDelay: '0.9s' }}>
               <UFOSvg size={56} />
             </div>
             <div style={{ minWidth: 80, textAlign: 'left' }}>
               <div style={{ fontSize: 'clamp(18px,3vw,26px)', fontWeight: 900, color: 'var(--ri-ufo)', fontFamily: '"Courier New",monospace' }}>
                 {t.alien_ufo_pts ?? '? PTS'}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>
                 {t.alien_ufo_label ?? 'MYSTERY SHIP'}
               </div>
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.2em', animation: 'si-glow 1.5s ease-in-out infinite' }}>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', animation: 'si-glow 0.8s ease-in-out infinite' }}>
           {t.alien_intro_click ?? 'CLICK TO START'}
         </div>
       </div>
@@ -435,14 +441,14 @@ function IntroScreen({ t, lang, onTournament, onFun }: {
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)' }} />
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-        <div style={{ animation: 'si-float 3s ease-in-out infinite', marginBottom: 6 }}>
+        <div style={{ animation: 'si-float 0.8s ease-in-out infinite', marginBottom: 6 }}>
           <ShipSVG />
         </div>
 
         {/* Tournament panel */}
         <div style={{ width: '100%', border: '1px solid rgba(0,229,255,0.35)', borderRadius: 16, background: 'rgba(0,229,255,0.04)', backdropFilter: 'blur(8px)', padding: '18px 22px', marginBottom: 16, animation: 'si-slidein 0.5s ease both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
-            <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid #ffd700', borderRadius: 6, padding: '3px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', color: '#ffd700' }}>
+            <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid #ffd700', borderRadius: 6, padding: '3px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ffd700' }}>
               {t.tournament_label ?? 'ACTIVE TOURNAMENT'}
             </span>
           </div>
@@ -468,8 +474,8 @@ function IntroScreen({ t, lang, onTournament, onFun }: {
             { icon: <MoveIconSVG />, text: t.controls_move ?? 'MOVE' },
             { icon: <ShootIconSVG />, text: t.controls_shoot ?? 'SHOOT' },
             { icon: <MouseIconSVG />, text: t.controls_mouse ?? 'MOUSE' },
-          ].map((c, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, letterSpacing: '0.1em', color: '#aaa' }}>
+          ].map((c) => (
+            <div key={c.text} className="flex items-center gap-[5px] text-[11px] text-[#aaa]">
               {c.icon} {c.text}
             </div>
           ))}
@@ -499,7 +505,7 @@ function BadgeScreen({ t, step, onPlay }: {
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#ffd700', margin: 0 }}>{t.badge_success_title ?? 'Badge Acquired!'}</p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: '12px 0 22px', maxWidth: 400, lineHeight: 1.6 }}>{t.badge_success_body ?? 'You are registered for this week\'s tournament.'}</p>
-            <button onClick={onPlay} style={{ padding: '14px 40px', fontFamily: '"Courier New",monospace', fontWeight: 700, fontSize: 16, color: '#010614', background: '#ffd700', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 0 20px #ffd700,0 0 40px #ffd700aa', letterSpacing: '0.1em' }}>
+            <button type="button" onClick={onPlay} style={{ padding: '14px 40px', fontFamily: '"Courier New",monospace', fontWeight: 700, fontSize: 16, color: '#010614', background: '#ffd700', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 0 20px #ffd700,0 0 40px #ffd700aa', letterSpacing: '0.05em' }}>
               {t.badge_btn_play ?? 'START PLAYING'}
             </button>
           </div>
@@ -514,6 +520,7 @@ function SoundButton({ muted, onToggle }: { muted: boolean; onToggle: () => void
   const [hovered, setHovered] = useState(false);
   return (
     <button
+      type="button"
       onClick={onToggle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -529,7 +536,7 @@ function SoundButton({ muted, onToggle }: { muted: boolean; onToggle: () => void
         border: `1px solid ${hovered ? 'rgba(0,229,255,0.5)' : 'rgba(255,255,255,0.15)'}`,
         color: muted ? 'rgba(255,255,255,0.3)' : 'rgba(0,229,255,0.9)',
         cursor: 'pointer',
-        transition: 'all 0.15s ease',
+        transition: 'background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
         backdropFilter: 'blur(8px)',
       }}
     >
@@ -587,17 +594,14 @@ export default function RadixInvadersGame() {
     if (typeof document === 'undefined') return false;
     return getCookie(COOKIE_MUTED) === 'true';
   });
-  const [pendingMode, setPendingMode] = useState<GameMode>('FUN');
+  const pendingModeRef = useRef<GameMode>('FUN');
   const { setTheaterMode } = useLayout();
   const isMobileRef = useRef(false);
 
   useEffect(() => {
     const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     isMobileRef.current = isMob;
-    if (isMob) {
-      setTheaterMode(true);
-    }
-  }, [setTheaterMode]);
+  }, []);
 
   // Sync Howler mute state with initial sound preference
   useEffect(() => {
@@ -625,6 +629,7 @@ export default function RadixInvadersGame() {
   const startGame = (mode: GameMode) => {
     hiRef.current = loadHi();
     modeRef.current = mode;
+    pendingModeRef.current = mode;
     const gs = initGameState(1, hiRef.current);
     gs.mode = mode;
     stateRef.current = gs;
@@ -632,7 +637,7 @@ export default function RadixInvadersGame() {
   };
 
   const handleAlienIntroReady = () => {
-    startGame(pendingMode);
+    startGame(pendingModeRef.current);
   };
 
   const handleTournament = () => {
@@ -643,12 +648,12 @@ export default function RadixInvadersGame() {
   };
   const handleBadgePlay = () => {
     activateTheaterIfMobile();
-    setPendingMode('TOURNAMENT');
+    pendingModeRef.current = 'TOURNAMENT';
     setAppScreen('ALIEN_INTRO');
   };
   const handleFun = () => {
     activateTheaterIfMobile();
-    setPendingMode('FUN');
+    pendingModeRef.current = 'FUN';
     setAppScreen('ALIEN_INTRO');
   };
 
@@ -719,7 +724,7 @@ export default function RadixInvadersGame() {
   const handleMouseEnter = () => { isMouseRef.current = true; };
   const handleMouseDown = () => { isMouseDownRef.current = true; };
   const handleMouseUp = () => { isMouseDownRef.current = false; };
-  const handleClick = () => {
+  const handleCanvasClick = () => {
     isMouseRef.current = true;
     const s = stateRef.current;
     if (!s) return;
@@ -737,6 +742,7 @@ export default function RadixInvadersGame() {
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     let lastStageLevel = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     const loop = () => {
       const s = stateRef.current;
@@ -755,7 +761,7 @@ export default function RadixInvadersGame() {
       // Stage clear → next level
       if (updated.screen === 'STAGE_CLEAR' && updated.stageTimer <= 0 && lastStageLevel !== updated.level) {
         lastStageLevel = updated.level;
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           const next = initGameState(updated.level + 1, updated.hiScore, updated.score, updated.lives);
           next.mode = modeRef.current;
           stateRef.current = next;
@@ -786,42 +792,41 @@ export default function RadixInvadersGame() {
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [appScreen]); // t is read via tRef.current (stable ref) — no dep needed
-
-  // ── Render ────────────────────────────────────────────────────────
-  const renderContent = () => {
-    if (appScreen === 'INTRO') return <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />;
-    if (appScreen === 'ALIEN_INTRO') return <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />;
-    if (appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS') {
-      return <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />;
-    }
-    return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
-        <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_W}
-          height={CANVAS_H}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          onMouseEnter={handleMouseEnter}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onClick={handleClick}
-          onTouchStart={handleTouch}
-          onTouchMove={handleTouch}
-          onTouchEnd={handleTouchEnd}
-          style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%', display: 'block', cursor: 'crosshair', imageRendering: 'pixelated', objectFit: 'contain', touchAction: 'none' }}
-          tabIndex={0}
-        />
-      </div>
-    );
-  };
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-      {renderContent()}
+      {appScreen === 'INTRO' ? (
+        <IntroScreen t={t} lang={language} onTournament={handleTournament} onFun={handleFun} />
+      ) : appScreen === 'ALIEN_INTRO' ? (
+        <AlienIntroScreen t={t} onReady={handleAlienIntroReady} />
+      ) : appScreen === 'BADGE_ACQUIRING' || appScreen === 'BADGE_SUCCESS' ? (
+        <BadgeScreen t={t} step={badgeStep} onPlay={handleBadgePlay} />
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#010614', position: 'relative' }}>
+          <SoundButton muted={soundMuted} onToggle={handleSoundToggle} />
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_W}
+            height={CANVAS_H}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onMouseEnter={handleMouseEnter}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onClick={handleCanvasClick}
+            onTouchStart={handleTouch}
+            onTouchMove={handleTouch}
+            onTouchEnd={handleTouchEnd}
+            className="max-w-full max-h-full w-full h-full block cursor-crosshair image-rendering-pixelated object-contain touch-action-none"
+            tabIndex={0}
+          />
+        </div>
+      )}
     </div>
   );
 }

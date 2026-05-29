@@ -104,16 +104,18 @@ export function getConfigEntries(ra: unknown, tt?: Partial<TranslationsT['dashbo
             entries.push({ name: 'owner', resolution: ownerType === 'Protected' ? (tt?.role_resolution_explicit || 'Explicit') : (ownerType || '—'), updatable: false, desc: ROLE_DESC['owner'] || '', group: 'admin', ruleAddress });
             processedRoles.add('owner');
         }
+        const entriesByRole = new Map(r.entries.map((e) => [e?.role_key?.name, e] as const));
+
         for (const roleName of ALL_ROLES) {
             if (roleName === 'owner') continue;
-            const entry = r.entries.find((e) => e?.role_key?.name === roleName);
+            const entry = entriesByRole.get(roleName);
             if (!entry) continue;
             processedRoles.add(roleName);
             const resolution: string = entry.assignment?.resolution ?? '';
             const explicitType: string = entry.assignment?.explicit_rule?.type ?? '';
             const ruleAddress = resolution === 'Explicit' && explicitType !== 'AllowAll' && explicitType !== 'DenyAll'
                 ? extractRuleAddress(entry.assignment?.explicit_rule) : null;
-            const updaterEntry = r.entries.find((e) => e?.role_key?.name === `${roleName}_updater`);
+            const updaterEntry = entriesByRole.get(`${roleName}_updater`);
             const updaterRes: string = updaterEntry?.assignment?.resolution ?? '';
             const updaterExplicit: string = updaterEntry?.assignment?.explicit_rule?.type ?? '';
             const updatable = !roleName.endsWith('_updater') && (updaterRes === 'Owner' || (updaterRes === 'Explicit' && updaterExplicit !== 'DenyAll'));
@@ -126,7 +128,7 @@ export function getConfigEntries(ra: unknown, tt?: Partial<TranslationsT['dashbo
             const explicitType: string = entry.assignment?.explicit_rule?.type ?? '';
             const ruleAddress = resolution === 'Explicit' && explicitType !== 'AllowAll' && explicitType !== 'DenyAll'
                 ? extractRuleAddress(entry.assignment?.explicit_rule) : null;
-            const updaterEntry = r.entries.find((e) => e?.role_key?.name === `${roleName}_updater`);
+            const updaterEntry = entriesByRole.get(`${roleName}_updater`);
             const updaterRes: string = updaterEntry?.assignment?.resolution ?? '';
             const updaterExplicit: string = updaterEntry?.assignment?.explicit_rule?.type ?? '';
             const updatable = !roleName.endsWith('_updater') && (updaterRes === 'Owner' || (updaterRes === 'Explicit' && updaterExplicit !== 'DenyAll'));
@@ -204,7 +206,7 @@ export function parseTags(rawItem: unknown): string[] {
  * Normalises the `role_assignments` object from a resource details response
  * into a flat name→resolution map, regardless of which Gateway shape is returned.
  */
-export function normaliseRoles(
+function normaliseRoles(
   ra: unknown,
 ): Record<string, RoleResolution> {
   const map: Record<string, RoleResolution> = {};
@@ -298,7 +300,7 @@ export function parseFloatSafe(value: unknown): number {
 //  extractRuleAddress
 // ─────────────────────────────────────────
 /** Extracts the badge/resource address from a Protected rule in role assignments. */
-export function extractRuleAddress(rule: unknown): string | null {
+function extractRuleAddress(rule: unknown): string | null {
   try {
     const r = rule as Record<string, unknown>;
     const ar = (r?.access_rule as Record<string, unknown>) || {};

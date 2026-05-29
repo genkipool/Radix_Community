@@ -27,22 +27,21 @@ function Sep() {
 }
 
 /* ─── Toolbar button ─── */
-const TBtn = React.forwardRef<
-    HTMLButtonElement,
-    {
-        icon: React.ReactNode;
-        title: string;
-        active?: boolean;
-        onMouseDown: (e: React.MouseEvent) => void;
-        children?: React.ReactNode;
-    }
->(({
+function TBtn({
     icon,
     title,
     active = false,
     onMouseDown,
-    children
-}, ref) => {
+    children,
+    ref,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    active?: boolean;
+    onMouseDown: (e: React.MouseEvent) => void;
+    children?: React.ReactNode;
+    ref?: React.Ref<HTMLButtonElement>;
+}) {
     return (
         <button
             type="button"
@@ -78,7 +77,7 @@ const TBtn = React.forwardRef<
             {children}
         </button>
     );
-});
+}
 TBtn.displayName = 'TBtn';
 
 /* ─── Color picker popup ─── */
@@ -103,7 +102,7 @@ function ColorPicker({
             if (anchorEl && ref.current) {
                 const anchorRect = anchorEl.getBoundingClientRect();
                 const pickerRect = ref.current.getBoundingClientRect();
-                
+
                 const scrollX = window.scrollX || window.pageXOffset;
                 const scrollY = window.scrollY || window.pageYOffset;
 
@@ -164,12 +163,13 @@ function ColorPicker({
                     type="button"
                     key={color}
                     onMouseDown={e => { e.preventDefault(); onSelect(color); onClose(); }}
-                    className="w-7 h-7 rounded-lg border-2 transition-transform hover:scale-110"
+                    className="size-7 rounded-lg border-2 transition-transform hover:scale-110"
                     style={{
                         background: color,
                         borderColor: currentColor === color ? 'var(--color-primary)' : 'transparent',
                     }}
                     title={color}
+                    aria-label={color}
                 />
             ))}
         </div>,
@@ -256,32 +256,32 @@ export default function EditorToolbar({
             }}
         >
             <div className="flex items-center gap-0.5 shrink-0">
-                <TBtn icon={<Undo2 className="w-5 h-5" />} title={t?.undo ?? 'Undo'} onMouseDown={cmd('undo')} />
-                <TBtn icon={<Redo2 className="w-5 h-5" />} title={t?.redo ?? 'Redo'} onMouseDown={cmd('redo')} />
+                <TBtn icon={<Undo2 className="size-5" />} title={t?.undo ?? 'Undo'} onMouseDown={cmd('undo')} />
+                <TBtn icon={<Redo2 className="size-5" />} title={t?.redo ?? 'Redo'} onMouseDown={cmd('redo')} />
             </div>
             <Sep />
 
             <div className="flex items-center gap-0.5 shrink-0">
                 <TBtn
-                    icon={<Type className="w-5 h-5" />}
+                    icon={<Type className="size-5" />}
                     title={t?.paragraph ?? 'Paragraph'}
                     active={blockActive('p') || blockActive('')}
                     onMouseDown={e => { e.preventDefault(); onBlockType('p'); }}
                 />
                 <TBtn
-                    icon={<Heading1 className="w-5 h-5" />}
+                    icon={<Heading1 className="size-5" />}
                     title={t?.heading1 ?? 'Heading 1'}
                     active={blockActive('h1')}
                     onMouseDown={e => { e.preventDefault(); onBlockType('h1'); }}
                 />
                 <TBtn
-                    icon={<Heading2 className="w-5 h-5" />}
+                    icon={<Heading2 className="size-5" />}
                     title={t?.heading2 ?? 'Heading 2'}
                     active={blockActive('h2')}
                     onMouseDown={e => { e.preventDefault(); onBlockType('h2'); }}
                 />
                 <TBtn
-                    icon={<Heading3 className="w-5 h-5" />}
+                    icon={<Heading3 className="size-5" />}
                     title={t?.heading3 ?? 'Heading 3'}
                     active={blockActive('h3')}
                     onMouseDown={e => { e.preventDefault(); onBlockType('h3'); }}
@@ -295,8 +295,8 @@ export default function EditorToolbar({
             <Sep />
 
             <div className="flex items-center gap-0.5 shrink-0">
-                <TBtn icon={<Bold className="w-4 h-4" />} title={t?.bold ?? 'Bold (Ctrl+B)'} active={fs.bold} onMouseDown={cmd('bold')} />
-                <TBtn icon={<Italic className="w-4 h-4" />} title={t?.italic ?? 'Italic (Ctrl+I)'} active={fs.italic} onMouseDown={cmd('italic')} />
+                <TBtn icon={<Bold className="size-4" />} title={t?.bold ?? 'Bold (Ctrl+B)'} active={fs.bold} onMouseDown={cmd('bold')} />
+                <TBtn icon={<Italic className="size-4" />} title={t?.italic ?? 'Italic (Ctrl+I)'} active={fs.italic} onMouseDown={cmd('italic')} />
                 <TBtn
                     icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"></path></svg>}
                     title={t?.underline ?? 'Underline (Ctrl+U)'}
@@ -330,18 +330,18 @@ export default function EditorToolbar({
                             </span>
                         }
                         title={t?.text_color ?? 'Text color'}
-                        onMouseDown={e => { 
-                            e.preventDefault(); 
-                            setShowForeColors(v => !v); 
-                            setShowHiliteColors(false); 
+                        onMouseDown={e => {
+                            e.preventDefault();
+                            setShowForeColors(v => !v);
+                            setShowHiliteColors(false);
                         }}
                     />
                     {showForeColors && (
-                        <ColorPicker 
-                            colors={TEXT_COLORS} 
-                            currentColor={fs.foreColor} 
-                            onSelect={onForeColor} 
-                            onClose={() => setShowForeColors(false)} 
+                        <ColorPicker
+                            colors={TEXT_COLORS}
+                            currentColor={fs.foreColor}
+                            onSelect={onForeColor}
+                            onClose={() => setShowForeColors(false)}
                             anchorEl={foreBtnEl}
                         />
                     )}
@@ -360,17 +360,17 @@ export default function EditorToolbar({
                             </span>
                         }
                         title={t?.bg_color ?? 'Highlight color'}
-                        onMouseDown={e => { 
-                            e.preventDefault(); 
-                            setShowHiliteColors(v => !v); 
-                            setShowForeColors(false); 
+                        onMouseDown={e => {
+                            e.preventDefault();
+                            setShowHiliteColors(v => !v);
+                            setShowForeColors(false);
                         }}
                     />
                     {showHiliteColors && (
-                        <ColorPicker 
-                            colors={BG_COLORS} 
-                            onSelect={onHiliteColor} 
-                            onClose={() => setShowHiliteColors(false)} 
+                        <ColorPicker
+                            colors={BG_COLORS}
+                            onSelect={onHiliteColor}
+                            onClose={() => setShowHiliteColors(false)}
                             anchorEl={hiliteBtnEl}
                         />
                     )}
@@ -417,23 +417,23 @@ export default function EditorToolbar({
             <Sep />
 
             <div className="flex items-center gap-0.5 shrink-0">
-                <TBtn icon={<Quote className="w-4 h-4" />} title={t?.blockquote ?? 'Blockquote'} active={blockActive('blockquote')} onMouseDown={e => { e.preventDefault(); onBlockType('blockquote'); }} />
-                <TBtn icon={<Code2 className="w-4 h-4" />} title={t?.code_block ?? 'Code block'} onMouseDown={e => { e.preventDefault(); onInsertCodeBlock(); }} />
-                <TBtn icon={<Link2 className="w-4 h-4" />} title={t?.link ?? 'Insert link'} onMouseDown={e => { e.preventDefault(); onInsertLink(); }} />
+                <TBtn icon={<Quote className="size-4" />} title={t?.blockquote ?? 'Blockquote'} active={blockActive('blockquote')} onMouseDown={e => { e.preventDefault(); onBlockType('blockquote'); }} />
+                <TBtn icon={<Code2 className="size-4" />} title={t?.code_block ?? 'Code block'} onMouseDown={e => { e.preventDefault(); onInsertCodeBlock(); }} />
+                <TBtn icon={<Link2 className="size-4" />} title={t?.link ?? 'Insert link'} onMouseDown={e => { e.preventDefault(); onInsertLink(); }} />
                 {!disallowImages && (
-                    <TBtn icon={<ImageIcon className="w-4 h-4" />} title={t?.insert_image ?? 'Insert image'} onMouseDown={e => { e.preventDefault(); onInsertImage(); }} />
+                    <TBtn icon={<ImageIcon className="size-4" />} title={t?.insert_image ?? 'Insert image'} onMouseDown={e => { e.preventDefault(); onInsertImage(); }} />
                 )}
             </div>
             <Sep />
 
             <div className="shrink-0 flex items-center gap-0.5">
-                <TBtn icon={<RemoveFormatting className="w-4 h-4" />} title={t?.clear_format ?? 'Clear formatting'} onMouseDown={cmd('removeFormat')} />
+                <TBtn icon={<RemoveFormatting className="size-4" />} title={t?.clear_format ?? 'Clear formatting'} onMouseDown={cmd('removeFormat')} />
                 {onTogglePreview && (
-                    <TBtn 
-                        icon={<Eye className="w-4 h-4" />} 
-                        title="Preview Markdown" 
-                        active={previewMode} 
-                        onMouseDown={e => { e.preventDefault(); onTogglePreview(); }} 
+                    <TBtn
+                        icon={<Eye className="size-4" />}
+                        title="Preview Markdown"
+                        active={previewMode}
+                        onMouseDown={e => { e.preventDefault(); onTogglePreview(); }}
                     />
                 )}
             </div>

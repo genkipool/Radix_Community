@@ -1,0 +1,11 @@
+allowBuilds:
+  esbuild: true
+  msw: true
+  secp256k1: true
+  sharp: true
+  snyk: true
+  unrs-resolver: true
+
+minimumReleaseAge: 10080
+
+trustPolicy: no-downgrade

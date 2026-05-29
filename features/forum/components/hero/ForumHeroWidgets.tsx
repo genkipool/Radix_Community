@@ -7,7 +7,7 @@ import { RankIcon } from '../RankIcon';
 
 export function ForumHeroWidgets() {
     const { t } = useForum();
-    
+
     return (
         <div className="w-full">
             {/* Points Header - Compact & Highlighted */}
@@ -41,7 +41,7 @@ export function ForumHeroWidgets() {
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-4 gap-x-2 py-4 mb-4 w-full max-w-4xl mx-auto">
                 {RANKS.map((r) => (
                     <div key={r.name} className="flex flex-col items-center gap-1 cursor-help p-2 rounded-xl border border-transparent">
-                        <RankIcon name={r.name} color={r.color} className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_0_5px_rgba(0,0,0,0.1)]" />
+                        <RankIcon name={r.name} color={r.color} className="size-7 sm:w-8 sm:h-8 drop-shadow-[0_0_5px_rgba(0,0,0,0.1)]" />
                         <div className="flex flex-col items-center leading-tight">
                             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-tighter" style={{ color: r.color }}>{t.forum.ranks[r.name as keyof typeof t.forum.ranks] || r.name}</span>
                             <span className="text-[11px] font-bold opacity-70" style={{ color: r.color }}>{r.minXp} {t.forum.header.points.xp}</span>

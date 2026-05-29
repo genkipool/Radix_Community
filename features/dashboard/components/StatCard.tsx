@@ -38,7 +38,7 @@ const StatCard = ({
             <div className="min-w-0 flex-1">
                 <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold flex items-center gap-1.5">
                     <span className="truncate">{label}</span>
-                    {description && <Info className="w-3 h-3 opacity-60 flex-shrink-0" />}
+                    {description && <Info className="size-3 opacity-60 flex-shrink-0" />}
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     {isLoading && (!value || value === '---') ? (
@@ -49,11 +49,12 @@ const StatCard = ({
                     )}
                     {copyText && !isLoading && (
                         <button
+                            type="button"
                             onClick={handleCopy}
                             className="p-1.5 -mr-1.5 hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] rounded-lg transition-colors flex-shrink-0"
                             title="Copy Hash"
                         >
-                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                            {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
                         </button>
                     )}
                 </div>

@@ -11,6 +11,7 @@ import { formatNumber } from '@/utils/formatters';
 import { formatCurrency, getCurrencyForLocale } from '@/utils/currencyUtils';
 import type { MarketData } from '@/features/dashboard/types';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
+import { generateClientAccountRewardsCsv } from '../services/clientCsvExport';
 
 export interface AccountRewardsCsvModalProps {
     isOpen: boolean;
@@ -37,19 +38,6 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     const [localError, setLocalError] = useState<string | null>(null);
     const abortControllerRef = React.useRef<AbortController | null>(null);
     const mounted = useMounted();
-
-    // Reset state when modal opens/closes
-    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-    if (isOpen !== prevIsOpen) {
-        setPrevIsOpen(isOpen);
-        if (!isOpen) {
-            setSelectedYear(null);
-            setDownloading(false);
-            setProgress(0);
-            setSummary(null);
-            setLocalError(null);
-        }
-    }
 
     const { data: yearsData, isLoading: yearsLoading, error: yearsError } = useQuery({
         queryKey: ['account-rewards-years', accountAddress],
@@ -81,20 +69,23 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
-        try {
-            // Use the new client-side generation service with dynamic import
-            const { generateClientAccountRewardsCsv } = await import('../services/clientCsvExport');
-            
-            const data = await generateClientAccountRewardsCsv(accountAddress, selectedYear, (p) => {
-                if (abortControllerRef.current === controller) {
-                    setProgress(Math.min(99, p));
-                }
-            }, controller.signal, tt);
+        const onProgress = (p: number) => {
+            if (abortControllerRef.current === controller) {
+                setProgress(Math.min(99, p));
+            }
+        };
 
+        try {
             if (abortControllerRef.current !== controller) return;
 
+            const data = await generateClientAccountRewardsCsv(accountAddress, selectedYear, onProgress, controller.signal, tt);
+
             if (!data.csv) {
-                throw new Error('CSV is empty');
+                if (abortControllerRef.current !== controller) return;
+                setLocalError('CSV is empty');
+                setDownloading(false);
+                setTimeout(() => setProgress(0), 2000);
+                return;
             }
 
             setProgress(100);
@@ -122,19 +113,22 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            if (abortControllerRef.current !== controller) return;
+            setDownloading(false);
+            setTimeout(() => setProgress(0), 2000);
         } catch (err: unknown) {
             if (err instanceof Error && (err.name === 'AbortError' || err.message === 'Aborted')) {
-                return; // Silently ignore cancellation
+                if (abortControllerRef.current !== controller) return;
+                setDownloading(false);
+                setTimeout(() => setProgress(0), 2000);
+                return;
             }
             if (abortControllerRef.current === controller) {
                 setLocalError(err instanceof Error ? err.message : String(err));
             }
-        } finally {
-            if (abortControllerRef.current !== controller) {
-                return; // This execution was aborted and overwritten. Ignore.
-            }
+            if (abortControllerRef.current !== controller) return;
             setDownloading(false);
-            // Don't reset progress immediately so user can see 100%
             setTimeout(() => setProgress(0), 2000);
         }
     };
@@ -180,10 +174,11 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                         {tt?.account_rewards_modal_title ?? 'Download Account Reward History'}
                     </h3>
                     <button
+                        type="button"
                         onClick={onClose}
                         className="p-1.5 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-40"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="size-4" />
                     </button>
                 </div>
 
@@ -196,16 +191,16 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
 
                     {yearsLoading ? (
                         <div className="flex items-center justify-center py-6">
-                            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
+                            <Loader2 className="size-5 animate-spin text-[var(--color-primary)]" />
                             <span className="ml-2 text-xs text-[var(--color-text-muted)]">
                                 {tt?.account_rewards_modal_loading ?? 'Loading...'}
                             </span>
                         </div>
                     ) : downloading ? (
-                        <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                        <div className="flex flex-col items-center justify-center py-6 gap-y-4">
                             <div className="relative">
-                                <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-                                <Clock className="w-3.5 h-3.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
+                                <Loader2 className="size-8 animate-spin text-[var(--color-primary)]" />
+                                <Clock className="size-3.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
                             </div>
                             <div className="text-center space-y-1 w-full max-w-[280px]">
                                 <p className="text-xs font-bold text-[var(--color-text-main)]">
@@ -224,13 +219,13 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="gap-y-4">
                             {/* Summary View */}
                             {summary && (
-                                <div className="py-2 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                    <div className="flex flex-col items-center justify-center text-center space-y-2 mb-2">
-                                        <div className="w-12 h-12 bg-[var(--color-accent)]/10 rounded-full flex items-center justify-center mb-1">
-                                            <RadixIcon className="w-6 h-6" strokeColor="var(--color-accent)" />
+                                <div className="py-2 flex flex-col gap-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="flex flex-col items-center justify-center text-center gap-y-2 mb-2">
+                                        <div className="size-12 bg-[var(--color-accent)]/10 rounded-full flex items-center justify-center mb-1">
+                                            <RadixIcon className="size-6" strokeColor="var(--color-accent)" />
                                         </div>
                                         <h4 className="text-sm font-bold text-[var(--color-text-main)]">
                                             {tt?.account_rewards_summary_title ?? 'Download Complete!'}
@@ -251,16 +246,15 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                             </div>
                                         </div>
                                         <div className="p-3 bg-[var(--color-primary)]/5">
-                                            <p
-                                                className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: (tt?.account_rewards_summary_dream ?? (
-                                                        "If Radix reached 1 {currency}, you would have earned <b>{value}</b> from staking this year."
-                                                    ))
-                                                        .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
-                                                        .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
-                                                }}
-                                            />
+                                            <p className="text-[11px] leading-relaxed text-center font-medium text-[var(--color-primary)]">
+                                                {(tt?.account_rewards_summary_dream ?? "If Radix reached 1 {currency}, you would have earned {value} from staking this year.")
+                                                    .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
+                                                    .split('{value}')[0]}
+                                                <b>{formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en')}</b>
+                                                {(tt?.account_rewards_summary_dream ?? "If Radix reached 1 {currency}, you would have earned {value} from staking this year.")
+                                                    .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
+                                                    .split('{value}')[1] ?? ''}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -286,6 +280,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                                     <div className="flex flex-wrap gap-2">
                                         {years.map((year) => (
                                             <button
+                                                type="button"
                                                 key={year}
                                                 onClick={() => setSelectedYear(year)}
                                                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
@@ -305,7 +300,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                     {/* Error display */}
                     {error && (
                         <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-xs font-bold text-red-500">
                                     {tt?.account_rewards_modal_error ?? 'Error'}
@@ -319,14 +314,15 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                     <button
+                        type="button"
                         onClick={handleDownload}
                         disabled={!selectedYear || downloading || years.length === 0}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[var(--color-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-[var(--color-primary)]/20"
                     >
                         {downloading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <Loader2 className="size-3.5 animate-spin" />
                         ) : (
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="size-3.5" />
                         )}
                         {tt?.account_rewards_modal_download ?? 'Download CSV'}
                     </button>

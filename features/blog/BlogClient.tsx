@@ -1,6 +1,7 @@
 'use client';
 import { useLanguage } from '@/context/LanguageContext';
 import { useState } from 'react';
+import type { BlogPost } from './types';
 import { ContentHero } from '@/components/layout/ContentHero';
 import { AnimatePresence } from 'motion/react';
 
@@ -12,7 +13,9 @@ import { BlogGrid } from './components/BlogGrid';
 import { BlogOverlay } from './components/BlogOverlay';
 import { BlogPublishModal } from './components/BlogPublishModal';
 
-export default function Blog({ initialPosts = [], dictionary }: BlogClientProps) {
+const EMPTY_POSTS: BlogPost[] = [];
+
+export default function Blog({ initialPosts = EMPTY_POSTS, dictionary }: BlogClientProps) {
   const { language, t: dict } = useLanguage();
   const [showPublishModal, setShowPublishModal] = useState(false);
   const t = dictionary || dict || {};

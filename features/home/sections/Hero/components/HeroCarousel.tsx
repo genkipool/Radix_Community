@@ -152,18 +152,20 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
         onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
       >
         <button
+          type="button"
           onClick={prev}
           disabled={exitingIdx !== null}
           aria-label={t.hero.btn_prev || "Slide anterior"}
-          className="group relative flex items-center justify-center w-7 h-7 rounded-full border border-[var(--color-card-border)] text-[var(--color-text-muted)] shrink-0 overflow-hidden transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+          className="group relative flex items-center justify-center size-7 rounded-full border border-[var(--color-card-border)] text-[var(--color-text-muted)] shrink-0 overflow-hidden transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
         >
           <span className="absolute inset-0 rounded-full bg-[var(--color-text-main)]/6 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <ChevronLeft className="w-3.5 h-3.5 relative z-10" strokeWidth={2} />
+          <ChevronLeft className="size-3.5 relative z-10" strokeWidth={2} />
         </button>
 
         {slides.map((_, index) => (
           <button
-            key={index}
+            type="button"
+            key={`dot-${index}`}
             onClick={() => goTo(index)}
             disabled={exitingIdx !== null}
             className="h-[3px] w-16 bg-[var(--color-text-main)]/15 rounded-full overflow-hidden cursor-pointer p-0 border-none outline-none relative transition-colors hover:bg-[var(--color-text-main)]/25 disabled:cursor-default"
@@ -187,13 +189,14 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
         ))}
 
         <button
+          type="button"
           onClick={next}
           disabled={exitingIdx !== null}
           aria-label={t.hero.btn_next || "Slide siguiente"}
-          className="group relative flex items-center justify-center w-7 h-7 rounded-full border border-[var(--color-card-border)] text-[var(--color-text-muted)] shrink-0 overflow-hidden transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+          className="group relative flex items-center justify-center size-7 rounded-full border border-[var(--color-card-border)] text-[var(--color-text-muted)] shrink-0 overflow-hidden transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
         >
           <span className="absolute inset-0 rounded-full bg-[var(--color-text-main)]/6 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <ChevronRight className="w-3.5 h-3.5 relative z-10" strokeWidth={2} />
+          <ChevronRight className="size-3.5 relative z-10" strokeWidth={2} />
         </button>
       </div>
     </>

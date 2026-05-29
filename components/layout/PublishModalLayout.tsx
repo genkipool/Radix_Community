@@ -40,7 +40,7 @@ export function PublishModalLayout({
     onSubmit,
     title,
     subtitle,
-    icon = <MessageSquarePlus className="w-6 h-6" />,
+    icon: iconProp,
     isPublishing,
     canPublish,
     publishLabel,
@@ -50,6 +50,7 @@ export function PublishModalLayout({
     disclaimer,
     maxWidth = 'max-w-5xl'
 }: PublishModalLayoutProps) {
+    const icon = iconProp ?? <MessageSquarePlus className="size-6" />;
     if (!isOpen) return null;
 
     return (
@@ -71,7 +72,7 @@ export function PublishModalLayout({
                         <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-[var(--color-accent)]/5 pointer-events-none" />
                         <div className="flex items-center justify-between relative z-10">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl shrink-0">
+                                <div className="size-12 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl shrink-0">
                                     {icon}
                                 </div>
                                 <div>
@@ -84,10 +85,11 @@ export function PublishModalLayout({
                                 </div>
                             </div>
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="w-10 h-10 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-transparent hover:border-[var(--color-card-border)]"
+                                className="size-10 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all border border-transparent hover:border-[var(--color-card-border)]"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="size-6" />
                             </button>
                         </div>
                     </div>
@@ -104,7 +106,7 @@ export function PublishModalLayout({
                                 {footerExtra}
                             </div>
                         )}
-                        
+
                         <div className="flex items-center gap-6 w-full justify-between">
                             <div className="flex-1 min-w-0">
                                 {disclaimer && (
@@ -115,30 +117,30 @@ export function PublishModalLayout({
                             </div>
 
                             <div className="flex items-center gap-4 shrink-0">
-                            {cancelLabel && (
-                                <Button 
-                                    variant="ghost" 
-                                    onClick={onClose} 
-                                    disabled={isPublishing}
-                                    className="px-8 py-3 rounded-2xl font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                {cancelLabel && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={onClose}
+                                        disabled={isPublishing}
+                                        className="px-8 py-3 rounded-2xl font-bold text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                                    >
+                                        {cancelLabel}
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="primary"
+                                    onClick={onSubmit}
+                                    isLoading={isPublishing}
+                                    disabled={!canPublish || isPublishing}
+                                    className="px-10 py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] min-w-[160px]"
                                 >
-                                    {cancelLabel}
+                                    {isPublishing ? '...' : publishLabel}
                                 </Button>
-                            )}
-                            <Button
-                                variant="primary"
-                                onClick={onSubmit}
-                                isLoading={isPublishing}
-                                disabled={!canPublish || isPublishing}
-                                className="px-10 py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] min-w-[160px]"
-                            >
-                                {isPublishing ? '...' : publishLabel}
-                            </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </motion.div>
+            </motion.div>
         </>
     );
 }

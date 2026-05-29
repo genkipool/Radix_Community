@@ -15,10 +15,11 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
-import { ValidatorDetailView } from '../staking';
-import { TransactionDetailModal, AccountCard } from '../explorador';
+import { ValidatorDetailView } from '../staking/components/ValidatorDetailView';
+import { TransactionDetailModal } from '../explorador/components/TransactionDetailModal';
+import { AccountCard } from '../explorador/components/AccountCard';
 
-import type { DashboardModalsProps } from '../types';
+import type { DashboardModalsProps } from '../types/components.types';
 
 export const DashboardModals = ({
   activeView,

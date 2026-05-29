@@ -4,7 +4,7 @@ import { X, Code2, Trophy, Percent, Wallet, Gamepad2, ArrowRight } from 'lucide-
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 
-import { DevPublishModalProps } from '../types';
+import { DevPublishModalProps } from '../types/components.types';
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
@@ -38,15 +38,13 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   return (
     <div
+      role="dialog"
+      aria-modal={isOpen}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      role="dialog"
-      aria-modal="true"
     >
       <div
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border shadow-2xl flex flex-col"
@@ -58,18 +56,18 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
           style={{ background: 'var(--color-bg)', borderColor: 'var(--color-card-border)' }}
         >
           <div className="flex items-center gap-3">
-            <Code2 className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
+            <Code2 className="size-6" style={{ color: 'var(--color-primary)' }} />
             <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-main)' }}>
               {t.title ?? 'Publica tu juego en Radix Games'}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl transition-opacity hover:opacity-70" style={{ color: 'var(--color-text-muted)' }} aria-label="Close">
-            <X className="w-5 h-5" />
+          <button type="button" onClick={onClose} className="p-2 rounded-xl transition-opacity hover:opacity-70" style={{ color: 'var(--color-text-muted)' }} aria-label="Close">
+            <X className="size-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-6 space-y-8">
+        <div className="p-6 space-y-8">
 
           {/* Intro */}
           <div className="rounded-2xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
@@ -79,7 +77,7 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
           </div>
 
           {/* How it works */}
-          <Section icon={<Gamepad2 className="w-5 h-5" />} title={t.how_title ?? '¿Cómo funciona?'}>
+          <Section icon={<Gamepad2 className="size-5" />} title={t.how_title ?? '¿Cómo funciona?'}>
             <div className="space-y-3">
               {[
                 { step: '1', label: t.step1_title ?? 'Adquiere tu badge', desc: t.step1_desc ?? 'Obtén tu badge de desarrollador pagando en XRD. La misma badge te permite jugar en torneos y publicar tus juegos.' },
@@ -89,7 +87,7 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
               ].map(({ step, label, desc }) => (
                 <div key={step} className="flex gap-4 p-3 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
                   <span
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
+                    className="size-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
                     style={{ background: 'var(--color-primary)', color: 'var(--color-bg)' }}
                   >
                     {step}
@@ -104,7 +102,7 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
           </Section>
 
           {/* Revenue split */}
-          <Section icon={<Percent className="w-5 h-5" />} title={t.revenue_title ?? 'Distribución de ingresos del torneo'}>
+          <Section icon={<Percent className="size-5" />} title={t.revenue_title ?? 'Distribución de ingresos del torneo'}>
             <div className="grid grid-cols-3 gap-3 mb-4">
               <StatBox value="80%" label={t.rev_players ?? 'Premios jugadores'} gradient="from-green-500 to-emerald-400" />
               <StatBox value="15%" label={t.rev_dev ?? 'Para el desarrollador'} gradient="from-violet-500 to-purple-400" />
@@ -118,13 +116,13 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
           </Section>
 
           {/* Badge requirement */}
-          <Section icon={<Wallet className="w-5 h-5" />} title={t.badge_title ?? 'Requisito: tu badge de Radix Games'}>
+          <Section icon={<Wallet className="size-5" />} title={t.badge_title ?? 'Requisito: tu badge de Radix Games'}>
             <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-primary)' }}>
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                className="size-10 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: 'var(--color-primary)', opacity: 0.9 }}
               >
-                <Trophy className="w-5 h-5" style={{ color: 'var(--color-bg)' }} />
+                <Trophy className="size-5" style={{ color: 'var(--color-bg)' }} />
               </div>
               <div>
                 <p className="text-sm font-bold mb-1" style={{ color: 'var(--color-primary)' }}>
@@ -140,12 +138,13 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
           {/* CTA */}
           <div className="flex items-center justify-center">
             <button
+              type="button"
               onClick={onClose}
               className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-opacity hover:opacity-80"
               style={{ background: 'var(--color-primary)', color: 'var(--color-bg)' }}
             >
               {t.cta ?? 'Adquiere tu badge y empieza a crear'}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="size-4" />
             </button>
           </div>
         </div>

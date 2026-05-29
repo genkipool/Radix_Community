@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Clock, Coins, Landmark, Users, Mail
@@ -57,10 +57,38 @@ const RenderSymbol = ({ address, fallback, network, enrichedName }: { address: s
     );
 };
 
+/* ── StatusTypeLabels component ── */
+function StatusTypeLabels({ isSuccess, color, statusLabel, labelBaseClass, immediateType }: { isSuccess: boolean; color: string; statusLabel: string; labelBaseClass: string; immediateType: string }) {
+    const statusStyle = isSuccess
+        ? {
+            color: 'var(--color-accent)',
+            borderColor: 'rgba(var(--color-accent-rgb), 0.2)',
+            boxShadow: '0 0 12px rgba(var(--color-accent-rgb), 0.1), inset 0 0 4px rgba(var(--color-accent-rgb), 0.05)',
+            textShadow: '0 0 8px rgba(var(--color-accent-rgb), 0.3)'
+        }
+        : {
+            color,
+            borderColor: `${color}40`,
+            boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`,
+            textShadow: `0 0 8px ${color}40`
+        };
+
+    return (
+        <>
+            <span className={`${labelBaseClass} bg-white/5`} style={statusStyle}>
+                <span className="mt-[1px]">{statusLabel}</span>
+            </span>
+            <div className={`${labelBaseClass} bg-[var(--color-surface)] border-[var(--color-card-border)] px-3 text-[var(--color-text-muted)]`} title="Transaction Type">
+                <span className="mt-[1px]">{immediateType}</span>
+            </div>
+        </>
+    );
+}
+
 /* ═══════ TRANSACTION CARD ═══════ */
 import { formatEntity } from '../../utils/entityUtils';
 
-import { TransactionCardProps } from '../types';
+import { TransactionCardProps } from '../types/components.types';
 
 const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onCopy, copiedAddress, t, readingMode, network = 'mainnet', timezone, locale, marketData }: TransactionCardProps) => {
     const tt = t?.dashboard?.transactions;
@@ -109,7 +137,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                 src={proposerSource.iconUrl}
                 alt={proposerSource.name}
                 fallbackName={proposerSource.name}
-                className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] object-cover shrink-0"
+                className="size-4 sm:w-5 sm:h-5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] object-cover shrink-0"
             />
             <span className="text-[10px] sm:text-[11px] font-bold text-[var(--color-text-main)] truncate" title={proposerSource.address}>
                 {proposerSource.name}
@@ -145,47 +173,19 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     // Show immediately even before expand
     const immediateTypeFallback = resolveTransactionType(immediateClasses, [], tt);
     const immediateType = (isExpanded ? transactionType : immediateTypeFallback) || resolveTransactionType(immediateClasses, [], tt);
-    const [downTime, setDownTime] = useState(0);
-    const [downPos, setDownPos] = useState({ x: 0, y: 0 });
+    const downTimeRef = useRef(0);
+    const downPosRef = useRef({ x: 0, y: 0 });
     const selectionRef = useRef<string | null>(null);
 
     // Common Label Styles to ensure Status & Type match
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
 
-    // Extracted to avoid duplicating the identical status+type label pair
-    const renderStatusTypeLabels = () => {
-        const statusStyle = isSuccess
-            ? {
-                color: 'var(--color-accent)',
-                borderColor: 'rgba(var(--color-accent-rgb), 0.2)',
-                boxShadow: '0 0 12px rgba(var(--color-accent-rgb), 0.1), inset 0 0 4px rgba(var(--color-accent-rgb), 0.05)',
-                textShadow: '0 0 8px rgba(var(--color-accent-rgb), 0.3)'
-            }
-            : {
-                color,
-                borderColor: `${color}40`,
-                boxShadow: `0 0 12px ${color}25, inset 0 0 4px ${color}15`,
-                textShadow: `0 0 8px ${color}40`
-            };
-
-        return (
-            <>
-                <span className={`${labelBaseClass} bg-white/5`} style={statusStyle}>
-                    <span className="mt-[1px]">{statusLabel}</span>
-                </span>
-                <div className={`${labelBaseClass} bg-[var(--color-surface)] border-[var(--color-card-border)] px-3 text-[var(--color-text-muted)]`} title="Transaction Type">
-                    <span className="mt-[1px]">{immediateType}</span>
-                </div>
-            </>
-        );
-    };
-
     return (
         <Card
             onPointerEnter={() => prefetchTx(tx.intentHash, network)}
             onPointerDown={(e) => {
-                setDownTime(Date.now());
-                setDownPos({ x: e.clientX, y: e.clientY });
+                downTimeRef.current = Date.now();
+                downPosRef.current = { x: e.clientX, y: e.clientY };
 
                 // Capture current selection state to differentiate between starting a selection
                 // and clicking after a selection already existed.
@@ -225,13 +225,11 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
                 // 4. Distance check: If the mouse moved significantly (drag/selection), don't toggle.
 
-                const distance = Math.sqrt(
-                    Math.pow(e.clientX - downPos.x, 2) + Math.pow(e.clientY - downPos.y, 2)
-                );
-                if (distance > 10) return;
+                const dp = downPosRef.current;
+                if (Math.sqrt(Math.pow(e.clientX - dp.x, 2) + Math.pow(e.clientY - dp.y, 2)) > 10) return;
 
                 // 5. Time check: Prevent long-press triggers.
-                if (Date.now() - downTime > 500) return;
+                if (Date.now() - downTimeRef.current > 500) return;
 
                 onExpand(tx.intentHash);
             }}
@@ -239,14 +237,14 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
         >
             <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
                 {/* AVATAR / ICON */}
-                <div onClick={() => undefined}
+                <div aria-hidden="true"
                     className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, ${isSuccess ? 'rgba(var(--color-accent-rgb), 0.2)' : color}, transparent)` }} />
                     <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center" style={{ borderColor: isSuccess ? 'var(--color-accent)' : color, boxShadow: isSuccess ? `0 0 15px rgba(var(--color-accent-rgb), 0.2)` : `0 0 15px ${color}30` }}>
                         {isSuccess ? (
-                            <RadixIcon className={isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} strokeColor="var(--color-accent)" />
+                            <RadixIcon className={isVertical ? (isCompact ? "size-5" : "size-6") : "size-8"} strokeColor="var(--color-accent)" />
                         ) : (
-                            <RadixIcon className={`${isVertical ? (isCompact ? "w-5 h-5" : "w-6 h-6") : "w-8 h-8"} scale-y-[-1] [stroke-dasharray:4_4]`} strokeColor={color} />
+                            <RadixIcon className={`${isVertical ? (isCompact ? "size-5" : "size-6") : "size-8"} scale-y-[-1] [stroke-dasharray:4_4]`} strokeColor={color} />
                         )}
                     </div>
                 </div>
@@ -257,7 +255,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Intent Hash Area */}
                         <div className={`flex items-start justify-between gap-4 ${isVertical ? 'mb-2 mt-2 flex-wrap' : 'mb-3 sm:flex-nowrap'}`}>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <h3 className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-sm sm:text-base'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2`}
+                                <button type="button" className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-sm sm:text-base'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 text-left`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onCopy(tx.intentHash);
@@ -271,12 +269,12 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                         onClick={() => onCopy(tx.intentHash)}
                                         className="shrink-0 ml-1"
                                     />
-                                </h3>
+                                </button>
                             </div>
 
                             {columns === 1 && (
                                 <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center gap-2 shrink-0">
-                                    {renderStatusTypeLabels()}
+                                    <StatusTypeLabels isSuccess={isSuccess} color={color} statusLabel={statusLabel} labelBaseClass={labelBaseClass} immediateType={immediateType} />
                                 </div>
                             )}
                         </div>
@@ -284,7 +282,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Stats Grid */}
                         <div className={`grid ${isCompact ? 'grid-cols-1' : (columns >= 2 && columns <= 4) ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-5'} gap-2 sm:gap-4 text-sm mt-3 items-center`}>
                             <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt?.date_time || 'Date & Time'}</div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="size-3" /> {tt?.date_time || 'Date & Time'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
                                     {new Date(tx.confirmedAt).toLocaleString(locale, {
                                         timeZone: timezone,
@@ -294,7 +292,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
                             </div>
                             <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="w-3 h-3" /> {tt?.epoch_round || 'Epoch/Round'}</div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1"><Clock className="size-3" /> {tt?.epoch_round || 'Epoch/Round'}</div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-sm'} font-bold text-[var(--color-text-main)] truncate`}>
                                     Ep: {tx.epoch} / Rnd: {tx.round}
                                 </div>
@@ -303,12 +301,12 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
                                     {tx.displayIsMint ? (
                                         <div className="flex items-center gap-1">
-                                            <Landmark className="w-3 h-3" />
+                                            <Landmark className="size-3" />
                                             {tt?.minting || 'Minting'}
                                         </div>
                                     ) : (
                                         <>
-                                            <Coins className="w-3 h-3" />
+                                            <Coins className="size-3" />
                                             {tx.displayAmount !== undefined
                                                 ? (tt?.amount || 'Amount')
                                                 : (tt?.fee_paid || 'Fee Paid')}
@@ -340,10 +338,10 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                             <div className={`flex items-center gap-8 sm:gap-12 min-w-0 w-full ${columns === 1 ? 'sm:col-span-2' : 'col-span-1'}`}>
                                 <div className="flex sm:flex-col justify-end sm:justify-start gap-4 sm:gap-1 text-right sm:text-left mt-2 sm:mt-0 shrink-0">
                                     <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
-                                        <Users className="w-3 h-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
+                                        <Users className="size-3" /> {tx.accountsCount} {t?.dashboard?.transactions?.accounts || 'Accounts'}
                                     </div>
                                     <div className="text-[10px] sm:text-xs font-bold text-[var(--color-text-muted)] flex items-center justify-end sm:justify-start gap-1">
-                                        <Landmark className="w-3 h-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
+                                        <Landmark className="size-3" /> {tx.componentsCount} {t?.dashboard?.transactions?.components || 'Components'}
                                     </div>
                                 </div>
 
@@ -378,7 +376,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Labels Footer (Grid 2+) */}
                         {columns >= 2 && (
                             <div className={`flex ${columns >= 7 ? 'flex-col items-start' : 'items-center'} gap-2 mt-4 pt-3 border-t border-[var(--color-card-border)]/50`}>
-                                {renderStatusTypeLabels()}
+                                <StatusTypeLabels isSuccess={isSuccess} color={color} statusLabel={statusLabel} labelBaseClass={labelBaseClass} immediateType={immediateType} />
 
                                 {/* Proposer for Grid 2-4 (Footer) */}
                                 {columns >= 2 && columns <= 4 && proposerDisplay && (
@@ -395,7 +393,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
             {/* MESSAGE FOOTER - Only visible when unexpanded */}
             {tx.message && !isExpanded && (
                 <div className="p-3 bg-[var(--color-bg)]/80 text-[11px] sm:text-xs font-mono text-[var(--color-text-muted)] border-t border-[var(--color-card-border)] flex items-start gap-2 shadow-inner">
-                    <Mail className="shrink-0 mt-0.5 text-[var(--color-primary)] w-3.5 h-3.5" />
+                    <Mail className="shrink-0 mt-0.5 text-[var(--color-primary)] size-3.5" />
                     <span className="truncate translate-y-[2px]">{tx.message}</span>
                 </div>
             )}
@@ -412,5 +410,4 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 };
 TransactionCard.displayName = 'TransactionCard';
 
-/* Re-export so existing imports of formatEntity from this file keep working */
-export { TransactionCard, formatEntity };
+export { TransactionCard };

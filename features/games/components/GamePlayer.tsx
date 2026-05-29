@@ -25,7 +25,7 @@ const CUSTOM_GAMES: Record<string, React.ComponentType> = {
   'radix-invaders': RadixInvadersGame,
 };
 
-import { GamePlayerProps } from '../types';
+import { GamePlayerProps } from '../types/components.types';
 
 export default function GamePlayer({ game }: GamePlayerProps) {
   const { t: dict } = useLanguage();
@@ -48,18 +48,18 @@ export default function GamePlayer({ game }: GamePlayerProps) {
             style={{ flex: 1, width: '100%', border: 0 }}
             title={gameTitle}
             allow="accelerometer; autoplay; fullscreen"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox="allow-scripts allow-forms allow-popups"
             loading="lazy"
           />
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--color-bg)' }}>
             <div className={`w-32 h-32 rounded-3xl bg-gradient-to-br ${game.thumbnailGradient} flex items-center justify-center shadow-2xl`}>
-              <Gamepad2 className="w-16 h-16 text-white opacity-80" />
+              <Gamepad2 className="size-16 text-white opacity-80" />
             </div>
             <div className="text-center max-w-md px-6">
               <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-text-main)' }}>{gameTitle}</h2>
               <div className="flex items-start gap-2 p-4 rounded-2xl border" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)' }}>
-                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                <AlertCircle className="size-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t.coming_soon ?? 'This game is coming soon!'}</p>
               </div>
             </div>

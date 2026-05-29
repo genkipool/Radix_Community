@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -28,9 +28,9 @@ export function SearchBar({
     const [localValue, setLocalValue] = useState(value);
     const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-        const [prevValue, setPrevValue] = useState(value);
-    if (value !== prevValue) {
-        setPrevValue(value);
+    const [prevExternalValue, setPrevExternalValue] = useState(value);
+    if (value !== prevExternalValue) {
+        setPrevExternalValue(value);
         setLocalValue(value);
     }
 
@@ -53,7 +53,7 @@ export function SearchBar({
         return (
             <div className={`relative ${className}`}>
                 <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
                     style={{ color: 'var(--color-text-muted)' }}
                 />
                 <input
@@ -67,17 +67,19 @@ export function SearchBar({
                         color: 'var(--color-text-main)',
                     }}
                     placeholder={placeholder}
+                    aria-label={placeholder}
                     value={localValue}
                     onChange={e => handleChange(e.target.value)}
                 />
                 {localValue && (
                     <button
+                        type="button"
                         onClick={handleClear}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full transition-opacity hover:opacity-70"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded-full transition-opacity hover:opacity-70"
                         style={{ color: 'var(--color-text-muted)' }}
                         aria-label="Clear search"
                     >
-                        <X className="w-3 h-3" />
+                        <X className="size-3" />
                     </button>
                 )}
             </div>
@@ -90,7 +92,7 @@ export function SearchBar({
             <div className="relative w-full max-w-3xl group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)]/5 to-[var(--color-accent)]/5 rounded-2xl blur-xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-500" />
                 <div className="relative flex items-center px-6 bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-card-border)] rounded-2xl shadow-sm transition-all duration-300">
-                    <Search className="w-5 h-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                    <Search className="size-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
                     <input
                         id={id}
                         name="search"
@@ -98,14 +100,17 @@ export function SearchBar({
                         value={localValue}
                         onChange={e => handleChange(e.target.value)}
                         placeholder={placeholder}
+                        aria-label={placeholder}
                         className="w-full px-4 py-3 md:py-4 bg-transparent border-none text-base focus:outline-none placeholder:text-[var(--color-text-muted)]/50 text-[var(--color-text-main)]"
                     />
                     {localValue && (
                         <button
+                            type="button"
                             onClick={handleClear}
+                            aria-label="Clear search"
                             className="mr-5 p-2 rounded-full hover:bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-all"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="size-5" />
                         </button>
                     )}
                 </div>

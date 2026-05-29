@@ -1,5 +1,5 @@
 'use client';
-import React, { useSyncExternalStore, useEffect } from 'react';
+import { useSyncExternalStore, useRef } from 'react';
 import {
     subscribeToLiveData,
     subscribeToEpochChange,
@@ -13,7 +13,8 @@ import { type Validator } from '@/types/radix';
    HOOKS
 ───────────────────────────────────────── */
 
-export function useCurrentEpoch(): number | null {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function useCurrentEpoch(): number | null {
     return useSyncExternalStore(subscribeToEpochChange, getLastKnownEpoch, getLastKnownEpoch);
 }
 
@@ -29,9 +30,11 @@ export function useCurrentEpoch(): number | null {
 export function useLiveProposals(validator: Validator) {
     const snap = useSyncExternalStore(subscribeToLiveData, getLiveSnapshot, getLiveSnapshot);
 
-    useEffect(() => {
-        if (validator.address) registerAddressForPolling(validator.address);
-    }, [validator.address]);
+    const prevAddressRef = useRef<string>();
+    if (validator.address && prevAddressRef.current !== validator.address) {
+        prevAddressRef.current = validator.address;
+        registerAddressForPolling(validator.address);
+    }
 
     // Live epoch-scoped data (real-time)
     const live = snap.epochProposals.get(validator.address);
@@ -71,8 +74,7 @@ export function useLiveProposals(validator: Validator) {
         // 2. Combine with client-side history (bridged)
         // 3. Optional: Fallback to server data ONLY if we have very few rows in client memory
         const serverRows = validator.epochPerformance
-            .filter(e => !e.isLive)
-            .map(e => ({ ...e, isLive: false }));
+            .flatMap(e => e.isLive ? [] : [{ ...e, isLive: false }]);
 
         const combined = [
             liveRow,
@@ -117,13 +119,3 @@ export function useLiveProposals(validator: Validator) {
     };
 }
 
-/* ─────────────────────────────────────────
-   UTILITY COMPONENTS
-───────────────────────────────────────── */
-
-import { type LiveProposalsTextProps } from '../types';
-
-export const LiveProposalsText: React.FC<LiveProposalsTextProps> = ({ validator, type, className }) => {
-    const data = useLiveProposals(validator);
-    return <span className={className}>{data[type].toLocaleString()}</span>;
-};

@@ -69,7 +69,9 @@ export const useStakingTransaction = () => {
                 }
 
                 if (!manifest) {
-                    throw new Error('Unsupported action');
+                    setError('Unsupported action');
+                    setIsTransacting(false);
+                    return null;
                 }
 
                 const result = await rdt.walletApi.sendTransaction({
@@ -78,16 +80,18 @@ export const useStakingTransaction = () => {
                 });
 
                 if (result.isErr()) {
-                    throw new Error(result.error.error || 'Transaction rejected by wallet');
+                    setError(result.error.error || 'Transaction rejected by wallet');
+                    setIsTransacting(false);
+                    return null;
                 }
 
+                setIsTransacting(false);
                 return result.value.transactionIntentHash;
             } catch (err: unknown) {
                 console.error('Staking transaction error:', err);
                 setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
-                return null;
-            } finally {
                 setIsTransacting(false);
+                return null;
             }
         };
 

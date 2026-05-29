@@ -37,6 +37,7 @@ export function LabelBadge({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       title={title}
       className={`${baseClasses} ${bgClasses} ${onClick ? 'cursor-pointer hover:opacity-80 active:scale-95' : 'cursor-default'} ${className}`}

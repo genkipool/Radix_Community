@@ -9,10 +9,10 @@ import type { BaseSectionProps } from '../../types';
 const card = 'rounded-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] p-8 shadow-md hover:shadow-xl transition-all duration-300 group';
 
 const DOC_ICONS = [
-    <FileText key={10} className="w-7 h-7 text-[var(--color-primary)]" />,
-    <BookOpen key={11} className="w-7 h-7 text-[var(--color-secondary)]" />,
-    <Code2 key={12} className="w-7 h-7 text-[var(--color-accent)]" />,
-    <Globe key={13} className="w-7 h-7 text-[var(--color-primary)]" />,
+    <FileText key={10} className="size-7 text-[var(--color-primary)]" />,
+    <BookOpen key={11} className="size-7 text-[var(--color-secondary)]" />,
+    <Code2 key={12} className="size-7 text-[var(--color-accent)]" />,
+    <Globe key={13} className="size-7 text-[var(--color-primary)]" />,
 ];
 
 const DOC_LINKS = [
@@ -42,7 +42,7 @@ export default function Documentation({ t }: BaseSectionProps) {
             <GlowBlob color="var(--color-primary)" position="bottom-left" opacity={0.15} />
             <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                 <SectionHeader
-                    icon={<FileText className="w-4 h-4 shrink-0" />}
+                    icon={<FileText className="size-4 shrink-0" />}
                     badge={t.documentacion?.label}
                     badgeClassName="bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-primary)]"
                     title={t.documentacion?.h2a}
@@ -53,9 +53,9 @@ export default function Documentation({ t }: BaseSectionProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                     {(t.documentacion?.cards || []).map((doc: { title: string; desc: string; links: string[] }, i: number) => (
-                        <FadeIn key={i} delay={i * 0.05} className={card}>
+                        <FadeIn key={`doc-${i}`} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-14 h-14 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center group-hover:border-[var(--color-primary)]/40 transition-colors">
+                                <div className="size-14 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center group-hover:border-[var(--color-primary)]/40 transition-colors">
                                     {DOC_ICONS[i]}
                                 </div>
                                 <div className="flex-1">

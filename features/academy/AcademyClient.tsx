@@ -21,19 +21,19 @@ export default function Academy({ t }: AcademyClientProps) {
 
     /* ── Static icon arrays ── */
     const featureIcons = [
-        <Shield key={2} className="w-7 h-7 text-green-400" />,
-        <Box key={3} className="w-7 h-7 text-[var(--color-secondary)]" />,
-        <Layers key={4} className="w-7 h-7 text-[var(--color-primary)]" />,
-        <Terminal key={5} className="w-7 h-7 text-[var(--color-accent)]" />,
+        <Shield key={2} className="size-7 text-green-400" />,
+        <Box key={3} className="size-7 text-[var(--color-secondary)]" />,
+        <Layers key={4} className="size-7 text-[var(--color-primary)]" />,
+        <Terminal key={5} className="size-7 text-[var(--color-accent)]" />,
     ];
 
     const moduleIcons = [
-        <BookOpen key={9} className="w-5 h-5" />,
-        <Terminal key={10} className="w-5 h-5" />,
-        <Zap key={11} className="w-5 h-5" />,
-        <Shield key={12} className="w-5 h-5" />,
-        <Layers key={13} className="w-5 h-5" />,
-        <Rocket key={14} className="w-5 h-5" />,
+        <BookOpen key={9} className="size-5" />,
+        <Terminal key={10} className="size-5" />,
+        <Zap key={11} className="size-5" />,
+        <Shield key={12} className="size-5" />,
+        <Layers key={13} className="size-5" />,
+        <Rocket key={14} className="size-5" />,
     ];
 
     /* ── Code examples ── */
@@ -66,7 +66,7 @@ contract MyToken is ERC20 {
                 gradient="from-[var(--color-accent)] to-[var(--color-secondary)]"
                 heroPadding="pt-32 pb-24"
                 badge={{
-                    icon: <GraduationCap className="w-4 h-4 shrink-0" />,
+                    icon: <GraduationCap className="size-4 shrink-0" />,
                     text: academy.hero.tag,
                     className: 'bg-[var(--color-secondary)]/10 border-[var(--color-secondary)]/30 text-[var(--color-secondary)]',
                 }}
@@ -101,7 +101,7 @@ contract MyToken is ERC20 {
             <section className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
                 <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                     <SectionHeader
-                        icon={<Code2 className="w-4 h-4 shrink-0" />}
+                        icon={<Code2 className="size-4 shrink-0" />}
                         badge={academy.whatIsScrypto.tag}
                         badgeClassName="bg-[var(--color-bg)] border-[var(--color-card-border)] text-green-400"
                         title={academy.whatIsScrypto.title}
@@ -112,10 +112,10 @@ contract MyToken is ERC20 {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                         {academy.features.map((f, i: number) => (
-                            <ScrollReveal key={i} delay={i * 0.05}>
+                            <ScrollReveal key={`feature-${i}`} delay={i * 0.05}>
                                 <div className={card}>
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-14 h-14 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center">
+                                        <div className="size-14 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center">
                                             {featureIcons[i]}
                                         </div>
                                         <h3 className="text-xl font-bold text-[var(--color-text-main)]">{f.title}</h3>
@@ -131,11 +131,11 @@ contract MyToken is ERC20 {
             {/* ═══════ CODE COMPARISON ═══════ */}
             <section className="py-24 bg-[var(--color-bg)] relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none opacity-15">
-                    <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-[var(--color-accent)] rounded-full blur-[120px]" />
+                    <div className="absolute top-1/3 right-0 size-[400px] bg-[var(--color-accent)] rounded-full blur-[120px]" />
                 </div>
                 <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                     <SectionHeader
-                        icon={<Zap className="w-4 h-4 shrink-0" />}
+                        icon={<Zap className="size-4 shrink-0" />}
                         badge={academy.comparison.tag}
                         badgeClassName="bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-accent)]"
                         title={academy.comparison.title}
@@ -149,7 +149,7 @@ contract MyToken is ERC20 {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 mb-20">
                             <div className="rounded-2xl bg-[var(--color-surface)] border border-green-500/30 p-6 overflow-hidden">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                                    <div className="size-3 rounded-full bg-green-500" />
                                     <span className="text-sm font-bold text-green-400">{academy.comparison.scryptoLabel}</span>
                                 </div>
                                 <pre className="text-sm text-[var(--color-text-muted)] overflow-x-auto leading-6">
@@ -158,7 +158,7 @@ contract MyToken is ERC20 {
                             </div>
                             <div className="rounded-2xl bg-[var(--color-surface)] border border-red-500/30 p-6 overflow-hidden">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                                    <div className="size-3 rounded-full bg-red-500" />
                                     <span className="text-sm font-bold text-red-400">{academy.comparison.solidityLabel}</span>
                                 </div>
                                 <pre className="text-sm text-[var(--color-text-muted)] overflow-x-auto leading-6">
@@ -175,7 +175,7 @@ contract MyToken is ERC20 {
                                     <thead>
                                         <tr className="border-b border-[var(--color-card-border)]">
                                             {academy.comparison.table.headers.map((header: string, i: number) => (
-                                                <th key={i} className={`px-6 py-4 text-sm font-bold uppercase tracking-widest ${i === 1 ? 'text-[var(--color-secondary)]' : 'text-[var(--color-text-muted)]'}`}>
+                                                <th key={`header-${i}`} className={`px-6 py-4 text-sm font-bold uppercase tracking-widest ${i === 1 ? 'text-[var(--color-secondary)]' : 'text-[var(--color-text-muted)]'}`}>
                                                     {header}
                                                 </th>
                                             ))}
@@ -183,7 +183,7 @@ contract MyToken is ERC20 {
                                     </thead>
                                     <tbody>
                                         {academy.comparison.table.rows.map((row: string[], i: number) => (
-                                            <tr key={i} className={`border-b border-[var(--color-card-border)] ${i % 2 === 0 ? 'bg-[var(--color-bg)]/30' : ''}`}>
+                                            <tr key={`row-${i}`} className={`border-b border-[var(--color-card-border)] ${i % 2 === 0 ? 'bg-[var(--color-bg)]/30' : ''}`}>
                                                 <td className="px-6 py-4 text-sm font-bold text-[var(--color-text-main)]">{row[0]}</td>
                                                 <td className="px-6 py-4 text-sm text-green-400 font-medium">{row[1]}</td>
                                                 <td className="px-6 py-4 text-sm text-[var(--color-text-muted)]">{row[2]}</td>
@@ -213,7 +213,7 @@ contract MyToken is ERC20 {
             <section className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
                 <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
                     <SectionHeader
-                        icon={<BookOpen className="w-4 h-4 shrink-0" />}
+                        icon={<BookOpen className="size-4 shrink-0" />}
                         badge={academy.content.tag}
                         badgeClassName="bg-[var(--color-bg)] border-[var(--color-card-border)] text-[var(--color-primary)]"
                         title={academy.content.title}
@@ -224,13 +224,13 @@ contract MyToken is ERC20 {
 
                     {/* `items-stretch` (default) + `h-full` on each card = equal height per row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-                        {academy.content.modules.map((mod, i: number) => (
-                            <ScrollReveal key={i} delay={i * 0.05}>
+                        {academy.content.modules.map((mod) => (
+                            <ScrollReveal key={mod.num} delay={(mod.num - 1) * 0.05}>
                                 {/* h-full + flex flex-col: card grows to fill grid cell height */}
                                 <div className={card}>
                                     {/* ── Card header ── */}
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-secondary)]/20 to-[var(--color-primary)]/20 border border-[var(--color-secondary)]/30 flex items-center justify-center text-[var(--color-secondary)] font-bold text-lg shrink-0">
+                                        <div className="size-12 rounded-xl bg-gradient-to-br from-[var(--color-secondary)]/20 to-[var(--color-primary)]/20 border border-[var(--color-secondary)]/30 flex items-center justify-center text-[var(--color-secondary)] font-bold text-lg shrink-0">
                                             {mod.num}
                                         </div>
                                         <div className="flex-1 flex items-center gap-2.5">
@@ -250,7 +250,7 @@ contract MyToken is ERC20 {
 
                                     {/* ── Duration badge ── */}
                                     <div className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-primary)] mb-4">
-                                        <Clock className="w-4 h-4 shrink-0" />
+                                        <Clock className="size-4 shrink-0" />
                                         {mod.duration}
                                     </div>
 
@@ -258,7 +258,7 @@ contract MyToken is ERC20 {
                                     <div className="flex-1 pt-4 border-t border-[var(--color-card-border)] space-y-2">
                                         {mod.lessons.map((lesson, li: number) => (
                                             <div key={li} className="flex items-start gap-2 text-sm text-[var(--color-text-muted)]">
-                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0 mt-0.5" />
+                                                <CheckCircle2 className="size-3.5 text-green-400 shrink-0 mt-0.5" />
                                                 <span>{lesson}</span>
                                             </div>
                                         ))}
@@ -282,7 +282,7 @@ contract MyToken is ERC20 {
 
                     <div className="space-y-4">
                         {academy.faq.items.map((faq, i: number) => (
-                            <ScrollReveal key={i} delay={i * 0.05}>
+                            <ScrollReveal key={`faq-${i}`} delay={i * 0.05}>
                                 <div className="rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] p-6">
                                     <h3 className="text-lg font-bold text-[var(--color-text-main)] mb-3">{faq.q}</h3>
                                     <p className="text-[var(--color-text-muted)] leading-relaxed text-sm">{faq.a}</p>
@@ -296,11 +296,11 @@ contract MyToken is ERC20 {
             {/* ═══════ CTA FINAL ═══════ */}
             <section className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none opacity-20">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[var(--color-accent)] rounded-full blur-[200px]" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-[var(--color-accent)] rounded-full blur-[200px]" />
                 </div>
                 <div className="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10 text-center">
                     <SectionHeader
-                        icon={<Rocket className="w-4 h-4 shrink-0" />}
+                        icon={<Rocket className="size-4 shrink-0" />}
                         badge={academy.cta.tag}
                         badgeClassName="bg-[var(--color-bg)] border-[var(--color-card-border)] text-[var(--color-accent)]"
                         title={academy.cta.title}
@@ -317,7 +317,7 @@ contract MyToken is ERC20 {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] text-white font-bold rounded-full text-lg hover:opacity-90 transition-opacity shadow-lg"
                             >
-                                <GraduationCap className="w-5 h-5" />
+                                <GraduationCap className="size-5" />
                                 {academy.cta.btnRegister}
                             </a>
                             <a
@@ -326,7 +326,7 @@ contract MyToken is ERC20 {
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-bg)] border border-[var(--color-card-border)] text-[var(--color-text-main)] font-bold rounded-full text-lg hover:border-[var(--color-secondary)]/50 transition-colors"
                             >
-                                <Users className="w-5 h-5" />
+                                <Users className="size-5" />
                                 {academy.cta.btnProgram}
                             </a>
                         </div>

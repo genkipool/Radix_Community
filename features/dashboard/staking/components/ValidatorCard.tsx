@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { usePrefetchValidatorEntity } from '../hooks/usePrefetchValidator';
 import {
@@ -32,7 +32,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
     marketData,
     locale,
 }: ValidatorCardProps & { isModalMode?: boolean }) => {
-    const [downTime, setDownTime] = useState(0);
+    const downTimeRef = useRef(0);
     const [csvModalOpen, setCsvModalOpen] = useState(false);
 
     const { prefetchValidator } = usePrefetchValidatorEntity();
@@ -43,7 +43,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
 
     const handleCardClick = () => {
         if (window.getSelection()?.toString().length) return;
-        if (Date.now() - downTime > 500) return;
+        if (Date.now() - downTimeRef.current > 500) return;
         handleExpand();
     };
 
@@ -72,7 +72,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         <>
             <Card
                 onPointerEnter={() => prefetchValidator(validator.address, network)}
-                onPointerDown={() => setDownTime(Date.now())}
+                onPointerDown={() => { downTimeRef.current = Date.now(); }}
                 onClick={handleCardClick}
                 className={`p-0 overflow-hidden group cursor-pointer transition-[border-color,box-shadow,transform] duration-300 ${isExpanded && !isModalMode
                     ? 'h-full border-[var(--color-primary)]/40 shadow-lg'

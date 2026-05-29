@@ -13,7 +13,7 @@ export function IconFeatureItem({ icon, title, description, iconClassName }: {
 }) {
     return (
         <div className="flex gap-4">
-            <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center ${iconClassName ?? ''}`}>
+            <div className={`flex-shrink-0 size-12 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center ${iconClassName ?? ''}`}>
                 {icon}
             </div>
             <div>

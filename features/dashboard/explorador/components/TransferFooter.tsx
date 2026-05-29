@@ -50,7 +50,7 @@ export function TransferFooter({
                     const totalSent = allFungible
                         .filter(c => !c.is_fee && parseFloat(c.balance_change || '0') < 0)
                         .reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
-                    
+
                     const totalReceived = allFungible
                         .filter(c => !c.is_fee && parseFloat(c.balance_change || '0') > 0)
                         .reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0);
@@ -59,7 +59,7 @@ export function TransferFooter({
                         <>
                             {totalSent > 0 && (
                                 <span className="flex items-center gap-2">
-                                    <ArrowUp className="text-red-500 w-3.5 h-3.5" />
+                                    <ArrowUp className="text-red-500 size-3.5" />
                                     {tt?.sent_label || 'SENT'}
                                     <span className="text-red-500 font-black">
                                         {totalSent.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
@@ -74,7 +74,7 @@ export function TransferFooter({
 
                             {totalReceived > 0 && (
                                 <span className="flex items-center gap-2">
-                                    <ArrowDown className={`${greenCls} w-3.5 h-3.5`} />
+                                    <ArrowDown className={`${greenCls} size-3.5`} />
                                     {tt?.received_label || 'RECEIVED'}
                                     <span className={`${greenCls} font-black`}>
                                         {totalReceived.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
@@ -86,7 +86,7 @@ export function TransferFooter({
                                 <>
                                     <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                                     <span className="flex items-center gap-2 text-[var(--color-text-main)]">
-                                        <IconBolt className="w-3.5 h-3.5 opacity-60" />
+                                        <IconBolt className="size-3.5 opacity-60" />
                                         <span className="font-black">{receivers.length}</span>
                                         {tt?.recipients_label || 'RECIPIENTS'}
                                     </span>
@@ -101,7 +101,7 @@ export function TransferFooter({
                     <>
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                            <IconFlame className="w-3.5 h-3.5" />
+                            <IconFlame className="size-3.5" />
                             {tt?.system_burn || 'BURNED'}
                             <span className="font-black">
                                 {burnedReceivers.reduce((s, c) => s + Math.abs(parseFloat(c.balance_change || '0')), 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} {symbol}
@@ -115,7 +115,7 @@ export function TransferFooter({
                     <>
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2">
-                            <Shield className="text-amber-500 w-3.5 h-3.5" />
+                            <Shield className="text-amber-500 size-3.5" />
                             {tt?.fee_label?.toUpperCase() || 'FEE'}
                             <span className="text-amber-600 font-black">{(Math.trunc(parseFloat(actualFeePaid) * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XRD</span>
                         </span>
@@ -127,7 +127,7 @@ export function TransferFooter({
                     <>
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                            <IconBolt className="w-3.5 h-3.5" />
+                            <IconBolt className="size-3.5" />
                             {tt?.nfts_minted_label?.toUpperCase() || 'NFTS MINTED'}
                             <span className="font-black">{mintedNftCount}</span>
                         </span>
@@ -139,7 +139,7 @@ export function TransferFooter({
                     <>
                         <div className="h-4 w-px bg-[var(--color-card-border)] hidden sm:block" />
                         <span className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                            <IconFlame className="w-3.5 h-3.5" />
+                            <IconFlame className="size-3.5" />
                             {tt?.nfts_burned_label?.toUpperCase() || 'NFTS BURNED'}
                             <span className="font-black">{burnedNftCount}</span>
                         </span>

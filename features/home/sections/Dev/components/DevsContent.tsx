@@ -21,7 +21,7 @@ export function DevTab0({ t }: { t: Dictionary }) {
         {/* Solidity */}
         <div className="flex flex-col h-full">
           <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 font-semibold px-4 py-3 rounded-t-xl text-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="size-2 rounded-full bg-red-500" />
             {tab.solLabel}
           </div>
           <div className="bg-[var(--code-bg)] border border-[var(--color-card-border)] border-t-0 rounded-b-xl p-6 font-mono text-sm overflow-x-auto flex-1 shadow-sm text-[var(--code-punct)]">
@@ -45,7 +45,7 @@ export function DevTab0({ t }: { t: Dictionary }) {
         {/* Scrypto */}
         <div className="flex flex-col h-full">
           <div className="bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 text-[var(--color-text-main)] font-semibold px-4 py-3 rounded-t-xl text-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />
+            <span className="size-2 rounded-full bg-[var(--color-accent)]" />
             {tab.scrLabel}
           </div>
           <div className="bg-[var(--code-bg)] border border-[var(--color-card-border)] border-t-0 rounded-b-xl p-6 font-mono text-sm overflow-x-auto flex-1 shadow-sm text-[var(--code-punct)]">
@@ -76,7 +76,7 @@ export function DevTab0({ t }: { t: Dictionary }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Stat Solidity */}
         <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-start gap-3 shadow-sm">
-          <AlertTriangle className="w-5 h-5 text-red-700 dark:text-red-400 shrink-0 mt-0.5" />
+          <AlertTriangle className="size-5 text-red-700 dark:text-red-400 shrink-0 mt-0.5" />
           <p className="text-sm text-red-700 dark:text-red-300 font-medium leading-relaxed">
             {tab.solStat}
           </p>
@@ -84,7 +84,7 @@ export function DevTab0({ t }: { t: Dictionary }) {
 
         {/* Stat Scrypto */}
         <div className="p-4 bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 rounded-xl flex items-start gap-3 shadow-sm">
-          <CheckCircle2 className="w-5 h-5 text-[var(--color-accent)] shrink-0 mt-0.5" />
+          <CheckCircle2 className="size-5 text-[var(--color-accent)] shrink-0 mt-0.5" />
           <p className="text-sm text-[var(--color-text-main)] font-medium leading-relaxed">
             {tab.scrStat}
           </p>
@@ -122,7 +122,7 @@ export function DevTab1({ t }: { t: Dictionary }) {
       </div>
       <div className="flex flex-col justify-center gap-6">
         {tab.cards.map((card, i: number) => (
-          <div key={i} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-6 rounded-xl shadow-sm">
+          <div key={`card-${i}`} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-6 rounded-xl shadow-sm">
             <h3 className="text-[var(--color-text-main)] font-bold mb-2 text-lg">{card.title}</h3>
             <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">{card.desc}</p>
           </div>
@@ -143,7 +143,7 @@ export function DevTab2({ t }: { t: Dictionary }) {
         {/* Cabecera del archivo tipo editor */}
         <div className="bg-[var(--color-surface)] border border-[var(--color-card-border)] border-b-0 px-4 py-3 rounded-t-xl text-sm flex items-center justify-between">
           <div className="flex items-center gap-2 text-[var(--color-text-muted)] font-mono text-xs">
-            <svg className="w-4 h-4 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="size-4 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             swap_and_deposit.rtm
@@ -190,8 +190,8 @@ export function DevTab2({ t }: { t: Dictionary }) {
                 'text-[var(--color-secondary)] bg-[var(--color-secondary)]/5 border-[var(--color-secondary)]/20';
 
           return (
-            <div key={i} className={`p-5 border rounded-xl flex items-center gap-4 shadow-sm transition-transform hover:-translate-y-1 ${colorClass}`}>
-              <CheckCircle2 className="w-6 h-6 shrink-0" />
+            <div key={tag} className={`p-5 border rounded-xl flex items-center gap-4 shadow-sm transition-transform hover:-translate-y-1 ${colorClass}`}>
+              <CheckCircle2 className="size-6 shrink-0" />
               <span className="text-sm font-semibold leading-tight">{tag}</span>
             </div>
           );

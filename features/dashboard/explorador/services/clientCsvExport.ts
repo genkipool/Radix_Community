@@ -272,8 +272,8 @@ async function fetchResourceLabels(resourceAddresses: string[], signal?: AbortSi
     const addrs = resourceAddresses.filter((a) => a && a !== XRD_ADDR);
     if (addrs.length === 0) return labels;
 
-    for (let i = 0; i < addrs.length; i += 20) {
-        const chunk = addrs.slice(i, i + 20);
+    await Promise.all(Array.from({ length: Math.ceil(addrs.length / 20) }, async (_, i) => {
+        const chunk = addrs.slice(i * 20, (i + 1) * 20);
         try {
             const rawData = await gatewayPost('/state/entity/details', { addresses: chunk, opt_ins: { explicit_metadata: ['symbol', 'name'] } }, signal);
             const resp = rawData as unknown as GatewayEntityDetailsResponse;
@@ -292,7 +292,7 @@ async function fetchResourceLabels(resourceAddresses: string[], signal?: AbortSi
         } catch {
             for (const addr of chunk) labels[addr] = addr.slice(-12);
         }
-    }
+    }));
     return labels;
 }
 
@@ -547,7 +547,7 @@ async function computeStakingRewardsMath(
                 // Also record balance for transactions on this day
                 const dayOps = txsByDay[dayStr] || [];
                 if (dayOps.length > 0) {
-                    const txHashesOnDay = new Set(accountTxs.filter(tx => tx.date === dayStr).map(tx => tx.hash));
+                    const txHashesOnDay = new Set(accountTxs.flatMap(tx => tx.date === dayStr ? [tx.hash] : []));
                     for (const hash of txHashesOnDay) {
                         validatorTxBalances[valAddr][hash] = correctedStakeXrd.toNumber();
                     }
@@ -637,8 +637,12 @@ function buildCsvRows(
     for (const tx of accountTxs) {
         const { txType, timestamp, hash, balanceChanges, validatorOps, fee } = tx;
         const dateTime = timestamp ? timestamp.replace('T', ' ').slice(0, 19) : `${tx.date} 00:00:00`;
-        const ins = balanceChanges.filter((c) => c.direction === 'in');
-        const outs = balanceChanges.filter((c) => c.direction === 'out');
+        const ins: typeof balanceChanges = [];
+        const outs: typeof balanceChanges = [];
+        for (const c of balanceChanges) {
+            if (c.direction === 'in') ins.push(c);
+            else if (c.direction === 'out') outs.push(c);
+        }
         let feeToApply = fee;
 
         if (txType === 'stake') {

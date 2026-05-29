@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import DocsSidebar, { TOPICS } from './components/DocsSidebar';
+import DocsSidebar from './components/DocsSidebar';
+import { TOPICS } from './data/docsTopics';
 import FeaturedDocsHero from './components/FeaturedDocsHero';
 import DocReaderView from './components/DocReaderView';
 import UserDocReader from './components/UserDocReader';
@@ -20,7 +21,7 @@ const DocsEditor = dynamic(() => import('./components/DocsEditor'), {
     loading: () => (
         <div className="flex-1 flex items-center justify-center py-32">
             <div
-                className="w-9 h-9 rounded-full border-2 animate-spin"
+                className="size-9 rounded-full border-2 animate-spin"
                 style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
             />
         </div>
@@ -58,10 +59,12 @@ const EDITOR_VIEW = 'editor';
  * Main Docs client component.
  * Manages URL sync, sidebar state, and document selection for the doc explorer.
  */
+const EMPTY_USER_DOC_META: UserDocMeta[] = [];
+
 export default function DocsClient({
     initialAutoCollapse = false,
     initialExpandedTopics = '',
-    initialUserDocMeta = [],
+    initialUserDocMeta = EMPTY_USER_DOC_META,
     dictionary,
 }: DocsClientProps) {
 
@@ -107,7 +110,7 @@ export default function DocsClient({
     } = usePersistentExpandSet({
         cookieKeyItems: COOKIE_OPEN_TOPICS,
         cookieKeyAutoCollapse: 'docs_auto_collapse',
-        allIds: TOPICS.map(t => t.id).filter(id => id !== 'admin'),
+        allIds: TOPICS.flatMap(t => t.id !== 'admin' ? [t.id] : []),
         defaultExpandAll: false,
         initialAutoCollapse,
         initialExpandedTopics,

@@ -1,30 +1,7 @@
 'use client';
-/**
- * LazyPhaseGraphic — client-only dynamic graphic loader
- *
- * WHY THIS EXISTS:
- * ─────────────────────────────────────────────────────────────────────────────
- * PhaseGraphics.tsx imports PhaseGraphics.css (≈31 KiB). A static import of
- * that module — even one hidden behind next/dynamic on the page — causes
- * Next.js to include PhaseGraphics.css in the SSR HTML as a render-blocking
- * <link> in <head>.
- *
- * The ONLY reliable way to move a CSS file out of the blocking critical path
- * is to ensure it is never imported in any statically-analysable import chain
- * that runs during SSR. This component achieves that by:
- *
- *   1. Being a pure client component (never executed on the server).
- *   2. Importing PhaseGraphics **dynamically inside useEffect**, which runs
- *      only in the browser, after the page has already painted.
- *
- * Result: PhaseGraphics.css is loaded as a non-blocking async chunk,
- * eliminating the ~120 ms render-blocking penalty identified by Lighthouse.
- *
- * SEO is unaffected — card titles, descriptions, and tags are all rendered
- * by the parent Ecosystem component, which remains SSR.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-import React, { useState, useEffect, useRef } from 'react';
+
+import React from 'react';
+import * as PhaseGraphics from './PhaseGraphics';
 
 interface LazyPhaseGraphicProps {
   num: number;
@@ -42,26 +19,43 @@ function GraphicSkeleton() {
   );
 }
 
+const GRAPHIC_MAP: Record<number, React.ComponentType<{ t?: unknown }> | undefined> = {
+  1: PhaseGraphics.Graphic1,
+  2: PhaseGraphics.Graphic2,
+  3: PhaseGraphics.Graphic3,
+  4: PhaseGraphics.Graphic4,
+  5: PhaseGraphics.Graphic5,
+  6: PhaseGraphics.Graphic6,
+  7: PhaseGraphics.Graphic7,
+  8: PhaseGraphics.Graphic8,
+  9: PhaseGraphics.Graphic9,
+  10: PhaseGraphics.Graphic10,
+  11: PhaseGraphics.Graphic11,
+  12: PhaseGraphics.Graphic12,
+  13: PhaseGraphics.Graphic13,
+  14: PhaseGraphics.Graphic14,
+  15: PhaseGraphics.Graphic15,
+  16: PhaseGraphics.Graphic16,
+  17: PhaseGraphics.Graphic17,
+  18: PhaseGraphics.Graphic18,
+  19: PhaseGraphics.Graphic19,
+  20: PhaseGraphics.Graphic20,
+  21: PhaseGraphics.Graphic21,
+  22: PhaseGraphics.Graphic22,
+  23: PhaseGraphics.Graphic23,
+  24: PhaseGraphics.Graphic24,
+  25: PhaseGraphics.Graphic25,
+  26: PhaseGraphics.Graphic26,
+  27: PhaseGraphics.Graphic27,
+  28: PhaseGraphics.Graphic28,
+  29: PhaseGraphics.Graphic29,
+  30: PhaseGraphics.Graphic30,
+  31: PhaseGraphics.Graphic31,
+  32: PhaseGraphics.Graphic32,
+};
+
 export function LazyPhaseGraphic({ num, t }: LazyPhaseGraphicProps) {
-  const [Graphic, setGraphic] = useState<React.ComponentType<{ t?: unknown }> | null>(null);
-  // Track whether the component is still mounted to avoid setState after unmount
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    isMounted.current = true;
-    // Dynamic import runs entirely in the browser — PhaseGraphics.css is
-    // loaded here, never during SSR, so it cannot block the initial render.
-    import('./PhaseGraphics').then((mod) => {
-      if (!isMounted.current) return;
-      const key = `Graphic${num}` as keyof typeof mod;
-      const Component = mod[key] as React.ComponentType<{ t?: unknown }> | undefined;
-      if (Component) setGraphic(() => Component);
-    });
-
-    return () => {
-      isMounted.current = false;
-    };
-  }, [num]);
+  const Graphic = GRAPHIC_MAP[num];
 
   if (!Graphic) return <GraphicSkeleton />;
 

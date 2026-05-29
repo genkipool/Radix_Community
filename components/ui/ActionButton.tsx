@@ -40,11 +40,11 @@ export function ActionButton({
     variant = 'primary'
 }: ActionButtonProps) {
     let finalIcon = icon;
-    
+
     if (icon === 'plus') {
-        finalIcon = <Plus className="w-4 h-4" />;
+        finalIcon = <Plus className="size-4" />;
     } else if (icon === 'reply') {
-        finalIcon = <Reply className="w-3.5 h-3.5" />;
+        finalIcon = <Reply className="size-3.5" />;
     }
 
     return (

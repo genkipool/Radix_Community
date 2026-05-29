@@ -25,7 +25,7 @@ export default function DevSection({ t }: BaseSectionProps) {
     <section id="para-devs" className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          icon={<Zap className="w-4 h-4 shrink-0" />}
+          icon={<Zap className="size-4 shrink-0" />}
           badge={t.devs.label}
           badgeClassName="bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 text-[var(--color-primary)]"
           title={t.devs.h2a}

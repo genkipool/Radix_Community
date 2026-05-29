@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { Validator } from '@/types/radix';
 import { StakingPopupContent } from './StakingPopupContent';
 import { TranslationsT } from '@/features/dashboard/types';
@@ -73,7 +73,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
-    }, []);
+    }, [timeoutRef]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -101,7 +101,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
             <Portal>
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, y: coords.isUp ? "calc(-100% + 10px)" : 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: coords.isUp ? "-100%" : 0, scale: 1 }}
                             exit={{ opacity: 0, y: coords.isUp ? "calc(-100% + 10px)" : 10, scale: 0.95 }}
@@ -125,7 +125,7 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
                                 }}
                             />
                             <StakingPopupContent validator={validator} t={t} />
-                        </motion.div>
+                        </m.div>
                     )}
                 </AnimatePresence>
             </Portal>

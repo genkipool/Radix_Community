@@ -1,5 +1,6 @@
 import 'server-only';
 import pino from 'pino';
+import 'pino-pretty';
 
 /**
  * Structured logger powered by Pino.

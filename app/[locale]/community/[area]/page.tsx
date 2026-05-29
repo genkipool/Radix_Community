@@ -1,5 +1,9 @@
 import { AREAS } from '@/features/community/data/communityData';
 
+export const metadata = {
+  title: 'Community',
+};
+
 // ═══════ SSG — generateStaticParams ═══════
 // Pre-renders one URL per locale × area segment and the admin panel:
 //   /en/community/development  /es/community/development

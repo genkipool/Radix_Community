@@ -61,10 +61,8 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const resolvedParams = await params;
-  const locale = resolvedParams.locale as Locale;
-  const dictionary = await getFeatureDictionary(locale, []);
-  const cookieStore = await cookies();
+  const [{ locale }, cookieStore] = await Promise.all([params, cookies()]);
+  const dictionary = await getFeatureDictionary(locale as Locale, []);
   const theme = parseTheme(cookieStore.get('theme')?.value);
 
   // Read and verify wallet session from HttpOnly cookie

@@ -14,7 +14,7 @@ import { useSpeedSyncURL } from '@/hooks/useSpeedSyncURL';
 
 const COOKIE_THEATER_MODE = 'games_theater_mode';
 const COOKIE_GRID_VIEW = 'games_grid_view';
-import { GamesClientProps } from './types';
+import { GamesClientProps } from './types/components.types';
 import { Dictionary } from '@/i18n';
 
 /* ── Exit Theater button icon ── */
@@ -56,6 +56,15 @@ export default function GamesClient({
     const [searchQuery, setSearchQuery] = useState('');
     const [gridView, setGridView] = useState(initialGridView);
 
+    /* Initialize theater mode from cookie on mount */
+    const theaterModeInitialized = useRef(false);
+    useEffect(() => {
+        if (!theaterModeInitialized.current) {
+            theaterModeInitialized.current = true;
+            if (initialTheaterMode) setTheaterMode(true);
+        }
+    }, [initialTheaterMode, setTheaterMode]);
+
     /* ── Shared expand/collapse + cookie persistence ── */
     const {
         expandedIds: expandedCategories,
@@ -73,10 +82,6 @@ export default function GamesClient({
         initialAutoCollapse,
         initialExpandedTopics,
     });
-
-    /* Restore theater mode from cookies (LayoutContext doesn't handle initialization) */    useEffect(() => {
-        if (initialTheaterMode) setTheaterMode(true);
-    }, [initialTheaterMode, setTheaterMode]);
 
     /* Scroll to top when a game is selected */
     useEffect(() => {
@@ -169,25 +174,13 @@ export default function GamesClient({
                         <>
                         {/* Top exit button for mobile/accessibility */}
                         <button
+                            type="button"
                             onClick={handleTheaterToggle}
+                            className="absolute top-5 right-5 z-[60] flex items-center justify-center size-11 rounded-full cursor-pointer backdrop-blur transition-[background,border-color,color] duration-150 shadow-lg"
                             style={{
-                                position: 'absolute',
-                                top: 20,
-                                right: 20,
-                                zIndex: 60,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 44,
-                                height: 44,
-                                borderRadius: '50%',
                                 background: 'rgba(0,0,0,0.6)',
                                 border: '1px solid rgba(255,255,255,0.2)',
                                 color: 'rgba(255,255,255,0.85)',
-                                cursor: 'pointer',
-                                backdropFilter: 'blur(8px)',
-                                transition: 'all 0.15s ease',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                             }}
                             onMouseEnter={e => {
                                 const b = e.currentTarget as HTMLButtonElement;
@@ -207,26 +200,13 @@ export default function GamesClient({
                         </button>
 
                         <button
+                            type="button"
                             onClick={handleTheaterToggle}
+                            className="absolute bottom-5 right-5 z-[50] flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-[13px] font-semibold cursor-pointer backdrop-blur transition-[background,border-color,color] duration-150"
                             style={{
-                                position: 'absolute',
-                                bottom: 20,
-                                right: 20,
-                                zIndex: 50,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                padding: '10px 16px',
-                                borderRadius: 10,
-                                fontSize: 13,
-                                fontWeight: 600,
                                 background: 'rgba(0,0,0,0.75)',
                                 border: '1px solid rgba(255,255,255,0.18)',
                                 color: 'rgba(255,255,255,0.8)',
-                                cursor: 'pointer',
-                                backdropFilter: 'blur(12px)',
-                                transition: 'all 0.15s ease',
-                                letterSpacing: '0.03em',
                             }}
                             onMouseEnter={e => {
                                 const b = e.currentTarget as HTMLButtonElement;

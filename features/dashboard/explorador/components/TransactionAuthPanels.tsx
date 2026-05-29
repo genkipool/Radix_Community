@@ -29,7 +29,7 @@ export function LockFeePanel({
             title={tt.lock_fee_title || 'Fee pre-authorization. Unused amount is automatically returned.'}
         >
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-amber-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <Shield className="size-3.5 text-amber-400" />
                 {tt.lock_fee_label || 'Lock Fee (Authorization)'}
             </h3>
             <div className="p-3 flex flex-col gap-2">
@@ -45,7 +45,7 @@ export function LockFeePanel({
                     <div className="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
                         <span className="font-mono truncate" title={lockFeeAccount}>{lockFeeAccount.slice(0, 16)}...{lockFeeAccount.slice(-6)}</span>
                         <button type="button" onClick={e => { e.stopPropagation(); onCopy(lockFeeAccount); }} className={`p-0.5 rounded transition-colors ${copiedAddress === lockFeeAccount ? 'text-green-500' : 'hover:text-[var(--color-text-main)]'}`}>
-                            {copiedAddress === lockFeeAccount ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                            {copiedAddress === lockFeeAccount ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                         </button>
                     </div>
                 )}
@@ -97,7 +97,7 @@ export function AuthBadgePanel({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-primary)]/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-primary)]/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                <Shield className="size-3.5 text-[var(--color-primary)]" />
                 {tt.auth_badge_label || 'Authorization Badge'}
             </h3>
             <div className="p-3">
@@ -113,7 +113,7 @@ export function AuthBadgePanel({
                             {badgeOrigin.slice(0, 16)}...{badgeOrigin.slice(-8)}
                         </span>
                         <button type="button" onClick={e => { e.stopPropagation(); onCopy(badgeOrigin); }} className="hover:text-[var(--color-accent)] transition-colors shrink-0 translate-y-[1px]">
-                            {copiedAddress === badgeOrigin ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                            {copiedAddress === badgeOrigin ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5 text-[var(--color-text-muted)]" />}
                         </button>
                     </div>
                 )}

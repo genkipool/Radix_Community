@@ -23,7 +23,7 @@ export default function InfraReadButton({ label, className: _className }: InfraR
         onClick={() => setOpen(true)}
         className="inline-flex justify-center items-center gap-2.5 px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-md"
       >
-        <BookOpen className="w-5 h-5 shrink-0" />
+        <BookOpen className="size-5 shrink-0" />
         {label}
       </button>
       <InfrastructureModal isOpen={open} onClose={() => setOpen(false)} />

@@ -7,7 +7,8 @@ import {
 import { ContentHero } from '@/components/layout/ContentHero';
 import { CollapsibleHeroSection } from '@/components/layout/CollapsibleHeroSection';
 import { RadixInfoModal } from './RadixInfoModal';
-import { LedgerTable, buildLedger } from './LedgerTable';
+import { LedgerTable } from './LedgerTable';
+import { buildLedger } from '../utils/buildLedger';
 import { useLanguage } from '@/context/LanguageContext';
 import {
     TOTAL_RAISED,
@@ -46,18 +47,19 @@ function AddressCopyRow({ address }: { address: string }) {
 
     return (
         <div className="mt-2 flex items-center justify-between gap-2 overflow-hidden">
-            <p 
-                className="text-[10px] font-mono truncate cursor-pointer hover:text-[var(--color-text-main)] transition-colors" 
-                style={{ color: 'var(--color-text-muted)' }}
+            <button
+                type="button"
+                className="text-[10px] font-mono truncate cursor-pointer hover:text-[var(--color-text-main)] transition-colors text-left"
+                style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', padding: 0 }}
                 onClick={handleCopy}
                 title="Click to copy"
             >
                 {address.length > 24 ? `${address.slice(0, 12)}…${address.slice(-6)}` : address}
-            </p>
-            <CopyButton 
-                value={address} 
-                size="xs" 
-                variant="minimal" 
+            </button>
+            <CopyButton
+                value={address}
+                size="xs"
+                variant="minimal"
                 forceCopied={copied}
                 onClick={handleCopy}
             />
@@ -99,11 +101,12 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                         {t.heroDescription}
                     </p>
                     <button
+                        type="button"
                         onClick={() => setIsInfoOpen(true)}
                         className="inline-flex items-center gap-2 text-sm font-semibold"
                         style={{ color: 'var(--color-primary)' }}
                     >
-                        <Info className="w-4 h-4" />
+                        <Info className="size-4" />
                         {t.more_info_link ?? 'More information'}
                     </button>
                 </div>
@@ -151,9 +154,9 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                         className="rounded-2xl p-5 relative overflow-hidden"
                         style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}
                     >
-                        <div className="absolute top-0 right-0 w-20 h-20 rounded-full -translate-y-6 translate-x-6 opacity-10"
+                        <div className="absolute top-0 right-0 size-20 rounded-full -translate-y-6 translate-x-6 opacity-10"
                             style={{ background: s.color }} />
-                        <s.Icon className="w-5 h-5 mb-3 relative z-10" style={{ color: s.color }} />
+                        <s.Icon className="size-5 mb-3 relative z-10" style={{ color: s.color }} />
                         <p className="text-2xl font-bold mb-0.5 relative z-10 tabular-nums" style={{ color: 'var(--color-text-main)' }}>
                             {s.value}
                         </p>
@@ -250,6 +253,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                         const pct = calculateUtilization(area.spentBudget, area.totalBudget);
                         return (
                             <button
+                                type="button"
                                 key={area.id}
                                 onClick={() => onSelectArea(area.id)}
                                 className="text-left group flex-1 min-w-[120px]"
@@ -280,7 +284,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                 style={{ background: 'var(--color-card-bg)', border: '1px solid rgba(99,102,241,0.25)' }}>
                 <div className="px-6 py-4 flex items-center gap-3"
                     style={{ borderBottom: '1px solid rgba(99,102,241,0.15)', background: 'rgba(99,102,241,0.04)' }}>
-                    <Globe className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                    <Globe className="size-4 shrink-0" style={{ color: 'var(--color-primary)' }} />
                     <div>
                         <p className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
                             {t.global_address_label ?? 'Global Project Address'}
@@ -311,7 +315,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
             {/* ── Areas overview ────────────────────────────────────────── */}
             <div>
                 <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--color-text-main)' }}>
-                    <TrendingUp className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                    <TrendingUp className="size-5" style={{ color: 'var(--color-primary)' }} />
                     {t.areas_title ?? 'Work areas'}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -320,24 +324,17 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                         const voluntaryTasks = area.tasks.filter(tk => tk.type === 'voluntary').length;
 
                         return (
-                            <div
+                            <button
+                                type="button"
                                 key={area.id}
-                                role="button"
-                                tabIndex={0}
                                 onClick={() => onSelectArea(area.id)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        onSelectArea(area.id);
-                                    }
-                                }}
                                 className="text-left rounded-2xl overflow-hidden group transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                                 style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}
                                 onMouseEnter={e => {
-                                    (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-primary)';
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-primary)';
                                 }}
                                 onMouseLeave={e => {
-                                    (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-card-border)';
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-card-border)';
                                 }}
                             >
                                 <div className={`h-1 w-full bg-gradient-to-r ${area.gradient}`} />
@@ -351,7 +348,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                                                 {area.members.length} {t.sidebar_members_label ?? 'members'} · {area.tasks.length} tasks
                                             </p>
                                         </div>
-                                        <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        <ExternalLink className="size-4 opacity-0 group-hover:opacity-100 transition-opacity"
                                             style={{ color: 'var(--color-primary)' }} />
                                     </div>
                                     <div className="mb-1 flex items-center justify-between">
@@ -386,7 +383,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                                     )}
                                     <AddressCopyRow address={area.radixAddress} />
                                 </div>
-                            </div>
+                            </button>
                         );
                     })}
                 </div>
@@ -395,7 +392,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
             {/* ── Funding sources ───────────────────────────────────────── */}
             <div>
                 <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--color-text-main)' }}>
-                    <Coins className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+                    <Coins className="size-5" style={{ color: 'var(--color-accent)' }} />
                     {t.funding_title ?? 'Funding sources'}
                 </h2>
                 <div className="rounded-2xl overflow-hidden"
@@ -423,7 +420,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
             {/* ── Legal expenses & taxes ────────────────────────────────── */}
             <div>
                 <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--color-text-main)' }}>
-                    <ShieldAlert className="w-5 h-5" style={{ color: '#ef4444' }} />
+                    <ShieldAlert className="size-5" style={{ color: '#ef4444' }} />
                     {t.legal_title ?? 'Legal Expenses & Taxes'}
                 </h2>
                 <div className="rounded-2xl overflow-hidden"
@@ -431,7 +428,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                     <div className="px-6 py-4 flex items-center justify-between"
                         style={{ borderBottom: '1px solid var(--color-card-border)', background: 'var(--color-surface)' }}>
                         <div className="flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4" style={{ color: '#ef4444' }} />
+                            <AlertCircle className="size-4" style={{ color: '#ef4444' }} />
                             <p className="text-sm font-semibold" style={{ color: 'var(--color-text-main)' }}>
                                 {LEGAL_EXPENSES.length} entries
                             </p>
@@ -455,6 +452,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                         {t.ledger_title ?? 'Ledger — all movements'}
                     </h2>
                     <button
+                        type="button"
                         onClick={() => {
                             const areaNames = t.area_names;
                             const ledger = buildLedger(t, areaNames, areas, FUNDING_SOURCES, LEGAL_EXPENSES);
@@ -491,13 +489,13 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                             document.body.removeChild(link);
                         }}
                         className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full transition-all hover:bg-[var(--color-primary)]/10"
-                        style={{ 
-                            background: 'var(--color-card-bg)', 
+                        style={{
+                            background: 'var(--color-card-bg)',
                             border: '1px solid var(--color-card-border)',
-                            color: 'var(--color-primary)' 
+                            color: 'var(--color-primary)'
                         }}
                     >
-                        <Download className="w-3 h-3" />
+                        <Download className="size-3" />
                         {t.ledger_download_csv ?? 'Download CSV'}
                     </button>
                 </div>

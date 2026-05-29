@@ -60,7 +60,8 @@ export const BizRow = ({
 /* ─────────────────────────────────────────
    PremiumStat — stat card for expanded view
 ───────────────────────────────────────── */
-export const PremiumStat = ({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const PremiumStat = ({
     label, value, sub, accent, glow = false, flexRow = false, tooltip
 }: PremiumStatProps) => (
     <div
@@ -88,12 +89,13 @@ export const PremiumStat = ({
 /* ─────────────────────────────────────────
    SectionHeader
 ───────────────────────────────────────── */
-export const SectionHeader = ({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const SectionHeader = ({
     title, icon: Icon,
 }: SectionHeaderProps) => (
     <div className="flex items-center gap-2 pb-2 relative mb-3">
         <div className="absolute bottom-0 left-0 w-10 h-px bg-gradient-to-r from-[var(--color-primary)] to-transparent" />
-        <Icon className="w-4 h-4 text-[var(--color-primary)]" />
+        <Icon className="size-4 text-[var(--color-primary)]" />
         <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-main)]">
             {title}
         </h4>

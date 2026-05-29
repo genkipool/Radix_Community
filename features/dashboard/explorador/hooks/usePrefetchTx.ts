@@ -30,8 +30,7 @@ export function usePrefetchTransactionDetails() {
           const uniqueResources = [
             ...new Set<string>(
               details.balance_changes.fungible_balance_changes
-                .map((c: FungibleChange) => c.resource_address)
-                .filter(Boolean),
+                .flatMap((c: FungibleChange) => c.resource_address ? [c.resource_address] : []),
             ),
           ];
           uniqueResources.forEach(resourceAddress => {

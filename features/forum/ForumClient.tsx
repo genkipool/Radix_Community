@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AnimatePresence } from 'motion/react';
-import { ForumClientProps } from './types';
+import { ForumClientProps } from './types/components.types';
 import { ForumProvider, useForum } from './components/ForumContext';
 import { ForumToolbar } from './components/ForumToolbar';
 import { ForumPostCard } from './components/ForumPostCard';
@@ -33,6 +33,7 @@ function ForumContent() {
                     </p>
                     <p style={{ color: 'var(--color-text-muted)' }}>
                         <button
+                            type="button"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();

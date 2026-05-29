@@ -68,7 +68,7 @@ const extractResourceAddress = (ev: GatewayEvent): string => {
 
 /* OraclePriceUpdateCard */
 
-export function OraclePriceUpdateCard({
+function OraclePriceUpdateCard({
     update, tt, onCopy, copiedAddress, onResourceClick, network, locale = 'en',
 }: {
     update: OracleUpdate;
@@ -138,7 +138,7 @@ export function OracleUpdateSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-blue-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <Activity className="w-3.5 h-3.5 text-blue-400" />
+                    <Activity className="size-3.5 text-blue-400" />
                     {tt?.oracle_update_label || 'Oracle Price Update'}
                 </span>
                 <Pill color="custom" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
@@ -152,9 +152,9 @@ export function OracleUpdateSection({
                     </p>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
-                    {updates.map((update, idx: number) => (
+                    {updates.map((update) => (
                         <OraclePriceUpdateCard
-                            key={idx}
+                            key={update.baseToken}
                             update={update}
                             tt={tt}
                             onCopy={onCopy}
@@ -209,7 +209,7 @@ function AirdropRewardCard({
                                 <SafeImage
                                     src={iconUrl}
                                     alt="Token"
-                                    className="w-4 h-4 rounded-full bg-white/10"
+                                    className="size-4 rounded-full bg-white/10"
                                     fallbackName={symbol || 'Token'}
                                 />
                             )}
@@ -264,7 +264,7 @@ export function AirdropSection({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-purple-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-purple-500/20 bg-[var(--color-surface)] flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <Gift className="w-3.5 h-3.5 text-purple-400" />
+                    <Gift className="size-3.5 text-purple-400" />
                     {tt?.airdrop_label || 'Airdrop / Rewards'}
                 </span>
             </h3>
@@ -314,18 +314,18 @@ export function VaultCreationSection({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-amber-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-amber-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Landmark className="w-3.5 h-3.5 text-amber-400" />
+                <Landmark className="size-3.5 text-amber-400" />
                 {te?.vault_creation || 'Vault Creation'}
             </h3>
             <div className="p-3 space-y-2">
-                {vaultEvents.map((ev, idx) => {
+                {vaultEvents.map((ev) => {
                     const resourceAddress = extractResourceAddress(ev);
                     const vaultId = extractField(ev, 'vault_id');
                     const amount = findEventAmount(events, resourceAddress);
 
                     return (
                         <VaultCreationCard
-                            key={`vault-${idx}`}
+                            key={`vault-${resourceAddress}`}
                             resource={resourceAddress}
                             vaultId={vaultId}
                             amount={amount}
@@ -381,7 +381,7 @@ function VaultCreationCard({
                         <SafeImage
                             src={meta.iconUrl}
                             alt={meta.name || 'Token'}
-                            className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-amber-500/20 shrink-0 object-cover"
+                            className="size-7 rounded-full bg-white/10 shadow-sm border border-amber-500/20 shrink-0 object-cover"
                             fallbackName={meta.name || 'Token'}
                         />
                     )}
@@ -413,7 +413,7 @@ function VaultCreationCard({
                                 className="p-1 hover:bg-amber-500/20 rounded transition-colors shrink-0"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === clean ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3 text-amber-800/40 dark:text-amber-400/40" />}
+                                {copiedAddress === clean ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3 text-amber-800/40 dark:text-amber-400/40" />}
                             </button>
                         </div>
                     </div>
@@ -441,7 +441,7 @@ function VaultCreationCard({
             <div className="pt-3 border-t border-amber-500/20">
                 <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        < Landmark className="w-2.5 h-2.5 text-amber-600/60 dark:text-amber-400/60" />
+                        < Landmark className="size-2.5 text-amber-600/60 dark:text-amber-400/60" />
                         <span className="text-[9px] uppercase font-black text-amber-800/60 dark:text-amber-400/60 tracking-wider">
                             {te?.vault_id || 'Vault ID'}
                         </span>
@@ -456,7 +456,7 @@ function VaultCreationCard({
                             className="hover:text-amber-600 transition-colors shrink-0 p-1"
                             title={tt?.copy_raw || 'Copy'}
                         >
-                            {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-amber-800/30 dark:text-amber-400/30" />}
+                            {copiedAddress === vaultId ? <Check className="size-3.5 text-[var(--color-accent)]" /> : <Copy className="size-3.5 text-amber-800/30 dark:text-amber-400/30" />}
                         </button>
                     </div>
                 </div>
@@ -489,7 +489,7 @@ export function BetVoteSection({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-blue-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-blue-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Vote className="w-3.5 h-3.5 text-blue-400" />
+                <Vote className="size-3.5 text-blue-400" />
                 {te?.bet_vote || 'Vote / Prediction'}
             </h3>
             <div className="p-3 space-y-2">
@@ -583,7 +583,7 @@ function BetVoteCard({
                         <SafeImage
                             src={meta.iconUrl}
                             alt={meta.name || 'Token'}
-                            className="w-7 h-7 rounded-full bg-white/10 shadow-sm border border-blue-500/20 shrink-0 object-cover"
+                            className="size-7 rounded-full bg-white/10 shadow-sm border border-blue-500/20 shrink-0 object-cover"
                             fallbackName={meta.name || 'Token'}
                         />
                     )}
@@ -612,7 +612,7 @@ function BetVoteCard({
                                     className="p-1 hover:bg-blue-500/20 rounded transition-colors shrink-0"
                                     title={tt?.copy_raw || 'Copy'}
                                 >
-                                    {copiedAddress === resourceAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3 text-blue-800/40 dark:text-blue-400/40" />}
+                                    {copiedAddress === resourceAddress ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3 text-blue-800/40 dark:text-blue-400/40" />}
                                 </button>
                             </div>
                         )}
@@ -664,7 +664,7 @@ function BetVoteCard({
                                 className="hover:text-blue-600 transition-colors shrink-0 p-1"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-blue-800/30 dark:text-blue-400/30" />}
+                                {copiedAddress === emitter ? <Check className="size-3.5 text-[var(--color-accent)]" /> : <Copy className="size-3.5 text-blue-800/30 dark:text-blue-400/30" />}
                             </button>
                         </div>
                     </div>
@@ -698,24 +698,24 @@ export function RatesChangedSection({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-teal-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-teal-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5 text-teal-400" />
+                <TrendingUp className="size-3.5 text-teal-400" />
                 {te?.rates_changed || 'Rates Update'}
             </h3>
             <div className="p-3 space-y-2">
-                {rateEvents.map((ev, idx) => {
+                {rateEvents.map((ev) => {
                     const emitter = sanitizeText(ev.emitter?.entity?.entity_address || '');
                     const rateType = extractField(ev, 'rate_type');
                     const prev = extractField(ev, 'previous');
                     const curr = extractField(ev, 'current');
 
                     return (
-                        <div key={`rate-${idx}`} className="p-3 bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl shadow-sm flex flex-col gap-3">
+                        <div key={`rate-${emitter}-${rateType}`} className="p-3 bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl shadow-sm flex flex-col gap-3">
                             <EntityBadge address={emitter} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} locale={locale} />
                             <div className="flex items-center justify-between gap-4 py-1.5 px-2 bg-teal-500/5 rounded-lg border border-teal-500/20">
                                 <span className="text-[10px] font-bold text-teal-500 uppercase tracking-wide">{rateType}</span>
                                 <div className="flex items-center gap-3">
                                     <span className="text-xs font-mono font-bold text-[var(--color-text-muted)]">{prev}%</span>
-                                    <ArrowRight className="w-3 h-3 text-teal-500 opacity-50" />
+                                    <ArrowRight className="size-3 text-teal-500 opacity-50" />
                                     <span className="text-sm font-mono font-black text-teal-400">{curr}%</span>
                                 </div>
                             </div>
@@ -754,10 +754,10 @@ export function MetadataUpdatesSection({
         const emitter = sanitizeText(emitterData?.entity?.entity_address || emitterData?.package_address || '');
         const entityType = emitterData?.entity?.entity_type || (emitterData?.package_address ? 'Package' : '');
         if (!acc[emitter]) acc[emitter] = { emitter, entityType, updates: [] };
-        
+
         const keyField = extractField(ev, 'key');
         const key = sanitizeText(String(keyField?.value || keyField?.hex || ''));
-        
+
         const valueField = extractField(ev, 'value');
         let metaValue = '...';
         const vfFields = valueField?.fields as GatewayField[] | undefined;
@@ -782,13 +782,13 @@ export function MetadataUpdatesSection({
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-indigo-500/30 overflow-hidden mt-4">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-indigo-500/20 bg-[var(--color-surface)] flex items-center gap-2">
-                <Settings2 className="w-3.5 h-3.5 text-indigo-400" />
+                <Settings2 className="size-3.5 text-indigo-400" />
                 {te?.set_metadata || 'Profile/Config Update'}
             </h3>
             <div className="p-4 flex flex-col gap-4">
-                {Object.values(grouped).map((grp, idx) => (
+                {Object.values(grouped).map((grp) => (
                     <MetadataEntityBlock
-                        key={`meta-grp-${idx}`}
+                        key={`meta-${grp.emitter}`}
                         emitter={grp.emitter}
                         updates={grp.updates}
                         translateKey={translateKey}
@@ -841,11 +841,11 @@ function MetadataEntityBlock({
 
     // Ordered keys to display below the address
     const orderedKeys = ['info_url', 'icon_url', 'claimed_entities', 'tags', 'account_type'];
-    
+
     // Group them: matching the ordered keys first, then the rest
-    const orderedUpdates = orderedKeys.map(k => validUpdates.find(u => u.key === k)).filter(Boolean) as {key: string, value: string}[];
+    const orderedUpdates = orderedKeys.flatMap(k => { const u = validUpdates.find(u => u.key === k); return u ? [u] : []; }) as { key: string, value: string }[];
     const restUpdates = validUpdates.filter(u => !orderedKeys.includes(u.key) && u.key !== 'name');
-    
+
     const displayUpdates = [...orderedUpdates, ...restUpdates];
 
     return (
@@ -856,11 +856,11 @@ function MetadataEntityBlock({
                     <SafeImage
                         src={resolvedIconUrl}
                         alt={resolvedName || 'Entity Icon'}
-                        className="w-12 h-12 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)]"
+                        className="size-12 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)]"
                         fallbackName={resolvedName || 'Entity'}
                     />
                 ) : (
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center">
+                    <div className="size-12 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center">
                         <span className="text-[10px] text-[var(--color-text-muted)]">N/A</span>
                     </div>
                 )}
@@ -874,7 +874,7 @@ function MetadataEntityBlock({
                         {resolvedName}
                     </div>
                 )}
-                
+
                 {/* 2. Address */}
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-mono text-[var(--color-text-muted)] select-all truncate" title={wellKnownTip || emitter}>
@@ -886,23 +886,23 @@ function MetadataEntityBlock({
                         className="p-1 hover:bg-slate-500/10 rounded transition-colors shrink-0"
                         title={tt?.copy_raw || 'Copy'}
                     >
-                        {copiedAddress === emitter ? <Check className="w-3.5 h-3.5 text-[var(--color-accent)]" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                        {copiedAddress === emitter ? <Check className="size-3.5 text-[var(--color-accent)]" /> : <Copy className="size-3.5 text-[var(--color-text-muted)]" />}
                     </button>
                 </div>
 
                 {/* The rest in specific order */}
                 <div className="flex flex-col gap-0.5 text-xs">
-                    {displayUpdates.map((u, i) => (
-                        <div key={`param-${i}`} className="flex flex-col gap-0.5 mb-2 last:mb-0">
+                    {displayUpdates.map((u) => (
+                        <div key={u.key} className="flex flex-col gap-0.5 mb-2 last:mb-0">
                             <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
                                 {translateKey(u.key)}
                             </span>
                             {u.key === 'info_url' ? (
                                 <div className="pl-4 pt-1">
-                                    <a 
-                                        href={u.value.startsWith('http') ? u.value : `https://${u.value}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
+                                    <a
+                                        href={u.value.startsWith('http') ? u.value : `https://${u.value}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="font-mono text-xs text-blue-500 hover:underline break-all"
                                     >
                                         {u.value}
@@ -942,7 +942,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
     const proposerValidator = validatorsData?.validators
         ? findProposerValidator(proposerInfo, validatorsData.validators)
         : null;
-    
+
     const valName = proposerValidator?.name || sanitizeText(tt?.proposer_box_title || 'Proposer');
     const valAddress = proposerValidator?.address || '';
     const valIcon = proposerValidator?.iconUrl;
@@ -954,20 +954,20 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
         : genericKey
             ? tt?.type_tooltips?.[genericKey as keyof typeof tt.type_tooltips]
             : null;
-    
+
     // Formatting local and UTC dates
     const dateObj = tx.confirmedAt;
     let formattedDate = '-';
     try {
         if (dateObj) {
             const d = new Date(dateObj);
-            
+
             const localDate = d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
             const localTime = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
+
             formattedDate = `${localDate} ${localTime}`;
         }
-    } catch {}
+    } catch { }
 
     const stateVersionValue = details?.state_version || '?';
 
@@ -975,13 +975,13 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
                 <span className="flex items-center gap-2 cursor-help" title={tt?.proposer_tooltip || ''}>
-                    <User className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <User className="size-3.5 text-[var(--color-primary)]" />
                     {tt?.proposer_box_title || 'Proposer'}
                 </span>
             </h3>
 
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 divide-y xl:divide-y-0 xl:divide-x divide-[var(--color-card-border)]">
-                
+
                 {/* 1. Name */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)] xl:border-none first:pt-0 first:border-0 first:xl:pl-0">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
@@ -992,12 +992,12 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                             <SafeImage
                                 src={valIcon}
                                 alt={valName}
-                                className="w-5 h-5 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)] shrink-0"
+                                className="size-5 rounded-full bg-[var(--color-surface)] shadow-sm object-cover border border-[var(--color-card-border)] shrink-0"
                                 fallbackName={valName}
                             />
                         ) : (
-                            <div className="w-5 h-5 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center shrink-0">
-                                <User className="w-2.5 h-2.5 text-[var(--color-text-muted)]" />
+                            <div className="size-5 rounded-full bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center shrink-0">
+                                <User className="size-2.5 text-[var(--color-text-muted)]" />
                             </div>
                         )}
                         <span className="text-[13px] font-bold text-[var(--color-text-main)] truncate" title={valName}>
@@ -1022,7 +1022,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                                 className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === valAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
+                                {copiedAddress === valAddress ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3" />}
                             </button>
                         )}
                     </div>
@@ -1031,7 +1031,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 {/* 3. Date & Time */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="size-3" />
                         {tt?.proposer_local_date || 'Local Date'}
                     </span>
                     <span className="text-[11px] text-[var(--color-text-main)] font-mono truncate" title={formattedDate}>
@@ -1042,7 +1042,7 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 {/* 4. Epoch/Round */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
-                        <Hash className="w-3 h-3" />
+                        <Hash className="size-3" />
                         {tt?.proposer_epoch_round || 'Epoch/Round'}
                     </span>
                     <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
@@ -1053,14 +1053,14 @@ export function ProposerSection({ details, tx, tt, network, onCopy, copiedAddres
                 {/* 5. State Version & Index */}
                 <div className="flex flex-col gap-1 xl:px-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-[var(--color-card-border)]">
                     <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold flex items-center gap-1">
-                        <Database className="w-3 h-3" />
+                        <Database className="size-3" />
                         {tt?.proposer_state_version_index || 'State Version / Index'}
                     </span>
                     <span className="text-[13px] font-bold text-[var(--color-text-main)] font-mono">
                         {stateVersionValue} / #{proposerInfo.validatorIndex}
                     </span>
                 </div>
-                
+
             </div>
         </div>
     );

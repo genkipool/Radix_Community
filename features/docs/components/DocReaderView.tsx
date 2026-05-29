@@ -47,6 +47,7 @@ export default function DocReaderView({ docId, onTopicClick, searchQuery = '' }:
       docTitle={docTitle}
       topicAction={topicLabel ? (
         <button
+          type="button"
           onClick={() => onTopicClick(topicId)}
           className="transition-all duration-150"
           style={{ color: 'var(--color-primary)' }}

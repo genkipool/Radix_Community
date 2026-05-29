@@ -13,14 +13,14 @@ const AUTH_CONFIG = {
   password: process.env.GATEWAY_AUTH_PASS ?? '',
 };
 
-export const getAuthHeader = (): Record<string, string> => {
+const getAuthHeader = (): Record<string, string> => {
   if (!AUTH_CONFIG.username || !AUTH_CONFIG.password) return {};
   const creds = Buffer.from(`${AUTH_CONFIG.username}:${AUTH_CONFIG.password}`).toString('base64');
   return { Authorization: `Basic ${creds}` };
 };
 
 // ── Gateway instances ─────────────────────────────────────────────────────────
-export const gatewayMainnet = GatewayApiClient.initialize({
+const gatewayMainnet = GatewayApiClient.initialize({
   networkId: RadixNetwork.Mainnet,
   applicationName: 'Radix Dashboard',
   applicationVersion: '1.0.0',
@@ -29,7 +29,7 @@ export const gatewayMainnet = GatewayApiClient.initialize({
   headers: getAuthHeader(),
 });
 
-export const gatewayStokenet = GatewayApiClient.initialize({
+const gatewayStokenet = GatewayApiClient.initialize({
   networkId: RadixNetwork.Stokenet,
   applicationName: 'Radix Dashboard',
   applicationVersion: '1.0.0',

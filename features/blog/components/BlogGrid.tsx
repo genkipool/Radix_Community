@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { BlogPost, BlogDictionary } from '../types';
+import { BlogPost } from '../types/data.types';
+import { BlogDictionary } from '../types/i18n.types';
 import { BlogPostCard } from './BlogPostCard';
 
 interface BlogGridProps {
@@ -74,7 +75,7 @@ export function BlogGrid({
 
                 {hasMore && (
                     <div ref={sentinelRef} className="flex justify-center py-12">
-                        <div className="w-8 h-8 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
+                        <div className="size-8 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
                     </div>
                 )}
             </div>

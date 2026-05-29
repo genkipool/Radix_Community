@@ -29,7 +29,7 @@ export default function Roadmap({ t }: BaseSectionProps) {
     <section id="roadmap" className="py-24 bg-[var(--color-surface)] relative overflow-hidden">
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <SectionHeader
-          icon={<Map className="w-4 h-4 mr-1" />}
+          icon={<Map className="size-4 mr-1" />}
           badge={t.nav.roadmap}
           title={t.roadmap.title}
           titleAccent={t.roadmap.title_accent}
@@ -68,12 +68,12 @@ export default function Roadmap({ t }: BaseSectionProps) {
                     {era.milestones.map((text: string, i: number) => {
                       const isDone = meta.milestoneDone[i];
                       return (
-                        <div key={i} className="relative flex items-start">
+                        <div key={`milestone-${i}`} className="relative flex items-start">
                           <div className="absolute -left-6 w-4 h-5 flex items-center justify-center bg-[var(--color-bg)] z-10">
                             {isDone ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                              <CheckCircle2 className="size-4 text-green-400 shrink-0" />
                             ) : (
-                              <Clock className="w-4 h-4 shrink-0" style={{ color: meta.color }} />
+                              <Clock className="size-4 shrink-0" style={{ color: meta.color }} />
                             )}
                           </div>
                           <p className={`text-xs leading-5 ${isDone ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)] font-semibold'}`}>

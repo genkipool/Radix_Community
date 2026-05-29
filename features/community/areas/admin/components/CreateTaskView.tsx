@@ -15,6 +15,7 @@ interface CreateTaskViewProps {
     t: CommunityDictionary;
 }
 
+const _numFmt = new Intl.NumberFormat();
 const generateTaskId = () => `dyn-${Date.now()}`;
 
 export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps) {
@@ -68,9 +69,9 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
             costUsd: isVoluntary ? 0 : costUsd,
             startDate: data.startDate,
             endDate: data.endDate || undefined,
-            tags: data.tags?.split(',').map(s => s.trim()).filter(Boolean) || [],
+            tags: data.tags?.split(',').flatMap(s => s.trim() || []) || [],
             githubUrl: data.githubUrl?.trim() || undefined,
-            assignedTo: data.assignedMembers?.split(',').map(s => s.trim()).filter(Boolean) || [],
+            assignedTo: data.assignedMembers?.split(',').flatMap(s => s.trim() || []) || [],
             isDynamic: true,
         };
 
@@ -95,7 +96,7 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
         { value: 'personnel', label: t.task_type_personnel ?? 'Personnel' },
         { value: 'voluntary', label: t.task_type_voluntary ?? 'Voluntary' },
     ];
-    
+
     const statusOptions: { value: TaskStatus; label: string }[] = [
         { value: 'in_progress', label: t.status_in_progress ?? 'In progress' },
         { value: 'planned', label: t.status_planned ?? 'Planned' },
@@ -109,7 +110,7 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
             {success && (
                 <div className="flex items-center gap-3 p-4 rounded-2xl"
                     style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                    <Check className="w-5 h-5 shrink-0" style={{ color: '#10b981' }} />
+                    <Check className="size-5 shrink-0" style={{ color: '#10b981' }} />
                     <div>
                         <p className="text-sm font-semibold" style={{ color: '#10b981' }}>
                             {t.admin_form_success ?? 'Task created successfully!'}
@@ -135,19 +136,19 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
                             <div className="mt-1.5 px-3 py-2 rounded-xl text-xs flex items-center justify-between"
                                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
                                 <span style={{ color: 'var(--color-text-muted)' }}>
-                                    {t.area_total_budget_label ?? 'Budget'}: <strong style={{ color: 'var(--color-text-main)' }}>{new Intl.NumberFormat().format(selectedAreaObj.totalBudget)} XRD</strong>
+                                    {t.area_total_budget_label ?? 'Budget'}: <strong style={{ color: 'var(--color-text-main)' }}>{_numFmt.format(selectedAreaObj.totalBudget)} XRD</strong>
                                 </span>
                                 <span style={{ color: '#10b981' }}>
-                                    {t.budget_available ?? 'Avail.'}: <strong>{new Intl.NumberFormat().format(selectedAreaObj.totalBudget - selectedAreaObj.spentBudget)} XRD</strong>
+                                    {t.budget_available ?? 'Avail.'}: <strong>{_numFmt.format(selectedAreaObj.totalBudget - selectedAreaObj.spentBudget)} XRD</strong>
                                 </span>
                             </div>
                         )}
                     </AdminFormField>
 
                     <AdminFormField label={t.admin_form_title ?? 'Task title'} required error={errors.titleDirect?.message}>
-                        <AdminTextInput 
+                        <AdminTextInput
                             {...register('titleDirect')}
-                            placeholder={t.admin_form_title_placeholder ?? 'E.g.: Radix API Integration'} 
+                            placeholder={t.admin_form_title_placeholder ?? 'E.g.: Radix API Integration'}
                         />
                     </AdminFormField>
 
@@ -210,19 +211,19 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
 
                     <AdminFormField label={t.admin_form_assigned ?? 'Assign members (IDs)'}
                         hint={t.admin_form_assigned_placeholder ?? 'E.g.: dev-1, dev-2'}>
-                        <AdminTextInput 
+                        <AdminTextInput
                             {...register('assignedMembers')}
-                            placeholder="dev-1, dev-2" 
-                            prefix={<Users className="w-4 h-4" />} 
+                            placeholder="dev-1, dev-2"
+                            prefix={<Users className="size-4" />}
                         />
                     </AdminFormField>
 
                     <AdminFormField label={t.admin_form_github ?? 'GitHub URL (optional)'} error={errors.githubUrl?.message}>
-                        <AdminTextInput 
-                            type="text" 
+                        <AdminTextInput
+                            type="text"
                             {...register('githubUrl')}
                             placeholder={t.admin_form_github_placeholder ?? 'https://github.com/...'}
-                            prefix={<Github className="w-4 h-4" />} 
+                            prefix={<Github className="size-4" />}
                         />
                     </AdminFormField>
                 </div>
@@ -236,7 +237,7 @@ export function CreateTaskView({ areas, onUpdateAreas, t }: CreateTaskViewProps)
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
                 >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="size-4" />
                     {t.admin_form_submit ?? 'Create task'}
                 </button>
             </div>

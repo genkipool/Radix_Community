@@ -35,6 +35,7 @@ export function TagFilterBar({ tags, activeTag, onSelect, allLabel, tagLabels, h
         <div className="flex flex-wrap gap-2 flex-1 justify-center">
             {!hideAll && (
                 <button
+                    type="button"
                     onClick={() => onSelect(null)}
                     className={`${btnBase} ${isActive(null) ? btnActive : btnInactive}`}
                 >
@@ -43,6 +44,7 @@ export function TagFilterBar({ tags, activeTag, onSelect, allLabel, tagLabels, h
             )}
             {tags.map(tag => (
                 <button
+                    type="button"
                     key={tag}
                     onClick={() => {
                         if (Array.isArray(activeTag)) {

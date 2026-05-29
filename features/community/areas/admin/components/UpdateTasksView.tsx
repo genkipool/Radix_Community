@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Search, Trash2, Save, Check, Clock, CheckCircle2, Calendar, PauseCircle, XCircle } from 'lucide-react';
 import { Area, Task, TaskType, TaskStatus } from '../../../types/data.types';
 import { CommunityDictionary } from '../../../types/i18n.types';
-import { AdminSelectInput, AdminTextInput, AdminTextArea, inputStyle } from './AdminUI';
+import { AdminSelectInput, AdminTextInput, AdminTextArea } from './AdminUI';
+import { inputStyle } from './adminStyles';
 
 interface UpdateTasksViewProps {
     areas: Area[];
@@ -43,7 +44,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
         { value: 'paused', label: t.status_paused ?? 'On hold' },
         { value: 'cancelled', label: t.status_cancelled ?? 'Cancelled' },
     ];
-    
+
     const typeOptions: { value: TaskType; label: string }[] = [
         { value: 'service', label: t.task_type_service ?? 'Service' },
         { value: 'personnel', label: t.task_type_personnel ?? 'Personnel' },
@@ -96,7 +97,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
             {/* Filters */}
             <div className="flex gap-3 flex-wrap">
                 <div className="relative flex-1 min-w-[180px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
                         style={{ color: 'var(--color-text-muted)' }} />
                     <AdminTextInput
                         value={searchQuery}
@@ -121,7 +122,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
 
             {filtered.length === 0 && (
                 <div className="py-12 text-center">
-                    <Search className="w-10 h-10 mx-auto mb-3 opacity-20" style={{ color: 'var(--color-text-muted)' }} />
+                    <Search className="size-10 mx-auto mb-3 opacity-20" style={{ color: 'var(--color-text-muted)' }} />
                     <p style={{ color: 'var(--color-text-muted)' }}>{t.admin_no_tasks ?? 'No tasks found'}</p>
                 </div>
             )}
@@ -135,11 +136,11 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
 
                     const currentTitle = edits.titleDirect !== undefined ? edits.titleDirect : (task.titleDirect ?? task.titleKey);
                     const currentDesc = edits.descriptionDirect !== undefined ? edits.descriptionDirect : (task.descriptionDirect ?? task.descriptionKey);
-                    
-                    const currentDeliverable = (edits as Record<string, string | undefined>).deliverableDirect !== undefined 
-                        ? (edits as Record<string, string | undefined>).deliverableDirect 
+
+                    const currentDeliverable = (edits as Record<string, string | undefined>).deliverableDirect !== undefined
+                        ? (edits as Record<string, string | undefined>).deliverableDirect
                         : (task.deliverableDirect ?? '');
-                    
+
                     const currentType = (edits.type ?? task.type) as TaskType;
                     const currentStatus = (edits.status ?? task.status) as TaskStatus;
                     const currentCost = edits.cost !== undefined ? edits.cost : task.cost;
@@ -159,7 +160,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                             <div className="px-4 py-2.5 flex items-center justify-between"
                                 style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-card-border)' }}>
                                 <div className="flex items-center gap-2.5">
-                                    <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${area?.gradient ?? 'from-gray-400 to-gray-500'}`} />
+                                    <div className={`size-3 rounded-full bg-gradient-to-r ${area?.gradient ?? 'from-gray-400 to-gray-500'}`} />
                                     <span className="text-[11px] font-semibold uppercase tracking-wide"
                                         style={{ color: 'var(--color-text-muted)' }}>
                                         {task.areaId}
@@ -173,7 +174,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                                 </div>
                                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                     style={{ background: statusStyle.bg, color: statusStyle.text, border: `1px solid ${statusStyle.border}` }}>
-                                    <StatusIcon className="w-2.5 h-2.5" />
+                                    <StatusIcon className="size-2.5" />
                                     {statusOptions.find(s => s.value === currentStatus)?.label ?? currentStatus}
                                 </span>
                             </div>
@@ -182,17 +183,17 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                                 <AdminTextInput value={currentTitle}
                                     onChange={e => updateField(task.id, 'titleDirect', e.target.value)}
                                     style={{ ...inputStyle, fontWeight: 600 }} />
-                                
+
                                 <AdminTextArea value={currentDesc}
                                     onChange={e => updateField(task.id, 'descriptionDirect', e.target.value)}
                                     rows={2} placeholder="Descripción..."
                                     style={{ ...inputStyle, fontSize: '12px' }} />
-                                
+
                                 <AdminTextArea value={currentDeliverable}
                                     onChange={e => updateField(task.id, 'deliverableDirect' as keyof Task, e.target.value)}
                                     rows={2} placeholder={t.admin_form_deliverable ?? 'Deliverable...'}
                                     style={{ ...inputStyle, fontSize: '12px' }} />
-                                
+
                                 <div className="grid grid-cols-2 gap-3">
                                     <AdminSelectInput value={currentType} onChange={e => updateField(task.id, 'type', e.target.value)} style={{ ...inputStyle, fontSize: '12px' }}>
                                         {typeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -201,7 +202,7 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                                         {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </AdminSelectInput>
                                 </div>
-                                
+
                                 {currentType !== 'voluntary' && (
                                     <div className="grid grid-cols-2 gap-3">
                                         <AdminTextInput type="number" min="0" value={currentCost}
@@ -219,30 +220,30 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                                             <span className="text-xs" style={{ color: '#ef4444' }}>
                                                 {t.admin_delete_confirm ?? '¿Eliminar?'}
                                             </span>
-                                            <button onClick={() => handleDelete(task.id, task.areaId)}
+                                            <button type="button" onClick={() => handleDelete(task.id, task.areaId)}
                                                 className="px-3 py-1.5 rounded-lg text-xs font-semibold"
                                                 style={{ background: '#ef4444', color: '#fff' }}>
                                                 {t.admin_delete_task ?? 'Eliminar'}
                                             </button>
-                                            <button onClick={() => setConfirmDeleteId(null)}
+                                            <button type="button" onClick={() => setConfirmDeleteId(null)}
                                                 className="px-3 py-1.5 rounded-lg text-xs font-semibold"
                                                 style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-card-border)' }}>
                                                 {t.admin_form_cancel ?? 'Cancel'}
                                             </button>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setConfirmDeleteId(task.id)}
+                                        <button type="button" onClick={() => setConfirmDeleteId(task.id)}
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
                                             style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
                                             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.14)'; }}
                                             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.06)'; }}>
-                                            <Trash2 className="w-3 h-3" />
+                                            <Trash2 className="size-3" />
                                             {t.admin_delete_task ?? 'Eliminar'}
                                         </button>
                                     )}
 
                                     {(hasEdits || isSaved) && (
-                                        <button onClick={() => handleSave(task.id, task.areaId)}
+                                        <button type="button" onClick={() => handleSave(task.id, task.areaId)}
                                             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200"
                                             style={{
                                                 background: isSaved ? 'rgba(16,185,129,0.1)' : 'var(--color-primary)',
@@ -250,8 +251,8 @@ export function UpdateTasksView({ areas, onUpdateAreas, t }: UpdateTasksViewProp
                                                 border: isSaved ? '1px solid rgba(16,185,129,0.3)' : 'none',
                                             }}>
                                             {isSaved
-                                                ? <><Check className="w-3.5 h-3.5" />{t.admin_update_saved ?? 'Saved!'}</>
-                                                : <><Save className="w-3.5 h-3.5" />{t.admin_update_save ?? 'Save'}</>}
+                                                ? <><Check className="size-3.5" />{t.admin_update_saved ?? 'Saved!'}</>
+                                                : <><Save className="size-3.5" />{t.admin_update_save ?? 'Save'}</>}
                                         </button>
                                     )}
                                 </div>

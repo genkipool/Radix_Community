@@ -81,7 +81,8 @@ export function formatEntityAddress(
  * Truncates a long address to a readable short form: "abcde12345...xyz890"
  * Used in transaction cards and entity badges.
  */
-export function formatAddressShort(
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function formatAddressShort(
   address: string,
   start = 10,
   end = 6,

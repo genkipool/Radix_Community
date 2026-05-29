@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-    Clock, Eye, MessageSquare, Heart, ArrowUp 
+import {
+    Clock, Eye, MessageSquare, Heart, ArrowUp
 } from 'lucide-react';
 import { useForum } from './ForumContext';
 import { ForumMessage } from './ForumMessage';
 import { ReplyFilterWidget } from './ReplyFilterWidget';
-import { ForumPost, ForumReply } from '../types';
+import { ForumPost, ForumReply } from '../types/data.types';
 import { getUserRank } from '../data/forumData';
 import { getReplyChildrenMap } from '../utils/replyTree';
 import { RankIcon } from './RankIcon';
@@ -80,14 +80,13 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
     };
 
     const filteredReplies = getFilteredReplies(post);
-    
+
     // For the original post card, the filter widget represents the ROOT of the tree.
     // It should include only direct replies (and relevant authors) to match the root filter logic.
     const childrenMap = post ? getReplyChildrenMap(post, users) : new Map<number | 'root', ForumReply[]>();
     const specificReplies = childrenMap.get('root') || [];
     const repliersToAuthor = Array.from(new Set(specificReplies.map((r: ForumReply) => r.authorId)))
-        .map(id => users[id])
-        .filter(Boolean);
+        .flatMap(id => users[id] ? [users[id]] : []);
 
     const renderInlineExpanded = () => {
         return (
@@ -146,11 +145,11 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                             <span className="text-sm font-black text-[var(--color-text-main)] truncate w-full">{author.name}</span>
 
                             <div className="flex items-center sm:justify-center gap-1.5 font-bold text-[13px] sm:text-[16px] uppercase tracking-widest mt-1 w-full" style={{ color: rank.color }} title={(t.forum.ranks as Record<string, string>)[rank.name] || rank.name}>
-                                <span className="truncate">{(t.forum.ranks as Record<string, string>)[rank.name] || rank.name}</span> 
-                                <RankIcon name={rank.name} color={rank.color} className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                                <span className="truncate">{(t.forum.ranks as Record<string, string>)[rank.name] || rank.name}</span>
+                                <RankIcon name={rank.name} color={rank.color} className="size-4 sm:w-5 sm:h-5 shrink-0" />
                             </div>
                         </div>
-                        <Image src={author.avatar} alt={author.name} width={96} height={96} className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border-2 sm:border-4 object-cover shadow-2xl z-10 order-first sm:order-none" style={{ borderColor: rank.color }} title={author.name} unoptimized />
+                        <Image src={author.avatar} alt={author.name} width={96} height={96} className="size-16 sm:w-24 sm:h-24 rounded-2xl border-2 sm:border-4 object-cover shadow-2xl z-10 order-first sm:order-none" style={{ borderColor: rank.color }} title={author.name} unoptimized />
 
                         <div className="hidden sm:block w-full mt-4 relative z-10 px-2">
                             <XPBar
@@ -184,7 +183,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                     <h3 className="text-[24px] font-bold text-[var(--color-text-main)] mb-2 group-hover:text-[var(--color-primary)] transition-colors line-clamp-2">
                         <HighlightText text={post.title || ''} query={searchQuery} />
                     </h3>
-                    <CodeHighlighter 
+                    <CodeHighlighter
                         className={`rich-text-content forum-content text-[14px] text-[var(--color-text-muted)] leading-relaxed mb-6 select-text cursor-pointer ${isExpanded ? '' : 'line-clamp-3'}`}
                         html={applyMarkdownToHtml(post.content || '')}
                     />
@@ -195,23 +194,23 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                             <>
                                 <div className="flex flex-row items-center gap-4 min-w-0">
                                     <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] opacity-80 shrink-0" title={t.forum.post.date}>
-                                        <Clock className="w-3.5 h-3.5" />
+                                        <Clock className="size-3.5" />
                                         {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-medium shrink-0">
-                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="w-3.5 h-3.5" />{post.views}</span>
-                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="w-3.5 h-3.5" />{post.replies.length}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="size-3.5" />{post.views}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="size-3.5" />{post.replies.length}</span>
                                         <StatButton
                                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLikePost(post.id); }}
                                             title={t.forum.post.like}
-                                            icon={<Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            icon={<Heart className={`size-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
                                             count={getPostLikes(post)}
                                             isActive={likedPosts.has(post.id)}
                                         />
                                         <StatButton
                                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleDislikePost(post.id); }}
                                             title={t.forum.post.dislike}
-                                            icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            icon={<ArrowUp className={`size-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
                                             count={getPostDislikes(post)}
                                             isActive={dislikedPosts.has(post.id)}
                                         />
@@ -234,18 +233,18 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                     )}
 
                                     <ActionButton
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            setReplyingToAuthorId(post.authorId); 
-                                            setReplyingToPost({ 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setReplyingToAuthorId(post.authorId);
+                                            setReplyingToPost({
                                                 postId: post.id,
-                                                authorId: post.authorId, 
-                                                content: post.content || '', 
-                                                date: post.date, 
+                                                authorId: post.authorId,
+                                                content: post.content || '',
+                                                date: post.date,
                                                 title: post.title,
                                                 messageId: post.id
                                             });
-                                            setShowPublishModal(true); 
+                                            setShowPublishModal(true);
                                         }}
                                         label={t.forum.post.reply}
                                         title={t.forum.post.reply}
@@ -259,23 +258,23 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                 {/* ROW 1: Date & Time + Stats */}
                                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                                     <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-muted)] opacity-80 shrink-0" title={t.forum.post.date}>
-                                        <Clock className="w-3.5 h-3.5" />
+                                        <Clock className="size-3.5" />
                                         {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] font-medium shrink-0">
-                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="w-3.5 h-3.5" />{post.views}</span>
-                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="w-3.5 h-3.5" />{post.replies.length}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.views}><Eye className="size-3.5" />{post.views}</span>
+                                        <span className="flex items-center gap-1.5 shrink-0" title={t.forum.post.replies}><MessageSquare className="size-3.5" />{post.replies.length}</span>
                                         <StatButton
                                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLikePost(post.id); }}
                                             title={t.forum.post.like}
-                                            icon={<Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            icon={<Heart className={`size-3.5 ${likedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
                                             count={getPostLikes(post)}
                                             isActive={likedPosts.has(post.id)}
                                         />
                                         <StatButton
                                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleDislikePost(post.id); }}
                                             title={t.forum.post.dislike}
-                                            icon={<ArrowUp className={`w-3.5 h-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
+                                            icon={<ArrowUp className={`size-3.5 rotate-180 ${dislikedPosts.has(post.id) ? 'fill-red-500' : ''}`} />}
                                             count={getPostDislikes(post)}
                                             isActive={dislikedPosts.has(post.id)}
                                         />
@@ -290,11 +289,11 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                             title={displayTag}
                                         />
                                         <ActionButton
-                                            onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                setReplyingToAuthorId(post.authorId); 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setReplyingToAuthorId(post.authorId);
                                                 setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
-                                                setShowPublishModal(true); 
+                                                setShowPublishModal(true);
                                             }}
                                             label={t.forum.post.reply}
                                             title={t.forum.post.reply}
@@ -328,11 +327,11 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                                                 )}
                                             </div>
                                             <ActionButton
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    setReplyingToAuthorId(post.authorId); 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setReplyingToAuthorId(post.authorId);
                                                     setReplyingToPost({ postId: post.id, authorId: post.authorId, content: post.content || '', date: post.date, title: post.title, messageId: post.id });
-                                                    setShowPublishModal(true); 
+                                                    setShowPublishModal(true);
                                                 }}
                                                 label={t.forum.post.reply}
                                                 title={t.forum.post.reply}

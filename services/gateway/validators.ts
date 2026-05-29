@@ -234,12 +234,6 @@ export interface ValidatorsFetchResult {
     };
 }
 
-
-export async function fetchValidators(network: "mainnet" | "stokenet" = "mainnet"): Promise<Validator[]> {
-    const { validators } = await fetchValidatorsWithLedger(network);
-    return validators;
-}
-
 export async function fetchValidatorsWithLedger(
     network: 'mainnet' | 'stokenet' = 'mainnet',
 ): Promise<ValidatorsFetchResult> {
@@ -321,7 +315,7 @@ export async function fetchValidatorsWithLedger(
     // Also need 14 days ago for "Recent"
     const recentSnapshotEpoch = currentEpoch - 4032;
     // Add null as a special marker for the absolute latest (now) snapshot
-    const allSnapshots: (number | null)[] = [null, ...new Set([...epochSnapshots, recentSnapshotEpoch])].sort((a, b) => {
+    const allSnapshots: (number | null)[] = [null, ...new Set([...epochSnapshots, recentSnapshotEpoch])].toSorted((a, b) => {
         if (a === null) return -1;
         if (b === null) return 1;
         return b - a;
@@ -329,12 +323,12 @@ export async function fetchValidatorsWithLedger(
 
     // Collect LSU resource addresses — REST /state/validators/list puts them in state.stake_unit_resource_address
     const lsuAddresses: string[] = validatorsList
-        .map((v: GatewayValidator) => {
+        .flatMap((v: GatewayValidator) => {
             const s = (v?.state as Record<string, unknown>) ?? {};
-            return s?.stake_unit_resource_address ||
+            const addr = s?.stake_unit_resource_address ||
                 v?.stake_unit_resource_address || '';
-        })
-        .filter(Boolean) as string[];
+            return addr ? [addr] : [];
+        }) as string[];
     const lsuChunks = chunkArray([...new Set(lsuAddresses)], LSU_CHUNK_SIZE);
 
     /* ── Phase 2: fan-out with bounded concurrency ──────────────────────

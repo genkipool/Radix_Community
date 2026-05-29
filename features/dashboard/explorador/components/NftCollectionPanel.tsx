@@ -13,7 +13,7 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 
-import { NftCollectionPanelProps } from '../types';
+import { NftCollectionPanelProps } from '../types/components.types';
 
 export type NftPanelTab = 'items' | 'summary' | 'metadata' | 'configuration' | 'raw';
 
@@ -82,10 +82,10 @@ export function NftCollectionPanel({
     };
 
     const tabs: { key: NftPanelTab; label: string; tooltip?: string }[] = ([
-        { 
-            key: 'items', 
-            label: `${(type === 'neutral' ? tt?.nft_panel_items_account : tt?.nft_panel_items) || 'Items'} (${ids.length})`, 
-            tooltip: tt?.tab_tokens_tooltip 
+        {
+            key: 'items',
+            label: `${(type === 'neutral' ? tt?.nft_panel_items_account : tt?.nft_panel_items) || 'Items'} (${ids.length})`,
+            tooltip: tt?.tab_tokens_tooltip
         },
         { key: 'summary', label: tt?.nft_panel_summary || 'Summary', tooltip: tt?.tab_summary_tooltip },
         { key: 'metadata', label: tt?.nft_panel_metadata || 'Metadata', tooltip: tt?.tab_metadata_tooltip },
@@ -98,10 +98,10 @@ export function NftCollectionPanel({
             className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
             onClick={e => e.stopPropagation()}
         >
-            <PanelTabBar 
-                tabs={tabs} 
-                activeTab={activeTab} 
-                onTabChange={setActiveTab} 
+            <PanelTabBar
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
                 layoutId="nftCollectionTabs"
             />
 
@@ -110,12 +110,12 @@ export function NftCollectionPanel({
                 {activeTab === 'items' && (
                     nftLoading ? (
                         <div className="flex items-center gap-2 py-3 text-[var(--color-text-muted)]">
-                            <Activity className="w-3.5 h-3.5 animate-spin text-[var(--color-primary)]" />
+                            <Activity className="size-3.5 animate-spin text-[var(--color-primary)]" />
                             <span className="text-xs">{tt?.loading_nft_data || 'Loading NFT data...'}</span>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {ids.map((id, idx) => {
+                            {ids.map((id) => {
                                 const nftItem = nftData.find((n) => n.non_fungible_id === id);
                                 const imageUrl = nftItem ? getNftImage(nftItem) : null;
                                 const nftName = nftItem ? getNftName(nftItem) : null;
@@ -126,24 +126,24 @@ export function NftCollectionPanel({
                                 const isOpen = expandedNfts.has(id);
                                 const isReceived = type === 'added';
                                 return (
-                                    <div key={idx} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
+                                    <div key={id} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
                                         <div
                                             className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]' : ''}`}
                                             onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
                                         >
-                                            <div className="w-10 h-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
+                                            <div className="size-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
                                                 {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" />
-                                                    : <Box className="w-4 h-4 text-[var(--color-text-muted)] opacity-40" />}
+                                                    : <Box className="size-4 text-[var(--color-text-muted)] opacity-40" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <div className="font-bold text-xs text-[var(--color-text-main)] truncate">{nftName || `#${shortId}`}</div>
-                                                    {hasData && <ChevronDown className={`w-3 h-3 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
+                                                    {hasData && <ChevronDown className={`size-3 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />}
                                                 </div>
                                                 <div className="flex items-center gap-1 mt-0.5">
                                                     <span className="text-[9px] text-[var(--color-text-muted)] font-mono truncate max-w-[100px]" title={id}>{shortId}</span>
-                                                    <button onClick={e => { e.stopPropagation(); onCopy?.(id); }} className={`p-0.5 rounded transition-colors ${copiedAddress === id ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
-                                                        {copiedAddress === id ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                                    <button type="button" onClick={e => { e.stopPropagation(); onCopy?.(id); }} className={`p-0.5 rounded transition-colors ${copiedAddress === id ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                        {copiedAddress === id ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                                     </button>
                                                 </div>
                                                 {(isStakeClaim || claimXrd != null) && (
@@ -222,7 +222,7 @@ export function NftCollectionPanel({
                                                         {(fields.length > 0 || ((isStakeClaim || isClaim) && validatorAddress)) && (
                                                             <div>
                                                                 <p className="text-[9px] uppercase tracking-widest font-black text-[var(--color-text-muted)] opacity-60 mb-2 flex items-center gap-1">
-                                                                    <FileJson className="w-3 h-3" />{tt?.nft_data_fields || 'NFT Data Fields'}
+                                                                    <FileJson className="size-3" />{tt?.nft_data_fields || 'NFT Data Fields'}
                                                                 </p>
                                                                 <div className="space-y-2">
                                                                     {(isStakeClaim || isClaim) && validatorAddress && (
@@ -262,8 +262,8 @@ export function NftCollectionPanel({
                 {activeTab === 'summary' && (
                     <div>
                         <div className="flex items-center gap-3 mb-4">
-                            {iconUrl ? <SafeImage src={iconUrl} alt={name} fallbackName={name} className="w-9 h-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
-                                : <div className="w-9 h-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0"><Box className="w-4 h-4" /></div>}
+                            {iconUrl ? <SafeImage src={iconUrl} alt={name} fallbackName={name} className="size-9 rounded-full shrink-0 object-cover border border-[var(--color-card-border)]" />
+                                : <div className="size-9 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] flex items-center justify-center border border-[var(--color-primary)]/20 shrink-0"><Box className="size-4" /></div>}
                             <div className="min-w-0 flex-1">
                                 <p className="font-bold text-sm text-[var(--color-text-main)] truncate">{name}</p>
                                 {symbol && <p className="text-[10px] text-[var(--color-primary)] font-mono truncate">{symbol}</p>}
@@ -282,7 +282,7 @@ export function NftCollectionPanel({
                                 return tagList.length > 0 ? (
                                     <div className="flex items-start justify-between gap-4">
                                         <dt className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] shrink-0 pt-0.5">{tt?.nft_panel_tags || 'Tags'}</dt>
-                                        <dd className="flex flex-wrap gap-1.5 justify-end">{tagList.map((tag: string, i: number) => <Pill key={i}>{tag}</Pill>)}</dd>
+                                        <dd className="flex flex-wrap gap-1.5 justify-end">{tagList.map((tag: string) => <Pill key={tag}>{tag}</Pill>)}</dd>
                                     </div>
                                 ) : null;
                             })()}
@@ -291,7 +291,7 @@ export function NftCollectionPanel({
                             <>
                                 <div className="border-t border-[var(--color-card-border)] mt-4 mb-3" />
                                 <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt?.nft_panel_behavior || 'Behavior'}</p>
-                                <ul className="space-y-1.5">{behaviors.map((b, i) => <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="w-1 h-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}</ul>
+                                <ul className="space-y-1.5">{behaviors.map((b, i) => <li key={`nft-behavior-${i}`} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}</ul>
                             </>
                         )}
                     </div>
@@ -311,11 +311,11 @@ export function NftCollectionPanel({
                 )}
 
                 {activeTab === 'raw' && (
-                    <PanelRawTab 
-                        data={meta} 
-                        tt={tt} 
-                        onCopy={onCopy ?? (() => { })} 
-                        copiedAddress={copiedAddress} 
+                    <PanelRawTab
+                        data={meta}
+                        tt={tt}
+                        onCopy={onCopy ?? (() => { })}
+                        copiedAddress={copiedAddress}
                     />
                 )}
             </div>

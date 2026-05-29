@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-    Calendar, Eye, MessageSquare 
+import {
+    Calendar, Eye, MessageSquare
 } from 'lucide-react';
 import { useForum } from './ForumContext';
 import { ForumMessage } from './ForumMessage';
@@ -15,7 +15,7 @@ import { LabelBadge } from '@/components/ui/LabelBadge';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 export function ForumReadingMode() {
-    const { 
+    const {
         t, language, readingMode, expandedPost, closeExpanded,
         handleExpandPost, filteredPosts,
         likedPosts, dislikedPosts, toggleLikePost, toggleDislikePost,
@@ -36,13 +36,13 @@ export function ForumReadingMode() {
     return (
         <AnimatePresence>
             <ModalOverlay key="reading-mode-overlay" onClose={closeExpanded} blur="sm" />
-            <motion.div 
+            <motion.div
                 key="reading-mode-content"
-                initial={{ opacity: 0, scale: 0.95, y: 40 }} 
-                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                initial={{ opacity: 0, scale: 0.95, y: 40 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 40 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="fixed inset-0 z-[120] flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto" 
+                className="fixed inset-0 z-[120] flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto"
                 onClick={closeExpanded}
             >
                 <FloatingNav
@@ -94,15 +94,15 @@ export function ForumReadingMode() {
                                                 {/* Standardized navigation handled by FloatingNav */}
                                             </div>
                                             <span className="flex items-center gap-1.5" title={t.forum.post.date}>
-                                                <Calendar className="w-3.5 h-3.5" />
+                                                <Calendar className="size-3.5" />
                                                 {new Date(expandedPost.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                             </span>
                                             <span className="flex items-center gap-1.5" title={t.forum.post.views}>
-                                                <Eye className="w-3.5 h-3.5" />
+                                                <Eye className="size-3.5" />
                                                 {expandedPost.views}
                                             </span>
                                             <span className="flex items-center gap-1.5" title={t.forum.post.replies}>
-                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                <MessageSquare className="size-3.5" />
                                                 {expandedPost.replies.length}
                                             </span>
                                         </div>
@@ -117,7 +117,7 @@ export function ForumReadingMode() {
                                         </div>
                                     </div>
                                 </div>
-                                <CloseButton 
+                                <CloseButton
                                     onClose={closeExpanded}
                                     title={t.forum.reading.close}
                                     className="bg-[var(--color-bg)]/50 sm:w-12 sm:h-12"
@@ -185,7 +185,7 @@ export function ForumReadingMode() {
 
                                             // We have a pivot. 
                                             const replies = expandedPost.replies;
-                                            
+
                                             // 1. Find pivot message index
                                             // The pivot ID is in format "[authorId]-[messageId]"
                                             // If pivot is the original post, pivotId might start with "root-"

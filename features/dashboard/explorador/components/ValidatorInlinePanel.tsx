@@ -103,7 +103,7 @@ export function ValidatorInlinePanel({
         };
     const enrichedMeta = syntheticValidatorAddress ? [...metadataItems, syntheticValidatorAddress] : metadataItems;
     const orderedMeta = [
-        ...META_ORDER.map(key => enrichedMeta.find((m) => m.key === key)).filter(Boolean),
+        ...META_ORDER.flatMap(key => { const m = enrichedMeta.find((m) => m.key === key); return m ? [m] : []; }),
         ...enrichedMeta.filter((m) => !META_ORDER.includes(m.key)),
     ] as MetadataItem[];
 
@@ -119,7 +119,7 @@ export function ValidatorInlinePanel({
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
             {/* Header */}
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                <Shield className="size-3.5 text-[var(--color-primary)]" />
                 {tt?.validator_info_title || 'Validator'}
             </h3>
 
@@ -128,10 +128,10 @@ export function ValidatorInlinePanel({
                 className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors"
                 onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
             >
-                <div className="w-9 h-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
+                <div className="size-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
                     {isLoading ? (
                         <div className="w-full h-full flex items-center justify-center">
-                            <Activity className="w-4 h-4 animate-spin text-[var(--color-primary)]" />
+                            <Activity className="size-4 animate-spin text-[var(--color-primary)]" />
                         </div>
                     ) : (
                         <SafeImage src={iconUrl as string} alt={name as string} fallbackName={name as string} className="w-full h-full object-cover" />
@@ -141,7 +141,7 @@ export function ValidatorInlinePanel({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                         <p className="text-sm font-bold text-[var(--color-text-main)] truncate">{name as string}</p>
-                        <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                        <ChevronDown className={`size-3.5 text-[var(--color-text-muted)] transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                     </div>
                     {headerMessage ? (
                         <p className={`text-[11px] font-medium leading-snug mt-0.5 ${amountColor}`}>{headerMessage}</p>
@@ -161,7 +161,7 @@ export function ValidatorInlinePanel({
                         {rightContent ?? (
                             <>
                                 <span className={`text-base font-black font-mono ${amountColor} tabular-nums flex items-center gap-1`}>
-                                    {isUnstake && <IconFlame className="w-4 h-4 shrink-0" />}
+                                    {isUnstake && <IconFlame className="size-4 shrink-0" />}
                                     {!isUnstake && amountSign}
                                     {numericAmount} <span className="text-xs font-semibold opacity-70">{primaryUnit}</span>
                                 </span>
@@ -193,7 +193,7 @@ export function ValidatorInlinePanel({
                                         {activeTab === 'summary' && (
                                             <div>
                                                 <div className="flex items-center gap-3 mb-4">
-                                                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0">
+                                                    <div className="size-10 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0">
                                                         <SafeImage src={iconUrl as string} alt={name as string} fallbackName={name as string} className="w-full h-full object-cover" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -203,8 +203,8 @@ export function ValidatorInlinePanel({
                                                                 <span className="hidden sm:inline">{validatorAddress.slice(0, 14)}...{validatorAddress.slice(-6)}</span>
                                                                 <span className="inline sm:hidden">{validatorAddress.slice(0, 8)}...{validatorAddress.slice(-8)}</span>
                                                             </span>
-                                                            <button onClick={e => { e.stopPropagation(); onCopy(validatorAddress); }} className={`p-0.5 rounded transition-colors ${copiedAddress === validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
-                                                                {copiedAddress === validatorAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                                            <button type="button" onClick={e => { e.stopPropagation(); onCopy(validatorAddress); }} className={`p-0.5 rounded transition-colors ${copiedAddress === validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}>
+                                                                {copiedAddress === validatorAddress ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -253,11 +253,11 @@ export function ValidatorInlinePanel({
                                         )}
 
                                         {activeTab === 'raw' && (
-                                            <PanelRawTab 
-                                                data={entityData} 
-                                                tt={tt} 
-                                                onCopy={onCopy} 
-                                                copiedAddress={copiedAddress} 
+                                            <PanelRawTab
+                                                data={entityData}
+                                                tt={tt}
+                                                onCopy={onCopy}
+                                                copiedAddress={copiedAddress}
                                             />
                                         )}
                                     </>

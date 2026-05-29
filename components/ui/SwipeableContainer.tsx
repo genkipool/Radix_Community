@@ -117,7 +117,7 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
         startPos.current = null;
     };
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleContainerClick = (e: React.MouseEvent) => {
         // If a swipe just happened, suppress the click
         if (didSwipe.current) {
             didSwipe.current = false;
@@ -143,7 +143,7 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
             className={`flex-1 flex flex-col min-h-0 relative select-text ${className}`}
-            onClick={handleClick}
+            onClick={handleContainerClick}
             style={{ ...style, touchAction: 'pan-y' }}
         >
             {children}

@@ -33,7 +33,7 @@ export function useReaderToC(toc: ReaderToCEntry[], docId: string) {
 
         if (visibleSections.size > 0) {
           const topmost = Array.from(visibleSections.entries())
-            .sort(([, a], [, b]) => a - b)[0][0];
+            .reduce((min, entry) => entry[1] < min[1] ? entry : min)[0];
           setActiveId(topmost);
         }
       },

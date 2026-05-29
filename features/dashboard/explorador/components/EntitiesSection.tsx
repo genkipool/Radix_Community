@@ -6,7 +6,7 @@ import { sanitizeText } from '@/utils/sanitize';
 import { Pill } from '@/components/ui/Pill';
 import { ExpandableEntityBadge } from '@/features/dashboard/explorador/components/ExpandableEntityBadge';
 
-import { EntitiesSectionProps } from '../types';
+import { EntitiesSectionProps } from '../types/components.types';
 
 /**
  * EntitiesSection
@@ -23,18 +23,17 @@ export function EntitiesSection({
     /* ── Resolve addresses ─────────────────────────────────── */
     const entities: string[] = isCreated
         ? (details.receipt?.state_updates?.new_global_entities ?? [])
-            .map((e) => sanitizeText(e?.entity_address || ''))
-            .filter(Boolean)
+            .flatMap((e) => { const t = sanitizeText(e?.entity_address || ''); return t ? [t] : []; })
         : (details.affected_global_entities ?? [])
-            .map((e: string | { address: string }) =>
-                sanitizeText(typeof e === 'string' ? e : e?.address || '')
-            )
-            .filter(Boolean);
+            .flatMap((e: string | { address: string }) => {
+                const t = sanitizeText(typeof e === 'string' ? e : e?.address || '');
+                return t ? [t] : [];
+            });
 
     /* ── Theme tokens ──────────────────────────────────────── */
     const icon = isCreated
-        ? <Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-        : <Activity className="w-3.5 h-3.5 text-violet-400" />;
+        ? <Zap className="size-3.5 text-blue-600 dark:text-blue-400" />
+        : <Activity className="size-3.5 text-violet-400" />;
     const countColor = isCreated ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
         : 'bg-violet-500/10 text-violet-400 border-violet-500/20';
     const heading = isCreated

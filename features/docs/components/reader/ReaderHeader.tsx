@@ -16,7 +16,7 @@ export function ReaderHeader({ rootLabel, topicLabel, docTitle, topicAction }: R
       {rootLabel && (
         <>
           <span>{rootLabel}</span>
-          <ChevronRight className="w-4 h-4 opacity-50 shrink-0" />
+          <ChevronRight className="size-4 opacity-50 shrink-0" />
         </>
       )}
       {topicAction ? (
@@ -24,7 +24,7 @@ export function ReaderHeader({ rootLabel, topicLabel, docTitle, topicAction }: R
       ) : (
         <span className="opacity-80">{topicLabel}</span>
       )}
-      <ChevronRight className="w-4 h-4 opacity-50 shrink-0" />
+      <ChevronRight className="size-4 opacity-50 shrink-0" />
       <span className="truncate" style={{ color: 'var(--color-text-main)' }}>
         {docTitle.replace(/^#+\s*/, '')}
       </span>

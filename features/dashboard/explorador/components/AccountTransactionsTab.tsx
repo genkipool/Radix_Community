@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
@@ -101,157 +101,167 @@ function StakingBalanceCell({
     const isStakeOrUnstake = tx.manifestClasses?.includes('ValidatorStake') || tx.manifestClasses?.includes('ValidatorUnstake');
     const shouldQuery = isStakeOrUnstake || tx.isEndOfMonthAuth;
 
-    const { data: balance, isLoading } = useQuery({
-        queryKey: ['staking-balance-version', accountAddress, tx.stateVersion, network],
-        queryFn: async () => {
-            const GATEWAY_URL = network === 'stokenet'
-                ? 'https://stokenet.radixdlt.com'
-                : 'https://mainnet.radixdlt.com';
+    const fetchBalance = async () => {
+        const GATEWAY_URL = network === 'stokenet'
+            ? 'https://stokenet.radixdlt.com'
+            : 'https://mainnet.radixdlt.com';
 
-            const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    addresses: [accountAddress],
-                    opt_ins: { fungible_resources: true },
-                    at_ledger_state: { state_version: tx.stateVersion }
-                })
-            });
+        const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                addresses: [accountAddress],
+                opt_ins: { fungible_resources: true },
+                at_ledger_state: { state_version: tx.stateVersion }
+            })
+        });
 
-            if (!res.ok) return 0;
-            const data = await res.json();
+        if (!res.ok) return 0;
+        const data = await res.json();
 
-            const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
-            if (!accountItem) return 0;
+        const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
+        if (!accountItem) return 0;
 
-            const fungibles = accountItem.fungible_resources?.items || [];
+        const fungibles = accountItem.fungible_resources?.items || [];
 
-            const lsuToValidator = new Map<string, string>();
-            if (validatorsData?.validators) {
-                validatorsData.validators.forEach((v: Validator) => {
-                    if (v.lsuResource) {
-                        lsuToValidator.set(v.lsuResource, v.address);
-                    }
-                });
-            }
-
-            const extraAddresses: string[] = [];
-            const lsuAddressesInAccount: string[] = [];
-            for (const f of fungibles) {
-                if (lsuToValidator.has(f.resource_address)) {
-                    lsuAddressesInAccount.push(f.resource_address);
-                    extraAddresses.push(f.resource_address);
-                    const valAddr = lsuToValidator.get(f.resource_address)!;
-                    extraAddresses.push(valAddr);
+        const lsuToValidator = new Map<string, string>();
+        if (validatorsData?.validators) {
+            validatorsData.validators.forEach((v: Validator) => {
+                if (v.lsuResource) {
+                    lsuToValidator.set(v.lsuResource, v.address);
                 }
+            });
+        }
+
+        const extraAddresses: string[] = [];
+        const lsuAddressesInAccount: string[] = [];
+        for (const f of fungibles) {
+            if (lsuToValidator.has(f.resource_address)) {
+                lsuAddressesInAccount.push(f.resource_address);
+                extraAddresses.push(f.resource_address);
+                const valAddr = lsuToValidator.get(f.resource_address)!;
+                extraAddresses.push(valAddr);
             }
+        }
 
-            const historicalRedemptionRates = new Map<string, number>();
+        const historicalRedemptionRates = new Map<string, number>();
 
-            if (extraAddresses.length > 0) {
-                try {
-                    const resExtra = await fetch(`${GATEWAY_URL}/state/entity/details`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            addresses: extraAddresses,
-                            at_ledger_state: { state_version: tx.stateVersion }
-                        })
-                    });
+        if (extraAddresses.length > 0) {
+            try {
+                const resExtra = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        addresses: extraAddresses,
+                        at_ledger_state: { state_version: tx.stateVersion }
+                    })
+                });
 
-                    if (resExtra.ok) {
-                        const extraData = await resExtra.json();
-                        const items = (extraData.items || []) as Array<{
-                            address: string;
-                            details?: {
-                                total_supply?: string;
-                                total_minted?: string;
-                                state?: {
-                                    stake_vault?: { balance: string }
-                                }
-                            };
-                            stake_vault?: { balance: string };
+                if (resExtra.ok) {
+                    const extraData = await resExtra.json();
+                    const items = (extraData.items || []) as Array<{
+                        address: string;
+                        details?: {
+                            total_supply?: string;
+                            total_minted?: string;
                             state?: {
                                 stake_vault?: { balance: string }
-                            };
-                            active_in_epoch?: {
-                                stake: string;
-                            };
-                        }>;
-
-                        const itemsMap = new Map<string, typeof items[number]>();
-                        items.forEach((item) => {
-                            itemsMap.set(item.address, item);
-                        });
-
-                        for (const lsuAddr of lsuAddressesInAccount) {
-                            const valAddr = lsuToValidator.get(lsuAddr)!;
-                            const lsuItem = itemsMap.get(lsuAddr);
-                            const valItem = itemsMap.get(valAddr);
-
-                            let lsuSupply = 1;
-                            if (lsuItem) {
-                                lsuSupply = parseFloat(
-                                    lsuItem.details?.total_supply ??
-                                    lsuItem.details?.total_minted ??
-                                    '1'
-                                );
-                                if (lsuSupply === 0) lsuSupply = 1;
                             }
+                        };
+                        stake_vault?: { balance: string };
+                        state?: {
+                            stake_vault?: { balance: string }
+                        };
+                        active_in_epoch?: {
+                            stake: string;
+                        };
+                    }>;
 
-                            let valStake = 0;
-                            if (valItem) {
-                                valStake = parseFloat(
-                                    valItem.stake_vault?.balance ??
-                                    valItem.details?.state?.stake_vault?.balance ??
-                                    valItem.state?.stake_vault?.balance ??
-                                    valItem.active_in_epoch?.stake ??
-                                    '0'
-                                );
-                            }
+                    const itemsMap = new Map<string, typeof items[number]>();
+                    items.forEach((item) => {
+                        itemsMap.set(item.address, item);
+                    });
 
-                            const factor = valStake / lsuSupply;
-                            if (factor > 0) {
-                                historicalRedemptionRates.set(lsuAddr, factor);
-                            }
+                    for (const lsuAddr of lsuAddressesInAccount) {
+                        const valAddr = lsuToValidator.get(lsuAddr)!;
+                        const lsuItem = itemsMap.get(lsuAddr);
+                        const valItem = itemsMap.get(valAddr);
+
+                        let lsuSupply = 1;
+                        if (lsuItem) {
+                            lsuSupply = parseFloat(
+                                lsuItem.details?.total_supply ??
+                                lsuItem.details?.total_minted ??
+                                '1'
+                            );
+                            if (lsuSupply === 0) lsuSupply = 1;
+                        }
+
+                        let valStake = 0;
+                        if (valItem) {
+                            valStake = parseFloat(
+                                valItem.stake_vault?.balance ??
+                                valItem.details?.state?.stake_vault?.balance ??
+                                valItem.state?.stake_vault?.balance ??
+                                valItem.active_in_epoch?.stake ??
+                                '0'
+                            );
+                        }
+
+                        const factor = valStake / lsuSupply;
+                        if (factor > 0) {
+                            historicalRedemptionRates.set(lsuAddr, factor);
                         }
                     }
-                } catch {
-                    // Fallback to mathematical discount on error
                 }
+            } catch {
+                // Fallback to mathematical discount on error
             }
+        }
 
-            let totalStaking = 0;
-            const now = new Date();
-            const txDate = new Date(tx.confirmedAt);
-            const daysDiff = Math.max(0, (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+        let totalStaking = 0;
+        const now = new Date();
+        const txDate = new Date(tx.confirmedAt);
+        const daysDiff = Math.max(0, (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+        const validatorByLsu = new Map((validatorsData?.validators ?? []).map(v => [v.lsuResource, v] as const));
 
-            for (const f of fungibles) {
-                if (lsuToValidator.has(f.resource_address)) {
-                    const amount = Number(f.amount);
+        for (const f of fungibles) {
+            if (lsuToValidator.has(f.resource_address)) {
+                const amount = Number(f.amount);
 
-                    let factor = historicalRedemptionRates.get(f.resource_address);
-                    if (factor === undefined) {
-                        const currentVal = validatorsData?.validators.find(v => v.lsuResource === f.resource_address);
-                        const currentFactor = currentVal?.lsu2xrdFactor || 1;
-                        const apy = currentVal?.apyProjection || 5.76;
-                        factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
-                    }
-
-                    totalStaking += amount * factor;
+                let factor = historicalRedemptionRates.get(f.resource_address);
+                if (factor === undefined) {
+                    const currentVal = validatorByLsu.get(f.resource_address);
+                    const currentFactor = currentVal?.lsu2xrdFactor || 1;
+                    const apy = currentVal?.apyProjection || 5.76;
+                    factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
                 }
+
+                totalStaking += amount * factor;
             }
-            return totalStaking;
+        }
+        return totalStaking;
+    };
+
+    const queryClient = useQueryClient();
+    const { data: balance, isPending, mutate } = useMutation({
+        mutationFn: fetchBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['account-staking-balance'] });
         },
-        enabled: shouldQuery && !!validatorsData,
-        staleTime: Infinity,
     });
+
+    React.useEffect(() => {
+        if (shouldQuery && !!validatorsData) {
+            mutate();
+        }
+    }, [shouldQuery, validatorsData, mutate]);
 
     if (!shouldQuery) {
         return <span className="text-xs text-[var(--color-text-muted)]">-</span>;
     }
 
-    if (isLoading) {
+    if (isPending) {
         return <span className="text-xs text-[var(--color-text-muted)] animate-pulse">...</span>;
     }
 
@@ -304,9 +314,8 @@ export function AccountTransactionsTab({
         staleTime: 300_000,
     });
 
-    const transactions = React.useMemo(() => data?.pages.flatMap((p) => p.transactions || []) || [], [data]);
-
-    const transactionsWithBalances = React.useMemo(() => {
+    const transactions = data?.pages.flatMap((p) => p.transactions || []) || [];
+    const transactionsWithBalances = (() => {
         if (!transactions.length || !entityDetails || !validatorsData) {
             return transactions.map(tx => ({ ...tx, balanceXrd: 0, balanceStaking: 0 }));
         }
@@ -353,9 +362,9 @@ export function AccountTransactionsTab({
                 balanceStaking: currentStaking,
             };
         });
-    }, [transactions, entityDetails, validatorsData, network, accountAddress]);
+    })();
 
-    const processedTransactions = React.useMemo(() => {
+    const processedTransactions = (() => {
         const daysAllocated = new Set<string>();
 
         return transactionsWithBalances.map((tx, index) => {
@@ -381,7 +390,7 @@ export function AccountTransactionsTab({
                 isEndOfMonthAuth: isAuthorizedForDay || isLatest
             };
         });
-    }, [transactionsWithBalances]);
+    })();
 
     const txLoadingText = 'Loading transactions...';
     const txErrorText = 'Error loading transactions.';
@@ -410,7 +419,7 @@ export function AccountTransactionsTab({
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)] gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
+                <Loader2 className="size-6 animate-spin text-[var(--color-primary)]" />
                 <span className="text-sm font-medium">{txLoadingText}</span>
             </div>
         );
@@ -420,7 +429,7 @@ export function AccountTransactionsTab({
         const errorMsg = error instanceof Error ? error.message : String(error);
         return (
             <div className="flex flex-col items-center justify-center py-12 text-red-400 gap-3">
-                <AlertCircle className="w-6 h-6" />
+                <AlertCircle className="size-6" />
                 <span className="text-sm font-medium">{getTranslatedError(errorMsg)}</span>
             </div>
         );
@@ -585,7 +594,7 @@ export function AccountTransactionsTab({
                     >
                         {isFetchingNextPage ? (
                             <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 className="size-3.5 animate-spin" />
                                 {accT?.tx_loading || 'Loading...'}
                             </>
                         ) : (

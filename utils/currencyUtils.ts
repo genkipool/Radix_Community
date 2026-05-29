@@ -4,6 +4,19 @@
  * Utilities for localized currency detection and formatting.
  */
 
+const _currencyFmtCache = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyFormatter(locale: string): Intl.NumberFormat {
+    const cached = _currencyFmtCache.get(locale);
+    if (cached) return cached;
+    const nf = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    _currencyFmtCache.set(locale, nf);
+    return nf;
+}
+
 /**
  * Returns 'EUR' for Eurozone locales, otherwise 'USD'.
  */
@@ -15,10 +28,8 @@ export function getCurrencyForLocale(locale: string): 'EUR' | 'USD' {
 }
 
 export function formatCurrency(value: number, currency: 'EUR' | 'USD', locale: string): string {
-    const formattedNum = new Intl.NumberFormat(locale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(value);
+    const nf = getCurrencyFormatter(locale);
+    const formattedNum = nf.format(value);
     
     // The user specifically requested the currency symbol to be strictly on the right
     const symbol = currency === 'EUR' ? '€' : '$';

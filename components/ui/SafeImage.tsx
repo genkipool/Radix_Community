@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useRef, useLayoutEffect, useState } from 'react';
 import Image from 'next/image';
 import type { CSSProperties } from 'react';
 import { buildFallbackAvatar } from '@/utils/sanitize';
@@ -28,26 +28,17 @@ export function SafeImage({
     loading = 'lazy',
 }: SafeImageProps) {
     const fallback = buildFallbackAvatar(fallbackName);
-    const [imgSrc, setImgSrc] = useState(() => resolveSrc(src, fallback));
+    const [errored, setErrored] = useState(false);
+    const imgSrc = errored ? fallback : resolveSrc(src, fallback);
     const imgRef = useRef<HTMLImageElement>(null);
-
-    const [prevSrc, setPrevSrc] = useState(src);
-    const [prevFallbackName, setPrevFallbackName] = useState(fallbackName);
-    
-    // Sync when src prop changes (e.g. list re-renders with different data)
-    if (src !== prevSrc || fallbackName !== prevFallbackName) {
-        setPrevSrc(src);
-        setPrevFallbackName(fallbackName);
-        setImgSrc(resolveSrc(src, fallback));
-    }
 
     // Catch cached 404s that resolve before React's onError attaches
     useLayoutEffect(() => {
         const img = imgRef.current;
-        if (img?.complete && img.naturalWidth === 0) setImgSrc(fallback);
+        if (img?.complete && img.naturalWidth === 0) setErrored(true);
     }, [fallback]);
 
-    const handleError = () => setImgSrc(fallback);
+    const handleError = () => setErrored(true);
 
     return (
         <Image

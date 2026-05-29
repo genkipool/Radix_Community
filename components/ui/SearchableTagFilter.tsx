@@ -46,7 +46,7 @@ export function SearchableTagFilter({
                 ? (currentIdx + 1) % allOptions.length
                 : (currentIdx - 1 + allOptions.length) % allOptions.length;
         }
-        
+
         onSelect(allOptions[nextIdx]);
     };
 
@@ -73,14 +73,14 @@ export function SearchableTagFilter({
                     onClick={(e) => { e.stopPropagation(); cycle('prev'); }}
                     className="p-2 w-10 flex items-center justify-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border-r border-[var(--color-card-border)] shrink-0"
                 >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="size-4" />
                 </button>
 
                 {/* Main Label/Toggle */}
                 <button
                     type="button"
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
+                    onClick={(e) => {
+                        e.stopPropagation();
                         if (activeTag) {
                             onSelect(null);
                         } else {
@@ -98,7 +98,7 @@ export function SearchableTagFilter({
                     onClick={(e) => { e.stopPropagation(); cycle('next'); }}
                     className="p-2 w-10 flex items-center justify-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border-l border-[var(--color-card-border)] shrink-0"
                 >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="size-4" />
                 </button>
 
                 {/* Search Toggle */}
@@ -108,7 +108,7 @@ export function SearchableTagFilter({
                     className={`p-2 w-10 flex items-center justify-center transition-colors border-l border-[var(--color-card-border)] shrink-0 ${isOpen ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]'}`}
                     title={placeholder}
                 >
-                    <Search className="w-4 h-4" />
+                    <Search className="size-4" />
                 </button>
             </div>
 
@@ -123,13 +123,13 @@ export function SearchableTagFilter({
                     >
                         <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
                                     id="tag-filter-input"
                                     name="tag-filter"
                                     type="text"
-                                    autoFocus
                                     placeholder={placeholder}
+                                    aria-label={placeholder}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"

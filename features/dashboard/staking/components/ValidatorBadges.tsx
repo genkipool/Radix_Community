@@ -12,8 +12,7 @@ import type { TranslationsT } from '@/features/dashboard/types';
  */
 
 const baseCls = (compact: boolean) =>
-    `inline-flex items-center gap-1 rounded-full border font-bold whitespace-nowrap align-middle box-border leading-none ${
-        compact ? 'px-1.5 py-1 text-[9px]' : 'px-2 py-1 text-[10px]'
+    `inline-flex items-center gap-1 rounded-full border font-bold whitespace-nowrap align-middle box-border leading-none ${compact ? 'px-1.5 py-1 text-[9px]' : 'px-2 py-1 text-[10px]'
     }`;
 
 /* ─────────────────────────────────────────
@@ -31,7 +30,7 @@ export const OnlineBadge = ({
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
             title={sanitizeText(online ? labelOn : labelOff)}
         >
-            <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
+            <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'size-3 shrink-0'} />
             {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(online ? labelOn : labelOff)}</span>}
         </span>
     );
@@ -52,7 +51,7 @@ export const ConnectBadge = ({
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
             title={sanitizeText(accepts ? labelYes : labelNo)}
         >
-            <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'w-3 h-3 shrink-0'} />
+            <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'size-3 shrink-0'} />
             {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(accepts ? labelYes : labelNo)}</span>}
         </span>
     );
@@ -75,7 +74,7 @@ export const VoteBadge = ({
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
             title={`${label}: ${safeVote}`}
         >
-            <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
+            <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />
             {!compact && <span className="mt-[1px] truncate max-w-[80px] hidden sm:inline">{safeVote || '—'}</span>}
         </span>
     );
@@ -86,45 +85,44 @@ export const VoteBadge = ({
 ───────────────────────────────────────── */
 export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Partial<TranslationsT>; compact?: boolean }) => {
     const lowerTag = tag.toLowerCase();
-    const isCommunity  = lowerTag.includes('community') || lowerTag.includes('comunidad');
+    const isCommunity = lowerTag.includes('community') || lowerTag.includes('comunidad');
     const isFoundation = lowerTag.includes('foundation') || lowerTag.includes('fundacion');
-    const isHispanic   = lowerTag.includes('hispanic')   || lowerTag.includes('hispana');
+    const isHispanic = lowerTag.includes('hispanic') || lowerTag.includes('hispana');
 
     const label = t?.dashboard?.tags?.[tag as keyof NonNullable<NonNullable<typeof t>["dashboard"]>["tags"]] ?? (
-        isHispanic   ? (t?.dashboard?.tags?.['Hispanic Community'] ?? tag)
-        : isCommunity  ? (t?.dashboard?.tags?.Community  ?? tag)
-        : isFoundation ? (t?.dashboard?.tags?.Foundation ?? tag)
-        : tag
+        isHispanic ? (t?.dashboard?.tags?.['Hispanic Community'] ?? tag)
+            : isCommunity ? (t?.dashboard?.tags?.Community ?? tag)
+                : isFoundation ? (t?.dashboard?.tags?.Foundation ?? tag)
+                    : tag
     );
 
-    let bgColor     = 'bg-sky-500/15';
-    let textColor   = 'text-sky-700 dark:text-sky-400';
+    let bgColor = 'bg-sky-500/15';
+    let textColor = 'text-sky-700 dark:text-sky-400';
     let borderColor = 'border-sky-500/25';
     let Icon = Tag;
 
     if (isHispanic) {
-        bgColor     = 'bg-amber-500/15';
-        textColor   = 'text-amber-700 dark:text-amber-400';
+        bgColor = 'bg-amber-500/15';
+        textColor = 'text-amber-700 dark:text-amber-400';
         borderColor = 'border-amber-500/25';
         Icon = Globe;
     } else if (isFoundation) {
-        bgColor     = 'bg-violet-500/15';
-        textColor   = 'text-violet-600 dark:text-violet-400';
+        bgColor = 'bg-violet-500/15';
+        textColor = 'text-violet-600 dark:text-violet-400';
         borderColor = 'border-violet-500/25';
         Icon = Building;
     } else if (isCommunity) {
         Icon = Users;
     } else {
-        bgColor     = 'bg-[var(--color-bg)]';
-        textColor   = 'text-[var(--color-text-muted)]';
+        bgColor = 'bg-[var(--color-bg)]';
+        textColor = 'text-[var(--color-text-muted)]';
         borderColor = 'border-[var(--color-card-border)]';
     }
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${
-                compact ? 'p-1' : 'px-2 py-1 text-[9px]'
-            }`}
+            className={`inline-flex items-center gap-1 rounded-full border font-bold tracking-wider transition-colors align-middle box-border leading-none ${bgColor} ${textColor} ${borderColor} ${compact ? 'p-1' : 'px-2 py-1 text-[9px]'
+                }`}
             title={label}
         >
             <Icon size={compact ? 10 : 12} className="shrink-0" />

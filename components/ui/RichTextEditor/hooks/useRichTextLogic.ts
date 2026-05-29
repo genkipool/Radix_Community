@@ -229,11 +229,9 @@ export function useRichTextLogic({
             if (img && size) {
                 img.style.maxWidth = `${size}%`;
                 wrap?.querySelectorAll('.img-size-btn').forEach(b => {
-                    (b as HTMLElement).style.background = 'var(--color-surface)';
-                    (b as HTMLElement).style.color = 'var(--color-text-muted)';
+                    (b as HTMLElement).setAttribute('style', 'background:var(--color-surface);color:var(--color-text-muted)');
                 });
-                btn.style.background = 'var(--color-primary)';
-                btn.style.color = 'var(--color-bg)';
+                btn.setAttribute('style', 'background:var(--color-primary);color:var(--color-bg)');
             }
             return;
         }
@@ -270,7 +268,7 @@ export function useRichTextLogic({
 
 
 
-    const handleInput = () => {
+    const syncHtmlOnInput = () => {
         syncHtml();
     };
 
@@ -431,7 +429,7 @@ export function useRichTextLogic({
         handlePaste,
         handleDrop,
         handleEditorClick,
-        handleInput,
+        syncHtmlOnInput,
         handleKeyDown
     };
 }

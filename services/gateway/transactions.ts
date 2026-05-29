@@ -97,6 +97,21 @@ const STREAM_OPT_INS = {
 // Uses Intl.DateTimeFormat to resolve the real offset for the specific
 // date, automatically handling DST (e.g. Europe/Madrid is UTC+1 in
 // winter and UTC+2 in summer).
+const _tzFmtCache = new Map<string, Intl.DateTimeFormat>();
+
+function getTimeZoneFormatter(timezone: string): Intl.DateTimeFormat {
+    const cached = _tzFmtCache.get(timezone);
+    if (cached) return cached;
+    const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+    });
+    _tzFmtCache.set(timezone, fmt);
+    return fmt;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 function localToUTC(
     dateStr: string,
@@ -114,12 +129,7 @@ function localToUTC(
 
     // Format this UTC instant in the target timezone to see what
     // local time it actually maps to
-    const fmt = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: false,
-    });
+    const fmt = getTimeZoneFormatter(timezone);
 
     const p: Record<string, string> = {};
     for (const { type, value } of fmt.formatToParts(guess)) p[type] = value;
@@ -184,8 +194,9 @@ function buildLedgerDateParams(
 // Searches by field name first, then falls back to the first Decimal kind.
 // ─────────────────────────────────────────────────────────────────────────────
 function getDecimalFromFields(fields: GatewayField[], names: string[]): number {
+    const namesSet = new Set(names);
     const f =
-        fields.find((x) => names.includes(x.field_name as string)) ||
+        fields.find((x) => namesSet.has(x.field_name as string)) ||
         fields.find((x) => x.kind === 'Decimal');
     return f ? Number(f.value) : 0;
 }
@@ -571,9 +582,10 @@ export async function enrichTransactionsMetadata(
 
         (res.items as unknown as GatewayEntityItem[] || []).forEach((item) => {
             const metadata = item.metadata?.items || [];
-            const name = metadata.find(m => m.key === 'name')?.value?.typed?.value;
-            const symbol = metadata.find(m => m.key === 'symbol')?.value?.typed?.value;
-            const icon = metadata.find(m => m.key === 'icon_url')?.value?.typed?.value;
+            const metaByKey = new Map(metadata.map(m => [m.key, m] as const));
+            const name = metaByKey.get('name')?.value?.typed?.value;
+            const symbol = metaByKey.get('symbol')?.value?.typed?.value;
+            const icon = metaByKey.get('icon_url')?.value?.typed?.value;
             metadataMap.set(item.address, { name, symbol, icon });
         });
     } catch (error) {

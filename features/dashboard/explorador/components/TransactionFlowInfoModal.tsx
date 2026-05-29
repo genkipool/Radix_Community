@@ -39,16 +39,17 @@ export function TransactionFlowInfoModal({
                                 <div className="p-8 flex flex-col relative z-10">
                                     {/* Close Button */}
                                     <button
+                                        type="button"
                                         onClick={onClose}
-                                        className="absolute top-6 right-6 w-8 h-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent"
+                                        className="absolute top-6 right-6 size-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent"
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="size-4" />
                                     </button>
 
                                     {/* Header */}
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl relative group shrink-0">
-                                            <Info className="w-6 h-6 group-hover:scale-110 transition-transform duration-500" />
+                                        <div className="size-12 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl relative group shrink-0">
+                                            <Info className="size-6 group-hover:scale-110 transition-transform duration-500" />
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-black text-[var(--color-text-main)] tracking-tight">
@@ -67,7 +68,7 @@ export function TransactionFlowInfoModal({
                                             {/* Left Column Explanation */}
                                             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                                    <Landmark className="w-16 h-16 text-blue-500" />
+                                                    <Landmark className="size-16 text-blue-500" />
                                                 </div>
                                                 <h4 className="font-black text-blue-600 text-xs tracking-widest uppercase flex items-center">
                                                     {tt?.tx_flow_info_left_col_title || 'LEFT COLUMN: Origin Address'}
@@ -83,7 +84,7 @@ export function TransactionFlowInfoModal({
                                             {/* Right Column Explanation */}
                                             <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-5 space-y-3 relative overflow-hidden group transition-colors">
                                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                                    <Landmark className="w-16 h-16 text-green-500" />
+                                                    <Landmark className="size-16 text-green-500" />
                                                 </div>
                                                 <h4 className="font-black text-[#16a34a] text-xs tracking-widest uppercase flex items-center">
                                                     {tt?.tx_flow_info_right_col_title || 'RIGHT COLUMN: Destination Address'}

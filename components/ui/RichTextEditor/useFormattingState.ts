@@ -79,7 +79,7 @@ export function useFormattingState(editorRef: React.RefObject<HTMLDivElement | n
             document.removeEventListener('selectionchange', scheduleUpdate);
             if (rafRef.current) cancelAnimationFrame(rafRef.current);
         };
-    }, []);
+    }, [rafRef, updateRef]);
 
     return { state, forceUpdate };
 }

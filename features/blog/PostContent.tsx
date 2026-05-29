@@ -14,8 +14,9 @@
 import { HighlightText } from '@/components/ui/HighlightText';
 import React from 'react';
 import type { PostContentProps } from './types';
+import { sanitizeUserHtml } from '@/utils/sanitize';
 
-function renderFormattedLine(text: string, query: string) {
+function FormattedLine({ text, query }: { text: string; query: string }) {
   const parts = text.split(/(\*\*.*?\*\*)/g);
   return (
     <>
@@ -42,7 +43,7 @@ export function PostContent({ content, query, isSummary = false }: PostContentPr
     return (
       <div
         className="rich-text-content space-y-3 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(content) }}
       />
     );
   }
@@ -53,18 +54,18 @@ export function PostContent({ content, query, isSummary = false }: PostContentPr
     <div className="space-y-3">
       {lines.map((line, i) => {
         const trimmed = line.trim();
-        if (!trimmed && i < lines.length - 1) return <div key={i} className="h-2" />;
+        if (!trimmed && i < lines.length - 1) return <div key={`line-${i}`} className="h-2" />;
         if (!trimmed) return null;
 
         const isBullet = trimmed.startsWith('•');
         const cleanLine = isBullet ? trimmed.substring(1).trim() : line;
 
         return (
-          <div key={i} className={`flex gap-2 ${isBullet ? 'pl-4' : ''}`}>
+          <div key={`line-${i}`} className={`flex gap-2 ${isBullet ? 'pl-4' : ''}`}>
             {isBullet && (
               <span className="text-[var(--color-primary)] font-bold shrink-0 mt-0.5">•</span>
             )}
-            <div className="flex-1">{renderFormattedLine(cleanLine, query)}</div>
+            <div className="flex-1"><FormattedLine text={cleanLine} query={query} /></div>
           </div>
         );
       })}

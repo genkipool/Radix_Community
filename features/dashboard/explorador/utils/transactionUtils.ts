@@ -69,6 +69,7 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
     let hasSwap = false;
     const tokensOut = new Set<string>();
     const tokensIn = new Set<string>();
+    const _initiatorSet = new Set(initiatorAddrs);
 
     for (const ev of events) {
         if (ev.name === 'SwapEvent' || (ev.name && ev.name.includes('Swap'))) {
@@ -76,7 +77,7 @@ export function detectSwapMode(events: GatewayEvent[], initiatorAddrs: string[])
         }
 
         const ent = ev.emitter?.entity?.entity_address;
-        if (ent && initiatorAddrs.includes(ent)) {
+        if (ent && _initiatorSet.has(ent)) {
             const fields = ev.data?.fields || [];
 
             const resField = fields.find((f: GatewayField) =>
@@ -152,14 +153,13 @@ export function extractSwapData(
     }
 
     const fungibles = balanceChanges.fungible_balance_changes ?? [];
-    const initiatorAddrs = Array.from(initiators);
 
     const grossOut = new Map<string, number>();
     const grossIn = new Map<string, number>();
 
     for (const ev of events) {
         const ent = sanitizeText(ev.emitter?.entity?.entity_address || '');
-        if (initiatorAddrs.includes(ent)) {
+        if (initiators.has(ent)) {
             if (ev.name === 'DepositEvent' || ev.name === 'WithdrawEvent') {
                 const fields = ev.data?.fields || [];
                 let res = '';
@@ -195,12 +195,12 @@ export function extractSwapData(
         }
     } else {
         const soldChanges = fungibles.filter(c =>
-            initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
+            initiators.has(sanitizeText(c.entity_address)) &&
             parseFloat(c.balance_change) < 0
         );
 
         const receivedChanges = fungibles.filter(c =>
-            initiatorAddrs.includes(sanitizeText(c.entity_address)) &&
+            initiators.has(sanitizeText(c.entity_address)) &&
             parseFloat(c.balance_change) > 0
         );
 
@@ -273,7 +273,8 @@ export function buildSwapRoutingChart(
     feePayer?: string,
     swapMode: 'NORMAL_SWAP' | 'ARBITRAGE' | 'NOT_SWAP' = 'NORMAL_SWAP'
 ): string {
-    const isInit = (a: string) => initiatorAddrs.includes(a);
+    const _initiatorSet = new Set(initiatorAddrs);
+    const isInit = (a: string) => _initiatorSet.has(a);
     const isBurn = (a: string) => a.startsWith('resource_');
     const isValidator = (a: string) => a.includes('consensusmanager');
     const isDex = (a: string) => !isInit(a) && !isBurn(a) && !isValidator(a);
@@ -669,9 +670,11 @@ export function buildSwapRoutingChart(
         feeEdgeIndices.push(edgeIdx++);
     }
 
+    const _feeEdgeSet = new Set(feeEdgeIndices);
+    const _outputEdgeSet = new Set(outputEdgeIndices);
     for (let i = 0; i < edgeIdx; i++) {
-        if (feeEdgeIndices.includes(i)) L.push(`  linkStyle ${i} stroke:#F43F5E,stroke-width:${strokeW}px,stroke-dasharray:5,5`);
-        else if (outputEdgeIndices.includes(i)) L.push(`  linkStyle ${i} stroke:#10b981,stroke-width:${strokeW}px`);
+        if (_feeEdgeSet.has(i)) L.push(`  linkStyle ${i} stroke:#F43F5E,stroke-width:${strokeW}px,stroke-dasharray:5,5`);
+        else if (_outputEdgeSet.has(i)) L.push(`  linkStyle ${i} stroke:#10b981,stroke-width:${strokeW}px`);
         else L.push(`  linkStyle ${i} stroke-width:${strokeW}px`);
     }
 

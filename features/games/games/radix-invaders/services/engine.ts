@@ -14,7 +14,7 @@ function randInt(a:number,b:number){return Math.floor(rand(a,b+1));}
 const TIME_BONUS_TARGET_TICKS = 1800;
 const TIME_BONUS_MAX = 2000;
 
-export function makeStars():Star[]{
+function makeStars():Star[]{
   return Array.from({length:200},()=>({
     x:rand(0,CANVAS_W),y:rand(0,CANVAS_H),r:rand(0.4,2.2),speed:rand(0.04,0.2),
     alpha:rand(0.3,1),twinkleSpeed:rand(0.008,0.04),twinklePhase:rand(0,Math.PI*2),
@@ -69,7 +69,7 @@ export function initGameState(level:number,prevHi:number,prevScore=0,prevLives=3
   };
 }
 
-export function spawnExplosion(particles:Particle[],x:number,y:number,color:string,count=18,spread=5){
+function spawnExplosion(particles:Particle[],x:number,y:number,color:string,count=18,spread=5){
   for(let i=0;i<count;i++){
     const angle=rand(0,Math.PI*2),speed=rand(0.5,spread);
     particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
@@ -151,9 +151,11 @@ export function updateGame(
   const wantShoot=keys.has('Space')||keys.has('ArrowUp')||mouseClick;
   if(mouseClick)clearMouseClick();
 
-  let bulletsP=s.bulletsP
-    .filter(b=>b.active&&b.y>-20)
-    .map(b=>{const trail=[{x:b.x,y:b.y},...b.trail.slice(0,8)];return{...b,x:b.x+b.vx,y:b.y+b.vy,trail};});
+  let bulletsP=s.bulletsP.flatMap(b=>{
+    if(!b.active||b.y<=-20)return [];
+    const trail=[{x:b.x,y:b.y},...b.trail.slice(0,8)];
+    return[{...b,x:b.x+b.vx,y:b.y+b.vy,trail}];
+  });
 
   if(wantShoot&&cooldown===0){
     const{bullets,cooldown:cd}=playerShoot(px,playerY-14,powerUp);
@@ -242,16 +244,15 @@ export function updateGame(
   }
 
   // ── Enemy bullets ─────────────────────────────────────────────────
-  let bulletsE=s.bulletsE
-    .filter(b=>b.active&&b.y<CANVAS_H+20)
-    .map(b=>{
-      const trail=[{x:b.x,y:b.y},...b.trail.slice(0,6)];
-      if(b.kind==='banana'){
-        const newX=b.x+Math.sin(s.tick*0.12+b.vx)*2.5;
-        return{...b,x:newX,y:b.y+b.vy,trail};
-      }
-      return{...b,x:b.x+b.vx,y:b.y+b.vy,trail};
-    });
+  let bulletsE=s.bulletsE.flatMap(b=>{
+    if(!b.active||b.y>=CANVAS_H+20)return[];
+    const trail=[{x:b.x,y:b.y},...b.trail.slice(0,6)];
+    if(b.kind==='banana'){
+      const newX=b.x+Math.sin(s.tick*0.12+b.vx)*2.5;
+      return[{...b,x:newX,y:b.y+b.vy,trail}];
+    }
+    return[{...b,x:b.x+b.vx,y:b.y+b.vy,trail}];
+  });
 
   const shootRate=Math.max(15,85-s.level*4);
   if(s.tick%shootRate===0&&alive.length>0){
@@ -285,9 +286,9 @@ export function updateGame(
 
   // ── Power-up drops ────────────────────────────────────────────────
   const PUTYPES:PowerUpItemType[]=['SPREAD','LASER','RAPID'];
-  let powerUpItems=s.powerUpItems
-    .filter(p=>p.active&&p.y<CANVAS_H+40)
-    .map(p=>({...p,y:p.y+p.vy,rotation:p.rotation+0.04}));
+  let powerUpItems=s.powerUpItems.flatMap(p=>
+    p.active&&p.y<CANVAS_H+40?[{...p,y:p.y+p.vy,rotation:p.rotation+0.04}]:[]
+  );
   let nextPowerUpId=s.nextPowerUpId;
 
   if(s.tick%350===170&&Math.random()<0.65){
@@ -441,8 +442,9 @@ function updateBg(s:GameState):GameState{
     return{...st,y:st.y+st.speed>CANVAS_H?0:st.y+st.speed,
       alpha:0.3+0.7*((Math.sin(phase)+1)/2),twinklePhase:phase};
   });
-  const particles=s.particles
-    .map(p=>({...p,x:p.x+p.vx,y:p.y+p.vy,vy:p.vy+0.07,life:p.life-0.024,r:p.r*0.97}))
-    .filter(p=>p.life>0);
+  const particles=s.particles.flatMap(p=>{
+    const n={...p,x:p.x+p.vx,y:p.y+p.vy,vy:p.vy+0.07,life:p.life-0.024,r:p.r*0.97};
+    return n.life>0?[n]:[];
+  });
   return{...s,stars,particles};
 }

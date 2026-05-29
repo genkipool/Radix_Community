@@ -32,9 +32,10 @@ export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3 }: DevShellProps)
     <>
       {/* Tab navigation */}
       <div className="flex flex-wrap justify-center gap-4 mb-12">
-        {tabs.map((tab, i) => (
+        {tabs.map((tab) => (
           <button
-            key={i}
+            type="button"
+            key={tab}
             onClick={() => handleTabChange(i)}
             className={`px-6 py-3 rounded-full font-bold text-sm ${activeTab === i
               ? 'bg-[var(--color-primary)] text-white shadow-md'
@@ -48,7 +49,7 @@ export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3 }: DevShellProps)
 
       {/* Active tab panel */}
       <div className="bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-3xl p-8 shadow-xl relative overflow-hidden min-h-[500px]">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--color-primary)]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+        <div className="absolute top-0 right-0 size-64 bg-[var(--color-primary)]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         {panels[activeTab]}
       </div>
     </>

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { sendEmail } from '@/services/mail/resend';
 import { getDictionary, type Locale } from '@/i18n/dictionaries';
+import { getSessionFromCookies as getSession } from '@/lib/auth/session';
 
 const schema = z.object({
   email: z.string().email(),
@@ -14,6 +15,7 @@ const schema = z.object({
  * Target recipient: radixgenkipool@gmail.com
  */
 export async function sendInstitutionalPilotMessage(formData: { email: string; message: string; lang: Locale }) {
+  await getSession(); // Optional — public contact form
   try {
     // 1. Validate data
     const { lang, ...data } = formData;

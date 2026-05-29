@@ -24,7 +24,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchXRDPrice } from '../utils/xrdPrice';
-import { UseXrdPriceResult, XRDPrice } from '../types';
+import { XRDPrice } from '../types/data.types';
+import { UseXrdPriceResult } from '../types/hooks.types';
 
 /** Tiempo que el precio se considera "fresco" antes de refetching: 2 minutos. */
 const XRD_PRICE_STALE_MS = 2 * 60 * 1000;

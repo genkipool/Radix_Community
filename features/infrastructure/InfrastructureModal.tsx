@@ -98,15 +98,15 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
 
                   <div className="relative z-10 flex items-center justify-between px-6 py-5 border-b border-[var(--color-card-border)]">
                     <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center shadow-lg shrink-0">
-                        <Wrench className="w-5 h-5 text-white" />
+                      <div className="size-11 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center shadow-lg shrink-0">
+                        <Wrench className="size-5 text-white" />
                       </div>
                       <div>
                         <h2 className="text-base sm:text-lg font-bold text-[var(--color-text-main)] tracking-tight leading-snug">
                           <span className="text-[var(--color-text-muted)] font-normal">
                             {pt?.hero?.brand ?? 'Radix'}{' '}
                           </span>
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]">
+                          <span className="text-white">
                             {pt?.hero?.title ?? 'Infrastructure'}
                           </span>
                         </h2>
@@ -121,16 +121,16 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                         href="/infrastructure"
                         className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 transition-all"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="size-3.5" />
                         {webBtnLabel}
                       </Link>
                       <button
                         type="button"
                         onClick={onClose}
                         aria-label="Close"
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] border border-transparent hover:border-[var(--color-card-border)] transition-all"
+                        className="size-9 rounded-full flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] border border-transparent hover:border-[var(--color-card-border)] transition-all"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="size-5" />
                       </button>
                     </div>
                   </div>
@@ -152,8 +152,8 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                           <div className={`absolute inset-0 bg-gradient-to-br ${layer.gradient} opacity-[0.06] pointer-events-none`} />
 
                           <div className="relative flex items-center gap-3 mb-3">
-                            <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${layer.gradient} shadow-sm`}>
-                              <Icon name={layer.icon} className="w-5 h-5 text-white" />
+                            <div className={`shrink-0 size-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${layer.gradient} shadow-sm`}>
+                              <Icon name={layer.icon} className="size-5 text-white" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
@@ -186,8 +186,8 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                                 key={item.key}
                                 className="flex items-start gap-3.5 p-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/25 transition-colors"
                               >
-                                <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${layer.gradient}`}>
-                                  <Icon name={item.icon} className="w-4 h-4 text-white" />
+                                <div className={`shrink-0 size-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${layer.gradient}`}>
+                                  <Icon name={item.icon} className="size-4 text-white" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-sm font-bold text-[var(--color-text-main)] leading-snug mb-1">
@@ -212,7 +212,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                     href="/infrastructure"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-sm font-bold shadow-sm hover:opacity-90 transition-opacity"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="size-4" />
                     {webBtnLabel}
                   </Link>
                 </div>

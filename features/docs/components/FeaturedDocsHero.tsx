@@ -73,7 +73,7 @@ export default function FeaturedDocsHero({
       gradient: cfg.gradient,
       accentRgb: cfg.accentRgb,
       iconVariant: 'gradient-text',
-      icon: <cfg.Icon className="w-6 h-6" />,
+      icon: <cfg.Icon className="size-6" />,
       badgeLabel: topics[cfg.topicKey] ?? cfg.topicKey,
       title: docsLabels?.[cfg.titleKey] ?? cardData.title ?? '',
       description: cardData.desc ?? '',

@@ -25,11 +25,8 @@ export {
 } from './gateway/client';
 
 export {
-  fetchLedgerState,
   fetchEntityDetails,
-  fetchNonFungibleData,
   fetchNonFungibleDataCached,
-  fetchNonFungibleLocation,
 } from './gateway/entities';
 
 export {
@@ -45,7 +42,6 @@ export {
 
 export {
   fetchValidatorsWithLedger,
-  fetchValidators,
   computeNetworkStats,
   getValidatorsCached,
 } from './gateway/validators';

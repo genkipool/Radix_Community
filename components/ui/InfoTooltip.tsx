@@ -81,7 +81,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
     return () => {
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
-  }, []);
+  }, [closeTimeoutRef]);
 
   useEffect(() => {
     if (isOpen) {
@@ -176,7 +176,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                   />
                   {/* Arrow */}
                   <div
-                    className={`absolute w-4 h-4 bg-[var(--color-surface)] border-[var(--color-card-border)] ${isTop
+                    className={`absolute size-4 bg-[var(--color-surface)] border-[var(--color-card-border)] ${isTop
                       ? '-bottom-[9px] border-r border-b'
                       : '-top-[9px] border-l border-t'
                       }`}

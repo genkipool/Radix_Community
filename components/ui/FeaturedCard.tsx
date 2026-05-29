@@ -48,6 +48,7 @@ export function FeaturedCard({
 }: FeaturedCardProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="group relative flex flex-col items-start p-8 text-left rounded-3xl border overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       style={{
@@ -58,7 +59,7 @@ export function FeaturedCard({
       {/* ── Icon ── */}
       {iconVariant === 'icon-box' ? (
         <div
-          className={`w-12 h-12 mb-5 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
+          className={`size-12 mb-5 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}
         >
           {icon}
         </div>
@@ -99,7 +100,7 @@ export function FeaturedCard({
         style={{ color: 'var(--color-primary)' }}
       >
         {ctaLabel}
-        <ArrowUpRight className="w-4 h-4 ml-1 opacity-0 -translate-x-2 translate-y-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300" />
+        <ArrowUpRight className="size-4 ml-1 opacity-0 -translate-x-2 translate-y-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300" />
       </div>
 
       {/* ── Optional top-right absolute badge ── */}

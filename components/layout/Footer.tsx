@@ -40,11 +40,11 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 );
 
 const iconMap = {
-  X: <XIcon className="w-5 h-5" />,
-  Github: <Github className="w-5 h-5" />,
-  Discord: <DiscordIcon className="w-5 h-5" />,
-  Telegram: <TelegramIcon className="w-5 h-5" />,
-  Youtube: <YoutubeIcon className="w-5 h-5" />,
+  X: <XIcon className="size-5" />,
+  Github: <Github className="size-5" />,
+  Discord: <DiscordIcon className="size-5" />,
+  Telegram: <TelegramIcon className="size-5" />,
+  Youtube: <YoutubeIcon className="size-5" />,
 };
 
 export default function Footer() {
@@ -72,8 +72,8 @@ export default function Footer() {
     <footer className="footer-premium pt-24 pb-12 border-t border-[var(--color-card-border)] relative overflow-hidden">
       {/* Dynamic background element */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)] to-transparent opacity-30" />
-      <div className="absolute -top-24 left-1/4 w-96 h-96 bg-[var(--color-primary)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
-      <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-[var(--color-accent)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
+      <div className="absolute -top-24 left-1/4 size-96 bg-[var(--color-primary)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
+      <div className="absolute -bottom-24 right-1/4 size-96 bg-[var(--color-accent)]/5 blur-[80px] rounded-full pointer-events-none will-change-transform" />
 
       <div className="max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
@@ -92,15 +92,15 @@ export default function Footer() {
               {t.footer?.desc}
             </p>
             <div className="flex gap-5">
-              {SOCIAL_LINKS.map((link, index) => (
+              {SOCIAL_LINKS.map((link) => (
                 <a
-                  key={index}
+                  key={link.icon}
                   href={link.href}
                   aria-label={link.icon}
                   title={link.icon}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
+                  className="size-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
                 >
                   {iconMap[link.icon as keyof typeof iconMap]}
                 </a>
@@ -110,7 +110,7 @@ export default function Footer() {
                 aria-label={t.community?.donate || 'Donate'}
                 title={t.community?.donate || 'Donate'}
                 onClick={(e) => handleLinkClick(e, '#under-construction')}
-                className="w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
+                className="size-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors duration-300 shadow-sm"
               >
                 <HeartHandshake size={20} />
               </Link>

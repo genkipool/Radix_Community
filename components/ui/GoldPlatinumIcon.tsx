@@ -47,4 +47,4 @@ export function GoldPlatinumIcon({ className, ...props }: GoldPlatinumIconProps)
     );
 }
 
-export default GoldPlatinumIcon;
+GoldPlatinumIcon;

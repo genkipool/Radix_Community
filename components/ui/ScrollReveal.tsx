@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useLayoutEffect } from 'react';
 import { motion } from 'motion/react';
 import { observe, unobserve } from '@/lib/observerManager';
 
@@ -51,37 +51,30 @@ export function ScrollReveal({
     threshold = 0.1,
 }: ScrollRevealProps) {
     const ref = useRef<HTMLDivElement>(null);
-    const [animState, setAnimState] = useState<'visible' | 'waiting' | 'entering'>('visible');
+    const [animState, setAnimState] = useState<'visible' | 'waiting' | 'entering'>('waiting');
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const el = ref.current as HTMLElement | null;
         if (!el) return;
 
-        // If element is already in viewport on mount → keep visible, skip animation
         const rect = el.getBoundingClientRect();
         if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
             setAnimState('visible');
             return;
         }
 
-        // Below fold: hide (in the same paint frame) → observe for scroll
-        const raf = requestAnimationFrame(() => {
-            setAnimState('waiting');
-
-            observe(
-                el,
-                (entry) => {
-                    if (entry.isIntersecting) {
-                        setAnimState('entering');
-                        unobserve(el);
-                    }
-                },
-                { threshold, rootMargin: '-40px 0px 0px 0px' },
-            );
-        });
+        observe(
+            el,
+            (entry) => {
+                if (entry.isIntersecting) {
+                    setAnimState('entering');
+                    unobserve(el);
+                }
+            },
+            { threshold, rootMargin: '-40px 0px 0px 0px' },
+        );
 
         return () => {
-            cancelAnimationFrame(raf);
             if (el) unobserve(el);
         };
     }, [threshold]);

@@ -20,9 +20,9 @@ export function AdminPanel({ areas, onUpdateAreas, initialView, onViewChange, on
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                    <div className="size-12 rounded-2xl flex items-center justify-center shrink-0"
                         style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}>
-                        <ShieldCheck className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
+                        <ShieldCheck className="size-6" style={{ color: 'var(--color-primary)' }} />
                     </div>
                     <div>
                         <p className="text-[10px] font-semibold uppercase tracking-widest mb-0.5"
@@ -38,12 +38,13 @@ export function AdminPanel({ areas, onUpdateAreas, initialView, onViewChange, on
                     </div>
                 </div>
                 <button
+                    type="button"
                     onClick={onClose}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0"
                     style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-card-border)' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; }}>
-                    <ArrowLeft className="w-4 h-4" />
+                    <ArrowLeft className="size-4" />
                     {t.admin_back ?? '← Volver'}
                 </button>
             </div>
@@ -58,7 +59,7 @@ export function AdminPanel({ areas, onUpdateAreas, initialView, onViewChange, on
                     { id: 'create' as NonNullable<AdminView>, label: t.admin_tab_create ?? 'Create task', icon: Plus },
                     { id: 'update' as NonNullable<AdminView>, label: t.admin_tab_update ?? 'Update tasks', icon: Pencil },
                 ]).map(({ id, label, icon: Icon }) => (
-                    <button key={id} onClick={() => onViewChange(id)}
+                    <button type="button" key={id} onClick={() => onViewChange(id)}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200"
                         style={{
                             background: initialView === id ? 'var(--color-primary)' : 'transparent',
@@ -66,7 +67,7 @@ export function AdminPanel({ areas, onUpdateAreas, initialView, onViewChange, on
                         }}
                         onMouseEnter={e => { if (initialView !== id) (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface)'; }}
                         onMouseLeave={e => { if (initialView !== id) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
-                        <Icon className="w-4 h-4" />
+                        <Icon className="size-4" />
                         {label}
                     </button>
                 ))}

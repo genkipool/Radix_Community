@@ -71,12 +71,13 @@ function CurrencyToggle({ currency, onChange, loading }: { currency: Currency; o
     { value: 'xrd', label: 'XRD' },
   ];
   return (
-    <div className="flex gap-1.5" role="group" aria-label="Currency">
+    <div className="flex gap-1.5" role="radiogroup" aria-label="Currency">
       {options.map(opt => {
         const active = currency === opt.value;
         const disabled = opt.value === 'xrd' && loading;
         return (
           <button
+            type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
             disabled={disabled}
@@ -122,15 +123,13 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
     ? `1 XRD ≈ $${xrdPrice.usd.toFixed(4)}`
     : '';
 
-  if (!isOpen) return null;
-
   return (
     <div
+      role="dialog"
+      aria-modal={isOpen}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      role="dialog"
-      aria-modal="true"
       aria-label={t.title ?? 'Tournament Information'}
     >
       <div
@@ -143,21 +142,21 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
           style={{ background: 'var(--color-bg)', borderColor: 'var(--color-card-border)' }}
         >
           <div className="flex items-center gap-3">
-            <Trophy className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
+            <Trophy className="size-6" style={{ color: 'var(--color-primary)' }} />
             <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-main)' }}>
               {t.title ?? 'How Tournaments Work'}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl transition-opacity hover:opacity-70" style={{ color: 'var(--color-text-muted)' }} aria-label="Close">
-            <X className="w-5 h-5" />
+          <button type="button" onClick={onClose} className="p-2 rounded-xl transition-opacity hover:opacity-70" style={{ color: 'var(--color-text-muted)' }} aria-label="Close">
+            <X className="size-5" />
           </button>
         </div>
 
         {/* ── Body ── */}
-        <div className="px-6 py-6 space-y-8">
+        <div className="p-6 space-y-8">
 
           {/* Registration — XRD highlighted */}
-          <Section icon={<Wallet className="w-5 h-5" />} title={t.registration_title ?? 'Tournament Registration'}>
+          <Section icon={<Wallet className="size-5" />} title={t.registration_title ?? 'Tournament Registration'}>
             <div className="rounded-2xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                 {t.registration_desc ?? 'To register for the tournament, acquire your badge for 5 dollars paid in XRD. This badge gives you access to compete in weekly tournaments and register your scores on the official leaderboard.'}
@@ -178,7 +177,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
           </Section>
 
           {/* Distribution */}
-          <Section icon={<Gift className="w-5 h-5" />} title={t.distribution_title ?? 'Revenue Distribution'}>
+          <Section icon={<Gift className="size-5" />} title={t.distribution_title ?? 'Revenue Distribution'}>
             <div className="grid grid-cols-2 gap-4 mb-3">
               <StatBox value="80%" label={t.prizes_pool ?? 'Prize Pool'} gradient="from-green-500 to-emerald-400" />
               <StatBox value="20%" label={t.community_fund ?? 'Radix Fund'} gradient="from-blue-500 to-cyan-400" />
@@ -196,7 +195,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
 
           {/* Example with 100k players + currency toggle inline in title */}
           <Section
-            icon={<Users className="w-5 h-5" />}
+            icon={<Users className="size-5" />}
             title={t.example_title ?? 'Example with 100,000 players'}
             action={
               <CurrencyToggle
@@ -238,9 +237,9 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
                   </tr>
                 </thead>
                 <tbody>
-                  {PRIZE_TABLE.map((row, i) => (
+                  {PRIZE_TABLE.map((row) => (
                     <tr
-                      key={i}
+                      key={row.rank}
                       style={{
                         borderBottom: i < PRIZE_TABLE.length - 1 ? '1px solid var(--color-card-border)' : 'none',
                         background: i < 3 ? `rgba(99,102,241,${0.06 - i * 0.015})` : 'transparent',
@@ -288,7 +287,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
           </Section>
 
           {/* Why so many winners */}
-          <Section icon={<Star className="w-5 h-5" />} title={t.why_title ?? 'Why reward so many players?'}>
+          <Section icon={<Star className="size-5" />} title={t.why_title ?? 'Why reward so many players?'}>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
               {t.why_desc ?? 'We have chosen to reward such a wide percentage of players (top 20%) to demonstrate the real potential of Radix as a payment and micropayment platform. Having 20,000 people receive prizes in XRD is a powerful demonstration of the speed, scalability and low cost of Radix transactions.'}
             </p>
@@ -296,7 +295,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
 
           {/* Duration */}
           <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
-            <Trophy className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+            <Trophy className="size-5 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
             <div>
               <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text-main)' }}>
                 {t.duration_title ?? 'Weekly Tournaments'}

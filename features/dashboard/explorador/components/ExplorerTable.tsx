@@ -31,7 +31,7 @@ export function ExplorerTable({ title, icon, headers, children }: ExplorerTableP
                                 const customClass = typeof header === 'object' ? header.className : '';
                                 return (
                                     <th
-                                        key={idx}
+                                        key={`header-${idx}`}
                                         className={`py-3 px-4 text-[9px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] ${idx === headers.length - 1 ? 'text-right' : 'text-left'} ${customClass}`}
                                     >
                                         {label}

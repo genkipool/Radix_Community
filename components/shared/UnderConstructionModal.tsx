@@ -46,17 +46,18 @@ export function UnderConstructionModal({
                 <div className="p-8 flex flex-col items-center text-center relative z-10">
                   {/* Close Button */}
                   <button
+                    type="button"
                     onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent hover:border-[var(--color-card-border)]"
+                    className="absolute top-4 right-4 size-8 rounded-full hover:bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors border border-transparent hover:border-[var(--color-card-border)]"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="size-4" />
                   </button>
 
                   {/* Construction Icon */}
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl mb-6 relative group">
-                    <Construction className="w-8 h-8 rotate-[-10deg] group-hover:rotate-0 transition-transform duration-500" />
-                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[var(--color-bg)] border-2 border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-primary)] shadow-sm">
-                      <HardHat className="w-4 h-4" />
+                  <div className="size-16 rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-secondary)] flex items-center justify-center text-white shadow-xl mb-6 relative group">
+                    <Construction className="size-8 rotate-[-10deg] group-hover:rotate-0 transition-transform duration-500" />
+                    <div className="absolute -top-2 -right-2 size-8 rounded-full bg-[var(--color-bg)] border-2 border-[var(--color-card-border)] flex items-center justify-center text-[var(--color-primary)] shadow-sm">
+                      <HardHat className="size-4" />
                     </div>
                   </div>
 

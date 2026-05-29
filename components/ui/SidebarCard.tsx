@@ -122,6 +122,7 @@ export function SidebarCard({
                 </Link>
             ) : (
                 <button
+                    type="button"
                     onClick={onToggle}
                     className="w-full text-left flex items-center gap-3 px-4 py-3.5 group transition-all duration-200 active:scale-100"
                     aria-expanded={isExpanded}
@@ -189,8 +190,8 @@ function SidebarCardRow({
     const { id, label, sublabel, leftVisual, badge, isSelected = false, onAction, actionIcon, actions, href } = item;
 
     const Component = (href ? Link : 'button') as React.ElementType;
-    const componentProps = href 
-        ? { 
+    const componentProps = href
+        ? {
             href,
             onClick: (e: React.MouseEvent) => {
                 // Native open in new tab support
@@ -199,7 +200,7 @@ function SidebarCardRow({
                     onSelectItem(id);
                 }
             }
-        } 
+        }
         : { onClick: () => onSelectItem(id) };
 
     const commonStyle = isSelected
@@ -274,8 +275,9 @@ function SidebarCardRow({
                 {/* Backward compatibility for single onAction */}
                 {onAction && actionIcon && !actions && (
                     <button
+                        type="button"
                         onClick={e => { e.stopPropagation(); onAction(); }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md transition-all"
+                        className="size-6 flex items-center justify-center rounded-md transition-all"
                         style={{
                             background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',
                             color: isSelected ? 'var(--color-bg)' : 'var(--color-text-muted)',
@@ -289,10 +291,11 @@ function SidebarCardRow({
                 {/* Multiple actions support */}
                 {actions?.map((act, i) => (
                     <button
-                        key={i}
+                        type="button"
+                        key={`action-${act.title}-${i}`}
                         title={act.title}
                         onClick={e => { e.stopPropagation(); act.onClick(); }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md transition-all"
+                        className="size-6 flex items-center justify-center rounded-md transition-all"
                         style={{
                             background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',
                             color: isSelected ? 'var(--color-bg)' : (act.color ?? 'var(--color-text-muted)'),

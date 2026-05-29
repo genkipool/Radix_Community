@@ -73,12 +73,16 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
 
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
-                throw new Error(body.error ?? `HTTP ${res.status}`);
+                setLocalError(body.error ?? `HTTP ${res.status}`);
+                setDownloading(false);
+                return;
             }
 
             const data = await res.json();
             if (!data.csv) {
-                throw new Error('CSV is empty');
+                setLocalError('CSV is empty');
+                setDownloading(false);
+                return;
             }
 
             // Get currency for locale
@@ -152,10 +156,11 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                         {dt?.validator_rewards_modal_title ?? 'Download Validator History'}
                     </h3>
                     <button
+                        type="button"
                         onClick={onClose}
                         className="p-1.5 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-40"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="size-4" />
                     </button>
                 </div>
 
@@ -167,16 +172,16 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
 
                     {yearsLoading ? (
                         <div className="flex items-center justify-center py-6">
-                            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary)]" />
+                            <Loader2 className="size-5 animate-spin text-[var(--color-primary)]" />
                             <span className="ml-2 text-xs text-[var(--color-text-muted)]">
                                 {dt?.validator_rewards_modal_loading ?? 'Loading available years...'}
                             </span>
                         </div>
                     ) : downloading ? (
-                        <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                        <div className="flex flex-col items-center justify-center py-6 gap-y-4">
                             <div className="relative">
-                                <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-                                <Clock className="w-3.5 h-3.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
+                                <Loader2 className="size-8 animate-spin text-[var(--color-primary)]" />
+                                <Clock className="size-3.5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[var(--color-primary)]" />
                             </div>
                             <div className="text-center space-y-1 w-full max-w-[280px]">
                                 <p className="text-xs font-bold text-[var(--color-text-main)]">
@@ -191,10 +196,10 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                             </div>
                         </div>
                     ) : summary ? (
-                        <div className="py-4 space-y-4">
-                            <div className="flex flex-col items-center justify-center text-center space-y-2 mb-4">
-                                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mb-1">
-                                    <CheckCircle2 className="w-6 h-6 text-green-500" />
+                        <div className="py-4 flex flex-col gap-y-4">
+                            <div className="flex flex-col items-center justify-center text-center gap-y-2 mb-4">
+                                <div className="size-12 bg-green-500/10 rounded-full flex items-center justify-center mb-1">
+                                    <CheckCircle2 className="size-6 text-green-500" />
                                 </div>
                                 <h4 className="text-sm font-bold text-[var(--color-text-main)]">
                                     {dt?.validator_rewards_summary_title ?? 'Download Complete!'}
@@ -215,16 +220,15 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-3 bg-[var(--color-primary)]/5 text-center">
-                                    <p
-                                        className="text-[11px] leading-relaxed font-medium text-[var(--color-primary)]"
-                                        dangerouslySetInnerHTML={{
-                                            __html: (dt?.validator_rewards_summary_dream ?? (
-                                                "If Radix reached 1 {currency}, this validator would have earned <b>{value}</b> this year."
-                                            ))
-                                                .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
-                                                .replace('{value}', formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en'))
-                                        }}
-                                    />
+                                    <p className="text-[11px] leading-relaxed font-medium text-[var(--color-primary)]">
+                                        {(dt?.validator_rewards_summary_dream ?? "If Radix reached 1 {currency}, this validator would have earned {value} this year.")
+                                            .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
+                                            .split('{value}')[0]}
+                                        <b>{formatCurrency(summary.dreamValue, summary.currency as 'USD' | 'EUR', locale || 'en')}</b>
+                                        {(dt?.validator_rewards_summary_dream ?? "If Radix reached 1 {currency}, this validator would have earned {value} this year.")
+                                            .replace('{currency}', summary.currency === 'EUR' ? 'Euro' : 'Dollar')
+                                            .split('{value}')[1] ?? ''}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -238,6 +242,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
                         <div className="flex flex-wrap gap-2">
                             {years.map((year) => (
                                 <button
+                                    type="button"
                                     key={year}
                                     onClick={() => setSelectedYear(year)}
                                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border ${selectedYear === year
@@ -253,7 +258,7 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
 
                     {error && (
                         <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
                             <div>
                                 <p className="text-xs font-bold text-red-500">Error</p>
                                 <p className="text-xs text-red-400 mt-0.5">{error}</p>
@@ -264,14 +269,15 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
 
                 <div className="px-6 py-4 bg-[var(--color-bg)] border-t border-[var(--color-card-border)] flex items-center justify-end">
                     <button
+                        type="button"
                         onClick={handleDownload}
                         disabled={!selectedYear || downloading || years.length === 0 || !!summary}
                         className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                     >
                         {downloading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <Loader2 className="size-3.5 animate-spin" />
                         ) : (
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="size-3.5" />
                         )}
                         {downloading ? (dt?.validator_rewards_modal_generating_btn ?? 'Working...') : (dt?.validator_rewards_modal_download_btn ?? 'Download CSV')}
                     </button>

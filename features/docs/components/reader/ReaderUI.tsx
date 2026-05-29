@@ -6,9 +6,11 @@ import { Hash } from 'lucide-react';
 import { Highlight } from '../DocsSidebar';
 import type { ReaderTocItemProps, ActionButtonProps, DocSectionProps, DocCalloutProps } from '../../types/components.types';
 
-export function ActionButton({ children, title, onClick }: ActionButtonProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function ActionButton({ children, title, onClick }: ActionButtonProps) {
   return (
     <button
+      type="button"
       title={title}
       onClick={onClick}
       className="p-2 rounded-full transition-colors"
@@ -52,7 +54,7 @@ export function ReaderTocItem({ entry, isActive }: ReaderTocItemProps) {
           width: isActive ? (entry.level === 2 ? 7 : entry.level === 3 ? 5 : 4) : (entry.level === 2 ? 6 : entry.level === 3 ? 4 : 3),
           height: isActive ? (entry.level === 2 ? 7 : entry.level === 3 ? 5 : 4) : (entry.level === 2 ? 6 : entry.level === 3 ? 4 : 3),
           background: isActive ? 'var(--color-primary)' : 'currentColor',
-          transition: 'all 0.2s',
+          transition: 'scale 0.2s, background 0.2s',
         }}
       />
       {entry.text}
@@ -93,7 +95,7 @@ export function ReaderDocCallout({ title, children }: DocCalloutProps) {
       style={{
         background: 'var(--color-surface)',
         borderColor: 'var(--color-card-border)',
-        borderLeft: '3px solid var(--color-primary)',
+        borderLeft: '1px solid var(--color-primary)',
       }}
     >
       <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-primary)' }}>

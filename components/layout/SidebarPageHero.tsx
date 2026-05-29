@@ -86,6 +86,7 @@ export function SidebarPageHero({
                 content = [
                   parts[0],
                   <button
+                    type="button"
                     key="connect"
                     onClick={(e) => {
                       e.preventDefault();
@@ -109,6 +110,7 @@ export function SidebarPageHero({
                     newContent.push(parts[0]);
                     newContent.push(
                       <button
+                        type="button"
                         key="buy"
                         onClick={(e) => {
                           e.preventDefault();
@@ -143,14 +145,19 @@ export function SidebarPageHero({
         className="text-xl font-bold mb-6 flex items-center gap-2"
         style={{ color: 'var(--color-text-main)' }}
       >
-        <Zap className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+        <Zap className="size-5" style={{ color: 'var(--color-primary)' }} />
         {featuredLabel}
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cards.map((card, idx) => (
-          <FeaturedCard key={idx} {...card} />
-        ))}
+        {cards.map((card) => {
+          // Convertimos primero a 'unknown' como sugiere TypeScript
+          const c = card as unknown as Record<string, unknown>;
+          const uniqueVal = c.id ?? c.title ?? c.href;
+          const key = uniqueVal ? String(uniqueVal) : `featured-${cards.indexOf(card)}`;
+
+          return <FeaturedCard key={key} {...card} />;
+        })}
       </div>
     </>
   );

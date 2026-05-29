@@ -104,7 +104,7 @@ export default function RadixWalletSVG({ className = '', x = 0, y = 80, scale = 
             {/* Card 1: Main Account */}
             <rect x="25" y="190" width="310" height="125" rx="12" fill="url(#w-gt)" />
             <text x="45" y="218" fontSize="14" fontWeight="700" fill="#ffffff">Main Account</text>
-            <text x="45" y="238" fontSize="13" fill="rgba(255,255,255,0.85)">acco...23eda1</text>
+            <text x="45" y="238" fontSize="13" fill="rgba(255,255,255,0.85)">acco…23eda1</text>
             <rect x="138" y="227" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <rect x="135" y="224" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <g transform="translate(45, 275)">
@@ -130,7 +130,7 @@ export default function RadixWalletSVG({ className = '', x = 0, y = 80, scale = 
             {/* Card 2: Savings */}
             <rect x="25" y="330" width="310" height="125" rx="12" fill="url(#w-gp)" />
             <text x="45" y="358" fontSize="14" fontWeight="700" fill="#ffffff">Savings</text>
-            <text x="45" y="378" fontSize="13" fill="rgba(255,255,255,0.85)">acco...e32aq5</text>
+            <text x="45" y="378" fontSize="13" fill="rgba(255,255,255,0.85)">acco…e32aq5</text>
             <rect x="138" y="367" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <rect x="135" y="364" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <g transform="translate(45, 415)">
@@ -148,7 +148,7 @@ export default function RadixWalletSVG({ className = '', x = 0, y = 80, scale = 
             {/* Card 3: My NFTs */}
             <rect x="25" y="470" width="310" height="125" rx="12" fill="url(#w-gb)" />
             <text x="45" y="498" fontSize="14" fontWeight="700" fill="#ffffff">{"My NFT's"}</text>
-            <text x="45" y="518" fontSize="13" fill="rgba(255,255,255,0.85)">acco...77r4t2</text>
+            <text x="45" y="518" fontSize="13" fill="rgba(255,255,255,0.85)">acco…77r4t2</text>
             <rect x="134" y="507" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <rect x="131" y="504" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
             <g transform="translate(45, 555)">
@@ -181,7 +181,7 @@ export default function RadixWalletSVG({ className = '', x = 0, y = 80, scale = 
             <path d="M 28 274 A 14 14 0 0 1 42 260 L 318 260 A 14 14 0 0 1 332 274 L 332 298 L 28 298 Z" fill="url(#w-gt)" />
             <path d="M 28 298 L 332 298 L 332 346 A 14 14 0 0 1 318 360 L 42 360 A 14 14 0 0 1 28 346 Z" fill="var(--color-surface)" stroke="var(--color-card-border)" strokeWidth="1" />
             <text x="42" y="284" fontSize="14" fontWeight="700" fill="#ffffff">My Main Account</text>
-            <text x="310" y="284" fontSize="12" fill="rgba(255,255,255,0.85)" textAnchor="end">acco...2qgtxg</text>
+            <text x="310" y="284" fontSize="12" fill="rgba(255,255,255,0.85)" textAnchor="end">acco…2qgtxg</text>
             <rect x="315" y="275" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
 
             {/* rUSD Circle with Lighter Blue and Dollar Sign */}
@@ -203,7 +203,7 @@ export default function RadixWalletSVG({ className = '', x = 0, y = 80, scale = 
             <path d="M 28 504 A 14 14 0 0 1 42 490 L 318 490 A 14 14 0 0 1 332 504 L 332 528 L 28 528 Z" fill="url(#w-gp)" />
             <path d="M 28 528 L 332 528 L 332 626 A 14 14 0 0 1 318 640 L 42 640 A 14 14 0 0 1 28 626 Z" fill="var(--color-surface)" stroke="var(--color-card-border)" strokeWidth="1" />
             <text x="42" y="514" fontSize="14" fontWeight="700" fill="#ffffff">My Savings Account</text>
-            <text x="310" y="514" fontSize="12" fill="rgba(255,255,255,0.85)" textAnchor="end">acco...39fm48</text>
+            <text x="310" y="514" fontSize="12" fill="rgba(255,255,255,0.85)" textAnchor="end">acco…39fm48</text>
             <rect x="315" y="505" width="8" height="10" rx="1" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2" />
 
             {/* XRD Circle with Radix Logo and Blue Color #0263e0 (Logo ahora es verde #00d69f) */}

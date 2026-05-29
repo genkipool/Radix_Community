@@ -45,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
 
         <InstitutionalPilotModal
+          key={String(showInstitutionalPilot)}
           isOpen={showInstitutionalPilot}
           onClose={() => setShowInstitutionalPilot(false)}
           t={t}

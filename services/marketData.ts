@@ -34,7 +34,7 @@ const getRedisClient = () => {
 /**
  * Fetches fresh market data from CoinGecko API.
  */
-export const fetchMarketData = async (): Promise<MarketData | null> => {
+const fetchMarketData = async (): Promise<MarketData | null> => {
     try {
         const res = await fetch(
             'https://api.coingecko.com/api/v3/coins/radix?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false',

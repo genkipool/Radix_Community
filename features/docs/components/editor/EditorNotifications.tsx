@@ -40,16 +40,17 @@ export function DraftRecoveryBanner({
       }}
     >
       <div className="flex items-center gap-2.5 min-w-0">
-        <History className="w-4 h-4 shrink-0" style={{ color: 'var(--color-primary)' }} />
+        <History className="size-4 shrink-0" style={{ color: 'var(--color-primary)' }} />
         <span style={{ color: 'var(--color-text-main)' }}>
           <span className="font-semibold">{t.draft_recovery_title ?? 'Draft found'}</span>
           <span className="ml-1.5 opacity-60 text-xs">
-            — {t.draft_last_saved ?? 'Last saved'} {time}
+            , {t.draft_last_saved ?? 'Last saved'} {time}
           </span>
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <button
+          type="button"
           onClick={onRestore}
           className="px-3 py-1.5 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
           style={{ background: 'var(--color-primary)', color: 'var(--color-bg)' }}
@@ -57,6 +58,7 @@ export function DraftRecoveryBanner({
           {t.draft_restore ?? 'Restore'}
         </button>
         <button
+          type="button"
           onClick={onDiscard}
           className="px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80 transition-opacity"
           style={{
@@ -95,15 +97,15 @@ export function ToastList({ toasts }: ToastListProps) {
                 t.type === 'success'
                   ? '#16a34a'
                   : t.type === 'error'
-                  ? '#dc2626'
-                  : 'var(--color-primary)',
+                    ? '#dc2626'
+                    : 'var(--color-primary)',
               color: '#fff',
             }}
           >
             {t.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <CheckCircle2 className="size-4 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              <AlertCircle className="size-4 shrink-0" />
             )}
             {t.text}
           </motion.div>

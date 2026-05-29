@@ -10,6 +10,7 @@ import { useRichTextLogic } from './hooks/useRichTextLogic';
 import { 
 } from './editorUtils';
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
+import { sanitizeUserHtml } from '@/utils/sanitize';
 
 /* ─── Styles ─── */
 import './styles/RichTextEditor.css';
@@ -46,7 +47,7 @@ export function RichTextEditor({
         handlePaste,
         handleDrop,
         handleEditorClick,
-        handleInput,
+        syncHtmlOnInput,
         handleKeyDown
     } = useRichTextLogic({
         editorRef,
@@ -92,7 +93,7 @@ export function RichTextEditor({
     return (
         <div className={`rich-text-editor flex flex-col gap-3 ${className}`}>
             {!disallowImages && (
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} aria-label="Upload image" />
             )}
 
             <AnimatePresence>
@@ -125,14 +126,14 @@ export function RichTextEditor({
                             lineHeight: '1.6', 
                             fontSize: '0.95rem'
                         }}
-                        dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(previewContent) }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(applyMarkdownToHtml(previewContent)) }}
                     />
                 )}
                 <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onInput={handleInput}
+                    onInput={syncHtmlOnInput}
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
                     onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}

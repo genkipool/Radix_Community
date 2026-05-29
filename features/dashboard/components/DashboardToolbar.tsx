@@ -76,10 +76,11 @@ export const DashboardToolbar = ({
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     {/* View toggle */}
                     <button
+                        type="button"
                         onClick={() => onViewChange(activeView === 'staking' ? 'transactions' : 'staking')}
                         className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-[var(--color-card-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] w-[130px] sm:w-[140px] shrink-0"
                     >
-                        <RadixIcon className="w-[18px] h-[18px] shrink-0" strokeColor="currentColor" />
+                        <RadixIcon className="size-[18px] shrink-0" strokeColor="currentColor" />
                         {activeView === 'staking'
                             ? (dt?.transactions?.toggle_transactions || 'Explorer')
                             : (dt?.transactions?.toggle_validators || 'Staking')}
@@ -88,6 +89,7 @@ export const DashboardToolbar = ({
                     {/* Network toggle */}
                     <div className="flex bg-[var(--color-surface)] p-1 rounded-xl border border-[var(--color-card-border)] shrink-0">
                         <button
+                            type="button"
                             onClick={() => onNetworkChange('mainnet')}
                             onMouseEnter={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'mainnet'
@@ -98,6 +100,7 @@ export const DashboardToolbar = ({
                             {dt?.network?.mainnet || 'Mainnet'}
                         </button>
                         <button
+                            type="button"
                             onClick={() => onNetworkChange('stokenet')}
                             onMouseEnter={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'stokenet'
@@ -118,6 +121,7 @@ export const DashboardToolbar = ({
                             <div className="flex items-center justify-center gap-3">
                                 {isConnected && (
                                     <button
+                                        type="button"
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
                                         className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
                                     >
@@ -137,6 +141,7 @@ export const DashboardToolbar = ({
                             <div className="flex items-center justify-center gap-3">
                                 {isConnected && (
                                     <button
+                                        type="button"
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
                                         className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
                                     >
@@ -184,6 +189,7 @@ export const DashboardToolbar = ({
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
                                 {isConnected && (
                                     <button
+                                        type="button"
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
                                         className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
                                     >
@@ -204,6 +210,7 @@ export const DashboardToolbar = ({
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
                                 {isConnected && (
                                     <button
+                                        type="button"
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
                                         className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
                                     >

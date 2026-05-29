@@ -122,7 +122,7 @@ export async function GET(request: Request) {
         // ── 5. Incremental fetch per validator ────────────────────────────────
         const updatedRecords: Record<string, string> = {};
 
-        for (const addr of oldestValidators as string[]) {
+        await Promise.all((oldestValidators as string[]).map(async (addr) => {
             try {
                 const existing = existingMap.get(addr) ?? null;
                 const record = await fetchStakeHistoryIncremental(addr, existing, network);
@@ -138,13 +138,10 @@ export async function GET(request: Request) {
                     '[SyncStakeHistoryCron] Fetched',
                 );
 
-                // Delay between validators to respect Gateway rate limits
-                await new Promise(r => setTimeout(r, 500));
-
             } catch (err) {
                 logger.error({ err, addr }, '[SyncStakeHistoryCron] Failed to fetch history');
             }
-        }
+        }));
 
         const processedCount = Object.keys(updatedRecords).length;
 

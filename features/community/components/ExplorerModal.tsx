@@ -5,23 +5,25 @@ import { X, ArrowUpRight, ArrowDownLeft, Hash, Globe, Calendar, Tag, Coins, Doll
 import { AnimatePresence } from 'motion/react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { useLanguage } from '@/context/LanguageContext';
-import { 
-    FUNDING_SOURCES, 
-    AREAS, 
-    LEGAL_EXPENSES as _LEGAL_EXPENSES, 
-    GLOBAL_PROJECT_ADDRESS 
+import {
+    FUNDING_SOURCES,
+    AREAS,
+    LEGAL_EXPENSES as _LEGAL_EXPENSES,
+    GLOBAL_PROJECT_ADDRESS
 } from '../data/communityData';
-import { 
-    ExplorerModalProps 
+import {
+    ExplorerModalProps
 } from '../types/components.types';
 import { CommunityDictionary } from '../types/i18n.types';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
+const _xrdFmt = new Intl.NumberFormat('es-ES');
+const _usdFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function fmtXrd(n: number) {
-    return new Intl.NumberFormat('es-ES').format(n) + ' XRD';
+    return _xrdFmt.format(n) + ' XRD';
 }
 function fmtUsd(n: number) {
-    return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    return '$' + _usdFmt.format(n);
 }
 function fmtDate(s: string) {
     return new Date(s).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -33,9 +35,9 @@ function InfoRow({ icon: Icon, label, value, mono = false, color }: {
 }) {
     return (
         <div className="flex items-start gap-4 py-3" style={{ borderBottom: '1px solid var(--color-card-border)' }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+            <div className="size-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                 style={{ background: 'var(--color-surface)' }}>
-                <Icon className="w-4 h-4" style={{ color: color ?? 'var(--color-text-muted)' }} />
+                <Icon className="size-4" style={{ color: color ?? 'var(--color-text-muted)' }} />
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5"
@@ -56,7 +58,7 @@ function TxDetail({ hash, t }: { hash: string; t: CommunityDictionary }) {
             <div>
                 <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl"
                     style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                    <ArrowUpRight className="w-6 h-6 shrink-0" style={{ color: '#10b981' }} />
+                    <ArrowUpRight className="size-6 shrink-0" style={{ color: '#10b981' }} />
                     <div>
                         <p className="font-bold text-lg" style={{ color: '#10b981' }}>
                             +{fmtXrd(fs.amount)}
@@ -81,7 +83,7 @@ function TxDetail({ hash, t }: { hash: string; t: CommunityDictionary }) {
 
     return (
         <div className="py-8 text-center">
-            <Hash className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-muted)' }} />
+            <Hash className="size-10 mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-muted)' }} />
             <p style={{ color: 'var(--color-text-muted)' }}>{t.explorer_not_found ?? 'Transaction not found'}</p>
             <p className="text-xs mt-2 font-mono break-all px-4" style={{ color: 'var(--color-text-muted)' }}>{hash}</p>
         </div>
@@ -105,7 +107,7 @@ function AddressDetail({ address, t }: { address: string; t: CommunityDictionary
         <div>
             <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl"
                 style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                <Globe className="w-6 h-6 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                <Globe className="size-6 shrink-0" style={{ color: 'var(--color-primary)' }} />
                 <div className="min-w-0">
                     <p className="font-bold text-sm" style={{ color: 'var(--color-primary)' }}>
                         {isGlobal ? (t.ledger_global_address ?? 'Global Project Address')
@@ -129,7 +131,7 @@ function AddressDetail({ address, t }: { address: string; t: CommunityDictionary
                             return (
                                 <div key={fs.id} className="flex items-center gap-3 p-3 rounded-xl"
                                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
-                                    <ArrowUpRight className="w-4 h-4 shrink-0" style={{ color: '#10b981' }} />
+                                    <ArrowUpRight className="size-4 shrink-0" style={{ color: '#10b981' }} />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text-main)' }}>
                                             {labels[fs.labelKey] ?? fs.labelKey}
@@ -157,7 +159,7 @@ function AddressDetail({ address, t }: { address: string; t: CommunityDictionary
                             return (
                                 <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl"
                                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)' }}>
-                                    <ArrowDownLeft className="w-4 h-4 shrink-0" style={{ color: '#ef4444' }} />
+                                    <ArrowDownLeft className="size-4 shrink-0" style={{ color: '#ef4444' }} />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium truncate" style={{ color: 'var(--color-text-main)' }}>
                                             {task.titleDirect ?? taskTitles[task.titleKey] ?? task.titleKey}
@@ -218,11 +220,11 @@ export function ExplorerModal({ target, onClose }: ExplorerModalProps) {
                             <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5"
                                 style={{ background: 'var(--color-card-bg)', borderBottom: '1px solid var(--color-card-border)' }}>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                                    <div className="size-9 rounded-xl flex items-center justify-center"
                                         style={{ background: 'var(--color-primary)', opacity: 0.12 }}>
                                         {isTx
-                                            ? <Hash className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-                                            : <Globe className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
+                                            ? <Hash className="size-4" style={{ color: 'var(--color-primary)' }} />
+                                            : <Globe className="size-4" style={{ color: 'var(--color-primary)' }} />
                                         }
                                     </div>
                                     <div>
@@ -236,13 +238,14 @@ export function ExplorerModal({ target, onClose }: ExplorerModalProps) {
                                     </div>
                                 </div>
                                 <button
+                                    type="button"
                                     onClick={onClose}
-                                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+                                    className="size-8 rounded-xl flex items-center justify-center transition-all duration-200"
                                     style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)' }}
                                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-card-border)'; }}
                                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface)'; }}
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="size-4" />
                                 </button>
                             </div>
 

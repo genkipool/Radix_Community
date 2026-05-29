@@ -1,4 +1,4 @@
-import { ForumPost, ForumReply, ForumUser } from '../types';
+import { ForumPost, ForumReply, ForumUser } from '../types/data.types';
 
 /**
  * Builds a map from a message ID (or 'root') to its direct child replies.

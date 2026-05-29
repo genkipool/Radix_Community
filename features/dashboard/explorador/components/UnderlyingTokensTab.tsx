@@ -68,14 +68,15 @@ function extractPoolReserves(poolData: GatewayEntityDetails): PoolReserve[] {
 function findPoolAddressInEntity(entity: GatewayEntityDetails): string | undefined {
     // 1. Check metadata keys
     const meta = entity.metadata?.items ?? [];
+    const metaByKey = new Map(meta.map((m) => [m.key, m] as const));
     for (const key of ['pool', 'pool_address', 'liquidity_pool']) {
-        const item = meta.find((m) => m.key === key);
+        const item = metaByKey.get(key);
         const val = item?.value?.typed?.value;
         if (typeof val === 'string' && val.startsWith('pool_')) return val;
     }
 
     // 2. Check dapp_definitions / dapp_definition for pool_ addresses
-    const dappDefs = meta.find((m) => m.key === 'dapp_definitions');
+    const dappDefs = metaByKey.get('dapp_definitions');
     if (dappDefs?.value?.typed?.values) {
         const poolAddr = dappDefs.value.typed.values.find(
             (v: string) => v.startsWith('pool_')
@@ -187,7 +188,7 @@ export function UnderlyingTokensTab({
     if (isLoading) {
         return (
             <div className="flex items-center gap-2 py-8 justify-center text-[var(--color-text-muted)]">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 <span className="text-xs">{accT?.contributed_tokens_loading || 'Calculating contributed tokens...'}</span>
             </div>
         );
@@ -287,7 +288,7 @@ function PositionSummaryTable({
         <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] overflow-hidden">
             {/* Title */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-card-border)] bg-[var(--color-primary)]/5">
-                <BarChart3 className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+                <BarChart3 className="size-4 text-[var(--color-primary)] shrink-0" />
                 <h4 className="text-xs font-bold text-[var(--color-text-main)] truncate">
                     {accT?.contributed_tokens_share || 'Your position in'} <span className="text-[var(--color-primary)]">{lpName}</span>
                 </h4>
@@ -313,10 +314,11 @@ function PositionSummaryTable({
                             <div className="flex items-center gap-2 justify-end w-full max-w-[280px] sm:max-w-md select-all break-all text-right ml-auto">
                                 <span className="font-mono text-[11px] leading-relaxed select-all">{poolAddress}</span>
                                 <button
+                                    type="button"
                                     onClick={(e) => { e.stopPropagation(); onCopy(poolAddress); }}
                                     className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === poolAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
-                                    {copiedAddress === poolAddress ? <Check className="w-3 h-3 text-[var(--color-accent)]" /> : <Copy className="w-3 h-3" />}
+                                    {copiedAddress === poolAddress ? <Check className="size-3 text-[var(--color-accent)]" /> : <Copy className="size-3" />}
                                 </button>
                             </div>
                         }
@@ -467,11 +469,11 @@ function UnderlyingTokenCard({
             >
                 {/* Left: icon + name + address */}
                 <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-                    <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
+                    <div className="size-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
                         {iconUrl ? (
                             <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className="w-full h-full object-cover" />
                         ) : (
-                            <Info className="w-4 h-4 text-[var(--color-text-muted)]" />
+                            <Info className="size-4 text-[var(--color-text-muted)]" />
                         )}
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
@@ -482,10 +484,11 @@ function UnderlyingTokenCard({
                         <div className="flex items-center gap-1 mt-0.5">
                             <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate select-all">{truncateAddress(address, 6, 6)}</span>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                                 className="p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors shrink-0"
                             >
-                                {copiedAddress === address ? <Check className="w-2.5 h-2.5 text-[var(--color-accent)]" /> : <Copy className="w-2.5 h-2.5" />}
+                                {copiedAddress === address ? <Check className="size-2.5 text-[var(--color-accent)]" /> : <Copy className="size-2.5" />}
                             </button>
                         </div>
                     </div>
@@ -501,7 +504,7 @@ function UnderlyingTokenCard({
                             {symbol || name}
                         </span>
                     </div>
-                    <ChevronDown className={`w-4 h-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
+                    <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                 </div>
             </div>
 

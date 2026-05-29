@@ -11,7 +11,7 @@ import { useEntityData } from '@/features/dashboard/hooks/useEntityData';
 import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
 import { getWellKnownKey, getGenericTooltipKey } from '../constants/wellKnownAddresses';
 
-import { TransactionDetailsTabProps } from '../types';
+import { TransactionDetailsTabProps } from '../types/components.types';
 import type { GatewayEvent, GatewayField } from '@/features/dashboard/types/shared.types';
 
 /* ── Asset Name Resolver Component (for async metadata) ── */
@@ -20,7 +20,7 @@ function ResourceName({ address, network }: { address: string; network: string }
     if (!address) return null;
     const rawVal = meta?.name || address;
     const displayVal = rawVal.length > 40 ? rawVal.slice(0, 37).trim() + '...' : rawVal;
-    
+
     return (
         <span className="font-bold italic text-[var(--color-primary)] truncate pe-1" title={meta?.name || address}>
             {displayVal}
@@ -137,7 +137,7 @@ export function TransactionDetailsTab({
                     className={`shrink-0 p-0.5 rounded transition-colors ${copiedAddress === addr ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                     title="Copy"
                 >
-                    {copiedAddress === addr ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copiedAddress === addr ? <Check className="size-3" /> : <Copy className="size-3" />}
                 </button>
             </span>
         );
@@ -222,7 +222,7 @@ export function TransactionDetailsTab({
                         className={`shrink-0 p-1 rounded-md transition-colors ${copiedAddress === addr ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
                         title="Copy"
                     >
-                        {copiedAddress === addr ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedAddress === addr ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                     </button>
                 </span>
             </span>
@@ -526,7 +526,7 @@ export function TransactionDetailsTab({
                                             className={`shrink-0 p-0.5 rounded transition-colors ${copiedAddress === resource ? 'text-green-500' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                             title="Copy"
                                         >
-                                            {copiedAddress === resource ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                            {copiedAddress === resource ? <Check className="size-3" /> : <Copy className="size-3" />}
                                         </button>
                                     </span>
                                 </EventRow>
@@ -545,7 +545,7 @@ export function TransactionDetailsTab({
                                         className="p-1 hover:bg-[var(--color-surface-hover)] rounded transition-colors shrink-0"
                                         title={tt?.copy_raw || 'Copy'}
                                     >
-                                        {copiedAddress === vaultId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />}
+                                        {copiedAddress === vaultId ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5 text-[var(--color-text-muted)]" />}
                                     </button>
                                 )}
                             </div>
@@ -607,7 +607,7 @@ export function TransactionDetailsTab({
 
             {/* ── Metadata rows ── */}
             <DetailRow label={tt?.transaction_id || 'Transaction ID'} value={sanitizeText((details.intent_hash ?? tx.intentHash) as string)} copyable={(details.intent_hash ?? tx.intentHash) as string} onCopy={onCopy} copiedAddress={copiedAddress} />
-            
+
             <DetailRow label={tt?.status || 'Status'} value={
                 <span className={`text-xs font-bold uppercase tracking-wider ${isSuccess ? 'text-[var(--color-accent)]' : 'text-red-500'}`}>
                     {isSuccess ? (tt?.success || 'Success') : (tt?.failed || 'Failed')}
@@ -626,14 +626,14 @@ export function TransactionDetailsTab({
 
             <DetailRow label={tt?.epoch_round || 'Epoch & Round'} value={`${details?.epoch} / ${details?.round}`} />
 
-            <DetailRow 
-                label={tt?.proposer_state_version_index || 'State Version / Index'} 
-                value={`${details?.state_version} / #${proposerInfo?.validatorIndex ?? '?'}`} 
+            <DetailRow
+                label={tt?.proposer_state_version_index || 'State Version / Index'}
+                value={`${details?.state_version} / #${proposerInfo?.validatorIndex ?? '?'}`}
             />
 
             {proposerValidator && (
-                <DetailRow 
-                    label={<span title={tt?.proposer_tooltip} className="cursor-help">{tt?.proposer || 'Proposer'}</span>} 
+                <DetailRow
+                    label={<span title={tt?.proposer_tooltip} className="cursor-help">{tt?.proposer || 'Proposer'}</span>}
                     value={(
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-semibold text-[var(--color-text-main)] text-sm">
@@ -648,10 +648,10 @@ export function TransactionDetailsTab({
                                 className="p-1 hover:bg-[var(--color-surface)] rounded text-[var(--color-text-muted)] transition-colors shrink-0"
                                 title={tt?.copy_raw || 'Copy'}
                             >
-                                {copiedAddress === proposerValidator.address ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                {copiedAddress === proposerValidator.address ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
                             </button>
                         </div>
-                    )} 
+                    )}
                 />
             )}
 
@@ -663,7 +663,7 @@ export function TransactionDetailsTab({
                 <div className="mt-8 mb-6">
                     <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-1.5">
-                            <Zap className="w-4 h-4 text-[var(--color-primary)]" />
+                            <Zap className="size-4 text-[var(--color-primary)]" />
                             {tt?.events_label || 'Events'} ({receipt.events.length})
                         </span>
                         <div className="flex items-center gap-2">
@@ -683,7 +683,7 @@ export function TransactionDetailsTab({
                                 className={`p-1 rounded-md transition-colors ${copiedAddress === JSON.stringify(receipt.events, null, 2) ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
                                 title={tt?.copy_raw || 'Copy Raw JSON'}
                             >
-                                {copiedAddress === JSON.stringify(receipt.events, null, 2) ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedAddress === JSON.stringify(receipt.events, null, 2) ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                             </button>
                         </div>
                     </h3>
@@ -700,7 +700,7 @@ export function TransactionDetailsTab({
                         {receipt.events.map((ev, i: number) => {
                             const { titleText, description, tooltip } = classifyEvent(ev);
                             return (
-                                <div key={i} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
+                                <div key={`event-${i}`} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
                                     <div
                                         title={tooltip as string}
                                         className={`font-bold text-sm text-[var(--color-primary)] mb-3 bg-[var(--color-primary)]/10 inline-block px-2 py-1 rounded ${tooltip ? 'cursor-help' : ''}`}
@@ -721,10 +721,10 @@ export function TransactionDetailsTab({
             <div className="mt-8">
                 <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mb-4 flex items-center justify-between gap-1.5">
                     <span className="flex items-center gap-1.5">
-                        <FileText className="w-4 h-4 text-[var(--color-primary)]" /> {tt?.manifest_label || 'Manifest'}
+                        <FileText className="size-4 text-[var(--color-primary)]" /> {tt?.manifest_label || 'Manifest'}
                     </span>
                     <button type="button" onClick={e => { e.stopPropagation(); onCopy(manifest_instructions || ''); }} className={`p-1.5 rounded-md transition-colors ${copiedAddress === (manifest_instructions || '') ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`} title={tt?.copy_manifest || 'Copy Manifest'}>
-                        {copiedAddress === (manifest_instructions || '') ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedAddress === (manifest_instructions || '') ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                     </button>
                 </h3>
                 <div className="p-4 sm:p-5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] text-xs sm:text-sm font-mono text-[var(--color-text-main)] break-words custom-scrollbar overflow-x-auto whitespace-pre max-h-[500px] overflow-y-auto shadow-inner leading-relaxed">
@@ -736,7 +736,7 @@ export function TransactionDetailsTab({
             {receipt?.error_message && (
                 <div className="mt-8">
                     <h3 className="text-[11px] text-red-500 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4" /> {tt?.error_label || 'Error'}
+                        <AlertCircle className="size-4" /> {tt?.error_label || 'Error'}
                     </h3>
                     <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 text-xs sm:text-sm font-mono text-red-400 break-words shadow-inner">
                         {sanitizeText(receipt.error_message)}

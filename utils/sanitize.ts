@@ -80,6 +80,7 @@ export function buildFallbackAvatar(name: string): string {
  * Allowed HTML tags for user-generated document content.
  * Script, iframe, object, embed and similar exec-capable tags are excluded.
  */
+const _REMOVED_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'noscript']);
 const ALLOWED_TAGS = new Set([
     'p','br','b','i','u','s','strong','em','mark','small','del','ins','sup','sub',
     'h1','h2','h3','h4','h5','h6',
@@ -124,7 +125,7 @@ export function sanitizeUserHtml(html: string): string {
                 const el = child as Element;
                 const tag = el.tagName.toLowerCase();
 
-                if (['script', 'style', 'iframe', 'object', 'embed', 'noscript'].includes(tag)) {
+                if (_REMOVED_TAGS.has(tag)) {
                     el.remove();
                     continue;
                 }

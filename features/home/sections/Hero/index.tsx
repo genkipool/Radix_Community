@@ -25,8 +25,8 @@ export default function Hero({ t, locale }: HeroProps) {
     >
       {/* Ambient background glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 -left-64 w-[500px] h-[500px] bg-[var(--color-primary)]/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 -right-64 w-[500px] h-[500px] bg-[var(--color-secondary)]/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/4 -left-64 size-[500px] bg-[var(--color-primary)]/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 -right-64 size-[500px] bg-[var(--color-secondary)]/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10 w-full">
@@ -172,7 +172,7 @@ export default function Hero({ t, locale }: HeroProps) {
         <div className="mt-24 pt-12 border-t border-[var(--color-card-border)]">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] mb-2">2²⁵⁶</div>
+              <div className="text-3xl font-bold text-white mb-2">2²⁵⁶</div>
               <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric1}</div>
             </div>
             <div>
@@ -180,7 +180,7 @@ export default function Hero({ t, locale }: HeroProps) {
               <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric2}</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] mb-2">ROA</div>
+              <div className="text-3xl font-bold text-white mb-2">ROA</div>
               <div className="text-sm text-[var(--color-text-muted)] font-medium min-h-[40px]">{t.hero.metric3}</div>
             </div>
             <div>

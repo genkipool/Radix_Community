@@ -25,7 +25,7 @@ export function CloseButton({
   iconSize = 20,
   ...props
 }: CloseButtonProps) {
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (onClose) onClose();
     if (onClick) onClick(e);
@@ -33,12 +33,13 @@ export function CloseButton({
 
   return (
     <button
-      onClick={handleClick}
+      type="button"
+      onClick={handleClose}
       title={title}
       aria-label={title}
       className={`
         flex items-center justify-center 
-        w-10 h-10 sm:w-[38px] sm:h-[38px] 
+        size-10 sm:w-[38px] sm:h-[38px] 
         rounded-full transition-all duration-200 
         bg-[var(--color-surface)] border border-[var(--color-card-border)] 
         text-[var(--color-text-muted)] hover:text-(--color-close-hover) 

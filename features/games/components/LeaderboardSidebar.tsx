@@ -55,7 +55,7 @@ function PlayerAvatar({ user, size = 36 }: { user: LeaderboardUser; size?: numbe
 
 function RankBadge({ rank }: { rank: number }) {
     const medal = MEDAL_COLORS[rank];
-    if (medal) return <span className="text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shrink-0" style={{ background: medal, color: '#000' }}>{rank}</span>;
+    if (medal) return <span className="text-[10px] font-black size-5 flex items-center justify-center rounded-full shrink-0" style={{ background: medal, color: '#000' }}>{rank}</span>;
     return <span className="text-[10px] font-bold w-5 text-center shrink-0" style={{ color: 'var(--color-text-muted)' }}>#{rank}</span>;
 }
 
@@ -86,7 +86,10 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [hiScore, setHiScore] = useState(0);
+    const [hiScore, setHiScore] = useState(() => {
+        if (typeof window !== 'undefined') return loadHiScore();
+        return 0;
+    });
 
     // XRD price via React Query — shared cache with TournamentModal and RadixInvaders
     const { price: xrdPrice } = useXrdPrice();
@@ -94,9 +97,7 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
     // Poll real hi-score from localStorage every 2s
     // (correct useEffect: synchronization effect with localStorage, not a data fetch)
     useEffect(() => {
-        const update = () => setHiScore(loadHiScore());
-        update();
-        const id = setInterval(update, 2000);
+        const id = setInterval(() => setHiScore(loadHiScore()), 2000);
         return () => clearInterval(id);
     }, []);
 
@@ -116,7 +117,7 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
                 {/* Game title + stats */}
                 <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: 'var(--color-card-border)' }}>
                     <div className="flex items-start gap-2 mb-3">
-                        <Trophy className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
+                        <Trophy className="size-4 mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
                         <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium uppercase tracking-wider mb-0.5" style={{ color: 'var(--color-primary)' }}>
                                 {t.section_title ?? 'Tournament'}
@@ -129,16 +130,17 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
 
                     <div className="flex gap-2 mb-3">
                         <StatChip icon={<XRDChipIcon />} value={prizePoolStr} label={t.stat_pool ?? 'Prize Pool'} />
-                        <StatChip icon={<Users className="w-3.5 h-3.5" />} value={TOTAL_PARTICIPANTS.toLocaleString()} label={t.stat_total ?? 'Players'} />
-                        <StatChip icon={<Award className="w-3.5 h-3.5" />} value={PRIZE_RECEIVERS.toLocaleString()} label={t.stat_winners ?? 'Winners'} />
+                        <StatChip icon={<Users className="size-3.5" />} value={TOTAL_PARTICIPANTS.toLocaleString()} label={t.stat_total ?? 'Players'} />
+                        <StatChip icon={<Award className="size-3.5" />} value={PRIZE_RECEIVERS.toLocaleString()} label={t.stat_winners ?? 'Winners'} />
                     </div>
 
                     <button
+                        type="button"
                         onClick={() => setIsModalOpen(true)}
                         className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
                         style={{ background: 'var(--color-surface)', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}
                     >
-                        <Info className="w-3.5 h-3.5" />
+                        <Info className="size-3.5" />
                         {t.more_info ?? 'Tournament info & prizes'}
                     </button>
                 </div>
@@ -158,7 +160,7 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
                         {/* Avatar with live pulse dot */}
                         <div className="relative shrink-0">
                             <div
-                                className="w-9 h-9 rounded-full overflow-hidden border-2"
+                                className="size-9 rounded-full overflow-hidden border-2"
                                 style={{ borderColor: 'var(--color-primary)' }}
                             >
                                 <SafeImage
@@ -170,7 +172,7 @@ export default function LeaderboardSidebar({ gameTitle, dictionary }: Leaderboar
                                 />
                             </div>
                             <span
-                                className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 animate-pulse"
+                                className="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 animate-pulse"
                                 style={{ background: '#22c55e', borderColor: 'var(--color-bg)' }}
                             />
                         </div>

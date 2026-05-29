@@ -37,9 +37,8 @@ interface DocsPageProps {
 }
 
 export default async function DocsPage({ params }: DocsPageProps) {
-    const { locale } = await params;
+    const [{ locale }, cookieStore] = await Promise.all([params, cookies()]);
     const t = await getFeatureDictionary(locale as Locale, ['docs']);
-    const cookieStore = await cookies();
     const initialAutoCollapse = cookieStore.get('docs_auto_collapse')?.value === 'true';
     const initialExpandedTopics = cookieStore.get('docs_open_topics')?.value || '';
 
@@ -50,9 +49,13 @@ export default async function DocsPage({ params }: DocsPageProps) {
         const raw = cookieStore.get('docs_sidebar_meta')?.value;
         if (raw) {
             const compact = JSON.parse(raw) as Array<{ i?: string; t?: string; p?: string }>;
-            initialUserDocMeta = compact
-                .map(x => ({ id: x.i ?? '', title: x.t ?? '', topic: x.p ?? '' }))
-                .filter(x => x.id && x.title && x.topic);
+            initialUserDocMeta = compact.reduce<Array<{ id: string; title: string; topic: string }>>((acc, x) => {
+                const id = x.i ?? '';
+                const title = x.t ?? '';
+                const topic = x.p ?? '';
+                if (id && title && topic) acc.push({ id, title, topic });
+                return acc;
+            }, []);
         }
     } catch { /* ignore malformed cookie */ }
 

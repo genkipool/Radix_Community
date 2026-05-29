@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useDeferredValue, useEffect } from 'react';
+import { useState, useTransition, useDeferredValue, useRef } from 'react';
 import type { DashboardView, Network } from '../types';
 import { isRadixAddress } from '../utils/radixAddress';
 
@@ -12,7 +12,21 @@ export interface UseDashboardUrlSyncOptions {
   initialDateRange?: { start: string | null; end: string | null };
 }
 
+function syncTxUrlParam(searchQuery: string) {
+  const url = new URL(window.location.href);
+  const currentTx = url.searchParams.get('tx');
+  const isAddress = isRadixAddress(searchQuery);
 
+  if (isAddress) {
+    if (currentTx !== searchQuery) {
+      url.searchParams.set('tx', searchQuery);
+      window.history.replaceState({}, '', url.toString());
+    }
+  } else if (currentTx) {
+    url.searchParams.delete('tx');
+    window.history.replaceState({}, '', url.toString());
+  }
+}
 
 export function useDashboardUrlSync({
   initialView,
@@ -21,17 +35,32 @@ export function useDashboardUrlSync({
   initialDateRange = { start: null, end: null },
 }: UseDashboardUrlSyncOptions) {
 
-
   const [, startViewTransition] = useTransition();
 
   const [activeView, setActiveView] = useState<DashboardView>(initialView);
   const [network, setNetwork] = useState<Network>(initialNetwork);
   const deferredNetwork = useDeferredValue(network);
 
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [searchQuery, _setSearchQuery] = useState(initialSearchQuery);
   const deferredSearch = useDeferredValue(searchQuery);
 
   const [dateRange, setDateRange] = useState(initialDateRange);
+
+  const setSearchQuery = (query: string) => {
+    _setSearchQuery(query);
+    syncTxUrlParam(query);
+  };
+
+  // Ensure ?network= is always present in the URL (once on mount)
+  const networkUrlRef = useRef(false);
+  if (!networkUrlRef.current && typeof window !== 'undefined') {
+    networkUrlRef.current = true;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('network')) {
+      url.searchParams.set('network', network);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
 
   const handleDateRangeChange = (range: { start: string | null; end: string | null }) => {
     const url = new URL(window.location.href);
@@ -49,20 +78,19 @@ export function useDashboardUrlSync({
     setDateRange(range);
   };
 
-
   const handleViewChange = (view: DashboardView) => {
     const url = new URL(window.location.href);
     if (view === 'transactions') {
       url.searchParams.set('view', 'transactions');
     } else {
       url.searchParams.delete('view');
-      url.searchParams.delete('tag'); // Transaction tags are not relevant for staking view
+      url.searchParams.delete('tag');
     }
     url.searchParams.set('network', network);
-    url.searchParams.delete('tx'); // Clear tx parameter when changing views
+    url.searchParams.delete('tx');
     window.history.replaceState({}, '', url.toString());
-    setSearchQuery(''); // Clear search when switching views
-    setDateRange({ start: null, end: null }); // Reset dates on view change
+    _setSearchQuery('');
+    setDateRange({ start: null, end: null });
 
     startViewTransition(() => setActiveView(view));
   };
@@ -73,10 +101,10 @@ export function useDashboardUrlSync({
     if (activeView === 'transactions') {
       url.searchParams.set('view', 'transactions');
     }
-    url.searchParams.delete('tx'); // Clear tx parameter when changing network
+    url.searchParams.delete('tx');
     window.history.replaceState({}, '', url.toString());
-    setSearchQuery(''); // Clear search on network change
-    setDateRange({ start: null, end: null }); // Reset dates on network change
+    _setSearchQuery('');
+    setDateRange({ start: null, end: null });
 
     setNetwork(net);
   };
@@ -84,6 +112,7 @@ export function useDashboardUrlSync({
   return {
     activeView,
     network,
+    setNetwork,
     deferredNetwork,
     searchQuery,
     setSearchQuery,
@@ -106,44 +135,23 @@ export interface UseDashboardUrlEffectsOptions {
 export function useDashboardUrlEffects({
   searchQuery,
   activeView,
-  network,
   setExpandedTxs,
 }: UseDashboardUrlEffectsOptions) {
-  /* Sync tx param from search */
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const currentTx = url.searchParams.get('tx');
-    const isAddress = isRadixAddress(searchQuery);
+  const prevSearchRef = useRef(searchQuery);
+  const prevViewRef = useRef(activeView);
 
-    if (isAddress) {
-      if (currentTx !== searchQuery) {
-        url.searchParams.set('tx', searchQuery);
-        window.history.replaceState({}, '', url.toString());
-        // Auto-expand only for specific transaction IDs and if not already expanded
-        if (searchQuery.startsWith('txid_')) {
-          setExpandedTxs(new Set([searchQuery]));
-        }
-      }
-    } else if (currentTx) {
-      url.searchParams.delete('tx');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [searchQuery, setExpandedTxs]);
+  if (searchQuery.startsWith('txid_') && searchQuery !== prevSearchRef.current) {
+    prevSearchRef.current = searchQuery;
+    setExpandedTxs(new Set([searchQuery]));
+  }
 
-  // Ensure ?network= is always present in the URL
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has('network')) {
-      url.searchParams.set('network', network);
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [network]);
-
-  // Auto-expand transaction from ?tx= URL param on load
-  useEffect(() => {
-    const txParam = new URL(window.location.href).searchParams.get('tx');
+  if (activeView !== prevViewRef.current) {
+    prevViewRef.current = activeView;
+    const txParam = typeof window !== 'undefined'
+      ? new URL(window.location.href).searchParams.get('tx')
+      : null;
     if (txParam && activeView === 'transactions') {
       setExpandedTxs(new Set([txParam]));
     }
-  }, [activeView, setExpandedTxs]);
+  }
 }

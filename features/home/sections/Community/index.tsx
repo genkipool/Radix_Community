@@ -183,12 +183,12 @@ export default function Community({ t }: BaseSectionProps) {
                         </div>
                         <h3 className="text-sm font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch4_vs_subtitle}</h3>
                         <ul className="space-y-2 text-xs text-[var(--color-text-muted)]">
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_swift}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_visa}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_sol}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_eth}</li>
-                            <li className="flex items-start gap-2"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_paypal}</li>
-                            <li className="flex items-start gap-2 text-[var(--color-text-main)] font-semibold"><span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] shrink-0 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />{t.community?.ch4_vs_radix}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_swift}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_visa}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_sol}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_eth}</li>
+                            <li className="flex items-start gap-2"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-card-border)] shrink-0" />{t.community?.ch4_vs_paypal}</li>
+                            <li className="flex items-start gap-2 text-[var(--color-text-main)] font-semibold"><span className="mt-1 size-1.5 rounded-full bg-[var(--color-primary)] shrink-0 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />{t.community?.ch4_vs_radix}</li>
                         </ul>
                     </FadeIn>
 
@@ -295,6 +295,7 @@ export default function Community({ t }: BaseSectionProps) {
                                 className="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center pointer-events-auto"
                             >
                                 <button
+                                    type="button"
                                     onClick={() => setSelectedImage(null)}
                                     className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white transition-colors"
                                 >

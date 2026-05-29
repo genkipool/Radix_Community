@@ -303,12 +303,12 @@ export const Graphic6 = ({ t: _t }: GraphicProps) => (
     <g transform="translate(-15, -10) scale(1.2)">
       <g opacity="0.8">
         <path d="M 10 70 L 60 70 M 20 70 L 20 50 M 35 70 L 35 50 M 50 70 L 50 50 M 10 50 L 60 50 L 35 30 Z" fill="transparent" stroke="#38BDF8" strokeWidth="2" strokeLinejoin="round" />
-        <text x="35" y="90" className="code" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "10px" }}>Bank</text>
+        <text x="35" y="90" className="code" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "12px" }}>Bank</text>
       </g>
       <g opacity="0.8">
         <circle cx="250" cy="45" r="10" fill="transparent" stroke="#38BDF8" strokeWidth="2" />
         <path d="M 230 70 C 230 55, 270 55, 270 70" fill="transparent" stroke="#38BDF8" strokeWidth="2" />
-        <text x="250" y="90" className="code" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "10px" }}>User</text>
+        <text x="250" y="90" className="code" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "12px" }}>User</text>
       </g>
       {/* ID Card glowing */}
       <g transform="translate(140, 50)" filter="url(#glowCyan6)">
@@ -319,7 +319,7 @@ export const Graphic6 = ({ t: _t }: GraphicProps) => (
         <line x1="5" y1="0" x2="15" y2="0" stroke="#38BDF8" strokeWidth="1" />
         <line x1="5" y1="5" x2="10" y2="5" stroke="#38BDF8" strokeWidth="1" />
       </g>
-      <text x="140" y="85" className="code font-bold" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "11px" }}>
+      <text x="140" y="85" className="code font-bold" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "12px" }}>
         {_t?.ecosistema?.graphics?.g6_idosCheck || "idOS"}
       </text>
       <path d="M 70 50 L 110 50" fill="none" stroke="#38BDF8" strokeWidth="2" strokeDasharray="4" className="draw-swift" />
@@ -349,7 +349,7 @@ export const Graphic7 = ({ t: _t }: GraphicProps) => (
       <g transform="translate(10, 15)">
         <rect x="-25" y="-12" width="60" height="24" rx="4" fill="none" stroke="#10B981" strokeWidth="2" />
         <circle cx="-25" cy="0" r="6" fill="#10B981" />
-        <text x="5" y="4" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "11px" }}>Minter</text>
+        <text x="5" y="4" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>Minter</text>
       </g>
       <path d="M 40 15 L 90 30" fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="3" className="draw-swift" />
 
@@ -357,7 +357,7 @@ export const Graphic7 = ({ t: _t }: GraphicProps) => (
       <g transform="translate(10, 75)">
         <rect x="-25" y="-12" width="60" height="24" rx="4" fill="none" stroke="#F43F5E" strokeWidth="2" />
         <circle cx="-25" cy="0" r="6" fill="#F43F5E" />
-        <text x="5" y="4" className="code font-bold" fill="#F43F5E" textAnchor="middle" style={{ fontSize: "11px" }}>Burner</text>
+        <text x="5" y="4" className="code font-bold" fill="#F43F5E" textAnchor="middle" style={{ fontSize: "12px" }}>Burner</text>
       </g>
       <path d="M 40 75 L 90 60" fill="none" stroke="#F43F5E" strokeWidth="2" strokeDasharray="3" className="draw-swift" />
 
@@ -448,7 +448,7 @@ export const Graphic9 = ({ t: _t }: GraphicProps) => (
       <text x="15" y="55" className="code" style={{ fontSize: "14px" }}>
         {" "}
         <tspan style={{ fill: "var(--code-type)" }}>Address(</tspan>
-        <tspan style={{ fill: "var(--code-string)" }}>&quot;account_rdx...&quot;</tspan>
+        <tspan style={{ fill: "var(--code-string)" }}>&quot;account_rdx…&quot;</tspan>
         <tspan style={{ fill: "var(--code-type)" }}>)</tspan>
       </text>
       <text x="15" y="75" className="code" style={{ fontSize: "14px" }}>
@@ -458,7 +458,7 @@ export const Graphic9 = ({ t: _t }: GraphicProps) => (
       <text x="15" y="95" className="code" style={{ fontSize: "14px" }}>
         {" "}
         <tspan style={{ fill: "var(--code-type)" }}>Address(</tspan>
-        <tspan style={{ fill: "var(--code-string)" }}>&quot;resource_rdx...&quot;</tspan>
+        <tspan style={{ fill: "var(--code-string)" }}>&quot;resource_rdx…&quot;</tspan>
         <tspan style={{ fill: "var(--code-type)" }}>)</tspan><tspan style={{ fill: "var(--code-punct)" }}>;</tspan>
       </text>
       <g transform="translate(255, 35)">
@@ -541,21 +541,21 @@ export const Graphic11 = ({ t }: GraphicProps) => (
       {/* Signer 1 (Signed) */}
       <g transform="translate(50, 25)" stroke="#10B981" strokeWidth="2" fill="none">
         <circle cx="0" cy="-6" r="6" /> <path d="M -12 12 C -12 0, 12 0, 12 12" />
-        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" stroke="none" style={{ fontSize: "10px" }}>Signer 1</text>
+        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" stroke="none" style={{ fontSize: "12px" }}>Signer 1</text>
       </g>
       <path d="M 65 35 L 120 50" stroke="#10B981" strokeWidth="2" className="draw-swift" />
 
       {/* Signer 2 (Signed) */}
       <g transform="translate(50, 95)" stroke="#10B981" strokeWidth="2" fill="none">
         <circle cx="0" cy="-6" r="6" /> <path d="M -12 12 C -12 0, 12 0, 12 12" />
-        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" stroke="none" style={{ fontSize: "10px" }}>Signer 2</text>
+        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" stroke="none" style={{ fontSize: "12px" }}>Signer 2</text>
       </g>
       <path d="M 65 85 L 120 70" stroke="#10B981" strokeWidth="2" className="draw-swift" />
 
       {/* Signer 3 (Pending) */}
       <g transform="translate(250, 60)" stroke="#64748B" strokeWidth="2" fill="none" strokeDasharray="3">
         <circle cx="0" cy="-6" r="6" /> <path d="M -12 12 C -12 0, 12 0, 12 12" />
-        <text x="0" y="25" className="code font-bold" fill="#64748B" textAnchor="middle" stroke="none" style={{ fontSize: "10px" }}>Signer 3</text>
+        <text x="0" y="25" className="code font-bold" fill="#64748B" textAnchor="middle" stroke="none" style={{ fontSize: "12px" }}>Signer 3</text>
       </g>
       <path d="M 235 60 L 180 60" stroke="#64748B" strokeWidth="2" strokeDasharray="4" />
 
@@ -871,7 +871,7 @@ export const Graphic13 = ({ t: _t }: GraphicProps) => (
     </g>
 
     <g transform="translate(250, 60)">
-      <g className="draw-spin" style={{ animationDuration: "8s" }}>
+      <g className="draw-spin" style={{ animationDuration: "0.8s" }}>
         <circle
           cx="0"
           cy="0"
@@ -1390,23 +1390,23 @@ export const Graphic17 = ({ t: _t }: GraphicProps) => (
 
       {/* Outer Validator Nodes text scaled */}
       <circle cx="-70" cy="-50" r="10" fill="transparent" stroke="#10B981" strokeWidth="2" />
-      <text x="-70" y="-65" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }}>Val 1</text>
+      <text x="-70" y="-65" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>Val 1</text>
 
       <circle cx="70" cy="-50" r="10" fill="transparent" stroke="#10B981" strokeWidth="2" />
-      <text x="70" y="-65" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }}>Val 2</text>
+      <text x="70" y="-65" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>Val 2</text>
 
       <circle cx="-70" cy="50" r="10" fill="transparent" stroke="#10B981" strokeWidth="2" />
-      <text x="-70" y="70" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }}>Val 3</text>
+      <text x="-70" y="70" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>Val 3</text>
 
       <circle cx="70" cy="50" r="10" fill="transparent" stroke="#10B981" strokeWidth="2" />
-      <text x="70" y="70" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }}>Val 4</text>
+      <text x="70" y="70" className="code" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>Val 4</text>
 
       {/* Central PROPOSAL Document - No Fill */}
       <rect x="-30" y="-35" width="60" height="70" rx="3" fill="transparent" stroke="#10B981" strokeWidth="2" filter="url(#glowEmer17)" className="draw-float" />
       <line x1="-15" y1="-15" x2="15" y2="-15" stroke="#10B981" strokeWidth="2" />
       <line x1="-15" y1="0" x2="15" y2="0" stroke="#10B981" strokeWidth="1" />
       <line x1="-15" y1="15" x2="5" y2="15" stroke="#10B981" strokeWidth="1" />
-      <text x="0" y="-22" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }}>PROPOSAL</text>
+      <text x="0" y="-22" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }}>PROPOSAL</text>
 
       {/* Signatures/Checks flowing - Moved after Proposal to be on top */}
       <g stroke="#10B981" strokeWidth="2" fill="none">
@@ -1808,7 +1808,7 @@ export const Graphic21 = ({ t: _t }: GraphicProps) => (
       strokeDasharray="6"
     />
     <g transform="translate(150, 60)">
-      <g className="draw-spin" style={{ animationDuration: "6s" }}>
+      <g className="draw-spin" style={{ animationDuration: "0.8s" }}>
         <path
           d="M 0 -25 L 20 -15 L 20 15 L 0 25 L -20 15 L -20 -15 Z"
           fill="transparent"
@@ -2076,9 +2076,9 @@ export const Graphic24 = ({ t: t }: GraphicProps) => (
       <polygon points="0,-35 45,-20 45,30 0,65 -45,30 -45,-20" fill="transparent" stroke="#38BDF8" strokeWidth="3" filter="url(#glowAzure24)" className="draw-pulse" />
       <polygon points="0,-25 35,-12 35,22 0,55 -35,22 -35,-12" fill="transparent" stroke="#38BDF8" strokeWidth="1" opacity="0.6" />
       {/* Explanatory Texts Scaled Up */}
-      <text x="0" y="-5" className="code font-bold" fill="#FFFFFF" textAnchor="middle" style={{ fontSize: "10px" }}>Mathematical</text>
-      <text x="0" y="10" className="code font-bold" fill="#FFFFFF" textAnchor="middle" style={{ fontSize: "10px" }}>Proofs</text>
-      <text x="0" y="27" className="code font-bold" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "10px" }}>Bug-Free DeFi</text>
+      <text x="0" y="-5" className="code font-bold" fill="#FFFFFF" textAnchor="middle" style={{ fontSize: "12px" }}>Mathematical</text>
+      <text x="0" y="10" className="code font-bold" fill="#FFFFFF" textAnchor="middle" style={{ fontSize: "12px" }}>Proofs</text>
+      <text x="0" y="27" className="code font-bold" fill="#38BDF8" textAnchor="middle" style={{ fontSize: "12px" }}>Bug-Free DeFi</text>
     </g>
     {/* Texto de pie */}
     <text x="150" y="140" className="code font-bold tracking-widest" fill="#00F0FF" textAnchor="middle" style={{ fontSize: "14px" }} filter="url(#glowAzure24)">
@@ -2376,7 +2376,7 @@ export const Graphic28 = ({ t: t }: GraphicProps) => (
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "10px" }} filter="url(#glowGreen28)">PEER REVIEWED</text>
+        <text x="0" y="25" className="code font-bold" fill="#10B981" textAnchor="middle" style={{ fontSize: "12px" }} filter="url(#glowGreen28)">PEER REVIEWED</text>
       </g>
     </g>
     <text x="150" y="160" className="code font-bold tracking-widest" fill="#00F0FF" textAnchor="middle" style={{ fontSize: "15px" }} filter="url(#glowCyan28)">

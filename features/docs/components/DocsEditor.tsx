@@ -11,6 +11,7 @@ import { LinkDialog } from '@/components/ui/RichTextEditor/EditorDialogs';
 import { useFormattingState } from '@/components/ui/RichTextEditor/useFormattingState';
 import { useRichTextLogic } from '@/components/ui/RichTextEditor/hooks/useRichTextLogic';
 import { markdownToHtml, applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
+import { sanitizeUserHtml } from '@/utils/sanitize';
 import type { DocsEditorProps } from '../types/components.types';
 import type { DocsDictionary } from '../types/i18n.types';
 import { useEditorState } from '../hooks/useEditorState';
@@ -70,7 +71,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
     handlePaste,
     handleDrop,
     handleEditorClick,
-    handleInput,
+    syncHtmlOnInput,
     handleKeyDown
   } = useRichTextLogic({
     editorRef,
@@ -85,14 +86,14 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
   });
 
   // Sync initial content
-  useEffect(() => {
+  const contentSyncedRef = useRef(false);
+  if (!contentSyncedRef.current && editorRef.current) {
+    contentSyncedRef.current = true;
     const initial = initialDoc?.html || '<p><br></p>';
-    if (editorRef.current) {
-      editorRef.current.innerHTML = initial;
-      htmlRef.current = initial;
-      if (initial !== '<p><br></p>') updateCounts(initial);
-    }
-  }, [initialDoc, updateCounts]);
+    editorRef.current.innerHTML = initial;
+    htmlRef.current = initial;
+    if (initial !== '<p><br></p>') updateCounts(initial);
+  }
 
   // Command & Sync helpers
   const handleMarkdownImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,8 +130,8 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
 
   return (
     <>
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
-      <input ref={mdInputRef} type="file" accept=".md,.markdown,text/plain" className="hidden" onChange={handleMarkdownImport} />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} aria-label="Upload image" />
+      <input ref={mdInputRef} type="file" accept=".md,.markdown,text/plain" className="hidden" onChange={handleMarkdownImport} aria-label="Import markdown" />
 
       <ToastList toasts={toasts} />
 
@@ -172,6 +173,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                   maxLength={85}
                   onChange={e => setTitle(e.target.value)}
                   placeholder={editorT.title_placeholder ?? 'Document title…'}
+                  aria-label={editorT.title_placeholder ?? 'Document title…'}
                   className="w-full text-3xl sm:text-4xl font-extrabold bg-transparent focus:outline-none tracking-tight leading-tight pr-20"
                   style={{ color: 'var(--color-text-main)', caretColor: 'var(--color-primary)' }}
                 />
@@ -183,13 +185,14 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                 </div>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 aria-label={editorT.close ?? 'Close editor'}
                 title={editorT.close ?? 'Close editor'}
-                className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-lg hover:opacity-80 transition-opacity"
+                className="absolute top-6 right-6 size-8 flex items-center justify-center rounded-lg hover:opacity-80 transition-opacity"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-card-border)', color: 'var(--color-text-muted)' }}
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </div>
 
@@ -226,7 +229,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 pointer-events-none m-4 rounded-2xl"
                     style={{ background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)', border: '2px dashed var(--color-primary)' }}>
-                    <Upload className="w-10 h-10" style={{ color: 'var(--color-primary)' }} />
+                    <Upload className="size-10" style={{ color: 'var(--color-primary)' }} />
                     <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
                       {editorT.drop_image ?? 'Drop image here'}
                     </p>
@@ -242,14 +245,14 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                     lineHeight: '1.85',
                     fontSize: '1rem'
                   }}
-                  dangerouslySetInnerHTML={{ __html: applyMarkdownToHtml(previewContent) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(applyMarkdownToHtml(previewContent)) }}
                 />
               )}
               <div
                 ref={editorRef}
                 contentEditable
                 suppressContentEditableWarning
-                onInput={handleInput}
+                onInput={syncHtmlOnInput}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 onClick={handleEditorClick}

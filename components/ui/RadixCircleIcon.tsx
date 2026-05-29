@@ -41,4 +41,4 @@ export function RadixCircleIcon({
     );
 }
 
-export default RadixCircleIcon;
+RadixCircleIcon;

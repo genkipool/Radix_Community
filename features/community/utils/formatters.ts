@@ -2,11 +2,14 @@
  * Community formatters for currency and dates.
  */
 
+const _xrdFmt = new Intl.NumberFormat('es-ES');
+const _usdFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
 /**
  * Formats a number as XRD (e.g., 150.000 XRD).
  */
 export function fmtXrd(n: number) {
-    return new Intl.NumberFormat('es-ES').format(Math.abs(n)) + ' XRD';
+    return _xrdFmt.format(Math.abs(n)) + ' XRD';
 }
 
 /**
@@ -21,11 +24,8 @@ export function fmtXrdShort(n: number) {
 /**
  * Formats a number as USD (e.g., $15,000).
  */
-export function fmtUsd(n: number, decimals = 0) {
-    return '$' + new Intl.NumberFormat('en-US', { 
-        minimumFractionDigits: decimals, 
-        maximumFractionDigits: decimals 
-    }).format(Math.abs(n));
+export function fmtUsd(n: number) {
+    return '$' + _usdFmt.format(Math.abs(n));
 }
 
 /**

@@ -9,10 +9,10 @@ import { type RichDescriptionProps } from '../types/components.types';
  * Render `text` wrapping each occurrence of `keywords` in a <strong>.
  * Keywords are matched case-insensitively; longer phrases match first.
  */
-function renderWithHighlights(text: string, keywords: string[]): React.ReactNode {
-  if (!keywords.length) return text;
+function HighlightBlock({ text, keywords }: { text: string; keywords: string[] }): React.ReactNode {
+  if (!keywords.length) return <>{text}</>;
 
-  const sorted = [...keywords].sort((a, b) => b.length - a.length);
+  const sorted = keywords.toSorted((a, b) => b.length - a.length);
   const escaped = sorted.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const regex = new RegExp(`(${escaped.join('|')})`, 'gi');
   const parts = text.split(regex);
@@ -37,7 +37,7 @@ export function RichDescription({ text, keywords, ctaPhrase, onCtaClick }: RichD
   const idx = ctaPhrase ? text.indexOf(ctaPhrase) : -1;
 
   if (idx === -1) {
-    return <>{renderWithHighlights(text, keywords)}</>;
+    return <HighlightBlock text={text} keywords={keywords} />;
   }
 
   const before = text.slice(0, idx);
@@ -45,7 +45,7 @@ export function RichDescription({ text, keywords, ctaPhrase, onCtaClick }: RichD
 
   return (
     <>
-      {renderWithHighlights(before, keywords)}
+      <HighlightBlock text={before} keywords={keywords} />
       <button
         type="button"
         onClick={onCtaClick}
@@ -59,7 +59,7 @@ export function RichDescription({ text, keywords, ctaPhrase, onCtaClick }: RichD
       >
         {ctaPhrase}
       </button>
-      {renderWithHighlights(after, keywords)}
+      <HighlightBlock text={after} keywords={keywords} />
     </>
   );
 }

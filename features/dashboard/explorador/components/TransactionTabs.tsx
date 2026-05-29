@@ -24,7 +24,9 @@ import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyG
 
 
 
-import { TransactionTabsProps, BalanceChanges, FungibleChange, NonFungibleChange, ValidatorOp } from '../types';
+import { TransactionTabsProps } from '../types/components.types';
+import { BalanceChanges, FungibleChange, NonFungibleChange } from '../types/gateway.types';
+import { ValidatorOp } from '@/types/radix';
 
 /* ── Loading skeleton ──────────────────── */
 function TransactionDetailsSkeleton({ tt }: { tt: Partial<TranslationsT['dashboard']['transactions']> }) {
@@ -100,9 +102,9 @@ const TransactionTabs = ({
                         onClick={() => setActiveTab(tab)}
                         className={`py-2.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-2 relative group ${activeTab === tab ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                     >
-                        {tab === 'summary' && <><Activity className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.summary || 'Summary'}</>}
-                        {tab === 'details' && <><List className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.details || 'Details'}</>}
-                        {tab === 'raw' && <><FileJson className={`w-3.5 h-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.raw_receipt || 'Raw Receipt'}</>}
+                        {tab === 'summary' && <><Activity className={`size-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.summary || 'Summary'}</>}
+                        {tab === 'details' && <><List className={`size-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.details || 'Details'}</>}
+                        {tab === 'raw' && <><FileJson className={`size-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.raw_receipt || 'Raw Receipt'}</>}
 
                         {activeTab === tab && (
                             <motion.div
@@ -126,7 +128,7 @@ const TransactionTabs = ({
                         {tx.message && (
                             <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-card-border)] overflow-hidden">
                                 <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center gap-2">
-                                    <Terminal className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                                    <Terminal className="size-3.5 text-[var(--color-primary)]" />
                                     {tt?.message_payload || 'Message Payload'}
                                 </h3>
                                 <div className="p-4 sm:p-5 text-xs sm:text-sm font-mono break-words text-[var(--color-text-main)] leading-relaxed">
@@ -336,7 +338,7 @@ const TransactionTabs = ({
                     <div className="space-y-4">
                         <h3 className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold flex items-center justify-between px-1">
                             <span className="flex items-center gap-1.5">
-                                <FileJson className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                                <FileJson className="size-3.5 text-[var(--color-primary)]" />
                                 {tt?.raw_receipt || 'Raw Receipt'}
                             </span>
                             <button
@@ -348,7 +350,7 @@ const TransactionTabs = ({
                                 className={`p-1.5 rounded-md transition-colors ${copiedAddress === JSON.stringify(details, null, 2) ? 'text-green-500 bg-green-500/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
                                 title={tt?.copy_raw || 'Copy Raw JSON'}
                             >
-                                {copiedAddress === JSON.stringify(details, null, 2) ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedAddress === JSON.stringify(details, null, 2) ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                             </button>
                         </h3>
                         <div className="p-4 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-xs font-mono text-green-400/90 shadow-inner overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar whitespace-pre">

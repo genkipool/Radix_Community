@@ -13,7 +13,7 @@ import { useState } from 'react';
 /* ─── Props ─────────────────────────────────────────────────────────────── */
 
 import type { Dictionary } from '@/i18n';
-import { GamesHeroProps } from '../types';
+import { GamesHeroProps } from '../types/components.types';
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
 
@@ -36,7 +36,7 @@ export default function GamesHero({ onSelectGame, collapsed = false, dictionary 
       gradient: game.thumbnailGradient,
       accentRgb: game.accentRgb,
       iconVariant: 'icon-box',
-      icon: <Gamepad2 className="w-6 h-6 text-white" />,
+      icon: <Gamepad2 className="size-6 text-white" />,
       badgeLabel: catLabel,
       title: titles[game.titleKey] ?? game.titleKey,
       description:
@@ -49,7 +49,7 @@ export default function GamesHero({ onSelectGame, collapsed = false, dictionary 
           className="absolute top-4 right-4 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
           style={{ background: 'var(--color-primary)', color: 'white', opacity: 0.9 }}
         >
-          <Trophy className="w-3 h-3" />
+          <Trophy className="size-3" />
           {t.tournament_badge ?? 'Tournament'}
         </span>
       ),
@@ -59,23 +59,25 @@ export default function GamesHero({ onSelectGame, collapsed = false, dictionary 
   const actions = (
     <div className="flex flex-wrap justify-center items-center gap-4">
       <button
+        type="button"
         onClick={() => setIsTournamentOpen(true)}
         className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
         style={{ color: 'var(--color-primary)' }}
       >
-        <Info className="w-4 h-4" />
+        <Info className="size-4" />
         {t.moreInfo ?? 'More information about tournaments'}
-        <ArrowUpRight className="w-4 h-4" />
+        <ArrowUpRight className="size-4" />
       </button>
       <span style={{ color: 'var(--color-card-border)' }}>|</span>
       <button
+        type="button"
         onClick={() => setIsDevOpen(true)}
         className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
         style={{ color: 'var(--color-primary)' }}
       >
-        <Code2 className="w-4 h-4" />
+        <Code2 className="size-4" />
         {t.moreInfoDev ?? 'More info on publishing games'}
-        <ArrowUpRight className="w-4 h-4" />
+        <ArrowUpRight className="size-4" />
       </button>
     </div>
   );

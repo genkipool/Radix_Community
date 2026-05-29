@@ -2,7 +2,7 @@
 
 import { useTheme } from '@/context/ThemeContext';
 import type { Theme } from '@/context/ThemeContext';
-import { useState, useId } from 'react';
+import { useState, useId, useEffect } from 'react';
 
 function getHtmlTheme(): Theme {
     if (typeof document === 'undefined') return 'radix-dark';
@@ -35,11 +35,13 @@ export const SidebarGraphic = ({
         return ctxTheme ?? 'radix-dark';
     });
 
-    const [prevCtxTheme, setPrevCtxTheme] = useState(ctxTheme);
-    if (ctxTheme !== prevCtxTheme) {
-        setPrevCtxTheme(ctxTheme);
-        setSafeTheme(ctxTheme ?? getHtmlTheme());
-    }
+    const prevCtxThemeRef = useRef(ctxTheme);
+    useEffect(() => {
+        if (ctxTheme !== prevCtxThemeRef.current) {
+            prevCtxThemeRef.current = ctxTheme;
+            setSafeTheme(ctxTheme ?? getHtmlTheme());
+        }
+    }, [ctxTheme]);
     const reactId = useId().replace(/:/g, ''); // SVG IDs shouldn't have colons just in case
     const id = `${idPrefix}-${safeTheme}-${reactId}`;
 

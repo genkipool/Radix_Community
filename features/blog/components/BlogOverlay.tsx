@@ -8,7 +8,8 @@ import { CloseButton } from '@/components/ui/CloseButton';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { PostContent } from '../PostContent';
 import { LabelBadge } from '@/components/ui/LabelBadge';
-import { BlogPost, BlogDictionary } from '../types';
+import { BlogPost } from '../types/data.types';
+import { BlogDictionary } from '../types/i18n.types';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
 interface BlogOverlayProps {
@@ -50,10 +51,10 @@ export function BlogOverlay({
 }: BlogOverlayProps) {
     // Track the stage of the morph animation to safely detach layout updates during navigation
     const [morphState, setMorphState] = React.useState<'opening' | 'open' | 'closing'>('opening');
-    const [initialPostId] = React.useState(post.id); // For the initial open animation
+    const initialPostId = post.id; // For the initial open animation
 
     // Restore smooth layout transition and specific layoutId before closing so it morphs back to the *current* card!
-    const handleInternalClose = React.useCallback(() => {
+    const handleInternalClose = () => {
         setMorphState('closing');
         // Wait two frames so Framer Motion registers the new layoutId before unmounting
         requestAnimationFrame(() => {
@@ -61,7 +62,7 @@ export function BlogOverlay({
                 onClose();
             });
         });
-    }, [onClose]);
+    };
 
     let activeLayoutId: string | undefined;
     if (morphState === 'opening') {
@@ -144,7 +145,7 @@ export function BlogOverlay({
                                     {/* Meta row */}
                                     <div className="flex flex-wrap items-center gap-3 mb-4">
                                         <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.calendar.title}>
-                                            <Calendar className="w-3 h-3" />
+                                            <Calendar className="size-3" />
                                             {new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                         </span>
                                         {post.tags.map(tag => (
@@ -154,10 +155,10 @@ export function BlogOverlay({
                                             />
                                         ))}
                                         <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.author}>
-                                            <User className="w-3 h-3" />{post.author}
+                                            <User className="size-3" />{post.author}
                                         </span>
                                         <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.views}>
-                                            <Eye className="w-3.5 h-3.5" />
+                                            <Eye className="size-3.5" />
                                             {post.views.toLocaleString()}
                                         </span>
                                         <Button
@@ -166,7 +167,7 @@ export function BlogOverlay({
                                             className="ml-auto w-[110px] justify-center"
                                             onClick={() => onToggleSpeech(`${post.title}. ${post.content}`)}
                                             title={isSpeaking ? blogT.stop : blogT.listen}
-                                            leftIcon={isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                                            leftIcon={isSpeaking ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
                                         >
                                             {isSpeaking ? blogT.stop : blogT.listen}
                                         </Button>
@@ -181,10 +182,10 @@ export function BlogOverlay({
                                     <div className="mt-10 pt-6 border-t border-[var(--color-card-border)]">
                                         <div className="flex items-center justify-center gap-4">
                                             <div className="flex flex-wrap items-center justify-center gap-3 flex-1 min-w-0">
-                                                <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.author}><User className="w-3 h-3" />{post.author}</span>
-                                                <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.calendar.title}><Calendar className="w-3 h-3" />{new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                                <button onClick={() => onToggleLike(post.id)} className={`inline-flex items-center gap-1.5 text-xs font-bold transition-colors ${likedPosts.has(post.id) ? 'text-red-400' : 'text-[var(--color-text-muted)] hover:text-red-400'}`} title={blogT.like}>
-                                                    <Heart className={`w-3.5 h-3.5 ${likedPosts.has(post.id) ? 'fill-red-400' : ''}`} />{getLikes(post)}
+                                                <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.author}><User className="size-3" />{post.author}</span>
+                                                <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]" title={blogT.calendar.title}><Calendar className="size-3" />{new Date(post.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                <button type="button" onClick={() => onToggleLike(post.id)} className={`inline-flex items-center gap-1.5 text-xs font-bold transition-colors ${likedPosts.has(post.id) ? 'text-red-400' : 'text-[var(--color-text-muted)] hover:text-red-400'}`} title={blogT.like}>
+                                                    <Heart className={`size-3.5 ${likedPosts.has(post.id) ? 'fill-red-400' : ''}`} />{getLikes(post)}
                                                 </button>
                                                 {post.tags.map(tag => (
                                                     <LabelBadge

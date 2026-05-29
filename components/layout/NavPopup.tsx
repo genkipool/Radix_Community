@@ -2,6 +2,8 @@
 import { ReactNode, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const EMPTY_HREFS: string[] = [];
+
 interface NavPopupProps {
   trigger: ReactNode;
   children: ReactNode;
@@ -48,7 +50,7 @@ export default function NavPopup({
   children,
   align = 'left',
   width = 'w-72',
-  prefetchHrefs = [],
+  prefetchHrefs = EMPTY_HREFS,
   keepOpenOnTriggerClick = false,
   offsetClass = 'absolute top-[calc(100%-12px)]',
 }: NavPopupProps) {
@@ -67,8 +69,9 @@ export default function NavPopup({
   const handleMouseEnter = () => {
     if (prefetchedRef.current || prefetchHrefs.length === 0) return;
     prefetchedRef.current = true;
+    const { prefetch } = router;
     prefetchHrefs.forEach((href) => {
-      if (!href.startsWith('http')) router.prefetch(href);
+      if (!href.startsWith('http')) prefetch(href);
     });
   };
 

@@ -81,6 +81,7 @@ export function CopyButton({
 
     return (
         <button
+            type="button"
             onClick={handleCopy}
             className={`relative inline-flex items-center justify-center gap-1.5 rounded-lg border font-bold transition-all duration-300 isolate ${padding} ${fontSize} ${currentStyle} ${className}`}
             aria-label={label ?? 'Copy'}
@@ -128,7 +129,9 @@ export function CopyButton({
 }
 
 /** Professional address row with integrated copy feedback */
-export function AddressRow({
+ 
+function _AddressRow({
+     
     address,
     label,
     className = '',

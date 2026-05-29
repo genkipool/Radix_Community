@@ -3,12 +3,12 @@ import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 
 /**
- * GET /api/auth/radix/challenge
+ * POST /api/auth/radix/challenge
  *
  * Generates a one-time ROLA challenge and stores it in Supabase
  * (replaces the in-memory Map that was lost across serverless invocations).
  */
-export async function GET() {
+export async function POST() {
   const challenge = crypto.randomBytes(32).toString('hex');
 
   const { error } = await supabaseAdmin.from('auth_challenges').insert({

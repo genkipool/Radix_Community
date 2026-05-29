@@ -15,19 +15,6 @@ export type EntityDetailsResponse = unknown;
 /** Minimal shape for a non-fungible ID item */
 export type NonFungibleIdItem = unknown;
 
-// ── Ledger state ──────────────────────────────────────────────────────────────
-export async function fetchLedgerState(network: Network = 'mainnet') {
-  const gateway = getGateway(network);
-  try {
-    const res = await withRetry(() => gateway.status.getCurrent());
-    return res.ledger_state;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error({ err: error }, 'Error fetching ledger state: %s', message);
-    return null;
-  }
-}
-
 // ── Entity details ────────────────────────────────────────────────────────────
 
 /**
@@ -109,7 +96,7 @@ export async function fetchNonFungibleDataCached(
     return fetchNonFungibleData(resourceAddress, localIds, network);
 }
 
-export async function fetchNonFungibleData(
+async function fetchNonFungibleData(
     resourceAddress: string,
     localIds: string[],
     network: Network = 'mainnet',
@@ -128,29 +115,6 @@ export async function fetchNonFungibleData(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error({ err: error }, 'Error fetching NFT data: %s', message);
-    return [];
-  }
-}
-
-export async function fetchNonFungibleLocation(
-  resourceAddress: string,
-  localIds: string[],
-  network: Network = 'mainnet',
-): Promise<NonFungibleIdItem[]> {
-  const gateway = getGateway(network);
-  try {
-    const res = await withRetry(() =>
-      gateway.state.innerClient.nonFungibleLocation({
-        stateNonFungibleLocationRequest: {
-          resource_address: resourceAddress,
-          non_fungible_ids: localIds,
-        },
-      }),
-    );
-    return ((res as { non_fungible_ids?: NonFungibleIdItem[] }).non_fungible_ids) || [];
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error({ err: error }, 'Error fetching NFT location: %s', message);
     return [];
   }
 }

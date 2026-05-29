@@ -1,4 +1,4 @@
-import { BlogPost } from '../types';
+import { BlogPost } from '../types/data.types';
 
 /**
  * Filter and sort blog posts based on search query, active tag, and date range.

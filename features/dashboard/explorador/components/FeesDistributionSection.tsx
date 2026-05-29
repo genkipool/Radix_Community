@@ -26,7 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { resolveProposerInfo, findProposerValidator } from '../utils/proposerUtils';
 
 /* ─── Props ──────────────────────────────── */
-import { FeesDistributionSectionProps } from '../types';
+import { FeesDistributionSectionProps } from '../types/components.types';
 
 
 /* ==============================═══════════
@@ -115,15 +115,10 @@ export function FeesDistributionSection({
     const totalFee = parseFloatSafe(tx.feePaid);
 
     const rawEntities = details.affected_global_entities ?? [];
-    const sourcePackages = Array.from(new Set([
-        ...rawEntities
-            .map((e) => sanitizeText(typeof e === 'string' ? e : (e?.address || '')))
-            .filter(addr => addr.startsWith('package_')),
-        ...allFeeChanges
-            .filter(fc => fc.type === 'RoyaltyDistributed')
-            .map(fc => sanitizeText(fc.entity_address || ''))
-            .filter(addr => addr.startsWith('package_'))
-    ]));
+    const sourcePackages = new Set([
+        ...rawEntities.flatMap((e) => { const s = sanitizeText(typeof e === 'string' ? e : (e?.address || '')); return s.startsWith('package_') ? [s] : []; }),
+        ...allFeeChanges.flatMap(fc => { if (fc.type !== 'RoyaltyDistributed') return []; const s = sanitizeText(fc.entity_address || ''); return s.startsWith('package_') ? [s] : []; })
+    ]);
 
     const filteredRoyaltyRecipients = Array.isArray(fdRoyaltyRecipients)
         ? (fdRoyaltyRecipients as RoyaltyRecipientObj[]).filter((r) => {
@@ -134,7 +129,7 @@ export function FeesDistributionSection({
                 r.recipientAddress ??
                 r.recipient_component_address ?? '',
             );
-            return !sourcePackages.includes(addr);
+            return !sourcePackages.has(addr);
         })
         : [];
 
@@ -144,7 +139,7 @@ export function FeesDistributionSection({
             {/* Header */}
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center">
                 <span className="flex items-center gap-2">
-                    <Coins className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <Coins className="size-3.5 text-[var(--color-primary)]" />
                     {tt?.fees_distribution || 'Fees Distributed'}
                 </span>
             </h3>
@@ -154,7 +149,7 @@ export function FeesDistributionSection({
                 {/* ── LEFT: payers + cost breakdown ── */}
                 <div className="flex-1 p-3 bg-red-500/3">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[#ef4444] mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronDown className="w-3 h-3 -rotate-180" />
+                        <ChevronDown className="size-3 -rotate-180" />
                         {tt?.fees_from_label || 'Fees Paid'}
                     </h5>
 
@@ -219,14 +214,14 @@ export function FeesDistributionSection({
                 {/* ── RIGHT: distribution breakdown ── */}
                 <div className="flex-1 p-3 bg-[var(--color-accent)]/3">
                     <h5 className="text-[10px] uppercase font-black tracking-widest text-[var(--color-accent)] mb-3 flex items-center gap-1.5 opacity-80">
-                        <ChevronDown className="w-3 h-3" />
+                        <ChevronDown className="size-3" />
                         {tt?.fees_breakdown || 'Breakdown'}
                     </h5>
 
                     <div className="space-y-2">
                         {finalBurn > 0 && (
                             <FeeRow
-                                icon={<IconFlame className="w-4 h-4 text-orange-600 shrink-0" />}
+                                icon={<IconFlame className="size-4 text-orange-600 shrink-0" />}
                                 label={tt?.fees_burn || 'Burn'} pct="50%"
                                 amount={finalBurn} color="orange"
                                 title={tt?.fees_burn_title || 'XRD permanently removed from total supply.'}
@@ -242,7 +237,7 @@ export function FeesDistributionSection({
                                 title={String(tt?.fees_proposer_title || 'XRD awarded to the validator that proposed this block.')}
                             >
                                 <FeeRowHeader
-                                    icon={<IconMedal className="w-4 h-4 text-blue-600 shrink-0" />}
+                                    icon={<IconMedal className="size-4 text-blue-600 shrink-0" />}
                                     label={tt?.fees_proposer || 'Proposer'} pct="25%"
                                     amount={finalProposer} color="blue"
                                     fmtAmt={fmtAmt}
@@ -251,7 +246,7 @@ export function FeesDistributionSection({
                                     {tt?.fees_proposer_desc || 'XRD awarded to the block proposer validator'}
                                 </p>
                                 {proposerAddr && (
-                                    <div className="mt-2.5 pl-2.5 border-l-2 border-blue-500/40 bg-blue-500/5 py-1 rounded-r-lg">
+                                    <div className="mt-2.5 pl-2.5 border-l border-blue-500/40 bg-blue-500/5 py-1 rounded-r-lg">
                                         <div className="flex items-center justify-between text-[10px] gap-2">
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-[8px] uppercase font-black text-blue-600/60 leading-none">
@@ -274,7 +269,7 @@ export function FeesDistributionSection({
                                 title={String(tt?.fees_validator_title || '25% distributed among the active validator set.')}
                             >
                                 <FeeRowHeader
-                                    icon={<IconBolt className="w-4 h-4 text-green-700 dark:text-green-400 shrink-0" />}
+                                    icon={<IconBolt className="size-4 text-green-700 dark:text-green-400 shrink-0" />}
                                     label={tt?.fees_validator_set || 'Validator Set'} pct="25%"
                                     amount={finalValidator} color="green"
                                     fmtAmt={fmtAmt}
@@ -283,7 +278,7 @@ export function FeesDistributionSection({
                                     {tt?.fees_validator_set_desc || 'XRD distributed among the validator set'}
                                 </p>
                                 {fdValShares.length > 0 && (
-                                    <div className="mt-2.5 space-y-1.5 pl-2.5 border-l-2 border-green-500/40 bg-green-500/3 py-1.5 rounded-r-lg">
+                                    <div className="mt-2.5 space-y-1.5 pl-2.5 border-l border-green-500/40 bg-green-500/3 py-1.5 rounded-r-lg">
                                         <span className="text-[8px] uppercase font-black text-green-700/70 dark:text-green-400/80 block mb-1">
                                             {tt?.fees_top_recipients || 'Top Recipients'}
                                         </span>
@@ -317,7 +312,7 @@ export function FeesDistributionSection({
                                 title={String(tt?.fees_royalty_title || '100% to royalty recipients.')}
                             >
                                 <FeeRowHeader
-                                    icon={<IconGem className="w-4 h-4 text-purple-600 shrink-0" />}
+                                    icon={<IconGem className="size-4 text-purple-600 shrink-0" />}
                                     label={tt?.fees_royalty || 'Royalties'} pct="100%"
                                     amount={royaltyAmt} color="purple"
                                     fmtAmt={fmtAmt}
@@ -338,7 +333,7 @@ export function FeesDistributionSection({
                                     </div>
                                 )}
                                 {filteredRoyaltyRecipients.length > 0 && (
-                                    <div className="mt-4 space-y-1.5 pl-2.5 border-l-2 border-purple-500/40 bg-purple-500/3 py-1.5 rounded-r-lg">
+                                    <div className="mt-4 space-y-1.5 pl-2.5 border-l border-purple-500/40 bg-purple-500/3 py-1.5 rounded-r-lg">
                                         <span className="text-[8px] uppercase font-black text-purple-600/60 block mb-1">
                                             {tt?.fees_recipients || 'Recipients'}
                                         </span>
@@ -374,11 +369,11 @@ export function FeesDistributionSection({
             <div className="p-4 bg-[var(--color-surface)] border-t border-[var(--color-card-border)] text-xs text-[var(--color-text-muted)] font-mono uppercase tracking-tight">
                 <div className="flex flex-wrap items-center justify-center gap-y-2 gap-x-6">
 
-                    {finalBurn > 0 && <FooterItem icon={<IconFlame className="w-3.5 h-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt?.fees_burn || 'Burn'} />}
-                    {finalProposer > 0 && <FooterItem icon={<IconMedal className="w-3.5 h-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt?.fees_proposer || 'Proposer'} />}
-                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt?.fees_validator_set || 'Validator'} />}
-                    {tippingAmt > 0 && <FooterItem icon={<IconTip className="w-3.5 h-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt?.fees_tips || 'Tips'} />}
-                    {royaltyAmt > 0 && <FooterItem icon={<IconGem className="w-3.5 h-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt?.fees_royalty || 'Royalties'} />}
+                    {finalBurn > 0 && <FooterItem icon={<IconFlame className="size-3.5 text-orange-600" />} value={fmtAmt(finalBurn)} color="text-orange-600" label={tt?.fees_burn || 'Burn'} />}
+                    {finalProposer > 0 && <FooterItem icon={<IconMedal className="size-3.5 text-blue-600" />} value={fmtAmt(finalProposer)} color="text-blue-600" label={tt?.fees_proposer || 'Proposer'} />}
+                    {finalValidator > 0 && <FooterItem icon={<IconBolt className="size-3.5 text-green-700 dark:text-green-400" />} value={fmtAmt(finalValidator)} color="text-green-700 dark:text-green-400" label={tt?.fees_validator_set || 'Validator'} />}
+                    {tippingAmt > 0 && <FooterItem icon={<IconTip className="size-3.5 text-[var(--color-accent)]" />} value={fmtAmt(tippingAmt)} color="text-[var(--color-accent)]" label={tt?.fees_tips || 'Tips'} />}
+                    {royaltyAmt > 0 && <FooterItem icon={<IconGem className="size-3.5 text-purple-600" />} value={fmtAmt(royaltyAmt)} color="text-purple-600" label={tt?.fees_royalty || 'Royalties'} />}
                     <div className="h-4 w-px bg-[var(--color-card-border)] mx-1 hidden md:block" />
                     <span className="flex items-center gap-1.5 font-black text-[var(--color-text-main)]">
                         {tt?.fees_total || 'Total'}: <span className="text-amber-600 text-xs">{fmtAmt(totalFee)} XRD</span>
@@ -443,14 +438,13 @@ function CopyIconBtn({
         <button
             type="button"
             onClick={e => { e.stopPropagation(); onCopy(address); }}
-            className={`p-1 rounded transition-colors ${
-                isGhost 
-                ? 'bg-transparent border-none' 
+            className={`p-1 rounded transition-colors ${isGhost
+                ? 'bg-transparent border-none'
                 : 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm'
-            } ${copiedAddress === address ? 'text-[var(--color-accent)]' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
+                } ${copiedAddress === address ? 'text-[var(--color-accent)]' : `text-[var(--color-text-muted)] ${groupHide ? 'opacity-0 group-hover/vs:opacity-100' : ''} hover:text-[var(--color-text-main)]`
                 }`}
         >
-            {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+            {copiedAddress === address ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
         </button>
     );
 }

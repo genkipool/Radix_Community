@@ -99,6 +99,7 @@ export async function fetchEpochRewardEvents(
     const items = data.items ?? [];
     const allEvents: EpochRewardEntry[] = [];
     const epochs: number[] = [];
+    const _epochsSeen = new Set<number>();
     let latestStateVersion = 0;
 
     for (const item of items) {
@@ -123,7 +124,7 @@ export async function fetchEpochRewardEvents(
             const proposalsMade = parseInt(getValue('proposals_made'), 10);
             const proposalsMissed = parseInt(getValue('proposals_missed'), 10);
 
-            if (!epochs.includes(epoch)) epochs.push(epoch);
+            if (!_epochsSeen.has(epoch)) { _epochsSeen.add(epoch); epochs.push(epoch); }
 
             allEvents.push({
                 epoch,
@@ -239,7 +240,7 @@ export async function syncRewardsToRedis(
     pipeline.set(REDIS_REWARDS_ALL, allData);
 
     // Store last 6 epochs reward data for the epoch history table
-    const epochNumbers = [...processedEpochs].sort((a, b) => b - a);
+    const epochNumbers = processedEpochs.toSorted((a, b) => b - a);
     if (epochNumbers.length > 0) {
         // Build per-epoch map: { epoch -> { address -> { fee, pool } } }
         const epochMap: Record<number, Record<string, { fee: number; pool: number }>> = {};

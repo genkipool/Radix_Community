@@ -19,7 +19,7 @@ import { usePersistentExpandSet } from '@/hooks/usePersistentExpandSet';
 import { INFRA_LAYERS } from './data/infrastructureData';
 import { AutoCollapseToggle } from '@/components/ui/AutoCollapseToggle';
 import type { InfraPageType } from './types/i18n.types';
-import type { 
+import type {
   InfrastructureClientProps,
   ItemCardProps,
   LayerCardProps
@@ -52,9 +52,9 @@ function ItemCard({ item, layerGradient, title, description, searchQuery, index:
     <div className="group h-full rounded-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] p-5 hover:border-[var(--color-primary)]/30 hover:shadow-md transition-all duration-300">
       <div className="flex items-start gap-4">
         <div
-          className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${layerGradient} shadow-sm`}
+          className={`shrink-0 size-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${layerGradient} shadow-sm`}
         >
-          <Icon name={item.icon} className="w-5 h-5 text-white" />
+          <Icon name={item.icon} className="size-5 text-white" />
         </div>
         <div className="min-w-0">
           <h4 className="text-sm font-bold text-[var(--color-text-main)] mb-1 group-hover:text-[var(--color-primary)] transition-colors">
@@ -85,9 +85,9 @@ function LayerCard({ layer, isExpanded, onToggle, layerT, searchQuery, index }: 
         >
           {/* Layer number */}
           <div
-            className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${layer.gradient} shadow-md`}
+            className={`shrink-0 size-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${layer.gradient} shadow-md`}
           >
-            <Icon name={layer.icon} className="w-6 h-6 text-white" />
+            <Icon name={layer.icon} className="size-6 text-white" />
           </div>
 
           {/* Titles */}
@@ -108,13 +108,13 @@ function LayerCard({ layer, isExpanded, onToggle, layerT, searchQuery, index }: 
           </div>
 
           {/* Item count badge */}
-          <span className="hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-full bg-[var(--color-bg)] border border-[var(--color-card-border)] text-[10px] font-black text-[var(--color-text-muted)]">
+          <span className="hidden sm:flex shrink-0 items-center justify-center size-7 rounded-full bg-[var(--color-bg)] border border-[var(--color-card-border)] text-[10px] font-black text-[var(--color-text-muted)]">
             {layer.items.length}
           </span>
 
           {/* Chevron */}
           <ChevronDown
-            className={`shrink-0 w-5 h-5 text-[var(--color-text-muted)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            className={`shrink-0 size-5 text-[var(--color-text-muted)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -268,8 +268,8 @@ export default function InfrastructureClient({
                 className={`${btnBase} ${allExpanded ? btnActive : btnInactive}`}
               >
                 {allExpanded
-                  ? <FoldVertical className="w-4 h-4" />
-                  : <UnfoldVertical className="w-4 h-4" />
+                  ? <FoldVertical className="size-4" />
+                  : <UnfoldVertical className="size-4" />
                 }
               </button>
 

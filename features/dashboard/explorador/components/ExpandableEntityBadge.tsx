@@ -41,7 +41,9 @@ import {
 } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { AccountTokensTab, AccountNftsTab, AccountPoolUnitsTab } from './AccountAssetsTabs';
-import { AccountStakingTab } from './AccountStakingTab';
+const AccountStakingTab = React.lazy(() =>
+    import('./AccountStakingTab').then(m => ({ default: m.AccountStakingTab }))
+);
 import { AccountTransactionsTab } from './AccountTransactionsTab';
 import { useAccountStats } from '../hooks/useAccountStats';
 import type {
@@ -195,8 +197,8 @@ export function ExpandableEntityBadge({
     const entityName = meta?.name;
     const iconUrl = meta?.iconUrl;
     const isResourceCard = variant === 'resource-card';
-    const short = clean.length > 20 
-        ? (isResourceCard ? `${clean.slice(0, 10)}...${clean.slice(-6)}` : `${clean.slice(0, 12)}...${clean.slice(-6)}`) 
+    const short = clean.length > 20
+        ? (isResourceCard ? `${clean.slice(0, 10)}...${clean.slice(-6)}` : `${clean.slice(0, 12)}...${clean.slice(-6)}`)
         : clean;
 
     const wellKnownKey = getWellKnownKey(clean, network);
@@ -250,7 +252,7 @@ export function ExpandableEntityBadge({
                         </span>
                     )}
                     {iconUrl && (
-                        <div className={`${isResourceCard ? 'w-8 h-8' : 'w-6 h-6'} rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)] shadow-sm`}>
+                        <div className={`${isResourceCard ? 'size-8' : 'size-6'} rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)] shadow-sm`}>
                             <SafeImage
                                 src={iconUrl}
                                 alt={entityName || 'Token'}
@@ -287,8 +289,8 @@ export function ExpandableEntityBadge({
                                     title="Copy address"
                                 >
                                     {copiedAddress === clean
-                                        ? <Check className="w-2.5 h-2.5" />
-                                        : <Copy className="w-2.5 h-2.5" />}
+                                        ? <Check className="size-2.5" />
+                                        : <Copy className="size-2.5" />}
                                 </button>
                             )}
                         </div>
@@ -347,7 +349,7 @@ export function ExpandableEntityBadge({
                             className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                             title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
                         >
-                            <Download className="w-3 h-3" />
+                            <Download className="size-3" />
                         </button>
                     )}
                     {!isResourceCard && (
@@ -361,12 +363,12 @@ export function ExpandableEntityBadge({
                             title="Copy address"
                         >
                             {copiedAddress === clean
-                                ? <Check className="w-3 h-3" />
-                                : <Copy className="w-3 h-3" />}
+                                ? <Check className="size-3" />
+                                : <Copy className="size-3" />}
                         </button>
                     )}
                     <ChevronDown
-                        className={`${isResourceCard ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
+                        className={`${isResourceCard ? 'size-4' : 'size-3.5'} text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`}
                     />
                 </div>
             </div>
@@ -448,17 +450,19 @@ export function ExpandableEntityBadge({
 
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
-                                            <AccountStakingTab
-                                                address={address}
-                                                stakingRows={stakingRows}
-                                                tt={tt}
-                                                onCopy={onCopy}
-                                                copiedAddress={copiedAddress}
-                                                network={network}
-                                                locale={locale}
-                                                marketData={marketData}
-                                                dt={dt}
-                                            />
+                                            <React.Suspense fallback={<div className="p-4 text-xs text-[var(--color-text-muted)]">Loading staking…</div>}>
+                                                <AccountStakingTab
+                                                    address={address}
+                                                    stakingRows={stakingRows}
+                                                    tt={tt}
+                                                    onCopy={onCopy}
+                                                    copiedAddress={copiedAddress}
+                                                    network={network}
+                                                    locale={locale}
+                                                    marketData={marketData}
+                                                    dt={dt}
+                                                />
+                                            </React.Suspense>
                                         )}
 
                                         {/* ── TOKENS ── */}
@@ -649,7 +653,7 @@ function EntitySummaryTab({
                 <>
                     <div className="flex items-center gap-3 mb-3">
                         {iconUrl && (
-                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
+                            <div className="size-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
                                 <SafeImage
                                     src={iconUrl}
                                     alt={entityName || address}
@@ -683,10 +687,11 @@ function EntitySummaryTab({
                                     {address.startsWith('pool_') ? address : `${address.slice(0, 14)}...${address.slice(-6)}`}
                                 </span>
                                 <button
+                                    type="button"
                                     onClick={(e) => { e.stopPropagation(); onCopy(address); }}
                                     className={`p-0.5 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
-                                    {copiedAddress === address ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                    {copiedAddress === address ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                 </button>
                             </div>
                         </div>
@@ -720,10 +725,11 @@ function EntitySummaryTab({
                                 {packageAddress.length > 20 ? `${packageAddress.slice(0, 12)}...${packageAddress.slice(-6)}` : packageAddress}
                             </span>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(packageAddress); }}
                                 className={`p-0.5 rounded transition-colors ${copiedAddress === packageAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
-                                {copiedAddress === packageAddress ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                {copiedAddress === packageAddress ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                             </button>
                         </div>
                     </SummaryInlineRow>
@@ -774,10 +780,11 @@ function EntitySummaryTab({
                                 {poolUnit.length > 20 ? `${poolUnit.slice(0, 12)}...${poolUnit.slice(-6)}` : poolUnit}
                             </span>
                             <button
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(poolUnit); }}
                                 className={`p-0.5 rounded transition-colors ${copiedAddress === poolUnit ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                             >
-                                {copiedAddress === poolUnit ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                                {copiedAddress === poolUnit ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                             </button>
                         </div>
                     </SummaryInlineRow>
@@ -849,7 +856,7 @@ function EntitySummaryTab({
                                     <div key={resAddr} className="flex flex-col gap-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             {resIcon && (
-                                                <SafeImage src={resIcon} alt={resName} fallbackName={resName} className="w-5 h-5 rounded-lg object-cover bg-white/10 shrink-0" />
+                                                <SafeImage src={resIcon} alt={resName} fallbackName={resName} className="size-5 rounded-lg object-cover bg-white/10 shrink-0" />
                                             )}
                                             <span className="text-[10px] text-[var(--color-text-main)] truncate" title={resName}>{resName}</span>
                                         </div>
@@ -858,10 +865,11 @@ function EntitySummaryTab({
                                                 {resAddr.length > 16 ? `${resAddr.slice(0, 16)}...${resAddr.slice(-4)}` : resAddr}
                                             </span>
                                             <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
                                                 className={`p-0.5 rounded transition-colors shrink-0 ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                             >
-                                                {copiedAddress === resAddr ? <Check className="w-2 h-2" /> : <Copy className="w-2 h-2" />}
+                                                {copiedAddress === resAddr ? <Check className="size-2" /> : <Copy className="size-2" />}
                                             </button>
                                         </div>
                                     </div>
@@ -881,10 +889,11 @@ function EntitySummaryTab({
                                         {resAddr.length > 16 ? `${resAddr.slice(0, 8)}...${resAddr.slice(-4)}` : resAddr}
                                     </span>
                                     <button
+                                        type="button"
                                         onClick={(e) => { e.stopPropagation(); onCopy(resAddr); }}
                                         className={`p-0.5 rounded transition-colors ${copiedAddress === resAddr ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                     >
-                                        {copiedAddress === resAddr ? <Check className="w-2 h-2" /> : <Copy className="w-2 h-2" />}
+                                        {copiedAddress === resAddr ? <Check className="size-2" /> : <Copy className="size-2" />}
                                     </button>
                                 </div>
                             ))}
@@ -899,8 +908,8 @@ function EntitySummaryTab({
                             {tt?.resource_panel_tags || 'Tags'}
                         </dt>
                         <dd className="flex flex-wrap gap-1 pl-4 pt-1">
-                            {tags.map((tag, i) => (
-                                <Pill key={i}>{tag}</Pill>
+                            {tags.map((tag) => (
+                                <Pill key={tag}>{tag}</Pill>
                             ))}
                         </dd>
                     </div>

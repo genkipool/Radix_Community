@@ -14,12 +14,12 @@ export default function Wallet({ t }: BaseSectionProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <ScrollReveal from={{ opacity: 0, x: -50 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/30 text-sm font-medium text-[var(--color-secondary)] mb-6">
-              <Smartphone className="w-4 h-4 text-[var(--color-secondary)]" />
+              <Smartphone className="size-4 text-[var(--color-secondary)]" />
               {t.wallet.label}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-[var(--color-text-main)] mb-6 tracking-tight">
               {t.wallet.h2a}<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)]">{t.wallet.h2b}</span>
+              <span className="text-white">{t.wallet.h2b}</span>
             </h2>
             <p className="text-xl text-[var(--color-text-muted)] mb-10 leading-relaxed">
               {t.wallet.sub}
@@ -28,13 +28,13 @@ export default function Wallet({ t }: BaseSectionProps) {
             <div className="space-y-8 mb-10">
               {/* Features using reusable IconFeatureItem component */}
               {[
-                { icon: <Ban className="w-6 h-6 text-[var(--color-primary)]" />, title: t.wallet.features[0].title, desc: t.wallet.features[0].desc },
-                { icon: <Monitor className="w-6 h-6 text-[var(--color-secondary)]" />, title: t.wallet.features[1].title, desc: t.wallet.features[1].desc },
-                { icon: <Shield className="w-6 h-6 text-[var(--color-accent)]" />, title: t.wallet.features[2].title, desc: t.wallet.features[2].desc },
-                { icon: <BadgeCheck className="w-6 h-6 text-[var(--color-primary)]" />, title: t.wallet.features[3].title, desc: t.wallet.features[3].desc },
-                { icon: <KeyRound className="w-6 h-6 text-[var(--color-secondary)]" />, title: t.wallet.features[4].title, desc: t.wallet.features[4].desc }
+                { icon: <Ban className="size-6 text-[var(--color-primary)]" />, title: t.wallet.features[0].title, desc: t.wallet.features[0].desc },
+                { icon: <Monitor className="size-6 text-[var(--color-secondary)]" />, title: t.wallet.features[1].title, desc: t.wallet.features[1].desc },
+                { icon: <Shield className="size-6 text-[var(--color-accent)]" />, title: t.wallet.features[2].title, desc: t.wallet.features[2].desc },
+                { icon: <BadgeCheck className="size-6 text-[var(--color-primary)]" />, title: t.wallet.features[3].title, desc: t.wallet.features[3].desc },
+                { icon: <KeyRound className="size-6 text-[var(--color-secondary)]" />, title: t.wallet.features[4].title, desc: t.wallet.features[4].desc }
               ].map((feature, i) => (
-                <div key={i}>
+                <div key={`wallet-feature-${i}`}>
                   <IconFeatureItem
                     icon={feature.icon}
                     title={feature.title}
@@ -58,7 +58,7 @@ export default function Wallet({ t }: BaseSectionProps) {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-full text-center">
                       {t.wallet.btnIOS}
                     </span>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 size-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
                   </div>
                 </div>
               </div>
@@ -76,7 +76,7 @@ export default function Wallet({ t }: BaseSectionProps) {
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap w-full text-center">
                       {t.wallet.btnAndroid}
                     </span>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 size-4 bg-white rotate-45 border-b border-r border-gray-100"></div>
                   </div>
                 </div>
               </div>

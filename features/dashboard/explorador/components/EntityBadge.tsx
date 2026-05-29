@@ -28,11 +28,11 @@ export function ConsensusManagerInfoCard({ tt }: { tt?: Partial<TranslationsT['d
                 onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-blue-500/10 transition-colors"
             >
-                <Shield className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <Shield className="size-3.5 text-blue-400 shrink-0" />
                 <span className="text-[11px] font-bold text-blue-300 flex-1">
                     {String(tt?.consensus_manager_badge || 'System Component')}
                 </span>
-                <Info className="w-3 h-3 text-blue-400/60" />
+                <Info className="size-3 text-blue-400/60" />
             </button>
             <AnimatePresence>
                 {open && (
@@ -103,7 +103,7 @@ export function AddressDisplay({
             )}
             <div className="flex items-center gap-2">
                 {entityIcon && (
-                    <SafeImage src={entityIcon} alt={entityName || address} fallbackName={entityName || address} className="w-5 h-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" />
+                    <SafeImage src={entityIcon} alt={entityName || address} fallbackName={entityName || address} className="size-5 rounded-full shrink-0 border border-[var(--color-card-border)] bg-white/10 object-cover" />
                 )}
 
                 <div className="flex flex-col min-w-0">
@@ -125,7 +125,7 @@ export function AddressDisplay({
                                 className="hover:text-[var(--color-primary)] transition-colors shrink-0 text-[var(--color-text-muted)]"
                                 title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards || 'Download Rewards'}
                             >
-                                <Download className="w-3 h-3" />
+                                <Download className="size-3" />
                             </button>
                         )}
                         <button
@@ -135,8 +135,8 @@ export function AddressDisplay({
                             title="Copy Address"
                         >
                             {copiedAddress === copyableAddr
-                                ? <Check className="w-3 h-3 text-green-500" />
-                                : <Copy className="w-3 h-3" />}
+                                ? <Check className="size-3 text-green-500" />
+                                : <Copy className="size-3" />}
                         </button>
                     </div>
                 </div>
@@ -201,7 +201,7 @@ export function EntityBadge({
                         src={iconUrl}
                         alt={entityName || 'Token'}
                         fallbackName={entityName || 'Token'}
-                        className="w-6 h-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
+                        className="size-6 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0"
                     />
                 )}
                 {!hideLabel && (
@@ -238,8 +238,8 @@ export function EntityBadge({
                 title="Copy address"
             >
                 {copiedAddress === clean
-                    ? <Check className="w-3 h-3" />
-                    : <Copy className="w-3 h-3" />}
+                    ? <Check className="size-3" />
+                    : <Copy className="size-3" />}
             </button>
         </div>
     );
