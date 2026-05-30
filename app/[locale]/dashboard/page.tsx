@@ -94,10 +94,14 @@ interface DashboardPageProps {
  * so the server render matches the user's last session exactly.
  */
 export default async function DashboardPage({ searchParams, params }: DashboardPageProps) {
-  const [{ locale }, searchParamsResolved, cookieStore, headerStore] = await Promise.all([
-    params, searchParams, cookies(), headers()
+  const p = await params;
+  const locale = p.locale;
+  const [searchParamsResolved, cookieStore, headerStore, t] = await Promise.all([
+    searchParams,
+    cookies(),
+    headers(),
+    getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador'])
   ]);
-  const t = await getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador']);
   const initialView = (searchParamsResolved.view === 'transactions' || searchParamsResolved.tx) ? 'transactions' : 'staking';
   const network = (searchParamsResolved.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
 

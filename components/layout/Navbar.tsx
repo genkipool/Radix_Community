@@ -5,7 +5,7 @@ import {
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
   User, RefreshCcw, LogOut
 } from 'lucide-react';
-import { useState, useEffect, useTransition, useRef, ReactNode } from 'react';
+import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { UnderConstructionModal } from '@/components/shared/UnderConstructionModal';
@@ -604,60 +604,18 @@ const INITIAL_UI: UiState = {
   optimisticLang: null,
 };
 
-// ─── Mobile Menu ──────────────────────────────────────────────────
-function MobileMenu({
-  isOpen, language, pathname, t, onClose, onHashClick
-}: {
-  isOpen: boolean; language: string; pathname: string;
-  t: ReturnType<typeof useLanguage>['t']; onClose: () => void;
-  onHashClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
-}) {
-  if (!isOpen) return null;
-  const localizeNavHref = (path: string, isHashLink: boolean) =>
-    isHashLink ? `/${language}${path.slice(1)}` : path.startsWith('/') ? `/${language}${path === '/' ? '' : path}` : path;
-
-  return (
-    <div className="md:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg">
-      <div className="px-4 py-3 space-y-0.5">
-        {NAV_LINKS.map((link) => {
-          const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
-          const popupItems = NAV_POPUP_ITEMS[link.key];
-          const isHashLink = link.path.startsWith('/#');
-          const linkHref = localizeNavHref(link.path, isHashLink);
-          return (
-            <div key={link.key}>
-              <Link href={linkHref}
-                className="block px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-accent)] rounded-lg hover:bg-[var(--color-surface)] transition-colors"
-                onClick={(e) => { if (isHashLink) onHashClick(e, linkHref); else if (!popupItems) onClose(); }}
-              >{label}</Link>
-              {popupItems && (
-                <div className="pl-4 mt-0.5 space-y-0.5 mb-1.5">
-                  {popupItems.map((sub) => {
-                    const subLabel = (t.nav as Record<string, string>)[sub.key] ?? sub.key;
-                    const subHref = sub.href.startsWith('/') ? `/${language}${sub.href === '/' ? '' : sub.href}` : sub.href;
-                    return (
-                      <Link key={sub.key} href={subHref} onClick={() => onClose()}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer"
-                      >
-                        <span className="opacity-60">{sub.icon}</span>
-                        {subLabel}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export default function Navbar() {
   const { theaterMode } = useLayout();
   const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
   const [ui, dispatch] = useReducer(uiReducer, INITIAL_UI);
+  const { isOpen, isWalletProfileModalOpen, isUnderConstructionModalOpen, mobileSheet, optimisticLang } = ui;
+  const setIsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
+    if (typeof value === 'function') {
+      dispatch({ type: 'TOGGLE_MENU' });
+    } else {
+      dispatch({ type: 'SET_MENU', value });
+    }
+  };
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { theme, setTheme } = useTheme();
   const { language, t } = useLanguage();
@@ -713,9 +671,9 @@ export default function Navbar() {
 
   const switchToLanguage = (targetLang: string) => {
     if (targetLang === language) return;
-    (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(targetLang);
+    dispatch({ type: 'SET_OPTIMISTIC_LANG', value: targetLang });
     setCookie('lang', targetLang);
-    const timeout = setTimeout(() => { (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(null); }, 5000);
+    const timeout = setTimeout(() => { dispatch({ type: 'SET_OPTIMISTIC_LANG', value: null }); }, 5000);
     // Read current search string directly — this handler only runs on user
     // interaction (client-side), so window is always available here.
     const search = window.location.search;
@@ -724,7 +682,7 @@ export default function Navbar() {
         ? pathname.replace(`/${language}`, `/${targetLang}`) + search
         : `/${targetLang}${search}`;
       startLangTransition(() => { replace(nextPath, { scroll: false }); });
-    } catch { clearTimeout(timeout); (v) => dispatch({ type: 'SET_OPTIMISTIC_LANG', value: v })(null); }
+    } catch { clearTimeout(timeout); dispatch({ type: 'SET_OPTIMISTIC_LANG', value: null }); }
   };
 
   const cycleTheme = () => {
@@ -850,7 +808,7 @@ export default function Navbar() {
                     trigger={
                       <button
                         type="button"
-                        onClick={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true)}
+                        onClick={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
                         aria-label="Wallet Settings"
                         className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-[44px] rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0 px-4 shadow-sm"
                       >
@@ -887,8 +845,8 @@ export default function Navbar() {
                       networkId={networkId}
                       personaName={persona?.label}
                       t={t}
-                      onOpenProfileModal={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true)}
-                      onOpenUnderConstruction={() => (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(true)}
+                      onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
+                      onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
                       switchNetwork={switchNetwork}
@@ -945,7 +903,7 @@ export default function Navbar() {
                 onTouchStart={(e) => {
                   longPressRef.current = setTimeout(() => {
                     e.preventDefault();
-                    (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })('lang');
+                    dispatch({ type: 'SET_MOBILE_SHEET', value: 'lang' });
                   }, 450);
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
@@ -961,7 +919,7 @@ export default function Navbar() {
                 onTouchStart={(e) => {
                   longPressRef.current = setTimeout(() => {
                     e.preventDefault();
-                    (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })('theme');
+                    dispatch({ type: 'SET_MOBILE_SHEET', value: 'theme' });
                   }, 450);
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
@@ -1049,7 +1007,7 @@ export default function Navbar() {
                         type="button"
                         onClick={() => {
                           setIsOpen(false);
-                          (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true);
+                          dispatch({ type: 'SET_PROFILE_MODAL', value: true });
                         }}
                         aria-label="Wallet Settings"
                         className="flex items-center justify-center w-full min-w-[200px] h-12 text-sm font-bold bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] rounded-xl px-4 shadow-sm"
@@ -1089,11 +1047,11 @@ export default function Navbar() {
                       t={t}
                       onOpenProfileModal={() => {
                         setIsOpen(false);
-                        (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(true);
+                        dispatch({ type: 'SET_PROFILE_MODAL', value: true });
                       }}
                       onOpenUnderConstruction={() => {
                         setIsOpen(false);
-                        (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(true);
+                        dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true });
                       }}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
@@ -1155,20 +1113,20 @@ export default function Navbar() {
 
       <WalletProfileModal
         isOpen={isWalletProfileModalOpen}
-        onClose={() => (v) => dispatch({ type: 'SET_PROFILE_MODAL', value: v })(false)}
+        onClose={() => dispatch({ type: 'SET_PROFILE_MODAL', value: false })}
         t={t}
         locale={language}
       />
 
       <UnderConstructionModal
         isOpen={isUnderConstructionModalOpen}
-        onClose={() => (v) => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: v })(false)}
+        onClose={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: false })}
         t={t}
       />
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (
-        <div aria-label="Close" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden" onClick={() => (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null)}>
+        <button type="button" aria-label="Close" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden w-full text-left" onClick={() => dispatch({ type: 'SET_MOBILE_SHEET', value: null })}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             className="relative bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-3xl shadow-2xl mt-[20vh] mx-4 overflow-hidden"
@@ -1190,7 +1148,7 @@ export default function Navbar() {
                       key={opt.key}
                       opt={opt}
                       isActive={theme === opt.key}
-                      onClick={() => { setTheme(opt.key); (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null); }}
+                      onClick={() => { setTheme(opt.key); dispatch({ type: 'SET_MOBILE_SHEET', value: null }); }}
                       nav={t.nav as Record<string, string>}
                     />
                   ))}
@@ -1209,7 +1167,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       key={code}
-                      onClick={() => { switchToLanguage(code); (v) => dispatch({ type: 'SET_MOBILE_SHEET', value: v })(null); }}
+                      onClick={() => { switchToLanguage(code); dispatch({ type: 'SET_MOBILE_SHEET', value: null }); }}
                       className={[
                         'w-full flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-colors mb-1',
                         isActive
@@ -1226,7 +1184,7 @@ export default function Navbar() {
               </div>
             )}
           </div>
-        </div>
+        </button>
       )}
     </>
   );

@@ -80,7 +80,7 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
             </div>
 
             {/* Mobile variant */}
-            <div
+            <button type="button"
                 className="flex sm:hidden items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] shadow-sm hover:border-[var(--color-primary)]/40 transition-all overflow-hidden cursor-pointer"
                 onClick={mobileToggle}
                 title={`Mobile Grid ${isMobileGrid1 ? 1 : 2}`}
@@ -91,7 +91,7 @@ export function GridToggle({ columns, onChange, label, min = 1, max = 8 }: GridT
                 <div className="pl-1.5 pr-3 py-2 border-l border-[var(--color-card-border)]/30">
                     <span className="text-xs font-black w-3 text-center block">{isMobileGrid1 ? 1 : 2}</span>
                 </div>
-            </div>
+            </button>
         </>
     );
 }

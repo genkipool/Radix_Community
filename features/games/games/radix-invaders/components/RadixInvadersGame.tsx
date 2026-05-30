@@ -292,11 +292,12 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
 
   useEffect(() => {
     const t1 = setTimeout(() => dispatch({ type: 'SHOW' }), 100);
+    let t3: ReturnType<typeof setTimeout>;
     const t2 = setTimeout(() => {
       dispatch({ type: 'FADE' });
-      setTimeout(onReady, 400);
+      t3 = setTimeout(onReady, 400);
     }, 3500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [onReady]);
 
   const aliens: Array<{ type: 0 | 1 | 2; pts: number; label: string }> = [
@@ -306,7 +307,7 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
   ];
 
   return (
-    <div
+    <button type="button"
       onClick={onReady}
       style={{
         width: '100%', height: '100%',
@@ -320,6 +321,7 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
         opacity: state.phase === 1 ? 0 : state.visible ? 1 : 0,
         transition: 'opacity 0.4s ease',
         position: 'relative', overflow: 'hidden',
+        border: 'none', textAlign: 'center',
       }}
     >
 
@@ -389,11 +391,11 @@ function AlienIntroScreen({ t, onReady }: { t: Record<string, string>; onReady: 
           </div>
         </div>
 
-        <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em', animation: 'si-glow 0.8s ease-in-out infinite' }}>
+        <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.05em', animation: 'si-glow 0.8s ease-in-out infinite' }}>
           {t.alien_intro_click ?? 'CLICK TO START'}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -448,7 +450,7 @@ function IntroScreen({ t, lang, onTournament, onFun }: {
         {/* Tournament panel */}
         <div style={{ width: '100%', border: '1px solid rgba(0,229,255,0.35)', borderRadius: 16, background: 'rgba(0,229,255,0.04)', backdropFilter: 'blur(8px)', padding: '18px 22px', marginBottom: 16, animation: 'si-slidein 0.5s ease both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, justifyContent: 'center' }}>
-            <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid #ffd700', borderRadius: 6, padding: '3px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#ffd700' }}>
+            <span style={{ background: 'rgba(255,215,0,0.12)', border: '1px solid #ffd700', borderRadius: 6, padding: '3px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#ffd700' }}>
               {t.tournament_label ?? 'ACTIVE TOURNAMENT'}
             </span>
           </div>

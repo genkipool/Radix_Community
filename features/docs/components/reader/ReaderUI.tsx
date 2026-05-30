@@ -6,8 +6,8 @@ import { Hash } from 'lucide-react';
 import { Highlight } from '../DocsSidebar';
 import type { ReaderTocItemProps, ActionButtonProps, DocSectionProps, DocCalloutProps } from '../../types/components.types';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function ActionButton({ children, title, onClick }: ActionButtonProps) {
+
+function _ActionButton({ children, title, onClick }: ActionButtonProps) {
   return (
     <button
       type="button"

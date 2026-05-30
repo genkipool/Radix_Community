@@ -321,28 +321,30 @@ function extractRuleAddress(rule: unknown): string | null {
  * Recursively parses complex programmatic_json metadata structures into standard JS values.
  * Useful for extracting arrays (like owner_keys) or deep nested object entries from Gateway metadata.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseProgrammaticJson(json: any): any {
+
+export function parseProgrammaticJson(json: unknown): unknown {
     if (!json) return null;
     if (typeof json !== 'object') return json;
 
-    if (json.value !== undefined) return json.value;
-    if (json.hex !== undefined) return json.hex;
+    const jsonObj = json as Record<string, unknown>;
+
+    if (jsonObj.value !== undefined) return jsonObj.value;
+    if (jsonObj.hex !== undefined) return jsonObj.hex;
 
     // Handle Gateway-specific key/hash pairs (like owner_keys)
-    const typeKey = json.key_hash_type || json.key_type || json.hash_type;
-    const hexKey = json.hash_hex || json.key_hex || json.hex;
+    const typeKey = jsonObj.key_hash_type || jsonObj.key_type || jsonObj.hash_type;
+    const hexKey = jsonObj.hash_hex || jsonObj.key_hex || jsonObj.hex;
     if (typeKey && hexKey) {
         return `${typeKey}(${hexKey})`;
     }
 
-    if (json.elements) {
-        return json.elements.map(parseProgrammaticJson);
+    if (Array.isArray(jsonObj.elements)) {
+        return jsonObj.elements.map(parseProgrammaticJson);
     }
 
-    if (json.fields) {
-        const parsedFields = json.fields.map(parseProgrammaticJson);
-        const name = json.variant_name;
+    if (Array.isArray(jsonObj.fields)) {
+        const parsedFields = jsonObj.fields.map(parseProgrammaticJson);
+        const name = jsonObj.variant_name as string | undefined;
 
         if (name) {
             if (parsedFields.length === 1) return `${name}(${parsedFields[0]})`;
@@ -351,20 +353,21 @@ export function parseProgrammaticJson(json: any): any {
         return parsedFields.length === 1 ? parsedFields[0] : parsedFields;
     }
 
-    if (json.entries) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const obj: any = {};
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        json.entries.forEach((e: any) => {
-            const key = parseProgrammaticJson(e.key);
-            const val = parseProgrammaticJson(e.value);
+    if (Array.isArray(jsonObj.entries)) {
+        
+        const obj: Record<string, unknown> = {};
+        
+        jsonObj.entries.forEach((e: unknown) => {
+            const entryObj = e as Record<string, unknown>;
+            const key = parseProgrammaticJson(entryObj.key);
+            const val = parseProgrammaticJson(entryObj.value);
             obj[String(key)] = val;
         });
         return obj;
     }
 
-    if (json.variant_name) {
-        return json.variant_name;
+    if (jsonObj.variant_name) {
+        return jsonObj.variant_name;
     }
 
     return json;

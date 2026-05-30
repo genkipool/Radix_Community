@@ -115,7 +115,7 @@ export function AssetTransferGroup({
                     </h5>
                     <div className="space-y-3">
                         {originActors.length > 0
-                            ? originActors.map((change, i: number) => {
+                            ? originActors.map((change) => {
                                 const matchingFee = balanceChanges.fungible_fee_balance_changes?.find((f) => sanitizeText(f.entity_address) === sanitizeText(change.entity_address));
                                 const nftWithdrawals = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.removed?.length ?? 0) > 0);
                                 // NFT deposits that belong to this origin address — show them here instead of destination
@@ -125,7 +125,7 @@ export function AssetTransferGroup({
                                 const fungibleBurned = isFungibleBurned(change.resource_address) && !change.is_fee;
 
                                 return (
-                                    <div key={'s' + i} className={isCM ? 'rounded-xl border border-blue-500/20 bg-blue-500/5 p-2' : ''}>
+                                    <div key={'s-' + change.entity_address + '-' + change.resource_address} className={isCM ? 'rounded-xl border border-blue-500/20 bg-blue-500/5 p-2' : ''}>
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <div className="min-w-0 flex-1 pl-2">
                                                 <AddressDisplay label={tt?.from_address || 'From'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} showConsensusInfo={isCM} network={network} hideLabel={true} />
@@ -169,14 +169,14 @@ export function AssetTransferGroup({
                                                     </div>
                                                 )
                                             )}
-                                            {nftWithdrawals.map((nft, ni: number) => {
+                                            {nftWithdrawals.map((nft) => {
                                                 const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
                                                 const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
-                                                return <NftTransferCard key={'nft-s-' + ni} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} isBurned={isBurnedNft} />;
+                                                return <NftTransferCard key={'nft-s-' + nft.resource_address} resourceAddress={nft.resource_address} ids={nft.removed || []} type="removed" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} isBurned={isBurnedNft} />;
                                             })}
                                             {/* NFT deposits for this origin address — consolidated here */}
-                                            {nftDepositsForOrigin.map((nft, ni: number) => (
-                                                <NftTransferCard key={'nft-s-dep-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} />
+                                            {nftDepositsForOrigin.map((nft) => (
+                                                <NftTransferCard key={'nft-s-dep-' + nft.resource_address} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="sender" locale={locale} />
                                             ))}
                                         </div>
                                     </div>
@@ -190,12 +190,12 @@ export function AssetTransferGroup({
                             const senderAddrs = new Set(originActors.map((s) => s.entity_address));
                             const orphans = (balanceChanges.non_fungible_balance_changes ?? [])
                                 .filter((nft) => (nft.removed?.length ?? 0) > 0 && !senderAddrs.has(nft.entity_address) && sanitizeText(nft.entity_address).startsWith('account_'));
-                            return orphans.map((nft, ni: number) => {
-                                const matchedOp = isClaim && validatorOps ? (validatorOps[ni] ?? validatorOps[0]) : undefined;
+                            return orphans.map((nft) => {
+                                const matchedOp = isClaim && validatorOps ? (validatorOps[0]) : undefined;
                                 const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));
                                 const isBurnedNft = (nft.removed || []).every(id => !allAddedIds.has(id));
                                 return (
-                                    <div key={'nft-orphan-s-' + ni}>
+                                    <div key={'nft-orphan-s-' + nft.resource_address}>
                                         <div className="pl-2 mb-2">
                                             <AddressDisplay label={tt?.from_address || 'From'} address={nft.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                         </div>
@@ -233,14 +233,14 @@ export function AssetTransferGroup({
                     </h5>
                     <div className="space-y-3">
                         {destActors.length > 0
-                            ? destActors.map((change, i: number) => {
+                            ? destActors.map((change) => {
                                 const nftDeposits = (balanceChanges.non_fungible_balance_changes ?? []).filter((nft) => nft.entity_address === change.entity_address && (nft.added?.length ?? 0) > 0);
                                 const isPayerInOrigin = initiators.has(sanitizeText(change.entity_address));
                                 const recipientFee = !isPayerInOrigin
                                     ? balanceChanges.fungible_fee_balance_changes?.find((f) => sanitizeText(f.entity_address) === sanitizeText(change.entity_address))
                                     : null;
                                 return (
-                                    <div key={'r' + i}>
+                                    <div key={'r-' + change.entity_address + '-' + change.resource_address}>
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <div className="min-w-0 flex-1 pl-2">
                                                 <AddressDisplay label={tt?.to_address || 'To'} address={change.entity_address} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
@@ -280,8 +280,8 @@ export function AssetTransferGroup({
                                                     <BalanceChangeRow change={{ ...recipientFee, resource_address: recipientFee.resource_address || getXrdAddress(network), is_fee: true }} t={t} onResourceClick={onResourceClick} onCopy={onCopy} copiedAddress={copiedAddress} readingMode={readingMode} network={network} side="receiver" locale={locale} />
                                                 </div>
                                             )}
-                                            {nftDeposits.map((nft, ni: number) => (
-                                                <NftTransferCard key={'nft-r-' + ni} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} />
+                                            {nftDeposits.map((nft) => (
+                                                <NftTransferCard key={'nft-r-' + nft.resource_address} resourceAddress={nft.resource_address} ids={nft.added || []} type="added" onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} onResourceClick={onResourceClick} readingMode={readingMode} network={network} tt={tt} side="receiver" locale={locale} />
                                             ))}
                                         </div>
                                     </div>
@@ -332,7 +332,7 @@ export function AssetTransferGroup({
                         {(() => {
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
                             const items = balanceChanges.non_fungible_balance_changes ?? [];
-                            const result: JSX.Element[] = [];
+                            const result: React.ReactNode[] = [];
                             for (const nft of items) {
                                 if ((nft.added?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !initiators.has(sanitizeText(nft.entity_address))) {
                                     const resourceSenders = group.filter(c => c.resource_address === nft.resource_address && parseFloat(c.balance_change || '0') < 0 && !c.is_fee);
@@ -356,7 +356,7 @@ export function AssetTransferGroup({
                         {(() => {
                             const receiverAddrs = new Set(destActors.map((r) => r.entity_address));
                             const items = balanceChanges.non_fungible_balance_changes ?? [];
-                            const result: JSX.Element[] = [];
+                            const result: React.ReactNode[] = [];
                             for (const nft of items) {
                                 if ((nft.removed?.length ?? 0) > 0 && !receiverAddrs.has(nft.entity_address) && !sanitizeText(nft.entity_address).startsWith('account_')) {
                                     const allAddedIds = new Set((balanceChanges.non_fungible_balance_changes ?? []).flatMap(c => c.added ?? []));

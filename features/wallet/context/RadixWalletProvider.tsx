@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, type ReactNode } from 'react';
@@ -79,12 +80,13 @@ export function RadixWalletProvider({
   React.useEffect(() => {
     // For each network with a session, ensure the toolkit is initialized
     // so walletData$ can pick up reconnections from the extension
+    const initial = sessionsFromPayload(initialSession);
     for (const net of ['mainnet', 'stokenet'] as const) {
-      if (sessions[net]) {
+      if (initial[net]) {
         getOrCreateToolkit(networkIdFromName(net));
       }
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialSession]);
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 

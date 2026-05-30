@@ -53,7 +53,7 @@ export default function Documentation({ t }: BaseSectionProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                     {(t.documentacion?.cards || []).map((doc: { title: string; desc: string; links: string[] }, i: number) => (
-                        <FadeIn key={`doc-${i}`} delay={i * 0.05} className={card}>
+                        <FadeIn key={doc.title} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="size-14 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center group-hover:border-[var(--color-primary)]/40 transition-colors">
                                     {DOC_ICONS[i]}
@@ -70,9 +70,9 @@ export default function Documentation({ t }: BaseSectionProps) {
                                     if (!linkData) return null;
                                     const cls = "text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] transition-colors";
                                     return (linkData as Record<string, unknown>).internal ? (
-                                        <Link key={linkIdx} href={linkData.url} className={cls}>{linkText}</Link>
+                                        <Link key={linkText} href={linkData.url} className={cls}>{linkText}</Link>
                                     ) : (
-                                        <a key={linkIdx} href={linkData.url} target="_blank" rel="noopener noreferrer" className={cls}>{linkText}</a>
+                                        <a key={linkText} href={linkData.url} target="_blank" rel="noopener noreferrer" className={cls}>{linkText}</a>
                                     );
                                 })}
                             </div>

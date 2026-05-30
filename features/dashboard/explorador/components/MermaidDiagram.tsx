@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import mermaid from 'mermaid';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface MermaidDiagramProps {
     chart: string;
@@ -18,6 +19,9 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
     useEffect(() => {
         cancelledRef.current = false;
         let cancelled = false;
+        let t1: ReturnType<typeof setTimeout> | undefined;
+        let t2: ReturnType<typeof setTimeout> | undefined;
+        let t3: ReturnType<typeof setTimeout> | undefined;
 
         function syncHighlight() {
             document.querySelectorAll('.mermaid-node-copied').forEach(el => {
@@ -94,9 +98,9 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                     requestAnimationFrame(() => {
                         if (!cancelled) {
                             syncHighlight();
-                            setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 100);
-                            setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 500);
-                            setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 1000);
+                            t1 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 100);
+                            t2 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 500);
+                            t3 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 1000);
                         }
                     });
                 }
@@ -109,6 +113,9 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
         return () => {
             cancelled = true;
             cancelledRef.current = true;
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
         };
     }, [chart, rawId, theme, copiedAddress]);
 
@@ -162,7 +169,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 [&_.mermaid-node-copied_polygon]:![stroke-width:4px]
                 [&_.mermaid-node-copied_circle]:![stroke-width:4px]"
         >
-            <div className="w-full" dangerouslySetInnerHTML={{ __html: svg }} />
+            <div className="w-full" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg) }} />
         </div>
     );
 }

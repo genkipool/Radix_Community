@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useTransition, useDeferredValue, useRef } from 'react';
+import { useState, useTransition, useDeferredValue, useRef, useEffect } from 'react';
 import type { DashboardView, Network } from '../types';
 import { isRadixAddress } from '../utils/radixAddress';
 
@@ -53,14 +54,16 @@ export function useDashboardUrlSync({
 
   // Ensure ?network= is always present in the URL (once on mount)
   const networkUrlRef = useRef(false);
-  if (!networkUrlRef.current && typeof window !== 'undefined') {
-    networkUrlRef.current = true;
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has('network')) {
-      url.searchParams.set('network', network);
-      window.history.replaceState({}, '', url.toString());
+  useEffect(() => {
+    if (!networkUrlRef.current && typeof window !== 'undefined') {
+      networkUrlRef.current = true;
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('network')) {
+        url.searchParams.set('network', network);
+        window.history.replaceState({}, '', url.toString());
+      }
     }
-  }
+  }, [network]);
 
   const handleDateRangeChange = (range: { start: string | null; end: string | null }) => {
     const url = new URL(window.location.href);
@@ -137,21 +140,18 @@ export function useDashboardUrlEffects({
   activeView,
   setExpandedTxs,
 }: UseDashboardUrlEffectsOptions) {
-  const prevSearchRef = useRef(searchQuery);
-  const prevViewRef = useRef(activeView);
+  useEffect(() => {
+    if (searchQuery.startsWith('txid_')) {
+      setExpandedTxs(new Set([searchQuery]));
+    }
+  }, [searchQuery, setExpandedTxs]);
 
-  if (searchQuery.startsWith('txid_') && searchQuery !== prevSearchRef.current) {
-    prevSearchRef.current = searchQuery;
-    setExpandedTxs(new Set([searchQuery]));
-  }
-
-  if (activeView !== prevViewRef.current) {
-    prevViewRef.current = activeView;
+  useEffect(() => {
     const txParam = typeof window !== 'undefined'
       ? new URL(window.location.href).searchParams.get('tx')
       : null;
     if (txParam && activeView === 'transactions') {
       setExpandedTxs(new Set([txParam]));
     }
-  }
+  }, [activeView, setExpandedTxs]);
 }

@@ -60,7 +60,7 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                     {items.map((item, i) => (
-                        <FadeIn key={`item-${i}`} delay={i * 0.05} className={card}>
+                        <FadeIn key={item.title} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="size-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center">
                                     {item.icon}

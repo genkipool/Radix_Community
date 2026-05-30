@@ -30,17 +30,14 @@ export default function NotFound() {
         <Script
           id="theme-script"
           strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
+        >{`
               try {
                 var match = document.cookie.match(new RegExp('(^| )theme=([^;]+)'));
                 var t = match ? match[2] : 'radix-dark';
                 document.documentElement.className = t;
                 document.documentElement.style.colorScheme = t.includes('dark') ? 'dark' : 'light';
               } catch (e) {}
-            `
-          }}
-        />
+            `}</Script>
       </head>
       <body className="bg-[var(--color-bg)] font-sans text-[var(--color-text-main)] antialiased">
         <Providers locale={locale} dictionary={dictionary} theme="radix-dark">

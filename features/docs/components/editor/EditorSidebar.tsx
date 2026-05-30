@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import { ChevronDown, FileText, Tag, User } from 'lucide-react';
 import { TOPICS } from '../../data/docsTopics';
 
@@ -146,7 +146,7 @@ export function EditorSidebar({
             </button>
             <AnimatePresence>
               {topicOpen && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
@@ -184,7 +184,7 @@ export function EditorSidebar({
                       </button>
                     );
                   })}
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>
@@ -218,7 +218,7 @@ export function EditorSidebar({
           />
           <AnimatePresence>
             {showAuthor && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
@@ -237,7 +237,7 @@ export function EditorSidebar({
                     color: 'var(--color-text-main)',
                   }}
                 />
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>

@@ -1,42 +1,28 @@
-'use client';
-
-import React from 'react';
-import { ExpandableEntityBadge } from './ExpandableEntityBadge';
-import type { StakingEntry } from '../types/models.types';
-import type { TranslationsT, MarketData, Network, DashboardDict } from '@/features/dashboard/types';
 import type { AccountRewardsCsvModalDict } from '../types/components.types';
+import React from 'react';
+import { useEntityBadge } from './EntityBadgeContext';
+import type { StakingEntry } from '../types/models.types';
+import type { MarketData, Network, DashboardDict , TranslationsT} from '@/features/dashboard/types';
 
-interface AccountStakingTabProps {
-    address: string;
+export interface AccountStakingTabProps {
     stakingRows: StakingEntry[];
-    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
-    onCopy: (v: string) => void;
-    copiedAddress: string | null;
     network: Network;
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
     locale: string;
-    marketData?: MarketData | null;
-    dt?: Partial<DashboardDict>;
+    marketData: MarketData | undefined;
+    dt?: DashboardDict;
     currentEpoch?: number;
 }
 
-/**
- * AccountStakingTab
- * 
- * Displays a list of validators where the account is staking.
- * Uses ExpandableEntityBadge to maintain UI consistency with Affected Entities.
- */
 export function AccountStakingTab({
-    address,
     stakingRows,
-    tt,
-    onCopy,
-    copiedAddress,
     network,
+    tt,
     locale,
     marketData,
     dt,
-    currentEpoch,
 }: AccountStakingTabProps) {
+    const badgeComp = useEntityBadge();
     if (stakingRows.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -53,26 +39,19 @@ export function AccountStakingTab({
                 {tt?.account_summary?.staking_validators_title || 'Validators'} <span className="ml-1 opacity-50">({stakingRows.length})</span>
             </h4>
             <div className="grid grid-cols-1 gap-2 items-start">
-            {stakingRows.map((row) => (
-                <ExpandableEntityBadge
-                    key={row.validatorAddress}
-                    address={row.validatorAddress}
-                    accountAddress={address}
-                    stakeAmount={row.xrdInStake}
-                    unstakeAmount={row.xrdInUnstake}
-                    claimAmount={row.xrdInClaim}
-                    unstakes={row.unstakes}
-                    currentEpoch={currentEpoch}
-                    tt={tt}
-                    onCopy={onCopy}
-                    copiedAddress={copiedAddress}
-                    network={network}
-                    locale={locale}
-                    marketData={marketData}
-                    dt={dt}
-                    variant="resource-card"
-                />
-            ))}
+                {stakingRows.map((row, idx) => (
+                    React.createElement(badgeComp, {
+                        key: `staking-row-${row.validatorAddress}-${idx}`,
+                        entityAddress: row.validatorAddress,
+                        network: network,
+                        tt: tt,
+                        locale: locale,
+                        marketData: marketData,
+                        dt: dt,
+                        startExpanded: false,
+                        forcedOpenTab: "summary"
+                    })
+                ))}
             </div>
         </div>
     );

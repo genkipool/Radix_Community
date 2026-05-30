@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { X, Send, Building2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { sendInstitutionalPilotMessage } from '../../actions/index';
@@ -84,7 +84,7 @@ export default function InstitutionalPilotModal({
         {isOpen && (
           <>
             {/* Backdrop */}
-            <motion.div
+            <m.div
               key="backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -95,7 +95,7 @@ export default function InstitutionalPilotModal({
             />
 
             {/* Panel */}
-            <motion.div
+            <m.div
               key="panel"
               initial={{ opacity: 0, y: 40, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -136,7 +136,7 @@ export default function InstitutionalPilotModal({
                 <AnimatePresence mode="wait">
                   {status === 'sent' ? (
                     /* ── Success state ── */
-                    <motion.div
+                    <m.div
                       key="success"
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -153,17 +153,17 @@ export default function InstitutionalPilotModal({
                       <p className="text-[var(--color-text-muted)] leading-relaxed max-w-md mx-auto text-sm">
                         {c.successBody}
                       </p>
-                      <button
+                      <button aria-label="button action"
                         type="button"
                         onClick={onClose}
                         className="mt-8 px-6 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-card-border)] text-sm font-semibold text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-colors"
                       >
                         {c.close}
                       </button>
-                    </motion.div>
+                    </m.div>
                   ) : (
                     /* ── Form state ── */
-                    <motion.div
+                    <m.div
                       key="form"
                       initial={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -236,7 +236,7 @@ export default function InstitutionalPilotModal({
                         </div>
                       )}
 
-                      <button
+                      <button aria-label="button action"
                         type="button"
                         onClick={handleSend}
                         disabled={!message.trim() || !validateEmail(email) || isOverLimit || status === 'sending'}
@@ -254,11 +254,11 @@ export default function InstitutionalPilotModal({
                           </>
                         )}
                       </button>
-                    </motion.div>
+                    </m.div>
                   )}
                 </AnimatePresence>
               </div>
-            </motion.div>
+            </m.div>
           </>
         )}
       </AnimatePresence>

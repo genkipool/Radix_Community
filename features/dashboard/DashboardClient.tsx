@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -21,7 +22,7 @@ import {
   useState,
   useDeferredValue, useEffect, useRef
 } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 
 const EMPTY_ACCOUNTS: string[] = [];
 
@@ -337,7 +338,7 @@ export default function DashboardClient({
       {/* ── Fixed-position loading bar (zero layout impact) ── */}
       <AnimatePresence>
         {isFetchingNextPage && (
-          <motion.div
+          <m.div
             key="tx-loading-bar"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -353,7 +354,7 @@ export default function DashboardClient({
                 animation: 'loading-bar 0.8s ease-in-out infinite',
               }}
             />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

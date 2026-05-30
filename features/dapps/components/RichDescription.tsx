@@ -20,9 +20,8 @@ function HighlightBlock({ text, keywords }: { text: string; keywords: string[] }
 
   return (
     <>
-      {parts.map((part, i) =>
-        kwSet.has(part.toLowerCase()) ? (
-          <strong key={i} className="text-[var(--color-text-main)] font-semibold">
+      {parts.map((part, i) => kwSet.has(part.toLowerCase()) ? (
+          <strong key={`${i}-${part}`} className="font-bold text-[var(--color-text-main)]">
             {part}
           </strong>
         ) : (

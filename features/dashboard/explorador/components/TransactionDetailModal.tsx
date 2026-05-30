@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
@@ -36,7 +36,7 @@ export function TransactionDetailModal({
     });
 
     return (
-        <motion.div
+        <m.div
             initial={{ opacity: 0, scale: 0.97, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 24 }}
@@ -212,6 +212,6 @@ export function TransactionDetailModal({
                     </SwipeableContainer>
                 </AnimatePresence>
             </div>
-        </motion.div>
+        </m.div>
     );
 }

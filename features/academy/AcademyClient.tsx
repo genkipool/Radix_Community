@@ -1,3 +1,5 @@
+'use client';
+
 import {
     Code2, BookOpen, Zap, Shield, Layers, GraduationCap,
     CheckCircle2, Rocket, Users, Terminal, Box, Clock
@@ -112,7 +114,7 @@ contract MyToken is ERC20 {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
                         {academy.features.map((f, i: number) => (
-                            <ScrollReveal key={`feature-${i}`} delay={i * 0.05}>
+                            <ScrollReveal key={f.title} delay={i * 0.05}>
                                 <div className={card}>
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className="size-14 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center">
@@ -175,7 +177,7 @@ contract MyToken is ERC20 {
                                     <thead>
                                         <tr className="border-b border-[var(--color-card-border)]">
                                             {academy.comparison.table.headers.map((header: string, i: number) => (
-                                                <th key={`header-${i}`} className={`px-6 py-4 text-sm font-bold uppercase tracking-widest ${i === 1 ? 'text-[var(--color-secondary)]' : 'text-[var(--color-text-muted)]'}`}>
+                                                <th key={header} className={`px-6 py-4 text-sm font-bold uppercase tracking-widest ${i === 1 ? 'text-[var(--color-secondary)]' : 'text-[var(--color-text-muted)]'}`}>
                                                     {header}
                                                 </th>
                                             ))}
@@ -183,7 +185,7 @@ contract MyToken is ERC20 {
                                     </thead>
                                     <tbody>
                                         {academy.comparison.table.rows.map((row: string[], i: number) => (
-                                            <tr key={`row-${i}`} className={`border-b border-[var(--color-card-border)] ${i % 2 === 0 ? 'bg-[var(--color-bg)]/30' : ''}`}>
+                                            <tr key={row[0]} className={`border-b border-[var(--color-card-border)] ${i % 2 === 0 ? 'bg-[var(--color-bg)]/30' : ''}`}>
                                                 <td className="px-6 py-4 text-sm font-bold text-[var(--color-text-main)]">{row[0]}</td>
                                                 <td className="px-6 py-4 text-sm text-green-400 font-medium">{row[1]}</td>
                                                 <td className="px-6 py-4 text-sm text-[var(--color-text-muted)]">{row[2]}</td>
@@ -224,8 +226,8 @@ contract MyToken is ERC20 {
 
                     {/* `items-stretch` (default) + `h-full` on each card = equal height per row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-                        {academy.content.modules.map((mod) => (
-                            <ScrollReveal key={mod.num} delay={(mod.num - 1) * 0.05}>
+                        {academy.content.modules.map((mod, i) => (
+                            <ScrollReveal key={mod.num} delay={(Number(mod.num) - 1) * 0.05}>
                                 {/* h-full + flex flex-col: card grows to fill grid cell height */}
                                 <div className={card}>
                                     {/* ── Card header ── */}
@@ -256,8 +258,8 @@ contract MyToken is ERC20 {
 
                                     {/* ── Lesson list — flex-1 pushes this block down so all cards align ── */}
                                     <div className="flex-1 pt-4 border-t border-[var(--color-card-border)] space-y-2">
-                                        {mod.lessons.map((lesson, li: number) => (
-                                            <div key={li} className="flex items-start gap-2 text-sm text-[var(--color-text-muted)]">
+                                        {mod.lessons.map((lesson) => (
+                                            <div key={lesson} className="flex items-start gap-2 text-sm text-[var(--color-text-muted)]">
                                                 <CheckCircle2 className="size-3.5 text-green-400 shrink-0 mt-0.5" />
                                                 <span>{lesson}</span>
                                             </div>
@@ -282,7 +284,7 @@ contract MyToken is ERC20 {
 
                     <div className="space-y-4">
                         {academy.faq.items.map((faq, i: number) => (
-                            <ScrollReveal key={`faq-${i}`} delay={i * 0.05}>
+                            <ScrollReveal key={typeof faq === 'object' && faq !== null ? (faq.q || String(i)) : String(i)} delay={i * 0.05}>
                                 <div className="rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] p-6">
                                     <h3 className="text-lg font-bold text-[var(--color-text-main)] mb-3">{faq.q}</h3>
                                     <p className="text-[var(--color-text-muted)] leading-relaxed text-sm">{faq.a}</p>

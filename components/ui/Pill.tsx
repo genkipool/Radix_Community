@@ -37,7 +37,7 @@ const COLOR_CLASSES: Record<PillColor, string> = {
 
 export function Pill({ children, color = 'primary', className = '', style, title, onClick }: PillProps) {
     return (
-        <span
+        <button type="button"
             className={`
                 inline-flex items-center justify-center
                 px-2 py-1 leading-none
@@ -53,6 +53,6 @@ export function Pill({ children, color = 'primary', className = '', style, title
             onClick={onClick}
         >
             <span className="mt-[1px]">{children}</span>
-        </span>
+        </button>
     );
 }

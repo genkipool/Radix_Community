@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import { Check, Copy, Activity } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
@@ -27,19 +27,18 @@ export { getConfigEntries, resolutionTooltip };
    Reusable row for summary tabs.
 ───────────────────────────────────────── */
 export function SummaryInlineRow({
-    label, value, secondaryValue, mono, accentValue, isDanger, isSuccess, isModal: _isModal, copyable, onCopy, isCopied, children,
-}: {
+    label, value, secondaryValue, mono, accentValue, isDanger, isSuccess, isModal: _isModal, copyable, onCopy, isCopied, children }: {
     label: string;
     value?: string;
     secondaryValue?: string;
-    mono?: boolean;
-    accentValue?: boolean;
-    isDanger?: boolean;
-    isSuccess?: boolean;
-    isModal?: boolean;
-    copyable?: boolean;
+    mono?: true | false;
+    accentValue?: true | false;
+    isDanger?: true | false;
+    isSuccess?: true | false;
+    isModal?: true | false;
+    copyable?: true | false;
     onCopy?: () => void;
-    isCopied?: boolean;
+    isCopied?: true | false;
     children?: React.ReactNode;
 }) {
     return (
@@ -96,8 +95,7 @@ function PanelSectionHeader({ label }: { label: string }) {
    Single role assignment display row.
 ───────────────────────────────────────── */
 function PanelRoleRow({
-    entry, tt, onCopy, copiedAddress,
-}: {
+    entry, tt, onCopy, copiedAddress }: {
     entry: ConfigEntry;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
@@ -170,8 +168,7 @@ function PanelRoleRow({
    in all inline entity panels.
 ───────────────────────────────────────── */
 export function PanelTabBar<T extends string>({
-    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline',
-}: {
+    tabs, activeTab, onTabChange, onTabHover, layoutId = 'activeTabUnderline' }: {
     tabs: { key: T; label: string; tooltip?: string }[];
     activeTab: T;
     onTabChange: (tab: T) => void;
@@ -181,7 +178,7 @@ export function PanelTabBar<T extends string>({
     return (
         <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar">
             {tabs.map(tab => (
-                <motion.button
+                <m.button
                     key={tab.key}
                     type="button"
                     whileHover="hover"
@@ -198,7 +195,7 @@ export function PanelTabBar<T extends string>({
                     </span>
 
                     {/* Hover Background */}
-                    <motion.div
+                    <m.div
                         className="absolute inset-x-1 inset-y-1.5 rounded-lg bg-white/5 -z-0"
                         variants={{
                             hover: { opacity: 1, scale: 1 },
@@ -209,14 +206,14 @@ export function PanelTabBar<T extends string>({
                     />
 
                     {activeTab === tab.key && (
-                        <motion.div
+                        <m.div
                             layoutId={layoutId}
                             className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)]"
                             initial={false}
                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         />
                     )}
-                </motion.button>
+                </m.button>
             ))}
         </div>
     );
@@ -241,8 +238,7 @@ export function PanelLoadingState({ tt }: { tt?: Partial<TranslationsT['dashboar
    URLs as anchor links.
 ───────────────────────────────────────── */
 export function PanelMetadataTab({
-    metadataItems, tt, onCopy, copiedAddress,
-}: {
+    metadataItems, tt, onCopy, copiedAddress }: {
     metadataItems: MetadataItem[];
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy?: (v: string) => void;
@@ -257,7 +253,7 @@ export function PanelMetadataTab({
     }
     return (
         <div className="space-y-4">
-            {metadataItems.map((meta: MetadataItem, idx: number) => {
+            {metadataItems.map((meta: MetadataItem) => {
                 const tagValues = parseTags(meta);
                 const isTags = meta.key === 'tags' || (meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray';
 
@@ -290,7 +286,7 @@ export function PanelMetadataTab({
                 });
 
                 return (
-                    <div key={idx}>
+                    <div key={meta.key as string}>
                         <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-1">
                             {metaKeyLabel(meta.key as string, tt)}
                         </dt>
@@ -314,7 +310,7 @@ export function PanelMetadataTab({
                                     );
 
                                     return (
-                                        <div key={`vitem-${vi}`} className="flex items-center gap-1 group/meta-item">
+                                        <div key={`${vi}-${typeof vItem === 'string' ? vItem : ''}`} className="flex items-center gap-1 group/meta-item">
                                             {isUrl && typeof vItem === 'string' ? (
                                                 <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
                                             ) : (
@@ -348,8 +344,7 @@ export function PanelMetadataTab({
    admin / roles / metadata sections.
 ───────────────────────────────────────── */
 export function PanelConfigurationTab({
-    configEntries, tt, onCopy, copiedAddress,
-}: {
+    configEntries, tt, onCopy, copiedAddress }: {
     configEntries: ConfigEntry[];
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
@@ -374,7 +369,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_admin || 'Role Administrator'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {adminEntries.map((e, i) => <PanelRoleRow key={`admin-${i}`} entry={e} {...rowProps} />)}
+                        {adminEntries.map((e) => <PanelRoleRow key={`admin-${e.name}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -382,7 +377,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_main || 'Main Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {mainRoleEntries.map((e, i) => <PanelRoleRow key={`main-role-${i}`} entry={e} {...rowProps} />)}
+                        {mainRoleEntries.map((e) => <PanelRoleRow key={`main-${e.name}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -390,7 +385,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_royalty || 'Royalty Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {royaltyRoleEntries.map((e, i) => <PanelRoleRow key={`royalty-role-${i}`} entry={e} {...rowProps} />)}
+                        {royaltyRoleEntries.map((e) => <PanelRoleRow key={`royalty-${e.name}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -398,7 +393,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_roles || 'Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {roleEntries.map((e, i) => <PanelRoleRow key={`role-${i}`} entry={e} {...rowProps} />)}
+                        {roleEntries.map((e) => <PanelRoleRow key={`role-${e.name}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -406,7 +401,7 @@ export function PanelConfigurationTab({
                 <>
                     <PanelSectionHeader label={tt?.role_section_metadata || 'Metadata Roles'} />
                     <div className="divide-y divide-[var(--color-card-border)]/30">
-                        {metaRoleEntries.map((e, i) => <PanelRoleRow key={`meta-role-${i}`} entry={e} {...rowProps} />)}
+                        {metaRoleEntries.map((e) => <PanelRoleRow key={`meta-${e.name}`} entry={e} {...rowProps} />)}
                     </div>
                 </>
             )}
@@ -420,8 +415,7 @@ export function PanelConfigurationTab({
    code block.
 ───────────────────────────────────────── */
 export function PanelRawTab({
-    data, tt, onCopy, copiedAddress,
-}: {
+    data, tt, onCopy, copiedAddress }: {
     data: unknown;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     onCopy: (v: string) => void;
@@ -430,7 +424,7 @@ export function PanelRawTab({
     const rawJson = JSON.stringify(data, null, 2);
     return (
         <div className="w-full overflow-hidden relative group">
-            <motion.button
+            <m.button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onCopy(rawJson); }}
                 className={`absolute top-3 right-3 transition-colors flex items-center z-10 ${copiedAddress === rawJson
@@ -440,7 +434,7 @@ export function PanelRawTab({
                 title={copiedAddress === rawJson ? tt?.copied_json || 'JSON Copied!' : tt?.copy_json || 'Copy JSON'}
             >
                 {copiedAddress === rawJson ? <Check className="size-4" /> : <Copy className="size-4" />}
-            </motion.button>
+            </m.button>
             <pre className="p-3 bg-[#0d1117] rounded-xl border border-[var(--color-card-border)] text-[10px] font-mono text-green-400/90 overflow-x-auto overflow-y-auto max-h-56 custom-scrollbar whitespace-pre-wrap break-all">
                 {rawJson}
             </pre>

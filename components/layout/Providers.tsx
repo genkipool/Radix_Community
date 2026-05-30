@@ -6,6 +6,7 @@ import { LanguageProvider } from '@/context/LanguageContext';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { AnimationProvider } from '@/context/AnimationContext';
 import { RadixWalletProvider } from '@/features/wallet/context/RadixWalletProvider';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { getQueryClient } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
 import type { Locale } from '@/i18n/dictionaries';
@@ -42,7 +43,9 @@ export function Providers({
           <LayoutProvider>
             <AnimationProvider>
               <RadixWalletProvider initialSession={walletSession}>
-                {children}
+                <LazyMotion features={domAnimation}>
+                  {children}
+                </LazyMotion>
               </RadixWalletProvider>
             </AnimationProvider>
           </LayoutProvider>

@@ -38,8 +38,8 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     const activeDirection = propDirection;
 
     return (
-        <div
-            className="relative w-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col"
+        <button type="button"
+            className="relative w-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col cursor-auto text-left"
             onClick={e => e.stopPropagation()}
         >
             <AnimatePresence mode="popLayout" initial={false} custom={activeDirection}>
@@ -124,8 +124,8 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             <div className="flex flex-col gap-2">
                                 {/* Validator address */}
                                 <div className="flex flex-col sm:flex-row sm:items-center items-start gap-[6px] sm:gap-[10px] min-w-0">
-                                    <div
-                                        className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr"
+                                    <button type="button"
+                                        className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr text-left"
                                         onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
                                     >
                                         <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
@@ -143,7 +143,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                             forceCopied={isAddrCopied}
                                             className="pointer-events-none shrink-0"
                                         />
-                                    </div>
+                                    </button>
                                     <StakingPopup validator={validator} t={t}>
                                         <button
                                             type="button"
@@ -197,6 +197,6 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     </div>
                 </SwipeableContainer>
             </AnimatePresence>
-        </div>
+        </button>
     );
 };

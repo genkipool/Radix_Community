@@ -46,7 +46,7 @@ export default function Institutions({ t }: BaseSectionProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-16">
           {t.instituciones.features.map((feature, i: number) => (
-            <FadeIn key={`feature-${i}`} delay={i * 0.05} className="flex gap-6">
+            <FadeIn key={feature.title} delay={i * 0.05} className="flex gap-6">
               <div className="flex-shrink-0 size-14 rounded-2xl flex items-center justify-center text-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] shadow-md">
                 {ICONS[i]}
               </div>

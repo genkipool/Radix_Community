@@ -13,6 +13,17 @@ const mockT: Dictionary = translations.en;
 // Replace framer-motion with simple div wrappers so we can test state changes
 // without depending on animation internals.
 vi.mock('motion/react', () => ({
+    m: new Proxy({}, { get: (_t, _p) => new Proxy({}, { get: () => () => null }) }),
+    m: new Proxy({}, {
+        get: (_target, prop) => {
+            // Return a forwardRef component for each HTML tag (div, button, span, etc.)
+            const Component = ({ children, ...rest }: { children?: React.ReactNode } & Record<string, unknown>) => {
+                return React.createElement(prop as string, rest, children);
+            };
+            Component.displayName = `motion.${String(prop)}`;
+            return Component;
+        },
+    }),
     motion: new Proxy({}, {
         get: (_target, prop) => {
             // Return a forwardRef component for each HTML tag (div, button, span, etc.)

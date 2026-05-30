@@ -1,7 +1,7 @@
 'use client';
 import { getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Shield, ChevronDown, Check, Copy, Activity } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
@@ -124,8 +124,8 @@ export function ValidatorInlinePanel({
             </h3>
 
             {/* Clickable card row */}
-            <div
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors"
+            <button type="button"
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors w-full text-left"
                 onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
             >
                 <div className="size-9 rounded-xl overflow-hidden border border-[var(--color-card-border)] shrink-0 bg-[var(--color-surface)]">
@@ -169,19 +169,19 @@ export function ValidatorInlinePanel({
                         )}
                     </div>
                 )}
-            </div>
+            </button>
 
             {/* Expandable tabs */}
             <AnimatePresence>
                 {expanded && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                     >
-                        <div className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]" onClick={e => e.stopPropagation()}>
+                        <button type="button" className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)] w-full text-left cursor-auto block" onClick={e => e.stopPropagation()}>
                             <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId="validatorInlineTabs" />
 
                             <div className="px-5 py-4">
@@ -263,8 +263,8 @@ export function ValidatorInlinePanel({
                                     </>
                                 )}
                             </div>
-                        </div>
-                    </motion.div>
+                        </button>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

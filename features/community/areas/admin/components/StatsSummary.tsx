@@ -24,9 +24,8 @@ export function StatsSummary({ areas, t }: StatsSummaryProps) {
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {stats.map((stat, i) => (
-                <div key={`stat-${i}`} className="rounded-xl p-4 relative overflow-hidden"
-                    style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}>
+            {stats.map((stat, _i) => (
+                <div key={stat.label} className="relative overflow-hidden rounded-xl p-5 shadow-sm transition-all hover:shadow-md" style={{ background: 'var(--color-card-bg)', border: '1px solid var(--color-card-border)' }}>
                     <div className="absolute top-0 right-0 size-16 rounded-full -translate-y-4 translate-x-4 opacity-10"
                         style={{ background: stat.color }} />
                     <p className="text-[10px] font-semibold uppercase tracking-wide mb-1 relative z-10"

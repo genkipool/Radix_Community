@@ -40,8 +40,7 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
 
   return (
     <div
-      role="dialog"
-      aria-modal={isOpen}
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}

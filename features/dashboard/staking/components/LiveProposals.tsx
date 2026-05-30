@@ -1,40 +1,21 @@
+
 'use client';
-import { useSyncExternalStore, useRef } from 'react';
+import { useSyncExternalStore, useEffect } from 'react';
 import {
     subscribeToLiveData,
-    subscribeToEpochChange,
     getLiveSnapshot,
-    getLastKnownEpoch,
-    registerAddressForPolling,
-} from '@/services/liveDataStore';
+    registerAddressForPolling } from '@/services/liveDataStore';
 import { type Validator } from '@/types/radix';
 
-/* ─────────────────────────────────────────
-   HOOKS
-───────────────────────────────────────── */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function useCurrentEpoch(): number | null {
-    return useSyncExternalStore(subscribeToEpochChange, getLastKnownEpoch, getLastKnownEpoch);
-}
-
-/**
- * useLiveProposals
- *
- * Reads epoch-scoped proposal counts directly from the live store.
- * The store gets them from ConsensusManagerFieldCurrentProposalStatistic,
- * updated every round — no baseline subtraction needed here.
- *
- * Falls back to SSR-computed values until the first poll arrives.
- */
 export function useLiveProposals(validator: Validator) {
     const snap = useSyncExternalStore(subscribeToLiveData, getLiveSnapshot, getLiveSnapshot);
 
-    const prevAddressRef = useRef<string>();
-    if (validator.address && prevAddressRef.current !== validator.address) {
-        prevAddressRef.current = validator.address;
-        registerAddressForPolling(validator.address);
-    }
+    useEffect(() => {
+        if (validator.address) {
+            registerAddressForPolling(validator.address);
+        }
+    }, [validator.address]);
 
     // Live epoch-scoped data (real-time)
     const live = snap.epochProposals.get(validator.address);

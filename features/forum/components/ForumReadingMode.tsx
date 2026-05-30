@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import {
     Calendar, Eye, MessageSquare
 } from 'lucide-react';
@@ -36,7 +36,7 @@ export function ForumReadingMode() {
     return (
         <AnimatePresence>
             <ModalOverlay key="reading-mode-overlay" onClose={closeExpanded} blur="sm" />
-            <motion.div
+            <m.div
                 key="reading-mode-content"
                 initial={{ opacity: 0, scale: 0.95, y: 40 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -263,7 +263,7 @@ export function ForumReadingMode() {
                         </SwipeableContainer>
                     </AnimatePresence>
                 </div>
-            </motion.div>
+            </m.div>
         </AnimatePresence>
     );
 }

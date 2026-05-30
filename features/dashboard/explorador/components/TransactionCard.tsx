@@ -1,6 +1,7 @@
+
 'use client';
 import React, { useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import {
     Clock, Coins, Landmark, Users, Mail
 } from 'lucide-react';
@@ -180,59 +181,63 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
     // Common Label Styles to ensure Status & Type match
     const labelBaseClass = "inline-flex items-center justify-center px-2 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[18px] sm:h-[22px]";
 
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        downTimeRef.current = Date.now();
+        downPosRef.current = { x: e.clientX, y: e.clientY };
+
+        // Capture current selection state to differentiate between starting a selection
+        // and clicking after a selection already existed.
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            // Check if the selection is inside this card's DOM
+            if (e.currentTarget.contains(range.commonAncestorContainer)) {
+                selectionRef.current = selection.toString();
+            } else {
+                selectionRef.current = null;
+            }
+        } else {
+            selectionRef.current = null;
+        }
+    };
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+
+        // 1. Interactive check: If we click on a button, link, or any identified interactive role, don't toggle expansion.
+        if (target.closest('button, a, [role="button"], input, textarea')) return;
+
+        // 2. Deselection check: 
+        // If a selection EXISTED when we pressed down, it means we are now
+        // either interacting with it or clearing it. We MUST NOT toggle in this case.
+        if (selectionRef.current && selectionRef.current.trim().length > 0) {
+            // We clear it so that the NEXT click (after selection is gone) will work.
+            selectionRef.current = null;
+            return;
+        }
+
+        // 3. New selection check: If text was selected during this specific click, don't toggle.
+        const currentSelection = window.getSelection();
+        if (currentSelection && !currentSelection.isCollapsed) {
+            return;
+        }
+
+        // 4. Distance check: If the mouse moved significantly (drag/selection), don't toggle.
+
+        const dp = downPosRef.current;
+        if (Math.sqrt(Math.pow(e.clientX - dp.x, 2) + Math.pow(e.clientY - dp.y, 2)) > 10) return;
+
+        // 5. Time check: Prevent long-press triggers.
+        if (Date.now() - downTimeRef.current > 500) return;
+
+        onExpand(tx.intentHash);
+    };
+
     return (
         <Card
             onPointerEnter={() => prefetchTx(tx.intentHash, network)}
-            onPointerDown={(e) => {
-                downTimeRef.current = Date.now();
-                downPosRef.current = { x: e.clientX, y: e.clientY };
-
-                // Capture current selection state to differentiate between starting a selection
-                // and clicking after a selection already existed.
-                const selection = window.getSelection();
-                if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    // Check if the selection is inside this card's DOM
-                    if (e.currentTarget.contains(range.commonAncestorContainer)) {
-                        selectionRef.current = selection.toString();
-                    } else {
-                        selectionRef.current = null;
-                    }
-                } else {
-                    selectionRef.current = null;
-                }
-            }}
-            onClick={(e) => {
-                const target = e.target as HTMLElement;
-
-                // 1. Interactive check: If we click on a button, link, or any identified interactive role, don't toggle expansion.
-                if (target.closest('button, a, [role="button"], input, textarea')) return;
-
-                // 2. Deselection check: 
-                // If a selection EXISTED when we pressed down, it means we are now
-                // either interacting with it or clearing it. We MUST NOT toggle in this case.
-                if (selectionRef.current && selectionRef.current.trim().length > 0) {
-                    // We clear it so that the NEXT click (after selection is gone) will work.
-                    selectionRef.current = null;
-                    return;
-                }
-
-                // 3. New selection check: If text was selected during this specific click, don't toggle.
-                const currentSelection = window.getSelection();
-                if (currentSelection && !currentSelection.isCollapsed) {
-                    return;
-                }
-
-                // 4. Distance check: If the mouse moved significantly (drag/selection), don't toggle.
-
-                const dp = downPosRef.current;
-                if (Math.sqrt(Math.pow(e.clientX - dp.x, 2) + Math.pow(e.clientY - dp.y, 2)) > 10) return;
-
-                // 5. Time check: Prevent long-press triggers.
-                if (Date.now() - downTimeRef.current > 500) return;
-
-                onExpand(tx.intentHash);
-            }}
+            onPointerDown={handlePointerDown}
+            onClick={handleClick}
             className={`p-0 shadow-md transition-all duration-300 group cursor-pointer overflow-hidden ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
         >
             <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
@@ -400,9 +405,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
 
             <AnimatePresence initial={false}>
                 {isExpanded && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden bg-[var(--color-bg)]">
+                    <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden bg-[var(--color-bg)]">
                         <TransactionTabs details={details} tx={tx} t={t} onCopy={onCopy} copiedAddress={copiedAddress} formatEntity={formatEntity} readingMode={readingMode} network={network} columns={columns} timezone={timezone} locale={locale} marketData={marketData} />
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </Card>

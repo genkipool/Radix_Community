@@ -13,13 +13,10 @@ import { LazyPhaseGraphic } from './components/LazyPhaseGraphic';
 import type { EcosystemProps } from '../../types';
 
 export default function Ecosystem({ t, language }: EcosystemProps) {
-  const [activeTag, setActiveTag] = useState<string>("All");
+  const [state, setState] = useState({ prevLang: language, activeTag: "All" });
 
-  // Reset filter when language changes to avoid mismatch with localized tags
-  const [prevLanguage, setPrevLanguage] = useState(language);
-  if (language !== prevLanguage) {
-    setPrevLanguage(language);
-    setActiveTag("All");
+  if (language !== state.prevLang) {
+    setState({ prevLang: language, activeTag: "All" });
   }
 
   const phases = Array.from({ length: 32 }, (_, i) => {
@@ -42,10 +39,7 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
     return Array.from(tags);
   })();
 
-  const filteredPhases = (() => {
-    if (activeTag === "All") return phases;
-    return phases.filter(p => p.tag === activeTag);
-  })();
+  const filteredPhases = state.activeTag === "All" ? phases : phases.filter(p => p.tag === state.activeTag);
 
   return (
     <section id="ecosistema" className="py-24 bg-[var(--color-bg)] relative overflow-hidden">
@@ -66,8 +60,8 @@ export default function Ecosystem({ t, language }: EcosystemProps) {
         >
           <TagFilterBar
             tags={logicalTags}
-            activeTag={activeTag === "All" ? null : activeTag}
-            onSelect={(tag) => setActiveTag(tag || "All")}
+            activeTag={state.activeTag === "All" ? null : state.activeTag}
+            onSelect={(tag) => setState(s => ({ ...s, activeTag: tag || "All" }))}
             allLabel={t.ecosistema?.all}
           />
         </ScrollReveal>

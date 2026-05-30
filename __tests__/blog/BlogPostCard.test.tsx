@@ -10,6 +10,31 @@ import type { BlogPost, BlogDictionary } from '@/features/blog/types';
 // Replace framer-motion with simple div wrappers so we can test state changes
 // without depending on animation internals.
 vi.mock('motion/react', () => ({
+    m: new Proxy({}, { get: (_t, _p) => new Proxy({}, { get: () => () => null }) }),
+    m: new Proxy({}, {
+        get: (_target, prop) => {
+            const Component = ({ children, ...rest }: { children?: React.ReactNode } & Record<string, unknown>) => {
+                // Filter out motion-specific props and pass style through for z-index testing
+                const validProps: Record<string, unknown> = {};
+                const motionOnlyKeys = new Set([
+                    'initial', 'animate', 'exit', 'whileHover', 'whileInView',
+                    'whileTap', 'whileFocus', 'whileDrag', 'variants',
+                    'transition', 'viewport', 'layout', 'layoutId',
+                    'onAnimationStart', 'onAnimationComplete', 'drag',
+                    'dragConstraints', 'dragElastic', 'hoverEffect',
+                    'innerClassName',
+                ]);
+                for (const [key, val] of Object.entries(rest)) {
+                    if (!motionOnlyKeys.has(key)) {
+                        validProps[key] = val;
+                    }
+                }
+                return React.createElement(prop as string, validProps, children);
+            };
+            Component.displayName = `motion.${String(prop)}`;
+            return Component;
+        },
+    }),
     motion: new Proxy({}, {
         get: (_target, prop) => {
             const Component = ({ children, ...rest }: { children?: React.ReactNode } & Record<string, unknown>) => {

@@ -118,8 +118,8 @@ export function TransactionDetailsTab({
                         {resolvedName}
                     </span>
                 )}
-                <span
-                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
+                <button type="button"
+                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal text-left"
                     title={wellKnownTip || addr}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -127,7 +127,7 @@ export function TransactionDetailsTab({
                     }}
                 >
                     {addr.length > 25 ? `${addr.slice(0, 12)}...${addr.slice(-12)}` : addr}
-                </span>
+                </button>
                 <button
                     type="button"
                     onClick={(e) => {
@@ -203,8 +203,8 @@ export function TransactionDetailsTab({
                     </span>
                 )}
                 <span className="inline-flex items-center gap-2 max-w-full">
-                    <span
-                        className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] break-all"
+                    <button type="button"
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] break-all text-left"
                         title={wellKnownTip || addr}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -212,7 +212,7 @@ export function TransactionDetailsTab({
                         }}
                     >
                         {addr}
-                    </span>
+                    </button>
                     <button
                         type="button"
                         onClick={(e) => {
@@ -507,8 +507,8 @@ export function TransactionDetailsTab({
                                 </EventRow>
                                 <EventRow label={tStr(te?.resource, 'Resource')}>
                                     <span className="inline-flex items-center gap-1.5 align-middle">
-                                        <span
-                                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal"
+                                        <button type="button"
+                                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors font-mono text-[11px] font-normal text-left"
                                             title={wellKnownTip || resource}
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -516,7 +516,7 @@ export function TransactionDetailsTab({
                                             }}
                                         >
                                             {resource.length > 25 ? `${resource.slice(0, 12)}...${resource.slice(-12)}` : resource}
-                                        </span>
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={(e) => {
@@ -697,10 +697,10 @@ export function TransactionDetailsTab({
                     )}
 
                     <div className="space-y-3">
-                        {receipt.events.map((ev, i: number) => {
+                        {receipt.events.map((ev) => {
                             const { titleText, description, tooltip } = classifyEvent(ev);
                             return (
-                                <div key={`event-${i}`} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
+                                <div key={'event-' + JSON.stringify(ev).slice(0, 50)} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
                                     <div
                                         title={tooltip as string}
                                         className={`font-bold text-sm text-[var(--color-primary)] mb-3 bg-[var(--color-primary)]/10 inline-block px-2 py-1 rounded ${tooltip ? 'cursor-help' : ''}`}

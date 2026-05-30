@@ -3,7 +3,7 @@
  */
 
 'use client';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import React, { useState, useId } from 'react';
 import { X, FileText, Layers, ImageIcon, Globe, Tag, Wallet, Sparkles, CheckCircle } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
@@ -66,7 +66,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
   return (
     <>
       <ModalOverlay onClose={onClose} blur="md" />
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -105,7 +105,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
           {/* Body */}
           <div className="overflow-y-auto custom-scrollbar flex-1 p-6 space-y-5">
             {submitted ? (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-4"
@@ -114,7 +114,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                 <p className="text-lg font-bold text-[var(--color-text-main)]">
                   {t.dapps_page.modal.success}
                 </p>
-              </motion.div>
+              </m.div>
             ) : (
               <>
                 {/* Name */}
@@ -204,7 +204,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                     {DAPP_TAGS.map(tag => {
                       const isSelected = selectedTags.includes(tag);
                       return (
-                        <button
+                        <button aria-label="button action"
                           key={tag}
                           type="button"
                           onClick={() => toggleTag(tag)}
@@ -228,7 +228,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                       <Wallet className="size-5" />
                     </div>
                     <div>
-                      <button
+                      <button aria-label="button action"
                         type="button"
                         onClick={() => setShowUnderConstruction(true)}
                         className="text-left font-bold text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors"
@@ -261,7 +261,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
             </div>
           )}
         </div>
-      </motion.div>
+      </m.div>
     </>
   );
 }

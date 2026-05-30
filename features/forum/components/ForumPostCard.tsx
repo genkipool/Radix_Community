@@ -1,7 +1,8 @@
+
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import {
     Clock, Eye, MessageSquare, Heart, ArrowUp
 } from 'lucide-react';
@@ -90,14 +91,14 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
 
     const renderInlineExpanded = () => {
         return (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }} className="overflow-hidden border-t border-[var(--color-card-border)] bg-[var(--color-surface)]/30">
                 <div className="pl-4 sm:pl-16 py-4 pr-5 sm:pr-5">
                     <div className="relative">
                         <div className="absolute top-0 bottom-0 -left-2 sm:-left-6 w-0.5 bg-[var(--color-card-border)]/50" />
                         <div className="space-y-4 relative z-10 w-full">
-                            {filteredReplies.map((reply, idx) => (
-                                <div key={`${post.id}-${reply.id}-${idx}`} className="w-full">
+                            {filteredReplies.map((reply) => (
+                                <div key={`${post.id}-${reply.id}`} className="w-full">
                                     <ForumMessage
                                         authorId={reply.authorId}
                                         content={reply.content || ''}
@@ -119,7 +120,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         );
     };
 
@@ -130,7 +131,7 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
     };
 
     return (
-        <motion.div
+        <m.div
             className={`rounded-3xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/40 backdrop-blur-xl shadow-md hover:shadow-xl hover:border-[var(--color-primary)]/30 group cursor-pointer overflow-hidden transition-all duration-500 ${isExpanded ? 'z-20' : 'z-10'}`}
             onClick={handleCardClick}
         >
@@ -348,6 +349,6 @@ export function ForumPostCard({ post }: ForumPostCardProps) {
             </div>
             {/* Inline expand integrated inside the card container */}
             <AnimatePresence>{isExpanded && !readingMode && renderInlineExpanded()}</AnimatePresence>
-        </motion.div>
+        </m.div>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Share2, Check } from 'lucide-react';
 
 interface ShareButtonProps {
@@ -21,7 +21,7 @@ export function ShareButton({ url, title, copiedLabel }: ShareButtonProps) {
   };
 
   return (
-    <motion.button
+    <m.button
       whileHover={{ scale: 1.1, translateY: -2 }}
       whileTap={{ scale: 0.9 }}
       onClick={handleShare}
@@ -30,25 +30,25 @@ export function ShareButton({ url, title, copiedLabel }: ShareButtonProps) {
     >
       <AnimatePresence mode="wait">
         {copied ? (
-          <motion.div
+          <m.div
             key="check"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
           >
             <Check className="size-4 text-green-500" />
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="share"
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.5, opacity: 0 }}
           >
             <Share2 className="size-4" />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </motion.button>
+    </m.button>
   );
 }

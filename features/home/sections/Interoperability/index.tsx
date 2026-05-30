@@ -26,8 +26,8 @@ export default function Interoperability({ t }: BaseSectionProps) {
             <h3 className="text-2xl font-bold text-[var(--color-text-main)] mb-6">{t.interoperabilidad?.whatTitle}</h3>
             <p className="text-[var(--color-text-muted)] mb-8 leading-relaxed">{t.interoperabilidad?.whatDesc}</p>
             <div className="space-y-6">
-              {(t.interoperabilidad?.features as Array<{ title: string; desc: string }> || []).map((feature: { title: string; desc: string }, i: number) => (
-                <div key={`feature-${i}`} className="flex gap-4">
+              {(t.interoperabilidad?.features as Array<{ title: string; desc: string }> || []).map((feature: { title: string; desc: string }) => (
+                <div key={feature.title} className="flex gap-4">
                   <div className="flex-shrink-0 size-10 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-[var(--color-primary)] font-bold flex items-center justify-center">
                     ✓
                   </div>

@@ -10,9 +10,8 @@ export function HighlightText({ text, query }: HighlightTextProps) {
     const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return (
         <>
-            {parts.map((part, i) =>
-                part.toLowerCase() === query.toLowerCase()
-                    ? <mark key={`hl-${i}`} className="bg-[var(--color-primary)]/30 text-[var(--color-text-main)] rounded px-0.5">{part}</mark>
+            {parts.map((part, i) => part.toLowerCase() === query.toLowerCase()
+                    ? <mark key={`${i}-${part}`} className="bg-[var(--color-primary)]/30 text-[var(--color-text-main)] rounded px-0.5">{part}</mark>
                     : part
             )}
         </>

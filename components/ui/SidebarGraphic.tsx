@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useTheme } from '@/context/ThemeContext';
 import type { Theme } from '@/context/ThemeContext';
-import { useState, useId, useEffect } from 'react';
+import { useRef,  useState, useId, useEffect } from 'react';
 
 function getHtmlTheme(): Theme {
     if (typeof document === 'undefined') return 'radix-dark';

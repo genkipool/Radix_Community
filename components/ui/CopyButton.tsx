@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -88,7 +88,7 @@ export function CopyButton({
         >
             <AnimatePresence mode="wait" initial={false}>
                 {isCopied ? (
-                    <motion.div
+                    <m.div
                         key="check"
                         initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
                         animate={{ scale: 1, opacity: 1, rotate: 0 }}
@@ -98,9 +98,9 @@ export function CopyButton({
                     >
                         <Check size={iconSize} />
                         {label && <span>{copiedText}</span>}
-                    </motion.div>
+                    </m.div>
                 ) : (
-                    <motion.div
+                    <m.div
                         key="copy"
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -110,13 +110,13 @@ export function CopyButton({
                     >
                         <Copy size={iconSize} />
                         {label && <span>{label}</span>}
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
 
             {/* Subtle glow effect on copy */}
             {isCopied && (
-                <motion.div
+                <m.div
                     layoutId="copy-glow"
                     className="absolute inset-0 z-[-1] rounded-lg bg-green-500/10 blur-md"
                     initial={{ opacity: 0 }}

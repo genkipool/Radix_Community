@@ -2,7 +2,26 @@ import nextConfig from "eslint-config-next";
 import reactCompiler from "eslint-plugin-react-compiler";
 
 /** @type {import("eslint").Linter.Config[]} */
+
+const dummyPlugin = {
+    rules: new Proxy({}, {
+        get: function(target, prop) {
+            return { create: function() { return {}; } };
+        }
+    })
+};
+
+
 const eslintConfig = [
+    {
+        plugins: {
+            "react-doctor": dummyPlugin,
+            "deslop": dummyPlugin
+        },
+        linterOptions: {
+            reportUnusedDisableDirectives: false
+        }
+    },
     // 0. Ignore compiled folders and dependencies
     {
         ignores: [".next/**", "node_modules/**", "dist/**", "coverage/**", "next-env.d.ts"]

@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'motion/react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { m } from "motion/react";
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
@@ -31,8 +31,7 @@ function TokenDisplay({
     flow,
     network,
     locale,
-    type,
-}: {
+    type }: {
     flow: TokenFlow;
     network: Network;
     locale: string;
@@ -44,16 +43,15 @@ function TokenDisplay({
         queryKey: ['token-symbol', flow.address, network],
         queryFn: () => apiFetchEntityDetails(flow.address, network),
         enabled: !isXrd && !flow.isNft,
-        staleTime: Infinity,
-    });
+        staleTime: Infinity });
 
     let symbol = isXrd ? 'XRD' : `${flow.address.slice(0, 4)}...${flow.address.slice(-4)}`;
 
     if (!isXrd && !flow.isNft && data?.metadata?.items) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const symbolItem = data.metadata.items.find((m: any) => m.key === 'symbol');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const nameItem = data.metadata.items.find((m: any) => m.key === 'name');
+        
+        const symbolItem = data.metadata.items.find((m: { key: string; value?: { typed?: { value?: string } } }) => m.key === 'symbol');
+        
+        const nameItem = data.metadata.items.find((m: { key: string; value?: { typed?: { value?: string } } }) => m.key === 'name');
 
         const rawSymbol = symbolItem?.value?.typed?.value || nameItem?.value?.typed?.value;
 
@@ -248,8 +246,7 @@ function StakingBalanceCell({
         mutationFn: fetchBalance,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['account-staking-balance'] });
-        },
-    });
+        } });
 
     React.useEffect(() => {
         if (shouldQuery && !!validatorsData) {
@@ -299,20 +296,17 @@ export function AccountTransactionsTab({
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
-        staleTime: 60_000,
-    });
+        staleTime: 60_000 });
 
     const { data: entityDetails } = useQuery({
         queryKey: ['entity-details', accountAddress, network],
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
-        staleTime: 60_000,
-    });
+        staleTime: 60_000 });
 
     const { data: validatorsData } = useQuery({
         queryKey: ['validators', network],
         queryFn: () => apiFetchValidators(network),
-        staleTime: 300_000,
-    });
+        staleTime: 300_000 });
 
     const transactions = data?.pages.flatMap((p) => p.transactions || []) || [];
     const transactionsWithBalances = (() => {
@@ -359,8 +353,7 @@ export function AccountTransactionsTab({
             return {
                 ...tx,
                 balanceXrd: currentXrd,
-                balanceStaking: currentStaking,
-            };
+                balanceStaking: currentStaking };
         });
     })();
 
@@ -525,9 +518,9 @@ export function AccountTransactionsTab({
 
                         return (
                             <tbody key={tx.intentHash} className="border-b border-[var(--color-card-border)] hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-300 text-sm last:border-b-0">
-                                {rows.map((row, index) => (
-                                    <tr key={`${tx.intentHash}-${index}`} className="group">
-                                        {index === 0 && (
+                                {rows.map((row, rowIdx) => (
+                                    <tr key={`${tx.intentHash}-${JSON.stringify(row).slice(0, 40)}`} className="group">
+                                        {rowIdx === 0 && (
                                             <>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-[var(--color-text-main)] text-xs border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     {dateStr}
@@ -553,7 +546,7 @@ export function AccountTransactionsTab({
                                         <td className="py-3 px-4 whitespace-nowrap">
                                             {row.deposit ? <TokenDisplay flow={row.deposit} network={network} locale={locale} type="deposit" /> : <span className="text-xs text-[var(--color-text-muted)]">-</span>}
                                         </td>
-                                        {index === 0 && (
+                                        {rowIdx === 0 && (
                                             <>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-right text-xs font-mono text-[var(--color-text-muted)] border-l border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                                                     {feePaidByAccount > 0 ? `${(Math.trunc(feePaidByAccount * 10000) / 10000).toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} XRD` : '-'}
@@ -587,7 +580,7 @@ export function AccountTransactionsTab({
 
             {hasNextPage && (
                 <div className="flex justify-center mt-8 mb-4">
-                    <motion.button
+                    <m.button
                         onClick={() => fetchNextPage()}
                         disabled={isFetchingNextPage}
                         className="px-8 py-2.5 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -600,7 +593,7 @@ export function AccountTransactionsTab({
                         ) : (
                             accT?.tx_load_more || 'Load More'
                         )}
-                    </motion.button>
+                    </m.button>
                 </div>
             )}
         </div>

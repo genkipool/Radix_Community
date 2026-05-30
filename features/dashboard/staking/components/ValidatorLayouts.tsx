@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
 import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import { formatXRD, formatNumber, truncateAddress, formatPercent, formatDisplayUrl } from '@/utils/formatters';
@@ -130,8 +130,8 @@ export const Layout1Col = ({
                         </p>
                     </div>
 
-                    <div
-                        className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-[var(--color-card-border)] mt-auto"
+                    <button type="button"
+                        className="block w-full text-left flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-[var(--color-card-border)] mt-auto cursor-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-text-muted)] min-w-0">
@@ -164,7 +164,7 @@ export const Layout1Col = ({
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
 
@@ -261,8 +261,8 @@ export const Layout2Col = ({
                         ]} />
                     </div>
 
-                    <div
-                        className={`flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''}`}
+                    <button type="button"
+                        className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
@@ -294,7 +294,7 @@ export const Layout2Col = ({
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
 
@@ -369,8 +369,8 @@ export const Layout4Col = ({
             </div>
 
             {/* Row 3: Footer */}
-            <div
-                className={`flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''}`}
+            <button type="button"
+                className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
@@ -400,7 +400,7 @@ export const Layout4Col = ({
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
                 </div>
-            </div>
+            </button>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
@@ -476,8 +476,8 @@ export const Layout6Col = ({
             </div>
 
             {/* Row 4: Footer — SVG Web, SVG Address, Button */}
-            <div
-                className={`flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)] ${!isExpanded ? 'mt-auto' : ''}`}
+            <button type="button"
+                className={`block w-full text-left flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className={`flex items-center ${columns >= 8 ? 'gap-1' : 'gap-2'}`}>
@@ -508,7 +508,7 @@ export const Layout6Col = ({
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
                 </div>
-            </div>
+            </button>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
@@ -523,7 +523,7 @@ const ExpandPanel = ({
 }: ExpandPanelProps) => (
     <AnimatePresence initial={false}>
         {isExpanded && (
-            <motion.div
+            <m.div
                 className="flex-1 flex flex-col overflow-hidden w-full"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -541,7 +541,7 @@ const ExpandPanel = ({
                     locale={locale}
                     onDownloadCsv={onDownloadCsv}
                 />
-            </motion.div>
+            </m.div>
         )}
     </AnimatePresence>
 );
@@ -560,23 +560,23 @@ const CopyStampIcon = ({
     };
 
     return (
-        <div
+        <button type="button"
             className="p-1 hover:bg-[var(--color-primary)]/10 rounded-md transition-colors cursor-pointer shrink-0"
             onClick={handleAddressCopy}
             title={address}
         >
             <AnimatePresence mode="wait" initial={false}>
                 {isCopied ? (
-                    <motion.div key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <m.div key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.2 }}>
                         <Check className="size-3.5 text-green-500" />
-                    </motion.div>
+                    </m.div>
                 ) : (
-                    <motion.div key="stamp" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: 0.2 }}>
+                    <m.div key="stamp" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} transition={{ duration: 0.2 }}>
                         <Stamp className="size-3.5 text-[var(--color-primary)]" />
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
-        </div>
+        </button>
     );
 };
 
@@ -588,7 +588,7 @@ const CopyAddressButton = ({
     const isCopied = !!copiedAddress && copiedAddress === address;
     const displayText = truncate ? truncateAddress(address, start, end) : address;
     return (
-        <div
+        <button type="button"
             className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'}`}
             onClick={() => onCopy(address)}
             title={address}
@@ -598,7 +598,7 @@ const CopyAddressButton = ({
                 {sanitizeText(displayText)}
             </span>
             <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0 translate-y-[-0.5px]" />
-        </div>
+        </button>
     );
 };
 

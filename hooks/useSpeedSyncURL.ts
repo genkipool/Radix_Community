@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams as useSP } from 'next/navigation';
 
 /**
  * useSpeedSyncURL Hook
@@ -16,7 +16,7 @@ export function useSpeedSyncURL<T extends string>(
     defaultValue: T | null = null
 ) {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSP();
     const [, startTransition] = useTransition();
     
     // Optimistic state for instant UI response during URL push

@@ -18,7 +18,7 @@ export default function Staking({ t, language }: LanguageSectionProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {(t.staking.stats as Array<Record<string, string>>).map((stat, i: number) => (
-            <FadeIn key={`stat-${i}`} delay={i * 0.1} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-8 rounded-2xl text-center relative overflow-hidden group">
+            <FadeIn key={stat.title as string} delay={i * 0.1} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-8 rounded-2xl text-center relative overflow-hidden group">
               <div className="absolute top-0 right-0 size-24 bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent blur-2xl -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
               <div className="text-4xl font-bold text-[var(--color-text-main)] mb-2 relative z-10">{stat.value as string}</div>
               <h3 className="text-xl font-bold text-[var(--color-secondary)] mb-4 relative z-10">{stat.title as string}</h3>
@@ -29,7 +29,7 @@ export default function Staking({ t, language }: LanguageSectionProps) {
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
           {(t.staking.features as Array<Record<string, string>>).map((feature, i: number) => (
-            <FadeIn key={`feature-${i}`} delay={0.3 + i * 0.1} className="group p-8 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl">
+            <FadeIn key={feature.title as string} delay={0.3 + i * 0.1} className="group p-8 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/50 transition-all duration-300 shadow-sm hover:shadow-xl">
               <div className="size-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 {i === 0 && <ShieldCheck className="size-6 text-[var(--color-primary)]" />}
                 {i === 1 && <Network className="size-6 text-[var(--color-secondary)]" />}

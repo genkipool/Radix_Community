@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { Validator } from '@/types/radix';
@@ -71,9 +72,10 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
 
     useEffect(() => {
         return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            const id = timeoutRef.current;
+            if (id) clearTimeout(id);
         };
-    }, [timeoutRef]);
+    }, []);
 
     useEffect(() => {
         if (!isOpen) return;

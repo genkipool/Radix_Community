@@ -1,5 +1,5 @@
 'use client';
-import { motion, HTMLMotionProps } from 'motion/react';
+import { m, HTMLMotionProps } from "motion/react";
 
 interface ModalOverlayProps extends HTMLMotionProps<'div'> {
     onClose: () => void;
@@ -18,7 +18,7 @@ export function ModalOverlay({ onClose, blur = 'sm', className = '', ...props }:
     };
 
     return (
-        <motion.div
+        <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

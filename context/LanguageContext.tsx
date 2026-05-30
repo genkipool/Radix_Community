@@ -1,6 +1,6 @@
 'use client';
-import { createContext, use, ReactNode, useState, useEffect } from "react";
-import { mergeTranslations, type Dictionary } from "@/i18n";
+import React, { useEffect, createContext, use, useState, ReactNode } from 'react';
+import type { Dictionary } from "@/i18n";
 
 type Language = "en" | "es";
 
@@ -21,15 +21,15 @@ export function LanguageProvider({
   language: Language;
   dictionary: Dictionary;
 }) {
-  const [dict, setDict] = useState<Dictionary>(dictionary);
-  const [prevDict, setPrevDict] = useState(dictionary);
-  if (dictionary !== prevDict) {
-    setPrevDict(dictionary);
-    setDict(dictionary);
+  const [state, setState] = useState({ prevDict: dictionary, dict: dictionary });
+
+  if (dictionary !== state.prevDict) {
+    setState({ prevDict: dictionary, dict: dictionary });
   }
 
   const enrich = (partial: Partial<Dictionary>) => {
-    setDict(prev => {
+    setState(s => {
+      const prev = s.dict;
       // Check if any of the incoming partial's top-level keys are actually new or different.
       // We focus on the features being loaded (home, dapps, etc.)
       const keys = Object.keys(partial) as Array<keyof Dictionary>;
@@ -38,18 +38,14 @@ export function LanguageProvider({
       // skip merging to prevent render loops.
       const hasNewData = keys.some(key => prev[key] === undefined);
       
-      if (!hasNewData) {
-        return prev;
-      }
-      
-      return mergeTranslations(prev, [partial as Record<string, unknown>]) as unknown as Dictionary;
+      if (!hasNewData) return s;
+
+      return { ...s, dict: { ...prev, ...partial } };
     });
   };
 
-  const value = { language, t: dict, enrich };
-
   return (
-    <LanguageContext.Provider value={value}>
+    <LanguageContext.Provider value={{ language, t: state.dict, enrich }}>
       {children}
     </LanguageContext.Provider>
   );

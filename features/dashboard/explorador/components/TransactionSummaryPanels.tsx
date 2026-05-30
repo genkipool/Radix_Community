@@ -201,8 +201,8 @@ function AirdropRewardCard({
                 </span>
                 <div className="flex items-center justify-between w-full">
                     {airdropData?.resource ? (
-                        <div
-                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors"
+                        <button type="button"
+                            className="flex items-center gap-1 cursor-pointer hover:text-[var(--color-primary)] transition-colors text-left"
                             onClick={() => onResourceClick?.(airdropData?.resource!)}
                         >
                             {iconUrl && (
@@ -216,7 +216,7 @@ function AirdropRewardCard({
                             <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[120px]" title={airdropData?.resource}>
                                 {airdropData?.resource.slice(0, 8)}...{airdropData?.resource.slice(-6)}
                             </span>
-                        </div>
+                        </button>
                     ) : <div />}
                     <span className="text-base font-mono font-black text-purple-400 flex items-center gap-1.5">
                         +{airdropData?.amount}
@@ -400,13 +400,13 @@ function VaultCreationCard({
                             >
                                 {te?.resource || 'Resource'}
                             </span>
-                            <span
-                                className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''}`}
+                            <button type="button"
+                                className={`font-mono text-xs truncate text-[var(--color-text-main)] ${isClickable ? 'cursor-pointer hover:text-amber-600 transition-colors underline decoration-amber-500/30 underline-offset-2' : ''} text-left`}
                                 title={wellKnownTip || clean}
                                 onClick={() => isClickable && _onResourceClick?.(clean)}
                             >
                                 {short}
-                            </span>
+                            </button>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onCopy(clean); }}
@@ -493,7 +493,7 @@ export function BetVoteSection({
                 {te?.bet_vote || 'Vote / Prediction'}
             </h3>
             <div className="p-3 space-y-2">
-                {voteEvents.map((ev, idx) => {
+                {voteEvents.map((ev) => {
                     const emitterData = ev.emitter as { entity?: { entity_address: string; entity_type: string }, package_address?: string };
                     const emitter = sanitizeText(emitterData?.entity?.entity_address || emitterData?.package_address || '');
                     const entityType = emitterData?.entity?.entity_type || (emitterData?.package_address ? 'Package' : '');
@@ -503,7 +503,7 @@ export function BetVoteSection({
 
                     return (
                         <BetVoteCard
-                            key={`vote-${idx}`}
+                            key={`vote-${emitter}-${option}-${amount}`}
                             option={option}
                             emitter={emitter}
                             entityType={entityType}

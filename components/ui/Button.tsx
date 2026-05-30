@@ -1,6 +1,6 @@
 'use client';
 import type { ReactNode } from 'react';
-import { motion, type HTMLMotionProps } from 'motion/react';
+import { m, type HTMLMotionProps } from "motion/react";
 import { Loader2 } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'soft';
@@ -45,7 +45,7 @@ export function Button({
     ...props
 }: ButtonProps) {
     return (
-        <motion.button
+        <m.button
             whileTap={{ scale: 0.96 }}
             disabled={isLoading || disabled}
             className={`${BASE} ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
@@ -55,6 +55,6 @@ export function Button({
             {!isLoading && leftIcon && <span className="mr-2">{leftIcon}</span>}
             {children}
             {!isLoading && rightIcon && <span className="ml-2">{rightIcon}</span>}
-        </motion.button>
+        </m.button>
     );
 }

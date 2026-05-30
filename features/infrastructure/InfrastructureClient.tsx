@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import {
   Database, Network, Code2, TrendingUp, ArrowLeftRight,
   Monitor, Shield, Wrench, Globe2, Layers, GitBranch,
@@ -121,7 +121,7 @@ function LayerCard({ layer, isExpanded, onToggle, layerT, searchQuery, index }: 
         {/* ── Expanded body ── */}
         <AnimatePresence initial={false}>
           {isExpanded && (
-            <motion.div
+            <m.div
               key="body"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -154,7 +154,7 @@ function LayerCard({ layer, isExpanded, onToggle, layerT, searchQuery, index }: 
                   })}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>

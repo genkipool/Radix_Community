@@ -61,8 +61,12 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const [{ locale }, cookieStore] = await Promise.all([params, cookies()]);
-  const dictionary = await getFeatureDictionary(locale as Locale, []);
+  const p = await params;
+  const locale = p.locale as Locale;
+  const [cookieStore, dictionary] = await Promise.all([
+    cookies(),
+    getFeatureDictionary(locale as Locale, [])
+  ]);
   const theme = parseTheme(cookieStore.get('theme')?.value);
 
   // Read and verify wallet session from HttpOnly cookie
@@ -74,16 +78,10 @@ export default async function RootLayout({
       <head>
         <Script
           id="theme-strategy"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`,
-          }}
-        />
+          >{`(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`}</Script>
         <Script
           id="tz-strategy"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;var c=document.cookie.match(/(^|;\\s*)client-tz=([^;]+)/);if(!c||decodeURIComponent(c[2])!==z){document.cookie='client-tz='+encodeURIComponent(z)+';path=/;max-age=31536000';}}catch(e){}})();`,
-          }}
-        />
+          >{`(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;var c=document.cookie.match(/(^|;\\s*)client-tz=([^;]+)/);if(!c||decodeURIComponent(c[2])!==z){document.cookie='client-tz='+encodeURIComponent(z)+';path=/;max-age=31536000';}}catch(e){}})();`}</Script>
       </head>
       <body suppressHydrationWarning>
         <Providers locale={locale} dictionary={dictionary} theme={theme} walletSession={walletSession}>

@@ -1,5 +1,5 @@
 'use client';
-import { createContext, use, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useEffect, useState, ReactNode } from 'react';
 
 interface AnimationContextType {
   canAnimate: boolean;
@@ -27,7 +27,7 @@ export function AnimationProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(outer);
   }, []);
 
-  const value = useMemo(() => ({ canAnimate }), [canAnimate]);
+  const value = { canAnimate };
 
   return (
     <AnimationContext.Provider value={value}>
@@ -36,7 +36,4 @@ export function AnimationProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function useAnimation() {
-  return use(AnimationContext);
-}
+

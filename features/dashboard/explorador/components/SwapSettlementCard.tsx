@@ -89,7 +89,7 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
             {(symbol || name) && <span className="text-xs font-bold text-[var(--color-text-main)] truncate max-w-full text-center">{symbol || name}</span>}
             <span className={`text-sm font-mono font-black ${textColorClass}`}>{sign}{fmtAmt}</span>
             <div className="flex items-center gap-1 min-w-0 max-w-full">
-                <span className={`text-[9px] font-mono text-[var(--color-text-muted)] truncate ${onResourceClick ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''}`} title={clean} onClick={() => onResourceClick?.(clean)}>{trunc(clean)}</span>
+                <button type="button" className={`text-[9px] font-mono text-[var(--color-text-muted)] truncate ${onResourceClick ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''}`} title={clean} onClick={() => onResourceClick?.(clean)}>{trunc(clean)}</button>
                 <CopyBtn addr={clean} onCopy={onCopy} copiedAddress={copiedAddress} />
             </div>
         </div>
@@ -98,7 +98,7 @@ function TokenColumn({ resource, amount, side, tt, onCopy, copiedAddress, onReso
 
 /* ── Routing intermediary node ── */
 /* ── Entity name resolver (invisible, feeds names map) ── */
-function NameResolver({ address, network, onResolved }: {
+function NameResolver({ address, network, onResolved: trigger }: {
     address: string; network: Network;
     onResolved: (addr: string, name: string, symbol: string, blueprintName: string) => void;
 }) {
@@ -107,12 +107,9 @@ function NameResolver({ address, network, onResolved }: {
     const symbol = meta?.symbol || '';
     const blueprintName = meta?.blueprintName || '';
 
-    const prevRef = React.useRef('');
-    const key = `${address}:${name}:${symbol}:${blueprintName}`;
-    if (key !== prevRef.current) {
-        prevRef.current = key;
-        onResolved(address, name, symbol, blueprintName);
-    }
+    useEffect(() => {
+        trigger(address, name, symbol, blueprintName);
+    }, [address, name, symbol, blueprintName, trigger]);
 
     return null;
 }
@@ -148,9 +145,9 @@ function RoutingMermaid({ fungibles, feeEntries, initiatorAddrs, network, tt, tx
 
     const handleResolved = (addr: string, name: string, symbol: string, blueprintName: string) => {
         const clean = sanitizeText(addr);
-        if (name) setNames(prev => { const n = new Map(prev); n.set(clean, name); return n; });
-        if (symbol) setSymbols(prev => { const s = new Map(prev); s.set(clean, symbol); return s; });
-        if (blueprintName) setBlueprintNames(prev => { const b = new Map(prev); b.set(clean, blueprintName); return b; });
+        if (name) setNames(prev => { if (prev.get(clean) === name) return prev; const n = new Map(prev); n.set(clean, name); return n; });
+        if (symbol) setSymbols(prev => { if (prev.get(clean) === symbol) return prev; const s = new Map(prev); s.set(clean, symbol); return s; });
+        if (blueprintName) setBlueprintNames(prev => { if (prev.get(clean) === blueprintName) return prev; const b = new Map(prev); b.set(clean, blueprintName); return b; });
     };
 
     useEffect(() => {
@@ -227,18 +224,18 @@ function BalanceRow({ change, isUser, onCopy, copiedAddress, onResourceClick, ne
         <tr className="border-b border-[var(--color-card-border)] hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-300 last:border-b-0 group">
             <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors min-w-[240px]">
                 <div className="flex items-center gap-1.5">
-                    <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)]" title={entityClean} onClick={() => onResourceClick?.(entityClean)}>
+                    <button type="button" className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)] text-left" title={entityClean} onClick={() => onResourceClick?.(entityClean)}>
                         {entityMeta?.name ? <><span className="font-bold text-[var(--color-text-main)] font-sans mr-1">{entityMeta.name}</span>{trunc(entityClean, 12, 10)}</> : trunc(entityClean, 20, 16)}
-                    </span>
+                    </button>
                     <CopyBtn addr={entityClean} onCopy={onCopy} copiedAddress={copiedAddress} />
                 </div>
             </td>
             <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors min-w-[140px]"><span className={`text-[9px] font-bold uppercase tracking-wider font-sans ${roleColor}`}>{role}</span></td>
             <td className="py-3 px-4 border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
                 <div className="flex items-center gap-1.5">
-                    <span className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)]" title={resourceClean} onClick={() => onResourceClick?.(resourceClean)}>
+                    <button type="button" className="cursor-pointer hover:text-[var(--color-primary)] transition-colors text-[10px] font-mono text-[var(--color-text-muted)] text-left" title={resourceClean} onClick={() => onResourceClick?.(resourceClean)}>
                         {trunc(resourceClean, 20, 36)}
-                    </span>
+                    </button>
                     <CopyBtn addr={resourceClean} onCopy={onCopy} copiedAddress={copiedAddress} />
                 </div>
             </td>
@@ -300,7 +297,7 @@ export function SwapSettlementCard({
                     <div className="flex items-center gap-2.5 opacity-80 hover:opacity-100 transition-opacity border-b border-dashed border-[var(--color-card-border)] pb-3">
                         <Wallet className="size-4 text-[var(--color-text-muted)]" />
                         {accountName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[160px]">{accountName}</span>}
-                        <span className="text-[12px] font-mono text-[var(--color-text-muted)] truncate cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanAccount} onClick={() => onResourceClick?.(cleanAccount)}>{trunc(cleanAccount, 12, 12)}</span>
+                        <button type="button" className="text-[12px] font-mono text-[var(--color-text-muted)] truncate cursor-pointer hover:text-[var(--color-primary)] transition-colors text-left" title={cleanAccount} onClick={() => onResourceClick?.(cleanAccount)}>{trunc(cleanAccount, 12, 12)}</button>
                         <CopyBtn addr={cleanAccount} onCopy={onCopy} copiedAddress={copiedAddress} />
                     </div>
 
@@ -315,7 +312,7 @@ export function SwapSettlementCard({
                                     <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[var(--color-accent)]">Swap</span>
                                     {dexName && <span className="text-[11px] font-bold text-[var(--color-text-main)] truncate max-w-[140px]" title={dexName}>{dexName}</span>}
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[110px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 10, 6)}</span>
+                                        <button type="button" className="text-[9px] font-mono text-[var(--color-text-muted)] truncate max-w-[110px] cursor-pointer hover:text-[var(--color-primary)] transition-colors text-left" title={cleanDex} onClick={() => onResourceClick?.(cleanDex)}>{trunc(cleanDex, 10, 6)}</button>
                                         <CopyBtn addr={cleanDex} onCopy={onCopy} copiedAddress={copiedAddress} />
                                     </div>
                                 </div>

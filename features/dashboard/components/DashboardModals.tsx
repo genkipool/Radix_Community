@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { FloatingNav } from '@/components/ui/FloatingNav';
 import { ValidatorDetailView } from '../staking/components/ValidatorDetailView';
@@ -55,7 +55,7 @@ export const DashboardModals = ({
       {readingMode && activeView === 'staking' && expandedPost && (
         <React.Fragment key="validator-modal">
           <ModalOverlay onClose={closeExpanded} blur="sm" />
-          <motion.div
+          <m.div
             key="validator-modal-motion"
             initial={{ opacity: 0, scale: 0.95, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -106,7 +106,7 @@ export const DashboardModals = ({
                 marketData={marketData}
               />
             </div>
-          </motion.div>
+          </m.div>
         </React.Fragment>
       )}
     </AnimatePresence>
@@ -158,7 +158,7 @@ export const DashboardModals = ({
       {readingMode && expandedAccount && (
         <React.Fragment key="account-modal">
           <ModalOverlay onClose={closeExpanded} blur="sm" />
-          <motion.div
+          <m.div
             key="account-modal-motion"
             initial={{ opacity: 0, scale: 0.95, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -182,7 +182,7 @@ export const DashboardModals = ({
                 isModal={true}
               />
             </div>
-          </motion.div>
+          </m.div>
         </React.Fragment>
       )}
     </AnimatePresence>

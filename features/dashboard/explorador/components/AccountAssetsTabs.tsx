@@ -1,11 +1,12 @@
 'use client';
 
+
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Copy, Check, Info, ChevronDown } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
-import { ResourceInlinePanel } from './BalanceChangeRow';
+import { ResourceInlinePanel } from '@/features/dashboard/explorador/components/ResourceInlinePanel';
 import { NftCollectionPanel } from './NftCollectionPanel';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
 import { useQuery } from '@tanstack/react-query';
@@ -175,8 +176,7 @@ function ExpandableResourceCard({
         enabled: expanded,
         staleTime: Infinity,
         gcTime: 10 * 60_000,
-        retry: 1,
-    });
+        retry: 1 });
 
     const idsKey = ids ? ids.toSorted().join(',') : '';
     const { data: nftData = [], isLoading: isLoadingNft } = useQuery({
@@ -185,14 +185,13 @@ function ExpandableResourceCard({
         enabled: expanded && isNft && !!ids && ids.length > 0,
         staleTime: Infinity,
         gcTime: 10 * 60_000,
-        retry: 1,
-    });
+        retry: 1 });
 
     return (
         <div className={`flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl transition-all shadow-sm`}>
             {/* Clickable Header */}
-            <div
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl"
+            <button type="button"
+                className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl w-full text-left"
                 onClick={handleToggle}
             >
                 {/* Left side: Icon + Name + Address */}
@@ -234,12 +233,12 @@ function ExpandableResourceCard({
                     </div>
                     <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                 </div>
-            </div>
+            </button>
 
             {/* Expandable Content Overlay using AnimatePresence */}
             <AnimatePresence>
                 {expanded && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
@@ -276,7 +275,7 @@ function ExpandableResourceCard({
                                 poolAddress={item.poolAddress}
                             />
                         )}
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

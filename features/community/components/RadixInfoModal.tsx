@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, AnimatePresence } from 'motion/react';
+
+import { m as motion, AnimatePresence } from "motion/react";
 import { X, Building2, Code2, FlaskConical, Users } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { useLanguage } from '@/context/LanguageContext';
@@ -134,8 +135,8 @@ export function RadixInfoModal({ isOpen, onClose }: RadixInfoModalProps) {
                                             </h3>
                                         </div>
                                         <div className="px-5 py-4 space-y-4">
-                                            {section.content.map((item, i) => (
-                                                <div key={`content-${i}`}>
+                                            {section.content.map((item, _i) => (
+                                                <div key={item.subtitle}>
                                                     <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide"
                                                         style={{ color: 'var(--color-primary)' }}>
                                                         {item.subtitle}

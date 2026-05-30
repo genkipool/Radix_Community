@@ -54,6 +54,8 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         }
     };
 
+    const handlePointerDown = () => { downTimeRef.current = Date.now(); };
+
     const sharedProps = {
         validator,
         searchQuery,
@@ -72,7 +74,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         <>
             <Card
                 onPointerEnter={() => prefetchValidator(validator.address, network)}
-                onPointerDown={() => { downTimeRef.current = Date.now(); }}
+                onPointerDown={handlePointerDown}
                 onClick={handleCardClick}
                 className={`p-0 overflow-hidden group cursor-pointer transition-[border-color,box-shadow,transform] duration-300 ${isExpanded && !isModalMode
                     ? 'h-full border-[var(--color-primary)]/40 shadow-lg'

@@ -37,8 +37,12 @@ interface DocsPageProps {
 }
 
 export default async function DocsPage({ params }: DocsPageProps) {
-    const [{ locale }, cookieStore] = await Promise.all([params, cookies()]);
-    const t = await getFeatureDictionary(locale as Locale, ['docs']);
+    const p = await params;
+    const locale = p.locale;
+    const [cookieStore, t] = await Promise.all([
+        cookies(),
+        getFeatureDictionary(locale as Locale, ['docs'])
+    ]);
     const initialAutoCollapse = cookieStore.get('docs_auto_collapse')?.value === 'true';
     const initialExpandedTopics = cookieStore.get('docs_open_topics')?.value || '';
 

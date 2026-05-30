@@ -76,7 +76,7 @@ function CurrencyToggle({ currency, onChange, loading }: { currency: Currency; o
         const active = currency === opt.value;
         const disabled = opt.value === 'xrd' && loading;
         return (
-          <button
+          <button aria-label="button action"
             type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
@@ -125,8 +125,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
 
   return (
     <div
-      role="dialog"
-      aria-modal={isOpen}
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -237,7 +236,7 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
                   </tr>
                 </thead>
                 <tbody>
-                  {PRIZE_TABLE.map((row) => (
+                  {PRIZE_TABLE.map((row, i) => (
                     <tr
                       key={row.rank}
                       style={{

@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -25,23 +25,21 @@ export function SearchBar({
     className = '',
     id = 'global-search',
 }: SearchBarProps) {
-    const [localValue, setLocalValue] = useState(value);
+    const [state, setState] = useState({ prevProp: value, local: value });
     const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-    const [prevExternalValue, setPrevExternalValue] = useState(value);
-    if (value !== prevExternalValue) {
-        setPrevExternalValue(value);
-        setLocalValue(value);
+    if (value !== state.prevProp) {
+        setState({ prevProp: value, local: value });
     }
 
     const handleChange = (v: string) => {
-        setLocalValue(v);
+        setState(s => ({ ...s, local: v }));
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => onChange(v), debounceMs);
     };
 
     const handleClear = () => {
-        setLocalValue('');
+        setState(s => ({ ...s, local: '' }));
         clearTimeout(timerRef.current);
         onChange('');
     };
@@ -68,10 +66,10 @@ export function SearchBar({
                     }}
                     placeholder={placeholder}
                     aria-label={placeholder}
-                    value={localValue}
+                    value={state.local}
                     onChange={e => handleChange(e.target.value)}
                 />
-                {localValue && (
+                {state.local && (
                     <button
                         type="button"
                         onClick={handleClear}
@@ -97,13 +95,13 @@ export function SearchBar({
                         id={id}
                         name="search"
                         type="text"
-                        value={localValue}
+                        value={state.local}
                         onChange={e => handleChange(e.target.value)}
                         placeholder={placeholder}
                         aria-label={placeholder}
                         className="w-full px-4 py-3 md:py-4 bg-transparent border-none text-base focus:outline-none placeholder:text-[var(--color-text-muted)]/50 text-[var(--color-text-main)]"
                     />
-                    {localValue && (
+                    {state.local && (
                         <button
                             type="button"
                             onClick={handleClear}

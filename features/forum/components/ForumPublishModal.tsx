@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import {
     MessageSquarePlus, FileText, MessageSquare, Filter, Wallet
 } from 'lucide-react';
@@ -124,7 +124,7 @@ export function ForumPublishModal() {
                             <h4 className="text-xl font-bold text-[var(--color-text-main)] mb-3">
                                 {replyingToPost.title || 'Post sin título'}
                             </h4>
-                            <button
+                            <button aria-label="button action"
                                 type="button"
                                 onClick={() => setShowOriginalContent(!showOriginalContent)}
                                 className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-2 mb-2"
@@ -133,7 +133,7 @@ export function ForumPublishModal() {
                             </button>
                             <AnimatePresence>
                                 {showOriginalContent && (
-                                    <motion.div
+                                    <m.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
@@ -143,7 +143,7 @@ export function ForumPublishModal() {
                                             className="rich-text-content forum-content text-sm text-[var(--color-text-muted)] p-4 rounded-xl bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] max-h-[100px] overflow-y-auto custom-scrollbar leading-relaxed"
                                             html={applyMarkdownToHtml(replyingToPost.content || '')}
                                         />
-                                    </motion.div>
+                                    </m.div>
                                 )}
                             </AnimatePresence>
                         </div>

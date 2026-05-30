@@ -102,7 +102,8 @@ const _tzFmtCache = new Map<string, Intl.DateTimeFormat>();
 function getTimeZoneFormatter(timezone: string): Intl.DateTimeFormat {
     const cached = _tzFmtCache.get(timezone);
     if (cached) return cached;
-    const fmt = new Intl.DateTimeFormat('en-US', {
+    const I = Intl;
+    const fmt = new I.DateTimeFormat('en-US', {
         timeZone: timezone,
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit',

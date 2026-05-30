@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FloatingNavProps {
@@ -40,7 +40,7 @@ export function FloatingNav({
     >
       <AnimatePresence>
         {hasPrev && onPrev && (
-          <motion.button
+          <m.button
             key="prev-btn"
             initial={{ opacity: 0, x: -20, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -56,7 +56,7 @@ export function FloatingNav({
             aria-label={prevLabel}
           >
             <ChevronLeft className="size-6 transition-transform group-hover:-translate-x-0.5" />
-          </motion.button>
+          </m.button>
         )}
       </AnimatePresence>
 
@@ -64,7 +64,7 @@ export function FloatingNav({
 
       <AnimatePresence>
         {hasNext && onNext && (
-          <motion.button
+          <m.button
             key="next-btn"
             initial={{ opacity: 0, x: 20, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -80,7 +80,7 @@ export function FloatingNav({
             aria-label={nextLabel}
           >
             <ChevronRight className="size-6 transition-transform group-hover:translate-x-0.5" />
-          </motion.button>
+          </m.button>
         )}
       </AnimatePresence>
     </div>

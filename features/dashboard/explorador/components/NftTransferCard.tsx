@@ -2,7 +2,7 @@
 import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, ChevronDown, Landmark } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
@@ -70,8 +70,8 @@ const NftTransferCard = ({
 
     return (
         <div className="mb-2">
-            <div
-                className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 cursor-pointer select-none ${expanded ? 'rounded-t-xl rounded-b-none border-b-transparent' : ''}`}
+            <button type="button"
+                className={`w-full text-left flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 cursor-pointer select-none ${expanded ? 'rounded-t-xl rounded-b-none border-b-transparent' : ''}`}
                 title={titleStr}
                 onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
             >
@@ -115,10 +115,10 @@ const NftTransferCard = ({
                         </div>
                     )}
                 </div>
-            </div>
+            </button>
             <AnimatePresence>
                 {expanded && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                         <NftCollectionPanel
                             resourceAddress={resourceAddress}
                             meta={meta} nftData={nftData as Record<string, unknown>[]} nftLoading={nftLoading}
@@ -132,7 +132,7 @@ const NftTransferCard = ({
                             network={network}
                             locale={locale}
                         />
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

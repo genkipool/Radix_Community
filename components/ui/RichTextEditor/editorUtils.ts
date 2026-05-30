@@ -125,8 +125,8 @@ export function sanitizePasteHtml(rawHtml: string): string {
 const _BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'PRE', 'DIV']);
 
 /** Find the closest block ancestor within the container */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getBlockAncestor(node: Node | null, container: HTMLElement): HTMLElement | null {
+
+function _getBlockAncestor(node: Node | null, container: HTMLElement): HTMLElement | null {
     let curr = node;
     while (curr && curr !== container) {
         if (curr instanceof HTMLElement && _BLOCK_TAGS.has(curr.tagName)) {

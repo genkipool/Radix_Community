@@ -1,8 +1,7 @@
-
 'use client';
 import { SafeImage } from '@/components/ui/SafeImage';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, Info, Shield, Download } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
@@ -36,7 +35,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt?: Partial<TranslationsT['d
             </button>
             <AnimatePresence>
                 {open && (
-                    <motion.div
+                    <m.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -47,7 +46,7 @@ export function ConsensusManagerInfoCard({ tt }: { tt?: Partial<TranslationsT['d
                             {String(tt?.consensus_manager_info_body ||
                                 'The Consensus Manager is a native built-in component of the Radix protocol that manages epochs, block proposals, and staking reward distribution. When it appears as Origin, the protocol itself is distributing XRD (e.g., network emissions to validators or delegators).')}
                         </p>
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>
@@ -218,14 +217,14 @@ export function EntityBadge({
                             {entityName}
                         </span>
                     )}
-                    <span
+                    <button type="button"
                         className={`font-mono text-xs truncate ${entityName ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-main)]'
-                            } ${isClickable ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''}`}
+                            } ${isClickable ? 'cursor-pointer hover:text-[var(--color-primary)] transition-colors' : ''} text-left`}
                         title={wellKnownTip || clean}
                         onClick={() => isClickable && onResourceClick?.(clean)}
                     >
                         {short}
-                    </span>
+                    </button>
                 </div>
             </div>
             <button

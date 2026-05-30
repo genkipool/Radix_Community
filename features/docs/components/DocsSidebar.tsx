@@ -28,7 +28,7 @@ function getSnippet(text: string, query: string): string {
 
 /* ─── Props ─── */
 
-const EMPTY_DOCS: import('../../types/data.types').UserDoc[] = [];
+const EMPTY_DOCS: import('../types/data.types').UserDoc[] = [];
 
 export default function DocsSidebar({
     searchQuery,
@@ -41,6 +41,14 @@ export default function DocsSidebar({
     searchValue = '',
     className = '',
     dictionary,
+    expandedTopics = new Set(),
+    onTopicToggle = () => {},
+    selectedDocId = null,
+    onSelectDoc = () => {},
+    autoCollapse = false,
+    onExpandAll = () => {},
+    onCollapseAll = () => {},
+    onAutoCollapseChange = () => {},
 }: DocsSidebarProps & { dictionary?: Partial<Dictionary> }) {
     const { t: dict } = useLanguage();
     const t = (dictionary?.docs || dict?.docs || {}) as DocsDictionary;
@@ -53,13 +61,8 @@ export default function DocsSidebar({
     const collapseAllLabel = sidebarT?.collapse_all ?? 'Collapse all';
     const expandAllLabel = sidebarT?.expand_all ?? 'Expand all';
 
-    const { language } = useLanguage();
-
-    /* Build search index: docId → { title, bodyTexts } (Cached at module level via useEffect) */
+    /* Build search index: docId → { title, bodyTexts } */
     const searchIndex = (() => {
-        const cached = _searchIndexCache[language];
-        if (cached) return cached as Record<string, { title: string; bodyTexts: { key: string; text: string }[] }>;
-
         const idx: Record<string, { title: string; bodyTexts: { key: string; text: string }[] }> = {};
         for (const [docId, docData] of Object.entries(DOCS_MAP)) {
             idx[docId] = {
@@ -72,12 +75,6 @@ export default function DocsSidebar({
         }
         return idx;
     })();
-
-    // Cache at module level during render
-    if (!_searchIndexCache[language] && searchIndex) {
-        _searchIndexCache[language] = searchIndex;
-    }
-
     /* 1. Build topics including user docs — React Compiler handles memoization */
     const topicsWithUserDocs = (() => {
         return TOPICS.map(topic => {

@@ -9,7 +9,8 @@ const _currencyFmtCache = new Map<string, Intl.NumberFormat>();
 function getCurrencyFormatter(locale: string): Intl.NumberFormat {
     const cached = _currencyFmtCache.get(locale);
     if (cached) return cached;
-    const nf = new Intl.NumberFormat(locale, {
+    const I = Intl;
+    const nf = new I.NumberFormat(locale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams as useSP } from 'next/navigation';
 import type { AdminView } from '../types/data.types';
 
 interface CommunityURLState {
@@ -38,7 +38,7 @@ export function useCommunityURLState(): [
     (next: CommunityURLState) => void,
 ] {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSP();
     const [, startTransition] = useTransition();
 
     // Guard: tracks the state we last pushed so the useEffect ignores stale

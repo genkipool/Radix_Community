@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getValidatorsCached } from '@/services/gateway/validators';

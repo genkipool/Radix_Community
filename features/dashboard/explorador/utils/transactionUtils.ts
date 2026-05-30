@@ -222,7 +222,7 @@ export function extractSwapData(
 
     if (!soldResource || !receivedResource) return null;
 
-    const initiatorAddress = initiatorAddrs[0] || '';
+    const initiatorAddress = Array.from(initiators)[0] || '';
 
     return {
         soldToken: {

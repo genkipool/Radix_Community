@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import { Calendar, User, Eye, Heart } from 'lucide-react';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { Card } from '@/components/ui/Card';
@@ -108,7 +108,7 @@ export function BlogPostCard({
                     <HighlightText text={post.title} query={searchQuery} />
                 </h3>
 
-                <motion.div
+                <m.div
                     initial={false}
                     animate={{ height: isExpanded ? 'auto' : 88, opacity: isExpanded ? 1 : 0.9 }}
                     transition={{ duration: 0.4, ease: 'easeOut', type: 'tween' }}
@@ -121,7 +121,7 @@ export function BlogPostCard({
                             <PostContent content={post.summary} query={searchQuery} isSummary={true} />
                         )}
                     </div>
-                </motion.div>
+                </m.div>
 
                 {/* Footer */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--color-card-border)] mt-auto">

@@ -71,8 +71,8 @@ export default function Comparison({ t }: BaseSectionProps) {
               </tr>
             </thead>
             <tbody className="text-[var(--color-text-main)]">
-              {categories.map((cat, catIdx) => (
-                <Fragment key={catIdx}>
+              {categories.map((cat) => (
+                <Fragment key={cat.title}>
                   <tr className="bg-[var(--color-bg)]/50 border-b border-[var(--color-card-border)]">
                     <td colSpan={5} className="px-5 py-3 text-[var(--color-text-muted)] font-bold text-[10px] tracking-[0.2em] uppercase bg-[var(--color-bg)]/30 text-center">
                       {cat.title}
@@ -108,8 +108,8 @@ export default function Comparison({ t }: BaseSectionProps) {
 
         {/* ── Mobile cards (< md) ── */}
         <div className="md:hidden space-y-12">
-          {categories.map((cat, catIdx) => (
-            <div key={catIdx} className="space-y-6">
+          {categories.map((cat) => (
+            <div key={cat.title} className="space-y-6">
               <div className="px-2 text-center">
                 <h3 className="text-[12px] font-bold text-[var(--color-text-muted)] tracking-[0.3em] uppercase pb-4">
                   {cat.title}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 
 interface SwipeableContainerProps {
     children: React.ReactNode;
@@ -132,7 +132,7 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
     };
 
     return (
-        <motion.div
+        <m.div
             key={itemKey}
             custom={direction}
             variants={variants}
@@ -147,7 +147,7 @@ export const SwipeableContainer: React.FC<SwipeableContainerProps> = ({
             style={{ ...style, touchAction: 'pan-y' }}
         >
             {children}
-        </motion.div>
+        </m.div>
     );
 };
 

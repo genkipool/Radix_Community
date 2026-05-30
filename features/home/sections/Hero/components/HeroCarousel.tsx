@@ -127,7 +127,7 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
 
           return (
             <div
-              key={`slide-${idx}`}
+              key={slide.h1a}
               className={`absolute inset-0 flex flex-col pt-4 ${isExiting ? 'animate-hero-out' : (targetIdx !== null ? 'animate-hero-in' : '')}`}
               onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
               onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
@@ -162,10 +162,10 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
           <ChevronLeft className="size-3.5 relative z-10" strokeWidth={2} />
         </button>
 
-        {slides.map((_, index) => (
+        {slides.map((slide, index) => (
           <button
             type="button"
-            key={`dot-${index}`}
+            key={`indicator-${slide.h1a}`}
             onClick={() => goTo(index)}
             disabled={exitingIdx !== null}
             className="h-[3px] w-16 bg-[var(--color-text-main)]/15 rounded-full overflow-hidden cursor-pointer p-0 border-none outline-none relative transition-colors hover:bg-[var(--color-text-main)]/25 disabled:cursor-default"

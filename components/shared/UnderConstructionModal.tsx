@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { X, Construction, HardHat } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Button } from '@/components/ui/Button';
@@ -30,7 +30,7 @@ export function UnderConstructionModal({
         {isOpen && (
           <>
             <ModalOverlay onClose={onClose} blur="sm" className={overlayClassName} />
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -78,7 +78,7 @@ export function UnderConstructionModal({
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </>
         )}
       </AnimatePresence>

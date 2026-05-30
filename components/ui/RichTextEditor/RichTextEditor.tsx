@@ -1,14 +1,15 @@
+
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import type { RichTextEditorProps } from './types/index';
 import EditorToolbar from './EditorToolbar';
 import { useFormattingState } from './useFormattingState';
 import { LinkDialog } from './EditorDialogs';
 import { useRichTextLogic } from './hooks/useRichTextLogic';
-import { 
-} from './editorUtils';
+import DOMPurify from 'isomorphic-dompurify';
+
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
 import { sanitizeUserHtml } from '@/utils/sanitize';
 
@@ -108,11 +109,11 @@ export function RichTextEditor({
                  style={{ borderColor: 'var(--color-card-border)' }}>
                 <AnimatePresence>
                     {(isDragOver && !disallowImages) && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 pointer-events-none m-2 rounded-xl"
                                     style={{ background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)', border: '2px dashed var(--color-primary)' }}>
                             <p className="text-sm font-semibold text-[var(--color-primary)]">Drop image here</p>
-                        </motion.div>
+                        </m.div>
                     )}
                 </AnimatePresence>
 
@@ -126,7 +127,7 @@ export function RichTextEditor({
                             lineHeight: '1.6', 
                             fontSize: '0.95rem'
                         }}
-                        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(applyMarkdownToHtml(previewContent)) }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
                     />
                 )}
                 <div

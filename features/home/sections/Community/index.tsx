@@ -9,7 +9,7 @@ import { SectionHeader } from '@/components/layout/SectionHeader';
 import { Portal } from '@/components/ui/Portal';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { useLayout } from '@/context/LayoutContext';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import type { BaseSectionProps } from '../../types';
 
 const card = "rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] p-5 shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden";
@@ -92,8 +92,8 @@ export default function Community({ t }: BaseSectionProps) {
 
                     {/* WIDE CARD: Dan Hughes Part 1 (spans 2 cols) */}
                     <FadeIn delay={0.1} className={`${card} col-span-2 flex flex-col sm:flex-row gap-5`}>
-                        <div
-                            className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
+                        <button type="button"
+                            className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image block p-0 border-none"
                             onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_1.webp", alt: t.community?.danFounderAlt || "Dan Hughes" })}
                         >
                             <Image
@@ -104,7 +104,7 @@ export default function Community({ t }: BaseSectionProps) {
                                 style={{ objectFit: 'cover' }}
                                 className="grayscale group-hover/image:grayscale-0 group-hover/image:scale-110 transition-all duration-700"
                             />
-                        </div>
+                        </button>
                         <div className="flex-1 min-w-0">
                             <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-primary)] mb-1 block">{t.community?.ch1_badge}</span>
                             <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch1_title}</h3>
@@ -135,8 +135,8 @@ export default function Community({ t }: BaseSectionProps) {
 
                     {/* WIDE CARD: Dan Hughes Part 2 — Tragedy (spans 2 cols) */}
                     <FadeIn delay={0.1} className={`${card} col-span-2 flex flex-col sm:flex-row gap-5`}>
-                        <div
-                            className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image"
+                        <button type="button"
+                            className="relative sm:w-40 h-40 shrink-0 rounded-xl overflow-hidden bg-[var(--color-bg-alt)] cursor-pointer group/image block p-0 border-none"
                             onClick={() => setSelectedImage({ src: "/images/Dan_Hughes_2.webp", alt: t.community?.danWorkingAlt || "Dan Hughes working" })}
                         >
                             <Image
@@ -147,7 +147,7 @@ export default function Community({ t }: BaseSectionProps) {
                                 style={{ objectFit: 'cover' }}
                                 className="opacity-60 group-hover/image:opacity-100 group-hover/image:scale-110 transition-all duration-700"
                             />
-                        </div>
+                        </button>
                         <div className="flex-1 min-w-0">
                             <span className="text-[10px] font-bold tracking-widest uppercase text-shadow-soft text-[var(--color-secondary)] mb-1 block">{t.community?.ch3_badge}</span>
                             <h3 className="text-base font-bold text-[var(--color-text-main)] mb-2 leading-snug">{t.community?.ch3_title}</h3>
@@ -288,7 +288,7 @@ export default function Community({ t }: BaseSectionProps) {
                     <Portal>
                         <ModalOverlay onClose={() => setSelectedImage(null)} blur="md" />
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
-                            <motion.div
+                            <m.div
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -315,7 +315,7 @@ export default function Community({ t }: BaseSectionProps) {
                                         <p className="text-white text-sm font-medium text-center">{selectedImage.alt || "Dan Hughes"}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </m.div>
                         </div>
                     </Portal>
                 )}

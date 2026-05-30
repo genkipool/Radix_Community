@@ -1,9 +1,9 @@
+
 'use client';
 
-import React, {
-  useEffect, useRef, useState,
-} from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
+import { AnimatePresence, m } from "motion/react";
 import { Upload, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import EditorToolbar from '@/components/ui/RichTextEditor/EditorToolbar';
@@ -87,13 +87,15 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
 
   // Sync initial content
   const contentSyncedRef = useRef(false);
-  if (!contentSyncedRef.current && editorRef.current) {
-    contentSyncedRef.current = true;
-    const initial = initialDoc?.html || '<p><br></p>';
-    editorRef.current.innerHTML = initial;
-    htmlRef.current = initial;
-    if (initial !== '<p><br></p>') updateCounts(initial);
-  }
+  useEffect(() => {
+    if (!contentSyncedRef.current && editorRef.current) {
+      contentSyncedRef.current = true;
+      const initial = initialDoc?.html || '<p><br></p>';
+      editorRef.current.innerHTML = initial;
+      htmlRef.current = initial;
+      if (initial !== '<p><br></p>') updateCounts(initial);
+    }
+  }, [initialDoc?.html, updateCounts]);
 
   // Command & Sync helpers
   const handleMarkdownImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,14 +228,14 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
             >
               <AnimatePresence>
                 {(isDragOver && !previewMode) && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 pointer-events-none m-4 rounded-2xl"
                     style={{ background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)', border: '2px dashed var(--color-primary)' }}>
                     <Upload className="size-10" style={{ color: 'var(--color-primary)' }} />
                     <p className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
                       {editorT.drop_image ?? 'Drop image here'}
                     </p>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
 
@@ -245,7 +247,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                     lineHeight: '1.85',
                     fontSize: '1rem'
                   }}
-                  dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(applyMarkdownToHtml(previewContent)) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
                 />
               )}
               <div

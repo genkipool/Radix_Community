@@ -429,14 +429,12 @@ export function stopPolling(): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function unregisterAddressForPolling(__address: string): void {
+function _unregisterAddressForPolling(__address: string): void {
     // Polling is global — no per-address teardown needed
 }
 
 // Legacy compat
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getLiveDataSnapshot() { return state.epochProposals; }
+function _getLiveDataSnapshot() { return state.epochProposals; }
 
 // ── HMR cleanup (dev only) ───────────────────────────────────────────────────
 // Without this, Vite/Turbopack HMR re-evaluates this module and starts a new

@@ -1,5 +1,5 @@
 'use client';
-import { createContext, use, useCallback, useMemo, useState, ReactNode, useEffect } from "react";
+import { createContext, use, useState, ReactNode, useEffect } from "react";
 
 export type Theme = "radix-light" | "radix-dark" | "oro-light" | "oro-dark" | "radix-original-light" | "radix-original-dark";
 
@@ -30,7 +30,7 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
     document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
   }, [theme]);
 
-  const setTheme = useCallback((t: Theme) => {
+  const setTheme = (t: Theme) => {
     // Freeze all transitions for exactly one paint cycle.
     // Without this, the ~70 elements that carry Tailwind transition-colors /
     // transition-all classes animate from the old theme's colours to the new
@@ -58,9 +58,9 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
     });
 
     setThemeState(t);
-  }, []);
+  };
 
-  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+  const value = { theme, setTheme };
 
   return (
     <ThemeContext.Provider value={value}>

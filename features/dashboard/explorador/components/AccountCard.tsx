@@ -1,7 +1,9 @@
 'use client';
 
+
+
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Landmark, Download } from 'lucide-react';
 import { formatNumber } from '@/utils/formatters';
@@ -219,7 +221,7 @@ export function AccountCard({
                                         <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                         </span>
-                                        <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData} statsLoading={statsLoading} locale={locale} />
+                                        <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -230,7 +232,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-blue-500 font-mono">
                                             {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
                                         </span>
-                                        <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData} statsLoading={statsLoading} locale={locale} />
+                                        <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -241,7 +243,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
                                             {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
                                         </span>
-                                        <FiatValueDisplay amount={stakedTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
+                                        <FiatValueDisplay amount={stakedTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -252,7 +254,7 @@ export function AccountCard({
                                         <span className="text-sm font-bold text-orange-500 font-mono">
                                             {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
                                         </span>
-                                        <FiatValueDisplay amount={unstakeTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
+                                        <FiatValueDisplay amount={unstakeTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                                 <div>
@@ -263,7 +265,7 @@ export function AccountCard({
                                         <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
                                             {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                         </span>
-                                        <FiatValueDisplay amount={claimTotal} marketData={marketData} statsLoading={statsLoading} locale={locale} />
+                                        <FiatValueDisplay amount={claimTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
                                     </div>
                                 </div>
                             </div>
@@ -273,7 +275,7 @@ export function AccountCard({
 
                 <AnimatePresence initial={false}>
                     {isExpanded && (
-                        <motion.div
+                        <m.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -299,8 +301,7 @@ export function AccountCard({
                                         ${columns === 1 ? 'is-grid-1' : 'is-grid-multi'} 
                                         ${isExpanded ? 'is-expanded-card' : ''}
                                     `}>
-                                        <style dangerouslySetInnerHTML={{
-                                            __html: `
+                                        <style>{`
                                             .is-expanded-card .account-assets-grid-wrapper > div > div.flex.flex-col.gap-2 {
                                                 display: grid !important;
                                                 grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
@@ -325,7 +326,7 @@ export function AccountCard({
                                                     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                                                 }
                                             }
-                                        `}} />
+                                        `}</style>
 
                                         {/* ── SUMMARY ── */}
                                         {activeTab === 'summary' && (
@@ -335,11 +336,11 @@ export function AccountCard({
                                                 entityName={entityName}
                                                 iconUrl={iconUrl}
                                                 getMeta={getMeta}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
-                                                marketData={marketData}
+                                                marketData={marketData ?? undefined}
                                                 locale={locale}
                                             />
                                         )}
@@ -347,14 +348,12 @@ export function AccountCard({
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
                                             <AccountStakingTab
-                                                address={address}
                                                 stakingRows={stakingRows}
-                                                tt={tt}
-                                                onCopy={onCopy}
-                                                copiedAddress={copiedAddress}
+                                                tt={tt as Record<string, unknown>}
+
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
-                                                marketData={marketData}
+                                                marketData={marketData ?? undefined}
                                                 currentEpoch={currentEpoch}
                                             />
                                         )}
@@ -364,7 +363,7 @@ export function AccountCard({
                                             <AccountTokensTab
                                                 address={address}
                                                 entityData={entityData ?? null}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -377,7 +376,7 @@ export function AccountCard({
                                             <AccountNftsTab
                                                 address={address}
                                                 entityData={entityData ?? null}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -390,7 +389,7 @@ export function AccountCard({
                                             <AccountPoolUnitsTab
                                                 address={address}
                                                 entityData={entityData ?? null}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                                 network={network as 'mainnet' | 'stokenet'}
@@ -403,21 +402,21 @@ export function AccountCard({
                                             <AccountTransactionsTab
                                                 accountAddress={address}
                                                 network={network as 'mainnet' | 'stokenet'}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 locale={locale}
                                             />
                                         )}
 
                                         {/* ── METADATA ── */}
                                         {activeTab === 'metadata' && (
-                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt} />
+                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt as Record<string, unknown>} />
                                         )}
 
                                         {/* ── CONFIGURATION ── */}
                                         {activeTab === 'configuration' && (
                                             <PanelConfigurationTab
                                                 configEntries={configEntries}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
@@ -427,7 +426,7 @@ export function AccountCard({
                                         {activeTab === 'raw' && (
                                             <PanelRawTab
                                                 data={entityData}
-                                                tt={tt}
+                                                tt={tt as Record<string, unknown>}
                                                 onCopy={onCopy}
                                                 copiedAddress={copiedAddress}
                                             />
@@ -435,7 +434,7 @@ export function AccountCard({
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </m.div>
                     )}
                 </AnimatePresence>
             </Card>
@@ -446,7 +445,7 @@ export function AccountCard({
                 accountAddress={address}
                 tt={accT}
                 locale={locale}
-                marketData={marketData}
+                marketData={marketData ?? undefined}
             />
         </>
     );

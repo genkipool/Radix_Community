@@ -1,9 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { createHighlighter, type Highlighter } from 'shiki';
 import { useTheme } from '@/context/ThemeContext';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface CodeHighlighterProps {
   html: string;
@@ -186,7 +188,7 @@ export function CodeHighlighter({ html, className = '' }: CodeHighlighterProps) 
   return (
     <div
       className={`rich-text-content ${className}`}
-      dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedHtml) }}
       style={{
         opacity: isLoaded ? 1 : 0.8,
         transition: 'opacity 0.2s',

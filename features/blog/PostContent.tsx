@@ -15,6 +15,7 @@ import { HighlightText } from '@/components/ui/HighlightText';
 import React from 'react';
 import type { PostContentProps } from './types';
 import { sanitizeUserHtml } from '@/utils/sanitize';
+import DOMPurify from 'isomorphic-dompurify';
 
 function FormattedLine({ text, query }: { text: string; query: string }) {
   const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -23,7 +24,7 @@ function FormattedLine({ text, query }: { text: string; query: string }) {
       {parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
           return (
-            <strong key={i} className="font-bold text-[var(--color-text-main)]">
+            <strong key={`${i}-${part}`} className="font-bold text-[var(--color-text-main)]">
               <HighlightText text={part.slice(2, -2)} query={query} />
             </strong>
           );
@@ -43,7 +44,7 @@ export function PostContent({ content, query, isSummary = false }: PostContentPr
     return (
       <div
         className="rich-text-content space-y-3 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(content) }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sanitizeUserHtml(content)) }}
       />
     );
   }
@@ -54,14 +55,14 @@ export function PostContent({ content, query, isSummary = false }: PostContentPr
     <div className="space-y-3">
       {lines.map((line, i) => {
         const trimmed = line.trim();
-        if (!trimmed && i < lines.length - 1) return <div key={`line-${i}`} className="h-2" />;
+        if (!trimmed && i < lines.length - 1) return <div key={`empty-${i}`} className="h-2" />;
         if (!trimmed) return null;
 
         const isBullet = trimmed.startsWith('•');
         const cleanLine = isBullet ? trimmed.substring(1).trim() : line;
 
         return (
-          <div key={`line-${i}`} className={`flex gap-2 ${isBullet ? 'pl-4' : ''}`}>
+          <div key={`${cleanLine}-${i}`} className={`flex gap-2 ${isBullet ? 'pl-4' : ''}`}>
             {isBullet && (
               <span className="text-[var(--color-primary)] font-bold shrink-0 mt-0.5">•</span>
             )}

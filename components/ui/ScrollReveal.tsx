@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useLayoutEffect } from 'react';
-import { motion } from 'motion/react';
+
 import { observe, unobserve } from '@/lib/observerManager';
+import { m } from 'motion/react';
 
 interface ScrollRevealProps {
     children: React.ReactNode;
@@ -79,7 +80,7 @@ export function ScrollReveal({
         };
     }, [threshold]);
 
-    const Tag = motion[as] as typeof motion.div;
+    const Tag = m[as] as typeof m.div;
     const to = deriveTarget(from);
 
     const animate =

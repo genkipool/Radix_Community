@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from "react";
 import GamesSidebar from './components/GamesSidebar';
 import GamesHero from './components/GamesHero';
 import GamePlayer from './components/GamePlayer';

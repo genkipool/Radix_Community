@@ -44,7 +44,7 @@ export default function TheProblem({ t }: BaseSectionProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {problems.map((item, i) => (
-            <FadeIn key={`problem-${i}`} delay={i * 0.1} className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] p-8 rounded-2xl">
+            <FadeIn key={item.title} delay={i * 0.1} className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] p-8 rounded-2xl">
               <div className="text-4xl mb-6">{PROBLEM_ICONS[i]}</div>
               <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-4">{item.title}</h3>
               <p className="text-[var(--color-text-muted)] leading-relaxed">{item.desc}</p>
@@ -60,7 +60,7 @@ export default function TheProblem({ t }: BaseSectionProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {solutions.map((item, i) => (
-            <FadeIn key={`solution-${i}`} delay={i * 0.1} className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent border border-[var(--color-secondary)]/30 p-8 rounded-2xl relative overflow-hidden">
+            <FadeIn key={item.title} delay={i * 0.1} className="bg-gradient-to-br from-[var(--color-primary)]/10 to-transparent border border-[var(--color-secondary)]/30 p-8 rounded-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 size-32 bg-[var(--color-secondary)]/10 rounded-full blur-2xl -mr-10 -mt-10" />
               <div className="text-3xl mb-4 relative z-10">{SOLUTION_ICONS[i]}</div>
               <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-3 relative z-10">{item.title}</h3>

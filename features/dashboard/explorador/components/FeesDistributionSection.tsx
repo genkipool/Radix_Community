@@ -155,10 +155,10 @@ export function FeesDistributionSection({
 
                     <div className="space-y-3">
                         {accountPayers.length > 0
-                            ? accountPayers.map((fc, i: number) => {
+                            ? accountPayers.map((fc) => {
                                 const isRoyalty = fc.type === 'RoyaltyDistributed';
                                 return (
-                                    <div key={'fp' + i} className="space-y-1.5 transition-colors">
+                                    <div key={'fp-' + sanitizeText(fc.entity_address || '')} className="space-y-1.5 transition-colors">
                                         <AddressDisplay
                                             label={isRoyalty ? (tt?.fees_royalty_package || 'Royalty Recipient') : String(tt?.from_address || 'From')}
                                             address={sanitizeText(fc.entity_address || '')}
@@ -282,12 +282,12 @@ export function FeesDistributionSection({
                                         <span className="text-[8px] uppercase font-black text-green-700/70 dark:text-green-400/80 block mb-1">
                                             {tt?.fees_top_recipients || 'Top Recipients'}
                                         </span>
-                                        {fdValShares.slice(0, 5).map((s, si: number) => {
+                                        {fdValShares.slice(0, 5).map((s) => {
                                             const addr = sanitizeText(String(s.validator_address ?? s.validatorAddress ?? ''));
                                             const amt = parseFloatSafe(s.xrd_amount ?? s.xrdAmount);
                                             if (!addr || amt <= 0) return null;
                                             return (
-                                                <div key={'vs' + si} className="flex items-center justify-between text-[10px] group/vs gap-2">
+                                                <div key={'vs-' + addr} className="flex items-center justify-between text-[10px] group/vs gap-2">
                                                     <ValidatorNameLabel address={addr} network={network} />
                                                     <div className="flex items-center gap-1 shrink-0">
                                                         <span className="text-green-600 font-mono font-black">{fmtAmt(amt)} XRD</span>
@@ -320,14 +320,14 @@ export function FeesDistributionSection({
                                 <p className="text-[10px] text-[var(--color-text-muted)] italic">
                                     {tt?.fees_royalty_desc || 'XRD distributed to royalty recipients'}
                                 </p>
-                                {sourcePackages.length > 0 && (
+                                {sourcePackages.size > 0 && (
                                     <div className="mt-3 space-y-1.5">
                                         <span className="text-[8px] uppercase font-black text-purple-600/60 block">
                                             {tt?.fees_royalty_package || 'Source Package'}
                                         </span>
                                         <div className="grid grid-cols-1 gap-2">
-                                            {sourcePackages.map((addr, i) => (
-                                                <EntityBadge key={'rp' + i} address={addr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                                            {Array.from(sourcePackages).map((addr) => (
+                                                <EntityBadge key={'rp-' + addr} address={addr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
                                             ))}
                                         </div>
                                     </div>
@@ -337,7 +337,7 @@ export function FeesDistributionSection({
                                         <span className="text-[8px] uppercase font-black text-purple-600/60 block mb-1">
                                             {tt?.fees_recipients || 'Recipients'}
                                         </span>
-                                        {filteredRoyaltyRecipients.slice(0, 5).map((r, ri: number) => {
+                                        {filteredRoyaltyRecipients.slice(0, 5).map((r) => {
                                             const item = r as RoyaltyRecipientObj;
                                             const addr = sanitizeText(
                                                 item?.royalty_recipient?.entity_address ?? item?.royalty_recipient?.entityAddress ??
@@ -346,7 +346,7 @@ export function FeesDistributionSection({
                                             const amt = parseFloatSafe(typeof r === 'string' ? r : (r?.xrd_amount ?? r?.xrdAmount));
                                             if (!addr) return null;
                                             return (
-                                                <div key={'rr' + ri} className="space-y-1">
+                                                <div key={'rr-' + addr} className="space-y-1">
                                                     <EntityBadge address={addr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} />
                                                     {amt > 0 && (
                                                         <div className="flex items-center justify-end gap-1.5">

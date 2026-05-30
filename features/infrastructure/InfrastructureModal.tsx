@@ -2,7 +2,7 @@
 import { Portal } from '@/components/ui/Portal';
 import Link from 'next/link';
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import {
   X, ExternalLink,
   Database, Network, Code2, TrendingUp, ArrowLeftRight,
@@ -59,7 +59,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
         {isOpen && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6 md:p-8">
             {/* Backdrop */}
-            <motion.div
+            <m.div
               key="backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -71,7 +71,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
             />
 
             {/* Panel — max-w-2xl for focused reading */}
-            <motion.div
+            <m.div
               key="panel"
               initial={{ opacity: 0, y: 28, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -217,7 +217,7 @@ export function InfrastructureModal({ isOpen, onClose }: InfrastructureModalProp
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         )}
       </AnimatePresence>

@@ -142,12 +142,12 @@ export const RewardsCsvModal: React.FC<RewardsCsvModalProps> = ({
     if (!isOpen || !mounted) return null;
 
     const modalContent = (
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        <div role="presentation"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 w-full text-left cursor-auto"
             onClick={onClose}
         >
             <div
-                className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/50"
+                className="relative bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/50"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header-like part of the modal */}

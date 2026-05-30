@@ -1,4 +1,5 @@
 'use client';
+
 /**
  * DesarrolladoresShell — Client Component (boundary)
  *
@@ -32,7 +33,7 @@ export function DevShell({ t: _t, tabs, tab0, tab1, tab2, tab3 }: DevShellProps)
     <>
       {/* Tab navigation */}
       <div className="flex flex-wrap justify-center gap-4 mb-12">
-        {tabs.map((tab) => (
+        {tabs.map((tab, i) => (
           <button
             type="button"
             key={tab}

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { X, Info, Landmark } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Portal } from '@/components/ui/Portal';
@@ -23,7 +23,7 @@ export function TransactionFlowInfoModal({
                 {isOpen && (
                     <>
                         <ModalOverlay onClose={onClose} blur="sm" />
-                        <motion.div
+                        <m.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -100,7 +100,7 @@ export function TransactionFlowInfoModal({
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </m.div>
                     </>
                 )}
             </AnimatePresence>

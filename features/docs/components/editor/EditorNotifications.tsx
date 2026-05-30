@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from "motion/react";
 import { AlertCircle, CheckCircle2, History } from 'lucide-react';
 import type { DraftData, ToastMsg } from '../../types/components.types';
 
@@ -28,7 +28,7 @@ export function DraftRecoveryBanner({
   });
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
@@ -70,7 +70,7 @@ export function DraftRecoveryBanner({
           {t.draft_discard_btn ?? 'Discard'}
         </button>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -85,7 +85,7 @@ export function ToastList({ toasts }: ToastListProps) {
     <div className="fixed bottom-4 right-4 z-[201] flex flex-col gap-2 pointer-events-none">
       <AnimatePresence>
         {toasts.map(t => (
-          <motion.div
+          <m.div
             key={t.id}
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -108,7 +108,7 @@ export function ToastList({ toasts }: ToastListProps) {
               <AlertCircle className="size-4 shrink-0" />
             )}
             {t.text}
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </div>

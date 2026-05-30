@@ -36,9 +36,9 @@ export function UnstakeAssetCard({
                             <div>
                                 <AddressDisplay label={tt?.from_address || 'From'} address={senderAddr} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} network={network} hideLabel={true} />
                                 <div className="space-y-1 mt-2">
-                                    {allLsuChanges.map((change, i: number) => (
+                                    {allLsuChanges.map((change) => (
                                         <BalanceChangeRow
-                                            key={`lsu-${i}`}
+                                            key={`lsu-${change.entity_address}-${change.resource_address}`}
                                             change={change}
                                             tt={tt}
                                             onResourceClick={onResourceClick}
@@ -82,7 +82,7 @@ export function UnstakeAssetCard({
                                         const nft = nftAdded[i] ?? null;
                                         if (!nft) return null;
                                         return (
-                                            <div key={'unstake-origin-nft-' + i} className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left mt-2">
+                                            <div key={'unstake-origin-nft-' + nft.resource_address} className="pl-4 border-l-2 border-[var(--color-primary)]/25 scale-95 origin-left mt-2">
                                                 <NftTransferCard
                                                     resourceAddress={nft.resource_address}
                                                     ids={nft.added || []}
@@ -118,8 +118,8 @@ export function UnstakeAssetCard({
                     <div className="space-y-2">
 
                         {/* Interleaved: validator → stake claim NFT */}
-                        {validatorOps.map((op, i: number) => (
-                            <div key={'unstake-dest-' + i} className="space-y-1">
+                        {validatorOps.map((op) => (
+                            <div key={'unstake-dest-' + op.validatorAddress} className="space-y-1">
                                 {/* Validator panel — NFT ENTREGADO / -1 NFT */}
                                 <ValidatorInlinePanel
                                     validatorAddress={op.validatorAddress}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useForum } from './ForumContext';
@@ -97,7 +97,7 @@ export function ReplyFilterWidget({
 
             <AnimatePresence>
                 {filterDropdownOpen === uniqueFilterId && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, y: 5, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 5, scale: 0.95 }}
@@ -136,7 +136,7 @@ export function ReplyFilterWidget({
                                 </button>
                             )] : [])}
                         </div>
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

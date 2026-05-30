@@ -2,7 +2,7 @@
 import { SafeImage } from '@/components/ui/SafeImage';
 import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, ChevronDown, Box, FileJson, Activity } from 'lucide-react';
 import { Pill } from '@/components/ui/Pill';
 import { getMetaValue } from '../utils/metadataUtils';
@@ -94,8 +94,8 @@ export function NftCollectionPanel({
     ] as { key: NftPanelTab; label: string; tooltip?: string }[]).filter(tab => tab.key !== 'items' || ids.length > 0);
 
     return (
-        <div
-            className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
+        <button type="button"
+            className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)] w-full text-left cursor-auto block"
             onClick={e => e.stopPropagation()}
         >
             <PanelTabBar
@@ -127,8 +127,8 @@ export function NftCollectionPanel({
                                 const isReceived = type === 'added';
                                 return (
                                     <div key={id} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
-                                        <div
-                                            className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]' : ''}`}
+                                        <button type="button"
+                                            className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]' : 'cursor-auto'} w-full text-left`}
                                             onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
                                         >
                                             <div className="size-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
@@ -194,10 +194,10 @@ export function NftCollectionPanel({
                                                     </Pill>
                                                 )}
                                             </div>
-                                        </div>
+                                        </button>
                                         <AnimatePresence>
                                             {isOpen && hasData && (
-                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                                                <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                                                     <div className="border-t border-[var(--color-card-border)] px-4 py-3 space-y-3">
                                                         {(claimXrd != null || (isClaim && claimXrdTotal) || (isStakeClaim && unstakeXrdExpected)) && (
                                                             <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-600/8 border border-amber-600/20">
@@ -233,10 +233,10 @@ export function NftCollectionPanel({
                                                                             </p>
                                                                         </div>
                                                                     )}
-                                                                    {fields.map((f, fi) => {
+                                                                    {fields.map((f) => {
                                                                         const isUrl = typeof f.value === 'string' && (f.value.startsWith('http') || f.value.startsWith('ipfs'));
                                                                         return (
-                                                                            <div key={fi}>
+                                                                            <div key={f.name}>
                                                                                 <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{f.name}</p>
                                                                                 <p className="text-xs text-[var(--color-text-main)] break-words leading-relaxed">
                                                                                     {isUrl ? <a href={f.value as string} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{(f.value as string).length > 60 ? (f.value as string).slice(0, 60) + '...' : (f.value as string)}</a> : String(f.value)}
@@ -248,7 +248,7 @@ export function NftCollectionPanel({
                                                             </div>
                                                         )}
                                                     </div>
-                                                </motion.div>
+                                                </m.div>
                                             )}
                                         </AnimatePresence>
                                     </div>
@@ -291,7 +291,7 @@ export function NftCollectionPanel({
                             <>
                                 <div className="border-t border-[var(--color-card-border)] mt-4 mb-3" />
                                 <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)] mb-2">{tt?.nft_panel_behavior || 'Behavior'}</p>
-                                <ul className="space-y-1.5">{behaviors.map((b, i) => <li key={`nft-behavior-${i}`} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}</ul>
+                                <ul className="space-y-1.5">{behaviors.map((b) => <li key={b} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"><span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />{b}</li>)}</ul>
                             </>
                         )}
                     </div>
@@ -319,7 +319,7 @@ export function NftCollectionPanel({
                     />
                 )}
             </div>
-        </div>
+        </button>
     );
 }
 

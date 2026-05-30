@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { X, User, LogOut, RefreshCcw, Wallet } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -90,7 +90,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        <motion.div
+                        <m.div
                             initial={{ x: '100%', opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
@@ -108,7 +108,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         >
                                             Mainnet
                                             {activeNetwork === 'mainnet' && (
-                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
+                                                <m.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
                                             )}
                                         </button>
                                         <button
@@ -118,7 +118,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         >
                                             Stokenet
                                             {activeNetwork === 'stokenet' && (
-                                                <motion.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
+                                                <m.div layoutId="network-indicator" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />
                                             )}
                                         </button>
                                         <button
@@ -265,7 +265,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                 </div>
 
                             </div>
-                        </motion.div>
+                        </m.div>
                     </>
                 )}
             </AnimatePresence>

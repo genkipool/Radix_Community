@@ -1,4 +1,6 @@
 'use client';
+import { ResourceInlinePanel } from './ResourceInlinePanel';
+
 
 /**
  * UnderlyingTokensTab.tsx
@@ -12,18 +14,17 @@
  *    resolve the actual pool address from metadata/state/fields, then fetch
  *    the pool for reserves.
  */
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Check, Copy, Info, Loader2, BarChart3 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/hooks/useEntityData';
-import { ResourceInlinePanel } from './BalanceChangeRow';
 import { getMetaValue } from '../utils/metadataUtils';
 import type { TranslationsT, MetadataItem, GatewayEntityDetails } from '@/features/dashboard/types';
+import type { ResourceInlinePanelProps } from '../types/components.types';
 
 /* ─── Types ─── */
 
@@ -43,6 +44,7 @@ interface UnderlyingTokensTabProps {
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
     locale: string;
+    ResourceInlinePanel?: (props: ResourceInlinePanelProps) => React.ReactNode;
 }
 
 /* ─── Helpers ─── */
@@ -463,8 +465,8 @@ function UnderlyingTokenCard({
 
     return (
         <div className="flex flex-col bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-xl transition-all shadow-sm">
-            <div
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl"
+            <button type="button"
+                className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl w-full text-left"
                 onClick={handleToggle}
             >
                 {/* Left: icon + name + address */}
@@ -506,28 +508,28 @@ function UnderlyingTokenCard({
                     </div>
                     <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                 </div>
-            </div>
+            </button>
 
             {/* Expandable content — full ResourceInlinePanel */}
             <AnimatePresence>
                 {expanded && (
-                    <motion.div
+                    <m.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                     >
-                        <ResourceInlinePanel
-                            address={address}
-                            details={entityData || null}
-                            loading={isLoading}
-                            onCopy={onCopy}
-                            copiedAddress={copiedAddress}
-                            tt={tt}
-                            locale={locale || 'en-US'}
-                        />
-                    </motion.div>
+                        {ResourceInlinePanel ? ResourceInlinePanel({
+                            address,
+                            details: entityData || null,
+                            loading: isLoading,
+                            onCopy,
+                            copiedAddress,
+                            tt,
+                            locale: locale || 'en-US',
+                        }) : null}
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>

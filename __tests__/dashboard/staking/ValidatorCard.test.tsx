@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock motion/react before anything else
 vi.mock('motion/react', () => ({
+  m: {
+    div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
+    h3: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <h3 {...props}>{children}</h3>,
+  },
   motion: {
     div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
     h3: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <h3 {...props}>{children}</h3>,

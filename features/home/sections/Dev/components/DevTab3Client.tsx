@@ -298,10 +298,10 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
           {tools.map((tool, i) => {
             const isActive = activeIdx === i;
             return (
-              <div
+              <button type="button"
                 key={tool.name}
                 onClick={() => setActiveIdx(i)}
-                className={`group w-full border-b border-[var(--color-card-border)] pb-4 flex items-center justify-between cursor-pointer transition-all ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                className={`group w-full border-b border-[var(--color-card-border)] pb-4 flex items-center justify-between cursor-pointer transition-all text-left ${isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'
                   }`}
               >
                 <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ export function Tab3Client({ tab }: { tab: Dictionary['devs']['tab3'] }) {
                     <ExternalLink className="size-3.5" />
                   </a>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

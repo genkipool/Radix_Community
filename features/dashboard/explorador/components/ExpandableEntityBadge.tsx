@@ -381,7 +381,7 @@ export function ExpandableEntityBadge({
                     onClose={() => setIsCsvModalOpen(false)}
                     locale={locale}
                     tt={tt?.account_summary}
-                    marketData={marketData}
+                    marketData={marketData ?? undefined}
                 />
             )}
 
@@ -419,7 +419,7 @@ export function ExpandableEntityBadge({
                                                     onCopy={onCopy}
                                                     copiedAddress={copiedAddress}
                                                     network={network}
-                                                    marketData={marketData}
+                                                    marketData={marketData ?? undefined}
                                                     locale={locale}
                                                     isBadge={true}
                                                 />
@@ -437,8 +437,8 @@ export function ExpandableEntityBadge({
                                                     onResourceClick={onResourceClick}
                                                     locale={locale}
                                                     network={network}
-                                                    marketData={marketData}
-                                                    dt={dt}
+                                                    marketData={marketData ?? undefined}
+                                                    dt={dt as DashboardDict | undefined}
                                                     stakeAmount={stakeAmount}
                                                     unstakeAmount={unstakeAmount}
                                                     claimAmount={claimAmount}
@@ -452,15 +452,12 @@ export function ExpandableEntityBadge({
                                         {activeTab === 'staking' && (
                                             <React.Suspense fallback={<div className="p-4 text-xs text-[var(--color-text-muted)]">Loading staking…</div>}>
                                                 <AccountStakingTab
-                                                    address={address}
                                                     stakingRows={stakingRows}
                                                     tt={tt}
-                                                    onCopy={onCopy}
-                                                    copiedAddress={copiedAddress}
                                                     network={network}
                                                     locale={locale}
-                                                    marketData={marketData}
-                                                    dt={dt}
+                                                    marketData={marketData ?? undefined}
+                                                    dt={dt as DashboardDict | undefined}
                                                 />
                                             </React.Suspense>
                                         )}
@@ -766,7 +763,7 @@ function EntitySummaryTab({
                             onCopy={onCopy}
                             copiedAddress={copiedAddress}
                             locale={locale}
-                            dt={dt}
+                            dt={dt as DashboardDict | undefined}
                             isModal={true}
                         />
                     );

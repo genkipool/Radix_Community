@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import { AlertCircle, Link2 } from 'lucide-react';
 import {
     LinkDialogProps,
@@ -15,11 +15,11 @@ import {
 function ModalShell({ children, onBackdropClick }: ModalShellProps) {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            <button type="button"
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full cursor-auto"
                 onClick={onBackdropClick}
             />
-            <motion.div
+            <m.div
                 initial={{ scale: 0.95, opacity: 0, y: 8 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 8 }}
@@ -31,7 +31,7 @@ function ModalShell({ children, onBackdropClick }: ModalShellProps) {
                 }}
             >
                 {children}
-            </motion.div>
+            </m.div>
         </div>
     );
 }

@@ -19,7 +19,7 @@ function GraphicSkeleton() {
   );
 }
 
-const GRAPHIC_MAP: Record<number, React.ComponentType<{ t?: unknown }> | undefined> = {
+const GRAPHIC_MAP: Record<number, React.ElementType> = {
   1: PhaseGraphics.Graphic1,
   2: PhaseGraphics.Graphic2,
   3: PhaseGraphics.Graphic3,

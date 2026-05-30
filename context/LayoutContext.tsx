@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, use, useMemo, useState, ReactNode } from 'react';
+import React, { createContext, use, useState, ReactNode } from 'react';
 
 interface LayoutContextType {
     showFooter: boolean;
@@ -36,7 +36,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         setDeleteDocModal(prev => ({ ...prev, isOpen: false }));
     };
 
-    const value = useMemo(() => ({
+    const value = {
         showFooter,
         setShowFooter,
         theaterMode,
@@ -48,15 +48,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
         deleteDocModal,
         openDeleteDocModal,
         closeDeleteDocModal
-    }), [
-        showFooter,
-        theaterMode,
-        showUnderConstruction,
-        showInstitutionalPilot,
-        deleteDocModal,
-        openDeleteDocModal,
-        closeDeleteDocModal
-    ]);
+    };
 
     return (
         <LayoutContext.Provider value={value}>

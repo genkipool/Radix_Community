@@ -25,7 +25,7 @@ export default function DAppsExchanges({ t, language: _language }: LanguageSecti
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-24">
                     {(t.dapps?.items as Array<Record<string, string>> || []).map((dapp, i: number) => (
-                        <FadeIn key={`dapp-${i}`} delay={i * 0.05} className={card}>
+                        <FadeIn key={dapp.name} delay={i * 0.05} className={card}>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="size-12 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] flex items-center justify-center">
                                     <TrendingUp className="size-6" style={{ color: DAPP_COLORS[i] }} />

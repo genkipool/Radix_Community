@@ -33,8 +33,8 @@ export default function Wallet({ t }: BaseSectionProps) {
                 { icon: <Shield className="size-6 text-[var(--color-accent)]" />, title: t.wallet.features[2].title, desc: t.wallet.features[2].desc },
                 { icon: <BadgeCheck className="size-6 text-[var(--color-primary)]" />, title: t.wallet.features[3].title, desc: t.wallet.features[3].desc },
                 { icon: <KeyRound className="size-6 text-[var(--color-secondary)]" />, title: t.wallet.features[4].title, desc: t.wallet.features[4].desc }
-              ].map((feature, i) => (
-                <div key={`wallet-feature-${i}`}>
+              ].map((feature, _i) => (
+                <div key={feature.title}>
                   <IconFeatureItem
                     icon={feature.icon}
                     title={feature.title}

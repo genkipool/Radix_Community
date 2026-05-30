@@ -240,7 +240,7 @@ export async function syncRewardsToRedis(
     pipeline.set(REDIS_REWARDS_ALL, allData);
 
     // Store last 6 epochs reward data for the epoch history table
-    const epochNumbers = processedEpochs.toSorted((a, b) => b - a);
+    const epochNumbers = Array.from(processedEpochs).sort((a, b) => b - a);
     if (epochNumbers.length > 0) {
         // Build per-epoch map: { epoch -> { address -> { fee, pool } } }
         const epochMap: Record<number, Record<string, { fee: number; pool: number }>> = {};

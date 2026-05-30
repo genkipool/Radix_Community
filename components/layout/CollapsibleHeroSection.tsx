@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 
 interface CollapsibleHeroSectionProps {
     /** When true both hero and grid slide up and disappear */
@@ -25,7 +25,7 @@ export function CollapsibleHeroSection({
     gridClassName = 'max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 w-full',
 }: CollapsibleHeroSectionProps) {
     return (
-        <motion.div
+        <m.div
             initial={false}
             animate={
                 collapsed
@@ -44,6 +44,6 @@ export function CollapsibleHeroSection({
             <div className={gridClassName} style={{ marginTop: 8, marginBottom: 48 }}>
                 {grid}
             </div>
-        </motion.div>
+        </m.div>
     );
 }

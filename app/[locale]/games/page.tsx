@@ -38,8 +38,12 @@ interface GamesPageProps {
 }
 
 export default async function GamesPage({ params }: GamesPageProps) {
-    const [{ locale }, cookieStore] = await Promise.all([params, cookies()]);
-    const t = await getFeatureDictionary(locale as Locale, ['games']);
+    const p = await params;
+    const locale = p.locale;
+    const [cookieStore, t] = await Promise.all([
+        cookies(),
+        getFeatureDictionary(locale as Locale, ['games'])
+    ]);
 
     const initialGridView = cookieStore.get('games_grid_view')?.value === 'true';
     const initialTheaterMode = cookieStore.get('games_theater_mode')?.value === 'true';

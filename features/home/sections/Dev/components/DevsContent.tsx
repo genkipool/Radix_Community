@@ -121,8 +121,8 @@ export function DevTab1({ t }: { t: Dictionary }) {
         <span className="text-[var(--code-keyword)]">let</span> pool = <span className="text-[var(--code-type)]">LiquidityPool</span>::<span className="text-[var(--code-keyword)]">instantiate</span>(vault_usdc, vault_xrd);
       </div>
       <div className="flex flex-col justify-center gap-6">
-        {tab.cards.map((card, i: number) => (
-          <div key={`card-${i}`} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-6 rounded-xl shadow-sm">
+        {tab.cards.map((card) => (
+          <div key={card.title} className="bg-[var(--color-bg)] border border-[var(--color-card-border)] p-6 rounded-xl shadow-sm">
             <h3 className="text-[var(--color-text-main)] font-bold mb-2 text-lg">{card.title}</h3>
             <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">{card.desc}</p>
           </div>

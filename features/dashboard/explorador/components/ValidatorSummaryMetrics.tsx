@@ -201,7 +201,7 @@ function ValidatorPositionMetrics({
                         {unstakes && unstakes.length > 0 && currentEpoch !== undefined && (
                             <div className="pl-4 pr-1 mt-1 flex flex-col gap-1.5 border-l-2 border-[var(--color-card-border)]/50 ml-1">
                                 {unstakes.map((u, i) => (
-                                    <div key={`unstake-${i}`} className="flex justify-between items-center text-[10px]">
+                                    <div key={`${u.epoch}-${u.amount}-${i}`} className="flex justify-between items-center text-[10px]">
                                         <span className="text-[var(--color-text-muted)] font-mono">{formatXRD(u.amount, locale)} XRD</span>
                                         <span className="text-[var(--color-warning)]/80 text-[9px] font-medium tracking-wide">
                                             {formatRemainingTime(u.epoch, currentEpoch)}

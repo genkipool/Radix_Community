@@ -43,8 +43,8 @@ export const AddressRow = ({
                 <span className="veb-ar-label">{label}</span>
                 {extra}
             </div>
-            <div
-                className="veb-ar-content group/ar"
+            <button type="button"
+                className="veb-ar-content group/ar w-full text-left"
                 onClick={e => { e.stopPropagation(); onCopy(brackets ? `[${addr}]` : addr); }}
             >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -74,7 +74,7 @@ export const AddressRow = ({
                         )}
                     </div>
                 </div>
-            </div>
+            </button>
         </div>
     );
 };

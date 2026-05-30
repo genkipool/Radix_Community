@@ -29,8 +29,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     accountAddress,
     tt,
     locale,
-    marketData,
-}) => {
+    marketData }) => {
     const [selectedYear, setSelectedYear] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -43,8 +42,7 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
         queryKey: ['account-rewards-years', accountAddress],
         queryFn: () => apiFetchAccountRewardsYears(accountAddress),
         enabled: isOpen,
-        staleTime: 5 * 60_000,
-    });
+        staleTime: 5 * 60_000 });
 
     const years = (yearsData?.years ?? []).map(y => String(y));
     const error = localError || (yearsError instanceof Error ? yearsError.message : yearsError ? String(yearsError) : null);
@@ -158,8 +156,8 @@ export const AccountRewardsCsvModal: React.FC<AccountRewardsCsvModalProps> = ({
     if (!isOpen || !mounted) return null;
 
     const modalContent = (
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        <div role="presentation"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm w-full text-left cursor-auto"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}

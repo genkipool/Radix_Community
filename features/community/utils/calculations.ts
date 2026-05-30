@@ -22,8 +22,7 @@ export function calculateGlobalStats(areas: Area[]) {
 /**
  * Recursively recomputes spent budget for an area based on its tasks.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function recomputeAreaStats(area: Area): Area {
+function _recomputeAreaStats(area: Area): Area {
     const nonVoluntaryTasks = area.tasks.filter(tk => tk.type !== 'voluntary');
     const newSpent = nonVoluntaryTasks.reduce((s, tk) => s + tk.cost, 0);
     const newSpentUsd = nonVoluntaryTasks.reduce((s, tk) => s + (tk.costUsd ?? 0), 0);

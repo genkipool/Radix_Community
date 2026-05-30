@@ -1,3 +1,4 @@
+
 /**
  * XRD price fetching utility.
  * Tries multiple APIs in sequence with a 5-second timeout each.
@@ -81,7 +82,7 @@ export function formatUSD(amount: number, decimals = 2): string {
 /**
  * Formats an XRD amount as a readable string, e.g. "1,234.56 XRD"
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function formatXRD(amount: number, decimals = 2): string {
+
+function _formatXRD(amount: number, decimals = 2): string {
   return `${amount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} XRD`;
 }

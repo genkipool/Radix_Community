@@ -47,7 +47,7 @@ export default function Security({ t }: BaseSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {(t.seguridad.cards as Array<Record<string, string>>).map((card, idx: number) => (
             <ScrollReveal
-              key={`card-${idx}`}
+              key={card.title}
               from={{ opacity: 0, x: idx === 0 ? -50 : 50 }}
               className="bg-[var(--color-surface)] border border-[var(--color-card-border)] p-8 rounded-3xl relative overflow-hidden flex flex-col h-full"
             >

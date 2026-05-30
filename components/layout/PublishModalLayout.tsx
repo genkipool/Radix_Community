@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import { X, MessageSquarePlus } from 'lucide-react';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { Button } from '@/components/ui/Button';
@@ -56,7 +56,7 @@ export function PublishModalLayout({
     return (
         <>
             <ModalOverlay onClose={onClose} blur="md" />
-            <motion.div
+            <m.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -140,7 +140,7 @@ export function PublishModalLayout({
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         </>
     );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from "motion/react";
 import { Portal } from './Portal';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface InfoTooltipProps {
   content: string;
@@ -79,9 +80,10 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
 
   useEffect(() => {
     return () => {
-      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      const id = closeTimeoutRef.current;
+      if (id) clearTimeout(id);
     };
-  }, [closeTimeoutRef]);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,17 +135,17 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
       onMouseEnter={handleOpen}
       onMouseLeave={handleClose}
     >
-      <span
+      <button type="button"
         onClick={handleToggle}
         className="cursor-pointer inline-flex items-center"
       >
         {children}
-      </span>
+      </button>
 
       <AnimatePresence>
         {isOpen && (
           <Portal>
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.95, x: '-50%', y: isTop ? '-90%' : '10%' }}
               animate={{ opacity: 1, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
               exit={{ opacity: 0, scale: 1, x: '-50%', y: isTop ? '-100%' : '0%' }}
@@ -172,7 +174,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                 >
                   <div
                     className="text-[11px] leading-relaxed text-[var(--color-text-main)] font-medium space-y-2 [&>strong]:text-[var(--color-text-strong,var(--color-text-main))] max-h-[60vh] overflow-y-auto overscroll-contain pr-1 custom-scrollbar select-text"
-                    dangerouslySetInnerHTML={{ __html: content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
                   />
                   {/* Arrow */}
                   <div
@@ -187,7 +189,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                   />
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </Portal>
         )}
       </AnimatePresence>

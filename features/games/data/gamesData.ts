@@ -226,8 +226,7 @@ export const GAMES: GameItem[] = GAME_CATEGORIES.flatMap(cat => cat.games);
 export const getGameById = (id: string): GameItem | undefined =>
   getAllGames().find(g => g.id === id);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getCategoryById = (id: string): GameCategory | undefined =>
+const _getCategoryById = (id: string): GameCategory | undefined =>
   GAME_CATEGORIES.find(c => c.id === id);
 
 /* ─── Mock leaderboard ─────────────────────────────────── */

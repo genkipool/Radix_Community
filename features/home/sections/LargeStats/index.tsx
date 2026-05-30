@@ -17,7 +17,7 @@ export default function LargeStats({ t }: BaseSectionProps) {
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
           {(t.stats.items as Array<Record<string, string>>).map((stat, i: number) => (
-            <FadeIn key={`stat-${i}`} delay={i * 0.1}>
+            <FadeIn key={stat.label} delay={i * 0.1}>
               <div className={`text-6xl md:text-7xl font-extrabold mb-4 ${GRADIENT_CLASSES[i] ? `text-transparent bg-clip-text bg-gradient-to-r ${GRADIENT_CLASSES[i]}` : 'text-[var(--color-text-main)]'}`}>
                 {stat.value}
               </div>

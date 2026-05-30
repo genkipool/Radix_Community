@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
-import { useMounted } from '@/hooks/useMounted';
+
 import {
     SortAsc, SortDesc, BookOpen,
     FoldVertical, UnfoldVertical,
@@ -86,7 +86,7 @@ export function ContentToolbar({
     const containerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
-    const mounted = useMounted();
+
 
     // ── Alignment: open left or right depending on available space ───────────
     const [calendarAlign, setCalendarAlign] = React.useState<'left' | 'right'>('left');

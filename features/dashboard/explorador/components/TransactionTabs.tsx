@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from "motion/react";
 import { Activity, Check, Copy, FileJson, List, Terminal } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import type { Dictionary } from '@/types/i18n';
@@ -107,7 +107,7 @@ const TransactionTabs = ({
                         {tab === 'raw' && <><FileJson className={`size-3.5 ${activeTab === tab ? 'text-[var(--color-primary)]' : 'group-hover:text-[var(--color-text-main)]'}`} />{tt?.raw_receipt || 'Raw Receipt'}</>}
 
                         {activeTab === tab && (
-                            <motion.div
+                            <m.div
                                 layoutId={`activeTab-${tx.intentHash}`}
                                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-full z-10"
                                 transition={{ type: "tween", ease: "circOut", duration: 0.3 }}
@@ -260,9 +260,9 @@ const TransactionTabs = ({
                             // If the whole transaction is ONLY fees (no real transfers at all), hide the section as per user request
                             if (realTransferAddresses.size === 0) return null;
 
-                            return filteredGroups.map((group, idx) => (
+                            return filteredGroups.map((group) => (
                                 <AssetTransferGroup
-                                    key={'rg' + idx}
+                                    key={'rg-' + (group[0]?.entity_address || '') + '-' + (group[0]?.resource_address || '')}
                                     group={group}
                                     balanceChanges={balanceChanges as BalanceChanges}
                                     initiators={initiators}
@@ -281,8 +281,8 @@ const TransactionTabs = ({
 
                         {/* NFT-only transfers: pass a synthetic group so AssetTransferGroup's
                             orphan-NFT detection handles rendering within the same card design */}
-                        {nftOnlyGroups.map((group, idx) => (
-                            <AssetTransferGroup key={'nft-rg' + idx} group={group} balanceChanges={balanceChanges as BalanceChanges} initiators={initiators} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
+                        {nftOnlyGroups.map((group) => (
+                            <AssetTransferGroup key={'nft-rg-' + (group[0]?.entity_address || '') + '-' + (group[0]?.resource_address || '')} group={group} balanceChanges={balanceChanges as BalanceChanges} initiators={initiators} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
                         ))}
 
 

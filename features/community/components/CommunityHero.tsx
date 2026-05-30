@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -70,6 +71,42 @@ function AddressCopyRow({ address }: { address: string }) {
 /* ─── Main component ─────────────────────────────────────────────────────── */
 export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onShowExplorer }: CommunityHeroProps) {
     const [isInfoOpen, setIsInfoOpen] = useState(false);
+
+    const handleDownloadCsv = () => {
+        const areaNames = dict.community_transparency?.area_names ?? {};
+        const ledger = buildLedger(dict.community_transparency as unknown as CommunityDictionary, areaNames, propAreas ?? AREAS, FUNDING_SOURCES, LEGAL_EXPENSES);
+        const headers = ['Type', 'Buy Amount', 'Buy Currency', 'Sell Amount', 'Sell Currency', 'Fee', 'Fee Currency', 'Exchange', 'Trade-Group', 'Comment', 'Date', 'Tx-ID'];
+        const rows = ledger.map(r => {
+            const isIncome = r.type === 'in';
+            return [
+                isIncome ? 'Deposit' : 'Withdrawal', // Type
+                isIncome ? r.xrdAmount : '',        // Buy Amount
+                isIncome ? 'XRD' : '',               // Buy Currency
+                !isIncome ? r.xrdAmount : '',       // Sell Amount
+                !isIncome ? 'XRD' : '',              // Sell Currency
+                '',                                  // Fee
+                'XRD',                               // Fee Currency
+                'Radix Ecosystem',                   // Exchange
+                'Community',                         // Trade-Group
+                `${r.category}: ${r.description}`,   // Comment
+                `${r.date} 12:00:00`,                // Date (CoinTracking likes time)
+                r.txHash ?? ''                       // Tx-ID
+            ];
+        });
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `radix_cointracking_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     // In a real app, t would come from props. For now, we still fetch it here 
     // but the sub-components will receive it as a prop.
@@ -453,41 +490,7 @@ export function CommunityHero({ collapsed, onSelectArea, areas: propAreas, onSho
                     </h2>
                     <button
                         type="button"
-                        onClick={() => {
-                            const areaNames = t.area_names;
-                            const ledger = buildLedger(t, areaNames, areas, FUNDING_SOURCES, LEGAL_EXPENSES);
-                            const headers = ['Type', 'Buy Amount', 'Buy Currency', 'Sell Amount', 'Sell Currency', 'Fee', 'Fee Currency', 'Exchange', 'Trade-Group', 'Comment', 'Date', 'Tx-ID'];
-                            const rows = ledger.map(r => {
-                                const isIncome = r.type === 'in';
-                                return [
-                                    isIncome ? 'Deposit' : 'Withdrawal', // Type
-                                    isIncome ? r.xrdAmount : '',        // Buy Amount
-                                    isIncome ? 'XRD' : '',               // Buy Currency
-                                    !isIncome ? r.xrdAmount : '',       // Sell Amount
-                                    !isIncome ? 'XRD' : '',              // Sell Currency
-                                    '',                                  // Fee
-                                    'XRD',                               // Fee Currency
-                                    'Radix Ecosystem',                   // Exchange
-                                    'Community',                         // Trade-Group
-                                    `${r.category}: ${r.description}`,   // Comment
-                                    `${r.date} 12:00:00`,                // Date (CoinTracking likes time)
-                                    r.txHash ?? ''                       // Tx-ID
-                                ];
-                            });
-                            const csvContent = [
-                                headers.join(','),
-                                ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-                            ].join('\n');
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const link = document.createElement('a');
-                            const url = URL.createObjectURL(blob);
-                            link.setAttribute('href', url);
-                            link.setAttribute('download', `radix_cointracking_${new Date().toISOString().split('T')[0]}.csv`);
-                            link.style.visibility = 'hidden';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }}
+                        onClick={handleDownloadCsv}
                         className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full transition-all hover:bg-[var(--color-primary)]/10"
                         style={{
                             background: 'var(--color-card-bg)',
