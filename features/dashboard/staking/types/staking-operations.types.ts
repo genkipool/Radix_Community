@@ -23,4 +23,12 @@ export interface AccountStakingData {
     ownerClaimNftIds: string[];
     /** Whether this account is the owner of the currently viewed validator */
     isOwner: boolean;
+    /** Current owner staked balance in XRD */
+    ownerLockedStakeXrd: number;
+    /** Current owner unstaking balance in XRD */
+    ownerPendingUnlockXrd: number;
+    /** Current owner claimable balance in LSU */
+    ownerUnlockedLsu: number;
+    /** Current owner claimable balance in XRD */
+    ownerUnlockedXrd: number;
 }

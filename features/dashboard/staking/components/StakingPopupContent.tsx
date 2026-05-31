@@ -77,7 +77,11 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const { submitTransaction, isTransacting, error, clearError } = useStakingTransaction();
 
     const xrdPerLsu = validator.lsu2xrdFactor || 1;
-    const stakedXrd = stakingData.lsuBalance * xrdPerLsu;
+    
+    const isOwnerTab = activeTab === 'validator' && stakingData.isOwner;
+    const stakedXrd = isOwnerTab ? stakingData.ownerLockedStakeXrd : (stakingData.lsuBalance * xrdPerLsu);
+    const pendingUnstakeXrd = isOwnerTab ? stakingData.ownerPendingUnlockXrd : stakingData.pendingUnstake;
+    const claimableXrd = isOwnerTab ? stakingData.ownerUnlockedXrd : stakingData.claimableXrd;
 
     const isEuroZone = () => {
         try {
@@ -146,7 +150,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
         let txAmount = amount;
         if (actionToPerform === 'Unstake') {
             if (amount === stakedXrd) {
-                txAmount = stakingData.lsuBalance; // Use exact LSU balance if max
+                txAmount = isOwnerTab ? (stakingData.ownerLockedStakeXrd / xrdPerLsu) : stakingData.lsuBalance; // Use exact LSU balance if max
             } else {
                 txAmount = amount / xrdPerLsu;
             }
@@ -159,8 +163,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             activeTab,
             txAmount,
             validator.lsuResource,
-            activeTab === 'delegator' ? stakingData.claimNftIds : stakingData.ownerClaimNftIds,
-            validator.claimTokenResourceAddress
+            activeTab === 'delegator' ? stakingData.claimNftIds : [],
+            validator.claimTokenResourceAddress,
+            validator.ownerBadge
         );
 
         if (hash) {
@@ -185,6 +190,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                 queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                 queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
                 queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                queryClient.invalidateQueries({ queryKey: ['validator-entity-details'] });
+                queryClient.invalidateQueries({ queryKey: ['validators'] });
                 return;
             }
 
@@ -197,6 +204,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         if (activeAccount) {
                             await apiFetchEntityDetails(activeAccount.address, networkName, true);
                         }
+                        if (activeTab === 'validator' && stakingData.isOwner) {
+                            await apiFetchEntityDetails(validator.address, networkName, true);
+                        }
                     } catch (e) {
                         console.error('Error refreshing cache', e);
                     }
@@ -204,6 +214,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                     queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
                     queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                    queryClient.invalidateQueries({ queryKey: ['validator-entity-details'] });
+                    queryClient.invalidateQueries({ queryKey: ['validators'] });
                     return;
                 } else if (details && (details.transaction_status === 'CommittedFailure' || details.transaction_status === 'Rejected')) {
                     return;
@@ -279,14 +291,14 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         <div className="w-px bg-[var(--color-border)]" />
                         <div className="flex flex-col items-center">
                             <span className="text-[var(--color-text-muted)]">{stakingT?.unstaking ?? 'Unstaking'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{stakingData.pendingUnstake.toFixed(2)} XRD</span>
-                            {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(stakingData.pendingUnstake)}</span> : null}
+                            <span className="font-medium text-[var(--color-text)]">{pendingUnstakeXrd.toFixed(2)} XRD</span>
+                            {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(pendingUnstakeXrd)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
                         <div className="flex flex-col items-center">
                             <span className="text-[var(--color-text-muted)]">{stakingT?.claimable ?? 'Claimable'}</span>
-                            <span className="font-medium text-[var(--color-text)]">{stakingData.claimableXrd.toFixed(2)} XRD</span>
-                            {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(stakingData.claimableXrd)}</span> : null}
+                            <span className="font-medium text-[var(--color-text)]">{claimableXrd.toFixed(2)} XRD</span>
+                            {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(claimableXrd)}</span> : null}
                         </div>
                     </>
                 )}
@@ -333,9 +345,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         hasTxError ||
                         isNotOwnerWarning ||
                         (action === 'Unstake' && stakedXrd <= 0) ||
-                        (action === 'Claim' && stakingData.claimableXrd <= 0) ||
+                        (action === 'Claim' && claimableXrd <= 0) ||
                         (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||
-                        (action === 'Claim' && (activeTab === 'delegator' ? stakingData.claimNftIds.length === 0 : stakingData.ownerClaimNftIds.length === 0));
+                        (action === 'Claim' && (activeTab === 'delegator' ? stakingData.claimNftIds.length === 0 : false));
 
                     return (
                         <button

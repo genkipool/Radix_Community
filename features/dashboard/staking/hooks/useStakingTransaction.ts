@@ -48,7 +48,8 @@ export const useStakingTransaction = () => {
             amount: number,
             lsuResourceAddress: string,
             claimNftIds?: string[],
-            claimNftResourceAddress?: string
+            claimNftResourceAddress?: string,
+            ownerBadgeId?: string
         ) => {
             if (!activeNetworkId) {
                 setError('No active network');
@@ -62,6 +63,7 @@ export const useStakingTransaction = () => {
             }
 
             const xrdAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId]?.XRD;
+            const ownerBadgeResourceAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId]?.OWNER_BADGE;
             if (!xrdAddress) {
                 setError('XRD address not found for network');
                 return null;
@@ -82,12 +84,17 @@ export const useStakingTransaction = () => {
                         manifest = buildClaimManifest(accountAddress, validatorAddress, claimNftIds || [], claimNftResourceAddress || '');
                     }
                 } else if (tab === 'validator') {
+                    if (!ownerBadgeId || !ownerBadgeResourceAddress) {
+                        setError('Missing owner badge information');
+                        setIsTransacting(false);
+                        return null;
+                    }
                     if (action === 'Stake') {
-                        manifest = buildOwnerStakeManifest(accountAddress, validatorAddress, amount, xrdAddress, lsuResourceAddress);
+                        manifest = buildOwnerStakeManifest(accountAddress, validatorAddress, amount, xrdAddress, lsuResourceAddress, ownerBadgeId, ownerBadgeResourceAddress);
                     } else if (action === 'Unstake') {
-                        manifest = buildOwnerUnstakeManifest(accountAddress, validatorAddress, amount);
+                        manifest = buildOwnerUnstakeManifest(accountAddress, validatorAddress, amount, ownerBadgeId, ownerBadgeResourceAddress);
                     } else if (action === 'Claim') {
-                        manifest = buildOwnerClaimManifest(accountAddress, validatorAddress, claimNftIds || [], claimNftResourceAddress || '');
+                        manifest = buildOwnerClaimManifest(accountAddress, validatorAddress, ownerBadgeId, ownerBadgeResourceAddress);
                     }
                 }
 

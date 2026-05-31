@@ -374,9 +374,19 @@ export const buildOwnerStakeManifest = (
   validatorAddress: string,
   amountXrd: number,
   xrdResourceAddress: string,
-  lsuResourceAddress: string
+  lsuResourceAddress: string,
+  ownerBadgeId: string,
+  ownerBadgeResourceAddress: string
 ): string => {
   return `
+CALL_METHOD
+    Address("${accountAddress}")
+    "create_proof_of_non_fungibles"
+    Address("${ownerBadgeResourceAddress}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("${ownerBadgeId}")
+    )
+;
 CALL_METHOD
     Address("${accountAddress}")
     "withdraw"
@@ -389,7 +399,7 @@ TAKE_ALL_FROM_WORKTOP
 ;
 CALL_METHOD
     Address("${validatorAddress}")
-    "stake"
+    "stake_as_owner"
     Bucket("bucket1")
 ;
 TAKE_ALL_FROM_WORKTOP
@@ -415,9 +425,19 @@ CALL_METHOD
 export const buildOwnerUnstakeManifest = (
   accountAddress: string,
   validatorAddress: string,
-  amountLsu: number
+  amountLsu: number,
+  ownerBadgeId: string,
+  ownerBadgeResourceAddress: string
 ): string => {
   return `
+CALL_METHOD
+    Address("${accountAddress}")
+    "create_proof_of_non_fungibles"
+    Address("${ownerBadgeResourceAddress}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("${ownerBadgeId}")
+    )
+;
 CALL_METHOD
     Address("${validatorAddress}")
     "start_unlock_owner_stake_units"
@@ -437,30 +457,21 @@ CALL_METHOD
 export const buildOwnerClaimManifest = (
   accountAddress: string,
   validatorAddress: string,
-  ownerClaimNftLocalIds: string[],
-  ownerClaimNftResourceAddress: string
+  ownerBadgeId: string,
+  ownerBadgeResourceAddress: string
 ): string => {
-  if (ownerClaimNftLocalIds.length === 0) {
-    throw new Error('No owner claim NFTs provided');
-  }
-
-  const idsString = ownerClaimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
-
   return `
 CALL_METHOD
     Address("${accountAddress}")
-    "withdraw_non_fungibles"
-    Address("${ownerClaimNftResourceAddress}")
-    Array<NonFungibleLocalId>(${idsString})
-;
-TAKE_ALL_FROM_WORKTOP
-    Address("${ownerClaimNftResourceAddress}")
-    Bucket("bucket1")
+    "create_proof_of_non_fungibles"
+    Address("${ownerBadgeResourceAddress}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("${ownerBadgeId}")
+    )
 ;
 CALL_METHOD
     Address("${validatorAddress}")
     "finish_unlock_owner_stake_units"
-    Bucket("bucket1")
 ;
 CALL_METHOD
     Address("${accountAddress}")

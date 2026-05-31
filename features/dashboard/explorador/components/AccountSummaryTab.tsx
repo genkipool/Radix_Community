@@ -358,6 +358,7 @@ export function AccountSummaryTab({
                 queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                 queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
                 queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                queryClient.invalidateQueries({ queryKey: ['validators'] });
                 setTransactingAction(null);
                 return;
             }
@@ -374,6 +375,7 @@ export function AccountSummaryTab({
                     queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                     queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
                     queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                    queryClient.invalidateQueries({ queryKey: ['validators'] });
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {
