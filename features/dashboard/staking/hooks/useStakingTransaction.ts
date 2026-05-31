@@ -25,7 +25,9 @@ export const useStakingTransaction = () => {
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sendWithTimeout = async (rdt: any, manifest: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const timeoutPromise = new Promise<any>((_, reject) =>
             setTimeout(() => reject(new Error('Tiempo de espera agotado tras 60 segundos.')), 60000)
         );

@@ -299,7 +299,11 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         type="number"
                         min="0"
                         value={amountStr}
-                        onChange={(e) => setAmountStr(e.target.value)}
+                        onChange={(e) => {
+                            if (e.target.value.includes('-')) return;
+                            setAmountStr(e.target.value);
+                            if (clearError) clearError();
+                        }}
                         onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}

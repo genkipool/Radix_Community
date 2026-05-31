@@ -5,7 +5,6 @@ import { useStakingTransaction } from '@/features/dashboard/staking/hooks/useSta
 import { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
-import { GatewayEntityDetails } from '@/features/dashboard/types';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 
 export type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
@@ -14,12 +13,12 @@ interface AccountValidatorStakeActionProps {
     accountAddress: string;
     validatorAddress: string;
     network: 'mainnet' | 'stokenet';
-    entityData?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    entityData: any;
     xrdBalance: number;
     stakedXrd: number;
     claimableXrd: number;
     lsuBalance: number;
-    t?: any;
     ghostAmount?: string;
     selections?: ValidatorSelections;
     onUpdateSelections?: (selections: ValidatorSelections) => void;
@@ -35,7 +34,6 @@ export const AccountValidatorStakeAction = ({
     stakedXrd,
     claimableXrd,
     lsuBalance,
-    t,
     ghostAmount,
     selections = {},
     onUpdateSelections,
@@ -61,6 +59,7 @@ export const AccountValidatorStakeAction = ({
     const claimNftIds: string[] = [];
     if (validator && entityData?.non_fungible_resources?.items) {
         const claimResource = entityData.non_fungible_resources.items.find(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (nft: any) => nft.resource_address === validator.claimTokenResourceAddress
         );
         if (claimResource && claimResource.vaults?.items?.[0]?.items) {

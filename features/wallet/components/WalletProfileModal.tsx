@@ -95,7 +95,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] bg-[var(--color-background)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden"
+                            className="fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden"
                         >
                             <div className="flex flex-col h-full">
                                 {/* Header */}

@@ -42,12 +42,6 @@ export function ValidatorCarouselSelector({
         setActiveIndex(nextIdx);
     };
 
-    const toggleCurrentActive = () => {
-        const currentVal = options[activeIndex]?.value;
-        if (!currentVal) return;
-        toggleSelection(currentVal);
-    };
-
     const toggleSelection = (val: string) => {
         if (selectedValues.includes(val)) {
             onChange(selectedValues.filter(v => v !== val));
@@ -83,9 +77,8 @@ export function ValidatorCarouselSelector({
                 </button>
                 <button
                     type="button"
-                    onClick={toggleCurrentActive}
-                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${selectedValues.includes(options[activeIndex]?.value) ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)] hover:text-[var(--color-primary)]'}`}
-                    title="Pulsar para seleccionar/deseleccionar"
+                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
+                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${isOpen ? 'text-[var(--color-primary)]' : selectedValues.includes(options[activeIndex]?.value) ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}
                 >
                     {activeLabel}
                     {selectedValues.includes(options[activeIndex]?.value) && <Check className="inline-block size-3 ml-1 mb-0.5" />}
@@ -97,14 +90,6 @@ export function ValidatorCarouselSelector({
                 >
                     <ChevronRight className="size-4" aria-hidden="true" />
                 </button>
-                <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
-                    className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 rounded-full ml-1 ${isOpen ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
-                    title="Buscar validadores"
-                >
-                    <Search className="size-4" aria-hidden="true" />
-                </button>
             </div>
 
             <AnimatePresence>
@@ -114,7 +99,7 @@ export function ValidatorCarouselSelector({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
                     >
                         <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">

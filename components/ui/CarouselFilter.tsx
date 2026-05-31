@@ -68,14 +68,8 @@ export function CarouselFilter({
                 </button>
                 <button
                     type="button"
-                    onClick={() => {
-                        if (activeValue) {
-                            onChange(null);
-                        } else {
-                            onChange(options[1]?.value || null);
-                        }
-                    }}
-                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${activeValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)] transition-colors'}`}
+                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
+                    className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${isOpen ? 'text-[var(--color-primary)]' : activeValue ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}
                 >
                     {activeLabel}
                 </button>
@@ -86,14 +80,6 @@ export function CarouselFilter({
                 >
                     <ChevronRight className="size-4" aria-hidden="true" />
                 </button>
-                <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
-                    className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 rounded-full ml-1 ${isOpen ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
-                    title={placeholder}
-                >
-                    <Search className="size-4" aria-hidden="true" />
-                </button>
             </div>
 
             <AnimatePresence>
@@ -103,7 +89,7 @@ export function CarouselFilter({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
                     >
                         <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">

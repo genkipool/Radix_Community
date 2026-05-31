@@ -29,7 +29,6 @@ export const BatchValidatorStakeAction = ({
     actionError,
     setActionError,
     clearError,
-    t,
     children
 }: BatchValidatorStakeActionProps) => {
     const inputRef = useRef<HTMLInputElement>(null);

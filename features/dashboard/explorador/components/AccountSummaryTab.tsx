@@ -1,4 +1,5 @@
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -156,11 +157,11 @@ export function AccountSummaryTab({
         setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
         setHasInitializedSelections(true);
     }
-
-    const xrdBalance = parseFloat(xrdAmount) || 0;
-
-    // Combine existing stakes and newly selected validators for the UI
-    const displayRows: StakingEntry[] = [...selectedValidatorAddresses].map(vAddr => {
+    // Show all staked validators always, plus any additionally selected ones
+    const displayRows: StakingEntry[] = [...new Set([
+        ...stakingRows.map(r => r.validatorAddress),
+        ...selectedValidatorAddresses
+    ])].map(vAddr => {
         const existing = stakingRows.find(r => r.validatorAddress === vAddr);
         if (existing) return existing;
         
@@ -616,7 +617,7 @@ export function AccountSummaryTab({
             </div>
 
             {/* Staking Section */}
-            {(displayRows.length > 0 || isModal) && (
+            {displayRows.length > 0 && (
                 <div className="mb-8">
                     <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center gap-2 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
                         {tt?.account_summary?.staking_validators_title || 'STAKING'} ({displayRows.length})
@@ -630,7 +631,7 @@ export function AccountSummaryTab({
                         </button>
                     </h4>
                     
-                    {isModal && (
+                    {isModal && stakingRows.length > 0 && (
                         <div className="mb-6 space-y-4">
                             <BatchValidatorStakeAction
                                 selectedValidatorsCount={selectedValidatorAddresses.length}
@@ -647,7 +648,6 @@ export function AccountSummaryTab({
                                 actionError={actionError || batchError}
                                 setActionError={setActionError}
                                 clearError={clearError}
-                                t={tt as any}
                             >
                                 <ValidatorCarouselSelector
                                     options={carouselOptions}
@@ -713,7 +713,6 @@ export function AccountSummaryTab({
                                         stakedXrd={row.xrdInStake}
                                         claimableXrd={row.xrdInClaim}
                                         lsuBalance={lsuTokens.find(t => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find(t => t.validatorAddress === row.validatorAddress)!.amount) : 0}
-                                        t={tt as any}
                                         ghostAmount={globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
                                         selections={validatorSelections[row.validatorAddress] || {}}
                                         onUpdateSelections={(newSels) => {
