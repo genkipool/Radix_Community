@@ -73,7 +73,7 @@ export function ValidatorCarouselSelector({
 
     return (
         <div className={`relative shrink-0 ${className}`} ref={containerRef}>
-            <div className="flex items-center rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] shadow-sm overflow-hidden h-9 w-full">
+            <div className="flex items-center overflow-hidden h-9 w-full">
                 <button
                     type="button"
                     onClick={() => cycle('prev')}
