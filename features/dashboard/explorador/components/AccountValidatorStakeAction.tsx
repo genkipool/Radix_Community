@@ -18,6 +18,8 @@ interface AccountValidatorStakeActionProps {
     claimableXrd: number;
     lsuBalance: number;
     t?: Partial<import('@/features/dashboard/types').TranslationsT>;
+    ghostAmount?: string;
+    hasGlobalAmount?: boolean;
 }
 
 export const AccountValidatorStakeAction = ({
@@ -29,7 +31,9 @@ export const AccountValidatorStakeAction = ({
     stakedXrd,
     claimableXrd,
     lsuBalance,
-    t
+    t,
+    ghostAmount,
+    hasGlobalAmount
 }: AccountValidatorStakeActionProps) => {
     const queryClient = useQueryClient();
     const { activeNetworkId } = useRadixWallet();
@@ -172,9 +176,9 @@ export const AccountValidatorStakeAction = ({
                         type="number"
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
-                        placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
+                        placeholder={ghostAmount ? `${ghostAmount} (Automático)` : (stakingT?.amount_placeholder ?? "Cantidad de XRD")}
                         disabled={hasTxError}
-                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${hasTxError ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${hasTxError ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${hasTxError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-background)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !amountStr ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-background)]'} ${hasTxError ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
                     <button
@@ -198,14 +202,18 @@ export const AccountValidatorStakeAction = ({
             <div className="flex gap-2">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
+                    const amountToUse = amountStr || ghostAmount || '0';
                     const isDisabled =
                         !validator ||
                         isTransacting ||
                         hasTxError ||
                         (action === 'Unstake' && stakedXrd <= 0) ||
                         (action === 'Claim' && claimableXrd <= 0) ||
-                        (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||
+                        (action !== 'Claim' && parseFloat(amountToUse) <= 0) ||
                         (action === 'Claim' && claimNftIds.length === 0);
+
+                    const labelPrefix = (stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action;
+                    const label = hasGlobalAmount ? `${labelPrefix} SELECCIONADOS` : labelPrefix;
 
                     return (
                         <button
@@ -216,15 +224,15 @@ export const AccountValidatorStakeAction = ({
                                 handleAction(action);
                             }}
                             disabled={isDisabled}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">
-                                    {(stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action}
+                                    {label}
                                     <span className="animate-pulse ml-0.5">...</span>
                                 </span>
                             ) : (
-                                (stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action
+                                label
                             )}
                         </button>
                     );

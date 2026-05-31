@@ -7,12 +7,22 @@ import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { AccountValidatorStakeAction } from './AccountValidatorStakeAction';
+import { BatchValidatorStakeAction } from './BatchValidatorStakeAction';
+import { ValidatorCarouselSelector } from './ValidatorCarouselSelector';
 import { PanelLoadingState } from './EntityPanelShared';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
 import { type AccountRewardsCsvModalDict } from '../types/components.types';
-import { useAccountStats } from '../hooks/useAccountStats';
+import { useAccountStats, StakingEntry } from '../hooks/useAccountStats';
+import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
+import { useStakingTransaction } from '@/features/dashboard/staking/hooks/useStakingTransaction';
+import { BatchStakeItem, BatchUnstakeItem, BatchClaimItem } from '@/features/wallet/lib/manifest-builders';
+import { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
+import { useQueryClient } from '@tanstack/react-query';
+import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -61,6 +71,18 @@ export function AccountSummaryTab({
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
+    const queryClient = useQueryClient();
+    const { activeNetworkId } = useRadixWallet();
+    const { data: validatorsData } = useValidatorsQuery(network);
+
+    const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
+    const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
+    
+    const [globalAmountStr, setGlobalAmountStr] = useState('');
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
+    
+    const { submitBatchTransaction, isTransacting, error: batchError } = useStakingTransaction();
 
     const description = getMeta('description');
     const {
@@ -79,6 +101,175 @@ export function AccountSummaryTab({
     if (isLoading) {
         return <PanelLoadingState tt={tt} />;
     }
+
+    // Initialize selections with existing delegations once data loads
+    if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
+        setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
+        setHasInitializedSelections(true);
+    }
+
+    const xrdBalance = parseFloat(xrdAmount) || 0;
+
+    // Combine existing stakes and newly selected validators for the UI
+    const displayRows: StakingEntry[] = [...selectedValidatorAddresses].map(vAddr => {
+        const existing = stakingRows.find(r => r.validatorAddress === vAddr);
+        if (existing) return existing;
+        
+        const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
+        return {
+            validatorName: valInfo?.name || 'Unknown Validator',
+            validatorIcon: valInfo?.iconUrl || '',
+            validatorAddress: vAddr,
+            xrdInStake: 0,
+            xrdInUnstake: 0,
+            xrdInClaim: 0,
+            unstakes: []
+        };
+    });
+
+    const carouselOptions = validatorsData?.validators.map(v => ({
+        value: v.address,
+        label: v.name || 'Unknown',
+        iconUrl: v.iconUrl
+    })) || [];
+
+    const handleBatchAction = async (actionToPerform: StakingAction) => {
+        setActionError(null);
+        let amount = parseFloat(globalAmountStr || '0');
+        const numSelected = selectedValidatorAddresses.length;
+
+        if (numSelected === 0) {
+            setActionError('Selecciona al menos un validador.');
+            return;
+        }
+
+        const amountPerValidator = amount / numSelected;
+
+        if (actionToPerform !== 'Claim' && amount <= 0) {
+            setActionError('Ingresa una cantidad válida.');
+            return;
+        }
+
+        if (actionToPerform === 'Stake' && amount > xrdBalance) {
+            setActionError(tt?.staking?.errors?.insufficient_balance ?? 'Saldo insuficiente.');
+            return;
+        }
+
+        const items = [];
+
+        // Validate individual limits
+        for (const vAddr of selectedValidatorAddresses) {
+            const row = displayRows.find(r => r.validatorAddress === vAddr);
+            const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
+            if (!row || !valInfo) {
+                setActionError(`Información incompleta para el validador ${vAddr}`);
+                return;
+            }
+
+            if (actionToPerform === 'Unstake') {
+                if (amountPerValidator > row.xrdInStake) {
+                    setActionError(`Error: la cantidad a retirar por validador (${amountPerValidator.toFixed(2)} XRD) supera el stake actual (${row.xrdInStake.toFixed(2)} XRD) en el validador ${row.validatorName}. Ajusta el monto o deselecciónalo.`);
+                    return;
+                }
+                const xrdPerLsu = valInfo.lsu2xrdFactor || 1;
+                const lsuToken = lsuTokens.find(t => t.validatorAddress === vAddr);
+                const lsuBalance = lsuToken ? parseFloat(lsuToken.amount) : 0;
+                
+                let amountLsu = amountPerValidator / xrdPerLsu;
+                // Use exact LSU balance to avoid rounding dust if unstaking MAX
+                if (amountPerValidator >= row.xrdInStake - 0.01) {
+                    amountLsu = lsuBalance;
+                }
+                
+                items.push({
+                    validatorAddress: vAddr,
+                    amountLsu,
+                    lsuResourceAddress: valInfo.lsuResource
+                } as BatchUnstakeItem);
+            } else if (actionToPerform === 'Stake') {
+                items.push({
+                    validatorAddress: vAddr,
+                    amountXrd: amountPerValidator
+                } as BatchStakeItem);
+            } else if (actionToPerform === 'Claim') {
+                const claimNftIds: string[] = [];
+                if (entityData?.non_fungible_resources?.items) {
+                    const claimResource = entityData.non_fungible_resources.items.find(
+                        nft => nft.resource_address === valInfo.claimTokenResourceAddress
+                    );
+                    if (claimResource && claimResource.vaults?.items?.[0]?.items) {
+                        claimNftIds.push(...claimResource.vaults.items[0].items);
+                    }
+                }
+                
+                if (claimNftIds.length > 0) {
+                    items.push({
+                        validatorAddress: vAddr,
+                        claimNftResourceAddress: valInfo.claimTokenResourceAddress,
+                        claimNftLocalIds: claimNftIds
+                    } as BatchClaimItem);
+                }
+            }
+        }
+
+        if (actionToPerform === 'Claim' && items.length === 0) {
+            setActionError('No hay XRD listo para reclamar en los validadores seleccionados.');
+            return;
+        }
+
+        setTransactingAction(actionToPerform);
+        const hash = await submitBatchTransaction(address, actionToPerform, items);
+
+        if (hash) {
+            setGlobalAmountStr('');
+            pollTransactionStatus(hash);
+        } else {
+            setTransactingAction(null);
+        }
+    };
+
+    const pollTransactionStatus = async (hash: string) => {
+        const netName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+        const maxAttempts = 15;
+
+        const pollOnce = async (attempt: number) => {
+            if (attempt > maxAttempts) {
+                queryClient.invalidateQueries({ queryKey: ['entity'] });
+                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                setTransactingAction(null);
+                return;
+            }
+
+            try {
+                const details = await apiFetchTransactionDetails(hash, netName);
+                if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
+                    try {
+                        await apiFetchEntityDetails(address, netName, true);
+                    } catch (e) {
+                        console.error('Failed to pre-fetch entity details after transaction', e);
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['entity'] });
+                    queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                    setTransactingAction(null);
+                    return;
+                } else if (details && details.transaction_status === 'CommittedFailure') {
+                    setActionError('La transacción falló.');
+                    setTransactingAction(null);
+                    return;
+                } else if (details && details.transaction_status === 'Rejected') {
+                    setActionError('Transacción rechazada.');
+                    setTransactingAction(null);
+                    return;
+                }
+            } catch (err) {
+                console.error("Error polling transaction:", err);
+            }
+
+            setTimeout(() => pollOnce(attempt + 1), 2000);
+        };
+
+        pollOnce(1);
+    };
 
     return (
         <div className="space-y-6">
@@ -302,13 +493,39 @@ export function AccountSummaryTab({
             </div>
 
             {/* Staking Section */}
-            {stakingRows.length > 0 && (
+            {(displayRows.length > 0 || isModal) && (
                 <div className="mb-8">
                     <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
-                        {tt?.account_summary?.staking_validators_title || 'STAKING'} ({stakingRows.length})
+                        {tt?.account_summary?.staking_validators_title || 'STAKING'} ({displayRows.length})
                     </h4>
+                    
+                    {isModal && (
+                        <div className="mb-6 space-y-4">
+                            <ValidatorCarouselSelector
+                                options={carouselOptions}
+                                selectedValues={selectedValidatorAddresses}
+                                onChange={setSelectedValidatorAddresses}
+                                placeholder="Buscar validadores para delegar..."
+                            />
+                            
+                            <BatchValidatorStakeAction
+                                accountAddress={address}
+                                network={network}
+                                selectedValidatorsCount={selectedValidatorAddresses.length}
+                                globalAmountStr={globalAmountStr}
+                                setGlobalAmountStr={setGlobalAmountStr}
+                                onBatchAction={handleBatchAction}
+                                isTransacting={isTransacting}
+                                transactingAction={transactingAction}
+                                actionError={actionError || batchError}
+                                setActionError={setActionError}
+                                t={tt}
+                            />
+                        </div>
+                    )}
+
                     <div className="space-y-4">
-                        {stakingRows.map((row) => (
+                        {displayRows.map((row) => (
                             <div key={row.validatorAddress} className={isModal ? "flex flex-col gap-4 py-2" : "flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm"}>
                                 {/* Validator Header */}
                                 <div className="flex items-center gap-3">
@@ -362,6 +579,8 @@ export function AccountSummaryTab({
                                         claimableXrd={row.xrdInClaim}
                                         lsuBalance={lsuTokens.find(t => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find(t => t.validatorAddress === row.validatorAddress)!.amount) : 0}
                                         t={tt}
+                                        ghostAmount={globalAmountStr && selectedValidatorAddresses.length > 0 && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr || '0') / selectedValidatorAddresses.length).toString() : undefined}
+                                        hasGlobalAmount={!!globalAmountStr && parseFloat(globalAmountStr) > 0}
                                     />
                                 )}
                             </div>

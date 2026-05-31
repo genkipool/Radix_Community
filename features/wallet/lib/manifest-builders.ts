@@ -103,6 +103,154 @@ CALL_METHOD
 `;
 };
 
+// ==========================================
+// BATCH MANIFEST BUILDERS
+// ==========================================
+
+export interface BatchStakeItem {
+  validatorAddress: string;
+  amountXrd: number;
+}
+
+export const buildBatchStakeManifest = (
+  accountAddress: string,
+  items: BatchStakeItem[],
+  xrdResourceAddress: string
+): string => {
+  const totalXrd = items.reduce((acc, item) => acc + item.amountXrd, 0);
+  
+  let manifest = `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw"
+    Address("${xrdResourceAddress}")
+    Decimal("${totalXrd}")
+;
+`;
+
+  items.forEach((item, index) => {
+    manifest += `
+TAKE_FROM_WORKTOP
+    Address("${xrdResourceAddress}")
+    Decimal("${item.amountXrd}")
+    Bucket("bucket${index + 1}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "stake"
+    Bucket("bucket${index + 1}")
+;
+`;
+  });
+
+  manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`;
+  return manifest;
+};
+
+export interface BatchUnstakeItem {
+  validatorAddress: string;
+  amountLsu: number;
+  lsuResourceAddress: string;
+}
+
+export const buildBatchUnstakeManifest = (
+  accountAddress: string,
+  items: BatchUnstakeItem[]
+): string => {
+  let manifest = '';
+
+  // withdraw all LSUs needed
+  items.forEach((item) => {
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw"
+    Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountLsu}")
+;
+`;
+  });
+
+  items.forEach((item, index) => {
+    manifest += `
+TAKE_ALL_FROM_WORKTOP
+    Address("${item.lsuResourceAddress}")
+    Bucket("bucket${index + 1}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "unstake"
+    Bucket("bucket${index + 1}")
+;
+`;
+  });
+
+  manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`;
+  return manifest;
+};
+
+export interface BatchClaimItem {
+  validatorAddress: string;
+  claimNftResourceAddress: string;
+  claimNftLocalIds: string[];
+}
+
+export const buildBatchClaimManifest = (
+  accountAddress: string,
+  items: BatchClaimItem[]
+): string => {
+  let manifest = '';
+
+  items.forEach((item) => {
+    if (item.claimNftLocalIds.length === 0) return;
+    const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw_non_fungibles"
+    Address("${item.claimNftResourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+;
+`;
+  });
+
+  items.forEach((item, index) => {
+    if (item.claimNftLocalIds.length === 0) return;
+    manifest += `
+TAKE_ALL_FROM_WORKTOP
+    Address("${item.claimNftResourceAddress}")
+    Bucket("bucket${index + 1}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "claim_xrd"
+    Bucket("bucket${index + 1}")
+;
+`;
+  });
+
+  manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`;
+  return manifest;
+};
+
 /**
  * Builds a manifest for an owner to stake XRD (stakes to LSU, then locks LSU).
  */

@@ -9,6 +9,12 @@ import {
     buildOwnerStakeManifest,
     buildOwnerUnstakeManifest,
     buildOwnerClaimManifest,
+    buildBatchStakeManifest,
+    buildBatchUnstakeManifest,
+    buildBatchClaimManifest,
+    BatchStakeItem,
+    BatchUnstakeItem,
+    BatchClaimItem
 } from '@/features/wallet/lib/manifest-builders';
 import { StakingAction, StakingTab } from '../types/staking-operations.types';
 
@@ -95,8 +101,77 @@ export const useStakingTransaction = () => {
             }
         };
 
+    const submitBatchTransaction = async (
+        accountAddress: string,
+        action: StakingAction,
+        items: (BatchStakeItem | BatchUnstakeItem | BatchClaimItem)[]
+    ) => {
+        if (!activeNetworkId) {
+            setError('No active network');
+            return null;
+        }
+
+        const rdt = getOrCreateToolkit(activeNetworkId);
+        if (!rdt) {
+            setError('Radix Dapp Toolkit not initialized');
+            return null;
+        }
+
+        const xrdAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId]?.XRD;
+        if (!xrdAddress) {
+            setError('XRD address not found for network');
+            return null;
+        }
+
+        if (items.length === 0) {
+            setError('No validators selected');
+            return null;
+        }
+
+        setIsTransacting(true);
+        setError(null);
+
+        try {
+            let manifest = '';
+
+            if (action === 'Stake') {
+                manifest = buildBatchStakeManifest(accountAddress, items as BatchStakeItem[], xrdAddress);
+            } else if (action === 'Unstake') {
+                manifest = buildBatchUnstakeManifest(accountAddress, items as BatchUnstakeItem[]);
+            } else if (action === 'Claim') {
+                manifest = buildBatchClaimManifest(accountAddress, items as BatchClaimItem[]);
+            }
+
+            if (!manifest) {
+                setError('Unsupported action');
+                setIsTransacting(false);
+                return null;
+            }
+
+            const result = await rdt.walletApi.sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            });
+
+            if (result.isErr()) {
+                setError(result.error.error || 'Transaction rejected by wallet');
+                setIsTransacting(false);
+                return null;
+            }
+
+            setIsTransacting(false);
+            return result.value.transactionIntentHash;
+        } catch (err: unknown) {
+            console.error('Batch staking transaction error:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
+            setIsTransacting(false);
+            return null;
+        }
+    };
+
     return {
         submitTransaction,
+        submitBatchTransaction,
         isTransacting,
         error,
     };
