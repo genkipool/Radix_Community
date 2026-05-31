@@ -9,6 +9,8 @@ interface BatchValidatorStakeActionProps {
     accountAddress: string;
     network: 'mainnet' | 'stokenet';
     selectedValidatorsCount: number;
+    xrdBalance: number;
+    totalStakedXrdSelected: number;
     globalAmountStr: string;
     setGlobalAmountStr: (val: string) => void;
     onBatchAction: (action: StakingAction) => void;
@@ -17,10 +19,13 @@ interface BatchValidatorStakeActionProps {
     actionError: string | null;
     setActionError: (err: string | null) => void;
     t?: Partial<import('@/features/dashboard/types').TranslationsT>;
+    children?: React.ReactNode;
 }
 
 export const BatchValidatorStakeAction = ({
     selectedValidatorsCount,
+    xrdBalance,
+    totalStakedXrdSelected,
     globalAmountStr,
     setGlobalAmountStr,
     onBatchAction,
@@ -28,7 +33,8 @@ export const BatchValidatorStakeAction = ({
     transactingAction,
     actionError,
     setActionError,
-    t
+    t,
+    children
 }: BatchValidatorStakeActionProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -40,19 +46,23 @@ export const BatchValidatorStakeAction = ({
     return (
         <div className="flex flex-col gap-3 mb-6">
             <div className="text-xs font-bold text-[var(--color-primary)] flex justify-between items-center px-1">
-                <div className="flex items-center gap-2">
+                <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
+                    className="flex items-center gap-2 hover:text-[var(--color-primary)] transition-colors group"
+                    title="Información sobre acciones globales"
+                >
+                    <Info className="size-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
                     <span>ACCIÓN GLOBAL (LOTES)</span>
-                    <button 
-                        type="button" 
-                        onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
-                        className="text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors p-1 rounded-full hover:bg-[var(--color-primary)]/10"
-                        title="Información sobre acciones globales"
-                    >
-                        <Info className="size-4" />
-                    </button>
-                </div>
+                </button>
                 <span>{selectedValidatorsCount} Validadores Seleccionados</span>
             </div>
+            
+            {children && (
+                <div className="mb-2">
+                    {children}
+                </div>
+            )}
             
             {/* Input Row */}
             <div className="relative flex flex-col">
@@ -65,10 +75,22 @@ export const BatchValidatorStakeAction = ({
                             setGlobalAmountStr(e.target.value);
                             setActionError(null);
                         }}
-                        placeholder={`Cantidad total de XRD a distribuir`}
+                        placeholder="Cantidad TOTAL de XRD (Staking/Unstaking)"
                         disabled={isTransacting || selectedValidatorsCount === 0}
                         className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${actionError ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isTransacting || selectedValidatorsCount === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
+                    <button
+                        type="button"
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            const maxAmount = Math.max(xrdBalance, totalStakedXrdSelected);
+                            setGlobalAmountStr(maxAmount.toString()); 
+                        }}
+                        disabled={isTransacting || selectedValidatorsCount === 0}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${(isTransacting || selectedValidatorsCount === 0) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
+                    >
+                        {stakingT?.max ?? 'MAX'}
+                    </button>
                 </div>
                 {actionError && (
                     <div className="text-[10px] text-red-500 mt-1 flex justify-between">
@@ -86,6 +108,8 @@ export const BatchValidatorStakeAction = ({
                         isTransacting ||
                         selectedValidatorsCount === 0 ||
                         (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
+                    
+                    const label = (stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action;
 
                     return (
                         <button
@@ -96,15 +120,15 @@ export const BatchValidatorStakeAction = ({
                                 onBatchAction(action);
                             }}
                             disabled={isDisabled}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${action === 'Claim' ? 'bg-[var(--color-accent)] text-white hover:opacity-90' : 'bg-[var(--color-primary)] text-white hover:opacity-90'}`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">
-                                    {(stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action}
+                                    {label}
                                     <span className="animate-pulse ml-0.5">...</span>
                                 </span>
                             ) : (
-                                `${(stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action} TODOS`
+                                `${label} TODOS`
                             )}
                         </button>
                     );
@@ -120,7 +144,7 @@ export const BatchValidatorStakeAction = ({
                 <AnimatePresence>
                     {isInfoModalOpen && (
                         <>
-                            <ModalOverlay onClose={() => setIsInfoModalOpen(false)} blur="sm" />
+                            <ModalOverlay onClose={() => setIsInfoModalOpen(false)} blur="sm" className="z-[9999]" />
                             <m.div
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -150,10 +174,10 @@ export const BatchValidatorStakeAction = ({
                                         </p>
                                         
                                         <ul className="list-disc pl-5 space-y-2 text-[var(--color-text-muted)]">
-                                            <li><strong className="text-[var(--color-text-main)]">Distribución Equitativa:</strong> La cantidad de XRD que ingreses se dividirá a partes iguales entre todos los validadores que hayas seleccionado en el carrusel superior.</li>
+                                            <li><strong className="text-[var(--color-text-main)]">Staking Masivo:</strong> Ingresa la cantidad de XRD en el campo superior. Esta se dividirá por igual entre todos los validadores seleccionados. <br/><span className="italic text-xs">Ejemplo: Si tienes 3 validadores seleccionados y pones 300 XRD, se enviarán 100 XRD a cada uno.</span></li>
+                                            <li><strong className="text-[var(--color-text-main)]">Unstaking Masivo:</strong> Ingresa la cantidad TOTAL que deseas retirar. Se intentará extraer a partes iguales de cada validador. <br/><span className="italic text-xs">Ejemplo: Si pones 150 XRD y tienes 3 validadores, se extraerán 50 XRD de cada uno. Ojo: Ningún validador puede tener menos saldo del que le pides.</span></li>
+                                            <li><strong className="text-[var(--color-text-main)]">Claim Masivo:</strong> No necesitas ingresar cantidad. Simplemente selecciona los validadores y haz clic en &quot;CLAIM TODOS&quot;. Recogerá automáticamente todas las recompensas listas de los validadores elegidos.</li>
                                             <li><strong className="text-[var(--color-text-main)]">Vista Previa:</strong> Podrás ver en el input de cada validador (en color tenue) la cantidad exacta que le corresponde antes de confirmar.</li>
-                                            <li><strong className="text-[var(--color-text-main)]">Límites de Unstake:</strong> Al hacer Unstake, la cantidad asignada a un validador no puede superar su balance actual. Si esto ocurre, se mostrará un error y deberás ajustar el monto o deseleccionar al validador.</li>
-                                            <li><strong className="text-[var(--color-text-main)]">Un Solo Click:</strong> Los botones &quot;TODOS&quot; enviarán una única orden inteligente (Smart Contract) a la red de Radix.</li>
                                         </ul>
                                     </div>
                                 </div>

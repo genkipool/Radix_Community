@@ -501,17 +501,10 @@ export function AccountSummaryTab({
                     
                     {isModal && (
                         <div className="mb-6 space-y-4">
-                            <ValidatorCarouselSelector
-                                options={carouselOptions}
-                                selectedValues={selectedValidatorAddresses}
-                                onChange={setSelectedValidatorAddresses}
-                                placeholder="Buscar validadores para delegar..."
-                            />
-                            
                             <BatchValidatorStakeAction
-                                accountAddress={address}
-                                network={network}
                                 selectedValidatorsCount={selectedValidatorAddresses.length}
+                                xrdBalance={Number(xrdAmount) || 0}
+                                totalStakedXrdSelected={selectedValidatorAddresses.reduce((acc, address) => acc + (stakingRows.find(row => row.validatorAddress === address)?.xrdInStake || 0), 0)}
                                 globalAmountStr={globalAmountStr}
                                 setGlobalAmountStr={setGlobalAmountStr}
                                 onBatchAction={handleBatchAction}
@@ -520,7 +513,14 @@ export function AccountSummaryTab({
                                 actionError={actionError || batchError}
                                 setActionError={setActionError}
                                 t={tt}
-                            />
+                            >
+                                <ValidatorCarouselSelector
+                                    options={carouselOptions}
+                                    selectedValues={selectedValidatorAddresses}
+                                    onChange={setSelectedValidatorAddresses}
+                                    placeholder="Buscar validadores para delegar..."
+                                />
+                            </BatchValidatorStakeAction>
                         </div>
                     )}
 
@@ -580,7 +580,6 @@ export function AccountSummaryTab({
                                         lsuBalance={lsuTokens.find(t => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find(t => t.validatorAddress === row.validatorAddress)!.amount) : 0}
                                         t={tt}
                                         ghostAmount={globalAmountStr && selectedValidatorAddresses.length > 0 && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr || '0') / selectedValidatorAddresses.length).toString() : undefined}
-                                        hasGlobalAmount={!!globalAmountStr && parseFloat(globalAmountStr) > 0}
                                     />
                                 )}
                             </div>

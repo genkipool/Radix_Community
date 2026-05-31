@@ -16,10 +16,8 @@ interface AccountValidatorStakeActionProps {
     xrdBalance: number;
     stakedXrd: number;
     claimableXrd: number;
-    lsuBalance: number;
     t?: Partial<import('@/features/dashboard/types').TranslationsT>;
     ghostAmount?: string;
-    hasGlobalAmount?: boolean;
 }
 
 export const AccountValidatorStakeAction = ({
@@ -32,8 +30,7 @@ export const AccountValidatorStakeAction = ({
     claimableXrd,
     lsuBalance,
     t,
-    ghostAmount,
-    hasGlobalAmount
+    ghostAmount
 }: AccountValidatorStakeActionProps) => {
     const queryClient = useQueryClient();
     const { activeNetworkId } = useRadixWallet();
@@ -202,18 +199,16 @@ export const AccountValidatorStakeAction = ({
             <div className="flex gap-2">
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const isThisActionTransacting = isTransacting && transactingAction === action;
-                    const amountToUse = amountStr || ghostAmount || '0';
                     const isDisabled =
                         !validator ||
                         isTransacting ||
                         hasTxError ||
                         (action === 'Unstake' && stakedXrd <= 0) ||
                         (action === 'Claim' && claimableXrd <= 0) ||
-                        (action !== 'Claim' && parseFloat(amountToUse) <= 0) ||
+                        (action !== 'Claim' && (!amountStr || parseFloat(amountStr) <= 0)) ||
                         (action === 'Claim' && claimNftIds.length === 0);
 
-                    const labelPrefix = (stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action;
-                    const label = hasGlobalAmount ? `${labelPrefix} SELECCIONADOS` : labelPrefix;
+                    const label = (stakingT?.[action.toLowerCase() as keyof typeof stakingT] as string) ?? action;
 
                     return (
                         <button

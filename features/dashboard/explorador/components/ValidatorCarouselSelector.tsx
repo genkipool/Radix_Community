@@ -77,7 +77,7 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('prev')}
-                    className="p-2 w-10 flex items-center justify-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border-r border-[var(--color-card-border)] shrink-0"
+                    className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-l-full"
                 >
                     <ChevronLeft className="size-4" aria-hidden="true" />
                 </button>
@@ -93,14 +93,14 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('next')}
-                    className="p-2 w-10 flex items-center justify-center hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors border-l border-[var(--color-card-border)] shrink-0"
+                    className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-r-full"
                 >
                     <ChevronRight className="size-4" aria-hidden="true" />
                 </button>
                 <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
-                    className={`p-2 w-10 flex items-center justify-center transition-colors border-l border-[var(--color-card-border)] shrink-0 ${isOpen ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' : 'hover:bg-[var(--color-primary)]/10 text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
+                    className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 rounded-full ml-1 ${isOpen ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
                     title="Buscar validadores"
                 >
                     <Search className="size-4" aria-hidden="true" />
