@@ -15,13 +15,19 @@ marked.setOptions({
   gfm: true,
 });
 
+const safeRenderer = new marked.Renderer();
+safeRenderer.html = (token: { text: string; block?: boolean }) => {
+  const escaped = token.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return token.block ? `<p>${escaped}</p>\n` : escaped;
+};
+
 /**
  * Converts a raw Markdown string into HTML using `marked`.
  */
 export function markdownToHtml(md: string): string {
   if (!md || !md.trim()) return '<p><br></p>';
   try {
-    return marked.parse(md, { async: false }) as string;
+    return marked.parse(md, { renderer: safeRenderer, async: false }) as string;
   } catch {
     return '<p>Error parsing content</p>';
   }
@@ -43,11 +49,21 @@ export function htmlToMarkdown(html: string): string {
     // Enable GFM extensions (tables, strikethrough, task lists)
     turndownService.use(gfm);
     
-    // Critical: Disable Turndown's automatic escaping.
-    // By default, turndown escapes characters like # or * found in regular HTML text.
-    // By disabling it, raw markdown typed in the editor (e.g., "## Title")
-    // is preserved and expertly transformed into HTML by marked.
-    turndownService.escape = (text) => text;
+    // Critical: Custom escape rule to preserve raw markdown but prevent HTML block consumption
+    // We only escape < and > so that tags like <script> aren't treated as HTML blocks by Marked
+    turndownService.escape = function (string) {
+      return string.replace(/</g, '\\<');
+    };
+
+    // Custom rule: if a code block already contains markdown backticks, strip them
+    turndownService.addRule('stripInnerBackticks', {
+      filter: ['pre'],
+      replacement: function (content, node) {
+        let code = node.textContent || '';
+        code = code.trim().replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+        return '\n\n```\n' + code + '\n```\n\n';
+      }
+    });
 
     return turndownService.turndown(html);
   } catch {
@@ -62,7 +78,15 @@ export function htmlToMarkdown(html: string): string {
  */
 export function applyMarkdownToHtml(html: string): string {
   if (!html || !html.trim()) return '<p><br></p>';
+
+  // Check if it is raw markdown (lacks block-level HTML tags from the editor)
+  const isEditorHtml = /<[a-z][\s\S]*>/i.test(html);
   
+  if (!isEditorHtml) {
+    // It's raw markdown (e.g. from docs/dictionaries). Don't use Turndown.
+    return markdownToHtml(html);
+  }
+
   // 1. Convert Editor HTML (with embedded markdown) to full Markdown
   const markdown = htmlToMarkdown(html);
   

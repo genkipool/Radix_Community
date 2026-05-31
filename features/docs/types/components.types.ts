@@ -6,6 +6,9 @@ export interface UserDocMeta {
     id: string;
     title: string;
     topic: string;
+    publishedAt?: number;
+    author?: string;
+    showAuthor?: boolean;
 }
 
 export interface DocsClientProps {
@@ -42,6 +45,7 @@ export interface DocReaderViewProps {
     docId: string;
     onTopicClick: (topicId: string) => void;
     searchQuery?: string;
+    dictionary?: Partial<import('@/i18n').Dictionary>;
 }
 
 export interface DocsEditorProps {
@@ -52,6 +56,7 @@ export interface DocsEditorProps {
 
 export interface UserDocReaderProps {
     doc: UserDoc;
+    dictionary?: Partial<Dictionary>;
 }
 
 export interface FeaturedDocsHeroProps {

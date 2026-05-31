@@ -8,6 +8,7 @@ import { LabelBadge } from '@/components/ui/LabelBadge';
 import { PublishModalLayout } from '@/components/layout/PublishModalLayout';
 import type { Dictionary } from '@/i18n';
 import { BlogPost } from '../types/data.types';
+import { sanitizeText } from '@/utils/sanitize';
 
 interface BlogPublishModalProps {
     isOpen: boolean;
@@ -51,8 +52,8 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
     const handleSubmit = () => {
         if (!title.trim() || !message.trim()) return;
 
-        // Strip HTML tags to produce a clean plain-text summary
-        const plainText = message.trim().replace(/<[^>]*>/g, '');
+        // Strip HTML tags and unescape entities to produce a clean plain-text summary
+        const plainText = sanitizeText(message);
 
         // Add the post to the local state
         addPost({

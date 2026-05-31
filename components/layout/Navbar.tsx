@@ -738,7 +738,11 @@ export default function Navbar() {
             {/* Desktop nav */}
             <div className="hidden md:flex items-stretch">
               {NAV_LINKS.map((link) => {
-                const popupItems = NAV_POPUP_ITEMS[link.key];
+                const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
+                  item.key === 'dashboard' && activeNetwork === 'stokenet'
+                    ? { ...item, href: '/dashboard?network=stokenet' }
+                    : item
+                );
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
                 const isHashLink = link.path.startsWith('/#');
                 const linkHref = localizeNavHref(link.path, isHashLink);
@@ -941,7 +945,11 @@ export default function Navbar() {
             <div className="px-4 py-3 space-y-0.5">
               {NAV_LINKS.map((link) => {
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
-                const popupItems = NAV_POPUP_ITEMS[link.key];
+                const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
+                  item.key === 'dashboard' && activeNetwork === 'stokenet'
+                    ? { ...item, href: '/dashboard?network=stokenet' }
+                    : item
+                );
                 const isHashLink = link.path.startsWith('/#');
                 const linkHref = localizeNavHref(link.path, isHashLink);
 

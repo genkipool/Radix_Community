@@ -10,5 +10,6 @@ export const getFeatureDictionary = async (
     locale: Locale,
     features: FeatureKey[] = [],
 ) => {
-    return loadFeatureDictionaries(locale, features);
+    const safeLocale = (locale === 'en' || locale === 'es') ? locale : 'en';
+    return loadFeatureDictionaries(safeLocale, features);
 };

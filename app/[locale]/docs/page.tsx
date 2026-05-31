@@ -52,12 +52,20 @@ export default async function DocsPage({ params }: DocsPageProps) {
     try {
         const raw = cookieStore.get('docs_sidebar_meta')?.value;
         if (raw) {
-            const compact = JSON.parse(raw) as Array<{ i?: string; t?: string; p?: string }>;
-            initialUserDocMeta = compact.reduce<Array<{ id: string; title: string; topic: string }>>((acc, x) => {
+            const decoded = decodeURIComponent(raw);
+            const compact = JSON.parse(decoded) as Array<{ i?: string; t?: string; p?: string; d?: number; a?: string; s?: boolean }>;
+            initialUserDocMeta = compact.reduce<Array<UserDocMeta>>((acc, x) => {
                 const id = x.i ?? '';
                 const title = x.t ?? '';
                 const topic = x.p ?? '';
-                if (id && title && topic) acc.push({ id, title, topic });
+                if (id && title && topic) {
+                    acc.push({ 
+                        id, title, topic, 
+                        publishedAt: x.d || 0,
+                        author: x.a,
+                        showAuthor: x.s
+                    });
+                }
                 return acc;
             }, []);
         }

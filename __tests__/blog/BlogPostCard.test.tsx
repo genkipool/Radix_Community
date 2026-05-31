@@ -6,6 +6,12 @@ import { renderWithProviders } from '../helpers/renderWithProviders';
 import { BlogPostCard } from '@/features/blog/components/BlogPostCard';
 import type { BlogPost, BlogDictionary } from '@/features/blog/types';
 
+// Mock the theme context
+vi.mock('@/context/ThemeContext', () => ({
+    useTheme: () => ({ theme: 'radix-dark' }),
+    ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>
+}));
+
 // ─── Mock motion/react ───────────────────────────────────────────────────────
 // Replace framer-motion with simple div wrappers so we can test state changes
 // without depending on animation internals.

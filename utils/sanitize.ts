@@ -8,12 +8,17 @@ const HTML_TAG_RE = /<[^>]*>/g;
 const ALLOWED_PROTOCOLS = ['http:', 'https:'];
 const _IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|svg|avif|ico)(\?|#|$)/i;
 
-/** Strip HTML tags and excessive whitespace from API strings */
+/** Strip HTML tags, unescape basic entities, and excessive whitespace from API strings */
 export function sanitizeText(text: string | undefined | null): string {
     if (!text) return '';
     return String(text)
         .replace(SCRIPT_STYLE_RE, '')
         .replace(HTML_TAG_RE, '')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
         .trim();
 }
 

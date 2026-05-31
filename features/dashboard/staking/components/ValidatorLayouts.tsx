@@ -130,9 +130,10 @@ export const Layout1Col = ({
                         </p>
                     </div>
 
-                    <button type="button"
+                    <div
                         className="block w-full text-left flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-[var(--color-card-border)] mt-auto cursor-auto"
                         onClick={e => e.stopPropagation()}
+                        onPointerDown={e => e.stopPropagation()}
                     >
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--color-text-muted)] min-w-0">
                             {validator.website && isValidUrl(validator.website) && (
@@ -164,7 +165,7 @@ export const Layout1Col = ({
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
-                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -261,9 +262,10 @@ export const Layout2Col = ({
                         ]} />
                     </div>
 
-                    <button type="button"
+                    <div
                         className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                         onClick={e => e.stopPropagation()}
+                        onPointerDown={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
                             <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
@@ -294,7 +296,7 @@ export const Layout2Col = ({
                                 title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                             />
                         </div>
-                    </button>
+                    </div>
                 </div>
             </div>
 
@@ -369,9 +371,10 @@ export const Layout4Col = ({
             </div>
 
             {/* Row 3: Footer */}
-            <button type="button"
+            <div
                 className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                 onClick={e => e.stopPropagation()}
+                onPointerDown={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
                     <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
@@ -400,7 +403,7 @@ export const Layout4Col = ({
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
                 </div>
-            </button>
+            </div>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
@@ -476,9 +479,10 @@ export const Layout6Col = ({
             </div>
 
             {/* Row 4: Footer — SVG Web, SVG Address, Button */}
-            <button type="button"
+            <div
                 className={`block w-full text-left flex items-center justify-between gap-1 p-2 border-t border-[var(--color-card-border)] bg-[var(--color-surface)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                 onClick={e => e.stopPropagation()}
+                onPointerDown={e => e.stopPropagation()}
             >
                 <div className={`flex items-center ${columns >= 8 ? 'gap-1' : 'gap-2'}`}>
                     {validator.website && isValidUrl(validator.website) ? (
@@ -508,7 +512,7 @@ export const Layout6Col = ({
                         title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : undefined}
                     />
                 </div>
-            </button>
+            </div>
 
             <ExpandPanel isExpanded={isExpanded} validator={validator} t={t} onCopy={onCopy} copiedAddress={copiedAddress} columns={columns} network={network} marketData={marketData} locale={locale} onDownloadCsv={onDownloadCsv} />
         </div>
@@ -588,8 +592,9 @@ const CopyAddressButton = ({
     const isCopied = !!copiedAddress && copiedAddress === address;
     const displayText = truncate ? truncateAddress(address, start, end) : address;
     return (
-        <button type="button"
-            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'}`}
+        <button
+            type="button"
+            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'} bg-transparent border-none p-0 text-left`}
             onClick={() => onCopy(address)}
             title={address}
         >

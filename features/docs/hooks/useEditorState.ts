@@ -110,9 +110,18 @@ export function useEditorState(initialDoc?: UserDoc) {
 
   const preparePublishDoc = (html: string): UserDoc | null => {
     const now = Date.now();
+    const cleanTitle = title.trim();
+    const slug = cleanTitle
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    const newId = slug ? `user-${slug}` : `user-${now}`;
+    
     const docData = {
-      id: initialDoc?.id ?? `user-${now}`,
-      title: title.trim(),
+      id: initialDoc?.id ?? newId,
+      title: cleanTitle,
       topic: selectedTopic,
       html: sanitizeUserHtml(html),
       tags: tags.trim(),

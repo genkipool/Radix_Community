@@ -13,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getFeatureDictionary(locale as Locale, ['forum']);
+  const t = await getFeatureDictionary(locale as Locale, ['forum', 'docs']);
   return {
     title: t.seo.forum.title,
     description: t.seo.forum.description,
@@ -42,7 +42,7 @@ interface ForumPageProps {
 
 export default async function ForumPage({ params }: ForumPageProps) {
   const { locale } = await params;
-  const t = await getFeatureDictionary(locale as Locale, ['forum']);
+  const t = await getFeatureDictionary(locale as Locale, ['forum', 'docs']);
 
   return (
     <Suspense fallback={null}>

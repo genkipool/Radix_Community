@@ -103,16 +103,32 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
     getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking', 'dashboardExplorador'])
   ]);
   const initialView = (searchParamsResolved.view === 'transactions' || searchParamsResolved.tx) ? 'transactions' : 'staking';
-  const network = (searchParamsResolved.network === 'stokenet' ? 'stokenet' : 'mainnet') as Network;
-
   // Parse date range from URL params
   const start = searchParamsResolved.start || null;
   const end = searchParamsResolved.end || null;
   const initialDateRange = { start, end };
   const c = makeCookieReader(cookieStore);
 
-  // Read wallet session to avoid initial UI flicker
+  // Read wallet session
   const session = await getSessionFromCookies();
+
+  // Determine active network
+  let network: Network;
+  if (searchParamsResolved.network === 'stokenet' || searchParamsResolved.network === 'mainnet') {
+    network = searchParamsResolved.network as Network;
+  } else {
+    const activeNetworkCookie = c.get('radix_active_network');
+    if (session?.mainnet && session?.stokenet) {
+      network = activeNetworkCookie === 'stokenet' ? 'stokenet' : 'mainnet';
+    } else if (session?.mainnet) {
+      network = 'mainnet';
+    } else if (session?.stokenet) {
+      network = 'stokenet';
+    } else {
+      network = activeNetworkCookie === 'stokenet' ? 'stokenet' : 'mainnet';
+    }
+  }
+
   const isServerWalletConnected = !!session?.[network];
   const initialConnectedAccounts = session?.[network]?.accounts?.map(a => a.address) || [];
 

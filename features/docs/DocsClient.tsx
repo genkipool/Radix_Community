@@ -43,7 +43,7 @@ function saveUserDocs(docs: UserDoc[]): void {
         // Persist sidebar-needed fields (id, title, topic) in a cookie so the server can
         // render the correct initial HTML on reload — eliminates the flash where published
         // cards disappear briefly. Compact keys {i,t,p} keep size under the 4 KB cookie limit.
-        const meta = docs.map(d => ({ i: d.id, t: d.title, p: d.topic }));
+        const meta = docs.map(d => ({ i: d.id, t: d.title, p: d.topic, d: d.publishedAt, a: d.author, s: d.showAuthor }));
         const metaStr = JSON.stringify(meta);
         setCookie('docs_sidebar_meta', metaStr.length < 3800 ? metaStr : '[]');
     } catch { /* quota */ }
@@ -92,9 +92,12 @@ export default function DocsClient({
             topic: m.topic,
             html: '',
             tags: '',
-            publishedAt: 0,
+            publishedAt: m.publishedAt || 0,
+            author: m.author,
+            showAuthor: m.showAuthor,
         }));
     });
+
     const [_isPending, startTransition] = useTransition();
     const { openDeleteDocModal } = useLayout();
 
@@ -116,10 +119,9 @@ export default function DocsClient({
         initialExpandedTopics,
     });
 
-    // Keep sidebar meta cookie in sync for next SSR render (on mount)
     useEffect(() => {
         const docs = loadUserDocs();
-        const meta = docs.map(d => ({ i: d.id, t: d.title, p: d.topic }));
+        const meta = docs.map(d => ({ i: d.id, t: d.title, p: d.topic, d: d.publishedAt, a: d.author, s: d.showAuthor }));
         const metaStr = JSON.stringify(meta);
         setCookie('docs_sidebar_meta', metaStr.length < 3800 ? metaStr : '[]');
     }, []);
@@ -219,6 +221,19 @@ export default function DocsClient({
                 ) : selectedUserDoc ? (
                     <UserDocReader
                         doc={selectedUserDoc}
+                        dictionary={dictionary}
+                    />
+                ) : selectedDocId?.startsWith('user-') ? (
+                    <UserDocReader
+                        doc={{
+                            id: selectedDocId,
+                            title: selectedDocId.replace('user-', '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                            topic: 'developers',
+                            html: '',
+                            tags: '',
+                            publishedAt: 0
+                        }}
+                        dictionary={dictionary}
                     />
                 ) : (
                     <>
@@ -234,6 +249,7 @@ export default function DocsClient({
                                 docId={selectedDocId}
                                 onTopicClick={handleTopicToggle}
                                 searchQuery={searchQuery}
+                                dictionary={dictionary}
                             />
                         )}
                     </>

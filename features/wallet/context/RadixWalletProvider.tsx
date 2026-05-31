@@ -10,6 +10,7 @@ import type {
 import { getOrCreateToolkit, disconnectToolkit } from '../lib/radix-toolkit';
 import { RadixNetworkId } from '../constants/network';
 import type { SessionPayload } from '@/lib/auth/session';
+import { setCookie as writeCookie, getCookie } from '@/utils/cookies';
 
 // ─── Context ────────────────────────────────────────────────────────────────────
 
@@ -62,14 +63,51 @@ export function RadixWalletProvider({
     () => sessionsFromPayload(initialSession),
   );
   const [activeNetwork, setActiveNetwork] = useState<'mainnet' | 'stokenet'>(
-    // Default to mainnet, unless only stokenet has a session
+    // Server-side default (no localStorage available to prevent hydration mismatch)
     () => {
       const initial = sessionsFromPayload(initialSession);
+      if (initial.mainnet && initial.stokenet) return 'mainnet';
       if (initial.mainnet) return 'mainnet';
       if (initial.stokenet) return 'stokenet';
       return 'mainnet';
     },
   );
+
+  // Restore preferred network from cookie on mount (client-side)
+  React.useEffect(() => {
+    const stored = getCookie('radix_active_network');
+    const initial = sessionsFromPayload(initialSession);
+
+    const timer = setTimeout(() => {
+      if (stored === 'mainnet' || stored === 'stokenet') {
+        if (stored === 'mainnet' && initial.mainnet) {
+          setActiveNetwork('mainnet');
+        } else if (stored === 'stokenet' && initial.stokenet) {
+          setActiveNetwork('stokenet');
+        } else if (initial.mainnet && !initial.stokenet) {
+          setActiveNetwork('mainnet');
+        } else if (!initial.mainnet && initial.stokenet) {
+          setActiveNetwork('stokenet');
+        } else if (!initial.mainnet && !initial.stokenet) {
+          setActiveNetwork(stored); // Remember UI selection even when disconnected
+        }
+      } else {
+        if (initial.mainnet && !initial.stokenet) {
+          setActiveNetwork('mainnet');
+        } else if (!initial.mainnet && initial.stokenet) {
+          setActiveNetwork('stokenet');
+        }
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [initialSession]);
+
+  // Persist selected network to cookie
+  React.useEffect(() => {
+    writeCookie('radix_active_network', activeNetwork);
+  }, [activeNetwork]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

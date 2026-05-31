@@ -13,10 +13,11 @@ import { ReaderHeader } from './reader/ReaderHeader';
 import { ReaderSidebarHeader } from './reader/ReaderSidebarHeader';
 import { downloadAsMarkdown } from '../utils/markdownDownload';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
+import { applyMarkdownToHtml } from '../utils/markdownParser';
 
-export default function DocReaderView({ docId, onTopicClick, searchQuery = '' }: DocReaderViewProps) {
+export default function DocReaderView({ docId, onTopicClick, searchQuery = '', dictionary }: DocReaderViewProps) {
   const { t: dict } = useLanguage();
-  const t = dict.docs as DocsDictionary;
+  const t = (dictionary?.docs || dict.docs || {}) as Partial<DocsDictionary>;
   const content = t.content ?? {};
   const documents = t.documents ?? {};
   const topics = t.topics ?? {};
@@ -100,11 +101,11 @@ export default function DocReaderView({ docId, onTopicClick, searchQuery = '' }:
             searchQuery={searchQuery}
           />
           <div className="mb-6" style={{ color: 'var(--color-text-muted)' }}>
-            <CodeHighlighter html={content[entry.bodyKey] ?? ''} />
+            <CodeHighlighter html={applyMarkdownToHtml(content[entry.bodyKey] ?? '')} />
           </div>
           {idx === 0 && entry.level === 2 && (
             <ReaderDocCallout title={t.editor?.callout_epochs ?? 'Epochs'}>
-              <CodeHighlighter html={content.callout_epochs_body ?? ''} />
+              <CodeHighlighter html={applyMarkdownToHtml(content.callout_epochs_body ?? '')} />
             </ReaderDocCallout>
           )}
         </div>

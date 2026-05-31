@@ -116,6 +116,9 @@ export function CodeHighlighter({ html, className = '' }: CodeHighlighterProps) 
 
           if (!rawCode.trim()) return;
 
+          // Strip wrapping markdown backticks if the user accidentally pasted them inside the code block
+          rawCode = rawCode.trim().replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+
           // Detect language
           let lang = 'typescript';
           const combinedClasses = (block as HTMLElement).className + " " + (block.querySelector('code')?.className || "");
@@ -188,6 +191,7 @@ export function CodeHighlighter({ html, className = '' }: CodeHighlighterProps) 
   return (
     <div
       className={`rich-text-content ${className}`}
+      suppressHydrationWarning
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedHtml) }}
       style={{
         opacity: isLoaded ? 1 : 0.8,

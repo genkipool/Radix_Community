@@ -15,10 +15,11 @@ import { downloadAsMarkdown } from '../utils/markdownDownload';
 import { applyMarkdownToHtml } from '../utils/markdownParser';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
 
-export default function UserDocReader({ doc }: UserDocReaderProps) {
-  const { t: dict } = useLanguage();
-  const docsT = dict.docs as DocsDictionary;
-  const topicLabels = docsT.topics;
+export default function UserDocReader({ doc, dictionary }: UserDocReaderProps) {
+  const { t: dictContext } = useLanguage();
+  const dict = dictionary || dictContext;
+  const docsT = (dict?.docs as DocsDictionary) || {};
+  const topicLabels = docsT.topics || {};
 
   /* Process HTML: parse embedded markdown universally */
   const rawContent = applyMarkdownToHtml(doc.html);
@@ -85,6 +86,8 @@ export default function UserDocReader({ doc }: UserDocReaderProps) {
       breadcrumb={breadcrumb}
       title={doc.title.replace(/^#+\s*/, '')}
       publishDate={doc.publishedAt}
+      author={doc.author}
+      showAuthor={doc.showAuthor}
     >
       <div className="doc-content-body prose prose-invert max-w-none">
         <CodeHighlighter html={processedHtml} />
