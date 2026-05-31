@@ -13,7 +13,7 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
-
+import { CarouselFilter } from '@/components/ui/CarouselFilter';
 interface WalletProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -220,24 +220,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             ) : (
                                                 <>
                                                     {accounts.length > 1 && (
-                                                        <div className="mb-4 flex gap-4 overflow-x-auto custom-scrollbar pb-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setSelectedAccountAddress(null)}
-                                                                className={`text-[12px] whitespace-nowrap font-medium transition-colors ${!selectedAccountAddress ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                                            >
-                                                                {navT.all_accounts ?? 'Todas'}
-                                                            </button>
-                                                            {accounts.map((acc, idx) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={acc.address}
-                                                                    onClick={() => setSelectedAccountAddress(acc.address)}
-                                                                    className={`text-[12px] whitespace-nowrap font-medium transition-colors ${selectedAccountAddress === acc.address ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                                                >
-                                                                    {acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`}
-                                                                </button>
-                                                            ))}
+                                                        <div className="mb-4">
+                                                            <CarouselFilter
+                                                                options={[
+                                                                    { value: null, label: navT.all_accounts ?? 'Todas' },
+                                                                    ...accounts.map((acc, idx) => ({
+                                                                        value: acc.address,
+                                                                        label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
+                                                                    }))
+                                                                ]}
+                                                                activeValue={selectedAccountAddress}
+                                                                onChange={(val) => setSelectedAccountAddress(val)}
+                                                            />
                                                         </div>
                                                     )}
 
