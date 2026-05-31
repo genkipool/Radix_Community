@@ -163,7 +163,7 @@ export const AccountValidatorStakeAction = ({
     };
 
     return (
-        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-[var(--color-card-border)]/30">
+        <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-card-border)]/30">
             {/* Input Row */}
             <div className="relative flex flex-col">
                 <div className="relative">
