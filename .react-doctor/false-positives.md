@@ -28,3 +28,4 @@ react-doctor/zod-v4-prefer-top-level-string-formats
 react-doctor/async-await-in-loop
 react-doctor/js-set-map-lookups
 react-doctor/js-index-maps
+react-doctor/prefer-tag-over-role

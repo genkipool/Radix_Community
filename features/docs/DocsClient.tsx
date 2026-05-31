@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useSyncExternalStore } from 'react';
 import DocsSidebar from './components/DocsSidebar';
 import { TOPICS } from './data/docsTopics';
 import FeaturedDocsHero from './components/FeaturedDocsHero';
@@ -97,6 +97,12 @@ export default function DocsClient({
             showAuthor: m.showAuthor,
         }));
     });
+
+    const isMounted = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false
+    );
 
     const [_isPending, startTransition] = useTransition();
     const { openDeleteDocModal } = useLayout();
@@ -205,10 +211,19 @@ export default function DocsClient({
                 searchValue={localSearchValue}
                 onAdminClick={handleOpenEditor}
                 isEditorOpen={showEditor}
-                userDocs={userDocs}
+                userDocs={isMounted ? userDocs : initialUserDocMeta.map((m: UserDocMeta) => ({
+                    id: m.id,
+                    title: m.title,
+                    topic: m.topic,
+                    html: '',
+                    tags: '',
+                    publishedAt: m.publishedAt || 0,
+                    author: m.author,
+                    showAuthor: m.showAuthor,
+                }))}
                 onEditUserDoc={handleEditUserDoc}
                 onDeleteUserDoc={handleDeleteUserDoc}
-                className="no-print"
+                className="h-full"
             />
 
             <main className="flex-1 relative min-w-0" style={{ overflowX: 'clip' }}>

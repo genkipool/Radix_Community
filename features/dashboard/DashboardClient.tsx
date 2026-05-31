@@ -116,7 +116,8 @@ export default function DashboardClient({
   const { isConnected, accounts, activeNetwork, switchNetwork } = useRadixWallet();
 
   // Derive wallet filter from connection state (avoid useEffect sync anti-pattern)
-  const [isWalletFilterActive, setIsWalletFilterActive] = useState(isConnected && accounts.length > 0);
+  const [walletFilterToggled, setWalletFilterToggled] = useState(isConnected && accounts.length > 0);
+  const isWalletFilterActive = walletFilterToggled && isConnected && accounts.length > 0;
 
   const isMounted = useRef(false);
 
@@ -237,7 +238,10 @@ export default function DashboardClient({
     ? accounts.map(a => a.address) 
     : (initialIsWalletConnected ? initialConnectedAccounts : undefined);
     
-  const txAddresses = isWalletFilterActive && connectedAddresses && connectedAddresses.length > 0 ? connectedAddresses : undefined;
+  const deferredConnectedAddresses = useDeferredValue(connectedAddresses);
+  const deferredIsWalletFilterActive = useDeferredValue(isWalletFilterActive);
+
+  const txAddresses = deferredIsWalletFilterActive && deferredConnectedAddresses && deferredConnectedAddresses.length > 0 ? deferredConnectedAddresses : undefined;
 
   const {
     data: txPages,
@@ -272,7 +276,9 @@ export default function DashboardClient({
     ? accounts.map(a => a.address) 
     : (initialIsWalletConnected ? initialConnectedAccounts : []);
     
-  const { pinnedValidatorAddresses } = useConnectedStakes(connectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet');
+  const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
+    
+  const { pinnedValidatorAddresses } = useConnectedStakes(deferredConnectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet');
 
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
@@ -283,8 +289,9 @@ export default function DashboardClient({
     activeView: 'staking',
     randomSeed,
     pinnedValidatorAddresses,
-    isWalletFilterActive,
+    isWalletFilterActive: deferredIsWalletFilterActive,
   });
+
 
   /* ── Infinite scroll effects ─────────────────────────────── */
   useInfiniteScrollTx({ activeView, hasNextPage, isFetchingNextPage, fetchNextPage });
@@ -460,7 +467,7 @@ export default function DashboardClient({
             }
           }}
           isWalletFilterActive={isWalletFilterActive}
-          onWalletFilterChange={setIsWalletFilterActive}
+          onWalletFilterChange={setWalletFilterToggled}
           dt={dt}
         />
 

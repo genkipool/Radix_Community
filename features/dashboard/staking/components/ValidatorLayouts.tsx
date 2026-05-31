@@ -592,10 +592,12 @@ const CopyAddressButton = ({
     const isCopied = !!copiedAddress && copiedAddress === address;
     const displayText = truncate ? truncateAddress(address, start, end) : address;
     return (
-        <button
-            type="button"
-            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'} bg-transparent border-none p-0 text-left`}
+        <div
+            role="button"
+            tabIndex={0}
+            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer min-w-0 font-mono ${small ? 'text-[10px] leading-tight' : 'text-[11px] leading-tight'}`}
             onClick={() => onCopy(address)}
+            onKeyDown={(e) => e.key === 'Enter' && onCopy(address)}
             title={address}
         >
             <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'size-3' : 'size-3.5'}`} />
@@ -603,7 +605,7 @@ const CopyAddressButton = ({
                 {sanitizeText(displayText)}
             </span>
             <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0 translate-y-[-0.5px]" />
-        </button>
+        </div>
     );
 };
 
