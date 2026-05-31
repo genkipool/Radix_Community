@@ -74,7 +74,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
         validator
     );
 
-    const { submitTransaction, isTransacting, error } = useStakingTransaction();
+    const { submitTransaction, isTransacting, error, clearError } = useStakingTransaction();
 
     const xrdPerLsu = validator.lsu2xrdFactor || 1;
     const stakedXrd = stakingData.lsuBalance * xrdPerLsu;
@@ -297,12 +297,15 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     <input
                         ref={inputRef}
                         type="number"
+                        min="0"
                         value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
+                        onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
-                        disabled={isNotOwnerWarning || hasTxError}
+                        disabled={isNotOwnerWarning || hasTxError || isTransacting}
                         aria-label={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
-                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth || error ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError || isTransacting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
                     <button

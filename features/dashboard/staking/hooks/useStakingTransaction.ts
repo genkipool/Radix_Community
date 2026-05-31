@@ -14,7 +14,9 @@ import {
     buildBatchClaimManifest,
     BatchStakeItem,
     BatchUnstakeItem,
-    BatchClaimItem
+    BatchClaimItem,
+    MixedBatchItem,
+    buildMixedBatchManifest
 } from '@/features/wallet/lib/manifest-builders';
 import { StakingAction, StakingTab } from '../types/staking-operations.types';
 
@@ -22,6 +24,19 @@ export const useStakingTransaction = () => {
     const { activeNetworkId } = useRadixWallet();
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const sendWithTimeout = async (rdt: any, manifest: string) => {
+        const timeoutPromise = new Promise<any>((_, reject) =>
+            setTimeout(() => reject(new Error('Tiempo de espera agotado tras 60 segundos.')), 60000)
+        );
+        return Promise.race([
+            rdt.walletApi.sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            }),
+            timeoutPromise
+        ]);
+    };
 
     const submitTransaction = async (
             accountAddress: string,
@@ -80,13 +95,12 @@ export const useStakingTransaction = () => {
                     return null;
                 }
 
-                const result = await rdt.walletApi.sendTransaction({
-                    transactionManifest: manifest,
-                    version: 1,
-                });
+                const result = await sendWithTimeout(rdt, manifest);
 
                 if (result.isErr()) {
-                    setError(result.error.error || 'Transaction rejected by wallet');
+                    const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
+                    const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
+                    setError(translatedError);
                     setIsTransacting(false);
                     return null;
                 }
@@ -148,13 +162,12 @@ export const useStakingTransaction = () => {
                 return null;
             }
 
-            const result = await rdt.walletApi.sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-            });
+            const result = await sendWithTimeout(rdt, manifest);
 
             if (result.isErr()) {
-                setError(result.error.error || 'Transaction rejected by wallet');
+                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
+                const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
+                setError(translatedError);
                 setIsTransacting(false);
                 return null;
             }
@@ -169,10 +182,67 @@ export const useStakingTransaction = () => {
         }
     };
 
+    const submitMixedBatchTransaction = async (
+        accountAddress: string,
+        items: MixedBatchItem[]
+    ) => {
+        if (!activeNetworkId) {
+            setError('No active network');
+            return null;
+        }
+
+        const rdt = getOrCreateToolkit(activeNetworkId);
+        if (!rdt) {
+            setError('Radix Dapp Toolkit not initialized');
+            return null;
+        }
+
+        const xrdAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId]?.XRD;
+        if (!xrdAddress) {
+            setError('XRD address not found for network');
+            return null;
+        }
+
+        if (items.length === 0) {
+            setError('No items selected');
+            return null;
+        }
+
+        setIsTransacting(true);
+        setError(null);
+
+        try {
+            const manifest = buildMixedBatchManifest(accountAddress, items, xrdAddress);
+
+            const result = await sendWithTimeout(rdt, manifest);
+
+            if (result.isErr()) {
+                console.error('Mixed Batch Transaction error:', result.error);
+                const errMsg = result.error.error || result.error.message || 'Transaction failed';
+                const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
+                setError(translatedError);
+                setIsTransacting(false);
+                return null;
+            }
+
+            setIsTransacting(false);
+            return result.value.transactionIntentHash;
+        } catch (err: unknown) {
+            console.error('Mixed Batch Transaction error:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
+            setIsTransacting(false);
+            return null;
+        }
+    };
+
+    const clearError = () => setError(null);
+
     return {
         submitTransaction,
         submitBatchTransaction,
+        submitMixedBatchTransaction,
         isTransacting,
         error,
+        clearError,
     };
 };

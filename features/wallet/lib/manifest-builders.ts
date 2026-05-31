@@ -251,6 +251,121 @@ CALL_METHOD
   return manifest;
 };
 
+export type MixedBatchItem = 
+  | (BatchStakeItem & { action: 'Stake' })
+  | (BatchUnstakeItem & { action: 'Unstake' })
+  | (BatchClaimItem & { action: 'Claim' });
+
+export const buildMixedBatchManifest = (
+  accountAddress: string,
+  items: MixedBatchItem[],
+  xrdResourceAddress: string
+): string => {
+  let manifest = '';
+  
+  const stakeItems = items.filter(i => i.action === 'Stake') as (BatchStakeItem & { action: 'Stake' })[];
+  const unstakeItems = items.filter(i => i.action === 'Unstake') as (BatchUnstakeItem & { action: 'Unstake' })[];
+  const claimItems = items.filter(i => i.action === 'Claim') as (BatchClaimItem & { action: 'Claim' })[];
+
+  // 1. Withdrawals
+  const totalXrdStake = stakeItems.reduce((acc, item) => acc + item.amountXrd, 0);
+  if (totalXrdStake > 0) {
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw"
+    Address("${xrdResourceAddress}")
+    Decimal("${totalXrdStake}")
+;
+`;
+  }
+
+  unstakeItems.forEach(item => {
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw"
+    Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountLsu}")
+;
+`;
+  });
+
+  claimItems.forEach(item => {
+    if (item.claimNftLocalIds.length === 0) return;
+    const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+    manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "withdraw_non_fungibles"
+    Address("${item.claimNftResourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+;
+`;
+  });
+
+  // 2. Actions (Bucket index tracking)
+  let bucketIndex = 1;
+
+  stakeItems.forEach(item => {
+    manifest += `
+TAKE_FROM_WORKTOP
+    Address("${xrdResourceAddress}")
+    Decimal("${item.amountXrd}")
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "stake"
+    Bucket("bucket${bucketIndex}")
+;
+`;
+    bucketIndex++;
+  });
+
+  unstakeItems.forEach(item => {
+    manifest += `
+TAKE_ALL_FROM_WORKTOP
+    Address("${item.lsuResourceAddress}")
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "unstake"
+    Bucket("bucket${bucketIndex}")
+;
+`;
+    bucketIndex++;
+  });
+
+  claimItems.forEach(item => {
+    if (item.claimNftLocalIds.length === 0) return;
+    manifest += `
+TAKE_ALL_FROM_WORKTOP
+    Address("${item.claimNftResourceAddress}")
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${item.validatorAddress}")
+    "claim_xrd"
+    Bucket("bucket${bucketIndex}")
+;
+`;
+    bucketIndex++;
+  });
+
+  // 3. Deposit remainder
+  manifest += `
+CALL_METHOD
+    Address("${accountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`;
+
+  return manifest;
+};
+
 /**
  * Builds a manifest for an owner to stake XRD (stakes to LSU, then locks LSU).
  */
