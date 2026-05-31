@@ -316,7 +316,15 @@ export function AccountTransactionsTab({
 
         const runningBalances: Record<string, number> = {};
         entityDetails.fungible_resources?.items.forEach((item) => {
-            runningBalances[item.resource_address] = Number(item.amount);
+            let amount = 0;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const itemAny = item as any;
+            if (itemAny.amount !== undefined) {
+                amount = Number(itemAny.amount);
+            } else if (itemAny.vaults?.items?.length) {
+                amount = itemAny.vaults.items.reduce((acc: number, v: { amount?: string }) => acc + parseFloat(v.amount || '0'), 0);
+            }
+            runningBalances[item.resource_address] = amount;
         });
 
         const validatorMap = new Map<string, number>();
