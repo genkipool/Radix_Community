@@ -327,6 +327,9 @@ export default function DashboardClient({
   const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
   const expandedAccount = (isAccountSearch && expandedPostId === deferredSearch.trim()) ? expandedPostId : null;
 
+  // Compute accounts to show for the explorer view using deferred values
+  const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);
+
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
     searchQuery, activeView, network, setExpandedTxs: expanded.setExpandedTxs
@@ -489,7 +492,7 @@ export default function DashboardClient({
             copiedAddress={copiedAddress}
             searchQuery={deferredSearch}
             network={deferredNetwork}
-            isWalletFilterActive={isWalletFilterActive}
+            accountsToShow={accountsToShow}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}

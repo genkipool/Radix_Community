@@ -14,8 +14,6 @@ import { Shield } from 'lucide-react';
 import { ValidatorCard } from '../staking/components/ValidatorCard';
 import { TransactionCard } from '../explorador/components/TransactionCard';
 import { AccountCard } from '../explorador/components/AccountCard';
-import { isRadixAddress } from '@/features/dashboard/utils/radixAddress';
-import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -41,13 +39,8 @@ export const DashboardCardGrid = ({
   onExpand,
   onCopy,
   marketData,
-  isWalletFilterActive,
+  accountsToShow = [],
 }: DashboardCardGridProps) => {
-  const { isConnected, accounts } = useRadixWallet();
-  const trimmedQuery = searchQuery.trim();
-  const isAccountSearch = isRadixAddress(trimmedQuery) && trimmedQuery.startsWith('account_');
-  const accountsToShow = isAccountSearch ? [trimmedQuery] : (isWalletFilterActive && isConnected && accounts.length > 0 ? accounts.map(a => a.address) : []);
-
   return (
     <>
       <div className={`grid gap-4 w-full mb-8 ${gridClass}`}>

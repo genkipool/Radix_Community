@@ -81,7 +81,7 @@ export interface DashboardCardGridProps {
     network: Network;
     timezone: string;
     locale: string;
-    isWalletFilterActive?: boolean;
+    accountsToShow?: string[];
     t?: Partial<TranslationsT>;
     dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;
