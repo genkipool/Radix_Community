@@ -6,6 +6,7 @@ import { Copy, Check, Info, Download, Landmark } from 'lucide-react';
 import { AccountRewardsCsvModal } from './AccountRewardsCsvModal';
 import { usePrefetchRewards } from '@/features/dashboard/hooks/usePrefetchRewards';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { AccountValidatorStakeAction } from './AccountValidatorStakeAction';
 import { PanelLoadingState } from './EntityPanelShared';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MarketData } from '@/features/dashboard/types';
@@ -66,6 +67,7 @@ export function AccountSummaryTab({
         isLoading,
         xrdAmount,
         tokens,
+        lsuTokens,
         activeNfts,
         burnedNfts,
         poolUnits,
@@ -347,6 +349,21 @@ export function AccountSummaryTab({
                                         <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(row.xrdInClaim, 2, locale)} XRD</span>
                                     </div>
                                 </div>
+
+                                {/* Interactive Staking Actions */}
+                                {isModal && (
+                                    <AccountValidatorStakeAction
+                                        accountAddress={address}
+                                        validatorAddress={row.validatorAddress}
+                                        network={network}
+                                        entityData={entityData}
+                                        xrdBalance={parseFloat(xrdAmount)}
+                                        stakedXrd={row.xrdInStake}
+                                        claimableXrd={row.xrdInClaim}
+                                        lsuBalance={lsuTokens.find(t => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find(t => t.validatorAddress === row.validatorAddress)!.amount) : 0}
+                                        t={tt}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>
