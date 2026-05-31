@@ -215,6 +215,7 @@ export default function DashboardClient({
   /* ── Deferred filter values ──────────────────────────────── */
   const deferredActiveTag = useDeferredValue(prefs.activeTag);
   const deferredTransactionActiveTag = useDeferredValue(prefs.transactionActiveTag);
+  const deferredDateRange = useDeferredValue(dateRange);
 
   /* ── Expanded cards ──────────────────────────────────────── */
   const expanded = useExpandedCards({
@@ -253,9 +254,9 @@ export default function DashboardClient({
     status: txStatus,
   } = useTransactionsQuery({
     network: deferredNetwork,
-    searchQuery,
+    searchQuery: deferredSearch,
     tag: deferredTransactionActiveTag,
-    dateRange,
+    dateRange: deferredDateRange,
     addresses: txAddresses,
     // Pass whether the explorer view is active. The hook internally keeps
     // enabled:true always (so HydrationBoundary cache is consumed immediately)
