@@ -83,21 +83,21 @@ export function AccountSummaryTab({
     const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
     const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-    
+
     const [globalAmountStr, setGlobalAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
-    
+
     type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
     const [validatorSelections, setValidatorSelections] = useState<Record<string, ValidatorSelections>>({});
 
     const handleUpdateSelections = (vAddr: string, newSelections: ValidatorSelections) => {
         setActionError(null);
         if (clearError) clearError();
-        
+
         setValidatorSelections(prev => {
             const updated = { ...prev };
-            
+
             if (Object.keys(newSelections).length === 0) {
                 delete updated[vAddr];
             } else {
@@ -127,11 +127,11 @@ export function AccountSummaryTab({
         const s = validatorSelections[vAddr];
         return (s.amountStr && parseFloat(s.amountStr) > 0) || s.stake || s.unstake || s.claim;
     });
-    
+
     // MultiMode se activa si más de un validador tiene alguna cantidad o selección manual, o si un validador tiene múltiples selecciones.
-    const isMultiMode = activeValidatorAddresses.length > 1 || 
+    const isMultiMode = activeValidatorAddresses.length > 1 ||
         Object.values(validatorSelections).some(s => (s.stake ? 1 : 0) + (s.unstake ? 1 : 0) + (s.claim ? 1 : 0) > 1);
-    
+
     const { submitBatchTransaction, submitMixedBatchTransaction, isTransacting, error: batchError, clearError } = useStakingTransaction();
 
     const description = getMeta('description');
@@ -164,7 +164,7 @@ export function AccountSummaryTab({
     ])].map(vAddr => {
         const existing = stakingRows.find(r => r.validatorAddress === vAddr);
         if (existing) return existing;
-        
+
         const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
         return {
             validatorName: valInfo?.name || 'Unknown Validator',
@@ -209,7 +209,7 @@ export function AccountSummaryTab({
         for (const vAddr of selectedValidatorAddresses) {
             const row = displayRows.find(r => r.validatorAddress === vAddr);
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
-            
+
             if (!row || !valInfo) continue;
 
             if (actionToPerform === 'Stake') {
@@ -226,7 +226,7 @@ export function AccountSummaryTab({
                     return;
                 }
                 const lsuAmount = amountPerValidator / xrdPerLsu;
-                
+
                 items.push({
                     validatorAddress: vAddr,
                     amountLsu: lsuAmount,
@@ -272,7 +272,7 @@ export function AccountSummaryTab({
     const handleMixedBatchAction = async () => {
         setActionError(null);
         setTransactingAction('Stake'); // genérico para spinner
-        
+
         const items: MixedBatchItem[] = [];
 
         for (const vAddr of Object.keys(validatorSelections)) {
@@ -295,13 +295,13 @@ export function AccountSummaryTab({
                 const unstakeAmt = parseFloat(selections.unstake);
                 const xrdPerLsu = valInfo.lsu2xrdFactor || 1;
                 const maxStaked = row.xrdInStake;
-                
+
                 if (unstakeAmt > maxStaked) {
                     setActionError(`Saldo insuficiente en validador ${vAddr.slice(0, 8)}... para Unstake.`);
                     setTransactingAction(null);
                     return;
                 }
-                
+
                 const lsuAmount = unstakeAmt / xrdPerLsu;
                 items.push({
                     action: 'Unstake',
@@ -632,7 +632,7 @@ export function AccountSummaryTab({
                             <Info className="size-4" />
                         </button>
                     </h4>
-                    
+
                     {isModal && stakingRows.length > 0 && (
                         <div className="mb-6 space-y-4">
                             <BatchValidatorStakeAction
@@ -726,7 +726,7 @@ export function AccountSummaryTab({
                                 )}
                             </div>
                         ))}
-                        
+
                         {isMultiMode && Object.keys(validatorSelections).some(k => Object.keys(validatorSelections[k]).length > 0) && (
                             <m.div
                                 initial={{ opacity: 0, y: 20 }}
@@ -738,18 +738,18 @@ export function AccountSummaryTab({
                                     {Object.keys(validatorSelections).map(vAddr => {
                                         const selections = validatorSelections[vAddr];
                                         if (!selections || Object.keys(selections).length === 0) return null;
-                                        
+
                                         const row = displayRows.find(r => r.validatorAddress === vAddr);
                                         if (!row) return null;
-                                        
+
                                         const actions = [];
                                         const stakeNum = parseFloat(selections.stake || '0');
                                         const unstakeNum = parseFloat(selections.unstake || '0');
-                                        
+
                                         if (selections.stake && stakeNum > 0) actions.push({ label: 'Stake', value: `${selections.stake} XRD`, color: 'text-[var(--color-primary)]' });
                                         if (selections.unstake && unstakeNum > 0) actions.push({ label: 'Unstake', value: `${selections.unstake} XRD`, color: 'text-red-400' });
                                         if (selections.claim && row.xrdInClaim > 0) actions.push({ label: 'Claim', value: `${formatNumber(row.xrdInClaim, 2, locale)} XRD`, color: 'text-green-400' });
-                                        
+
                                         if (actions.length === 0) return null;
 
                                         return (
@@ -786,21 +786,21 @@ export function AccountSummaryTab({
                                 >
                                     {isTransacting ? (
                                         <>
-                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            <svg className="animate-spin -ml-1 mr-2 size-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                             Enviando a la Billetera...
                                         </>
                                     ) : (
                                         'Enviar a la billetera'
                                     )}
                                 </button>
-                                
+
                                 {actionError && (
-                                    <div className="text-xs text-red-500 mt-3 px-2 py-2 bg-red-500/10 rounded border border-red-500/20 text-center">
+                                    <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
                                         {actionError.replace(/^Error:\s*/, '')}
                                     </div>
                                 )}
                                 {(batchError && !actionError) && (
-                                    <div className="text-xs text-red-500 mt-3 px-2 py-2 bg-red-500/10 rounded border border-red-500/20 text-center">
+                                    <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
                                         {batchError.replace(/^Error:\s*/, '')}
                                     </div>
                                 )}
@@ -852,21 +852,21 @@ export function AccountSummaryTab({
                                     >
                                         <X className="size-4" />
                                     </button>
-                                    
+
                                     <div className="flex items-center gap-3 mb-4 text-[var(--color-primary)]">
                                         <Info className="size-6" />
                                         <h3 className="text-lg font-black tracking-tight">Acción Global y Mixta</h3>
                                     </div>
-                                    
+
                                     <div className="space-y-4 text-sm text-[var(--color-text-main)] leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
                                         <p>
                                             El panel de Staking te permite realizar acciones masivas y mixtas sobre varios validadores en una sola transacción, ahorrando tiempo y firmas.
                                         </p>
-                                        
+
                                         <h4 className="font-bold text-[var(--color-text-main)] border-b border-[var(--color-border)] pb-1">ACCIÓN GLOBAL (LOTES)</h4>
                                         <ul className="list-disc pl-5 space-y-2 text-[var(--color-text-muted)]">
-                                            <li><strong className="text-[var(--color-text-main)]">Staking Masivo:</strong> Ingresa la cantidad de XRD en el campo superior. Esta se dividirá por igual entre todos los validadores seleccionados. <br/><span className="italic text-xs">Ejemplo: Si tienes 3 validadores seleccionados y pones 300 XRD, se enviarán 100 XRD a cada uno.</span></li>
-                                            <li><strong className="text-[var(--color-text-main)]">Unstaking Masivo:</strong> Ingresa la cantidad TOTAL que deseas retirar. Se intentará extraer a partes iguales de cada validador. <br/><span className="italic text-xs">Ejemplo: Si pones 150 XRD y tienes 3 validadores, se extraerán 50 XRD de cada uno. Ojo: Ningún validador puede tener menos saldo del que le pides.</span></li>
+                                            <li><strong className="text-[var(--color-text-main)]">Staking Masivo:</strong> Ingresa la cantidad de XRD en el campo superior. Esta se dividirá por igual entre todos los validadores seleccionados. <br /><span className="italic text-xs">Ejemplo: Si tienes 3 validadores seleccionados y pones 300 XRD, se enviarán 100 XRD a cada uno.</span></li>
+                                            <li><strong className="text-[var(--color-text-main)]">Unstaking Masivo:</strong> Ingresa la cantidad TOTAL que deseas retirar. Se intentará extraer a partes iguales de cada validador. <br /><span className="italic text-xs">Ejemplo: Si pones 150 XRD y tienes 3 validadores, se extraerán 50 XRD de cada uno. Ojo: Ningún validador puede tener menos saldo del que le pides.</span></li>
                                             <li><strong className="text-[var(--color-text-main)]">Claim Masivo:</strong> No necesitas ingresar cantidad. Simplemente selecciona los validadores y haz clic en &quot;CLAIM TODOS&quot;.</li>
                                         </ul>
 

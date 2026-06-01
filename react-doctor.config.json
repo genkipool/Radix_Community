@@ -32,6 +32,7 @@
     "react-doctor/async-await-in-loop": "off",
     "react-doctor/js-index-maps": "off",
     "react-doctor/js-flatmap-filter": "off",
-    "react-doctor/no-array-index-as-key": "off"
+    "react-doctor/no-array-index-as-key": "off",
+    "react-doctor/prefer-tag-over-role": "off"
   }
 }

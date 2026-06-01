@@ -150,7 +150,8 @@ describe('StakingPopupContent', () => {
                 100,
                 'resource_lsu123',
                 ['nft1'],
-                'resource_claim123'
+                'resource_claim123',
+                undefined
             );
         });
     });
@@ -170,10 +171,11 @@ describe('StakingPopupContent', () => {
                 'validator_rdx123',
                 'Unstake',
                 'delegator',
-                50, // 50 / lsu2xrdFactor (which is 1)
+                50,
                 'resource_lsu123',
                 ['nft1'],
-                'resource_claim123'
+                'resource_claim123',
+                undefined
             );
         });
     });
@@ -190,10 +192,11 @@ describe('StakingPopupContent', () => {
                 'validator_rdx123',
                 'Claim',
                 'delegator',
-                0, // Amount is not required for claim, but it passes the input amount (0)
+                0,
                 'resource_lsu123',
                 ['nft1'],
-                'resource_claim123'
+                'resource_claim123',
+                undefined
             );
         });
     });
