@@ -602,7 +602,7 @@ function BetVoteCard({
                             </span>
                         )}
                         {resourceAddress && (
-                            <div className="flex items-center gap-2 mt-1.5">
+                            <div className="flex items-center gap-2 mt-1.5 min-w-0">
                                 <span className={`text-xs font-mono truncate text-[var(--color-text-main)] select-all ${wellKnownTip ? 'cursor-help' : ''}`} title={wellKnownTip ?? resourceAddress}>
                                     {resourceAddress.length > 20 ? `${resourceAddress.slice(0, 12)}...${resourceAddress.slice(-6)}` : resourceAddress}
                                 </span>

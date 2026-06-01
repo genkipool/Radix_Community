@@ -99,9 +99,9 @@ const BalanceChangeRow = ({
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                             <div className="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-[150px] sm:max-w-[200px]" title={wellKnownTip || change.resource_address}>{change.resource_address.slice(0, 12)}...{change.resource_address.slice(-6)}</div>
-                            <button type="button" onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors ${copiedAddress === change.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address">
+                            <span onClick={e => { e.stopPropagation(); onCopy(change.resource_address); }} className={`p-1 rounded-md transition-colors cursor-pointer ${copiedAddress === change.resource_address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-white/5'}`} title="Copy Address" role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onCopy(change.resource_address); } }}>
                                 {copiedAddress === change.resource_address ? <Check className="size-3" /> : <Copy className="size-3" />}
-                            </button>
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -142,8 +142,8 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
     }));
 
     return (
-        <button type="button"
-            className="block w-full text-left border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)] cursor-auto"
+        <div
+            className="block w-full text-left border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
             onClick={e => e.stopPropagation()}
         >
             <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId="resourceInlineTabs" />
@@ -260,6 +260,6 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                     </>
                 )}
             </div>
-        </button>
+        </div>
     );
 }

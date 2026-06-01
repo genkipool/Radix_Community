@@ -161,7 +161,7 @@
       "available": "Balance",
       "staked": "Staked",
       "unstaking": "Unstaking",
-      "claimable": "Claimable",
+      "claimable": "Claim",
       "amount_to": "Amount to",
       "amount_placeholder": "Amount of XRD",
       "max": "MAX",
@@ -169,6 +169,8 @@
       "unstake": "Unstake",
       "claim": "Claim",
       "owner_warning": "Warning: The selected account does not appear to be the owner of this validator. Owner actions may fail.",
+      "claim_tooltip": "The validator claims LSU tokens, the claimed LSU tokens go to the delegator stake.",
+      "owner_claim_info": "The validator claims LSU tokens, the claimed LSU tokens go to the delegator stake.",
       "errors": {
         "failedToPrepareTransaction": "Failed to prepare transaction. Check your manifest.",
         "rejectedByUser": "Transaction rejected by user.",

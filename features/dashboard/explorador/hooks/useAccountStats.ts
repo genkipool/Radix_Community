@@ -184,7 +184,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             return results;
         },
         enabled: claimCollectionAddresses.length > 0,
-        staleTime: Infinity,
+        staleTime: 0,
     });
 
     // Staking Aggregation

@@ -36,6 +36,8 @@ interface StakingTranslations {
     amount_placeholder?: string;
     max?: string;
     owner_warning?: string;
+    claim_tooltip?: string;
+    owner_claim_info?: string;
     stake?: string;
     unstake?: string;
     claim?: string;
@@ -49,6 +51,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const [amountStr, setAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
+    const [showOwnerClaimInfo, setShowOwnerClaimInfo] = useState(false);
     const { price } = useXrdPrice();
 
     const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(() => {
@@ -210,6 +213,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     } catch (e) {
                         console.error('Error refreshing cache', e);
                     }
+                    if (activeTab === 'validator' && transactingAction === 'Claim') {
+                        setShowOwnerClaimInfo(true);
+                    }
                     queryClient.invalidateQueries({ queryKey: ['entity'] });
                     queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
                     queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
@@ -289,13 +295,13 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(stakedXrd)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center" title={stakingData.unstakeTooltip || undefined}>
                             <span className="text-[var(--color-text-muted)]">{stakingT?.unstaking ?? 'Unstaking'}</span>
                             <span className="font-medium text-[var(--color-text)]">{pendingUnstakeXrd.toFixed(2)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(pendingUnstakeXrd)}</span> : null}
                         </div>
                         <div className="w-px bg-[var(--color-border)]" />
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center" title={isOwnerTab ? (stakingT?.claim_tooltip ?? 'The claimed LSU tokens are added to the delegator stake of this validator.') : undefined}>
                             <span className="text-[var(--color-text-muted)]">{stakingT?.claimable ?? 'Claimable'}</span>
                             <span className="font-medium text-[var(--color-text)]">{claimableXrd.toFixed(2)} XRD</span>
                             {fiatRate ? <span className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{getFiatString(claimableXrd)}</span> : null}
@@ -386,6 +392,12 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
             {activeTab === 'validator' && !stakingData.isOwner && !isLoadingData && activeAccount && (
                 <div className="text-[10px] text-amber-500 bg-amber-500/10 p-2 rounded-lg text-center mt-1">
                     {stakingT?.owner_warning ?? 'Warning: The selected account does not appear to be the owner of this validator.'}
+                </div>
+            )}
+
+            {showOwnerClaimInfo && (
+                <div className="text-[10px] text-blue-500 bg-blue-500/10 p-2 rounded-lg text-center mt-1">
+                    {stakingT?.owner_claim_info ?? 'The claimed LSU tokens have been added to the delegator stake of this validator.'}
                 </div>
             )}
         </div>

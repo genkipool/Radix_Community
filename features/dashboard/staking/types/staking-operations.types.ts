@@ -21,6 +21,8 @@ export interface AccountStakingData {
     claimNftIds: string[];
     /** Local IDs for the owner claim NFTs (if validator tab is active) */
     ownerClaimNftIds: string[];
+    /** Tooltip with epoch unlock info for pending unstake */
+    unstakeTooltip: string;
     /** Whether this account is the owner of the currently viewed validator */
     isOwner: boolean;
     /** Current owner staked balance in XRD */

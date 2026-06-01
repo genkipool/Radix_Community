@@ -161,7 +161,7 @@
       "available": "Saldo",
       "staked": "Staked",
       "unstaking": "Unstaking",
-      "claimable": "Claimable",
+      "claimable": "Claim",
       "amount_to": "Cantidad a",
       "amount_placeholder": "Cantidad de XRD",
       "max": "MÁX",
@@ -169,6 +169,8 @@
       "unstake": "Unstake",
       "claim": "Claim",
       "owner_warning": "Aviso: La cuenta seleccionada no parece ser la dueña de este validador.",
+      "claim_tooltip": "Los tokens LSU reclamados se añaden al stake de los delegantes de este validador.",
+      "owner_claim_info": "Los tokens LSU reclamados se han añadido al stake de los delegantes de este validador.",
       "errors": {
         "failedToPrepareTransaction": "Error al preparar la transacción. Revisa tu manifest.",
         "rejectedByUser": "Transacción rechazada por el usuario.",

@@ -1,5 +1,7 @@
-{
-  "rules": {
+import type { ReactDoctorConfig } from "react-doctor/api";
+
+export default {
+  rules: {
     "react-doctor/no-giant-component": "off",
     "react-doctor/no-tiny-text": "off",
     "react-doctor/no-inline-exhaustive-style": "off",
@@ -35,4 +37,4 @@
     "react-doctor/no-array-index-as-key": "off",
     "react-doctor/prefer-tag-over-role": "off"
   }
-}
+} satisfies ReactDoctorConfig;

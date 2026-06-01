@@ -857,8 +857,8 @@ function EntitySummaryTab({
                                             )}
                                             <span className="text-[10px] text-[var(--color-text-main)] truncate" title={resName}>{resName}</span>
                                         </div>
-                                        <div className="flex items-center gap-1 pl-4 pt-0.5">
-                                            <span className="text-[9px] font-mono text-[var(--color-text-muted)]" title={resAddr}>
+                                        <div className="flex items-center gap-1 pl-4 pt-0.5 min-w-0 overflow-hidden">
+                                            <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate" title={resAddr}>
                                                 {resAddr.length > 16 ? `${resAddr.slice(0, 16)}...${resAddr.slice(-4)}` : resAddr}
                                             </span>
                                             <button

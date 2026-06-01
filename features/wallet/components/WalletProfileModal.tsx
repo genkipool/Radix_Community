@@ -30,7 +30,8 @@ function WalletAccountSummaryWrapper({
     onCopy,
     copiedAddress,
     network,
-    locale
+    locale,
+    isOpen
 }: {
     address: string;
     entityName: string;
@@ -39,12 +40,13 @@ function WalletAccountSummaryWrapper({
     copiedAddress: string | null;
     network: 'mainnet' | 'stokenet';
     locale: string;
+    isOpen: boolean;
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
         queryFn: () => apiFetchEntityDetails(address, network),
-        enabled: true,
-        staleTime: Infinity,
+        enabled: isOpen,
+        staleTime: 0,
         gcTime: 10 * 60_000,
     });
 
@@ -247,6 +249,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                                         copiedAddress={copiedText}
                                                                         network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
                                                                         locale={locale}
+                                                                        isOpen={isOpen}
                                                                     />
                                                                 </div>]
                                                                 : []

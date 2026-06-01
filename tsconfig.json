@@ -38,6 +38,7 @@
     "i18n/locales/es.js"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "doctor.config.ts"
   ]
 }

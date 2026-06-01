@@ -82,6 +82,7 @@ export function AccountSummaryTab({
 
     const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
     const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
+
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
     const [globalAmountStr, setGlobalAmountStr] = useState('');
@@ -694,7 +695,18 @@ export function AccountSummaryTab({
                                         <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'STAKE XRD'}</span>
                                         <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
                                     </div>
-                                    <div className="flex flex-col items-center text-center">
+                                    <div className="flex flex-col items-center text-center" title={(() => {
+                                        const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
+                                        const lines = (row.unstakes || [])
+                                            .filter(u => u.epoch > currentEpoch)
+                                            .map(u => {
+                                                const epochsRemaining = u.epoch - currentEpoch;
+                                                const date = new Date(Date.now() + epochsRemaining * 5 * 60 * 1000);
+                                                const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                                return `Epoch ${u.epoch} ~ ${dateStr}`;
+                                            });
+                                        return lines.length > 0 ? lines.join('\n') : undefined;
+                                    })()}>
                                         <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}</span>
                                         <span className="text-sm font-mono font-black text-orange-500">{formatNumber(row.xrdInUnstake, 2, locale)} XRD</span>
                                     </div>
@@ -993,7 +1005,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tit
             <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider ${titleClassName} ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-3'}`}>
                 {title}
             </h4>
-            <div className={isModal ? "grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
+            <div className={isModal ? "grid grid-cols-2 gap-3 items-stretch" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar items-stretch"}>
                 {items.map((item) => (
                     <ResourceCard key={item.address} item={item} onCopy={onCopy} copiedAddress={copiedAddress} burned={burned} locale={locale} isModal={isModal} />
                 ))}
@@ -1034,8 +1046,8 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
             </div>
 
             <div className="flex items-center justify-between mt-auto pt-2 border-t border-[var(--color-card-border)]">
-                <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-mono text-[var(--color-text-muted)]">{truncateAddress(address, 13, 12)}</span>
+                <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                    <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate">{truncateAddress(address, 13, 12)}</span>
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onCopy(address); }}

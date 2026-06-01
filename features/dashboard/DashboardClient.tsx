@@ -63,9 +63,18 @@ import { DashboardToolbar } from './components/DashboardToolbar';
 import { DashboardCardGrid } from './components/DashboardCardGrid';
 import { DashboardModals } from './components/DashboardModals';
 
+/* EntityBadge context */
+import { EntityBadgeContext } from './explorador/components/EntityBadgeContext';
+import { ExpandableEntityBadge } from './explorador/components/ExpandableEntityBadge';
+
 /* Helpers */
 import { getGridClass, VALIDATOR_MODAL_THRESHOLD } from '@/constants/dashboard';
 
+const EntityBadgeAdapter = (props: Record<string, unknown>) => {
+  const { entityAddress: _ea, ...rest } = props;
+  const badgeProps = { ...rest, address: rest.address || _ea || '' } as unknown as React.ComponentProps<typeof ExpandableEntityBadge>;
+  return <ExpandableEntityBadge {...badgeProps} />;
+};
 
 export default function DashboardClient({
   timezone,
@@ -337,6 +346,7 @@ export default function DashboardClient({
 
   /* ===============═══════════ RENDER ===============═════════ */
   return (
+    <EntityBadgeContext.Provider value={EntityBadgeAdapter}>
     <div className="pb-20">
       {/* ── Hero ── */}
       <ContentHero
@@ -527,5 +537,6 @@ export default function DashboardClient({
         expandedAccount={expandedAccount}
       />
     </div>
+    </EntityBadgeContext.Provider>
   );
 }
