@@ -9,6 +9,8 @@ import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValida
 
 export type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
 
+const EMPTY_SELECTIONS: ValidatorSelections = {};
+
 interface AccountValidatorStakeActionProps {
     accountAddress: string;
     validatorAddress: string;
@@ -35,7 +37,7 @@ export const AccountValidatorStakeAction = ({
     claimableXrd,
     lsuBalance,
     ghostAmount,
-    selections = {},
+    selections = EMPTY_SELECTIONS,
     onUpdateSelections,
     isMultiMode
 }: AccountValidatorStakeActionProps) => {

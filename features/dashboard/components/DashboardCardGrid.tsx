@@ -17,6 +17,8 @@ import { AccountCard } from '../explorador/components/AccountCard';
 
 import type { DashboardCardGridProps } from '../types';
 
+const EMPTY_ACCOUNTS: string[] = [];
+
 export const DashboardCardGrid = ({
   activeView,
   gridClass,
@@ -39,7 +41,7 @@ export const DashboardCardGrid = ({
   onExpand,
   onCopy,
   marketData,
-  accountsToShow = [],
+  accountsToShow = EMPTY_ACCOUNTS,
 }: DashboardCardGridProps) => {
   return (
     <>

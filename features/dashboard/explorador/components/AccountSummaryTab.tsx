@@ -82,6 +82,7 @@ export function AccountSummaryTab({
 
     const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
     const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
+    const [mountTime] = useState(() => Date.now());
 
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
@@ -701,7 +702,7 @@ export function AccountSummaryTab({
                                             .filter(u => u.epoch > currentEpoch)
                                             .map(u => {
                                                 const epochsRemaining = u.epoch - currentEpoch;
-                                                const date = new Date(Date.now() + epochsRemaining * 5 * 60 * 1000);
+                                                const date = new Date(mountTime + epochsRemaining * 5 * 60 * 1000);
                                                 const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                                                 return `Epoch ${u.epoch} ~ ${dateStr}`;
                                             });
