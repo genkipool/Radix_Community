@@ -527,7 +527,7 @@ export function AccountTransactionsTab({
                         return (
                             <tbody key={tx.intentHash} className="border-b border-[var(--color-card-border)] hover:bg-white/[0.03] hover:shadow-[inset_2px_0_0_0_var(--color-primary)] transition-all duration-300 text-sm last:border-b-0">
                                 {rows.map((row, rowIdx) => (
-                                    <tr key={`${tx.intentHash}-${JSON.stringify(row).slice(0, 40)}`} className="group">
+                                    <tr key={`${tx.intentHash}-${rowIdx}`} className="group">
                                         {rowIdx === 0 && (
                                             <>
                                                 <td rowSpan={maxRows} className="py-3 px-4 whitespace-nowrap text-[var(--color-text-main)] text-xs border-r border-transparent group-hover:border-[var(--color-card-border)]/30 transition-colors">
