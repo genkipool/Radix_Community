@@ -260,11 +260,22 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                         {/* Intent Hash Area */}
                         <div className={`flex items-start justify-between gap-4 ${isVertical ? 'mb-2 mt-2 flex-wrap' : 'mb-3 sm:flex-nowrap'}`}>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <button type="button" className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-sm sm:text-base'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 text-left`}
+                                <div 
+                                    role="button"
+                                    tabIndex={0}
+                                    className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-sm sm:text-base'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onCopy(tx.intentHash);
-                                    }}>
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onCopy(tx.intentHash);
+                                        }
+                                    }}
+                                >
                                     <span className="truncate">{truncateHash(tx.intentHash)}</span>
                                     <CopyButton
                                         value={tx.intentHash}
@@ -274,7 +285,7 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                         onClick={() => onCopy(tx.intentHash)}
                                         className="shrink-0 ml-1"
                                     />
-                                </button>
+                                </div>
                             </div>
 
                             {columns === 1 && (
