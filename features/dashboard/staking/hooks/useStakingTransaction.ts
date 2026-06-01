@@ -108,8 +108,7 @@ export const useStakingTransaction = () => {
 
                 if (result.isErr()) {
                     const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                    const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
-                    setError(translatedError);
+                    setError(errMsg);
                     setIsTransacting(false);
                     return null;
                 }
@@ -175,8 +174,7 @@ export const useStakingTransaction = () => {
 
             if (result.isErr()) {
                 const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
-                const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
-                setError(translatedError);
+                setError(errMsg);
                 setIsTransacting(false);
                 return null;
             }
@@ -227,9 +225,8 @@ export const useStakingTransaction = () => {
 
             if (result.isErr()) {
                 console.error('Mixed Batch Transaction error:', result.error);
-                const errMsg = result.error.error || result.error.message || 'Transaction failed';
-                const translatedError = errMsg.includes('rejectedByUser') ? 'Transacción rechazada por el usuario.' : errMsg;
-                setError(translatedError);
+                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
+                setError(errMsg);
                 setIsTransacting(false);
                 return null;
             }

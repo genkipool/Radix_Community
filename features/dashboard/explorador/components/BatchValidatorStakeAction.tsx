@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
+import { useLanguage } from '@/context/LanguageContext';
+import type { TranslationsT } from '@/features/dashboard/types';
 
 interface BatchValidatorStakeActionProps {
     selectedValidatorsCount: number;
@@ -14,6 +16,7 @@ interface BatchValidatorStakeActionProps {
     setActionError: (err: string | null) => void;
     clearError?: () => void;
     t?: Partial<import('@/features/dashboard/types').TranslationsT>;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
     children?: React.ReactNode;
 }
 
@@ -29,20 +32,21 @@ export const BatchValidatorStakeAction = ({
     actionError,
     setActionError,
     clearError,
+    tt,
     children
 }: BatchValidatorStakeActionProps) => {
+    const { t: contextT } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
     
-    // In batch mode, we don't know the exact max balance trivially here since it depends on the sum across selected validators.
-    // The actual limit validation happens before calling onBatchAction or inside it.
+    const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
     
     return (
         <div className="flex flex-col gap-3 mb-6">
             <div className="text-xs font-bold text-[var(--color-primary)] flex justify-between items-center px-1">
                 <span className="flex items-center gap-2">
-                    ACCIÓN GLOBAL (LOTES)
+                    {accT?.global_batch_title_short || 'GLOBAL ACTION (BATCHES)'}
                 </span>
-                <span>{selectedValidatorsCount} Validadores Seleccionados</span>
+                <span>{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
             </div>
             
             {children && (
@@ -67,7 +71,7 @@ export const BatchValidatorStakeAction = ({
                         }}
                         onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                         onWheel={(e) => (e.target as HTMLElement).blur()}
-                        placeholder="Cantidad de XRD (Lote)"
+                        placeholder={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
                         disabled={isTransacting}
                         className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${actionError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-background)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-background)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
@@ -81,7 +85,7 @@ export const BatchValidatorStakeAction = ({
                         disabled={isTransacting}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${isTransacting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
                     >
-                        MAX
+                        {accT?.max || 'MAX'}
                     </button>
                 </div>
                 {actionError && (
@@ -125,7 +129,7 @@ export const BatchValidatorStakeAction = ({
             </div>
             
             <div className="text-[10px] text-[var(--color-text-muted)] text-center italic mt-2">
-                La cantidad ingresada se distribuirá a partes iguales entre los validadores seleccionados.
+                {accT?.batch_distribute_hint || 'The entered amount will be distributed equally among the selected validators.'}
             </div>
 
         </div>

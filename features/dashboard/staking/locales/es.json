@@ -157,7 +157,8 @@
     "validator_rewards_summary_dream": "Si Radix valiera 1 {currency}, este validador habría ganado <b>{value}</b> en recompensas este año.",
     "staking": {
       "delegator": "Delegador",
-      "validator": "Validador",
+      "validator": "Propietario",
+      "owner_toggle": "Propietario",
       "available": "Saldo",
       "staked": "Staked",
       "unstaking": "Unstaking",

@@ -24,10 +24,12 @@ import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValida
 import { useStakingTransaction } from '@/features/dashboard/staking/hooks/useStakingTransaction';
 import { BatchStakeItem, BatchUnstakeItem, BatchClaimItem, MixedBatchItem } from '@/features/wallet/lib/manifest-builders';
 import { StakingAction } from '@/features/dashboard/staking/types/staking-operations.types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { computeOwnerStakingData } from '@/features/dashboard/staking/hooks/useAccountStakingData';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -42,6 +44,7 @@ interface AccountSummaryTabProps {
     marketData?: MarketData | null;
     locale: string;
     isModal?: boolean;
+    stakingErrors?: Record<string, string>;
 }
 
 interface ParsedResource {
@@ -59,6 +62,162 @@ interface ParsedResource {
 }
 
 
+function ValidatorStakingRow({
+    row,
+    isModal,
+    tt,
+    entityData,
+    address,
+    network,
+    validatorsData,
+    accounts,
+    lsuTokens,
+    xrdAmount,
+    onCopy,
+    copiedAddress,
+    mountTime,
+    globalAmountStr,
+    selectedValidatorAddresses,
+    validatorSelections,
+    onUpdateSelections,
+    setGlobalAmountStr,
+    isMultiMode,
+    locale,
+    stakingErrors,
+}: {
+    row: StakingEntry;
+    isModal: boolean;
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
+    entityData: GatewayEntityDetails | null;
+    address: string;
+    network: 'mainnet' | 'stokenet';
+    validatorsData: any;
+    accounts: any[];
+    lsuTokens: ParsedResource[];
+    xrdAmount: string;
+    onCopy: (v: string) => void;
+    copiedAddress: string | null;
+    mountTime: number;
+    globalAmountStr: string;
+    selectedValidatorAddresses: string[];
+    validatorSelections: Record<string, any>;
+    onUpdateSelections: (vAddr: string, sels: any) => void;
+    setGlobalAmountStr: (v: string) => void;
+    isMultiMode: boolean;
+    locale: string;
+    stakingErrors?: Record<string, string>;
+}) {
+    const { t: contextT } = useLanguage();
+    const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
+    const [ownerMode, setOwnerMode] = useState(false);
+
+    const valInfo = validatorsData?.validators.find((v: any) => v.address === row.validatorAddress);
+    const connectedAccount = accounts?.find((a: any) => a.address === address);
+    const isOwner = !!valInfo?.ownerAddress && !!connectedAccount && valInfo.ownerAddress === address;
+    const validator = valInfo;
+
+    const { data: validatorEntityData } = useQuery({
+        queryKey: ['entityDetails', row.validatorAddress, network],
+        queryFn: () => apiFetchEntityDetails(row.validatorAddress, network),
+        enabled: ownerMode && !!row.validatorAddress,
+        staleTime: 0,
+    });
+
+    const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
+    const ownerData = ownerMode && validatorEntityData && validator
+        ? computeOwnerStakingData(validatorEntityData as any, validator, currentEpoch, mountTime)
+        : null;
+    const ownerLockedStakeXrd = ownerData?.ownerLockedStakeXrd ?? 0;
+    const ownerUnlockedXrd = ownerData?.ownerUnlockedXrd ?? 0;
+
+    const ownerToggleLabel = (tt as any)?.dashboard?.staking?.owner_toggle || (locale === 'es' ? 'Propietario' : 'Owner');
+
+    return (
+        <div className={isModal ? "flex flex-col gap-4 py-2" : "flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm"}>
+            <div className="flex items-start gap-3">
+                <div className="size-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
+                    {row.validatorIcon ? (
+                        <SafeImage src={row.validatorIcon} alt={row.validatorName || 'Validator'} fallbackName={row.validatorName || 'Validator'} className="w-full h-full object-cover" />
+                    ) : (
+                        <Landmark className="size-5 text-[var(--color-text-muted)]" />
+                    )}
+                </div>
+                <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="font-black text-sm text-[var(--color-text-main)] truncate">{row.validatorName || 'Unknown Validator'}</span>
+                        {isModal && isOwner && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setOwnerMode(v => !v); }}
+                                className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${ownerMode ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:opacity-70'}`}
+                            >
+                                {ownerToggleLabel}
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">{row.validatorAddress}</span>
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }}
+                            className={`p-1 rounded transition-colors shrink-0 ${copiedAddress === row.validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                        >
+                            {copiedAddress === row.validatorAddress ? <Check className="size-3" /> : <Copy className="size-3" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 py-2 border-t border-[var(--color-card-border)]/50">
+                <div className="flex flex-col items-center text-center">
+                    <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.stake_xrd || 'STAKE XRD'}</span>
+                    <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(ownerMode ? ownerLockedStakeXrd : row.xrdInStake, 2, locale)} XRD</span>
+                </div>
+                <div className="flex flex-col items-center text-center" title={!ownerMode ? (() => {
+                    const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
+                    const lines = (row.unstakes || [])
+                        .filter(u => u.epoch > currentEpoch)
+                        .map(u => {
+                            const epochsRemaining = u.epoch - currentEpoch;
+                            const date = new Date(mountTime + epochsRemaining * 5 * 60 * 1000);
+                            const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            return `Epoch ${u.epoch} ~ ${dateStr}`;
+                        });
+                    return lines.length > 0 ? lines.join('\n') : undefined;
+                })() : undefined}>
+                    <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.unstake_xrd || 'UNSTAKE XRD'}</span>
+                    <span className="text-sm font-mono font-black text-orange-500">{formatNumber(ownerMode ? 0 : row.xrdInUnstake, 2, locale)} XRD</span>
+                </div>
+                <div className="flex flex-col items-center text-center" title={ownerMode ? ((tt as any)?.dashboard?.staking?.claim_tooltip || 'The claimed LSU tokens are added to the delegator stake of this validator.') : undefined}>
+                    <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.claim_xrd || 'CLAIM XRD'}</span>
+                    <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(ownerMode ? ownerUnlockedXrd : row.xrdInClaim, 2, locale)} XRD</span>
+                </div>
+            </div>
+            {isModal && (
+                <AccountValidatorStakeAction
+                    accountAddress={address}
+                    validatorAddress={row.validatorAddress}
+                    network={network}
+                    entityData={entityData}
+                    xrdBalance={parseFloat(xrdAmount)}
+                    stakedXrd={ownerMode ? ownerLockedStakeXrd : row.xrdInStake}
+                    claimableXrd={ownerMode ? ownerUnlockedXrd : row.xrdInClaim}
+                    lsuBalance={lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)!.amount) : 0}
+                    ghostAmount={globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
+                    selections={validatorSelections[row.validatorAddress] || {}}
+                    onUpdateSelections={(newSels: any) => {
+                        setGlobalAmountStr('');
+                        onUpdateSelections(row.validatorAddress, newSels);
+                    }}
+                    isMultiMode={isMultiMode}
+                    ownerMode={ownerMode}
+                    tt={tt}
+                    stakingErrors={stakingErrors}
+                />
+            )}
+        </div>
+    );
+}
+
 export function AccountSummaryTab({
     address,
     entityData,
@@ -72,13 +231,16 @@ export function AccountSummaryTab({
     marketData,
     locale,
     isBadge = false,
-    isModal = false
+    isModal = false,
+    stakingErrors,
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
     const queryClient = useQueryClient();
-    const { activeNetworkId } = useRadixWallet();
+    const { activeNetworkId, accounts } = useRadixWallet();
     const { data: validatorsData } = useValidatorsQuery(network);
+    const { t: contextT } = useLanguage();
+    const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
 
     const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
     const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
@@ -135,6 +297,13 @@ export function AccountSummaryTab({
         Object.values(validatorSelections).some(s => (s.stake ? 1 : 0) + (s.unstake ? 1 : 0) + (s.claim ? 1 : 0) > 1);
 
     const { submitBatchTransaction, submitMixedBatchTransaction, isTransacting, error: batchError, clearError } = useStakingTransaction();
+
+    const renderStakingError = (err: string) => {
+        const lower = err.toLowerCase();
+        if (lower.includes('failed to prepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || err;
+        if (lower.includes('rejected')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || err;
+        return err;
+    };
 
     const description = getMeta('description');
     const {
@@ -194,14 +363,14 @@ export function AccountSummaryTab({
         // Global Batch Action
         const globalAmount = parseFloat(globalAmountStr || '0');
         if (actionToPerform !== 'Claim' && globalAmount <= 0) {
-            setActionError('Ingresa una cantidad válida.');
+            setActionError(accT?.enter_valid_amount || 'Enter a valid amount.');
             setTransactingAction(null);
             return;
         }
 
         const count = selectedValidatorAddresses.length;
         if (count === 0) {
-            setActionError('Selecciona al menos un validador.');
+            setActionError(accT?.select_at_least_one_validator || 'Select at least one validator.');
             setTransactingAction(null);
             return;
         }
@@ -223,7 +392,7 @@ export function AccountSummaryTab({
                 const xrdPerLsu = valInfo.lsu2xrdFactor || 1;
                 const maxStaked = row.xrdInStake;
                 if (amountPerValidator > maxStaked) {
-                    setActionError(`Saldo insuficiente en validador ${vAddr.slice(0, 8)}...`);
+                    setActionError((accT?.insufficient_balance_validator || 'Insufficient balance in validator {address}').replace('{address}', `${vAddr.slice(0, 8)}...`));
                     setTransactingAction(null);
                     return;
                 }
@@ -255,7 +424,7 @@ export function AccountSummaryTab({
         }
 
         if (items.length === 0) {
-            setActionError('No hay acciones válidas a realizar.');
+            setActionError(accT?.no_valid_actions || 'No valid actions to perform.');
             setTransactingAction(null);
             return;
         }
@@ -299,7 +468,7 @@ export function AccountSummaryTab({
                 const maxStaked = row.xrdInStake;
 
                 if (unstakeAmt > maxStaked) {
-                    setActionError(`Saldo insuficiente en validador ${vAddr.slice(0, 8)}... para Unstake.`);
+                    setActionError((accT?.insufficient_balance_validator_unstake || 'Insufficient balance in validator {address} for Unstake.').replace('{address}', `${vAddr.slice(0, 8)}...`));
                     setTransactingAction(null);
                     return;
                 }
@@ -336,7 +505,7 @@ export function AccountSummaryTab({
         }
 
         if (items.length === 0) {
-            setActionError('No hay acciones válidas configuradas.');
+            setActionError(accT?.no_valid_actions_configured || 'No valid actions configured.');
             setTransactingAction(null);
             return;
         }
@@ -381,11 +550,11 @@ export function AccountSummaryTab({
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {
-                    setActionError('La transacción falló.');
+                    setActionError(accT?.transaction_failed || 'Transaction failed.');
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'Rejected') {
-                    setActionError('La transacción fue rechazada.');
+                    setActionError(accT?.transaction_rejected || 'Transaction rejected.');
                     setTransactingAction(null);
                     return;
                 }
@@ -415,7 +584,7 @@ export function AccountSummaryTab({
                 )}
                 <div className="min-w-0">
                     <p className="font-bold text-sm text-[var(--color-text-main)] truncate">
-                        {entityName || tt?.account_summary?.account || 'Account'}
+                        {entityName || accT?.account || 'Account'}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
@@ -427,7 +596,7 @@ export function AccountSummaryTab({
                                 onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
                                 onPointerEnter={() => prefetchAccountRewards(address)}
                                 className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                                title={tt?.account_summary?.download_rewards_tooltip || 'Download Rewards'}
+                                title={accT?.download_rewards_tooltip || 'Download Rewards'}
                             >
                                 <Download className="size-3" />
                             </button>
@@ -451,13 +620,13 @@ export function AccountSummaryTab({
 
             {/* Principal Balance */}
             <div>
-                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3 ${isModal ? 'pb-2 border-b border-[var(--color-border)]' : ''}`}>{isModal ? 'Balance' : (tt?.account_summary?.principal_balance || 'Principal Balance')}</h4>
+                <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider mb-3 ${isModal ? 'pb-2 border-b border-[var(--color-border)]' : ''}`}>{accT?.balance || 'Balance'}</h4>
                 {!isBadge ? (
                     isModal ? (
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3 items-stretch">
                                 <BalanceCard
-                                    title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
+                                    title={accT?.total_xrd || 'TOTAL XRD'}
                                     amount={xrdAmount}
                                     symbol="XRD"
                                     valueColor="text-[var(--color-accent)]"
@@ -468,7 +637,7 @@ export function AccountSummaryTab({
                                     align="left"
                                 />
                                 <BalanceCard
-                                    title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
+                                    title={accT?.total_lsu || 'TOTAL LSU'}
                                     amount={String(totalLsuAmount)}
                                     symbol="LSU"
                                     valueColor="text-blue-500 dark:text-blue-400"
@@ -481,7 +650,7 @@ export function AccountSummaryTab({
                             </div>
                             <div className="grid grid-cols-3 gap-3 items-stretch">
                                 <BalanceCard
-                                    title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
+                                    title={accT?.stake_xrd || 'STAKE XRD'}
                                     amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                     symbol="XRD"
                                     valueColor="text-[var(--color-text-main)]"
@@ -492,7 +661,7 @@ export function AccountSummaryTab({
                                     align="left"
                                 />
                                 <BalanceCard
-                                    title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                    title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                     amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                     symbol="XRD"
                                     valueColor="text-orange-500"
@@ -503,7 +672,7 @@ export function AccountSummaryTab({
                                     align="center"
                                 />
                                 <BalanceCard
-                                    title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                    title={accT?.claim_xrd || 'CLAIM XRD'}
                                     amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                                     symbol="XRD"
                                     valueColor="text-[var(--color-accent)]"
@@ -518,7 +687,7 @@ export function AccountSummaryTab({
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-stretch">
                             <BalanceCard
-                                title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
+                                title={accT?.total_xrd || 'TOTAL XRD'}
                                 amount={xrdAmount}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-accent)]"
@@ -528,7 +697,7 @@ export function AccountSummaryTab({
                                 isModal={isModal}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
+                                title={accT?.total_lsu || 'TOTAL LSU'}
                                 amount={String(totalLsuAmount)}
                                 symbol="LSU"
                                 valueColor="text-blue-500 dark:text-blue-400"
@@ -538,7 +707,7 @@ export function AccountSummaryTab({
                                 isModal={isModal}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
+                                title={accT?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-text-main)]"
@@ -548,7 +717,7 @@ export function AccountSummaryTab({
                                 isModal={isModal}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                 symbol="XRD"
                                 valueColor="text-orange-500"
@@ -558,7 +727,7 @@ export function AccountSummaryTab({
                                 isModal={isModal}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                title={accT?.claim_xrd || 'CLAIM XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-accent)]"
@@ -573,7 +742,7 @@ export function AccountSummaryTab({
                     <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
                             <BalanceCard
-                                title={tt?.account_summary?.total_xrd || 'TOTAL XRD'}
+                                title={accT?.total_xrd || 'TOTAL XRD'}
                                 amount={xrdAmount}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-accent)]"
@@ -581,7 +750,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.total_lsu || 'TOTAL LSU'}
+                                title={accT?.total_lsu || 'TOTAL LSU'}
                                 amount={String(totalLsuAmount)}
                                 symbol="LSU"
                                 valueColor="text-blue-500 dark:text-blue-400"
@@ -592,7 +761,7 @@ export function AccountSummaryTab({
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
                             <BalanceCard
-                                title={tt?.account_summary?.stake_xrd || 'STAKE XRD'}
+                                title={accT?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-text-main)]"
@@ -600,7 +769,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}
+                                title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                 symbol="XRD"
                                 valueColor="text-orange-500"
@@ -608,7 +777,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                             />
                             <BalanceCard
-                                title={tt?.account_summary?.claim_xrd || 'CLAIM XRD'}
+                                title={accT?.claim_xrd || 'CLAIM XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInClaim, 0))}
                                 symbol="XRD"
                                 valueColor="text-[var(--color-accent)]"
@@ -624,12 +793,12 @@ export function AccountSummaryTab({
             {displayRows.length > 0 && (
                 <div className="mb-8">
                     <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center gap-2 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
-                        {tt?.account_summary?.staking_validators_title || 'STAKING'} ({displayRows.length})
+                        {accT?.staking_validators_title || 'STAKING'} ({displayRows.length})
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
                             className="hover:text-[var(--color-primary)] transition-colors p-1"
-                            title="Información sobre acciones globales y mixtas"
+                            title={accT?.info_tooltip || 'Information about global and mixed actions'}
                         >
                             <Info className="size-4" />
                         </button>
@@ -649,15 +818,16 @@ export function AccountSummaryTab({
                                 onBatchAction={handleBatchAction}
                                 isTransacting={isTransacting}
                                 transactingAction={transactingAction}
-                                actionError={actionError || batchError}
+                                actionError={actionError || renderStakingError(batchError || '')}
                                 setActionError={setActionError}
                                 clearError={clearError}
+                                tt={tt}
                             >
                                 <ValidatorCarouselSelector
                                     options={carouselOptions}
                                     selectedValues={selectedValidatorAddresses}
                                     onChange={setSelectedValidatorAddresses}
-                                    placeholder="Buscar validadores para delegar..."
+                                    placeholder={accT?.validator_search_placeholder || 'Search validators to delegate...'}
                                 />
                             </BatchValidatorStakeAction>
                         </div>
@@ -665,79 +835,30 @@ export function AccountSummaryTab({
 
                     <div className="space-y-4">
                         {displayRows.map((row) => (
-                            <div key={row.validatorAddress} className={isModal ? "flex flex-col gap-4 py-2" : "flex flex-col gap-4 p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] hover:border-[var(--color-primary)]/30 transition-all shadow-sm"}>
-                                {/* Validator Header */}
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
-                                        {row.validatorIcon ? (
-                                            <SafeImage src={row.validatorIcon} alt={row.validatorName || 'Validator'} fallbackName={row.validatorName || 'Validator'} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Landmark className="size-5 text-[var(--color-text-muted)]" />
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="font-black text-sm text-[var(--color-text-main)] truncate">{row.validatorName || 'Unknown Validator'}</span>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">{row.validatorAddress}</span>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }}
-                                                className={`p-1 rounded transition-colors ${copiedAddress === row.validatorAddress ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                            >
-                                                {copiedAddress === row.validatorAddress ? <Check className="size-3" /> : <Copy className="size-3" />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Staking Grid */}
-                                <div className="grid grid-cols-3 gap-4 py-2 border-t border-[var(--color-card-border)]/50">
-                                    <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.stake_xrd || 'STAKE XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(row.xrdInStake, 2, locale)} XRD</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center" title={(() => {
-                                        const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
-                                        const lines = (row.unstakes || [])
-                                            .filter(u => u.epoch > currentEpoch)
-                                            .map(u => {
-                                                const epochsRemaining = u.epoch - currentEpoch;
-                                                const date = new Date(mountTime + epochsRemaining * 5 * 60 * 1000);
-                                                const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                                                return `Epoch ${u.epoch} ~ ${dateStr}`;
-                                            });
-                                        return lines.length > 0 ? lines.join('\n') : undefined;
-                                    })()}>
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.unstake_xrd || 'UNSTAKE XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-orange-500">{formatNumber(row.xrdInUnstake, 2, locale)} XRD</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center">
-                                        <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{tt?.account_summary?.claim_xrd || 'CLAIM XRD'}</span>
-                                        <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(row.xrdInClaim, 2, locale)} XRD</span>
-                                    </div>
-                                </div>
-
-                                {/* Interactive Staking Actions */}
-                                {isModal && (
-                                    <AccountValidatorStakeAction
-                                        accountAddress={address}
-                                        validatorAddress={row.validatorAddress}
-                                        network={network}
-                                        entityData={entityData}
-                                        xrdBalance={parseFloat(xrdAmount)}
-                                        stakedXrd={row.xrdInStake}
-                                        claimableXrd={row.xrdInClaim}
-                                        lsuBalance={lsuTokens.find(t => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find(t => t.validatorAddress === row.validatorAddress)!.amount) : 0}
-                                        ghostAmount={globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
-                                        selections={validatorSelections[row.validatorAddress] || {}}
-                                        onUpdateSelections={(newSels) => {
-                                            setGlobalAmountStr(''); // Reset global lote para forzar modo individual
-                                            handleUpdateSelections(row.validatorAddress, newSels);
-                                        }}
-                                        isMultiMode={isMultiMode}
-                                    />
-                                )}
-                            </div>
+                            <ValidatorStakingRow
+                                key={row.validatorAddress}
+                                row={row}
+                                isModal={isModal}
+                                tt={tt}
+                                entityData={entityData}
+                                address={address}
+                                network={network}
+                                validatorsData={validatorsData}
+                                accounts={accounts}
+                                lsuTokens={lsuTokens}
+                                xrdAmount={xrdAmount}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                mountTime={mountTime}
+                                globalAmountStr={globalAmountStr}
+                                selectedValidatorAddresses={selectedValidatorAddresses}
+                                validatorSelections={validatorSelections}
+                                onUpdateSelections={handleUpdateSelections}
+                                setGlobalAmountStr={setGlobalAmountStr}
+                                isMultiMode={isMultiMode}
+                                locale={locale}
+                                stakingErrors={stakingErrors}
+                            />
                         ))}
 
                         {isMultiMode && Object.keys(validatorSelections).some(k => Object.keys(validatorSelections[k]).length > 0) && (
@@ -746,7 +867,7 @@ export function AccountSummaryTab({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mt-6 pt-4 border-t border-[var(--color-border)]"
                             >
-                                <h5 className="text-xs font-bold text-[var(--color-text-main)] mb-3 uppercase tracking-wider">Resumen de Operaciones</h5>
+                                <h5 className="text-xs font-bold text-[var(--color-text-main)] mb-3 uppercase tracking-wider">{accT?.info_modal_title_operations || 'Operation Summary'}</h5>
                                 <div className="space-y-3 mb-6">
                                     {Object.keys(validatorSelections).map(vAddr => {
                                         const selections = validatorSelections[vAddr];
@@ -800,21 +921,21 @@ export function AccountSummaryTab({
                                     {isTransacting ? (
                                         <>
                                             <svg className="animate-spin -ml-1 mr-2 size-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                            Enviando a la Billetera...
+                                            {accT?.sending_to_wallet || 'Sending to Wallet...'}
                                         </>
                                     ) : (
-                                        'Enviar a la billetera'
+                                        accT?.send_to_wallet || 'Send to wallet'
                                     )}
                                 </button>
 
                                 {actionError && (
                                     <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
-                                        {actionError.replace(/^Error:\s*/, '')}
+                                        {renderStakingError(actionError)}
                                     </div>
                                 )}
                                 {(batchError && !actionError) && (
                                     <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
-                                        {batchError.replace(/^Error:\s*/, '')}
+                                        {renderStakingError(batchError)}
                                     </div>
                                 )}
                             </m.div>
@@ -830,7 +951,7 @@ export function AccountSummaryTab({
 
             {burnedNfts.length > 0 && (
                 <AssetSection
-                    title={`${tt?.account_summary?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
+                    title={`${accT?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
                     items={burnedNfts}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}
@@ -840,7 +961,7 @@ export function AccountSummaryTab({
                     isModal={isModal}
                 />
             )}
-            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+            <AssetSection title={`${accT?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
             {/* Info Modal */}
             <Portal>
@@ -868,26 +989,26 @@ export function AccountSummaryTab({
 
                                     <div className="flex items-center gap-3 mb-4 text-[var(--color-primary)]">
                                         <Info className="size-6" />
-                                        <h3 className="text-lg font-black tracking-tight">Acción Global y Mixta</h3>
+                                        <h3 className="text-lg font-black tracking-tight">{accT?.global_mixed_title || 'Global and Mixed Action'}</h3>
                                     </div>
 
                                     <div className="space-y-4 text-sm text-[var(--color-text-main)] leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
                                         <p>
-                                            El panel de Staking te permite realizar acciones masivas y mixtas sobre varios validadores en una sola transacción, ahorrando tiempo y firmas.
+                                            {accT?.info_modal_desc || 'The Staking panel allows you to perform combined staking operations. Below are the available modes:'}
                                         </p>
 
-                                        <h4 className="font-bold text-[var(--color-text-main)] border-b border-[var(--color-border)] pb-1">ACCIÓN GLOBAL (LOTES)</h4>
+                                        <h4 className="font-bold text-[var(--color-text-main)] border-b border-[var(--color-border)] pb-1">{accT?.global_batch_title || 'GLOBAL ACTION (BATCHES)'}</h4>
                                         <ul className="list-disc pl-5 space-y-2 text-[var(--color-text-muted)]">
-                                            <li><strong className="text-[var(--color-text-main)]">Staking Masivo:</strong> Ingresa la cantidad de XRD en el campo superior. Esta se dividirá por igual entre todos los validadores seleccionados. <br /><span className="italic text-xs">Ejemplo: Si tienes 3 validadores seleccionados y pones 300 XRD, se enviarán 100 XRD a cada uno.</span></li>
-                                            <li><strong className="text-[var(--color-text-main)]">Unstaking Masivo:</strong> Ingresa la cantidad TOTAL que deseas retirar. Se intentará extraer a partes iguales de cada validador. <br /><span className="italic text-xs">Ejemplo: Si pones 150 XRD y tienes 3 validadores, se extraerán 50 XRD de cada uno. Ojo: Ningún validador puede tener menos saldo del que le pides.</span></li>
-                                            <li><strong className="text-[var(--color-text-main)]">Claim Masivo:</strong> No necesitas ingresar cantidad. Simplemente selecciona los validadores y haz clic en &quot;CLAIM TODOS&quot;.</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.global_batch_stake || 'Mass Staking:'}</strong> {accT?.global_batch_stake_desc || 'Enter the XRD amount in the top field. It will be divided equally among all selected validators.'}</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.global_batch_unstake || 'Mass Unstaking:'}</strong> {accT?.global_batch_unstake_desc || 'Enter the TOTAL amount you wish to withdraw. It will be split equally across each validator.'}</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.global_batch_claim || 'Mass Claim:'}</strong> {accT?.global_batch_claim_desc || 'No amount needed. Simply select validators and click Claim All.'}</li>
                                         </ul>
 
-                                        <h4 className="font-bold text-[var(--color-text-main)] border-b border-[var(--color-border)] mt-4 pb-1">OPERACIONES MIXTAS MANUALES</h4>
+                                        <h4 className="font-bold text-[var(--color-text-main)] border-b border-[var(--color-border)] mt-4 pb-1">{accT?.mixed_operations_title || 'MANUAL MIXED OPERATIONS'}</h4>
                                         <ul className="list-disc pl-5 space-y-2 text-[var(--color-text-muted)]">
-                                            <li><strong className="text-[var(--color-text-main)]">Modo Carrito:</strong> Si ingresas una cantidad de XRD en <strong>más de un validador</strong> de forma manual, se activa el modo carrito.</li>
-                                            <li><strong className="text-[var(--color-text-main)]">Selección de Acción:</strong> Al hacer clic en Stake, Unstake o Claim, el botón se quedará marcado en lugar de abrir la billetera.</li>
-                                            <li><strong className="text-[var(--color-text-main)]">Transacción Única:</strong> Una vez hayas seleccionado las acciones que deseas para cada validador (ej. Stake en uno, Unstake en otro, Claim en un tercero), aparecerá un resumen en la parte inferior con un botón de <strong>Enviar a la billetera</strong> que ejecutará todo en una sola transacción.</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.mixed_cart_mode || 'Cart Mode:'}</strong> {accT?.mixed_cart_desc || 'Enter an XRD amount in more than one validator manually to activate cart mode.'}</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.mixed_action_selection || 'Action Selection:'}</strong> {accT?.mixed_action_desc || 'Clicking Stake, Unstake, or Claim will mark the action instead of opening the wallet.'}</li>
+                                            <li><strong className="text-[var(--color-text-main)]">{accT?.mixed_single_tx || 'Single Transaction:'}</strong> {accT?.mixed_single_tx_desc || 'A summary appears at the bottom with a Send to wallet button that executes everything in one transaction.'}</li>
                                         </ul>
                                     </div>
                                 </div>

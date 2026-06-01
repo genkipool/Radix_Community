@@ -65,6 +65,7 @@ export function AccountCard({
 }: AccountCardProps) {
     const tt = t?.dashboard?.transactions;
     const accT = tt?.account_summary;
+    const stakingErrors = t?.dashboard?.staking?.errors;
 
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<EntityTab>('summary');
@@ -196,7 +197,7 @@ export function AccountCard({
                                         title={accT?.download_rewards_tooltip}
                                     >
                                         <Download className="size-3" />
-                                        <span className="mt-[0.5px]">CSV</span>
+                                        <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
                                     </button>
 
                                     {isModal && onExpand && (
@@ -218,7 +219,7 @@ export function AccountCard({
                                         {accT?.total_xrd || 'TOTAL XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
+                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
                                             {statsLoading ? '-' : formatNumber(parseFloat(xrdAmount), 2, locale)}
                                         </span>
                                         <FiatValueDisplay amount={parseFloat(xrdAmount)} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
@@ -262,7 +263,7 @@ export function AccountCard({
                                         {accT?.claim_xrd || 'CLAIM XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-sm font-bold font-mono ${!isExpanded ? 'text-[var(--color-accent)]' : 'text-green-500'}`}>
+                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)]">
                                             {statsLoading ? '-' : formatNumber(claimTotal, 2, locale)}
                                         </span>
                                         <FiatValueDisplay amount={claimTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
@@ -342,6 +343,7 @@ export function AccountCard({
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 marketData={marketData ?? undefined}
                                                 locale={locale}
+                                                stakingErrors={stakingErrors as Record<string, string> | undefined}
                                             />
                                         )}
 

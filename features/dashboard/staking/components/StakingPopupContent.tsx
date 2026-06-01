@@ -244,8 +244,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const isNotOwnerWarning = Boolean(activeTab === 'validator' && !stakingData.isOwner && !isLoadingData && activeAccount);
 
     const renderError = (err: string) => {
-        if (err === 'failedToPrepareTransaction') return stakingT?.errors?.failedToPrepareTransaction ?? 'Failed to prepare transaction. Check your manifest.';
-        if (err === 'rejectedByUser') return stakingT?.errors?.rejectedByUser ?? 'Transaction rejected by user.';
+        const lower = err.toLowerCase();
+        if (lower.includes('failed to prepare')) return stakingT?.errors?.failedToPrepareTransaction ?? 'Failed to prepare transaction. Check your manifest.';
+        if (lower.includes('rejected')) return stakingT?.errors?.rejectedByUser ?? 'Transaction rejected by user.';
         return err;
     };
 
@@ -268,7 +269,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     onClick={(e) => { e.stopPropagation(); setActiveTab('validator'); }}
                     className={`flex-1 pb-2 text-xs font-semibold transition-colors border-b-2 -mb-[1px] ${activeTab === 'validator' ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}`}
                 >
-                    {stakingT?.validator ?? 'Validator'}
+                    {stakingT?.validator ?? 'Owner'}
                 </button>
             </div>
 

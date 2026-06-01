@@ -9,6 +9,99 @@ import type { GatewayEntityDetails } from '@/features/dashboard/types';
 
 const HOOK_MOUNT_TIME = Date.now();
 
+type WithdrawalEntry = {
+    epoch_unlocked: number;
+    stake_unit_amount: string;
+};
+
+export type ValidatorEntityState = {
+    details?: {
+        state?: {
+            locked_owner_stake_unit_vault?: { entity_address: string };
+            pending_owner_stake_unit_unlock_vault?: { entity_address: string };
+            already_unlocked_owner_stake_unit_amount?: string;
+            pending_owner_stake_unit_withdrawals?: WithdrawalEntry[];
+        }
+    };
+    fungible_resources?: {
+        items: Array<{
+            resource_address: string;
+            vaults: {
+                items: Array<{
+                    vault_address: string;
+                    amount: string;
+                }>;
+            };
+        }>;
+    };
+};
+
+export function computeOwnerStakingData(
+    validatorEntityData: ValidatorEntityState,
+    validator: Validator,
+    currentEpoch: number,
+    mountTime: number = HOOK_MOUNT_TIME,
+): {
+    ownerLockedStakeXrd: number;
+    ownerPendingUnlockXrd: number;
+    ownerUnlockedLsu: number;
+    ownerUnlockedXrd: number;
+    unstakeTooltip: string;
+} {
+    const lsu2xrd = validator.lsu2xrdFactor || 1;
+    const stateObj = validatorEntityData.details?.state;
+
+    if (!stateObj) {
+        return { ownerLockedStakeXrd: 0, ownerPendingUnlockXrd: 0, ownerUnlockedLsu: 0, ownerUnlockedXrd: 0, unstakeTooltip: '' };
+    }
+
+    const lockedVaultAddress = stateObj.locked_owner_stake_unit_vault?.entity_address;
+    let lockedLsu = 0;
+
+    const lsuResourceObj = validatorEntityData.fungible_resources?.items?.find(
+        item => item.resource_address === validator.lsuResource
+    );
+    if (lsuResourceObj?.vaults?.items) {
+        for (const vault of lsuResourceObj.vaults.items) {
+            if (vault.vault_address === lockedVaultAddress) {
+                lockedLsu = parseFloat(vault.amount);
+            }
+        }
+    }
+
+    const ownerLockedStakeXrd = lockedLsu * lsu2xrd;
+
+    const alreadyUnlocked = parseFloat(stateObj.already_unlocked_owner_stake_unit_amount || '0');
+    let totalClaimableLsu = alreadyUnlocked;
+    let totalPendingLsu = 0;
+    const tooltipLines: string[] = [];
+
+    const formatEpochDate = (epoch: number) => {
+        const epochsRemaining = epoch - currentEpoch;
+        const date = new Date(mountTime + epochsRemaining * 5 * 60 * 1000);
+        return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    if (stateObj.pending_owner_stake_unit_withdrawals) {
+        for (const w of stateObj.pending_owner_stake_unit_withdrawals) {
+            const amt = parseFloat(w.stake_unit_amount || '0');
+            if (w.epoch_unlocked <= currentEpoch) {
+                totalClaimableLsu += amt;
+            } else {
+                totalPendingLsu += amt;
+                tooltipLines.push(`Epoch ${w.epoch_unlocked} ~ ${formatEpochDate(w.epoch_unlocked)}`);
+            }
+        }
+    }
+
+    const unstakeTooltip = tooltipLines.length > 0 ? tooltipLines.join('\n') : '';
+    const ownerPendingUnlockXrd = totalPendingLsu * lsu2xrd;
+    const ownerUnlockedLsu = totalClaimableLsu;
+    const ownerUnlockedXrd = totalClaimableLsu * lsu2xrd;
+
+    return { ownerLockedStakeXrd, ownerPendingUnlockXrd, ownerUnlockedLsu, ownerUnlockedXrd, unstakeTooltip };
+}
+
 export const useAccountStakingData = (
     accountAddress: string | null,
     validator: Validator | null
@@ -80,11 +173,6 @@ export const useAccountStakingData = (
             }
         }
 
-        let ownerLockedStakeXrd = 0;
-        let ownerPendingUnlockXrd = 0;
-        let ownerUnlockedLsu = 0;
-        let ownerUnlockedXrd = 0;
-
         const currentEpoch = (entityData as GatewayEntityDetails & { ledger_state?: { epoch: number } })?.ledger_state?.epoch ?? 0;
 
         const formatEpochDate = (epoch: number) => {
@@ -93,84 +181,23 @@ export const useAccountStakingData = (
             return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         };
 
+        let ownerLockedStakeXrd = 0;
+        let ownerPendingUnlockXrd = 0;
+        let ownerUnlockedLsu = 0;
+        let ownerUnlockedXrd = 0;
         let unstakeTooltip = '';
 
         if (isOwner && validatorEntityData) {
-            type WithdrawalEntry = {
-                epoch_unlocked: number;
-                stake_unit_amount: string;
-            };
-
-            type ValidatorState = {
-                details?: {
-                    state?: {
-                        locked_owner_stake_unit_vault?: { entity_address: string };
-                        pending_owner_stake_unit_unlock_vault?: { entity_address: string };
-                        already_unlocked_owner_stake_unit_amount?: string;
-                        pending_owner_stake_unit_withdrawals?: WithdrawalEntry[];
-                    }
-                };
-                fungible_resources?: {
-                    items: Array<{
-                        resource_address: string;
-                        vaults: {
-                            items: Array<{
-                                vault_address: string;
-                                amount: string;
-                            }>;
-                        };
-                    }>;
-                };
-            };
-            const vState = validatorEntityData as unknown as ValidatorState;
-            const lsu2xrd = validator.lsu2xrdFactor || 1;
-
-            const stateObj = vState.details?.state;
-            if (!stateObj) {
-                ownerLockedStakeXrd = 0;
-                ownerPendingUnlockXrd = 0;
-                ownerUnlockedXrd = 0;
-            } else {
-                const lockedVaultAddress = stateObj.locked_owner_stake_unit_vault?.entity_address;
-
-                let lockedLsu = 0;
-
-                const lsuResourceObj = vState.fungible_resources?.items?.find(item => item.resource_address === validator.lsuResource);
-                if (lsuResourceObj?.vaults?.items) {
-                    for (const vault of lsuResourceObj.vaults.items) {
-                        if (vault.vault_address === lockedVaultAddress) {
-                            lockedLsu = parseFloat(vault.amount);
-                        }
-                    }
-                }
-
-                ownerLockedStakeXrd = lockedLsu * lsu2xrd;
-
-                const alreadyUnlocked = parseFloat(stateObj.already_unlocked_owner_stake_unit_amount || '0');
-                let totalClaimableLsu = alreadyUnlocked;
-                let totalPendingLsu = 0;
-                const tooltipLines: string[] = [];
-
-                if (stateObj.pending_owner_stake_unit_withdrawals) {
-                    for (const w of stateObj.pending_owner_stake_unit_withdrawals) {
-                        const amt = parseFloat(w.stake_unit_amount || '0');
-                        if (w.epoch_unlocked <= currentEpoch) {
-                            totalClaimableLsu += amt;
-                        } else {
-                            totalPendingLsu += amt;
-                            tooltipLines.push(`Epoch ${w.epoch_unlocked} ~ ${formatEpochDate(w.epoch_unlocked)}`);
-                        }
-                    }
-                }
-
-                if (tooltipLines.length > 0) {
-                    unstakeTooltip = tooltipLines.join('\n');
-                }
-
-                ownerPendingUnlockXrd = totalPendingLsu * lsu2xrd;
-                ownerUnlockedLsu = totalClaimableLsu;
-                ownerUnlockedXrd = totalClaimableLsu * lsu2xrd;
-            }
+            const result = computeOwnerStakingData(
+                validatorEntityData as unknown as ValidatorEntityState,
+                validator,
+                currentEpoch,
+            );
+            ownerLockedStakeXrd = result.ownerLockedStakeXrd;
+            ownerPendingUnlockXrd = result.ownerPendingUnlockXrd;
+            ownerUnlockedLsu = result.ownerUnlockedLsu;
+            ownerUnlockedXrd = result.ownerUnlockedXrd;
+            unstakeTooltip = result.unstakeTooltip;
         } else {
             const tooltipLines: string[] = [];
             if (stakingRow?.unstakes) {

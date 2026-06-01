@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Search, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
+import type { TranslationsT } from '@/features/dashboard/types';
 
 export interface ValidatorOption {
     value: string;
@@ -16,6 +17,8 @@ interface ValidatorCarouselSelectorProps {
     onChange: (values: string[]) => void;
     className?: string;
     placeholder?: string;
+    locale?: string;
+    tt?: Partial<TranslationsT['dashboard']['transactions']>;
 }
 
 export function ValidatorCarouselSelector({
@@ -23,14 +26,16 @@ export function ValidatorCarouselSelector({
     selectedValues,
     onChange,
     className = '',
-    placeholder = 'Buscar validadores...'
+    placeholder,
+    locale: _locale,
+    tt
 }: ValidatorCarouselSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
-    const activeLabel = options[activeIndex]?.label || 'Validadores';
+    const activeLabel = options[activeIndex]?.label || (tt?.account_summary?.validators_label || 'Validators');
 
     const cycle = (direction: 'next' | 'prev') => {
         let nextIdx;
@@ -106,7 +111,7 @@ export function ValidatorCarouselSelector({
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
                                     type="text"
-                                    placeholder={placeholder}
+                                    placeholder={placeholder || (tt?.account_summary?.search_validators_placeholder || 'Search validators...')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
@@ -130,7 +135,7 @@ export function ValidatorCarouselSelector({
                             })}
                             {filteredOptions.length === 0 && (
                                 <div className="py-4 text-center text-xs text-[var(--color-text-muted)]">
-                                    No se encontraron resultados
+                                    {tt?.account_summary?.no_results || 'No results found'}
                                 </div>
                             )}
                         </div>

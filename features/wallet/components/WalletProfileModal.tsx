@@ -31,7 +31,8 @@ function WalletAccountSummaryWrapper({
     copiedAddress,
     network,
     locale,
-    isOpen
+    isOpen,
+    stakingErrors
 }: {
     address: string;
     entityName: string;
@@ -41,6 +42,7 @@ function WalletAccountSummaryWrapper({
     network: 'mainnet' | 'stokenet';
     locale: string;
     isOpen: boolean;
+    stakingErrors?: Record<string, string>;
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
@@ -63,6 +65,7 @@ function WalletAccountSummaryWrapper({
             network={network}
             locale={locale}
             isModal={true}
+            stakingErrors={stakingErrors}
         />
     );
 }
@@ -241,16 +244,17 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                         {accounts.flatMap(account =>
                                                             !selectedAccountAddress || account.address === selectedAccountAddress
                                                                 ? [<div key={account.address} className="relative group">
-                                                                    <WalletAccountSummaryWrapper
-                                                                        address={account.address}
-                                                                        entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
-                                                                        tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
-                                                                        onCopy={copy}
-                                                                        copiedAddress={copiedText}
-                                                                        network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
-                                                                        locale={locale}
-                                                                        isOpen={isOpen}
-                                                                    />
+                                                                     <WalletAccountSummaryWrapper
+                                                                         address={account.address}
+                                                                         entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
+                                                                         tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                         onCopy={copy}
+                                                                         copiedAddress={copiedText}
+                                                                         network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
+                                                                         locale={locale}
+                                                                         isOpen={isOpen}
+                                                                          stakingErrors={t?.dashboard?.staking?.errors}
+                                                                     />
                                                                 </div>]
                                                                 : []
                                                         )}
