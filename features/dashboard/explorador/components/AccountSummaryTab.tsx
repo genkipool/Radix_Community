@@ -84,6 +84,7 @@ function ValidatorStakingRow({
     isMultiMode,
     locale,
     stakingErrors,
+    onOwnerModeChange,
 }: {
     row: StakingEntry;
     isModal: boolean;
@@ -106,6 +107,7 @@ function ValidatorStakingRow({
     isMultiMode: boolean;
     locale: string;
     stakingErrors?: Record<string, string>;
+    onOwnerModeChange?: (addr: string, isOwnerMode: boolean) => void;
 }) {
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
@@ -148,7 +150,7 @@ function ValidatorStakingRow({
                         {isModal && isOwner && (
                             <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setOwnerMode(v => !v); }}
+                                onClick={(e) => { e.stopPropagation(); const next = !ownerMode; setOwnerMode(next); onOwnerModeChange?.(row.validatorAddress, next); }}
                                 className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${ownerMode ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:opacity-70'}`}
                             >
                                 {ownerToggleLabel}
@@ -202,7 +204,7 @@ function ValidatorStakingRow({
                     stakedXrd={ownerMode ? ownerLockedStakeXrd : row.xrdInStake}
                     claimableXrd={ownerMode ? ownerUnlockedXrd : row.xrdInClaim}
                     lsuBalance={lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)?.amount ? parseFloat(lsuTokens.find((t: any) => t.validatorAddress === row.validatorAddress)!.amount) : 0}
-                    ghostAmount={globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
+                    ghostAmount={!ownerMode && globalAmountStr && selectedValidatorAddresses.includes(row.validatorAddress) ? (parseFloat(globalAmountStr) / selectedValidatorAddresses.length).toString() : undefined}
                     selections={validatorSelections[row.validatorAddress] || {}}
                     onUpdateSelections={(newSels: any) => {
                         setGlobalAmountStr('');
@@ -254,6 +256,16 @@ export function AccountSummaryTab({
 
     type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
     const [validatorSelections, setValidatorSelections] = useState<Record<string, ValidatorSelections>>({});
+    const [ownerModeAddresses, setOwnerModeAddresses] = useState<Set<string>>(new Set());
+
+    const handleOwnerModeChange = (addr: string, isOwnerMode: boolean) => {
+        setOwnerModeAddresses(prev => {
+            const next = new Set(prev);
+            if (isOwnerMode) next.add(addr);
+            else next.delete(addr);
+            return next;
+        });
+    };
 
     const handleUpdateSelections = (vAddr: string, newSelections: ValidatorSelections) => {
         setActionError(null);
@@ -295,6 +307,8 @@ export function AccountSummaryTab({
     // MultiMode se activa si más de un validador tiene alguna cantidad o selección manual, o si un validador tiene múltiples selecciones.
     const isMultiMode = activeValidatorAddresses.length > 1 ||
         Object.values(validatorSelections).some(s => (s.stake ? 1 : 0) + (s.unstake ? 1 : 0) + (s.claim ? 1 : 0) > 1);
+
+    const canDistribute = selectedValidatorAddresses.some(addr => !ownerModeAddresses.has(addr));
 
     const { submitBatchTransaction, submitMixedBatchTransaction, isTransacting, error: batchError, clearError } = useStakingTransaction();
 
@@ -368,16 +382,25 @@ export function AccountSummaryTab({
             return;
         }
 
-        const count = selectedValidatorAddresses.length;
+        const nonOwnerAddresses = selectedValidatorAddresses.filter(vAddr => {
+            const row = displayRows.find(r => r.validatorAddress === vAddr);
+            if (!row) return false;
+            const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
+            const connectedAccount = accounts?.find((a: any) => a.address === address);
+            const isOwner = !!valInfo?.ownerAddress && !!connectedAccount && valInfo.ownerAddress === address;
+            return !ownerModeAddresses.has(vAddr) || !isOwner;
+        });
+
+        const count = nonOwnerAddresses.length;
         if (count === 0) {
-            setActionError(accT?.select_at_least_one_validator || 'Select at least one validator.');
+            setActionError(accT?.no_valid_actions || 'No valid actions to perform.');
             setTransactingAction(null);
             return;
         }
 
         const amountPerValidator = globalAmount / count;
 
-        for (const vAddr of selectedValidatorAddresses) {
+        for (const vAddr of nonOwnerAddresses) {
             const row = displayRows.find(r => r.validatorAddress === vAddr);
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
 
@@ -822,6 +845,7 @@ export function AccountSummaryTab({
                                 setActionError={setActionError}
                                 clearError={clearError}
                                 tt={tt}
+                                canDistribute={canDistribute}
                             >
                                 <ValidatorCarouselSelector
                                     options={carouselOptions}
@@ -858,6 +882,7 @@ export function AccountSummaryTab({
                                 isMultiMode={isMultiMode}
                                 locale={locale}
                                 stakingErrors={stakingErrors}
+                                onOwnerModeChange={handleOwnerModeChange}
                             />
                         ))}
 

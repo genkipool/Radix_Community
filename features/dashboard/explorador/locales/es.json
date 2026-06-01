@@ -552,6 +552,7 @@
         "validators_label": "Validadores",
         "batch_amount_placeholder": "Cantidad de XRD distribuida",
         "batch_distribute_hint": "La cantidad ingresada se distribuirá a partes iguales entre los validadores seleccionados.",
+        "batch_disabled_owner_tooltip": "El modo propietario está activo en todos los validadores seleccionados. La distribución en lote no está disponible.",
         "search_validators_placeholder": "Buscar validadores...",
         "no_results": "No se encontraron resultados",
         "csv": "CSV",

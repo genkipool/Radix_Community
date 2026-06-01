@@ -18,6 +18,7 @@ interface BatchValidatorStakeActionProps {
     t?: Partial<import('@/features/dashboard/types').TranslationsT>;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     children?: React.ReactNode;
+    canDistribute?: boolean;
 }
 
 export const BatchValidatorStakeAction = ({
@@ -33,7 +34,8 @@ export const BatchValidatorStakeAction = ({
     setActionError,
     clearError,
     tt,
-    children
+    children,
+    canDistribute = true
 }: BatchValidatorStakeActionProps) => {
     const { t: contextT } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
@@ -102,10 +104,12 @@ export const BatchValidatorStakeAction = ({
                     const isDisabled =
                         isTransacting ||
                         selectedValidatorsCount === 0 ||
+                        !canDistribute ||
                         (action === 'Unstake' && totalStakedXrdSelected <= 0) ||
                         (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
                     
                     const label = action;
+                    const buttonTitle = !canDistribute ? (accT?.batch_disabled_owner_tooltip || 'Owner mode is active on all selected validators. Batch distribution is not available.') : undefined;
 
                     return (
                         <button
@@ -113,6 +117,7 @@ export const BatchValidatorStakeAction = ({
                             key={action}
                             onClick={() => onBatchAction(action)}
                             disabled={isDisabled}
+                            title={isDisabled ? buttonTitle : undefined}
                             className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
                         >
                             {isThisActionTransacting ? (
