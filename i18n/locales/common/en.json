@@ -77,7 +77,10 @@
     "update_wallet": "Update",
     "profile": "Profile",
     "accounts": "Accounts",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "wallet_invalid_address": "Invalid address",
+    "wallet_validating": "Validating...",
+    "wallet_add_dest_input": "Add destination address input"
   },
   "roadmap_status": {
     "done": "Done",

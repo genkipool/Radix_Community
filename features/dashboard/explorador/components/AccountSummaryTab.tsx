@@ -45,6 +45,7 @@ interface AccountSummaryTabProps {
     locale: string;
     isModal?: boolean;
     stakingErrors?: Record<string, string>;
+    sendTransactionSection?: React.ReactNode;
 }
 
 interface ParsedResource {
@@ -235,6 +236,7 @@ export function AccountSummaryTab({
     isBadge = false,
     isModal = false,
     stakingErrors,
+    sendTransactionSection,
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
     const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
     const { prefetchAccountRewards } = usePrefetchRewards();
@@ -634,6 +636,8 @@ export function AccountSummaryTab({
                     </div>
                 </div>
             </div>
+
+            {sendTransactionSection}
 
             {description && (
                 <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">

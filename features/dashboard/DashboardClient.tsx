@@ -32,7 +32,7 @@ import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
 
 /* React Query hooks */
-import { stopPolling } from '@/services/liveDataStore';
+import { startPolling, stopPolling } from '@/services/liveDataStore';
 import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
 import { useValidatorFilters } from './staking/hooks/useValidatorFilters';
 import {
@@ -149,6 +149,15 @@ export default function DashboardClient({
       window.history.replaceState({}, '', url.toString());
     }
   }, [activeNetwork, network, switchNetwork, setNetwork]);
+
+  // Start/stop live proposals polling based on active view
+  useEffect(() => {
+    if (activeView === 'staking') {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+  }, [activeView]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
     setPendingRange(range);
@@ -398,7 +407,11 @@ export default function DashboardClient({
           onSearchChange={setSearchQuery}
           activeView={activeView}
           onViewChange={(view) => {
-            if (view === 'transactions') stopPolling();
+            if (view === 'staking') {
+              startPolling();
+            } else {
+              stopPolling();
+            }
             handleViewChange(view);
           }}
           network={network}

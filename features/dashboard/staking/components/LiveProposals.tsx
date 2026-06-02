@@ -1,21 +1,14 @@
 
 'use client';
-import { useSyncExternalStore, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import {
     subscribeToLiveData,
-    getLiveSnapshot,
-    registerAddressForPolling } from '@/services/liveDataStore';
+    getLiveSnapshot } from '@/services/liveDataStore';
 import { type Validator } from '@/types/radix';
 
 
 export function useLiveProposals(validator: Validator) {
     const snap = useSyncExternalStore(subscribeToLiveData, getLiveSnapshot, getLiveSnapshot);
-
-    useEffect(() => {
-        if (validator.address) {
-            registerAddressForPolling(validator.address);
-        }
-    }, [validator.address]);
 
     // Live epoch-scoped data (real-time)
     const live = snap.epochProposals.get(validator.address);

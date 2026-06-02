@@ -480,3 +480,169 @@ CALL_METHOD
 ;
 `;
 };
+
+export interface TransferItem {
+  type: 'fungible' | 'non_fungible';
+  resourceAddress: string;
+  amount?: number; // For fungibles
+  nonFungibleLocalIds?: string[]; // For non-fungibles
+}
+
+export interface TransferGroup {
+  toAccountAddress: string;
+  items: TransferItem[];
+}
+
+export const buildMultiTransferManifest = (
+  fromAccountAddress: string,
+  groups: TransferGroup[]
+): string => {
+  let manifest = '';
+  let bucketIndex = 1;
+
+  // 1. Withdrawals — one per item (no dedup, so amounts match TAKEs exactly)
+  groups.forEach(group => {
+    group.items.forEach(item => {
+      if (item.type === 'fungible' && item.amount) {
+        manifest += `
+CALL_METHOD
+    Address("${fromAccountAddress}")
+    "withdraw"
+    Address("${item.resourceAddress}")
+    Decimal("${item.amount}")
+;
+`;
+      } else if (item.type === 'non_fungible' && item.nonFungibleLocalIds && item.nonFungibleLocalIds.length > 0) {
+        const idsString = item.nonFungibleLocalIds.map(id => `NonFungibleLocalId("${id}")`).join(', ');
+        manifest += `
+CALL_METHOD
+    Address("${fromAccountAddress}")
+    "withdraw_non_fungibles"
+    Address("${item.resourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+;
+`;
+      }
+    });
+  });
+
+  // 2. Take from worktop and deposit to each item's destination
+  groups.forEach(group => {
+    group.items.forEach(item => {
+      if (item.type === 'fungible' && item.amount) {
+        manifest += `
+TAKE_FROM_WORKTOP
+    Address("${item.resourceAddress}")
+    Decimal("${item.amount}")
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${group.toAccountAddress}")
+    "try_deposit_or_abort"
+    Bucket("bucket${bucketIndex}")
+    Enum<0u8>()
+;
+`;
+        bucketIndex++;
+      } else if (item.type === 'non_fungible' && item.nonFungibleLocalIds && item.nonFungibleLocalIds.length > 0) {
+        const idsString = item.nonFungibleLocalIds.map(id => `NonFungibleLocalId("${id}")`).join(', ');
+        manifest += `
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${item.resourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${group.toAccountAddress}")
+    "try_deposit_or_abort"
+    Bucket("bucket${bucketIndex}")
+    Enum<0u8>()
+;
+`;
+        bucketIndex++;
+      }
+    });
+  });
+
+  // Safety net: deposit any leftover back to the sender
+  manifest += `
+CALL_METHOD
+    Address("${fromAccountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`;
+
+  return manifest;
+};
+
+export const buildTransferManifest = (
+  fromAccountAddress: string,
+  toAccountAddress: string,
+  items: TransferItem[]
+): string => {
+  let manifest = '';
+  let bucketIndex = 1;
+
+  // 1. Withdrawals
+  items.forEach((item) => {
+    if (item.type === 'fungible' && item.amount) {
+      manifest += `
+CALL_METHOD
+    Address("${fromAccountAddress}")
+    "withdraw"
+    Address("${item.resourceAddress}")
+    Decimal("${item.amount}")
+;
+`;
+    } else if (item.type === 'non_fungible' && item.nonFungibleLocalIds && item.nonFungibleLocalIds.length > 0) {
+      const idsString = item.nonFungibleLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+      manifest += `
+CALL_METHOD
+    Address("${fromAccountAddress}")
+    "withdraw_non_fungibles"
+    Address("${item.resourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+;
+`;
+    }
+  });
+
+  // 2. Buckets and Deposits
+  items.forEach((item) => {
+    if (item.type === 'fungible' && item.amount) {
+      manifest += `
+TAKE_FROM_WORKTOP
+    Address("${item.resourceAddress}")
+    Decimal("${item.amount}")
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${toAccountAddress}")
+    "try_deposit_or_abort"
+    Bucket("bucket${bucketIndex}")
+    Enum<0u8>()
+;
+`;
+      bucketIndex++;
+    } else if (item.type === 'non_fungible' && item.nonFungibleLocalIds && item.nonFungibleLocalIds.length > 0) {
+      const idsString = item.nonFungibleLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
+      manifest += `
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${item.resourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+    Bucket("bucket${bucketIndex}")
+;
+CALL_METHOD
+    Address("${toAccountAddress}")
+    "try_deposit_or_abort"
+    Bucket("bucket${bucketIndex}")
+    Enum<0u8>()
+;
+`;
+      bucketIndex++;
+    }
+  });
+
+  return manifest;
+};

@@ -70,7 +70,7 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, add
     // always sends the correct IANA timezone via Intl.DateTimeFormat, so
     // the refetch guarantees correct local-time day boundaries.
     refetchOnMount:       hasDateFilter ? 'always' : enabled,
-    staleTime:            hasDateFilter ? 0 : 10_000,
+    staleTime:            hasDateFilter ? 0 : 30_000,
     refetchOnWindowFocus: false,
   });
 }

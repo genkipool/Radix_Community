@@ -14,6 +14,7 @@ import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
+import { TransactionBuilder } from './TransactionBuilder';
 interface WalletProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -32,7 +33,8 @@ function WalletAccountSummaryWrapper({
     network,
     locale,
     isOpen,
-    stakingErrors
+    stakingErrors,
+    sendTransactionSection
 }: {
     address: string;
     entityName: string;
@@ -43,6 +45,7 @@ function WalletAccountSummaryWrapper({
     locale: string;
     isOpen: boolean;
     stakingErrors?: Record<string, string>;
+    sendTransactionSection?: React.ReactNode;
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
@@ -66,6 +69,7 @@ function WalletAccountSummaryWrapper({
             locale={locale}
             isModal={true}
             stakingErrors={stakingErrors}
+            sendTransactionSection={sendTransactionSection}
         />
     );
 }
@@ -244,17 +248,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                         {accounts.flatMap(account =>
                                                             !selectedAccountAddress || account.address === selectedAccountAddress
                                                                 ? [<div key={account.address} className="relative group">
-                                                                     <WalletAccountSummaryWrapper
-                                                                         address={account.address}
-                                                                         entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
-                                                                         tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
-                                                                         onCopy={copy}
-                                                                         copiedAddress={copiedText}
-                                                                         network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
-                                                                         locale={locale}
-                                                                         isOpen={isOpen}
+                                                                      <WalletAccountSummaryWrapper
+                                                                          address={account.address}
+                                                                          entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
+                                                                          tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                          onCopy={copy}
+                                                                          copiedAddress={copiedText}
+                                                                          network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
+                                                                          locale={locale}
+                                                                          isOpen={isOpen}
                                                                           stakingErrors={t?.dashboard?.staking?.errors}
-                                                                     />
+                                                                          sendTransactionSection={<TransactionBuilder accountAddress={account.address} t={t} />}
+                                                                      />
                                                                 </div>]
                                                                 : []
                                                         )}

@@ -412,7 +412,7 @@ export function subscribeToEpochChange(callback: () => void): () => void {
 export function getLiveSnapshot(): LiveStoreSnapshot { return state; }
 export function getLastKnownEpoch(): number | null { return state.currentEpoch; }
 
-export function registerAddressForPolling(__address: string): void {
+export function startPolling(): void {
     if (!pollingInterval) {
         init().then(() => {
             if (!pollingInterval) {
@@ -427,6 +427,10 @@ export function stopPolling(): void {
         clearInterval(pollingInterval);
         pollingInterval = null;
     }
+}
+
+export function registerAddressForPolling(__address: string): void {
+    startPolling();
 }
 
 function _unregisterAddressForPolling(__address: string): void {
