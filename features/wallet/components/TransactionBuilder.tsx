@@ -776,13 +776,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 {/* Destination input + popup (wrapped together for popup positioning) */}
                 <div className="relative">
                     {/* Destination Address Input with embedded + */}
-                    <div className="relative">
+                    <div className="relative z-10">
                         <input
                             type="text"
                             placeholder="Dirección de destino (account_...)"
                             value={destinationAddress}
                             onChange={(e) => setDestinationAddress(e.target.value)}
-                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-background)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]"
+                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
@@ -954,13 +954,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     const header = items[0];
                     return (
                         <div key={groupId} className="flex flex-col">
-                            <div className="relative">
+                            <div className="relative z-10">
                                 <input
                                     type="text"
                                     placeholder="Destino (account_...)"
                                     value={header.destAddress || ''}
                                     onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-background)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono"
+                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
@@ -976,7 +976,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                             {items.map((item) => (
                                 <div key={item.internalId} className="relative flex items-stretch mt-1.5">
                                     <div className="relative w-6 shrink-0">
-                                        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
+                                        <div className="absolute left-1/2 -translate-x-1/2 top-[-36px] bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
                                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] bg-[var(--color-card-border)]"></div>
                                         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 size-[7px] rounded-full bg-[var(--color-card-border)]"></div>
                                     </div>

@@ -56,7 +56,7 @@ export const AccountSelector = ({ accounts, selectedAccount, onSelect }: Account
                                 onSelect(acc);
                                 setIsOpen(false);
                             }}
-                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--color-background)] transition-colors border-b border-[var(--color-border)] last:border-0 group"
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-[var(--color-bg)] transition-colors border-b border-[var(--color-border)] last:border-0 group"
                         >
                             <div className="flex flex-col items-start text-left">
                                 <span className="font-medium text-[var(--color-text)] text-sm transition-colors group-hover:text-[var(--color-accent)]">{acc.label}</span>

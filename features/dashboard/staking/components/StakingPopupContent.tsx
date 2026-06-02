@@ -81,7 +81,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const { submitTransaction, isTransacting, error, clearError } = useStakingTransaction();
 
     const xrdPerLsu = validator.lsu2xrdFactor || 1;
-    
+
     const isOwnerTab = activeTab === 'validator' && stakingData.isOwner;
     const stakedXrd = isOwnerTab ? stakingData.ownerLockedStakeXrd : (stakingData.lsuBalance * xrdPerLsu);
     const pendingUnstakeXrd = isOwnerTab ? stakingData.ownerPendingUnlockXrd : stakingData.pendingUnstake;
@@ -273,7 +273,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                 onSelect={handleAccountSelect}
             />
 
-            <div className="bg-[var(--color-background)] rounded-lg p-3 flex justify-between text-xs">
+            <div className="bg-[var(--color-bg)] rounded-lg p-3 flex justify-between text-xs">
                 {isLoadingData ? (
                     <div className="w-full flex justify-center py-2"><Loader2 className="size-4 animate-spin text-[var(--color-primary)]" /></div>
                 ) : (
@@ -322,7 +322,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                         placeholder={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
                         disabled={isNotOwnerWarning || hasTxError || isTransacting}
                         aria-label={stakingT?.amount_placeholder ?? "Cantidad de XRD"}
-                        className={`w-full bg-[var(--color-background)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth || error ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError || isTransacting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-[var(--color-bg)] border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${isSuperiorToBoth || error ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${(isNotOwnerWarning || hasTxError || isTransacting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={e => e.stopPropagation()}
                     />
                     <button
@@ -359,7 +359,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                                 handleAction(action);
                             }}
                             disabled={isDisabled}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
+                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

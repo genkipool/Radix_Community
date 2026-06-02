@@ -39,9 +39,9 @@ export const BatchValidatorStakeAction = ({
 }: BatchValidatorStakeActionProps) => {
     const { t: contextT } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
-    
+
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
-    
+
     return (
         <div className="flex flex-col gap-3 mb-6">
             <div className="text-xs font-bold text-[var(--color-primary)] flex justify-between items-center px-1">
@@ -50,13 +50,13 @@ export const BatchValidatorStakeAction = ({
                 </span>
                 <span>{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
             </div>
-            
+
             {children && (
                 <div className="mb-2">
                     {children}
                 </div>
             )}
-            
+
             {/* Input Row */}
             <div className="relative flex flex-col">
                 <div className="relative">
@@ -75,14 +75,14 @@ export const BatchValidatorStakeAction = ({
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
                         disabled={isTransacting}
-                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${actionError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-background)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-background)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${actionError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     <button
                         type="button"
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
+                        onClick={(e) => {
+                            e.stopPropagation();
                             const maxAmount = Math.max(xrdBalance, totalStakedXrdSelected);
-                            setGlobalAmountStr(maxAmount.toString()); 
+                            setGlobalAmountStr(maxAmount.toString());
                         }}
                         disabled={isTransacting}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${isTransacting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
@@ -107,7 +107,7 @@ export const BatchValidatorStakeAction = ({
                         !canDistribute ||
                         (action === 'Unstake' && totalStakedXrdSelected <= 0) ||
                         (action !== 'Claim' && (!globalAmountStr || parseFloat(globalAmountStr) <= 0));
-                    
+
                     const label = action;
                     const buttonTitle = !canDistribute ? (accT?.batch_disabled_owner_tooltip || 'Owner mode is active on all selected validators. Batch distribution is not available.') : undefined;
 
@@ -118,7 +118,7 @@ export const BatchValidatorStakeAction = ({
                             onClick={() => onBatchAction(action)}
                             disabled={isDisabled}
                             title={isDisabled ? buttonTitle : undefined}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">
@@ -132,7 +132,7 @@ export const BatchValidatorStakeAction = ({
                     );
                 })}
             </div>
-            
+
             <div className="text-[10px] text-[var(--color-text-muted)] text-center italic mt-2">
                 {accT?.batch_distribute_hint || 'The entered amount will be distributed equally among the selected validators.'}
             </div>

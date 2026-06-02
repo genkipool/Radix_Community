@@ -113,7 +113,7 @@ export const AccountValidatorStakeAction = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
-    
+
     // Para modo multi: qué input estamos editando. Si no hay nada, por defecto Stake o Unstake si Stake no está disponible.
     const [activeTab, setActiveTab] = useState<'Stake' | 'Unstake' | 'Claim' | null>('Stake');
 
@@ -147,14 +147,14 @@ export const AccountValidatorStakeAction = ({
         ? selections.stake
         : activeTab === 'Unstake' && selections.unstake !== undefined
             ? selections.unstake
-            : activeTab === 'Claim' 
-                ? '' 
+            : activeTab === 'Claim'
+                ? ''
                 : selections.amountStr || '';
 
     const handleInputChange = (val: string) => {
         setActionError(null);
         if (clearError) clearError();
-        
+
         // Prevent negative numbers manually if they bypass input type
         if (val.includes('-')) return;
 
@@ -167,7 +167,7 @@ export const AccountValidatorStakeAction = ({
             } else if (activeTab !== 'Claim') {
                 newSelections.amountStr = val;
             }
-            
+
             if (val === '') {
                 if (activeTab === 'Stake') delete newSelections.stake;
                 if (activeTab === 'Unstake') delete newSelections.unstake;
@@ -188,7 +188,7 @@ export const AccountValidatorStakeAction = ({
 
         if (isMultiMode && onUpdateSelections) {
             const newSelections = { ...selections };
-            
+
             if (actionToPerform === 'Claim') {
                 if (selections.claim) {
                     delete newSelections.claim;
@@ -217,7 +217,7 @@ export const AccountValidatorStakeAction = ({
                     setActiveTab('Unstake');
                 }
             }
-            
+
             onUpdateSelections(newSelections);
             return;
         }
@@ -355,7 +355,7 @@ export const AccountValidatorStakeAction = ({
                             onWheel={(e) => (e.target as HTMLElement).blur()}
                             placeholder={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' ? `(${activeTab})` : ''}`}
                             disabled={isTransacting || activeTab === 'Claim'}
-                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${hasTxError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-background)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-background)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${hasTxError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-bg)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={e => e.stopPropagation()}
                         />
                         <button
@@ -380,17 +380,17 @@ export const AccountValidatorStakeAction = ({
                 {(['Stake', 'Unstake', 'Claim'] as StakingAction[]).map(action => {
                     const label = action === 'Stake' ? 'Staking' : action;
                     const isThisActionTransacting = isTransacting && transactingAction === action;
-                    
+
                     let isSelected = false;
                     let isDisabled = false;
 
                     if (isMultiMode) {
                         isSelected = action === 'Stake' ? selections.stake !== undefined : action === 'Unstake' ? selections.unstake !== undefined : !!selections.claim;
-                        
+
                         // Habilitar toggle off siempre. Toggle on solo si hay fondos.
                         if (!isSelected) {
-                            isDisabled = 
-                                (action === 'Unstake' && effectiveStakedXrd <= 0) || 
+                            isDisabled =
+                                (action === 'Unstake' && effectiveStakedXrd <= 0) ||
                                 (action === 'Claim' && effectiveClaimableXrd <= 0) ||
                                 (action === 'Claim' && !ownerMode && claimNftIds.length === 0);
                         }
@@ -414,7 +414,7 @@ export const AccountValidatorStakeAction = ({
                                 handleAction(action);
                             }}
                             disabled={isDisabled && !isSelected}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md' : 'bg-[var(--color-background)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">
