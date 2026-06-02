@@ -10,7 +10,9 @@ import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValida
 import { useQuery } from '@tanstack/react-query';
 import type { TranslationsT } from '@/features/dashboard/types';
 import type { ValidatorEntityState } from '@/features/dashboard/staking/hooks/useAccountStakingData';
-
+import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 export type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
 
 const EMPTY_SELECTIONS: ValidatorSelections = {};
@@ -59,11 +61,11 @@ export const AccountValidatorStakeAction = ({
     const validator = validatorsData?.validators.find(v => v.address === validatorAddress);
 
     const { data: validatorEntityData } = useQuery({
-        queryKey: ['validator-entity-details', validator?.address, network],
+        queryKey: dashboardKeys.entities.detail(validator?.address || '', network),
         queryFn: () => apiFetchEntityDetails(validator!.address, network),
         enabled: !!validator && ownerMode,
-        staleTime: 10_000,
-        gcTime: 60_000,
+        staleTime: CACHE_TIMES.SHORT,
+        gcTime: CACHE_TIMES.LONG,
     });
 
     const ownerLockedStakeXrd = (() => {
@@ -300,8 +302,7 @@ export const AccountValidatorStakeAction = ({
 
         const pollOnce = async (attempt: number) => {
             if (attempt > maxAttempts) {
-                queryClient.invalidateQueries({ queryKey: ['entity'] });
-                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                invalidateAccountStakingData(queryClient, accountAddress, networkName);
                 return;
             }
 
@@ -313,8 +314,7 @@ export const AccountValidatorStakeAction = ({
                     } catch (e) {
                         console.error('Failed to pre-fetch entity details after transaction', e);
                     }
-                    queryClient.invalidateQueries({ queryKey: ['entity'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
+                    invalidateAccountStakingData(queryClient, accountAddress, networkName);
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {

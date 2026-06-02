@@ -2,6 +2,8 @@
 
 import { useQueries } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 
 /**
  * Hook optimizado para extraer rápidamente las direcciones de los validadores 
@@ -10,10 +12,11 @@ import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 export function useConnectedStakes(accountAddresses: string[], network: 'mainnet' | 'stokenet') {
   const queryResults = useQueries({
     queries: accountAddresses.map((address) => ({
-      queryKey: ['entity-details', address, network],
+      queryKey: dashboardKeys.entities.detail(address, network),
       queryFn: () => apiFetchEntityDetails(address, network),
       enabled: !!address,
-      staleTime: 60000, // 1 minute cache
+      staleTime: CACHE_TIMES.MEDIUM,
+      gcTime: CACHE_TIMES.LONG,
     }))
   });
 

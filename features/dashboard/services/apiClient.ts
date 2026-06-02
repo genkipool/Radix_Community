@@ -126,6 +126,154 @@ export async function apiFetchStakeHistory(
 
 
 
+export async function apiFetchHistoricalStakingBalance(
+    accountAddress: string,
+    stateVersion: number,
+    network: 'mainnet' | 'stokenet',
+    validatorsData: { validators: import('@/types/radix').Validator[] } | undefined,
+    confirmedAt: string | Date
+): Promise<number> {
+    const GATEWAY_URL = network === 'stokenet'
+        ? 'https://stokenet.radixdlt.com'
+        : 'https://mainnet.radixdlt.com';
+
+    const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            addresses: [accountAddress],
+            opt_ins: { fungible_resources: true },
+            at_ledger_state: { state_version: stateVersion }
+        })
+    });
+
+    if (!res.ok) return 0;
+    const data = await res.json();
+
+    const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
+    if (!accountItem) return 0;
+
+    const fungibles = accountItem.fungible_resources?.items || [];
+
+    const lsuToValidator = new Map<string, string>();
+    if (validatorsData?.validators) {
+        validatorsData.validators.forEach((v: import('@/types/radix').Validator) => {
+            if (v.lsuResource) {
+                lsuToValidator.set(v.lsuResource, v.address);
+            }
+        });
+    }
+
+    const extraAddresses: string[] = [];
+    const lsuAddressesInAccount: string[] = [];
+    for (const f of fungibles) {
+        if (lsuToValidator.has(f.resource_address)) {
+            lsuAddressesInAccount.push(f.resource_address);
+            extraAddresses.push(f.resource_address);
+            const valAddr = lsuToValidator.get(f.resource_address)!;
+            extraAddresses.push(valAddr);
+        }
+    }
+
+    const historicalRedemptionRates = new Map<string, number>();
+
+    if (extraAddresses.length > 0) {
+        try {
+            const resExtra = await fetch(`${GATEWAY_URL}/state/entity/details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    addresses: extraAddresses,
+                    at_ledger_state: { state_version: stateVersion }
+                })
+            });
+
+            if (resExtra.ok) {
+                const extraData = await resExtra.json();
+                const items = (extraData.items || []) as Array<{
+                    address: string;
+                    details?: {
+                        total_supply?: string;
+                        total_minted?: string;
+                        state?: {
+                            stake_vault?: { balance: string }
+                        }
+                    };
+                    stake_vault?: { balance: string };
+                    state?: {
+                        stake_vault?: { balance: string }
+                    };
+                    active_in_epoch?: {
+                        stake: string;
+                    };
+                }>;
+
+                const itemsMap = new Map<string, typeof items[number]>();
+                items.forEach((item) => {
+                    itemsMap.set(item.address, item);
+                });
+
+                for (const lsuAddr of lsuAddressesInAccount) {
+                    const valAddr = lsuToValidator.get(lsuAddr)!;
+                    const lsuItem = itemsMap.get(lsuAddr);
+                    const valItem = itemsMap.get(valAddr);
+
+                    let lsuSupply = 1;
+                    if (lsuItem) {
+                        lsuSupply = parseFloat(
+                            lsuItem.details?.total_supply ??
+                            lsuItem.details?.total_minted ??
+                            '1'
+                        );
+                        if (lsuSupply === 0) lsuSupply = 1;
+                    }
+
+                    let valStake = 0;
+                    if (valItem) {
+                        valStake = parseFloat(
+                            valItem.stake_vault?.balance ??
+                            valItem.details?.state?.stake_vault?.balance ??
+                            valItem.state?.stake_vault?.balance ??
+                            valItem.active_in_epoch?.stake ??
+                            '0'
+                        );
+                    }
+
+                    const factor = valStake / lsuSupply;
+                    if (factor > 0) {
+                        historicalRedemptionRates.set(lsuAddr, factor);
+                    }
+                }
+            }
+        } catch {
+            // Fallback to mathematical discount on error
+        }
+    }
+
+    let totalStaking = 0;
+    const now = new Date();
+    const txDate = new Date(confirmedAt);
+    const daysDiff = Math.max(0, (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+    const validatorByLsu = new Map((validatorsData?.validators ?? []).map(v => [v.lsuResource, v] as const));
+
+    for (const f of fungibles) {
+        if (lsuToValidator.has(f.resource_address)) {
+            const amount = Number(f.amount);
+
+            let factor = historicalRedemptionRates.get(f.resource_address);
+            if (factor === undefined) {
+                const currentVal = validatorByLsu.get(f.resource_address);
+                const currentFactor = currentVal?.lsu2xrdFactor || 1;
+                const apy = currentVal?.apyProjection || 5.76;
+                factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
+            }
+
+            totalStaking += amount * factor;
+        }
+    }
+    return totalStaking;
+}
+
 export async function apiFetchValidators(
     network: 'mainnet' | 'stokenet' = 'mainnet',
 ): Promise<{ validators: import('@/types/radix').Validator[]; networkStats: import('@/types/radix').NetworkStats }> {

@@ -30,6 +30,9 @@ import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/da
 import { computeOwnerStakingData } from '@/features/dashboard/staking/hooks/useAccountStakingData';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useLanguage } from '@/context/LanguageContext';
+import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 
 interface AccountSummaryTabProps {
     address: string;
@@ -120,10 +123,10 @@ function ValidatorStakingRow({
     const validator = valInfo;
 
     const { data: validatorEntityData } = useQuery({
-        queryKey: ['entityDetails', row.validatorAddress, network],
+        queryKey: dashboardKeys.entities.detail(row.validatorAddress, network),
         queryFn: () => apiFetchEntityDetails(row.validatorAddress, network),
         enabled: ownerMode && !!row.validatorAddress,
-        staleTime: 0,
+        staleTime: CACHE_TIMES.VOLATILE,
     });
 
     const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
@@ -550,11 +553,7 @@ export function AccountSummaryTab({
 
         const pollOnce = async (attempt: number) => {
             if (attempt > maxAttempts) {
-                queryClient.invalidateQueries({ queryKey: ['entity'] });
-                queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
-                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
-                queryClient.invalidateQueries({ queryKey: ['validators'] });
+                invalidateAccountStakingData(queryClient, address, netName);
                 setTransactingAction(null);
                 return;
             }
@@ -567,11 +566,7 @@ export function AccountSummaryTab({
                     } catch (e) {
                         console.error('Failed to pre-fetch entity details after transaction', e);
                     }
-                    queryClient.invalidateQueries({ queryKey: ['entity'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
-                    queryClient.invalidateQueries({ queryKey: ['validators'] });
+                    invalidateAccountStakingData(queryClient, address, netName);
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {

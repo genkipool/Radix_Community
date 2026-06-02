@@ -2,8 +2,10 @@
 
 import React from 'react';
 import { m } from "motion/react";
-import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators } from '@/features/dashboard/services/apiClient';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { apiFetchTransactions, apiFetchEntityDetails, apiFetchValidators, apiFetchHistoricalStakingBalance } from '@/features/dashboard/services/apiClient';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import type { TransactionInfo, Validator } from '@/types/radix';
@@ -40,10 +42,10 @@ function TokenDisplay({
     const isXrd = flow.address === getXrdAddress(network);
 
     const { data } = useQuery({
-        queryKey: ['token-symbol', flow.address, network],
+        queryKey: dashboardKeys.account.tokenSymbol(flow.address, network),
         queryFn: () => apiFetchEntityDetails(flow.address, network),
         enabled: !isXrd && !flow.isNft,
-        staleTime: Infinity });
+        staleTime: CACHE_TIMES.INFINITY });
 
     let symbol = isXrd ? 'XRD' : `${flow.address.slice(0, 4)}...${flow.address.slice(-4)}`;
 
@@ -99,160 +101,19 @@ function StakingBalanceCell({
     const isStakeOrUnstake = tx.manifestClasses?.includes('ValidatorStake') || tx.manifestClasses?.includes('ValidatorUnstake');
     const shouldQuery = isStakeOrUnstake || tx.isEndOfMonthAuth;
 
-    const fetchBalance = async () => {
-        const GATEWAY_URL = network === 'stokenet'
-            ? 'https://stokenet.radixdlt.com'
-            : 'https://mainnet.radixdlt.com';
-
-        const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                addresses: [accountAddress],
-                opt_ins: { fungible_resources: true },
-                at_ledger_state: { state_version: tx.stateVersion }
-            })
-        });
-
-        if (!res.ok) return 0;
-        const data = await res.json();
-
-        const accountItem = data.items?.find((i: { address: string }) => i.address === accountAddress);
-        if (!accountItem) return 0;
-
-        const fungibles = accountItem.fungible_resources?.items || [];
-
-        const lsuToValidator = new Map<string, string>();
-        if (validatorsData?.validators) {
-            validatorsData.validators.forEach((v: Validator) => {
-                if (v.lsuResource) {
-                    lsuToValidator.set(v.lsuResource, v.address);
-                }
-            });
-        }
-
-        const extraAddresses: string[] = [];
-        const lsuAddressesInAccount: string[] = [];
-        for (const f of fungibles) {
-            if (lsuToValidator.has(f.resource_address)) {
-                lsuAddressesInAccount.push(f.resource_address);
-                extraAddresses.push(f.resource_address);
-                const valAddr = lsuToValidator.get(f.resource_address)!;
-                extraAddresses.push(valAddr);
-            }
-        }
-
-        const historicalRedemptionRates = new Map<string, number>();
-
-        if (extraAddresses.length > 0) {
-            try {
-                const resExtra = await fetch(`${GATEWAY_URL}/state/entity/details`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        addresses: extraAddresses,
-                        at_ledger_state: { state_version: tx.stateVersion }
-                    })
-                });
-
-                if (resExtra.ok) {
-                    const extraData = await resExtra.json();
-                    const items = (extraData.items || []) as Array<{
-                        address: string;
-                        details?: {
-                            total_supply?: string;
-                            total_minted?: string;
-                            state?: {
-                                stake_vault?: { balance: string }
-                            }
-                        };
-                        stake_vault?: { balance: string };
-                        state?: {
-                            stake_vault?: { balance: string }
-                        };
-                        active_in_epoch?: {
-                            stake: string;
-                        };
-                    }>;
-
-                    const itemsMap = new Map<string, typeof items[number]>();
-                    items.forEach((item) => {
-                        itemsMap.set(item.address, item);
-                    });
-
-                    for (const lsuAddr of lsuAddressesInAccount) {
-                        const valAddr = lsuToValidator.get(lsuAddr)!;
-                        const lsuItem = itemsMap.get(lsuAddr);
-                        const valItem = itemsMap.get(valAddr);
-
-                        let lsuSupply = 1;
-                        if (lsuItem) {
-                            lsuSupply = parseFloat(
-                                lsuItem.details?.total_supply ??
-                                lsuItem.details?.total_minted ??
-                                '1'
-                            );
-                            if (lsuSupply === 0) lsuSupply = 1;
-                        }
-
-                        let valStake = 0;
-                        if (valItem) {
-                            valStake = parseFloat(
-                                valItem.stake_vault?.balance ??
-                                valItem.details?.state?.stake_vault?.balance ??
-                                valItem.state?.stake_vault?.balance ??
-                                valItem.active_in_epoch?.stake ??
-                                '0'
-                            );
-                        }
-
-                        const factor = valStake / lsuSupply;
-                        if (factor > 0) {
-                            historicalRedemptionRates.set(lsuAddr, factor);
-                        }
-                    }
-                }
-            } catch {
-                // Fallback to mathematical discount on error
-            }
-        }
-
-        let totalStaking = 0;
-        const now = new Date();
-        const txDate = new Date(tx.confirmedAt);
-        const daysDiff = Math.max(0, (now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
-        const validatorByLsu = new Map((validatorsData?.validators ?? []).map(v => [v.lsuResource, v] as const));
-
-        for (const f of fungibles) {
-            if (lsuToValidator.has(f.resource_address)) {
-                const amount = Number(f.amount);
-
-                let factor = historicalRedemptionRates.get(f.resource_address);
-                if (factor === undefined) {
-                    const currentVal = validatorByLsu.get(f.resource_address);
-                    const currentFactor = currentVal?.lsu2xrdFactor || 1;
-                    const apy = currentVal?.apyProjection || 5.76;
-                    factor = currentFactor / (1 + (apy / 100) * (daysDiff / 365));
-                }
-
-                totalStaking += amount * factor;
-            }
-        }
-        return totalStaking;
-    };
-
-    const queryClient = useQueryClient();
-    const { data: balance, isPending, mutate } = useMutation({
-        mutationFn: fetchBalance,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['account-staking-balance'] });
-        } });
-
-    React.useEffect(() => {
-        if (shouldQuery && !!validatorsData) {
-            mutate();
-        }
-    }, [shouldQuery, validatorsData, mutate]);
+    const { data: balance, isPending } = useQuery({
+        queryKey: dashboardKeys.account.historicalStaking(accountAddress, network, tx.stateVersion),
+        queryFn: () => apiFetchHistoricalStakingBalance(
+            accountAddress,
+            tx.stateVersion,
+            network,
+            validatorsData,
+            tx.confirmedAt
+        ),
+        enabled: !!shouldQuery && !!validatorsData,
+        staleTime: CACHE_TIMES.INFINITY,
+        gcTime: CACHE_TIMES.LONG,
+    });
 
     if (!shouldQuery) {
         return <span className="text-xs text-[var(--color-text-muted)]">-</span>;
@@ -286,7 +147,7 @@ export function AccountTransactionsTab({
         isError,
         error
     } = useInfiniteQuery({
-        queryKey: ['account-transactions', accountAddress, network],
+        queryKey: dashboardKeys.transactions.list(network, accountAddress, undefined, undefined),
         queryFn: async ({ pageParam }) =>
             apiFetchTransactions({
                 cursor: pageParam as string | undefined,
@@ -296,17 +157,17 @@ export function AccountTransactionsTab({
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
-        staleTime: 60_000 });
+        staleTime: CACHE_TIMES.SHORT });
 
     const { data: entityDetails } = useQuery({
-        queryKey: ['entity-details', accountAddress, network],
+        queryKey: dashboardKeys.entities.detail(accountAddress, network),
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
-        staleTime: 60_000 });
+        staleTime: CACHE_TIMES.MEDIUM });
 
     const { data: validatorsData } = useQuery({
-        queryKey: ['validators', network],
+        queryKey: dashboardKeys.validators.list(network),
         queryFn: () => apiFetchValidators(network),
-        staleTime: 300_000 });
+        staleTime: CACHE_TIMES.MEDIUM });
 
     const transactions = data?.pages.flatMap((p) => p.transactions || []) || [];
     const transactionsWithBalances = (() => {

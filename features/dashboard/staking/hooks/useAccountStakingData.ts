@@ -4,6 +4,8 @@ import { useAccountStats } from '@/features/dashboard/explorador/hooks/useAccoun
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { AccountStakingData } from '../types/staking-operations.types';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 import { Validator } from '@/types/radix';
 import type { GatewayEntityDetails } from '@/features/dashboard/types';
 
@@ -110,12 +112,14 @@ export const useAccountStakingData = (
     const networkName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
 
     const { data: entityData, isLoading: isLoadingEntity } = useQuery({
-        queryKey: ['account-entity-details', accountAddress, networkName],
+        queryKey: dashboardKeys.entities.detail(accountAddress || '', networkName),
         queryFn: () => {
             if (!accountAddress) return null;
             return apiFetchEntityDetails(accountAddress, networkName);
         },
         enabled: !!accountAddress,
+        staleTime: CACHE_TIMES.MEDIUM,
+        gcTime: CACHE_TIMES.LONG,
     });
 
     const { 
@@ -128,12 +132,14 @@ export const useAccountStakingData = (
     const isOwner = validator?.ownerAddress === accountAddress;
 
     const { data: validatorEntityData, isLoading: isLoadingValidator } = useQuery({
-        queryKey: ['validator-entity-details', validator?.address, networkName],
+        queryKey: dashboardKeys.entities.detail(validator?.address || '', networkName),
         queryFn: () => {
             if (!validator?.address) return null;
             return apiFetchEntityDetails(validator.address, networkName);
         },
         enabled: !!validator?.address && isOwner,
+        staleTime: CACHE_TIMES.SHORT,
+        gcTime: CACHE_TIMES.LONG,
     });
 
     const isLoading = isLoadingEntity || isLoadingStats || (isOwner && isLoadingValidator);

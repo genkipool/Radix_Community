@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import { TranslationsT } from '@/features/dashboard/types';
 import { apiFetchTransactionDetails, apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useXrdPrice } from '@/features/games/hooks/useXrdPrice';
+import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 
 interface StakingPopupContentProps {
     validator: Validator;
@@ -188,13 +189,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
         const pollOnce = async (attempt: number) => {
             if (attempt > maxAttempts) {
-                // Fallback invalidation just in case
-                queryClient.invalidateQueries({ queryKey: ['entity'] });
-                queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
-                queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
-                queryClient.invalidateQueries({ queryKey: ['validator-entity-details'] });
-                queryClient.invalidateQueries({ queryKey: ['validators'] });
+                if (activeAccount) {
+                    invalidateAccountStakingData(queryClient, activeAccount.address, networkName);
+                }
                 return;
             }
 
@@ -216,12 +213,9 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     if (activeTab === 'validator' && transactingAction === 'Claim') {
                         setShowOwnerClaimInfo(true);
                     }
-                    queryClient.invalidateQueries({ queryKey: ['entity'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-transactions'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-claim-nfts'] });
-                    queryClient.invalidateQueries({ queryKey: ['account-entity-details'] });
-                    queryClient.invalidateQueries({ queryKey: ['validator-entity-details'] });
-                    queryClient.invalidateQueries({ queryKey: ['validators'] });
+                    if (activeAccount) {
+                        invalidateAccountStakingData(queryClient, activeAccount.address, networkName);
+                    }
                     return;
                 } else if (details && (details.transaction_status === 'CommittedFailure' || details.transaction_status === 'Rejected')) {
                     return;

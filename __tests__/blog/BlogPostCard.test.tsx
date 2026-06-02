@@ -16,7 +16,6 @@ vi.mock('@/context/ThemeContext', () => ({
 // Replace framer-motion with simple div wrappers so we can test state changes
 // without depending on animation internals.
 vi.mock('motion/react', () => ({
-    m: new Proxy({}, { get: (_t, _p) => new Proxy({}, { get: () => () => null }) }),
     m: new Proxy({}, {
         get: (_target, prop) => {
             const Component = ({ children, ...rest }: { children?: React.ReactNode } & Record<string, unknown>) => {

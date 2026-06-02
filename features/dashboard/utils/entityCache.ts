@@ -74,3 +74,32 @@ export const entityKeys = {
   full: (address: string, network: string) => 
     ['entity', 'full', normalizeAddress(address), network] as const,
 };
+
+export const dashboardKeys = {
+  all: ['radix-dashboard'] as const,
+  entities: {
+    all: () => [...dashboardKeys.all, 'entities'] as const,
+    detail: (address: string, network: string) => [...dashboardKeys.entities.all(), 'detail', normalizeAddress(address), network] as const,
+    full: (address: string, network: string) => [...dashboardKeys.entities.all(), 'full', normalizeAddress(address), network] as const,
+  },
+  transactions: {
+    all: () => [...dashboardKeys.all, 'transactions'] as const,
+    list: (network: string, address: string | undefined, tag: string | undefined, dateRange: string | undefined) => 
+      [...dashboardKeys.transactions.all(), network, address, tag, dateRange] as const,
+    detail: (intentHash: string, network: string) => [...dashboardKeys.transactions.all(), 'detail', intentHash, network] as const,
+  },
+  validators: {
+    all: () => [...dashboardKeys.all, 'validators'] as const,
+    list: (network: string) => [...dashboardKeys.validators.all(), 'list', network] as const,
+    stakeHistory: (address: string, network: string) => [...dashboardKeys.validators.all(), 'stake-history', normalizeAddress(address), network] as const,
+    rewards: (validatorAddress: string, network: string) => [...dashboardKeys.validators.all(), 'epoch-rewards', normalizeAddress(validatorAddress), network] as const,
+  },
+  account: {
+    all: () => [...dashboardKeys.all, 'account'] as const,
+    claimNfts: (address: string, network: string, collectionIds?: string[]) => [...dashboardKeys.account.all(), 'claim-nfts', normalizeAddress(address), network, collectionIds] as const,
+    rewardsYears: (address: string) => [...dashboardKeys.account.all(), 'rewards-years', normalizeAddress(address)] as const,
+    nftData: (address: string, idsKey: string, network: string) => [...dashboardKeys.account.all(), 'nft-data', normalizeAddress(address), idsKey, network] as const,
+    tokenSymbol: (address: string, network: string) => [...dashboardKeys.account.all(), 'token-symbol', normalizeAddress(address), network] as const,
+    historicalStaking: (address: string, network: string, stateVersion: number) => [...dashboardKeys.account.all(), 'historical-staking', normalizeAddress(address), network, stateVersion] as const,
+  }
+};
