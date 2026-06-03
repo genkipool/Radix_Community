@@ -141,9 +141,10 @@ export const AddressItem = ({
     className?: string;
     brackets?: boolean;
 }) => (
-    <button type="button"
+    <div role="button" tabIndex={0}
         className={`col-span-full group/addr cursor-pointer flex flex-col justify-between gap-1 p-2.5 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] transition-colors w-full text-left ${className}`}
         onClick={() => onCopy(brackets ? `[${address}]` : address)}
+        onKeyDown={e => { if (e.key === 'Enter') onCopy(brackets ? `[${address}]` : address); }}
     >
         <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold shrink-0">{label}</div>
         <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--color-bg)] border border-[var(--color-card-border)] transition-colors">
@@ -152,7 +153,7 @@ export const AddressItem = ({
             </code>
             <CopyButton value={brackets ? `[${address}]` : address} variant="minimal" size="sm" forceCopied={isCopied} className="pointer-events-none" />
         </div>
-    </button>
+    </div>
 );
 
 /* ─────────────────────────────────────────

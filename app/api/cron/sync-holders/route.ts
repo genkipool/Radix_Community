@@ -30,14 +30,14 @@ export async function GET(request: Request) {
 
     const redis = new Redis({ url: redisUrl, token: redisToken });
     const BATCH_SIZE = 15; // Number of LSUs to sync per execution to avoid Vercel timeouts and API rate limit bursts
-    
+
     // Using Stokenet vs Mainnet based on an env or fixed to mainnet if not specified.
     const network = (url.searchParams.get('network') as 'mainnet' | 'stokenet') || 'mainnet';
-    
+
     const HOLDER_ZSET = `lsu_sync_queue_${network}`;
     const HOLDER_HASH = `lsu_holders_${network}`;
     const gatewayBaseUrl = network === 'stokenet'
-        ? 'https://stokenet.radixdlt.com'
+        ? 'https://gateway-stokenet.radix.community/'
         : 'https://mainnet.radixdlt.com';
 
     try {
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         validatorsList.forEach((v: Validator) => {
             const isActive = v.status === 'active';
             const lsuResourceAddress = v.lsuResource;
-            
+
             if (isActive && typeof lsuResourceAddress === 'string') {
                 lsuAddressesSet.add(lsuResourceAddress);
             }
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
         // 4. Fetch the N oldest updated LSUs from the Queue (score = timestamp)
         const oldestLsus = await redis.zrange(HOLDER_ZSET, 0, BATCH_SIZE - 1);
-        
+
         if (!oldestLsus || oldestLsus.length === 0) {
             return NextResponse.json({ success: true, message: 'Queue is empty' });
         }
@@ -124,7 +124,7 @@ export async function GET(request: Request) {
             const now = Date.now();
 
             pipeline.hmset(HOLDER_HASH, updatedCounts);
-            
+
             for (const addr of Object.keys(updatedCounts)) {
                 pipeline.zadd(HOLDER_ZSET, { score: now, member: addr });
             }
@@ -132,8 +132,8 @@ export async function GET(request: Request) {
             await pipeline.exec();
         }
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             message: `Processed ${lsusProcessedCount} LSUs`,
             updated: Object.keys(updatedCounts)
         });

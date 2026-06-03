@@ -32,14 +32,14 @@ export async function apiFetchTransactions(
     // Send the client's IANA timezone so the server computes correct day
     // boundaries for each specific date (handles DST automatically)
     params.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
-    
+
     const res = await fetch(`/api/transactions?${params.toString()}`);
     if (!res.ok) {
         let errorMsg = `API error: ${res.status}`;
         try {
             const errJson = await res.json();
             if (errJson && errJson.error) errorMsg = `API error: ${errJson.error}`;
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(errorMsg);
     }
     return res.json();
@@ -52,14 +52,14 @@ export async function apiFetchTransactionDetails(intentHash: string, network: 'm
         try {
             const errJson = await res.json();
             if (errJson && errJson.error) errorMsg = `API error: ${errJson.error}`;
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(errorMsg);
     }
     return res.json();
 }
 
 export async function apiFetchEntityDetails(address: string, network: 'mainnet' | 'stokenet' = 'mainnet', refresh = false): Promise<GatewayEntityDetails> {
-    const baseUrl = network === 'stokenet' ? 'https://babylon-stokenet-gateway.radixdlt.com' : 'https://mainnet.radixdlt.com';
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
     const res = await fetch(`${baseUrl}/state/entity/details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,7 +86,7 @@ export async function apiFetchEntityDetails(address: string, network: 'mainnet' 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
     if (!data.items || data.items.length === 0) throw new Error("Entity not found");
-    
+
     // Inject ledger_state into the returned item for epoch calculations
     const item = data.items[0];
     item.ledger_state = data.ledger_state;
@@ -94,7 +94,7 @@ export async function apiFetchEntityDetails(address: string, network: 'mainnet' 
 }
 
 export async function apiFetchNonFungibleData(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, unknown>[]> {
-    const baseUrl = network === 'stokenet' ? 'https://babylon-stokenet-gateway.radixdlt.com' : 'https://mainnet.radixdlt.com';
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
     const res = await fetch(`${baseUrl}/state/non-fungible/data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,7 +105,7 @@ export async function apiFetchNonFungibleData(resourceAddress: string, localIds:
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    
+
     // The gateway returns an array in `non_fungible_ids`
     // We can also inject ledger_state into each NFT if needed, but we injected it in entity details already.
     return (data.non_fungible_ids || []) as Record<string, unknown>[];
@@ -118,7 +118,7 @@ export async function apiFetchStakeHistory(
     const params = new URLSearchParams();
     params.set('address', validatorAddress);
     params.set('network', network);
-    
+
     const res = await fetch(`/api/stake-history?${params.toString()}`);
     if (!res.ok) return [];
     return res.json();
@@ -134,7 +134,7 @@ export async function apiFetchHistoricalStakingBalance(
     confirmedAt: string | Date
 ): Promise<number> {
     const GATEWAY_URL = network === 'stokenet'
-        ? 'https://stokenet.radixdlt.com'
+        ? 'https://gateway-stokenet.radix.community'
         : 'https://mainnet.radixdlt.com';
 
     const res = await fetch(`${GATEWAY_URL}/state/entity/details`, {

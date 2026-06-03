@@ -124,9 +124,10 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             <div className="flex flex-col gap-2">
                                 {/* Validator address */}
                                 <div className="flex flex-col sm:flex-row sm:items-center items-start gap-[6px] sm:gap-[10px] min-w-0">
-                                    <button type="button"
+                                    <div role="button" tabIndex={0}
                                         className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr text-left"
                                         onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
+                                        onKeyDown={e => { if (e.key === 'Enter') copyAddress(validator.address); }}
                                     >
                                         <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
                                             <span className="hidden sm:inline">{validator.address || '...'}</span>
@@ -143,7 +144,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                             forceCopied={isAddrCopied}
                                             className="pointer-events-none shrink-0"
                                         />
-                                    </button>
+                                    </div>
                                     <StakingPopup validator={validator} t={t}>
                                         <button
                                             type="button"

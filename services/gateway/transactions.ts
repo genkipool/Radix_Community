@@ -698,7 +698,7 @@ export async function fetchTransactionDetails(
 
     const restBase =
         network === 'stokenet'
-            ? 'https://stokenet.radixdlt.com'
+            ? 'https://gateway-stokenet.radix.community'
             : 'https://mainnet.radixdlt.com';
     try {
         const res = await withRetry(async () => {
@@ -791,7 +791,7 @@ export async function searchTransactionsByAddress(
         const fetchPromises = address.map(async (addr) => {
             // If we have a cursor object and this address is explicitly set to null, it means it has reached the end
             if (cursor && cursors[addr] === null) return { addr, transactions: [], nextCursor: null };
-            
+
             try {
                 const res = await withRetry(() =>
                     gateway.stream.innerClient.streamTransactions({
@@ -816,7 +816,7 @@ export async function searchTransactionsByAddress(
 
         const results = await Promise.all(fetchPromises);
         let allTransactions = results.flatMap(r => r.transactions);
-        
+
         // Deduplicate by intentHash
         const seen = new Set<string>();
         allTransactions = allTransactions.filter(tx => {
@@ -834,7 +834,7 @@ export async function searchTransactionsByAddress(
         // Therefore, we return ALL fetched transactions (up to address.length * limit) 
         // and advance the cursors for ALL addresses that returned data.
         // The frontend will deduplicate and display them.
-        
+
         const nextCursors: Record<string, string | null> = {};
         let hasMore = false;
         results.forEach(r => {
@@ -1436,7 +1436,7 @@ async function getRecentTransactionsFromDataCache(
 
     const isTip = !cursor;
     const rawResult = await fetchRecentTransactions(cursor, limit, network);
-    const result = isTip 
+    const result = isTip
         ? await enrichTransactionsMetadata(rawResult.transactions, network)
             .then(enriched => enrichTransactionsProposerInfo(enriched, network))
             .then(enriched => ({ ...rawResult, transactions: enriched }))
@@ -1513,13 +1513,13 @@ export async function getRecentTransactionsCached(
                     // This call is OUTSIDE the "use cache" directive, so it can safely call revalidateTag.
                     after(async () => {
                         try {
-                                logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
-                                const rawResult = await fetchRecentTransactions(cursor, actualLimit, network);
-                                const freshResult = await enrichTransactionsMetadata(rawResult.transactions, network)
-                                    .then(enriched => enrichTransactionsProposerInfo(enriched, network))
-                                    .then(enriched => ({ ...rawResult, transactions: enriched }));
+                            logger.info({ network }, '[TransactionsService] Background revalidation started for transactions tip');
+                            const rawResult = await fetchRecentTransactions(cursor, actualLimit, network);
+                            const freshResult = await enrichTransactionsMetadata(rawResult.transactions, network)
+                                .then(enriched => enrichTransactionsProposerInfo(enriched, network))
+                                .then(enriched => ({ ...rawResult, transactions: enriched }));
 
-                                if (freshResult.transactions && freshResult.transactions.length > 0) {
+                            if (freshResult.transactions && freshResult.transactions.length > 0) {
                                 // Update Redis with timestamp + Invalidate Data Cache
                                 await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
 

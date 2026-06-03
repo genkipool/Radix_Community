@@ -239,7 +239,7 @@ export async function fetchValidatorsWithLedger(
 ): Promise<ValidatorsFetchResult> {
     const gateway = getGateway(network);
     const restBase = network === 'stokenet'
-        ? 'https://stokenet.radixdlt.com'
+        ? 'https://gateway-stokenet.radix.community'
         : 'https://mainnet.radixdlt.com';
 
     /* ── Phase 1: basic validator list + current status ──

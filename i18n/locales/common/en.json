@@ -80,6 +80,9 @@
     "notifications": "Notifications",
     "wallet_invalid_address": "Invalid address",
     "wallet_validating": "Validating...",
+    "wallet_confirm_selection": "Add",
+    "wallet_send_transaction": "Send Transaction",
+    "wallet_sending": "Sending...",
     "wallet_add_dest_input": "Add destination address input"
   },
   "roadmap_status": {

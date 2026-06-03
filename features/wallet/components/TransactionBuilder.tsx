@@ -82,7 +82,6 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     const [destinationAddress, setDestinationAddress] = useState('');
     const [isAddressValid, setIsAddressValid] = useState<boolean | null>(null);
-    const [validatingAddress, setValidatingAddress] = useState(false);
 
     const [assets, setAssets] = useState<AssetItem[]>([
         {
@@ -107,7 +106,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     // Multi-selection state (only used in 'address' mode)
     const [selectedItems, setSelectedItems] = useState<SelectedAsset[]>([]);
-    const [addressCount, setAddressCount] = useState(1);
+    const [addressCount, setAddressCount] = useState(0);
     const [popupDestTarget, setPopupDestTarget] = useState<string | null>(null);
 
     const assetsRef = useRef(assets);
@@ -129,14 +128,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Validate destination address
+    // Validate destination address (no loading state to avoid flashing "Validando...")
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (!destinationAddress || destinationAddress.length < 10) {
                 setIsAddressValid(null);
                 return;
             }
-            setValidatingAddress(true);
             try {
                 if (destinationAddress.startsWith('account_')) {
                     await apiFetchEntityDetails(destinationAddress, network);
@@ -146,8 +144,6 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 }
             } catch (_err) {
                 setIsAddressValid(false);
-            } finally {
-                setValidatingAddress(false);
             }
         }, 800);
         return () => clearTimeout(timer);
@@ -159,6 +155,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
         enabled: popupOpen,
     });
+
+    // Derive XRD icon URL from entity data at render time (avoid cascading setState in effects)
+    const xrdIconUrl = (() => {
+        if (!entityData?.fungible_resources?.items) return '';
+        const xrdResource = entityData.fungible_resources.items.find(
+            (f: ResourceItem) => f.resource_address === xrdAddress
+        );
+        if (!xrdResource) return '';
+        return getMetadataValue(xrdResource.explicit_metadata?.items, 'icon_url') || '';
+    })();
 
     const handleAssetSelect = (selected: SelectedAsset) => {
         if (selected.type === 'address') {
@@ -349,6 +355,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         resourceAddress: xrdAddress,
                         symbol: 'XRD',
                         name: 'Radix',
+                        iconUrl: xrdIconUrl,
                         amount: '',
                         destAddress: '',
                         groupId: Math.random().toString(36).substring(7),
@@ -359,7 +366,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         }
 
         setSelectedItems([]);
-        setAddressCount(1);
+        setAddressCount(0);
         setPopupDestTarget(null);
         setPopupOpen(false);
     };
@@ -463,7 +470,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         }
         setEditingAssetId(assetId ?? null);
         setSearchQuery('');
-        setAddressCount(1);
+        setAddressCount(0);
 
         // For global address popup: initialize selection from already-added assets
         // so previously added items appear checked when reopening.
@@ -554,21 +561,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 .map(a => a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress)
         );
         let added = 0;
-        let removed = 0;
         for (const s of selectedItems) {
             if (s.type === 'address') continue;
             const sk = s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
-            if (groupKeys.has(sk)) { removed++; }
-            else { added++; }
+            if (!groupKeys.has(sk)) { added++; }
         }
         return {
             hasAny: groupKeys.size > 0 || added > 0,
-            count: groupKeys.size + added - removed,
         };
     })() : null;
 
     const hasSelectedAssets = perDestInfo?.hasAny ?? selectedItems.some(s => s.type !== 'address');
-    const selectedCount = perDestInfo?.count ?? selectedItems.length;
 
     const renderAddressTab = () => {
         if (!isAddressMode || popupDestTarget !== null) return null;
@@ -797,11 +800,8 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     </div>
 
                     {/* Validation text below input */}
-                    {!validatingAddress && isAddressValid === false && destinationAddress.length > 10 && (
+                    {isAddressValid === false && destinationAddress.length > 10 && (
                         <p className="text-[11px] text-red-400 mt-1.5 px-1">{navT.wallet_invalid_address || 'Dirección inválida'}</p>
-                    )}
-                    {validatingAddress && (
-                        <p className="text-[11px] text-[var(--color-text-muted)] mt-1.5 px-1">{navT.wallet_validating || 'Validando...'}</p>
                     )}
 
                     {/* Asset Selection Popup (floating, right below destination input) */}
@@ -867,10 +867,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             onClick={handleConfirmSelection}
                                             className="w-full py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
                                         >
-                                            {popupDestTarget !== null
-                                                ? `Agregar`
-                                                : `Agregar${selectedCount > 0 ? ` (${selectedCount})` : ` (${addressCount})`}`
-                                            }
+                                            {navT.wallet_confirm_selection || 'Agregar'}
                                         </button>
                                     </div>
                                 )}
@@ -918,11 +915,15 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors"
                                             title="Cambiar Activo"
                                         >
-                                            {asset.iconUrl ? (
-                                                <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                    <SafeImage src={asset.iconUrl} alt={asset.symbol} fallbackName={asset.symbol} className="w-full h-full object-cover" />
-                                                </div>
-                                            ) : null}
+                                            <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
+                                                {(asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl) ? (
+                                                    <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} className="w-full h-full object-cover" />
+                                                ) : asset.type === 'non_fungible' ? (
+                                                    <ImageIcon className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
+                                                ) : (
+                                                    <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
+                                                )}
+                                            </div>
                                             <span className="font-semibold text-[10px]">{asset.symbol}</span>
                                         </button>
                                         {showRowActions && (
@@ -1008,11 +1009,15 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors"
                                                 title="Cambiar Activo"
                                             >
-                                                {item.iconUrl ? (
-                                                    <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                        <SafeImage src={item.iconUrl} alt={item.symbol} fallbackName={item.symbol} className="w-full h-full object-cover" />
-                                                    </div>
-                                                ) : null}
+                                                <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
+                                                    {(item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl) ? (
+                                                        <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} className="w-full h-full object-cover" />
+                                                    ) : item.type === 'non_fungible' ? (
+                                                        <ImageIcon className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
+                                                    ) : (
+                                                        <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
+                                                    )}
+                                                </div>
                                                 <span className="font-semibold text-[10px]">{item.symbol}</span>
                                             </button>
                                             <button
@@ -1034,16 +1039,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             <button
                 type="button"
                 onClick={handleSend}
-                disabled={isTransacting || validatingAddress}
+                disabled={isTransacting}
                 className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
             >
                 {isTransacting ? (
                     <>
                         <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Enviando...</span>
+                        <span>{navT.wallet_sending || 'Enviando...'}</span>
                     </>
                 ) : (
-                    <span>Enviar Transacción</span>
+                    <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
                 )}
             </button>
 
