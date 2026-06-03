@@ -9,6 +9,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 
 export type AssetType = 'address' | 'fungible' | 'non_fungible' | 'pool_unit';
 
@@ -56,6 +57,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<AssetType>('fungible');
     const { accounts } = useRadixWallet();
+    const { data: validatorsData } = useValidatorsQuery(network);
 
     const { data: entityData, isLoading } = useQuery({
         queryKey: ['entityDetails', address, network],
@@ -79,7 +81,14 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
         if (!entityData?.fungible_resources?.items) return [];
         return entityData.fungible_resources.items.filter((f: ResourceItem) => {
             const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown';
-            const symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+            let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+            
+            const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.typed?.value?.value;
+            if (valAddr) {
+                const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
+                symbol = valName ? `${valName} LSU` : 'LSU';
+            }
+            
             return name.toLowerCase().includes(query) || symbol.toLowerCase().includes(query);
         });
     })();
@@ -181,7 +190,14 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                             fungibles.length === 0 ? <div className="p-4 text-center text-sm text-[var(--color-text-muted)]">No se encontraron tokens</div> :
                                             fungibles.map((f: ResourceItem) => {
                                                 const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown';
-                                                const symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+                                                let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+                                                
+                                                const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.typed?.value?.value;
+                                                if (valAddr) {
+                                                    const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
+                                                    symbol = valName ? `${valName} LSU` : 'LSU';
+                                                }
+                                                
                                                 const icon = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.typed?.value?.value || '';
                                                 return (
                                                     <button

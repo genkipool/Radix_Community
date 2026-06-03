@@ -34,6 +34,7 @@ export function ValidatorCarouselSelector({
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+    const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
 
     const activeLabel = options[activeIndex]?.label || (tt?.account_summary?.validators_label || 'Validators');
 
@@ -64,6 +65,19 @@ export function ValidatorCarouselSelector({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 350 && spaceAbove > spaceBelow) {
+                setPopupDirection('up');
+            } else {
+                setPopupDirection('down');
+            }
+        }
+    }, [isOpen]);
 
     const filteredOptions = options.filter(opt =>
         opt.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -100,11 +114,11 @@ export function ValidatorCarouselSelector({
             <AnimatePresence>
                 {isOpen && (
                     <m.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+                        className={`absolute left-1/2 -translate-x-1/2 ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden`}
                     >
                         <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">

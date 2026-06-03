@@ -11,6 +11,7 @@ import { buildMultiTransferManifest, TransferGroup } from '@/features/wallet/lib
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 
 interface TransactionBuilderProps {
     accountAddress: string;
@@ -74,16 +75,23 @@ function isLsuToken(metadataItems: MetadataItem[] | undefined): boolean {
     return !!metadataItems?.some((m: MetadataItem) => m.key === 'validator');
 }
 
+const transactionStateCache = new Map<string, { destinationAddress: string; assets: AssetItem[] }>();
+
 export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProps) {
     const navT = (t?.nav || {}) as Record<string, string>;
     const { activeNetworkId, activeNetwork, accounts } = useRadixWallet();
     const network = activeNetwork || 'mainnet';
     const xrdAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId || RadixNetworkId.Mainnet].XRD;
 
-    const [destinationAddress, setDestinationAddress] = useState('');
+    const { data: validatorsData } = useValidatorsQuery(network);
+
+    const cacheKey = `${network}-${accountAddress}`;
+    const cachedState = transactionStateCache.get(cacheKey);
+
+    const [destinationAddress, setDestinationAddress] = useState(cachedState?.destinationAddress ?? '');
     const [isAddressValid, setIsAddressValid] = useState<boolean | null>(null);
 
-    const [assets, setAssets] = useState<AssetItem[]>([
+    const [assets, setAssets] = useState<AssetItem[]>(cachedState?.assets ?? [
         {
             internalId: 'default-xrd',
             type: 'fungible',
@@ -93,6 +101,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             amount: '',
         }
     ]);
+
+    useEffect(() => {
+        transactionStateCache.set(cacheKey, { destinationAddress, assets });
+    }, [cacheKey, destinationAddress, assets]);
 
     const [popupOpen, setPopupOpen] = useState(false);
     const [popupMode, setPopupMode] = useState<PopupMode>('asset');
@@ -104,10 +116,19 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Focus state for address formatting
+    const [isDestFocused, setIsDestFocused] = useState(false);
+    const [focusedGroupId, setFocusedGroupId] = useState<string | null>(null);
+
     // Multi-selection state (only used in 'address' mode)
     const [selectedItems, setSelectedItems] = useState<SelectedAsset[]>([]);
     const [addressCount, setAddressCount] = useState(0);
     const [popupDestTarget, setPopupDestTarget] = useState<string | null>(null);
+
+    const formatAddress = (addr: string, isFocused: boolean) => {
+        if (isFocused || !addr || addr.length <= 32) return addr;
+        return `${addr.slice(0, 24)}...${addr.slice(-8)}`;
+    };
 
     const assetsRef = useRef(assets);
 
@@ -116,6 +137,8 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     }, [assets]);
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const destContainerRef = useRef<HTMLDivElement>(null);
+    const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -127,6 +150,19 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (popupOpen && destContainerRef.current) {
+            const rect = destContainerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 400 && spaceAbove > spaceBelow) {
+                setPopupDirection('up');
+            } else {
+                setPopupDirection('down');
+            }
+        }
+    }, [popupOpen]);
 
     // Validate destination address (no loading state to avoid flashing "Validando...")
     useEffect(() => {
@@ -287,68 +323,99 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         } else {
             const assetKey = (s: { resourceAddress: string; id?: string }) => s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
 
-            // Handle destination address selection
-            const selectedAddress = selectedItems.find(s => s.type === 'address');
-            if (selectedAddress) {
-                setDestinationAddress(selectedAddress.resourceAddress);
-            } else if (destinationAddress) {
-                // Address was deselected — clear it
-                const wasAddressPreSelected = accounts.some(acc => acc.address === destinationAddress);
-                if (wasAddressPreSelected) {
-                    setDestinationAddress('');
-                }
-            }
+            // --- 1. Identify selected addresses vs existing addresses ---
+            const selectedAddresses = selectedItems.filter(s => s.type === 'address').map(s => s.resourceAddress);
+            const formAddresses = [
+                destinationAddress,
+                ...assetsRef.current.map(a => a.destAddress).filter(Boolean)
+            ].filter(addr => accounts.some(acc => acc.address === addr)); // Only consider known accounts
 
-            // Diff-based logic for global assets (no groupId, no destAddress)
+            const toAddAddrs = selectedAddresses.filter(addr => !formAddresses.includes(addr));
+            const toRemoveAddrs = formAddresses.filter(addr => !selectedAddresses.includes(addr));
+
+            // --- 2. Process removals and additions for destinationAddress state ---
+            let nextDestAddr = destinationAddress;
+            if (toRemoveAddrs.includes(destinationAddress)) {
+                nextDestAddr = '';
+                toRemoveAddrs.splice(toRemoveAddrs.indexOf(destinationAddress), 1);
+            }
+            if (nextDestAddr === '' && toAddAddrs.length > 0) {
+                nextDestAddr = toAddAddrs.shift()!;
+            }
+            setDestinationAddress(nextDestAddr);
+
+            // --- 3. Diff-based logic for global assets ---
             const selectedAssetItems = selectedItems.filter(s => s.type !== 'address');
             const existingGlobalKeys = new Set(
                 assetsRef.current
-                    .filter(a => a.groupId === undefined && a.internalId !== 'default-xrd')
+                    .filter(a => a.groupId === undefined)
                     .map(a => a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress)
             );
 
-            // Items in selection but NOT in existing globals → add
-            const toAdd = selectedAssetItems.filter(s => !existingGlobalKeys.has(assetKey(s)));
-
-            // Items in existing globals but NOT in selection → remove
+            const toAddAssets = selectedAssetItems.filter(s => !existingGlobalKeys.has(assetKey(s)));
             const selectedKeys = new Set(selectedAssetItems.map(assetKey));
-            const toRemoveKeys = new Set(
-                [...existingGlobalKeys].filter(k => !selectedKeys.has(k))
-            );
+            const toRemoveKeys = new Set([...existingGlobalKeys].filter(k => !selectedKeys.has(k)));
 
-            // Apply asset diff (add new / remove deselected)
-            if (toAdd.length > 0 || toRemoveKeys.size > 0) {
-                setAssets(prev => {
-                    let next = toRemoveKeys.size > 0
-                        ? prev.filter(a => {
-                            if (a.groupId !== undefined || a.internalId === 'default-xrd') return true;
-                            const aKey = a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress;
-                            return !toRemoveKeys.has(aKey);
-                        })
-                        : prev;
+            // --- 4. Apply changes to assets (groups and globals) ---
+            setAssets(prev => {
+                let next = [...prev];
 
-                    if (toAdd.length > 0) {
-                        const newAssets = toAdd.map(s => ({
-                            internalId: Math.random().toString(36).substring(7),
-                            type: (s.type === 'pool_unit' ? 'fungible' : s.type) as 'fungible' | 'non_fungible',
-                            resourceAddress: s.resourceAddress,
-                            symbol: s.symbol,
-                            name: s.name,
-                            iconUrl: s.iconUrl,
-                            amount: '',
-                            nftId: s.id,
-                        }));
-                        next = [...next, ...newAssets];
+                // Remove deselected global assets
+                if (toRemoveKeys.size > 0) {
+                    next = next.filter(a => {
+                        if (a.groupId !== undefined) return true;
+                        const aKey = a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress;
+                        return !toRemoveKeys.has(aKey);
+                    });
+                }
+
+                // Add new global assets
+                if (toAddAssets.length > 0) {
+                    const newAssets = toAddAssets.map(s => ({
+                        internalId: Math.random().toString(36).substring(7),
+                        type: (s.type === 'pool_unit' ? 'fungible' : s.type) as 'fungible' | 'non_fungible',
+                        resourceAddress: s.resourceAddress,
+                        symbol: s.symbol,
+                        name: s.name,
+                        iconUrl: s.iconUrl,
+                        amount: '',
+                        nftId: s.id,
+                    }));
+                    next = [...next, ...newAssets];
+                }
+
+                // Process removed addresses (clear group destAddress)
+                for (const addr of toRemoveAddrs) {
+                    const groupItemIndex = next.findIndex(a => a.destAddress === addr);
+                    if (groupItemIndex !== -1) {
+                        const groupId = next[groupItemIndex].groupId;
+                        next = next.map(a => a.groupId === groupId ? { ...a, destAddress: '' } : a);
                     }
+                }
 
-                    return next;
-                });
-            }
+                // Process added addresses (fill empty groups or create new)
+                for (const addr of toAddAddrs) {
+                    const emptyGroupIds = new Set(next.filter(a => a.groupId !== undefined && !a.destAddress).map(a => a.groupId));
+                    if (emptyGroupIds.size > 0) {
+                        const groupIdToFill = Array.from(emptyGroupIds)[0];
+                        next = next.map(a => a.groupId === groupIdToFill ? { ...a, destAddress: addr } : a);
+                    } else {
+                        next.push({
+                            internalId: Math.random().toString(36).substring(7),
+                            type: 'fungible' as const,
+                            resourceAddress: xrdAddress,
+                            symbol: 'XRD',
+                            name: 'Radix',
+                            iconUrl: xrdIconUrl,
+                            amount: '',
+                            destAddress: addr,
+                            groupId: Math.random().toString(36).substring(7),
+                        });
+                    }
+                }
 
-            // Create destination+XRD pairs from addressCount.
-            // Always runs when addressCount > 0, even when assets were selected.
-            if (addressCount > 0) {
-                setAssets(prev => {
+                // Handle empty address inputs count
+                if (addressCount > 0) {
                     const pairs = Array.from({ length: addressCount }, () => ({
                         internalId: Math.random().toString(36).substring(7),
                         type: 'fungible' as const,
@@ -360,9 +427,11 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         destAddress: '',
                         groupId: Math.random().toString(36).substring(7),
                     }));
-                    return [...prev, ...pairs];
-                });
-            }
+                    next = [...next, ...pairs];
+                }
+
+                return next;
+            });
         }
 
         setSelectedItems([]);
@@ -461,14 +530,24 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     };
 
     const handleOpenPopup = (mode: PopupMode, assetId?: string, destTarget?: string) => {
+        const targetDest = destTarget ?? null;
+        const targetAsset = assetId ?? null;
+
+        if (popupOpen && popupMode === mode && popupDestTarget === targetDest && editingAssetId === targetAsset) {
+            setPopupOpen(false);
+            setPopupDestTarget(null);
+            setEditingAssetId(null);
+            return;
+        }
+
         setPopupMode(mode);
-        setPopupDestTarget(destTarget ?? null);
+        setPopupDestTarget(targetDest);
         if (mode === 'address' && destTarget === undefined) {
             setActiveTab('address');
         } else {
             setActiveTab('fungible');
         }
-        setEditingAssetId(assetId ?? null);
+        setEditingAssetId(targetAsset);
         setSearchQuery('');
         setAddressCount(0);
 
@@ -478,7 +557,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         // that derives selection from live group assets automatically.
         if (mode === 'address' && destTarget === undefined) {
             const existingSelection: SelectedAsset[] = assetsRef.current
-                .filter(a => a.groupId === undefined && a.internalId !== 'default-xrd')
+                .filter(a => a.groupId === undefined)
                 .map(a => ({
                     type: a.type === 'fungible' ? 'fungible' as const : 'non_fungible' as const,
                     resourceAddress: a.resourceAddress,
@@ -488,9 +567,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     id: a.nftId,
                 }));
 
-            // Also include the current destination address as a selected address item
-            if (destinationAddress) {
-                const matchingAccount = accounts.find(acc => acc.address === destinationAddress);
+            // Also include all current destination addresses as selected address items
+            const allDestAddresses = new Set([destinationAddress, ...assetsRef.current.map(a => a.destAddress)].filter(Boolean));
+            allDestAddresses.forEach(addr => {
+                const matchingAccount = accounts.find(acc => acc.address === addr);
                 if (matchingAccount) {
                     existingSelection.push({
                         type: 'address',
@@ -499,7 +579,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         name: matchingAccount.label,
                     });
                 }
-            }
+            });
 
             setSelectedItems(existingSelection);
         } else {
@@ -553,25 +633,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     const isAddressMode = popupMode === 'address';
 
-    // Per-dest popup: derive selection state from live group assets
-    const perDestInfo = popupDestTarget !== null ? (() => {
-        const groupKeys = new Set(
-            assets
-                .filter(a => a.groupId === popupDestTarget)
-                .map(a => a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress)
-        );
-        let added = 0;
-        for (const s of selectedItems) {
-            if (s.type === 'address') continue;
-            const sk = s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
-            if (!groupKeys.has(sk)) { added++; }
-        }
-        return {
-            hasAny: groupKeys.size > 0 || added > 0,
-        };
-    })() : null;
 
-    const hasSelectedAssets = perDestInfo?.hasAny ?? selectedItems.some(s => s.type !== 'address');
 
     const renderAddressTab = () => {
         if (!isAddressMode || popupDestTarget !== null) return null;
@@ -606,24 +668,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 type="button"
                                 onClick={() => {
                                     const addrItem: SelectedAsset = { type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label };
-                                    if (isAddrSelected) {
-                                        toggleSelectedItem(addrItem);
-                                    } else {
-                                        // Deselect other addresses, select this one
-                                        setSelectedItems(prev => [...prev.filter(s => s.type !== 'address'), addrItem]);
-                                    }
+                                    toggleSelectedItem(addrItem);
                                 }}
-                                className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${isAddrSelected ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30' : 'hover:bg-[var(--color-bg)]'
+                                className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${isAddrSelected ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                                     }`}
                             >
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className="font-semibold text-xs group-hover:text-[var(--color-primary)] transition-colors">{acc.label}</span>
-                                    <span className="text-[10px] text-[var(--color-text-muted)] truncate">{acc.address}</span>
+                                    <span className={`text-xs transition-colors ${isAddrSelected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
+                                    <span className={`text-[10px] truncate ${isAddrSelected ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
                                 </div>
-                                <div className={`size-4 rounded border flex items-center justify-center shrink-0 ml-2 transition-colors ${isAddrSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'border-[var(--color-card-border)]'
-                                    }`}>
-                                    {isAddrSelected && <Check className="size-3 text-white" strokeWidth={3} />}
-                                </div>
+                                {isAddrSelected && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                             </button>
                         );
                     })
@@ -637,7 +691,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron tokens</div>
             : fungibles.map((f: ResourceItem) => {
                 const name = getMetadataValue(f.explicit_metadata?.items, 'name') || 'Unknown';
-                const symbol = getValueOrLsu(f.explicit_metadata?.items, getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown');
+                let symbol = getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown';
+                
+                if (isLsuToken(f.explicit_metadata?.items)) {
+                    const valAddr = getMetadataValue(f.explicit_metadata?.items, 'validator');
+                    const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
+                    symbol = valName ? `${valName} LSU` : 'LSU';
+                }
+                
                 const icon = getMetadataValue(f.explicit_metadata?.items, 'icon_url') || '';
                 const item: SelectedAsset = { type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon };
                 const sel = isItemSelected(item);
@@ -652,26 +713,21 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 handleAssetSelect(item);
                             }
                         }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30' : 'hover:bg-[var(--color-bg)]'
+                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                             }`}
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Coins className="size-3.5 m-auto mt-1.5 text-[var(--color-text-muted)]" />}
+                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Coins className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-xs group-hover:text-[var(--color-primary)] transition-colors truncate">{symbol}</span>
-                                <span className="text-[10px] text-[var(--color-text-muted)] truncate">{name}</span>
+                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                                <span className={`text-[10px] truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold shrink-0">{parseFloat(f.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && (
-                                <div className={`size-4 rounded border flex items-center justify-center shrink-0 transition-colors ${sel ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'border-[var(--color-card-border)]'
-                                    }`}>
-                                    {sel && <Check className="size-3 text-white" strokeWidth={3} />}
-                                </div>
-                            )}
+                            <span className={`text-[10px] font-mono shrink-0 ${sel ? '' : 'font-bold'}`}>{parseFloat(f.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                         </div>
                     </button>
                 );
@@ -700,22 +756,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     handleAssetSelect(item);
                                 }
                             }}
-                            className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30' : 'hover:bg-[var(--color-bg)]'
+                            className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                                 }`}
                         >
                             <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <ImageIcon className="size-3.5 m-auto mt-1.5 text-[var(--color-text-muted)]" />}
+                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <ImageIcon className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <span className="font-semibold text-xs group-hover:text-[var(--color-primary)] transition-colors truncate">{name}</span>
-                                <span className="text-[9px] font-mono text-[var(--color-text-muted)] truncate">{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
+                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{name}</span>
+                                <span className={`text-[9px] font-mono truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
                             </div>
-                            {isAddressMode && (
-                                <div className={`size-4 rounded border flex items-center justify-center shrink-0 transition-colors ${sel ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'border-[var(--color-card-border)]'
-                                    }`}>
-                                    {sel && <Check className="size-3 text-white" strokeWidth={3} />}
-                                </div>
-                            )}
+                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                         </button>
                     );
                 });
@@ -742,50 +793,42 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 handleAssetSelect(item);
                             }
                         }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30' : 'hover:bg-[var(--color-bg)]'
+                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                             }`}
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Layers className="size-3.5 m-auto mt-1.5 text-[var(--color-text-muted)]" />}
+                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Layers className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-xs group-hover:text-[var(--color-primary)] transition-colors truncate">{symbol}</span>
-                                <span className="text-[10px] text-[var(--color-text-muted)] truncate">{name}</span>
+                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                                <span className={`text-[10px] truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold shrink-0">{parseFloat(pu.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && (
-                                <div className={`size-4 rounded border flex items-center justify-center shrink-0 transition-colors ${sel ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'border-[var(--color-card-border)]'
-                                    }`}>
-                                    {sel && <Check className="size-3 text-white" strokeWidth={3} />}
-                                </div>
-                            )}
+                            <span className={`text-[10px] font-mono shrink-0 ${sel ? '' : 'font-bold'}`}>{parseFloat(pu.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                         </div>
                     </button>
                 );
             })
     );
-
-    function getValueOrLsu(metadataItems: MetadataItem[] | undefined, fallback: string): string {
-        return isLsuToken(metadataItems) ? 'LSU' : fallback;
-    }
-
     return (
         <div ref={containerRef} className="flex flex-col gap-3 pb-2 relative">
             {/* Global dest tree */}
             <div className="flex flex-col">
                 {/* Destination input + popup (wrapped together for popup positioning) */}
-                <div className="relative">
+                <div className="relative" ref={destContainerRef}>
                     {/* Destination Address Input with embedded + */}
                     <div className="relative z-10">
                         <input
                             type="text"
                             placeholder="Dirección de destino (account_...)"
-                            value={destinationAddress}
+                            value={formatAddress(destinationAddress, isDestFocused)}
+                            onFocus={() => setIsDestFocused(true)}
+                            onBlur={() => setIsDestFocused(false)}
                             onChange={(e) => setDestinationAddress(e.target.value)}
-                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]"
+                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] truncate"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
@@ -808,12 +851,42 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     <AnimatePresence>
                         {popupOpen && (
                             <m.div
-                                initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                                initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                                exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
                                 transition={{ duration: 0.15 }}
-                                className="absolute left-0 right-0 z-50 mt-1 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+                                className={`absolute left-0 right-0 z-50 ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden`}
                             >
+                                {/* Tabs and Close */}
+                                <div className="px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                                    <div className="flex gap-3 overflow-x-auto custom-scrollbar flex-1">
+                                        {tabs.map(tab => (
+                                            <button
+                                                key={tab.type}
+                                                type="button"
+                                                onClick={() => setActiveTab(tab.type)}
+                                                className={`pb-2 text-[10px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === tab.type
+                                                    ? 'text-[var(--color-primary)] border-[var(--color-primary)]'
+                                                    : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
+                                                    }`}
+                                            >
+                                                {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setPopupOpen(false);
+                                            setPopupDestTarget(null);
+                                        }}
+                                        className="mb-2 size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
+                                        title="Cerrar"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </div>
+
                                 {/* Search */}
                                 <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                                     <div className="relative">
@@ -826,23 +899,6 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
                                         />
                                     </div>
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="px-3 pt-3 flex gap-3 overflow-x-auto custom-scrollbar border-b border-[var(--color-card-border)]">
-                                    {tabs.map(tab => (
-                                        <button
-                                            key={tab.type}
-                                            type="button"
-                                            onClick={() => setActiveTab(tab.type)}
-                                            className={`pb-2 text-[10px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === tab.type
-                                                ? 'text-[var(--color-primary)] border-[var(--color-primary)]'
-                                                : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
-                                                }`}
-                                        >
-                                            {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-                                        </button>
-                                    ))}
                                 </div>
 
                                 {/* Content */}
@@ -859,8 +915,8 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     )}
                                 </div>
 
-                                {/* Confirm button (only in address mode with selections) */}
-                                {isAddressMode && (popupDestTarget !== null ? hasSelectedAssets : (hasSelectedAssets || addressCount > 0)) && (
+                                {/* Confirm button */}
+                                {isAddressMode && (
                                     <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                                         <button
                                             type="button"
@@ -912,7 +968,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         <button
                                             type="button"
                                             onClick={() => handleOpenPopup('asset', asset.internalId)}
-                                            className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors"
+                                            className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
                                             title="Cambiar Activo"
                                         >
                                             <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
@@ -924,7 +980,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                     <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
                                                 )}
                                             </div>
-                                            <span className="font-semibold text-[10px]">{asset.symbol}</span>
+                                            <span className="font-semibold text-[10px] truncate">{asset.symbol}</span>
                                         </button>
                                         {showRowActions && (
                                             <button
@@ -959,9 +1015,11 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <input
                                     type="text"
                                     placeholder="Destino (account_...)"
-                                    value={header.destAddress || ''}
+                                    value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
+                                    onFocus={() => setFocusedGroupId(groupId)}
+                                    onBlur={() => setFocusedGroupId(null)}
                                     onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono"
+                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono pr-10 truncate"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
@@ -1006,7 +1064,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenPopup('asset', item.internalId)}
-                                                className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors"
+                                                className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
                                                 title="Cambiar Activo"
                                             >
                                                 <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
@@ -1018,7 +1076,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                         <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
                                                     )}
                                                 </div>
-                                                <span className="font-semibold text-[10px]">{item.symbol}</span>
+                                                <span className="font-semibold text-[10px] truncate">{item.symbol}</span>
                                             </button>
                                             <button
                                                 type="button"
