@@ -89,6 +89,7 @@ function ValidatorStakingRow({
     locale,
     stakingErrors,
     onOwnerModeChange,
+    hideStakingControls,
 }: {
     row: StakingEntry;
     isModal: boolean;
@@ -112,6 +113,7 @@ function ValidatorStakingRow({
     locale: string;
     stakingErrors?: Record<string, string>;
     onOwnerModeChange?: (addr: string, isOwnerMode: boolean) => void;
+    hideStakingControls?: boolean;
 }) {
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
@@ -198,7 +200,7 @@ function ValidatorStakingRow({
                     <span className="text-sm font-mono font-black text-[var(--color-accent)]">{formatNumber(ownerMode ? ownerUnlockedXrd : row.xrdInClaim, 2, locale)} XRD</span>
                 </div>
             </div>
-            {isModal && (
+            {isModal && !hideStakingControls && (
                 <AccountValidatorStakeAction
                     accountAddress={address}
                     validatorAddress={row.validatorAddress}
@@ -255,6 +257,7 @@ export function AccountSummaryTab({
 
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [hideTransactionBuilder, setHideTransactionBuilder] = useState(false);
+    const [hideStakingControls, setHideStakingControls] = useState(false);
 
     const [globalAmountStr, setGlobalAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
@@ -827,19 +830,31 @@ export function AccountSummaryTab({
             {/* Staking Section */}
             {displayRows.length > 0 && (
                 <div className="mb-8">
-                    <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center gap-2 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
-                        {accT?.staking_validators_title || 'STAKING'} ({displayRows.length})
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
-                            className="hover:text-[var(--color-primary)] transition-colors p-1"
-                            title={accT?.info_tooltip || 'Information about global and mixed actions'}
-                        >
-                            <Info className="size-4" />
-                        </button>
+                    <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center justify-between gap-2 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
+                        <div className="flex items-center gap-2">
+                            {accT?.staking_validators_title || 'STAKING'} ({displayRows.length})
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
+                                className="hover:text-[var(--color-primary)] transition-colors p-1"
+                                title={accT?.info_tooltip || 'Information about global and mixed actions'}
+                            >
+                                <Info className="size-4" />
+                            </button>
+                        </div>
+                        {isModal && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setHideStakingControls(!hideStakingControls); }}
+                                title={hideStakingControls ? (accT?.show_staking_tooltip || (locale === 'es' ? 'Mostrar controles de staking' : 'Show staking controls')) : (accT?.hide_staking_tooltip || (locale === 'es' ? 'Ocultar controles de staking' : 'Hide staking controls'))}
+                                className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideStakingControls ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
+                            >
+                                {hideStakingControls ? (accT?.show_staking || (locale === 'es' ? 'Mostrar Staking' : 'Show Staking')) : (accT?.hide_staking || (locale === 'es' ? 'Ocultar Staking' : 'Hide Staking'))}
+                            </button>
+                        )}
                     </h4>
 
-                    {isModal && stakingRows.length > 0 && (
+                    {isModal && stakingRows.length > 0 && !hideStakingControls && (
                         <div className="mb-6 space-y-4">
                             <BatchValidatorStakeAction
                                 selectedValidatorsCount={selectedValidatorAddresses.length}
@@ -895,6 +910,7 @@ export function AccountSummaryTab({
                                 locale={locale}
                                 stakingErrors={stakingErrors}
                                 onOwnerModeChange={handleOwnerModeChange}
+                                hideStakingControls={hideStakingControls}
                             />
                         ))}
 

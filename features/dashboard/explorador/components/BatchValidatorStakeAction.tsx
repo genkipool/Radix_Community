@@ -46,7 +46,7 @@ export const BatchValidatorStakeAction = ({
         <div className="flex flex-col gap-3 mb-6">
             <div className="text-xs font-bold text-[var(--color-primary)] flex justify-between items-center px-1">
                 <span className="flex items-center gap-2">
-                    {accT?.global_batch_title_short || 'GLOBAL ACTION (BATCHES)'}
+                    {accT?.global_batch_title_short || 'Distribuir XRD'}
                 </span>
                 <span>{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
             </div>
