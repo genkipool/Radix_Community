@@ -29,16 +29,23 @@ export function SafeImage({
 }: SafeImageProps) {
     const fallback = buildFallbackAvatar(fallbackName);
     const [errored, setErrored] = useState(false);
+    const [loaded, setLoaded] = useState(false);
     const imgSrc = errored ? fallback : resolveSrc(src, fallback);
     const imgRef = useRef<HTMLImageElement>(null);
 
     // Catch cached 404s that resolve before React's onError attaches
     useLayoutEffect(() => {
         const img = imgRef.current;
-        if (img?.complete && img.naturalWidth === 0) setErrored(true);
+        if (img?.complete) {
+            if (img.naturalWidth === 0) setErrored(true);
+            else setLoaded(true);
+        }
     }, [fallback]);
 
-    const handleError = () => setErrored(true);
+    const handleError = () => {
+        setErrored(true);
+        setLoaded(true);
+    };
 
     return (
         <Image
@@ -46,8 +53,15 @@ export function SafeImage({
             src={imgSrc}
             alt={alt}
             className={className}
-            style={style}
+            style={{
+                ...style,
+                color: 'transparent', // Hide alt text while loading
+                backgroundImage: !loaded && !errored ? `url('${fallback}')` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
             title={title}
+            onLoad={() => setLoaded(true)}
             onError={handleError}
             loading={loading}
             unoptimized={true} // External avatars can be from any domain

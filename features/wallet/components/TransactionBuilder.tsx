@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Search, Coins, Image as ImageIcon, Layers, Check } from 'lucide-react';
+import { Plus, X, Search, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
@@ -188,11 +188,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         return () => clearTimeout(timer);
     }, [destinationAddress, network]);
 
-    // Fetch entity data for popup asset selection
+    // Fetch entity data for popup asset selection and initial rendering
     const { data: entityData, isLoading: isLoadingAssets } = useQuery({
         queryKey: ['entityDetails', accountAddress, network],
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
-        enabled: popupOpen,
     });
 
     // Derive XRD icon URL from entity data at render time (avoid cascading setState in effects)
@@ -748,7 +747,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Coins className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
+                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
@@ -801,7 +800,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 }`}
                         >
                             <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <ImageIcon className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
+                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                                 <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{name}</span>
@@ -850,7 +849,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <Layers className={`size-3.5 m-auto mt-1.5 ${sel ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`} />}
+                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
@@ -1043,13 +1042,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             title="Cambiar Activo"
                                         >
                                             <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                {(asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl) ? (
-                                                    <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} className="w-full h-full object-cover" />
-                                                ) : asset.type === 'non_fungible' ? (
-                                                    <ImageIcon className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
-                                                ) : (
-                                                    <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
-                                                )}
+                                                <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} className="w-full h-full object-cover" />
                                             </div>
                                             <span className="font-semibold text-[10px] truncate">{asset.symbol}</span>
                                         </button>
@@ -1141,13 +1134,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 title="Cambiar Activo"
                                             >
                                                 <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                    {(item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl) ? (
-                                                        <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} className="w-full h-full object-cover" />
-                                                    ) : item.type === 'non_fungible' ? (
-                                                        <ImageIcon className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
-                                                    ) : (
-                                                        <Coins className="size-3 m-auto mt-0.5 text-[var(--color-text-muted)]" />
-                                                    )}
+                                                    <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} className="w-full h-full object-cover" />
                                                 </div>
                                                 <span className="font-semibold text-[10px] truncate">{item.symbol}</span>
                                             </button>
