@@ -204,6 +204,54 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         return getMetadataValue(xrdResource.explicit_metadata?.items, 'icon_url') || '';
     })();
 
+    const hasAnyTokens = !!entityData && (
+        (entityData.fungible_resources?.items?.length || 0) > 0 ||
+        (entityData.non_fungible_resources?.items?.length || 0) > 0
+    );
+
+    const isWalletEmpty = !!entityData && !hasAnyTokens;
+
+    // Default asset replacement logic when data is loaded
+    useEffect(() => {
+        if (!entityData || assets.length !== 1 || assets[0].internalId !== 'default-xrd' || assets[0].amount !== '') return;
+        
+        const xrdResource = entityData.fungible_resources?.items?.find((f: ResourceItem) => f.resource_address === xrdAddress);
+        if (!xrdResource && hasAnyTokens) {
+            // No XRD found. Pick the first available fungible or non-fungible.
+            const firstFungible = entityData.fungible_resources?.items?.[0];
+            if (firstFungible) {
+                setTimeout(() => {
+                    setAssets([{
+                        internalId: 'default-xrd', // Keep same internalId to not break other assumptions
+                        type: 'fungible',
+                        resourceAddress: firstFungible.resource_address,
+                        symbol: getMetadataValue(firstFungible.explicit_metadata?.items, 'symbol') || 'TOKEN',
+                        name: getMetadataValue(firstFungible.explicit_metadata?.items, 'name') || 'Token',
+                        iconUrl: getMetadataValue(firstFungible.explicit_metadata?.items, 'icon_url') || '',
+                        amount: '',
+                    }]);
+                }, 0);
+            } else {
+                const firstNonFungible = entityData.non_fungible_resources?.items?.[0];
+                if (firstNonFungible) {
+                    const firstId = firstNonFungible.vaults?.items?.[0]?.items?.[0];
+                    setTimeout(() => {
+                        setAssets([{
+                            internalId: 'default-xrd', // Keep same internalId
+                            type: 'non_fungible',
+                            resourceAddress: firstNonFungible.resource_address,
+                            symbol: getMetadataValue(firstNonFungible.explicit_metadata?.items, 'symbol') || 'NFT',
+                            name: getMetadataValue(firstNonFungible.explicit_metadata?.items, 'name') || 'NFT',
+                            iconUrl: getMetadataValue(firstNonFungible.explicit_metadata?.items, 'icon_url') || '',
+                            amount: '',
+                            nftId: firstId,
+                        }]);
+                    }, 0);
+                }
+            }
+        }
+    }, [entityData, xrdAddress, assets, hasAnyTokens]);
+
     const handleAssetSelect = (selected: SelectedAsset) => {
         if (selected.type === 'address') {
             setDestinationAddress(selected.resourceAddress);
@@ -985,8 +1033,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
                                 type="button"
+                                disabled={isWalletEmpty}
                                 onClick={(e) => handleOpenPopup('address', undefined, undefined, e.currentTarget)}
-                                className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all"
+                                className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Seleccionar dirección"
                             >
                                 <Plus className="size-3.5" strokeWidth={3} />
@@ -1029,16 +1078,18 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 step="any"
                                                 placeholder="0.00"
                                                 value={asset.amount}
+                                                disabled={isWalletEmpty}
                                                 onChange={(e) => updateAmount(asset.internalId, e.target.value)}
-                                                className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px]"
+                                                className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px] disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         )}
                                     </div>
                                     <div className={`flex items-center gap-0 ${asset.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${asset.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
                                         <button
                                             type="button"
+                                            disabled={isWalletEmpty}
                                             onClick={(e) => handleOpenPopup('asset', asset.internalId, undefined, e.currentTarget)}
-                                            className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
+                                            className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px] disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Cambiar Activo"
                                         >
                                             <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
@@ -1049,8 +1100,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         {showRowActions && (
                                             <button
                                                 type="button"
+                                                disabled={isWalletEmpty}
                                                 onClick={() => removeAsset(asset.internalId)}
-                                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg)] transition-colors"
+                                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <X className="size-3" strokeWidth={3} />
                                             </button>
@@ -1083,14 +1135,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
                                     onFocus={() => setFocusedGroupId(groupId)}
                                     onBlur={() => setFocusedGroupId(null)}
+                                    disabled={isWalletEmpty}
                                     onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono pr-10 truncate"
+                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono pr-10 truncate disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
                                         type="button"
+                                        disabled={isWalletEmpty}
                                         onClick={(e) => handleOpenPopup('address', undefined, groupId, e.currentTarget)}
-                                        className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all"
+                                        className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Vincular activos"
                                     >
                                         <Plus className="size-3.5" strokeWidth={3} />
@@ -1121,16 +1175,18 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                     step="any"
                                                     placeholder="0.00"
                                                     value={item.amount}
+                                                    disabled={isWalletEmpty}
                                                     onChange={(e) => updateAmount(item.internalId, e.target.value)}
-                                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px]"
+                                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px] disabled:opacity-50 disabled:cursor-not-allowed"
                                                 />
                                             )}
                                         </div>
                                         <div className={`flex items-center gap-0 ${item.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${item.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
                                             <button
                                                 type="button"
+                                                disabled={isWalletEmpty}
                                                 onClick={(e) => handleOpenPopup('asset', item.internalId, undefined, e.currentTarget)}
-                                                className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
+                                                className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px] disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Cambiar Activo"
                                             >
                                                 <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
@@ -1140,8 +1196,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             </button>
                                             <button
                                                 type="button"
+                                                disabled={isWalletEmpty}
                                                 onClick={() => removeAsset(item.internalId)}
-                                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg)] transition-colors"
+                                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <X className="size-3" strokeWidth={3} />
                                             </button>
@@ -1158,7 +1215,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             <button
                 type="button"
                 onClick={handleSend}
-                disabled={isTransacting}
+                disabled={isTransacting || isWalletEmpty}
                 className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
             >
                 {isTransacting ? (
