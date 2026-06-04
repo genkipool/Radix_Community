@@ -254,6 +254,7 @@ export function AccountSummaryTab({
     const [mountTime] = useState(() => Date.now());
 
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [hideTransactionBuilder, setHideTransactionBuilder] = useState(false);
 
     const [globalAmountStr, setGlobalAmountStr] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
@@ -602,10 +603,22 @@ export function AccountSummaryTab({
                         />
                     </div>
                 )}
-                <div className="min-w-0">
-                    <p className="font-bold text-sm text-[var(--color-text-main)] truncate">
-                        {entityName || accT?.account || 'Account'}
-                    </p>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-sm text-[var(--color-text-main)] truncate">
+                            {entityName || accT?.account || 'Account'}
+                        </p>
+                        {isModal && sendTransactionSection && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setHideTransactionBuilder(!hideTransactionBuilder); }}
+                                title={hideTransactionBuilder ? (accT?.show_transaction_tooltip || (locale === 'es' ? 'Mostrar sección para enviar transacciones' : 'Show transaction section')) : (accT?.hide_transaction_tooltip || (locale === 'es' ? 'Ocultar sección para enviar transacciones' : 'Hide transaction section'))}
+                                className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideTransactionBuilder ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
+                            >
+                                {hideTransactionBuilder ? (accT?.show_transaction || (locale === 'es' ? 'Mostrar Transacción' : 'Show Transaction')) : (accT?.hide_transaction || (locale === 'es' ? 'Ocultar Transacción' : 'Hide Transaction'))}
+                            </button>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
                             {address}
@@ -632,7 +645,7 @@ export function AccountSummaryTab({
                 </div>
             </div>
 
-            {sendTransactionSection}
+            {!hideTransactionBuilder && sendTransactionSection}
 
             {description && (
                 <p className="text-[11px] text-[var(--color-text-muted)] leading-relaxed italic border-l-2 border-[var(--color-primary)]/30 pl-3">
