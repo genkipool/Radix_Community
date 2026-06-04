@@ -57,6 +57,7 @@ export default function NavPopup({
   const router = useRouter();
   const prefetchedRef = useRef(false);
   const forceOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [forceOpen, setForceOpen] = useState(false);
 
   const alignClass =
@@ -82,25 +83,29 @@ export default function NavPopup({
     }
   };
 
-  const handleTriggerClick = () => {
-    if (!keepOpenOnTriggerClick) return;
-    setForceOpen(true);
-    if (forceOpenTimerRef.current) clearTimeout(forceOpenTimerRef.current);
-    forceOpenTimerRef.current = setTimeout(() => setForceOpen(false), 600);
-  };
-
   return (
     // self-stretch + flex items-center: fills full navbar height, centers trigger vertically
     <div
       className="relative group/navpopup self-stretch flex items-center"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClickCapture={keepOpenOnTriggerClick ? handleTriggerClick : undefined}
+      onClickCapture={(e) => {
+        if (contentRef.current?.contains(e.target as Node)) {
+          return;
+        }
+        // Allow mobile tap to toggle the popup visibility
+        setForceOpen((prev) => !prev);
+        if (keepOpenOnTriggerClick) {
+          if (forceOpenTimerRef.current) clearTimeout(forceOpenTimerRef.current);
+          forceOpenTimerRef.current = setTimeout(() => setForceOpen(false), 600);
+        }
+      }}
     >
       {trigger}
       {/* Invisible bridge prevents losing hover while cursor moves from nav to popup */}
       <div className="absolute top-full left-0 right-0 h-8 pointer-events-auto z-[45]" />
       <div
+        ref={contentRef}
         className={[
           offsetClass,
           alignClass,
