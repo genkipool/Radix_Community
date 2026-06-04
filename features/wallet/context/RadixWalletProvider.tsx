@@ -128,7 +128,7 @@ export function RadixWalletProvider({
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 
-  function connect(networkId: RadixNetworkId) {
+  function connect(networkId: RadixNetworkId, isUpdate: boolean = false) {
     // If a connection is already in progress, cancel the previous one
     if (isLoading) {
       disconnectToolkit(networkId);
@@ -158,8 +158,9 @@ export function RadixWalletProvider({
         return data.challenge;
       });
 
-      // Provide connect response callback — this is where ROLA verification happens
-      rdt.walletApi.provideConnectResponseCallback(async (result) => {
+      // The callback that processes wallet responses
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handleWalletResponse = async (result: any) => {
         if (result.isErr()) {
           if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
           setIsLoading(false);
@@ -170,37 +171,40 @@ export function RadixWalletProvider({
         const walletData = result.value;
         const proofs = walletData.proofs;
 
+        let endpoint = '/api/auth/radix/verify';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let requestBody: any = {
+          identityAddress: walletData.persona?.identityAddress,
+          networkId,
+          accounts: walletData.accounts,
+          personaLabel: walletData.persona?.label,
+        };
+
         if (!proofs || proofs.length === 0) {
-          if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-          setIsLoading(false);
-          setError('No ROLA proof provided by wallet.');
-          return;
+          // If no proof is provided (e.g. during an update flow), try hitting the update endpoint
+          // instead of verify. The update endpoint relies on the existing secure cookie.
+          endpoint = '/api/auth/radix/update';
+        } else {
+          // If proof is provided, hit verify
+          requestBody.challenge = proofs[0].challenge;
+          requestBody.proof = proofs[0].proof;
         }
 
-        // Verify via backend — this also creates session + sets cookie
         try {
-          const verifyResponse = await fetch('/api/auth/radix/verify', {
+          const verifyResponse = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              challenge: proofs[0].challenge,
-              proof: proofs[0].proof,
-              identityAddress: walletData.persona?.identityAddress,
-              networkId,
-              accounts: walletData.accounts,
-              personaLabel: walletData.persona?.label,
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           if (!verifyResponse.ok) {
             const errBody = await verifyResponse.json().catch(() => ({}));
             if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
             setIsLoading(false);
-            setError((errBody as Record<string, string>).error || 'Verification failed');
+            setError((errBody as Record<string, string>).error || (endpoint === '/api/auth/radix/update' ? 'Update failed' : 'Verification failed'));
             return;
           }
 
-          // Update local state with verified session
           const newSession: NetworkSession = {
             identityAddress: walletData.persona?.identityAddress || '',
             personaLabel: walletData.persona?.label || '',
@@ -220,10 +224,23 @@ export function RadixWalletProvider({
           setIsLoading(false);
           setError(err instanceof Error ? err.message : 'Identity verification failed.');
         }
-      });
+      };
+
+      // Provide connect response callback — this is where ROLA verification happens
+      rdt.walletApi.provideConnectResponseCallback(handleWalletResponse);
 
       // Fire the wallet connection request
-      rdt.walletApi.sendRequest();
+      if (isUpdate) {
+        rdt.walletApi.updateSharedAccounts().map(walletData => ({
+          isErr: () => false,
+          value: walletData
+        })).mapErr(err => ({
+          isErr: () => true,
+          error: err
+        })).then(handleWalletResponse);
+      } else {
+        rdt.walletApi.sendRequest();
+      }
 
       // Timeout after 60 seconds
       if (connectionTimeoutRef.current) {

@@ -170,7 +170,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                connect(networkId || RadixNetworkId.Stokenet);
+                                                connect(networkId || RadixNetworkId.Stokenet, true);
                                             }}
                                             className="flex items-center justify-end gap-2 text-[12px] font-medium text-[var(--color-primary)] opacity-80 hover:opacity-100 transition-all duration-300"
                                         >

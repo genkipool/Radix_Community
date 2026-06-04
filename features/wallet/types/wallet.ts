@@ -64,7 +64,7 @@ export interface RadixWalletState {
 
 export interface RadixWalletContextValue extends RadixWalletState {
   /** Start ROLA connection flow for a specific network */
-  connect: (networkId: RadixNetworkId) => void;
+  connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
 
   /** Disconnect from a specific network (or all if no arg) */
   disconnect: (network?: 'mainnet' | 'stokenet' | 'all') => void;
