@@ -77,6 +77,8 @@
     "update_wallet": "Update",
     "profile": "Profile",
     "accounts": "Accounts",
+    "all_accounts": "All",
+    "account": "Account",
     "notifications": "Notifications",
     "wallet_invalid_address": "Invalid address",
     "wallet_validating": "Validating...",
