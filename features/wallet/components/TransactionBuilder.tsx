@@ -670,6 +670,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     const addrItem: SelectedAsset = { type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label };
                                     toggleSelectedItem(addrItem);
                                 }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        // eslint-disable-next-line react-hooks/refs
+                                        handleConfirmSelection();
+                                    }
+                                }}
                                 className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${isAddrSelected ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                                     }`}
                             >
@@ -711,6 +718,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 toggleSelectedItem(item);
                             } else {
                                 handleAssetSelect(item);
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (isAddressMode) {
+                                    // eslint-disable-next-line react-hooks/refs
+                                    handleConfirmSelection();
+                                } else {
+                                    handleAssetSelect(item);
+                                }
                             }
                         }}
                         className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
@@ -756,6 +774,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     handleAssetSelect(item);
                                 }
                             }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (isAddressMode) {
+                                        // eslint-disable-next-line react-hooks/refs
+                                        handleConfirmSelection();
+                                    } else {
+                                        handleAssetSelect(item);
+                                    }
+                                }
+                            }}
                             className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
                                 }`}
                         >
@@ -791,6 +820,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 toggleSelectedItem(item);
                             } else {
                                 handleAssetSelect(item);
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (isAddressMode) {
+                                    // eslint-disable-next-line react-hooks/refs
+                                    handleConfirmSelection();
+                                } else {
+                                    handleAssetSelect(item);
+                                }
                             }
                         }}
                         className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
@@ -896,6 +936,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             placeholder={popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...'}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && isAddressMode) {
+                                                    e.preventDefault();
+                                                    // eslint-disable-next-line react-hooks/refs
+                                                    handleConfirmSelection();
+                                                }
+                                            }}
                                             className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
                                         />
                                     </div>
