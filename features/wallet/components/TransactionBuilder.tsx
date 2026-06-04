@@ -139,12 +139,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     const containerRef = useRef<HTMLDivElement>(null);
     const destContainerRef = useRef<HTMLDivElement>(null);
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
+    const [activeTriggerElement, setActiveTriggerElement] = useState<HTMLElement | null>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
                 setPopupOpen(false);
                 setPopupDestTarget(null);
+                setActiveTriggerElement(null);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -152,8 +154,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     }, []);
 
     useEffect(() => {
-        if (popupOpen && destContainerRef.current) {
-            const rect = destContainerRef.current.getBoundingClientRect();
+        const el = activeTriggerElement || destContainerRef.current;
+        if (popupOpen && el) {
+            const rect = el.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
             if (spaceBelow < 400 && spaceAbove > spaceBelow) {
@@ -162,7 +165,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 setPopupDirection('down');
             }
         }
-    }, [popupOpen]);
+    }, [popupOpen, activeTriggerElement]);
 
     // Validate destination address (no loading state to avoid flashing "Validando...")
     useEffect(() => {
@@ -529,7 +532,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         }
     };
 
-    const handleOpenPopup = (mode: PopupMode, assetId?: string, destTarget?: string) => {
+    const handleOpenPopup = (mode: PopupMode, assetId?: string, destTarget?: string, triggerElement?: HTMLElement) => {
         const targetDest = destTarget ?? null;
         const targetAsset = assetId ?? null;
 
@@ -537,11 +540,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             setPopupOpen(false);
             setPopupDestTarget(null);
             setEditingAssetId(null);
+            setActiveTriggerElement(null);
             return;
         }
 
         setPopupMode(mode);
         setPopupDestTarget(targetDest);
+        setActiveTriggerElement(triggerElement ?? null);
         if (mode === 'address' && destTarget === undefined) {
             setActiveTab('address');
         } else {
@@ -860,6 +865,107 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 );
             })
     );
+    const renderSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {
+        const targetDest = context.destTarget ?? null;
+        const targetAsset = context.assetId ?? null;
+        const isMatch = popupMode === (context.assetId ? 'asset' : 'address') &&
+            popupDestTarget === targetDest &&
+            editingAssetId === targetAsset;
+
+        return (
+            <AnimatePresence>
+                {(isMatch && popupOpen) && (
+                    <m.div
+                        initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
+                        transition={{ duration: 0.15 }}
+                        className={`absolute left-0 right-0 z-50 ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden`}
+                    >
+                        {/* Tabs and Close */}
+                        <div className="px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                            <div className="flex gap-3 overflow-x-auto custom-scrollbar flex-1">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.type}
+                                        type="button"
+                                        onClick={() => setActiveTab(tab.type)}
+                                        className={`pb-2 text-[10px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === tab.type
+                                            ? 'text-[var(--color-primary)] border-[var(--color-primary)]'
+                                            : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
+                                            }`}
+                                    >
+                                        {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPopupOpen(false);
+                                    setPopupDestTarget(null);
+                                    setActiveTriggerElement(null);
+                                }}
+                                className="mb-2 size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
+                                title="Cerrar"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        {/* Search */}
+                        <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
+                                <input
+                                    type="text"
+                                    placeholder={popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...'}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && isAddressMode) {
+                                            e.preventDefault();
+                                            // eslint-disable-next-line react-hooks/refs
+                                            handleConfirmSelection();
+                                        }
+                                    }}
+                                    className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-2 max-h-56 overflow-y-auto custom-scrollbar">
+                            {isLoadingAssets ? (
+                                <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {activeTab === 'address' && renderAddressTab()}
+                                    {activeTab === 'fungible' && renderFungibleItems()}
+                                    {activeTab === 'non_fungible' && renderNftItems()}
+                                    {activeTab === 'pool_unit' && renderPoolUnitItems()}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Confirm button */}
+                        {isAddressMode && (
+                            <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmSelection}
+                                    className="w-full py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
+                                >
+                                    {navT.wallet_confirm_selection || 'Agregar'}
+                                </button>
+                            </div>
+                        )}
+                    </m.div>
+                )}
+            </AnimatePresence>
+        );
+    };
+
     return (
         <div ref={containerRef} className="flex flex-col gap-3 pb-2 relative">
             {/* Global dest tree */}
@@ -880,7 +986,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
                                 type="button"
-                                onClick={() => handleOpenPopup('address')}
+                                onClick={(e) => handleOpenPopup('address', undefined, undefined, e.currentTarget)}
                                 className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all"
                                 title="Seleccionar dirección"
                             >
@@ -894,96 +1000,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         <p className="text-[11px] text-red-400 mt-1.5 px-1">{navT.wallet_invalid_address || 'Dirección inválida'}</p>
                     )}
 
-                    {/* Asset Selection Popup (floating, right below destination input) */}
-                    <AnimatePresence>
-                        {popupOpen && (
-                            <m.div
-                                initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
-                                transition={{ duration: 0.15 }}
-                                className={`absolute left-0 right-0 z-50 ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden`}
-                            >
-                                {/* Tabs and Close */}
-                                <div className="px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                                    <div className="flex gap-3 overflow-x-auto custom-scrollbar flex-1">
-                                        {tabs.map(tab => (
-                                            <button
-                                                key={tab.type}
-                                                type="button"
-                                                onClick={() => setActiveTab(tab.type)}
-                                                className={`pb-2 text-[10px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === tab.type
-                                                    ? 'text-[var(--color-primary)] border-[var(--color-primary)]'
-                                                    : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
-                                                    }`}
-                                            >
-                                                {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setPopupOpen(false);
-                                            setPopupDestTarget(null);
-                                        }}
-                                        className="mb-2 size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
-                                        title="Cerrar"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
-                                </div>
-
-                                {/* Search */}
-                                <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
-                                        <input
-                                            type="text"
-                                            placeholder={popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...'}
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && isAddressMode) {
-                                                    e.preventDefault();
-                                                    // eslint-disable-next-line react-hooks/refs
-                                                    handleConfirmSelection();
-                                                }
-                                            }}
-                                            className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-2 max-h-56 overflow-y-auto custom-scrollbar">
-                                    {isLoadingAssets ? (
-                                        <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
-                                    ) : (
-                                        <div className="space-y-1">
-                                            {activeTab === 'address' && renderAddressTab()}
-                                            {activeTab === 'fungible' && renderFungibleItems()}
-                                            {activeTab === 'non_fungible' && renderNftItems()}
-                                            {activeTab === 'pool_unit' && renderPoolUnitItems()}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Confirm button */}
-                                {isAddressMode && (
-                                    <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                                        <button
-                                            type="button"
-                                            onClick={handleConfirmSelection}
-                                            className="w-full py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
-                                        >
-                                            {navT.wallet_confirm_selection || 'Agregar'}
-                                        </button>
-                                    </div>
-                                )}
-                            </m.div>
-                        )}
-                    </AnimatePresence>
+                    {renderSelectionPopup({ destTarget: null })}
                 </div>
 
                 {/* Global dest assets (without per-row destination) */}
@@ -1021,7 +1038,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     <div className={`flex items-center gap-0 ${asset.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${asset.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
                                         <button
                                             type="button"
-                                            onClick={() => handleOpenPopup('asset', asset.internalId)}
+                                            onClick={(e) => handleOpenPopup('asset', asset.internalId, undefined, e.currentTarget)}
                                             className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
                                             title="Cambiar Activo"
                                         >
@@ -1047,6 +1064,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         )}
                                     </div>
                                 </div>
+                                {renderSelectionPopup({ assetId: asset.internalId })}
                             </div>
                         );
                     })}
@@ -1078,13 +1096,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenPopup('address', undefined, groupId)}
+                                        onClick={(e) => handleOpenPopup('address', undefined, groupId, e.currentTarget)}
                                         className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all"
                                         title="Vincular activos"
                                     >
                                         <Plus className="size-3.5" strokeWidth={3} />
                                     </button>
                                 </div>
+                                {renderSelectionPopup({ destTarget: groupId })}
                             </div>
                             {items.map((item) => (
                                 <div key={item.internalId} className="relative flex items-stretch mt-1.5">
@@ -1117,7 +1136,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         <div className={`flex items-center gap-0 ${item.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${item.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
                                             <button
                                                 type="button"
-                                                onClick={() => handleOpenPopup('asset', item.internalId)}
+                                                onClick={(e) => handleOpenPopup('asset', item.internalId, undefined, e.currentTarget)}
                                                 className="flex items-center gap-1.5 h-[28px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-lg px-2 hover:bg-[var(--color-bg)] transition-colors max-w-[110px]"
                                                 title="Cambiar Activo"
                                             >
@@ -1141,6 +1160,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             </button>
                                         </div>
                                     </div>
+                                    {renderSelectionPopup({ assetId: item.internalId })}
                                 </div>
                             ))}
                         </div>
