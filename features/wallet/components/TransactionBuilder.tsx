@@ -653,6 +653,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                             const num = parseInt(raw, 10);
                             if (!isNaN(num) && num >= 0) setAddressCount(num);
                         }}
+                        // eslint-disable-next-line react-hooks/refs
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleConfirmSelection();
+                            }
+                        }}
                         className="w-14 text-center bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-1.5 px-1 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         title="Cantidad de inputs"
                     />
