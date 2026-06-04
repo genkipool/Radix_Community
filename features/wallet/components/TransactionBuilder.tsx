@@ -378,7 +378,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             const formAddresses = [
                 destinationAddress,
                 ...assetsRef.current.map(a => a.destAddress).filter(Boolean)
-            ].filter(addr => accounts.some(acc => acc.address === addr)); // Only consider known accounts
+            ].filter((addr): addr is string => Boolean(addr && accounts.some(acc => acc.address === addr))); // Only consider known accounts
 
             const toAddAddrs = selectedAddresses.filter(addr => !formAddresses.includes(addr));
             const toRemoveAddrs = formAddresses.filter(addr => !selectedAddresses.includes(addr));

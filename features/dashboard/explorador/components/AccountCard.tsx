@@ -189,16 +189,18 @@ export function AccountCard({
                                     </div>
                                 </div>
                                 <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={handleDownloadClick}
-                                        onMouseEnter={handleDownloadMouseEnter}
-                                        className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
-                                        title={accT?.download_rewards_tooltip}
-                                    >
-                                        <Download className="size-3" />
-                                        <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
-                                    </button>
+                                    {network === 'mainnet' && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDownloadClick}
+                                            onMouseEnter={handleDownloadMouseEnter}
+                                            className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-none align-middle box-border border backdrop-blur-md transition-all duration-300 h-[22px] bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 gap-1.5"
+                                            title={accT?.download_rewards_tooltip}
+                                        >
+                                            <Download className="size-3" />
+                                            <span className="mt-[0.5px]">{accT?.csv || 'CSV'}</span>
+                                        </button>
+                                    )}
 
                                     {isModal && onExpand && (
                                         <CloseButton

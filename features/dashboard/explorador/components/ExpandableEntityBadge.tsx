@@ -341,7 +341,7 @@ export function ExpandableEntityBadge({
                             )}
                         </div>
                     )}
-                    {isAccountAddr && (
+                    {isAccountAddr && network === 'mainnet' && (
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}

@@ -38,6 +38,8 @@ export default function DevPublishModal({ isOpen, onClose }: DevPublishModalProp
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
+  if (!isOpen) return null;
+
   return (
     <div
       role="presentation"

@@ -116,7 +116,7 @@ export function AddressDisplay({
                         >
                             {displayText}
                         </span>
-                        {isAccountAddr && (
+                        {isAccountAddr && network === 'mainnet' && (
                             <button
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setIsCsvModalOpen(true); }}

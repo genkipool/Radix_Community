@@ -90,6 +90,7 @@ function ValidatorStakingRow({
     stakingErrors,
     onOwnerModeChange,
     hideStakingControls,
+    onOpenCsvModal,
 }: {
     row: StakingEntry;
     isModal: boolean;
@@ -114,6 +115,7 @@ function ValidatorStakingRow({
     stakingErrors?: Record<string, string>;
     onOwnerModeChange?: (addr: string, isOwnerMode: boolean) => void;
     hideStakingControls?: boolean;
+    onOpenCsvModal?: (address: string) => void;
 }) {
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
@@ -165,6 +167,16 @@ function ValidatorStakingRow({
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">{row.validatorAddress}</span>
+                        {isOwner && onOpenCsvModal && network === 'mainnet' && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onOpenCsvModal(row.validatorAddress); }}
+                                className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)] shrink-0"
+                                title={tt?.account_summary?.download_rewards_tooltip || 'Download Rewards'}
+                            >
+                                <Download className="size-3" />
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onCopy(row.validatorAddress); }}
@@ -243,7 +255,7 @@ export function AccountSummaryTab({
     stakingErrors,
     sendTransactionSection,
 }: AccountSummaryTabProps & { isBadge?: boolean }) {
-    const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+    const [csvModalAddress, setCsvModalAddress] = useState<string | null>(null);
     const { prefetchAccountRewards } = usePrefetchRewards();
     const queryClient = useQueryClient();
     const { activeNetworkId, accounts } = useRadixWallet();
@@ -615,10 +627,10 @@ export function AccountSummaryTab({
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setHideTransactionBuilder(!hideTransactionBuilder); }}
-                                title={hideTransactionBuilder ? (accT?.show_transaction_tooltip || (locale === 'es' ? 'Mostrar sección para enviar transacciones' : 'Show transaction section')) : (accT?.hide_transaction_tooltip || (locale === 'es' ? 'Ocultar sección para enviar transacciones' : 'Hide transaction section'))}
+                                title={hideTransactionBuilder ? ((accT as any)?.show_transaction_tooltip || (locale === 'es' ? 'Mostrar sección para enviar transacciones' : 'Show transaction section')) : ((accT as any)?.hide_transaction_tooltip || (locale === 'es' ? 'Ocultar sección para enviar transacciones' : 'Hide transaction section'))}
                                 className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideTransactionBuilder ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
                             >
-                                {hideTransactionBuilder ? (accT?.show_transaction || (locale === 'es' ? 'Mostrar Transacción' : 'Show Transaction')) : (accT?.hide_transaction || (locale === 'es' ? 'Ocultar Transacción' : 'Hide Transaction'))}
+                                {hideTransactionBuilder ? ((accT as any)?.show_transaction || (locale === 'es' ? 'Mostrar Transacción' : 'Show Transaction')) : ((accT as any)?.hide_transaction || (locale === 'es' ? 'Ocultar Transacción' : 'Hide Transaction'))}
                             </button>
                         )}
                     </div>
@@ -626,10 +638,10 @@ export function AccountSummaryTab({
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
                             {address}
                         </span>
-                        {address.startsWith('account_') && (
+                        {address.startsWith('account_') && network === 'mainnet' && (
                             <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                                onClick={(e) => { e.stopPropagation(); setCsvModalAddress(address); }}
                                 onPointerEnter={() => prefetchAccountRewards(address)}
                                 className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
                                 title={accT?.download_rewards_tooltip || 'Download Rewards'}
@@ -846,10 +858,10 @@ export function AccountSummaryTab({
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setHideStakingControls(!hideStakingControls); }}
-                                title={hideStakingControls ? (accT?.show_staking_tooltip || (locale === 'es' ? 'Mostrar controles de staking' : 'Show staking controls')) : (accT?.hide_staking_tooltip || (locale === 'es' ? 'Ocultar controles de staking' : 'Hide staking controls'))}
+                                title={hideStakingControls ? ((accT as any)?.show_staking_tooltip || (locale === 'es' ? 'Mostrar controles de staking' : 'Show staking controls')) : ((accT as any)?.hide_staking_tooltip || (locale === 'es' ? 'Ocultar controles de staking' : 'Hide staking controls'))}
                                 className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideStakingControls ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
                             >
-                                {hideStakingControls ? (accT?.show_staking || (locale === 'es' ? 'Mostrar Staking' : 'Show Staking')) : (accT?.hide_staking || (locale === 'es' ? 'Ocultar Staking' : 'Hide Staking'))}
+                                {hideStakingControls ? ((accT as any)?.show_staking || (locale === 'es' ? 'Mostrar Staking' : 'Show Staking')) : ((accT as any)?.hide_staking || (locale === 'es' ? 'Ocultar Staking' : 'Hide Staking'))}
                             </button>
                         )}
                     </h4>
@@ -911,6 +923,7 @@ export function AccountSummaryTab({
                                 stakingErrors={stakingErrors}
                                 onOwnerModeChange={handleOwnerModeChange}
                                 hideStakingControls={hideStakingControls}
+                                onOpenCsvModal={(addr) => setCsvModalAddress(addr)}
                             />
                         ))}
 
@@ -1072,11 +1085,11 @@ export function AccountSummaryTab({
             </Portal>
 
             {/* Account Rewards CSV Modal */}
-            {isCsvModalOpen && (
+            {csvModalAddress && (
                 <AccountRewardsCsvModal
-                    accountAddress={address}
-                    isOpen={isCsvModalOpen}
-                    onClose={() => setIsCsvModalOpen(false)}
+                    accountAddress={csvModalAddress}
+                    isOpen={!!csvModalAddress}
+                    onClose={() => setCsvModalAddress(null)}
                     locale={locale}
                     tt={tt?.account_summary}
                     marketData={marketData}

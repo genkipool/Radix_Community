@@ -123,6 +123,8 @@ export default function TournamentModal({ isOpen, onClose }: TournamentModalProp
     ? `1 XRD ≈ $${xrdPrice.usd.toFixed(4)}`
     : '';
 
+  if (!isOpen) return null;
+
   return (
     <div
       role="presentation"
