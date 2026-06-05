@@ -50,6 +50,7 @@ interface ResourceItem {
     vaults?: {
         items?: Array<{
             amount?: string;
+            total_count?: number;
             items?: string[];
         }>;
     };
@@ -691,9 +692,25 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         (a.label.toLowerCase().includes(query) || a.address.toLowerCase().includes(query))
     );
 
+    const hasAvailableBalance = (resource: ResourceItem) => {
+        if (!resource.vaults?.items || resource.vaults.items.length === 0) return false;
+        let totalAmount = 0;
+        resource.vaults.items.forEach(v => {
+            if (v.amount) {
+                totalAmount += parseFloat(v.amount);
+            } else if (v.total_count) {
+                totalAmount += v.total_count;
+            } else if (v.items && Array.isArray(v.items)) {
+                totalAmount += v.items.length;
+            }
+        });
+        return totalAmount > 0;
+    };
+
     const fungibles = (() => {
         if (!entityData?.fungible_resources?.items) return [];
         return entityData.fungible_resources.items.filter((f: ResourceItem) => {
+            if (!hasAvailableBalance(f)) return false;
             const name = getMetadataValue(f.explicit_metadata?.items, 'name') || 'Unknown';
             const symbol = getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown';
             return name.toLowerCase().includes(query) || symbol.toLowerCase().includes(query);
@@ -703,6 +720,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     const nonFungibles = (() => {
         if (!entityData?.non_fungible_resources?.items) return [];
         return entityData.non_fungible_resources.items.filter((nf: ResourceItem) => {
+            if (!hasAvailableBalance(nf)) return false;
             const name = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
             return name.toLowerCase().includes(query);
         });
@@ -712,16 +730,35 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         const ed = entityData as { pool_units?: { items?: ResourceItem[] } } | undefined;
         if (!ed?.pool_units?.items) return [];
         return ed.pool_units.items.filter((pu: ResourceItem) => {
+            if (!hasAvailableBalance(pu)) return false;
             const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || 'Pool Unit';
             return name.toLowerCase().includes(query);
         });
     })();
 
+    const getIndividualNftCount = () => {
+        let count = 0;
+        if (!entityData?.non_fungible_resources?.items) return 0;
+        entityData.non_fungible_resources.items.forEach((nf: ResourceItem) => {
+            if (!hasAvailableBalance(nf)) return;
+            if (nf.vaults?.items && nf.vaults.items.length > 0) {
+                nf.vaults.items.forEach(v => {
+                    if (v.items && Array.isArray(v.items)) {
+                        count += v.items.length;
+                    } else if (v.total_count) {
+                        count += v.total_count;
+                    }
+                });
+            }
+        });
+        return count;
+    };
+
     const allTabs: { type: AssetType; label: string; count?: number }[] = [
         { type: 'address', label: 'Direcciones', count: availableAddresses.length },
-        { type: 'fungible', label: 'Tokens', count: entityData?.fungible_resources?.items?.length || 0 },
-        { type: 'non_fungible', label: 'NFTs', count: entityData?.non_fungible_resources?.items?.length || 0 },
-        { type: 'pool_unit', label: 'Pools', count: (entityData as { pool_units?: { items?: unknown[] } } | undefined)?.pool_units?.items?.length || 0 },
+        { type: 'fungible', label: 'Tokens', count: entityData?.fungible_resources?.items?.filter(hasAvailableBalance).length || 0 },
+        { type: 'non_fungible', label: 'NFTs', count: getIndividualNftCount() },
+        { type: 'pool_unit', label: 'Pools', count: ((entityData as { pool_units?: { items?: ResourceItem[] } } | undefined)?.pool_units?.items?.filter(hasAvailableBalance).length) || 0 },
     ];
     const tabs = (popupMode === 'asset' || popupDestTarget !== null) ? allTabs.filter(t => t.type !== 'address') : allTabs;
 
