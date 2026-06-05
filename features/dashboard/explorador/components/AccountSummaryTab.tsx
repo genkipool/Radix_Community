@@ -125,8 +125,11 @@ function ValidatorStakingRow({
 
     const valInfo = validatorsData?.validators.find((v: any) => v.address === row.validatorAddress);
     const connectedAccount = accounts?.find((a: any) => a.address === address);
-    const isOwnerByBadge = valInfo?.ownerBadge && activeNfts?.some((nft: any) => nft.address === valInfo.ownerBadge);
-    const isOwner = !!connectedAccount && (isOwnerByBadge || valInfo?.ownerAddress === address);
+    const isOwner = !!connectedAccount && (
+        valInfo?.ownerBadge 
+            ? !!activeNfts?.some((nft: any) => nft.ids?.includes(valInfo.ownerBadge!))
+            : valInfo?.ownerAddress === address
+    );
     const validator = valInfo;
 
     const { data: validatorEntityData } = useQuery({
@@ -414,8 +417,11 @@ export function AccountSummaryTab({
             if (!row) return false;
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
             const connectedAccount = accounts?.find((a: any) => a.address === address);
-            const isOwnerByBadge = valInfo?.ownerBadge && activeNfts?.some((nft: any) => nft.address === valInfo.ownerBadge);
-            const isOwner = !!connectedAccount && (isOwnerByBadge || valInfo?.ownerAddress === address);
+            const isOwner = !!connectedAccount && (
+                valInfo?.ownerBadge 
+                    ? !!activeNfts?.some((nft: any) => nft.ids?.includes(valInfo.ownerBadge!))
+                    : valInfo?.ownerAddress === address
+            );
             return !ownerModeAddresses.has(vAddr) || !isOwner;
         });
 
@@ -587,11 +593,13 @@ export function AccountSummaryTab({
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        await apiFetchEntityDetails(address, netName, true);
+                        for (const acc of accounts || []) {
+                            await apiFetchEntityDetails(acc.address, netName, true);
+                            invalidateAccountStakingData(queryClient, acc.address, netName);
+                        }
                     } catch (e) {
-                        console.error('Failed to pre-fetch entity details after transaction', e);
+                        console.error('Failed to pre-fetch entity details after transaction for accounts', e);
                     }
-                    invalidateAccountStakingData(queryClient, address, netName);
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {

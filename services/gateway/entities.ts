@@ -61,7 +61,7 @@ export async function fetchEntityDetails(
             ancestor_identities: false,
             component_royalty_vault_balance: false,
             package_royalty_vault_balance: false,
-            non_fungible_include_nfids: false,
+            non_fungible_include_nfids: true,
           },
         },
       }),

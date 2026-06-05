@@ -49,7 +49,7 @@ interface StakingTranslations {
 
 export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) => {
     const queryClient = useQueryClient();
-    const { accounts, activeNetworkId } = useRadixWallet();
+    const { accounts, activeNetworkId, selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<StakingTab>('delegator');
     const inputRef = useRef<HTMLInputElement>(null);
     const [amountStr, setAmountStr] = useState('');
@@ -57,13 +57,6 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const [transactingAction, setTransactingAction] = useState<StakingAction | null>(null);
     const [showOwnerClaimInfo, setShowOwnerClaimInfo] = useState(false);
     const { price } = useXrdPrice();
-
-    const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('stakingPopupLastAccount');
-        }
-        return null;
-    });
 
     const activeAccount = accounts.find(a => a.address === selectedAccountAddress) || (accounts.length > 0 ? accounts[0] : null);
 
@@ -206,21 +199,20 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        if (activeAccount) {
-                            await apiFetchEntityDetails(activeAccount.address, networkName, true);
+                        for (const acc of accounts || []) {
+                            await apiFetchEntityDetails(acc.address, networkName, true);
+                            invalidateAccountStakingData(queryClient, acc.address, networkName);
                         }
                         if (activeTab === 'validator' && stakingData.isOwner) {
                             await apiFetchEntityDetails(validator.address, networkName, true);
                         }
                     } catch (e) {
-                        console.error('Error refreshing cache', e);
+                        console.error('Error refreshing cache for accounts', e);
                     }
                     if (activeTab === 'validator' && transactingAction === 'Claim') {
                         setShowOwnerClaimInfo(true);
                     }
-                    if (activeAccount) {
-                        invalidateAccountStakingData(queryClient, activeAccount.address, networkName);
-                    }
+                    // Invalidations are now handled in the loop above
                     return;
                 } else if (details && (details.transaction_status === 'CommittedFailure' || details.transaction_status === 'Rejected')) {
                     return;

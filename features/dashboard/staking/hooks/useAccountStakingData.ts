@@ -4,7 +4,7 @@ import { useAccountStats } from '@/features/dashboard/explorador/hooks/useAccoun
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { AccountStakingData } from '../types/staking-operations.types';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
-import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { entityKeys, dashboardKeys } from '@/features/dashboard/utils/entityCache';
 import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 import { Validator } from '@/types/radix';
 import type { GatewayEntityDetails } from '@/features/dashboard/types';
@@ -112,7 +112,7 @@ export const useAccountStakingData = (
     const networkName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
 
     const { data: entityData, isLoading: isLoadingEntity } = useQuery({
-        queryKey: dashboardKeys.entities.detail(accountAddress || '', networkName),
+        queryKey: entityKeys.detail(accountAddress || '', networkName),
         queryFn: () => {
             if (!accountAddress) return null;
             return apiFetchEntityDetails(accountAddress, networkName);
@@ -130,8 +130,9 @@ export const useAccountStakingData = (
         isLoading: isLoadingStats 
     } = useAccountStats(accountAddress || '', networkName, entityData || null);
 
-    const isOwnerByBadge = validator?.ownerBadge && activeNfts?.some(nft => nft.address === validator.ownerBadge);
-    const isOwner = isOwnerByBadge || (validator?.ownerAddress === accountAddress);
+    const isOwner = validator?.ownerBadge 
+        ? !!activeNfts?.some(nft => nft.ids?.includes(validator.ownerBadge!))
+        : validator?.ownerAddress === accountAddress;
 
     const { data: validatorEntityData, isLoading: isLoadingValidator } = useQuery({
         queryKey: dashboardKeys.entities.detail(validator?.address || '', networkName),

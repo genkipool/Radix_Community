@@ -49,7 +49,7 @@ function WalletAccountSummaryWrapper({
 }) {
     const { data: entityData } = useQuery({
         queryKey: entityKeys.detail(address, network),
-        queryFn: () => apiFetchEntityDetails(address, network),
+        queryFn: () => apiFetchEntityDetails(address, network, true),
         enabled: isOpen,
         staleTime: 0,
         gcTime: 10 * 60_000,

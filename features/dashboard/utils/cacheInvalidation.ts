@@ -21,6 +21,9 @@ export const invalidateAccountStakingData = (
     // 1. Invalidate root of entities to ensure all entity states are refreshed
     // Using fuzzy matching, this invalidates details for accounts, validators, resources, etc.
     queryClient.invalidateQueries({ queryKey: dashboardKeys.entities.all() });
+    
+    // Also invalidate the top-level 'entity' key used by WalletProfileModal
+    queryClient.invalidateQueries({ queryKey: ['entity'] });
 
     // 2. Invalidate all transactions
     if (network) {

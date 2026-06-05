@@ -56,7 +56,7 @@ export const AccountValidatorStakeAction = ({
     const queryClient = useQueryClient();
     const { t: contextT } = useLanguage();
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
-    const { activeNetworkId } = useRadixWallet();
+    const { activeNetworkId, accounts } = useRadixWallet();
     const { data: validatorsData } = useValidatorsQuery(network);
     const validator = validatorsData?.validators.find(v => v.address === validatorAddress);
 
@@ -315,11 +315,13 @@ export const AccountValidatorStakeAction = ({
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        await apiFetchEntityDetails(accountAddress, networkName, true);
+                        for (const acc of accounts || []) {
+                            await apiFetchEntityDetails(acc.address, networkName, true);
+                            invalidateAccountStakingData(queryClient, acc.address, networkName);
+                        }
                     } catch (e) {
-                        console.error('Failed to pre-fetch entity details after transaction', e);
+                        console.error('Failed to pre-fetch entity details after transaction for accounts', e);
                     }
-                    invalidateAccountStakingData(queryClient, accountAddress, networkName);
                     setTransactingAction(null);
                     return;
                 } else if (details && details.transaction_status === 'CommittedFailure') {

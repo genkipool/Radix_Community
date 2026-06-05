@@ -592,12 +592,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
                             // Wait 2 seconds for Gateway to sync new ledger state before refetching
                             await new Promise(resolve => setTimeout(resolve, 2000));
-                            try {
-                                await apiFetchEntityDetails(accountAddress, netName, true);
-                            } catch (e) {
-                                console.error('Failed to pre-fetch entity details after transaction', e);
+                            for (const acc of accounts || []) {
+                                try {
+                                    await apiFetchEntityDetails(acc.address, netName, true);
+                                    invalidateAccountStakingData(queryClient, acc.address, netName);
+                                } catch (e) {
+                                    console.error('Failed to pre-fetch entity details after transaction for', acc.address, e);
+                                }
                             }
-                            invalidateAccountStakingData(queryClient, accountAddress, netName);
                             setIsTransacting(false);
                             return;
                         } else if (details && details.transaction_status === 'CommittedFailure') {
