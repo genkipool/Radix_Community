@@ -15,13 +15,13 @@ export type DashboardTag = typeof DASHBOARD_TAGS[number];
 /* ── Grid column → Tailwind class map ──────────────────────── */
 const GRID_CLASS_MAP: Record<number, string> = {
   1: 'grid-cols-1',
-  2: 'grid-cols-1 sm:grid-cols-2',
-  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-  4: 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-4',
-  5: 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-5',
-  6: 'grid-cols-1 sm:grid-cols-4 lg:grid-cols-6',
-  7: 'grid-cols-1 sm:grid-cols-5 lg:grid-cols-7',
-  8: 'grid-cols-1 sm:grid-cols-6 lg:grid-cols-8',
+  2: 'grid-cols-1 xl:grid-cols-2',
+  3: 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3',
+  4: 'grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4',
+  5: 'grid-cols-1 xl:grid-cols-3 2xl:grid-cols-5',
+  6: 'grid-cols-1 xl:grid-cols-4 2xl:grid-cols-6',
+  7: 'grid-cols-1 xl:grid-cols-5 2xl:grid-cols-7',
+  8: 'grid-cols-1 xl:grid-cols-6 2xl:grid-cols-8',
 };
 
 /** Returns the Tailwind responsive grid-cols class string for a given column count. */

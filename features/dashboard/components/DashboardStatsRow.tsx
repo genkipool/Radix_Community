@@ -27,7 +27,7 @@ export const DashboardStatsRow = ({
 }: DashboardStatsRowProps) => {
     if (activeView === 'staking') {
         return (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
                 <StatCard
                     icon={<Coins className="size-5" />}
                     label={dt?.network?.total_staked ?? ''}
@@ -70,7 +70,7 @@ export const DashboardStatsRow = ({
     const tvl = isEur ? (marketData?.totalValueLockedEur ?? 0) : (marketData?.totalValueLockedUsd ?? 0);
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
+        <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 mb-8">
             <StatCard
                 icon={<Activity className="size-5" />}
                 label={dt?.explorer?.ledger_txs || 'Total Transactions'}

@@ -759,7 +759,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop nav */}
-            <div className="hidden md:flex items-stretch">
+            <div className="hidden xl:flex items-stretch">
               {NAV_LINKS.map((link) => {
                 const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
                   item.key === 'dashboard' && activeNetwork === 'stokenet'
@@ -804,7 +804,7 @@ export default function Navbar() {
             </div>
 
             {/* Desktop controls */}
-            <div className="hidden md:flex items-stretch gap-1">
+            <div className="hidden xl:flex items-stretch gap-1">
 
               {/* Language: click = toggle, hover = popup */}
               <NavPopup align="right" width="w-44" keepOpenOnTriggerClick offsetClass="absolute top-[calc(100%+4px)]" trigger={
@@ -923,8 +923,8 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mobile controls */}
-            <div className="md:hidden flex items-center gap-1">
+            {/* Mobile/Tablet controls */}
+            <div className="xl:hidden flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={toggleLanguage}
@@ -936,10 +936,10 @@ export default function Navbar() {
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                className={`${iconBtnClass} px-2`} aria-label="Toggle language"
+                className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle language"
               >
-                <Globe className="size-4" />
-                {currentLangDisplay.toUpperCase()}
+                <Globe className="size-4 sm:size-5" />
+                <span className="hidden sm:inline">{currentLangDisplay.toUpperCase()}</span>
               </button>
               <button
                 type="button"
@@ -952,7 +952,7 @@ export default function Navbar() {
                 }}
                 onTouchEnd={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
                 onTouchMove={() => { if (longPressRef.current) clearTimeout(longPressRef.current); }}
-                className={`${iconBtnClass} px-2`} aria-label="Toggle theme" suppressHydrationWarning
+                className={`${iconBtnClass} px-2.5 sm:px-3 h-10 sm:h-11 bg-[var(--color-surface)] sm:bg-transparent`} aria-label="Toggle theme" suppressHydrationWarning
               >
                 <ThemeIcon theme={theme} isLightTheme={isLightTheme} />
               </button>
@@ -965,9 +965,36 @@ export default function Navbar() {
                     <button
                       type="button"
                       aria-label="Wallet Settings"
-                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] size-[30px] rounded-full text-white font-bold text-sm hover:opacity-90 transition-opacity shrink-0 shadow-sm ml-2"
+                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-10 w-10 sm:w-auto sm:h-11 sm:px-4 rounded-full text-white font-bold text-sm hover:opacity-90 transition-opacity shrink-0 shadow-md ml-1 sm:ml-2"
                     >
-                      {persona?.label ? persona.label.charAt(0).toUpperCase() : (accounts.length > 0 ? accounts[0].address.charAt(0).toUpperCase() : '?')}
+                      <span className="sm:hidden">
+                        {persona?.label ? persona.label.charAt(0).toUpperCase() : (accounts.length > 0 ? accounts[0].address.charAt(0).toUpperCase() : '?')}
+                      </span>
+                      <span className="hidden sm:block">
+                        <RadixLogo
+                          label={
+                            isLoading
+                              ? (t.nav?.wallet_connecting as string ?? 'Connecting...')
+                              : persona
+                                ? (persona.label.length > 12 ? `${persona.label.slice(0, 10)}...` : persona.label)
+                                : accounts.length > 0
+                                  ? `${accounts[0].address.slice(0, 4)}...${accounts[0].address.slice(-4)}`
+                                  : (t.nav?.connectWallet as string)
+                          }
+                          showBeta={false}
+                          width="160"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={122}
+                          textAnchor="middle"
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={5}
+                          strokeColor="white"
+                          textColor="white"
+                        />
+                      </span>
                     </button>
                   }
                 >
@@ -994,17 +1021,36 @@ export default function Navbar() {
                     <button
                       type="button"
                       aria-label="Connect Wallet"
-                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] size-[30px] rounded-full hover:opacity-90 transition-opacity shrink-0 shadow-sm ml-2"
+                      className="flex items-center justify-center bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] h-10 w-10 sm:w-auto sm:h-11 sm:px-4 rounded-full hover:opacity-90 transition-opacity shrink-0 shadow-md ml-1 sm:ml-2"
                     >
-                      <RadixCircleIcon className="size-[30px]" fillColor="transparent" strokeColor="white" />
+                      <span className="sm:hidden">
+                        <RadixCircleIcon className="size-[24px]" fillColor="transparent" strokeColor="white" />
+                      </span>
+                      <span className="hidden sm:block">
+                        <RadixLogo
+                          label={isLoading ? (t.nav?.wallet_connecting as string ?? 'Connecting...') : (t.nav?.connectWallet as string)}
+                          showBeta={false}
+                          width="160"
+                          height="32"
+                          viewBox="0 0 210 40"
+                          fontSize={18}
+                          textX={122}
+                          textAnchor="middle"
+                          logoScale={0.12}
+                          logoTranslateY={8}
+                          logoTranslateX={5}
+                          strokeColor="white"
+                          textColor="white"
+                        />
+                      </span>
                     </button>
                   }
                 >
                   <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
                 </NavPopup>
               )}
-              <button type="button" onClick={() => setIsOpen(!isOpen)} className="text-[var(--color-text-main)] p-1 ml-2" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
-                {isOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+              <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center p-2 text-[var(--color-text-main)] ml-1 sm:ml-2 hover:text-[var(--color-primary)] transition-colors" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
+                {isOpen ? <X className="size-6 sm:size-7" /> : <Menu className="size-6 sm:size-7" />}
               </button>
             </div>
           </div>
@@ -1012,7 +1058,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg">
+          <div className="xl:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg">
             <div className="px-4 py-3 space-y-0.5">
               {NAV_LINKS.map((link) => {
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;

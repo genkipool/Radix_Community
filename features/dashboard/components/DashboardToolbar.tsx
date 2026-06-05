@@ -239,7 +239,7 @@ export const DashboardToolbar = ({
                 </div>
 
                 {/* Right Controls: Toolbar & Grid Toggle */}
-                <div className="hidden sm:flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
+                <div className="hidden xl:flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
                     <ContentToolbar
                         sortMode={sortMode}
                         setSortMode={onSortModeChange}
