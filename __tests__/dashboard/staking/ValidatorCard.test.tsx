@@ -178,7 +178,7 @@ describe('ValidatorCard', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Super Validator')).toBeInTheDocument();
+    expect(screen.getAllByText('Super Validator')[0]).toBeInTheDocument();
   });
 
   it('calls onExpand when the card is clicked', () => {
@@ -188,7 +188,7 @@ describe('ValidatorCard', () => {
       </QueryClientProvider>
     );
 
-    const name = screen.getByText('Super Validator');
+    const name = screen.getAllByText('Super Validator')[0];
     fireEvent.pointerDown(name);
     fireEvent.click(name);
     expect(baseProps.onExpand).toHaveBeenCalledWith('val_1');

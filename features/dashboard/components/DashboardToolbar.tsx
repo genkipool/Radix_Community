@@ -196,15 +196,17 @@ export const DashboardToolbar = ({
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
                                 )}
-                                <SearchableTagFilter
-                                    tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                    activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
-                                    onSelect={tag => onActiveTagChange(tag || 'All')}
-                                    allLabel={dt?.tags?.['All'] || 'All'}
-                                    tagLabels={dt?.tags}
-                                    placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
-                                    hideAll={true}
-                                />
+                                <div className="hidden sm:block w-full">
+                                    <SearchableTagFilter
+                                        tags={DASHBOARD_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                        activeTag={activeTags.includes('All') ? null : activeTags[0] || null}
+                                        onSelect={tag => onActiveTagChange(tag || 'All')}
+                                        allLabel={dt?.tags?.['All'] || 'All'}
+                                        tagLabels={dt?.tags}
+                                        placeholder={dt?.search?.tags_placeholder || 'Buscar etiquetas...'}
+                                        hideAll={true}
+                                    />
+                                </div>
                             </div>
                         ) : (
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full animate-in fade-in slide-in-from-top-1 duration-500">
@@ -217,16 +219,18 @@ export const DashboardToolbar = ({
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
                                 )}
-                                <SearchableTagFilter
-                                    tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
-                                    activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
-                                    onSelect={tag => onTransactionTagChange(tag || 'All')}
-                                    allLabel={dt?.transaction_tags?.['All'] || 'All'}
-                                    tagLabels={dt?.transaction_tags}
-                                    placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
-                                    hideAll={true}
-                                />
-                                <div className="sm:shrink-0 w-full sm:w-auto">
+                                <div className="hidden sm:block w-full">
+                                    <SearchableTagFilter
+                                        tags={TRANSACTION_TAGS.filter(tag => tag !== 'All') as unknown as string[]}
+                                        activeTag={transactionActiveTag === 'All' ? null : transactionActiveTag}
+                                        onSelect={tag => onTransactionTagChange(tag || 'All')}
+                                        allLabel={dt?.transaction_tags?.['All'] || 'All'}
+                                        tagLabels={dt?.transaction_tags}
+                                        placeholder={dt?.search?.transactions_placeholder || 'Filtrar transacciones...'}
+                                        hideAll={true}
+                                    />
+                                </div>
+                                <div className="hidden sm:block sm:shrink-0 w-full sm:w-auto">
                                     {isConnected ? (
                                         <SearchableTagFilter
                                             tags={accounts.map(acc => acc.address)}
@@ -257,7 +261,7 @@ export const DashboardToolbar = ({
                 </div>
 
                 {/* Right Controls: Toolbar & Grid Toggle */}
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
+                <div className="hidden sm:flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
                     <ContentToolbar
                         sortMode={sortMode}
                         setSortMode={onSortModeChange}

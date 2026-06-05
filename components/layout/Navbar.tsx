@@ -368,7 +368,7 @@ function WalletPopupContent({
   isLoading,
   disconnect
 }: {
-  connect: (networkId: RadixNetworkId) => void,
+  connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void,
   t: Dictionary,
   sessions: Record<'mainnet' | 'stokenet', unknown>,
   switchNetwork: (network: 'mainnet' | 'stokenet') => void,
@@ -428,7 +428,7 @@ interface ConnectedWalletPopupContentProps {
   onOpenProfileModal: () => void;
   onOpenUnderConstruction?: () => void;
   networkId: RadixNetworkId | null;
-  connect: (networkId: RadixNetworkId) => void;
+  connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
   disconnect: () => void;
   sessions: Record<'mainnet' | 'stokenet', unknown>;
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
@@ -507,7 +507,7 @@ function ConnectedWalletPopupContent({
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => networkId && connect(networkId)}
+          onClick={() => networkId && connect(networkId, true)}
           className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
         >
           <RefreshCcw className="size-3.5 text-[var(--color-text-muted)]" />

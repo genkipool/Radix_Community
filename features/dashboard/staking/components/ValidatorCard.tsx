@@ -67,7 +67,7 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         network,
         marketData,
         locale,
-        onDownloadCsv: handleDownloadCsv,
+        onDownloadCsv: network !== 'stokenet' ? handleDownloadCsv : undefined,
     };
 
     return (
@@ -82,10 +82,15 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
                     }`}
                 innerClassName={`${isExpanded ? 'h-full' : ''} flex flex-col`}
             >
-                {columns === 1 && <Layout1Col {...sharedProps} columns={columns} />}
-                {(columns === 2 || columns === 3) && <Layout2Col {...sharedProps} columns={columns} />}
-                {(columns === 4 || columns === 5) && <Layout4Col {...sharedProps} columns={columns} />}
-                {columns >= 6 && <Layout6Col {...sharedProps} columns={columns} />}
+                <div className="block sm:hidden flex-1 flex-col h-full w-full">
+                    <Layout4Col {...sharedProps} columns={4} />
+                </div>
+                <div className="hidden sm:flex flex-col flex-1 h-full w-full">
+                    {columns === 1 && <Layout1Col {...sharedProps} columns={columns} />}
+                    {(columns === 2 || columns === 3) && <Layout2Col {...sharedProps} columns={columns} />}
+                    {(columns === 4 || columns === 5) && <Layout4Col {...sharedProps} columns={columns} />}
+                    {columns >= 6 && <Layout6Col {...sharedProps} columns={columns} />}
+                </div>
             </Card>
 
             {csvModalOpen && (
