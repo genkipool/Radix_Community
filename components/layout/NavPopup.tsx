@@ -1,5 +1,5 @@
 'use client';
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const EMPTY_HREFS: string[] = [];
@@ -58,6 +58,7 @@ export default function NavPopup({
   const prefetchedRef = useRef(false);
   const forceOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [forceOpen, setForceOpen] = useState(false);
 
   const alignClass =
@@ -83,9 +84,39 @@ export default function NavPopup({
     }
   };
 
+  // Solución de raíz: capturamos los eventos de interacción a nivel del document (capture phase)
+  // para evitar que lleguen a los elementos que están por debajo (ej. ValidatorCard)
+  useEffect(() => {
+    if (!forceOpen) return;
+
+    const handleOutsideInteraction = (e: Event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        // Detenemos la propagación antes de que el evento llegue a React o a otros elementos del DOM
+        e.stopPropagation();
+        // Solo en eventos táctiles o de puntero para no romper comportamientos nativos de scroll si es posible,
+        // pero evitamos el click/touch en las tarjetas.
+        setForceOpen(false);
+      }
+    };
+
+    // Usamos el parámetro `capture: true` para interceptar el evento bajando por el DOM
+    document.addEventListener('pointerdown', handleOutsideInteraction, true);
+    document.addEventListener('touchstart', handleOutsideInteraction, true);
+    document.addEventListener('mousedown', handleOutsideInteraction, true);
+    document.addEventListener('click', handleOutsideInteraction, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsideInteraction, true);
+      document.removeEventListener('touchstart', handleOutsideInteraction, true);
+      document.removeEventListener('mousedown', handleOutsideInteraction, true);
+      document.removeEventListener('click', handleOutsideInteraction, true);
+    };
+  }, [forceOpen]);
+
   return (
     // self-stretch + flex items-center: fills full navbar height, centers trigger vertically
     <div
+      ref={wrapperRef}
       className="relative group/navpopup self-stretch flex items-center"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

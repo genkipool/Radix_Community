@@ -1,6 +1,4 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, m } from 'motion/react';
 import { Validator } from '@/types/radix';
 import { StakingPopupContent } from './StakingPopupContent';
 import { TranslationsT } from '@/features/dashboard/types';
@@ -16,13 +14,12 @@ interface PopupCoords {
     top: number;
     left?: number;
     right?: number;
-    transformOrigin: string;
     isUp: boolean;
 }
 
 export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [coords, setCoords] = useState<PopupCoords>({ top: 0, right: 0, transformOrigin: 'top right', isUp: false });
+    const [coords, setCoords] = useState<PopupCoords>({ top: 0, right: 0, isUp: false });
     const triggerRef = useRef<HTMLDivElement>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -36,26 +33,24 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
         let top = rect.bottom + window.scrollY + 8;
         let left: number | undefined = undefined;
         let right: number | undefined = document.documentElement.clientWidth - rect.right - window.scrollX;
-        let transformOrigin = 'top right';
         let isUp = false;
 
         // Check vertical collision (space below vs above)
         if (rect.bottom + estimatedHeight > window.innerHeight && rect.top > estimatedHeight) {
             top = rect.top + window.scrollY - 8;
-            transformOrigin = transformOrigin.replace('top', 'bottom');
             isUp = true;
         }
 
         // Check horizontal collision (space left vs right)
-        // By default it aligns to the right edge and expands left.
-        if (rect.right < popupWidth) {
-            // Not enough space to the left, so align to the left edge and expand right
+        if (window.innerWidth < popupWidth + 32) {
+            left = 16;
+            right = 16;
+        } else if (rect.right < popupWidth) {
             right = undefined;
             left = rect.left + window.scrollX;
-            transformOrigin = transformOrigin.replace('right', 'left');
         }
 
-        setCoords({ top, left, right, transformOrigin, isUp });
+        setCoords({ top, left, right, isUp });
     };
 
     const handleMouseEnter = () => {
@@ -89,6 +84,15 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
         };
     }, [isOpen]);
 
+    const handleMobileClickCapture = () => {
+        const mobile = window.innerWidth < 640;
+        if (mobile) {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            calculateCoords();
+            setIsOpen(true);
+        }
+    };
+
     return (
         <>
             <div 
@@ -96,24 +100,27 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
                 className="relative inline-block"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
+                onClickCapture={handleMobileClickCapture}
             >
                 {children}
             </div>
             
             <Portal>
-                <AnimatePresence>
-                    {isOpen && (
-                        <m.div
-                            initial={{ opacity: 0, y: coords.isUp ? "calc(-100% + 10px)" : 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: coords.isUp ? "-100%" : 0, scale: 1 }}
-                            exit={{ opacity: 0, y: coords.isUp ? "calc(-100% + 10px)" : 10, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
+                {isOpen && (
+                    <>
+                        {/* Mobile Overlay (Invisible) to capture taps and close the popup */}
+                        <div 
+                            className="fixed inset-0 z-[9998] sm:hidden"
+                            onClick={() => setIsOpen(false)}
+                            style={{ touchAction: 'none' }}
+                        />
+                        <div
                             className="absolute z-[9999]"
                             style={{ 
                                 top: coords.top, 
                                 right: coords.right, 
                                 left: coords.left,
-                                transformOrigin: coords.transformOrigin 
+                                transform: coords.isUp ? 'translateY(-100%)' : 'none'
                             }}
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
@@ -127,9 +134,9 @@ export const StakingPopup = ({ children, validator, t }: StakingPopupProps) => {
                                 }}
                             />
                             <StakingPopupContent validator={validator} t={t} />
-                        </m.div>
-                    )}
-                </AnimatePresence>
+                        </div>
+                    </>
+                )}
             </Portal>
         </>
     );

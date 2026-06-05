@@ -246,7 +246,7 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
     return (
         <div
-            className="flex flex-col gap-3 w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl backdrop-blur-md"
+            className="flex flex-col gap-3 w-full sm:w-[420px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 shadow-2xl backdrop-blur-md"
             onClick={e => e.stopPropagation()}
             onMouseEnter={e => e.stopPropagation()}
         >
