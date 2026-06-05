@@ -73,7 +73,7 @@ export const DashboardToolbar = ({
             />
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
                 {/* Left Controls: View & Network */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="flex items-center justify-around w-full sm:w-auto sm:justify-start gap-2 sm:gap-3 shrink-0">
                     {/* View toggle */}
                     <button
                         type="button"
