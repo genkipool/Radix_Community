@@ -174,6 +174,9 @@
       "owner_claim_info": "The XRD rewards go to the delegator stake, and the LSU tokens are sent to the owner’s address.",
       "errors": {
         "failedToPrepareTransaction": "Failed to prepare transaction. Check your manifest.",
+        "failedToSignTransaction": "Failed to sign transaction.",
+        "failedToSubmitTransaction": "Failed to submit transaction. Please try again.",
+        "failedToCompileTransaction": "Failed to compile transaction.",
         "rejectedByUser": "Transaction rejected by user.",
         "insufficient_balance": "Insufficient balance for this action.",
         "superior_to_both": "The entered amount exceeds both the available balance and the staked amount, so neither stake nor unstake operations can be performed."

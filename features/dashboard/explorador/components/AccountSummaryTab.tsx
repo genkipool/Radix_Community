@@ -335,8 +335,11 @@ export function AccountSummaryTab({
 
     const renderStakingError = (err: string) => {
         const lower = err.toLowerCase();
-        if (lower.includes('failed to prepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || err;
-        if (lower.includes('rejected')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || err;
+        if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || err;
+        if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || err;
+        if (lower.includes('failed to sign') || lower.includes('failedtosign')) return stakingErrors?.failedToSignTransaction || err;
+        if (lower.includes('failed to submit') || lower.includes('failedtosubmit')) return stakingErrors?.failedToSubmitTransaction || err;
+        if (lower.includes('failed to compile') || lower.includes('failedtocompile')) return stakingErrors?.failedToCompileTransaction || err;
         return err;
     };
 

@@ -239,8 +239,11 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
     const renderError = (err: string) => {
         const lower = err.toLowerCase();
-        if (lower.includes('failed to prepare')) return stakingT?.errors?.failedToPrepareTransaction ?? 'Failed to prepare transaction. Check your manifest.';
-        if (lower.includes('rejected')) return stakingT?.errors?.rejectedByUser ?? 'Transaction rejected by user.';
+        if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingT?.errors?.failedToPrepareTransaction ?? 'Failed to prepare transaction. Check your manifest.';
+        if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingT?.errors?.rejectedByUser ?? 'Transaction rejected by user.';
+        if (lower.includes('failed to sign') || lower.includes('failedtosign')) return stakingT?.errors?.failedToSignTransaction ?? 'Failed to sign transaction.';
+        if (lower.includes('failed to submit') || lower.includes('failedtosubmit')) return stakingT?.errors?.failedToSubmitTransaction ?? 'Failed to submit transaction.';
+        if (lower.includes('failed to compile') || lower.includes('failedtocompile')) return stakingT?.errors?.failedToCompileTransaction ?? 'Failed to compile transaction.';
         return err;
     };
 

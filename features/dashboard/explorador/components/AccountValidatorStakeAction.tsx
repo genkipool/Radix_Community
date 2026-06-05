@@ -137,8 +137,11 @@ export const AccountValidatorStakeAction = ({
 
     const renderError = (err: string) => {
         const lower = err.toLowerCase();
-        if (lower.includes('failed to prepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || 'Failed to prepare transaction. Check your manifest.';
-        if (lower.includes('rejected')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || 'Transaction rejected by user.';
+        if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || 'Failed to prepare transaction. Check your manifest.';
+        if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || 'Transaction rejected by user.';
+        if (lower.includes('failed to sign') || lower.includes('failedtosign')) return stakingErrors?.failedToSignTransaction || 'Failed to sign transaction.';
+        if (lower.includes('failed to submit') || lower.includes('failedtosubmit')) return stakingErrors?.failedToSubmitTransaction || 'Failed to submit transaction.';
+        if (lower.includes('failed to compile') || lower.includes('failedtocompile')) return stakingErrors?.failedToCompileTransaction || 'Failed to compile transaction.';
         return err;
     };
 

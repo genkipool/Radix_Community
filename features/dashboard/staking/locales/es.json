@@ -174,6 +174,9 @@
       "owner_claim_info": "Los tokens LSU reclamados se han añadido al stake de los delegantes de este validador.",
       "errors": {
         "failedToPrepareTransaction": "Error al preparar la transacción. Revisa tu manifest.",
+        "failedToSignTransaction": "Error al firmar la transacción.",
+        "failedToSubmitTransaction": "Error al enviar la transacción. Por favor, inténtalo de nuevo.",
+        "failedToCompileTransaction": "Error al compilar la transacción.",
         "rejectedByUser": "Transacción rechazada por el usuario.",
         "insufficient_balance": "Saldo insuficiente para esta acción.",
         "superior_to_both": "La cantidad ingresada supera la cantidad de saldo y de staking por lo que no puede realizar las operaciones de stake o unstake."
