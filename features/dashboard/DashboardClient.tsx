@@ -297,7 +297,7 @@ export default function DashboardClient({
     
   const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
     
-  const { pinnedValidatorAddresses } = useConnectedStakes(deferredConnectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet');
+  const { pinnedValidatorAddresses, ownerValidatorAddresses } = useConnectedStakes(deferredConnectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet', realValidators);
 
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
@@ -308,6 +308,7 @@ export default function DashboardClient({
     activeView: 'staking',
     randomSeed,
     pinnedValidatorAddresses,
+    ownerValidatorAddresses,
     isWalletFilterActive: deferredIsWalletFilterActive,
   });
 

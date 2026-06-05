@@ -243,7 +243,31 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         });
     }
 
-    const stakingRows = Array.from(stakingMap.values()).toSorted((a, b) => b.xrdInStake - a.xrdInStake);
+    // Ensure validators where the user is an owner are included
+    validatorsData?.validators.forEach(v => {
+        if (
+            (v.ownerBadge && activeNfts.some(nft => nft.ids?.includes(v.ownerBadge!))) ||
+            v.ownerAddress === address
+        ) {
+            getStakingEntry(v.address);
+        }
+    });
+
+    const isOwner = (vAddr: string) => {
+        const val = validatorsData?.validators.find(v => v.address === vAddr);
+        if (!val) return false;
+        if (val.ownerBadge && activeNfts.some(nft => nft.ids?.includes(val.ownerBadge!))) return true;
+        if (val.ownerAddress === address) return true;
+        return false;
+    };
+
+    const stakingRows = Array.from(stakingMap.values()).toSorted((a, b) => {
+        const ownerA = isOwner(a.validatorAddress);
+        const ownerB = isOwner(b.validatorAddress);
+        if (ownerA && !ownerB) return -1;
+        if (!ownerA && ownerB) return 1;
+        return b.xrdInStake - a.xrdInStake;
+    });
     const totalLsuAmount = lsuTokens.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const totalLsuXrdEquivalent = lsuTokens.reduce((acc, lsu) => {
         if (!lsu.validatorAddress) return acc;

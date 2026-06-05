@@ -21,6 +21,7 @@ interface UseValidatorFiltersOptions {
   activeView:  'staking' | 'transactions';
   randomSeed:  number;
   pinnedValidatorAddresses?: string[];
+  ownerValidatorAddresses?: string[];
   isWalletFilterActive?: boolean;
 }
 
@@ -31,7 +32,7 @@ interface UseValidatorFiltersReturn {
 }
 
 export function useValidatorFilters({
-  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses, isWalletFilterActive
+  validators, activeTags, searchQuery, sortMode, network, activeView, randomSeed, pinnedValidatorAddresses, ownerValidatorAddresses, isWalletFilterActive
 }: UseValidatorFiltersOptions): UseValidatorFiltersReturn {
 
   // React Compiler automatically memoizes this derived calculation.
@@ -135,10 +136,18 @@ export function useValidatorFilters({
     // 4. Wallet Exclusive Filter
     if (isWalletFilterActive) {
       if (pinnedValidatorAddresses && pinnedValidatorAddresses.length > 0) {
-        return result.filter(v => pinnedValidatorAddresses.includes(v.address));
+        result = result.filter(v => pinnedValidatorAddresses.includes(v.address));
+      } else {
+        // If the wallet filter is active but there are no pinned validators, return empty
+        result = [];
       }
-      // If the wallet filter is active but there are no pinned validators, return empty
-      return [];
+    }
+
+    // 5. Always Pin Owner Validators to the Top
+    if (ownerValidatorAddresses && ownerValidatorAddresses.length > 0 && result.length > 0) {
+        const ownerValidators = result.filter(v => ownerValidatorAddresses.includes(v.address));
+        const otherValidators = result.filter(v => !ownerValidatorAddresses.includes(v.address));
+        result = [...ownerValidators, ...otherValidators];
     }
 
     return result;
