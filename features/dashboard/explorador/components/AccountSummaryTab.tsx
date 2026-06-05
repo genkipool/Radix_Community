@@ -580,6 +580,8 @@ export function AccountSummaryTab({
             try {
                 const details = await apiFetchTransactionDetails(hash, netName);
                 if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
+                    // Wait 2 seconds for Gateway to sync new ledger state before refetching
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
                         await apiFetchEntityDetails(address, netName, true);
                     } catch (e) {

@@ -24,6 +24,9 @@ interface StakingTranslations {
     errors?: {
         insufficient_balance?: string;
         failedToPrepareTransaction?: string;
+        failedToSignTransaction?: string;
+        failedToSubmitTransaction?: string;
+        failedToCompileTransaction?: string;
         rejectedByUser?: string;
         superior_to_both?: string;
     };
@@ -200,6 +203,8 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
 
                 // If the transaction is committed successfully, update the UI
                 if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
+                    // Wait 2 seconds for Gateway to sync new ledger state before refetching
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
                         if (activeAccount) {
                             await apiFetchEntityDetails(activeAccount.address, networkName, true);

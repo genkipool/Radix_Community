@@ -8,10 +8,11 @@ import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { buildMultiTransferManifest, TransferGroup } from '@/features/wallet/lib/manifest-builders';
-import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
-import { useQuery } from '@tanstack/react-query';
+import { apiFetchEntityDetails, apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
+import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 
 interface TransactionBuilderProps {
     accountAddress: string;
@@ -115,6 +116,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     const [isTransacting, setIsTransacting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
     // Focus state for address formatting
     const [isDestFocused, setIsDestFocused] = useState(false);
@@ -561,6 +563,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
             if (result.isErr()) {
                 setError('Transacciones rechazadas o fallidas.');
+                setIsTransacting(false);
             } else {
                 setDestinationAddress('');
                 setAssets([{
@@ -571,10 +574,49 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     name: 'Radix',
                     amount: '',
                 }]);
+                
+                // Polling logic to wait for transaction to be committed before invalidating cache
+                const hash = result.value.transactionIntentHash;
+                const netName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+                const maxAttempts = 15;
+                
+                const pollOnce = async (attempt: number) => {
+                    if (attempt > maxAttempts) {
+                        invalidateAccountStakingData(queryClient, accountAddress, netName);
+                        setIsTransacting(false);
+                        return;
+                    }
+                    try {
+                        const details = await apiFetchTransactionDetails(hash, netName);
+                        if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
+                            // Wait 2 seconds for Gateway to sync new ledger state before refetching
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            try {
+                                await apiFetchEntityDetails(accountAddress, netName, true);
+                            } catch (e) {
+                                console.error('Failed to pre-fetch entity details after transaction', e);
+                            }
+                            invalidateAccountStakingData(queryClient, accountAddress, netName);
+                            setIsTransacting(false);
+                            return;
+                        } else if (details && details.transaction_status === 'CommittedFailure') {
+                            setError('Transacción fallida.');
+                            setIsTransacting(false);
+                            return;
+                        } else if (details && details.transaction_status === 'Rejected') {
+                            setError('Transacción rechazada.');
+                            setIsTransacting(false);
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Error polling transaction', err);
+                    }
+                    setTimeout(() => pollOnce(attempt + 1), 2000);
+                };
+                pollOnce(1);
             }
         } catch (err: unknown) {
             setError((err as Error).message || 'Ocurrió un error al enviar la transacción.');
-        } finally {
             setIsTransacting(false);
         }
     };
