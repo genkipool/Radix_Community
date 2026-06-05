@@ -126,10 +126,12 @@ export const useAccountStakingData = (
         xrdAmount, 
         lsuTokens, 
         stakingRows,
+        activeNfts,
         isLoading: isLoadingStats 
     } = useAccountStats(accountAddress || '', networkName, entityData || null);
 
-    const isOwner = validator?.ownerAddress === accountAddress;
+    const isOwnerByBadge = validator?.ownerBadge && activeNfts?.some(nft => nft.address === validator.ownerBadge);
+    const isOwner = isOwnerByBadge || (validator?.ownerAddress === accountAddress);
 
     const { data: validatorEntityData, isLoading: isLoadingValidator } = useQuery({
         queryKey: dashboardKeys.entities.detail(validator?.address || '', networkName),

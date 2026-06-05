@@ -76,6 +76,7 @@ function ValidatorStakingRow({
     validatorsData,
     accounts,
     lsuTokens,
+    activeNfts,
     xrdAmount,
     onCopy,
     copiedAddress,
@@ -101,6 +102,7 @@ function ValidatorStakingRow({
     validatorsData: any;
     accounts: any[];
     lsuTokens: ParsedResource[];
+    activeNfts: any[];
     xrdAmount: string;
     onCopy: (v: string) => void;
     copiedAddress: string | null;
@@ -123,7 +125,8 @@ function ValidatorStakingRow({
 
     const valInfo = validatorsData?.validators.find((v: any) => v.address === row.validatorAddress);
     const connectedAccount = accounts?.find((a: any) => a.address === address);
-    const isOwner = !!valInfo?.ownerAddress && !!connectedAccount && valInfo.ownerAddress === address;
+    const isOwnerByBadge = valInfo?.ownerBadge && activeNfts?.some((nft: any) => nft.address === valInfo.ownerBadge);
+    const isOwner = !!connectedAccount && (isOwnerByBadge || valInfo?.ownerAddress === address);
     const validator = valInfo;
 
     const { data: validatorEntityData } = useQuery({
@@ -411,7 +414,8 @@ export function AccountSummaryTab({
             if (!row) return false;
             const valInfo = validatorsData?.validators.find(v => v.address === vAddr);
             const connectedAccount = accounts?.find((a: any) => a.address === address);
-            const isOwner = !!valInfo?.ownerAddress && !!connectedAccount && valInfo.ownerAddress === address;
+            const isOwnerByBadge = valInfo?.ownerBadge && activeNfts?.some((nft: any) => nft.address === valInfo.ownerBadge);
+            const isOwner = !!connectedAccount && (isOwnerByBadge || valInfo?.ownerAddress === address);
             return !ownerModeAddresses.has(vAddr) || !isOwner;
         });
 
@@ -914,6 +918,7 @@ export function AccountSummaryTab({
                                 validatorsData={validatorsData}
                                 accounts={accounts}
                                 lsuTokens={lsuTokens}
+                                activeNfts={activeNfts}
                                 xrdAmount={xrdAmount}
                                 onCopy={onCopy}
                                 copiedAddress={copiedAddress}
