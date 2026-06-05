@@ -1058,8 +1058,8 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="xl:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg">
-            <div className="px-4 py-3 space-y-0.5">
+          <div className="xl:hidden bg-[var(--color-bg)] border-b border-[var(--color-card-border)] shadow-lg max-h-[calc(100vh-80px)] overflow-y-auto overscroll-contain">
+            <div className="px-4 py-4 space-y-1">
               {NAV_LINKS.map((link) => {
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
                 const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
@@ -1074,7 +1074,7 @@ export default function Navbar() {
                   <div key={link.key}>
                     <Link
                       href={linkHref}
-                      className="block px-3 py-2.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-accent)] rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                      className="block px-4 py-3.5 text-base sm:text-lg font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-accent)] rounded-xl hover:bg-[var(--color-surface)] transition-colors"
                       onClick={(e) => {
                         if (isHashLink) handleHashClick(e, linkHref);
                         else if (!popupItems) setIsOpen(false);
@@ -1083,7 +1083,7 @@ export default function Navbar() {
                       {label}
                     </Link>
                     {popupItems && (
-                      <div className="pl-4 mt-0.5 space-y-0.5 mb-1.5">
+                      <div className="pl-2 mt-1 space-y-1 mb-2">
                         {popupItems.map((sub) => {
                           const subLabel = (t.nav as Record<string, string>)[sub.key] ?? sub.key;
                           const subHref = sub.href.startsWith('/')
@@ -1091,7 +1091,7 @@ export default function Navbar() {
                             : sub.href;
 
                           const inner = (
-                            <div className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l border-[var(--color-card-border)] ml-1 rounded-r-lg hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
+                            <div className="flex items-center gap-3 px-4 py-3 text-sm sm:text-base font-medium text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border-l-2 border-[var(--color-card-border)] ml-2 rounded-r-xl hover:bg-[var(--color-surface)] transition-colors cursor-pointer">
                               <span className="opacity-60">{sub.icon}</span>
                               {subLabel}
                             </div>
