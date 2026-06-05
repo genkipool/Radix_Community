@@ -110,6 +110,7 @@ export function RadixWalletProvider({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(null);
 
   // ── Connection Timeout Ref ──
   const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -320,6 +321,7 @@ export function RadixWalletProvider({
     isLoading,
     isExtensionAvailable: true,
     error,
+    selectedAccountAddress,
 
     // Backward-compatible derived values
     isConnected: activeSession !== null,
@@ -336,6 +338,7 @@ export function RadixWalletProvider({
     connect,
     disconnect,
     switchNetwork,
+    setSelectedAccountAddress,
   };
 
   return (

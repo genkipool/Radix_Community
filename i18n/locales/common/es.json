@@ -18,6 +18,8 @@
     "beta": "BETA"
   },
   "nav": {
+    "full_profile": "Perfil Completo",
+    "view_profile": "Ver perfil completo",
     "institutions": "Instituciones",
     "developers": "Desarrolladores",
     "ecosystem": "Ecosistema",

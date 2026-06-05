@@ -75,10 +75,9 @@ function WalletAccountSummaryWrapper({
 }
 
 export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfileModalProps) {
-    const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork } = useRadixWallet();
+    const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork, selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
-    const [selectedAccountAddress, setSelectedAccountAddress] = useState<string | null>(null);
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;

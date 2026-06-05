@@ -41,7 +41,7 @@ export const DashboardToolbar = ({
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
-    const { isConnected, accounts } = useRadixWallet();
+    const { isConnected } = useRadixWallet();
 
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
         // Prefetch validators
@@ -156,18 +156,7 @@ export const DashboardToolbar = ({
                                     tagLabels={dt?.transaction_tags}
                                     hideAll={true}
                                 />
-                                {isConnected ? (
-                                    <SearchableTagFilter
-                                        tags={accounts.map(acc => acc.address)}
-                                        activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
-                                        onSelect={tag => onSearchChange(tag ? tag : '')}
-                                        allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
-                                        tagLabels={accounts.reduce((acc, a) => ({ ...acc, [a.address]: a.label }), {})}
-                                        hideAll={false}
-                                        width="w-[240px]"
-                                        placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
-                                    />
-                                ) : (
+                                {!isConnected && (
                                     <SearchableTagFilter
                                         tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
                                         activeTag={activeRanking}
@@ -231,18 +220,7 @@ export const DashboardToolbar = ({
                                     />
                                 </div>
                                 <div className="hidden sm:block sm:shrink-0 w-full sm:w-auto">
-                                    {isConnected ? (
-                                        <SearchableTagFilter
-                                            tags={accounts.map(acc => acc.address)}
-                                            activeTag={searchQuery.startsWith('account_') ? searchQuery : null}
-                                            onSelect={tag => onSearchChange(tag ? tag : '')}
-                                            allLabel={(dt?.tags as Record<string, string>)?.my_wallet || 'Todas las cuentas'}
-                                            tagLabels={accounts.reduce((acc, a) => ({ ...acc, [a.address]: a.label }), {})}
-                                            hideAll={false}
-                                            width="w-full sm:w-[240px]"
-                                            placeholder={(dt?.search as Record<string, string>)?.accounts_placeholder || 'Filtrar cuentas...'}
-                                        />
-                                    ) : (
+                                    {!isConnected && (
                                         <SearchableTagFilter
                                             tags={['top_accounts', 'top_tokens', 'top_nfts', 'contracts', 'blueprints']}
                                             activeTag={activeRanking}

@@ -40,25 +40,34 @@ import infrastructureEs from '@/features/infrastructure/locales/es.json';
 type TranslationModule = { seo?: Record<string, unknown> } & Record<string, unknown>;
 
 export const mergeTranslations = (common: TranslationModule, features: TranslationModule[]) => {
-  const result = { ...common };
+  const isObject = (item: unknown): item is Record<string, unknown> => {
+    return !!item && typeof item === 'object' && !Array.isArray(item);
+  };
+
+  const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
+    const output = { ...target };
+    if (isObject(target) && isObject(source)) {
+      Object.keys(source).forEach((key) => {
+        if (isObject(source[key])) {
+          if (!(key in target)) {
+            output[key] = source[key];
+          } else {
+            output[key] = deepMerge(
+              target[key] as Record<string, unknown>,
+              source[key] as Record<string, unknown>
+            );
+          }
+        } else {
+          output[key] = source[key];
+        }
+      });
+    }
+    return output;
+  };
+
+  let result = { ...common } as Record<string, unknown>;
   features.forEach((feature) => {
-    Object.keys(feature).forEach((key) => {
-      const existing = result[key];
-      const incoming = feature[key];
-      // Deep merge objects one level (handles SEO, dashboard, etc.)
-      if (
-        existing &&
-        typeof existing === 'object' &&
-        !Array.isArray(existing) &&
-        incoming &&
-        typeof incoming === 'object' &&
-        !Array.isArray(incoming)
-      ) {
-        result[key] = { ...(existing as Record<string, unknown>), ...(incoming as Record<string, unknown>) };
-      } else {
-        result[key] = incoming;
-      }
-    });
+    result = deepMerge(result, feature as Record<string, unknown>);
   });
   return result;
 };

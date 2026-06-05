@@ -22,6 +22,7 @@ import { RadixLogo } from '@/components/shared/RadixLogo';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { WalletProfileModal } from '@/features/wallet/components/WalletProfileModal';
+import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import type { Dictionary } from '@/i18n';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -425,6 +426,7 @@ interface ConnectedWalletPopupContentProps {
   t: Dictionary;
   activeNetwork: 'mainnet' | 'stokenet';
   personaName?: string;
+  accounts: { address: string; label?: string }[];
   onOpenProfileModal: () => void;
   onOpenUnderConstruction?: () => void;
   networkId: RadixNetworkId | null;
@@ -438,6 +440,7 @@ function ConnectedWalletPopupContent({
   t,
   activeNetwork,
   personaName,
+  accounts,
   onOpenProfileModal,
   onOpenUnderConstruction,
   networkId,
@@ -446,6 +449,9 @@ function ConnectedWalletPopupContent({
   sessions,
   switchNetwork
 }: ConnectedWalletPopupContentProps) {
+  const { selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
+  const navT = (t.nav || {}) as Record<string, string>;
+
   const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
     if (sessions[netName]) {
       switchNetwork(netName);
@@ -478,7 +484,7 @@ function ConnectedWalletPopupContent({
           onClick={onOpenProfileModal}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
         >
-          {((t.nav || {}) as Record<string, string>).profile ?? 'Perfil'}
+          {navT.profile ?? 'Perfil'}
         </button>
       </div>
 
@@ -495,13 +501,30 @@ function ConnectedWalletPopupContent({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-[var(--color-text-main)] truncate group-hover:text-[var(--color-primary)] transition-colors">
-            {personaName || t.nav?.wallet_connected || 'Persona'}
+            {personaName || navT.wallet_connected || 'Persona'}
           </p>
           <p className="text-[10px] text-[var(--color-text-muted)] truncate">
-            {((t.nav || {}) as Record<string, string>).view_profile ?? 'Ver perfil completo'}
+            {navT.view_profile ?? 'Ver perfil completo'}
           </p>
         </div>
       </button>
+
+      {/* Account Filter Carousel */}
+      {accounts && accounts.length > 1 && (
+        <div className="mb-4">
+          <CarouselFilter
+            options={[
+              { value: null, label: navT.all_accounts ?? 'Todas' },
+              ...accounts.map((acc, idx) => ({
+                value: acc.address,
+                label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
+              }))
+            ]}
+            activeValue={selectedAccountAddress}
+            onChange={(val) => setSelectedAccountAddress(val)}
+          />
+        </div>
+      )}
 
       {/* Row 2: Actions */}
       <div className="grid grid-cols-2 gap-2">
@@ -848,6 +871,7 @@ export default function Navbar() {
                       connect={connect}
                       networkId={networkId}
                       personaName={persona?.label}
+                      accounts={accounts}
                       t={t}
                       onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
                       onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
@@ -952,6 +976,7 @@ export default function Navbar() {
                     connect={connect}
                     networkId={networkId}
                     personaName={persona?.label}
+                    accounts={accounts}
                     t={t}
                     onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
                     onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
@@ -1095,6 +1120,7 @@ export default function Navbar() {
                       connect={(netId) => { connect(netId); setIsOpen(false); }}
                       networkId={networkId}
                       personaName={persona?.label}
+                      accounts={accounts}
                       t={t}
                       onOpenProfileModal={() => {
                         setIsOpen(false);
