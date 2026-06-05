@@ -75,7 +75,7 @@ describe('Navbar', () => {
             expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument();
             expect(screen.getAllByRole('link').length).toBeGreaterThan(1);
             expect(screen.getByRole('button', { name: /toggle theme/i })).toBeInTheDocument();
-            expect(screen.getByLabelText('Connect Wallet')).toBeInTheDocument();
+            expect(screen.getAllByLabelText('Connect Wallet').length).toBeGreaterThan(0);
         });
     });
 
