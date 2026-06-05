@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 
 interface TransactionBuilderProps {
     accountAddress: string;
@@ -193,7 +194,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     // Fetch entity data for popup asset selection and initial rendering
     const { data: entityData, isLoading: isLoadingAssets } = useQuery({
-        queryKey: ['entityDetails', accountAddress, network],
+        queryKey: dashboardKeys.entities.detail(accountAddress, network),
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
     });
 

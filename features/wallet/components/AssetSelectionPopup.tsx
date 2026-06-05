@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 
 export type AssetType = 'address' | 'fungible' | 'non_fungible' | 'pool_unit';
 
@@ -60,7 +61,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     const { data: validatorsData } = useValidatorsQuery(network);
 
     const { data: entityData, isLoading } = useQuery({
-        queryKey: ['entityDetails', address, network],
+        queryKey: dashboardKeys.entities.detail(address, network),
         queryFn: () => apiFetchEntityDetails(address, network),
         enabled: isOpen,
     });
