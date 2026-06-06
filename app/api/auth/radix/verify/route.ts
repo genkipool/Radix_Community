@@ -34,12 +34,17 @@ interface VerifyRequestBody {
  */
 function createRolaForNetwork(networkId: RadixNetworkId) {
   const config = NETWORKS[networkId];
+  const expectedOrigin = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!expectedOrigin) {
+    throw new Error('CRITICAL ERROR: NEXT_PUBLIC_APP_URL environment variable is missing. You MUST define it in Vercel and .env.local (e.g., http://localhost:3000 or https://yourdomain.com)');
+  }
+
   return Rola({
     networkId: config.networkId,
     applicationName: 'Radix Community',
     dAppDefinitionAddress: config.dAppDefinitionAddress,
-    expectedOrigin: process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+    expectedOrigin,
   });
 }
 
