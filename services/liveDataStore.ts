@@ -412,10 +412,13 @@ export function subscribeToEpochChange(callback: () => void): () => void {
 export function getLiveSnapshot(): LiveStoreSnapshot { return state; }
 export function getLastKnownEpoch(): number | null { return state.currentEpoch; }
 
+let activePollers = 0;
+
 export function startPolling(): void {
+    activePollers++;
     if (!pollingInterval) {
         init().then(() => {
-            if (!pollingInterval) {
+            if (!pollingInterval && activePollers > 0) {
                 pollingInterval = setInterval(poll, currentPollIntervalMs);
             }
         });
@@ -423,7 +426,8 @@ export function startPolling(): void {
 }
 
 export function stopPolling(): void {
-    if (pollingInterval) {
+    if (activePollers > 0) activePollers--;
+    if (activePollers === 0 && pollingInterval) {
         clearInterval(pollingInterval);
         pollingInterval = null;
     }
@@ -433,8 +437,8 @@ export function registerAddressForPolling(__address: string): void {
     startPolling();
 }
 
-function _unregisterAddressForPolling(__address: string): void {
-    // Polling is global — no per-address teardown needed
+export function unregisterAddressForPolling(__address: string): void {
+    stopPolling();
 }
 
 // Legacy compat

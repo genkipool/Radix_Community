@@ -1,5 +1,6 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { registerAddressForPolling, unregisterAddressForPolling } from '@/services/liveDataStore';
 import { Activity, ShieldCheck, Users, Shield, Globe, Server, ExternalLink } from 'lucide-react';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
@@ -422,6 +423,13 @@ export function ValidatorDelegationMetrics({
 export function ValidatorPerformanceMetrics({
     validator, locale, dt, renderRow, hideHeader
 }: Partial<ValidatorMetricsProps> & { hideHeader?: boolean }) {
+    useEffect(() => {
+        if (validator?.address) {
+            registerAddressForPolling(validator.address);
+            return () => unregisterAddressForPolling(validator.address);
+        }
+    }, [validator?.address]);
+
     if (!validator) return null;
     const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const Row = renderRow || SummaryInlineRow;
