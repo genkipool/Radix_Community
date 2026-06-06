@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
 
+const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
 const REDIS_REWARDS_ALL = 'validator_rewards_all';
 
 interface ValidatorRewardData {
@@ -9,38 +10,31 @@ interface ValidatorRewardData {
     dailyStake?: Record<string, number>;
 }
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-function getRedisClient(): Redis | null {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            return new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[AccountRewardsData] Failed to initialize Redis');
-    }
-    return null;
-}
-
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const year = searchParams.get('year');
 
-    if (!year) {
-        return NextResponse.json({ error: 'Year parameter is required' }, { status: 400 });
+    if (!year || !/^\d{4}$/.test(year)) {
+        return NextResponse.json({ error: 'Year parameter is required (YYYY format)' }, { status: 400 });
     }
 
-    const redis = getRedisClient();
+    const redis = getRedis();
     if (!redis) {
         return NextResponse.json({ error: 'Redis client not available' }, { status: 500 });
     }
 
     try {
-        // Read all rewards data from Redis
+        // Try year-indexed key first (small payload, no filtering needed)
+        const yearData = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${year}`);
+        if (yearData && Object.keys(yearData).length > 0) {
+            return NextResponse.json({ rewardsData: yearData }, {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                },
+            });
+        }
+
+        // Fallback to legacy monolithic key (will be removed after full migration)
         const allDataRaw = await redis.get(REDIS_REWARDS_ALL);
         if (!allDataRaw) {
             return NextResponse.json({ error: 'No rewards data found' }, { status: 404 });
@@ -48,7 +42,7 @@ export async function GET(request: Request) {
 
         const allData = (typeof allDataRaw === 'string' ? JSON.parse(allDataRaw) : allDataRaw) as Record<string, ValidatorRewardData>;
         
-        // Filter data to only include the requested year to reduce payload size
+        // Filter data to only include the requested year
         const filteredData: Record<string, ValidatorRewardData> = {};
         
         for (const [valAddr, valData] of Object.entries(allData)) {
@@ -82,7 +76,11 @@ export async function GET(request: Request) {
             }
         }
 
-        return NextResponse.json({ rewardsData: filteredData });
+        return NextResponse.json({ rewardsData: filteredData }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+            },
+        });
     } catch (error) {
         logger.error({ err: error, year }, '[AccountRewardsData] Error fetching from Redis');
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

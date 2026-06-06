@@ -2,11 +2,11 @@
  * services/gateway/validators.ts
  *
  * Gateway API calls for validators: fetching, uptime calculation,
- * geolocation, and network stats computation.
+ * and network stats computation.
  * Used by: app/api/validators, app/[locale]/dashboard/page.tsx.
  */
 
-import { getGateway, withRetry, runWithLimit, runInBatches, CONCURRENCY, type Network } from './client';
+import { getGateway, withRetry, runWithLimit, CONCURRENCY, type Network } from './client';
 import logger from '@/lib/logger';
 import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
@@ -14,7 +14,7 @@ import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
 import type { Validator, NetworkStats } from '@/types/radix';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import { after } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 
 
 // ── Opaque Gateway response type aliases ─────────────────────────────────────
@@ -73,23 +73,7 @@ const protocolVotesCache = protocolVotesCacheRaw as Record<string, string>;
 // to the Gateway API (to respect 160rq/min global limit) and places the fresh
 // counts directly into Upstash Redis.
 
-const getRedisClient = () => {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            const client = new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-            logger.info('[ValidatorsService] Upstash Redis client initialized successfully');
-            return client;
-        } else {
-            logger.warn('[ValidatorsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[ValidatorsService] Failed to initialize Upstash Redis');
-    }
-    return null;
-};
+
 
 const METADATA_KEYS = {
     NAME: 'name',
@@ -149,45 +133,6 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 const BATCH_SIZE = 150;
 const LSU_CHUNK_SIZE = 20;  // /state/entity/details allows max 20 addresses per request
 const EPOCH_HISTORY = 6;    // 7 per-epoch entries — enough for last 6 epochs as requested
-
-/* ═══════ GEOLOCATION HELPERS ═══════ */
-interface GeoData {
-    status: string;
-    country?: string;
-    countryCode?: string;
-    org?: string;
-    isp?: string;
-}
-
-const geoCache = new Map<string, GeoData>();
-
-async function fetchLocationData(ipOrHost: string): Promise<GeoData | null> {
-    if (!ipOrHost) return null;
-    if (geoCache.has(ipOrHost)) return geoCache.get(ipOrHost)!;
-
-    try {
-        // Use ip-api.com (Note: demo endpoint, using http as free tier is http)
-        const res = await fetch(`http://ip-api.com/json/${ipOrHost}`);
-        const data = await res.json();
-        if (data.status === 'success') {
-            geoCache.set(ipOrHost, data);
-            return data;
-        }
-    } catch (err) {
-        logger.warn({ ipOrHost, err }, '[fetchLocationData] Geolocation fetch failed');
-    }
-    return null;
-}
-
-function extractIpOrHost(metadata: GatewayMetadata | null | undefined): string {
-    const keys = ['validator_ip', 'ip_address', 'host', 'hostname', 'ip', 'registered_ip'];
-    if (!metadata || !metadata.items) return '';
-    for (const key of keys) {
-        const val = getMetadataValue(metadata, key);
-        if (val && val.length > 5) return val; // Basic length check for valid IP/Host
-    }
-    return '';
-}
 
 /* ═══════ UPTIME HELPERS ═══════ */
 function buildUptimeMap(responses: GatewayResponse[] | unknown[]): Map<string, GatewayUptimeItem> {
@@ -418,17 +363,6 @@ export async function fetchValidatorsWithLedger(
     }
 
     /* ── Phase 3: build Validator objects ── */
-    // ── Phase 6: geolocation (best-effort, in-memory cached) ─────────
-    const geoResultsList = await runInBatches(
-        validatorsList,
-        (v: GatewayValidator) => {
-            const ipOrHost = extractIpOrHost(v.metadata as GatewayMetadata);
-            return ipOrHost ? fetchLocationData(ipOrHost) : Promise.resolve(null);
-        },
-        CONCURRENCY.GEO,
-    );
-    const geoResultsMap = new Map<string, GeoData | null>();
-    validatorsList.forEach((v: GatewayValidator, i: number) => geoResultsMap.set(v.address as string, geoResultsList[i]));
 
     /* ── Phase 3 + 4 REMOVED ─────────────────────────────────────────
        Previously: ~250 nonFungibleLocation calls (1/validator with owner_role)
@@ -449,7 +383,7 @@ export async function fetchValidatorsWithLedger(
     // ── Phase 4: Holder counts (INSTANT REDIS) ──────────────────────
     if (lsuAddresses.length > 0) {
         try {
-            const redis = getRedisClient();
+            const redis = getRedis();
             if (redis) {
                 // Recuperar las cuentas masivamente desde el diccionario subido por el cron
                 const allHolders = await redis.hgetall<Record<string, number>>(`lsu_holders_${network}`);
@@ -608,14 +542,13 @@ export async function fetchValidatorsWithLedger(
         const protocolVote = PROTOCOL_SIGNALS[rawProtocolVote] || sanitizeText(rawProtocolVote) || 'None';
 
         // ── Technical & Location ──
-        const geo = geoResultsMap.get(v.address);
 
         const claimTokenResourceAddress = state?.claim_token_resource_address ||
             getMetadataValue(v.metadata, METADATA_KEYS.CLAIM_NFT) || '';
-        // Metadata first, then Geo fallback
-        const _provider = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || geo?.org || geo?.isp || '';
-        const _country = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || geo?.country || '';
-        const countryCode = getMetadataValue(v.metadata, 'country_code') || geo?.countryCode || '';
+        // Provider and country from validator's own metadata only
+        const _provider = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || '';
+        const _country = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || '';
+        const countryCode = getMetadataValue(v.metadata, 'country_code') || '';
 
         // Owner address derived from protocol state + metadata
         const _ownerRole = state?.owner_role as {
@@ -639,8 +572,8 @@ export async function fetchValidatorsWithLedger(
         // ── Technical Metadata (from validator's own metadata only) ───────
         const versionFinal = getMetadataValue(v.metadata, METADATA_KEYS.VERSION);
         const commitFinal = getMetadataValue(v.metadata, METADATA_KEYS.COMMIT);
-        const providerFinal = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || geo?.org || geo?.isp || '';
-        const countryFinal = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || geo?.country || '';
+        const providerFinal = getMetadataValue(v.metadata, METADATA_KEYS.PROVIDER) || '';
+        const countryFinal = getMetadataValue(v.metadata, METADATA_KEYS.COUNTRY) || '';
 
         return {
             id: v.address,
@@ -921,7 +854,7 @@ async function getValidatorsFromDataCache(network: Network) {
     const result = await fetchValidatorsRaw(network);
 
     // Optional: Background seed Redis on every Data Cache miss
-    const redis = getRedisClient();
+    const redis = getRedis();
     if (redis) {
         const backupKey = `radix_validators_${network}_backup`;
         redis.set(backupKey, result).catch((e) =>
@@ -948,7 +881,7 @@ const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
  *   4. Absolute Fallback — returns empty state ([]) to prevent UI crash.
  */
 export async function getValidatorsCached(network: Network = 'mainnet') {
-    const redis = getRedisClient();
+    const redis = getRedis();
     const backupKey = `radix_validators_${network}_backup`;
 
     // ── Step 1: Try Storage for instant SWR return ─────────────────────────

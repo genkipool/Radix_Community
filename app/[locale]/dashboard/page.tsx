@@ -161,6 +161,9 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
   // Read transaction ID or Account Address from URL
   const txid = searchParamsResolved.tx ? (validateAddress(searchParamsResolved.tx) || validateTxHash(searchParamsResolved.tx)) : null;
 
+  // Launch marketData early — runs independently of validator/transaction prefetch
+  const marketDataPromise = getMarketDataCached();
+
   try {
     // 1. Fetch the first page of transactions explicitly so we can scan it for resources
     const txData = await (async () => {
@@ -205,9 +208,6 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
 
 
     // ── PHASE 1: Critical data (must complete before render) ──────────────
-    // Validators prefetch is async; transactions are set synchronously.
-    // Using a dedicated await ensures validators are in the cache before
-    // we enrich proposer info and dehydrate.
     const txQueryKey = ['transactions', network, txid ?? undefined, activeTxTag, initialDateRange];
 
     await serverQueryClient.prefetchQuery({
@@ -242,7 +242,8 @@ export default async function DashboardPage({ searchParams, params }: DashboardP
     logger.error({ err: error }, '[DashboardPage] Failed to prefetch data: %s', message);
   }
 
-  const marketData = await getMarketDataCached();
+  // Await the marketData promise launched in parallel during PHASE 1
+  const marketData = await marketDataPromise;
 
   return (
     <ReactQueryHydrate state={dehydrate(serverQueryClient)}>

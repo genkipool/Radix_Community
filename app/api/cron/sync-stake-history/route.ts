@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import { getValidatorsCached } from '@/services/gateway/validators';
 import {
     fetchStakeHistoryIncremental,
@@ -26,13 +26,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const redisUrl = process.env.KV_REST_API_URL;
-    const redisToken = process.env.KV_REST_API_TOKEN;
-    if (!redisUrl || !redisToken) {
+    const redis = getRedis();
+    if (!redis) {
         return NextResponse.json({ error: 'Redis configuration missing' }, { status: 500 });
     }
-
-    const redis = new Redis({ url: redisUrl, token: redisToken });
 
     const network =
         (url.searchParams.get('network') as 'mainnet' | 'stokenet') || 'mainnet';

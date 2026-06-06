@@ -23,7 +23,7 @@ import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from 
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
 import { resolveProposerFromReceipt, type ReceiptLike } from '@/features/dashboard/explorador/utils/proposerUtils';
 import { after } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import { isValidAddressForNetwork } from '@/utils/apiValidation';
 
 
@@ -629,7 +629,7 @@ export async function enrichTransactionsProposerInfo(
     const needsEnrichment = transactions.some(tx => tx.proposerInfo && !tx.proposerInfo.name);
     if (!needsEnrichment) return transactions;
 
-    const redis = getRedisClient();
+    const redis = getRedis();
     if (!redis) return transactions;
 
     try {
@@ -984,7 +984,7 @@ async function getFilteredTransactionsFromDataCache(
     const result = await fetchFilteredTransactionsRaw(options);
 
     // Seed Redis for SWR
-    const redis = getRedisClient();
+    const redis = getRedis();
     if (backupKey && redis && result.transactions && result.transactions.length > 0) {
         redis.set(backupKey, result).catch(e =>
             logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
@@ -1051,7 +1051,7 @@ export async function fetchFilteredTransactions(options: {
     const tagSlug = tag.replace(/\s+/g, '_').toLowerCase();
     const backupKey = `radix_txs_filtered_${network}_${tagSlug}`;
 
-    const redis = getRedisClient();
+    const redis = getRedis();
 
     // ── Step 1: Redis Fast Hit ───────────────────────────────────────────────
     if (redis) {
@@ -1323,7 +1323,7 @@ export async function fetchStakeHistoryCached(
         return [];
     }
 
-    const redis = getRedisClient();
+    const redis = getRedis();
     const historyMap = `stake_history_map_${network}`;
 
     if (!redis) return [];
@@ -1394,23 +1394,7 @@ export async function fetchRoundProposer(
 // ─────────────────────────────────────────────────────────────────────────────
 const REVALIDATION_THRESHOLD = 1 * 60 * 1000; // 1 minute
 
-const getRedisClient = () => {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            const client = new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-            logger.info('[TransactionsService] Upstash Redis client initialized successfully');
-            return client;
-        } else {
-            logger.warn('[TransactionsService] Upstash Redis environment variables are missing (KV_REST_API_URL / KV_REST_API_TOKEN)');
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[TransactionsService] Failed to initialize Upstash Redis');
-    }
-    return null;
-};
+
 
 /**
  * Cached version of fetchRecentTransactions (Data Cache).
@@ -1444,25 +1428,13 @@ async function getRecentTransactionsFromDataCache(
 
     // Seed Storage for future requests (tip only)
     if (isTip) {
-        const redis = getRedisClient();
+        const redis = getRedis();
         if (redis && result.transactions && result.transactions.length > 0) {
             const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
             redis.set(backupKey, result).catch((e) =>
                 logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
             );
 
-            // Pre-warm the filtered views to keep them mathematically in sync
-            const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
-            Promise.allSettled(
-                prefetchTags.map(async (t) => {
-                    const opParams = { tag: t, start: null, end: null, cursor: undefined, limit, address: undefined, network, timezone: 'UTC' };
-                    const tagRes = await fetchFilteredTransactionsRaw(opParams);
-                    if (tagRes.transactions && tagRes.transactions.length > 0) {
-                        const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                        await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, tagRes);
-                    }
-                })
-            ).catch(() => { });
         }
     }
 
@@ -1487,7 +1459,7 @@ export async function getRecentTransactionsCached(
     const isTip = !cursor;
     // Fix: Unify tip limit to 100 to prevent smaller queries from shrinking the cache
     const actualLimit = isTip ? 100 : limit;
-    const redis = isTip ? getRedisClient() : null;
+    const redis = isTip ? getRedis() : null;
     const backupKey = `radix_txs_${network}_tip_${actualLimit}_backup`;
 
     // ── Step 1: Try Storage for instant SWR return (tip only) ──────────────
@@ -1523,24 +1495,13 @@ export async function getRecentTransactionsCached(
                                 // Update Redis with timestamp + Invalidate Data Cache
                                 await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
 
-                                // Pre-warm the filtered views to keep them mathematically in sync
-                                const prefetchTags = ['Success', 'Failed', 'With Message', 'With NFTs'];
-                                await Promise.allSettled(
-                                    prefetchTags.map(async (t) => {
-                                        const opParams = { tag: t, start: null, end: null, cursor: undefined, limit: actualLimit, address: undefined, network, timezone: 'UTC' };
-                                        const tagRes = await fetchFilteredTransactionsRaw(opParams);
-                                        if (tagRes.transactions && tagRes.transactions.length > 0) {
-                                            const tagSlug = t.replace(/\s+/g, '_').toLowerCase();
-                                            await redis.set(`radix_txs_filtered_${network}_${tagSlug}`, { ...tagRes, updatedAt: Date.now() });
-                                        }
-                                    })
-                                );
+
 
                                 // revalidateTag is safe here because we're in a standard server action/route/after context
                                 revalidateTag(`transactions-${network}`, 'max');
                             }
 
-                            logger.info({ network }, '[TransactionsService] Background revalidation complete with pre-warmed tags');
+                            logger.info({ network }, '[TransactionsService] Background revalidation complete');
                         } catch (bgError) {
                             logger.error({ err: bgError, network }, '[TransactionsService] Background revalidation failed');
                         }

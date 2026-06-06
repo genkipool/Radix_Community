@@ -1,4 +1,4 @@
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
 
 export interface MarketData {
@@ -14,22 +14,7 @@ export interface MarketData {
 
 const REDIS_KEY = 'radix_market_data';
 
-/**
- * Returns an Upstash Redis client or null when env vars are missing.
- */
-const getRedisClient = () => {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            return new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[MarketData] Failed to initialize Redis');
-    }
-    return null;
-};
+
 
 /**
  * Fetches fresh market data from CoinGecko API.
@@ -85,7 +70,7 @@ const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
  * 4. If not found, fetch fresh, store in Redis, and return.
  */
 export const getMarketDataCached = async (): Promise<MarketData | null> => {
-    const redis = getRedisClient();
+    const redis = getRedis();
 
     // ── Step 1: Redis fast hit ─────────────────────────────────────────
     if (redis) {

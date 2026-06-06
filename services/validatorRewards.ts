@@ -1,4 +1,4 @@
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -39,26 +39,12 @@ interface RewardsSyncMeta {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const REDIS_REWARDS_ALL = 'validator_rewards_all';
+const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
 const REDIS_REWARDS_META = 'validator_rewards_meta';
 const REDIS_EPOCH_REWARDS = 'validator_epoch_rewards';
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const MAX_YEARS_TO_KEEP = 5;
 
-// ── Redis Helper ───────────────────────────────────────────────────────────────
-
-export const getRewardsRedisClient = (): Redis | null => {
-    try {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            return new Redis({
-                url: process.env.KV_REST_API_URL,
-                token: process.env.KV_REST_API_TOKEN,
-            });
-        }
-    } catch (e) {
-        logger.error({ err: e }, '[ValidatorRewards] Failed to initialize Redis');
-    }
-    return null;
-};
 
 // ── Gateway API ────────────────────────────────────────────────────────────────
 
@@ -152,7 +138,7 @@ export async function syncRewardsToRedis(
     events: EpochRewardEntry[],
     _latestStateVersion: number,
 ): Promise<{ processedValidators: number; processedEpochs: number[] }> {
-    const redis = getRewardsRedisClient();
+    const redis = getRedis();
     if (!redis) throw new Error('Redis not available');
 
     // Group events by validator
@@ -239,6 +225,44 @@ export async function syncRewardsToRedis(
 
     pipeline.set(REDIS_REWARDS_ALL, allData);
 
+    // Write year-indexed keys for efficient per-year reads
+    const yearBuckets = new Map<string, Record<string, ValidatorRewardData>>();
+    for (const [address, data] of Object.entries(allData)) {
+        // Collect all years this validator has data for
+        const years = new Set<string>();
+        if (data.daily) Object.keys(data.daily).forEach(d => years.add(d.substring(0, 4)));
+        if (data.dailyDelegants) Object.keys(data.dailyDelegants).forEach(d => years.add(d.substring(0, 4)));
+        if (data.dailyStake) Object.keys(data.dailyStake).forEach(d => years.add(d.substring(0, 4)));
+
+        for (const yr of years) {
+            if (!yearBuckets.has(yr)) yearBuckets.set(yr, {});
+            const bucket = yearBuckets.get(yr)!;
+
+            // Extract only entries for this year
+            const filterByYear = (map?: Record<string, number>) => {
+                if (!map) return undefined;
+                const filtered: Record<string, number> = {};
+                for (const [key, val] of Object.entries(map)) {
+                    if (key.startsWith(yr)) filtered[key] = val;
+                }
+                return Object.keys(filtered).length > 0 ? filtered : undefined;
+            };
+
+            bucket[address] = {
+                lastSyncedEpoch: data.lastSyncedEpoch,
+                daily: filterByYear(data.daily) ?? {},
+                yearly: data.yearly[yr] !== undefined ? { [yr]: data.yearly[yr] } : {},
+                dailyDelegants: filterByYear(data.dailyDelegants),
+                yearlyDelegants: data.yearlyDelegants?.[yr] !== undefined ? { [yr]: data.yearlyDelegants[yr] } : {},
+                dailyStake: filterByYear(data.dailyStake),
+            };
+        }
+    }
+
+    for (const [yr, bucket] of yearBuckets) {
+        pipeline.set(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`, bucket);
+    }
+
     // Store last 6 epochs reward data for the epoch history table
     const epochNumbers = Array.from(processedEpochs).sort((a, b) => b - a);
     if (epochNumbers.length > 0) {
@@ -303,7 +327,7 @@ async function getCachedAllEpochRewards() {
     cacheLife("minutes");
     cacheTag('all_validator_epoch_rewards_cache');
 
-    const redis = getRewardsRedisClient();
+    const redis = getRedis();
     if (!redis) return null;
     try {
         return await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
@@ -340,10 +364,31 @@ export async function getEpochRewardsForTable(
 export async function getAvailableYears(
     validatorAddress: string,
 ): Promise<string[]> {
-    const redis = getRewardsRedisClient();
+    const redis = getRedis();
     if (!redis) return [];
 
     try {
+        // Try year-indexed keys first (much smaller payloads)
+        const currentYear = new Date().getFullYear();
+        const candidateYears: string[] = [];
+        for (let y = currentYear; y >= currentYear - MAX_YEARS_TO_KEEP; y--) {
+            candidateYears.push(y.toString());
+        }
+
+        const checks = await Promise.all(
+            candidateYears.map(async (yr) => {
+                const data = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`);
+                if (data && data[validatorAddress]) return yr;
+                return null;
+            })
+        );
+
+        const years = checks.filter((yr): yr is string => yr !== null);
+        if (years.length > 0) {
+            return years.sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+        }
+
+        // Fallback to legacy monolithic key
         const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
         const data = allData?.[validatorAddress];
         if (!data?.yearly) return [];
@@ -364,15 +409,35 @@ export async function generateRewardsCsv(
     validatorAddress: string,
     year: string,
 ): Promise<{ csv: string; totalXrd: number } | null> {
-    const redis = getRewardsRedisClient();
+    const redis = getRedis();
     if (!redis) return null;
 
     try {
+        // Try year-indexed key first (efficient)
+        const yearData = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${year}`);
+        const yearEntry = yearData?.[validatorAddress];
+        if (yearEntry?.daily) {
+            const entries = Object.entries(yearEntry.daily)
+                .filter(([date]) => date.startsWith(year))
+                .sort(([a], [b]) => a.localeCompare(b));
+
+            if (entries.length > 0) {
+                const header = '"Type","Buy","Cur.","Sell","Cur.","Fee","Cur.","Exchange","Group","Comment","Date"';
+                const rows = entries.map(([date, xrd]) => {
+                    const formattedDate = `${date} 00:00:00`;
+                    const shortAddr = `${validatorAddress.substring(0, 20)}...`;
+                    return `"Staking","${xrd.toFixed(8)}","XRD","","","","","Radix Network","Staking","Daily reward - ${shortAddr}","${formattedDate}"`;
+                });
+                const totalXrd = entries.reduce((acc, [_, xrd]) => acc + xrd, 0);
+                return { csv: [header, ...rows].join('\n'), totalXrd };
+            }
+        }
+
+        // Fallback to legacy monolithic key
         const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
         const data = allData?.[validatorAddress];
         if (!data?.daily) return null;
 
-        // Filter daily entries for the requested year  
         const entries = Object.entries(data.daily)
             .filter(([date]) => date.startsWith(year))
             .sort(([a], [b]) => a.localeCompare(b));
@@ -402,7 +467,7 @@ export async function generateRewardsCsv(
  * Returns the sync metadata (lastProcessedEpoch, lastRunTimestamp).
  */
 export async function getRewardsSyncMeta(): Promise<RewardsSyncMeta | null> {
-    const redis = getRewardsRedisClient();
+    const redis = getRedis();
     if (!redis) return null;
 
     try {

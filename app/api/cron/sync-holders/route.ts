@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 import { getValidatorsCached } from '@/services/gateway/validators';
 import logger from '@/lib/logger';
 import type { Validator } from '@/types/radix';
@@ -22,13 +22,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const redisUrl = process.env.KV_REST_API_URL;
-    const redisToken = process.env.KV_REST_API_TOKEN;
-    if (!redisUrl || !redisToken) {
+    const redis = getRedis();
+    if (!redis) {
         return NextResponse.json({ error: 'Redis configuration missing' }, { status: 500 });
     }
-
-    const redis = new Redis({ url: redisUrl, token: redisToken });
     const BATCH_SIZE = 15; // Number of LSUs to sync per execution to avoid Vercel timeouts and API rate limit bursts
 
     // Using Stokenet vs Mainnet based on an env or fixed to mainnet if not specified.
