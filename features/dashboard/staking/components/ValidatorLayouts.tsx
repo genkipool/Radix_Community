@@ -528,23 +528,25 @@ const ExpandPanel = ({
     <AnimatePresence initial={false}>
         {isExpanded && (
             <m.div
-                className="flex-1 flex flex-col overflow-hidden w-full"
+                className="overflow-hidden w-full"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                exit={{ opacity: 1, height: 0 }}
                 transition={EXPAND_TRANSITION}
             >
-                <ValidatorExpandedBody
-                    validator={validator}
-                    t={t}
-                    onCopy={onCopy}
-                    copiedAddress={copiedAddress}
-                    columns={columns}
-                    network={network}
-                    marketData={marketData}
-                    locale={locale}
-                    onDownloadCsv={onDownloadCsv}
-                />
+                <div className="min-h-[300px]">
+                    <ValidatorExpandedBody
+                        validator={validator}
+                        t={t}
+                        onCopy={onCopy}
+                        copiedAddress={copiedAddress}
+                        columns={columns}
+                        network={network}
+                        marketData={marketData}
+                        locale={locale}
+                        onDownloadCsv={onDownloadCsv}
+                    />
+                </div>
             </m.div>
         )}
     </AnimatePresence>

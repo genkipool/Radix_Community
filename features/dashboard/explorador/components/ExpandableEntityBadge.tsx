@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useId } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Copy, Download } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sanitizeText } from '@/utils/sanitize';
@@ -236,10 +236,10 @@ export function ExpandableEntityBadge({
     };
 
     return (
-        <div className={`flex flex-col ${isResourceCard ? 'bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-sm' : `border ${bg}`} rounded-xl overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`}>
+        <div className={`flex flex-col ${isResourceCard ? `bg-[var(--color-surface)] border border-[var(--color-card-border)] transition-all duration-300 overflow-hidden ${expanded ? 'ring-2 ring-[var(--color-primary)] shadow-md' : 'shadow-md hover:shadow-lg'}` : `border ${bg} overflow-hidden transition-all ${expanded ? 'shadow-lg shadow-black/10' : ''}`} rounded-xl`}>
             {/* ── Clickable header ─────────────────────── */}
             <div
-                className={`flex-1 flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5'} min-h-[52px] cursor-pointer hover:bg-white/5 transition-colors group/entity`}
+                className={`flex-1 flex items-center justify-between ${isResourceCard ? 'gap-3 p-3' : 'gap-2 p-2.5 hover:bg-white/5'} min-h-[52px] cursor-pointer transition-colors group/entity`}
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
@@ -263,11 +263,11 @@ export function ExpandableEntityBadge({
                     )}
                     <div className="min-w-0 flex-1 flex flex-col">
                         {clean.startsWith('pool_') && blueprintName ? (
-                            <span className={`${isResourceCard ? 'text-sm font-bold' : 'text-[11px] font-semibold'} truncate ${color}`}>
+                            <span className={`${isResourceCard ? 'text-sm font-bold group-hover:text-[var(--color-secondary)] transition-colors' : 'text-[11px] font-semibold'} truncate ${color}`}>
                                 {blueprintName}
                             </span>
                         ) : entityName ? (
-                            <span className={`${isResourceCard ? 'text-sm font-bold' : 'text-[11px] font-semibold'} truncate ${color}`}>
+                            <span className={`${isResourceCard ? 'text-sm font-bold group-hover:text-[var(--color-secondary)] transition-colors' : 'text-[11px] font-semibold'} truncate ${color}`}>
                                 {entityName}
                             </span>
                         ) : null}
@@ -386,14 +386,15 @@ export function ExpandableEntityBadge({
             )}
 
             {/* ── Expandable panel ────────────────────── */}
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
                 {expanded && (
-                    <motion.div
+                    <m.div
+                        key="expanded-panel"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden bg-[var(--color-bg)]"
                     >
                         <div
                             className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)]"
@@ -401,7 +402,7 @@ export function ExpandableEntityBadge({
                         >
                             <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityTabs-${instanceId}`} />
 
-                            <div className="px-4 py-3">
+                            <div className="px-4 py-3 min-h-[200px]">
                                 {isLoading ? (
                                     <PanelLoadingState tt={tt} />
                                 ) : (
@@ -564,7 +565,7 @@ export function ExpandableEntityBadge({
                                 )}
                             </div>
                         </div>
-                    </motion.div>
+                    </m.div>
                 )}
             </AnimatePresence>
         </div>
