@@ -232,7 +232,7 @@ export function AccountCard({
                                         {accT?.total_lsu || 'TOTAL LSU'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-blue-500 font-mono">
+                                        <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
                                             {statsLoading ? '-' : formatNumber(totalLsuAmount, 2, locale)}
                                         </span>
                                         <FiatValueDisplay amount={totalLsuXrdEquivalent} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
@@ -243,7 +243,7 @@ export function AccountCard({
                                         {accT?.stake_xrd || 'STAKE XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-text-main)] font-mono">
+                                        <span className="text-sm font-bold text-[var(--color-primary)] font-mono">
                                             {statsLoading ? '-' : formatNumber(stakedTotal, 2, locale)}
                                         </span>
                                         <FiatValueDisplay amount={stakedTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
@@ -254,7 +254,7 @@ export function AccountCard({
                                         {accT?.unstake_xrd || 'UNSTAKE XRD'}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-orange-500 font-mono">
+                                        <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
                                             {statsLoading ? '-' : formatNumber(unstakeTotal, 2, locale)}
                                         </span>
                                         <FiatValueDisplay amount={unstakeTotal} marketData={marketData ?? undefined} statsLoading={statsLoading} locale={locale} />
@@ -295,7 +295,7 @@ export function AccountCard({
                                             handleTransactionsMouseEnter();
                                         }
                                     }}
-                                    layoutId="accountCardTabs"
+                                    layoutId={`accountCardTabs-${address}`}
                                 />
 
                                 <div className="px-4 py-3 pb-6">

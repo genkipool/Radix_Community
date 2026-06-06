@@ -44,11 +44,11 @@ export const BatchValidatorStakeAction = ({
 
     return (
         <div className="flex flex-col gap-3 mb-6">
-            <div className="text-xs font-bold text-[var(--color-primary)] flex justify-between items-center px-1">
+            <div className="text-[10px] font-bold text-[var(--color-text-main)] uppercase tracking-wider flex justify-between items-center px-1">
                 <span className="flex items-center gap-2">
                     {accT?.global_batch_title_short || 'Distribuir XRD'}
                 </span>
-                <span>{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
+                <span className="text-[var(--color-text-muted)] tracking-normal normal-case">{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
             </div>
 
             {children && (

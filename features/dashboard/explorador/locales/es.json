@@ -524,6 +524,8 @@
         "transaction_rejected": "La transacción fue rechazada.",
         "info_tooltip": "Información sobre acciones globales y mixtas",
         "validator_search_placeholder": "Buscar validadores para delegar...",
+        "select_validator_title": "Seleccionar validador",
+        "add_validator_btn": "Añadir",
         "info_modal_title_operations": "Resumen de Operaciones",
         "sending_to_wallet": "Enviando a la Billetera...",
         "send_to_wallet": "Enviar a la billetera",

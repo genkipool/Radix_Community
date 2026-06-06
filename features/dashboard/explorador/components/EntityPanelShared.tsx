@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { m } from "motion/react";
-import { Check, Copy, Activity } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
 import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip, parseProgrammaticJson } from '../../utils/resourceUtils';
@@ -222,11 +222,11 @@ export function PanelTabBar<T extends string>({
 /* ─────────────────────────────────────────
    PanelLoadingState
 ───────────────────────────────────────── */
-export function PanelLoadingState({ tt }: { tt?: Partial<TranslationsT['dashboard']['transactions']> }) {
+export function PanelLoadingState({ tt: _tt }: { tt?: Partial<TranslationsT['dashboard']['transactions']> }) {
     return (
-        <div className="flex items-center gap-2 py-3 text-[var(--color-text-muted)]">
-            <Activity className="size-3.5 animate-spin text-[var(--color-primary)]" />
-            <span className="text-xs">{tt?.resource_panel_loading || 'Loading details...'}</span>
+        <div className="animate-pulse space-y-4">
+            <div className="h-20 bg-[var(--color-card-border)] rounded-xl opacity-30 w-full" />
+            <div className="h-10 bg-[var(--color-card-border)] rounded-xl opacity-20 w-3/4" />
         </div>
     );
 }

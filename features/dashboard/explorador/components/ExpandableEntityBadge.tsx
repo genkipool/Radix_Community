@@ -28,7 +28,6 @@ import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/expl
 import {
     SummaryInlineRow,
     PanelTabBar,
-    PanelLoadingState,
     PanelMetadataTab,
     PanelConfigurationTab,
     PanelRawTab,
@@ -210,7 +209,7 @@ export function ExpandableEntityBadge({
             : null;
 
     // Lazy fetch — only when expanded (eager for pools)
-    const { data: entityData, isLoading } = useQuery<GatewayEntityDetails | null>({
+    const { data: entityData } = useQuery<GatewayEntityDetails | null>({
         queryKey: entityKeys.full(clean, network),
         queryFn: () => apiFetchEntityDetails(clean, network as 'mainnet' | 'stokenet'),
         enabled: expanded || clean.startsWith('pool_'),
@@ -403,9 +402,6 @@ export function ExpandableEntityBadge({
                             <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`entityTabs-${instanceId}`} />
 
                             <div className="px-4 py-3 min-h-[200px]">
-                                {isLoading ? (
-                                    <PanelLoadingState tt={tt} />
-                                ) : (
                                     <>
                                         {/* ── SUMMARY ── */}
                                         {activeTab === 'summary' && (
@@ -451,7 +447,7 @@ export function ExpandableEntityBadge({
 
                                         {/* ── STAKING ── */}
                                         {activeTab === 'staking' && (
-                                            <React.Suspense fallback={<div className="p-4 text-xs text-[var(--color-text-muted)]">Loading staking…</div>}>
+                                            <React.Suspense fallback={null}>
                                                 <AccountStakingTab
                                                     stakingRows={stakingRows}
                                                     tt={tt}
@@ -562,7 +558,6 @@ export function ExpandableEntityBadge({
                                             />
                                         )}
                                     </>
-                                )}
                             </div>
                         </div>
                     </m.div>

@@ -908,8 +908,8 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         return (
             <>
                 {/* Add destination input section */}
-                <div className="flex items-center justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3">
-                    <span className="text-xs text-[var(--color-text-main)] font-medium">{navT.wallet_add_dest_input || 'Añadir input dirección de destino'}</span>
+                <div className="flex items-end justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3">
+                    <span className="text-xs text-[var(--color-text-main)] font-medium mb-1">{navT.wallet_add_dest_input || 'Añadir input dirección de destino'}</span>
                     <input
                         type="number"
                         min={0}
@@ -928,7 +928,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 handleConfirmSelection();
                             }
                         }}
-                        className="w-14 text-center bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-1.5 px-1 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="w-14 h-8 text-center bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg px-1 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         title="Cantidad de inputs"
                     />
                 </div>
@@ -1373,7 +1373,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     setPopupDestTarget(null);
 
                                 }}
-                                className="mb-2 size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
+                                className="size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
                                 title="Cerrar"
                             >
                                 <X className="size-4" />
@@ -1421,7 +1421,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <button
                                     type="button"
                                     onClick={handleConfirmSelection}
-                                    className="w-full py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
+                                    className="w-full flex items-center justify-center py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 transition-colors"
                                 >
                                     {navT.wallet_confirm_selection || 'Agregar'}
                                 </button>

@@ -10,7 +10,7 @@ import { resolveTransactionType } from '../utils/transactionUtils';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import type { TransactionInfo, Validator } from '@/types/radix';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import { formatNumber } from '@/utils/formatters';
 import type { FungibleChange, NonFungibleChange } from '@/features/dashboard/types/shared.types';
@@ -143,7 +143,6 @@ export function AccountTransactionsTab({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-        isLoading,
         isError,
         error
     } = useInfiniteQuery({
@@ -254,7 +253,6 @@ export function AccountTransactionsTab({
         });
     })();
 
-    const txLoadingText = 'Loading transactions...';
     const txErrorText = 'Error loading transactions.';
     const txNoTransactionsText = 'No transactions found for this account.';
 
@@ -277,15 +275,6 @@ export function AccountTransactionsTab({
         }
         return rawMsg;
     };
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-12 text-[var(--color-text-muted)] gap-3">
-                <Loader2 className="size-6 animate-spin text-[var(--color-primary)]" />
-                <span className="text-sm font-medium">{txLoadingText}</span>
-            </div>
-        );
-    }
 
     if (isError) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -456,7 +445,6 @@ export function AccountTransactionsTab({
                     >
                         {isFetchingNextPage ? (
                             <>
-                                <Loader2 className="size-3.5 animate-spin" />
                                 {accT?.tx_loading || 'Loading...'}
                             </>
                         ) : (

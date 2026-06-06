@@ -13,7 +13,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { AccountValidatorStakeAction } from './AccountValidatorStakeAction';
 import { BatchValidatorStakeAction } from './BatchValidatorStakeAction';
 import { ValidatorCarouselSelector } from './ValidatorCarouselSelector';
-import { PanelLoadingState } from './EntityPanelShared';
+
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { GatewayEntityDetails, TranslationsT, MarketData } from '@/features/dashboard/types';
 import { getCurrencyForLocale, formatCurrency } from '../../../../utils/currencyUtils';
@@ -200,7 +200,7 @@ function ValidatorStakingRow({
             <div className="grid grid-cols-3 gap-4 py-2 border-t border-[var(--color-card-border)]/50">
                 <div className="flex flex-col items-center text-center">
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.stake_xrd || 'STAKE XRD'}</span>
-                    <span className="text-sm font-mono font-black text-[var(--color-text-main)]">{formatNumber(ownerMode ? ownerLockedStakeXrd : row.xrdInStake, 2, locale)} XRD</span>
+                    <span className="text-sm font-mono font-black text-[var(--color-primary)]">{formatNumber(ownerMode ? ownerLockedStakeXrd : row.xrdInStake, 2, locale)} XRD</span>
                 </div>
                 <div className="flex flex-col items-center text-center" title={!ownerMode ? (() => {
                     const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
@@ -216,7 +216,7 @@ function ValidatorStakingRow({
                     return lines.length > 0 ? lines.join('\n') : undefined;
                 })() : (ownerData?.unstakeTooltip || undefined)}>
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.unstake_xrd || 'UNSTAKE XRD'}</span>
-                    <span className="text-sm font-mono font-black text-orange-500">{formatNumber(ownerMode ? ownerPendingUnlockXrd : row.xrdInUnstake, 2, locale)} XRD</span>
+                    <span className="text-sm font-mono font-black text-[var(--color-secondary)]">{formatNumber(ownerMode ? ownerPendingUnlockXrd : row.xrdInUnstake, 2, locale)} XRD</span>
                 </div>
                 <div className="flex flex-col items-center text-center" title={ownerMode ? ((tt as any)?.dashboard?.staking?.claim_tooltip || 'The claimed LSU tokens are added to the delegator stake of this validator.') : undefined}>
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.claim_xrd || 'CLAIM XRD'}</span>
@@ -357,10 +357,6 @@ export function AccountSummaryTab({
     if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
         setHasInitializedSelections(true);
         setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
-    }
-
-    if (isLoading) {
-        return <PanelLoadingState tt={tt} />;
     }
 
     // Show all staked validators always, plus any additionally selected ones
@@ -698,7 +694,7 @@ export function AccountSummaryTab({
                                     title={accT?.total_lsu || 'TOTAL LSU'}
                                     amount={String(totalLsuAmount)}
                                     symbol="LSU"
-                                    valueColor="text-blue-500 dark:text-blue-400"
+                                    valueColor="text-[var(--color-secondary)]"
                                     marketData={marketData}
                                     locale={locale}
                                     rawFiatAmount={totalLsuXrdEquivalent}
@@ -711,7 +707,7 @@ export function AccountSummaryTab({
                                     title={accT?.stake_xrd || 'STAKE XRD'}
                                     amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                     symbol="XRD"
-                                    valueColor="text-[var(--color-text-main)]"
+                                    valueColor="text-[var(--color-primary)]"
                                     marketData={marketData}
                                     locale={locale}
                                     rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
@@ -722,7 +718,7 @@ export function AccountSummaryTab({
                                     title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                     amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                     symbol="XRD"
-                                    valueColor="text-orange-500"
+                                    valueColor="text-[var(--color-secondary)]"
                                     marketData={marketData}
                                     locale={locale}
                                     rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
@@ -758,7 +754,7 @@ export function AccountSummaryTab({
                                 title={accT?.total_lsu || 'TOTAL LSU'}
                                 amount={String(totalLsuAmount)}
                                 symbol="LSU"
-                                valueColor="text-blue-500 dark:text-blue-400"
+                                valueColor="text-[var(--color-secondary)]"
                                 marketData={marketData}
                                 locale={locale}
                                 rawFiatAmount={totalLsuXrdEquivalent}
@@ -768,7 +764,7 @@ export function AccountSummaryTab({
                                 title={accT?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                 symbol="XRD"
-                                valueColor="text-[var(--color-text-main)]"
+                                valueColor="text-[var(--color-primary)]"
                                 marketData={marketData}
                                 locale={locale}
                                 rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0)}
@@ -778,7 +774,7 @@ export function AccountSummaryTab({
                                 title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                 symbol="XRD"
-                                valueColor="text-orange-500"
+                                valueColor="text-[var(--color-secondary)]"
                                 marketData={marketData}
                                 locale={locale}
                                 rawFiatAmount={stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0)}
@@ -811,7 +807,7 @@ export function AccountSummaryTab({
                                 title={accT?.total_lsu || 'TOTAL LSU'}
                                 amount={String(totalLsuAmount)}
                                 symbol="LSU"
-                                valueColor="text-blue-500 dark:text-blue-400"
+                                valueColor="text-[var(--color-secondary)]"
                                 marketData={marketData}
                                 locale={locale}
                                 rawFiatAmount={totalLsuXrdEquivalent}
@@ -822,7 +818,7 @@ export function AccountSummaryTab({
                                 title={accT?.stake_xrd || 'STAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInStake, 0))}
                                 symbol="XRD"
-                                valueColor="text-[var(--color-text-main)]"
+                                valueColor="text-[var(--color-primary)]"
                                 marketData={marketData}
                                 locale={locale}
                             />
@@ -830,7 +826,7 @@ export function AccountSummaryTab({
                                 title={accT?.unstake_xrd || 'UNSTAKE XRD'}
                                 amount={String(stakingRows.reduce((acc, row) => acc + row.xrdInUnstake, 0))}
                                 symbol="XRD"
-                                valueColor="text-orange-500"
+                                valueColor="text-[var(--color-secondary)]"
                                 marketData={marketData}
                                 locale={locale}
                             />
@@ -899,6 +895,8 @@ export function AccountSummaryTab({
                                     selectedValues={selectedValidatorAddresses}
                                     onChange={setSelectedValidatorAddresses}
                                     placeholder={accT?.validator_search_placeholder || 'Search validators to delegate...'}
+                                    headerTitle={accT?.select_validator_title || 'Select validator'}
+                                    footerActionText={accT?.add_validator_btn || 'Add'}
                                 />
                             </BatchValidatorStakeAction>
                         </div>
@@ -936,7 +934,15 @@ export function AccountSummaryTab({
                             />
                         ))}
 
-                        {isMultiMode && Object.keys(validatorSelections).some(k => Object.keys(validatorSelections[k]).length > 0) && (
+                        {isMultiMode && Object.keys(validatorSelections).some(k => {
+                            const sel = validatorSelections[k];
+                            if (!sel) return false;
+                            const row = displayRows.find(r => r.validatorAddress === k);
+                            if (!row) return false;
+                            return (sel.stake && parseFloat(sel.stake) > 0) || 
+                                   (sel.unstake && parseFloat(sel.unstake) > 0) || 
+                                   (sel.claim && row.xrdInClaim > 0);
+                        }) && (
                             <m.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -966,9 +972,12 @@ export function AccountSummaryTab({
                                         const stakeNum = parseFloat(selections.stake || '0');
                                         const unstakeNum = parseFloat(selections.unstake || '0');
 
-                                        if (selections.stake && stakeNum > 0) actions.push({ label: 'Stake', value: `${selections.stake} XRD`, color: 'text-[var(--color-primary)]' });
-                                        if (selections.unstake && unstakeNum > 0) actions.push({ label: 'Unstake', value: `${selections.unstake} XRD`, color: 'text-red-400' });
-                                        if (selections.claim && row.xrdInClaim > 0) actions.push({ label: 'Claim', value: `${formatNumber(row.xrdInClaim, 2, locale)} XRD`, color: 'text-green-400' });
+                                        const valInfo = validatorsData?.validators.find((v: any) => v.address === vAddr);
+                                        const xrdPerLsu = valInfo?.lsu2xrdFactor || 1;
+
+                                        if (selections.stake && stakeNum > 0) actions.push({ label: 'Stake', value: `${selections.stake} XRD`, lsuText: `~${formatNumber(stakeNum / xrdPerLsu, 2, locale)} LSU`, color: 'text-[var(--color-primary)]' });
+                                        if (selections.unstake && unstakeNum > 0) actions.push({ label: 'Unstake', value: `${selections.unstake} XRD`, color: 'text-[var(--color-secondary)]' });
+                                        if (selections.claim && row.xrdInClaim > 0) actions.push({ label: 'Claim', value: `${formatNumber(row.xrdInClaim, 2, locale)} XRD`, color: 'text-[var(--color-accent)]' });
 
                                         if (actions.length === 0) return null;
 
@@ -977,17 +986,27 @@ export function AccountSummaryTab({
                                                 {actions.length === 1 ? (
                                                     <div className="flex justify-between items-center w-full">
                                                         <span className="font-bold text-[var(--color-text-main)] truncate max-w-[60%]">{row.validatorName || vAddr.slice(0, 8) + '...'}</span>
-                                                        <span className="font-bold whitespace-nowrap">
-                                                            {actions[0].label}: <span className={actions[0].color}>{actions[0].value}</span>
-                                                        </span>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="font-bold whitespace-nowrap">
+                                                                {actions[0].label}: <span className={actions[0].color}>{actions[0].value}</span>
+                                                            </span>
+                                                            {actions[0].lsuText && (
+                                                                <span className="text-[10px] font-mono text-[var(--color-secondary)]">{actions[0].lsuText}</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <>
                                                         <span className="font-bold text-[var(--color-text-main)] mb-2 truncate">{row.validatorName || vAddr.slice(0, 8) + '...'}</span>
                                                         <ul className="space-y-1 w-full">
                                                             {actions.map(act => (
-                                                                <li key={act.label} className="flex justify-end items-center text-xs">
-                                                                    <span className="font-bold mr-1">{act.label}:</span> <span className={`${act.color} font-bold`}>{act.value}</span>
+                                                                <li key={act.label} className="flex flex-col items-end">
+                                                                    <div className="flex justify-end items-center text-xs">
+                                                                        <span className="font-bold mr-1">{act.label}:</span> <span className={`${act.color} font-bold`}>{act.value}</span>
+                                                                    </div>
+                                                                    {act.lsuText && (
+                                                                        <span className="text-[10px] font-mono text-[var(--color-secondary)] leading-none mt-0.5">{act.lsuText}</span>
+                                                                    )}
                                                                 </li>
                                                             ))}
                                                         </ul>

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Check, X, Landmark } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
+import { SafeImage } from '@/components/ui/SafeImage';
 import type { TranslationsT } from '@/features/dashboard/types';
 
 export interface ValidatorOption {
@@ -19,6 +20,9 @@ interface ValidatorCarouselSelectorProps {
     placeholder?: string;
     locale?: string;
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    headerTitle?: string;
+    footerActionText?: string;
+    onFooterAction?: () => void;
 }
 
 export function ValidatorCarouselSelector({
@@ -28,7 +32,10 @@ export function ValidatorCarouselSelector({
     className = '',
     placeholder,
     locale: _locale,
-    tt
+    tt,
+    headerTitle,
+    footerActionText,
+    onFooterAction
 }: ValidatorCarouselSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -124,6 +131,18 @@ export function ValidatorCarouselSelector({
                         transition={{ duration: 0.15 }}
                         className={`absolute left-1/2 -translate-x-1/2 ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden`}
                     >
+                        <div className="flex items-center justify-between p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/80">
+                            <span className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider leading-none">
+                                {headerTitle || 'Seleccionar validador'}
+                            </span>
+                            <button 
+                                type="button"
+                                onClick={() => setIsOpen(false)}
+                                className="size-6 flex items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
                         <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
@@ -146,7 +165,16 @@ export function ValidatorCarouselSelector({
                                         onClick={() => toggleSelection(opt.value)}
                                         className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg transition-colors ${isSelected ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)] text-[var(--color-text-main)]'}`}
                                     >
-                                        <span className="truncate">{opt.label}</span>
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <div className="size-4 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center shadow-inner">
+                                                {opt.iconUrl ? (
+                                                    <SafeImage src={opt.iconUrl} alt={opt.label} fallbackName={opt.label} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Landmark className="size-2.5 text-[var(--color-text-muted)]" />
+                                                )}
+                                            </div>
+                                            <span className="truncate">{opt.label}</span>
+                                        </div>
                                         {isSelected && <Check className="size-3 shrink-0" />}
                                     </button>
                                 );
@@ -156,6 +184,18 @@ export function ValidatorCarouselSelector({
                                     {tt?.account_summary?.no_results || 'No results found'}
                                 </div>
                             )}
+                        </div>
+                        <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onFooterAction) onFooterAction();
+                                    else setIsOpen(false);
+                                }}
+                                className="w-full flex items-center justify-center py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 transition-colors"
+                            >
+                                {footerActionText || 'Añadir'}
+                            </button>
                         </div>
                     </m.div>
                 )}

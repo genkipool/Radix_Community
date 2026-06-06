@@ -524,6 +524,8 @@
         "transaction_rejected": "Transaction rejected.",
         "info_tooltip": "Information about global and mixed actions",
         "validator_search_placeholder": "Search validators to delegate...",
+        "select_validator_title": "Select validator",
+        "add_validator_btn": "Add",
         "info_modal_title_operations": "Operation Summary",
         "sending_to_wallet": "Sending to Wallet...",
         "send_to_wallet": "Send to wallet",
