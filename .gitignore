@@ -46,3 +46,10 @@ events_dump.json
 wrangler.toml
 .dev.vars
 .dev.vars.example
+
+# Local tools and scratch scripts
+.antigravitycli/
+.react-doctor/
+scratch/
+*.py
+test_gateway.js
