@@ -94,7 +94,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     const cachedState = transactionStateCache.get(cacheKey);
 
     const [destinationAddress, setDestinationAddress] = useState(cachedState?.destinationAddress ?? '');
-    const [isAddressValid, setIsAddressValid] = useState<boolean | null>(null);
+    const [addressValidity, setAddressValidity] = useState<Record<string, boolean>>({});
 
     const [assets, setAssets] = useState<AssetItem[]>(cachedState?.assets ?? [
         {
@@ -173,26 +173,29 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         }
     }, [popupOpen, activeTriggerElement]);
 
-    // Validate destination address (no loading state to avoid flashing "Validando...")
+    // Validate all destination addresses (no loading state to avoid flashing "Validando...")
     useEffect(() => {
         const timer = setTimeout(async () => {
-            if (!destinationAddress || destinationAddress.length < 10) {
-                setIsAddressValid(null);
-                return;
-            }
-            try {
-                if (destinationAddress.startsWith('account_')) {
-                    await apiFetchEntityDetails(destinationAddress, network);
-                    setIsAddressValid(true);
-                } else {
-                    setIsAddressValid(false);
+            const allAddresses = Array.from(new Set([destinationAddress, ...assets.map(a => a.destAddress)].filter(Boolean) as string[]));
+            const newValidity: Record<string, boolean> = {};
+            
+            for (const addr of allAddresses) {
+                if (addr.length < 10) continue;
+                try {
+                    if (addr.startsWith('account_')) {
+                        await apiFetchEntityDetails(addr, network);
+                        newValidity[addr] = true;
+                    } else {
+                        newValidity[addr] = false;
+                    }
+                } catch (_err) {
+                    newValidity[addr] = false;
                 }
-            } catch (_err) {
-                setIsAddressValid(false);
             }
+            setAddressValidity(prev => ({ ...prev, ...newValidity }));
         }, 800);
         return () => clearTimeout(timer);
-    }, [destinationAddress, network]);
+    }, [destinationAddress, assets, network]);
 
     // Fetch entity data for popup asset selection and initial rendering
     const { data: entityData, isLoading: isLoadingAssets } = useQuery({
@@ -831,9 +834,39 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     ];
     const tabs = popupMode === 'asset' ? allTabs.filter(t => t.type !== 'address') : allTabs;
 
+    const getAvailableBalance = (resourceAddress: string) => {
+        let initialAmount = 0;
+        
+        const f = entityData?.fungible_resources?.items?.find((i) => i.resource_address === resourceAddress) as unknown as ResourceItem | undefined;
+        if (f && f.vaults?.items) {
+            f.vaults.items.forEach(v => {
+                if (v.amount) initialAmount += parseFloat(v.amount);
+            });
+        } else {
+            const ed = entityData as { pool_units?: { items?: ResourceItem[] } } | undefined;
+            const pu = ed?.pool_units?.items?.find((i) => i.resource_address === resourceAddress) as unknown as ResourceItem | undefined;
+            if (pu && pu.vaults?.items) {
+                pu.vaults.items.forEach(v => {
+                    if (v.amount) initialAmount += parseFloat(v.amount);
+                });
+            }
+        }
+
+        let usedAmount = 0;
+        assets.forEach(a => {
+            if ((a.type === 'fungible' || a.type === 'pool_unit') && a.resourceAddress === resourceAddress) {
+                const amt = parseFloat(a.amount || '0');
+                if (!isNaN(amt)) {
+                    usedAmount += amt;
+                }
+            }
+        });
+
+        const available = initialAmount - usedAmount;
+        return available;
+    };
+
     const isAddressMode = popupMode === 'address';
-
-
 
     const renderAddressTab = () => {
         if (!isAddressMode) return null;
@@ -971,12 +1004,18 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
                 const icon = getMetadataValue(f.explicit_metadata?.items, 'icon_url') || '';
                 const item: SelectedAsset = { type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon };
-                const sel = isItemSelected(item);
+                
+                let sel = isAddressMode ? selectedItems.some(s => s.type === 'fungible' && s.resourceAddress === f.resource_address) : isItemSelected(item);
+                const liveAmount = getAvailableBalance(f.resource_address);
+                const isDisabled = liveAmount <= 0 && !sel;
+
                 return (
                     <button
                         key={f.resource_address}
                         type="button"
+                        disabled={isDisabled}
                         onClick={() => {
+                            if (isDisabled) return;
                             if (isAddressMode) {
                                 toggleSelectedItem(item);
                             } else {
@@ -986,6 +1025,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
+                                if (isDisabled) return;
                                 if (isAddressMode) {
                                     // eslint-disable-next-line react-hooks/refs
                                     handleConfirmSelection();
@@ -994,7 +1034,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 }
                             }
                         }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
+                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'
                             }`}
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1002,13 +1042,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                                <span className={`text-[10px] truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
+                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                                <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono shrink-0 ${sel ? '' : 'font-bold'}`}>{parseFloat(f.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
+                            <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
                         </div>
                     </button>
                 );
@@ -1216,12 +1256,18 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 const symbol = getMetadataValue(pu.explicit_metadata?.items, 'symbol') || 'POOL';
                 const icon = getMetadataValue(pu.explicit_metadata?.items, 'icon_url') || '';
                 const item: SelectedAsset = { type: 'pool_unit', resourceAddress: pu.resource_address, symbol, name, iconUrl: icon };
-                const sel = isItemSelected(item);
+                
+                let sel = isAddressMode ? selectedItems.some(s => s.type === 'pool_unit' && s.resourceAddress === pu.resource_address) : isItemSelected(item);
+                const liveAmount = getAvailableBalance(pu.resource_address);
+                const isDisabled = liveAmount <= 0 && !sel;
+
                 return (
                     <button
                         key={pu.resource_address}
                         type="button"
+                        disabled={isDisabled}
                         onClick={() => {
+                            if (isDisabled) return;
                             if (isAddressMode) {
                                 toggleSelectedItem(item);
                             } else {
@@ -1231,6 +1277,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault();
+                                if (isDisabled) return;
                                 if (isAddressMode) {
                                     // eslint-disable-next-line react-hooks/refs
                                     handleConfirmSelection();
@@ -1239,7 +1286,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 }
                             }
                         }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
+                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'
                             }`}
                     >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1247,13 +1294,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                                <span className={`text-[10px] truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
+                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                                <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono shrink-0 ${sel ? '' : 'font-bold'}`}>{parseFloat(pu.vaults?.items?.[0]?.amount || '0').toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
+                            <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
                         </div>
                     </button>
                 );
@@ -1392,7 +1439,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         onFocus={() => setIsDestFocused(true)}
                                         onBlur={() => setIsDestFocused(false)}
                                         onChange={(e) => setDestinationAddress(e.target.value)}
-                                        className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate`}
+                                        className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] ${addressValidity[destinationAddress] === false ? 'text-red-500' : 'text-[var(--color-text-main)]'} placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate`}
                                     />
                                 </>
                             );
@@ -1410,10 +1457,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         </div>
                     </div>
 
-                    {/* Validation text below input */}
-                    {isAddressValid === false && destinationAddress.length > 10 && (
-                        <p className="text-[11px] text-red-400 mt-1.5 px-1">{navT.wallet_invalid_address || 'Dirección inválida'}</p>
-                    )}
+                    {/* Validation text removed here, moved to the bottom */}
 
                     {renderSelectionPopup({ destTarget: null })}
                 </div>
@@ -1447,16 +1491,27 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 );
                                             })()
                                         ) : (
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="any"
-                                                placeholder="0.00"
-                                                value={asset.amount}
-                                                disabled={isWalletEmpty}
-                                                onChange={(e) => updateAmount(asset.internalId, e.target.value)}
-                                                className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px] disabled:opacity-50 disabled:cursor-not-allowed"
-                                            />
+                                            (() => {
+                                                const availBalance = getAvailableBalance(asset.resourceAddress);
+                                                const isError = availBalance < 0;
+                                                return (
+                                                    <div className="relative w-full h-[42px]">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="any"
+                                                            placeholder="0.00"
+                                                            value={asset.amount}
+                                                            disabled={isWalletEmpty}
+                                                            onChange={(e) => updateAmount(asset.internalId, e.target.value)}
+                                                            className={`w-full h-full bg-[var(--color-surface)] border-y border-l rounded-l-xl py-2.5 pl-4 pr-16 text-sm focus:outline-none transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-[var(--color-card-border)] focus:border-[var(--color-primary)]/50 ${isError ? 'text-red-500 placeholder:text-red-500/70' : 'text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]'}`}
+                                                        />
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-end">
+                                                            <span className={`text-[10px] font-mono ${isError ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>{availBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()
                                         )}
                                     </div>
                                     <div className={`flex items-center gap-0 ${asset.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50 h-full' : 'bg-[var(--color-surface)] h-[42px]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl px-1.5 shrink-0`}>
@@ -1522,7 +1577,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 onBlur={() => setFocusedGroupId(null)}
                                                 disabled={isWalletEmpty}
                                                 onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                                className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] ${(header.destAddress && addressValidity[header.destAddress] === false) ? 'text-red-500' : 'text-[var(--color-text-main)]'} placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate disabled:opacity-50 disabled:cursor-not-allowed`}
                                             />
                                         </>
                                     );
@@ -1565,16 +1620,27 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                     );
                                                 })()
                                             ) : (
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="any"
-                                                    placeholder="0.00"
-                                                    value={item.amount}
-                                                    disabled={isWalletEmpty}
-                                                    onChange={(e) => updateAmount(item.internalId, e.target.value)}
-                                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2.5 pl-4 text-sm text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]/50 transition-all font-mono h-[42px] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                />
+                                                (() => {
+                                                    const availBalance = getAvailableBalance(item.resourceAddress);
+                                                    const isError = availBalance < 0;
+                                                    return (
+                                                        <div className="relative w-full h-[42px]">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="any"
+                                                                placeholder="0.00"
+                                                                value={item.amount}
+                                                                disabled={isWalletEmpty}
+                                                                onChange={(e) => updateAmount(item.internalId, e.target.value)}
+                                                                className={`w-full h-full bg-[var(--color-surface)] border-y border-l rounded-l-xl py-2.5 pl-4 pr-16 text-sm focus:outline-none transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-[var(--color-card-border)] focus:border-[var(--color-primary)]/50 ${isError ? 'text-red-500 placeholder:text-red-500/70' : 'text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]'}`}
+                                                            />
+                                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-end">
+                                                                <span className={`text-[10px] font-mono ${isError ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>{availBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()
                                             )}
                                         </div>
                                         <div className={`flex items-center gap-0 ${item.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50 h-full' : 'bg-[var(--color-surface)] h-[42px]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl px-1.5 shrink-0`}>
@@ -1607,28 +1673,50 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     );
                 });
             })()}
-
-            <button
-                type="button"
-                onClick={handleSend}
-                disabled={isTransacting || isWalletEmpty}
-                className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
-            >
-                {isTransacting ? (
+            {/* Compute global states inline or use a precomputed variable */}
+            {(() => {
+                const isAnyOverdrawn = assets.some(a => a.type === 'fungible' && getAvailableBalance(a.resourceAddress) < 0);
+                const hasAnyInvalidAddress = (destinationAddress && addressValidity[destinationAddress] === false) ||
+                                             assets.some(a => a.destAddress && addressValidity[a.destAddress] === false);
+                
+                return (
                     <>
-                        <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{navT.wallet_sending || 'Enviando...'}</span>
-                    </>
-                ) : (
-                    <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
-                )}
-            </button>
+                        <button
+                            type="button"
+                            onClick={handleSend}
+                            disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress}
+                            className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 transform-gpu origin-center will-change-transform [backface-visibility:hidden] [-webkit-font-smoothing:antialiased] [&:not(:disabled):hover]:brightness-110 [&:not(:disabled):hover]:shadow-xl [&:not(:disabled):active]:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
+                        >
+                            {isTransacting ? (
+                                <>
+                                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    <span>{navT.wallet_sending || 'Enviando...'}</span>
+                                </>
+                            ) : (
+                                <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
+                            )}
+                        </button>
 
-            {error && (
-                <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20">
-                    {error}
-                </div>
-            )}
+                        {isAnyOverdrawn && (
+                            <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">
+                                {navT.wallet_insufficient_balance || 'Saldo insuficiente'}
+                            </div>
+                        )}
+
+                        {hasAnyInvalidAddress && !isAnyOverdrawn && (
+                            <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">
+                                {navT.wallet_invalid_address || 'Dirección inválida'}
+                            </div>
+                        )}
+
+                        {error && !isAnyOverdrawn && (
+                            <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">
+                                {error}
+                            </div>
+                        )}
+                    </>
+                );
+            })()}
         </div>
     );
 }

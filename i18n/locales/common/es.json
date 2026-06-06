@@ -88,7 +88,8 @@
     "wallet_send_transaction": "Enviar Transacción",
     "wallet_sending": "Enviando...",
     "wallet_add_dest_input": "Añadir input dirección de destino",
-    "wallet_dest_placeholder": "Dirección de destino (account_...)"
+    "wallet_dest_placeholder": "Dirección de destino (account_...)",
+    "wallet_insufficient_balance": "Saldo insuficiente"
   },
   "roadmap_status": {
     "done": "Completado",
