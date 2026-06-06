@@ -60,9 +60,12 @@ interface ParsedResource {
     isPoolUnit: boolean;
     isLsu: boolean;
     validatorAddress?: string;
+    validatorName?: string;
     isClaim: boolean;
     ids?: string[];
     isNft: boolean;
+    claimXrdTotal?: number;
+    isOwnerBadge?: boolean;
 }
 
 
@@ -1242,11 +1245,27 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                     <span className="font-bold text-xs text-[var(--color-text-main)] truncate" title={name}>{name}</span>
-                    <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)]">
-                            {isNft ? formatNumber(parseInt(amount, 10), 0, locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
-                        </span>
-                        {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate">{symbol}</span>}
+                    <div className="flex flex-wrap items-center justify-between gap-1 mt-0.5 w-full">
+                        <div className="flex items-center gap-1 min-w-0">
+                            <span className="text-[10px] font-mono font-bold text-[var(--color-text-main)]">
+                                {isNft ? formatNumber(parseInt(amount, 10), 0, locale) : (parseFloat(amount) >= 1000 ? formatNumber(parseFloat(amount), 2, locale) : formatNumber(parseFloat(amount), 4, locale))}
+                            </span>
+                            {symbol && <span className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider truncate shrink-0">{symbol}</span>}
+                        </div>
+                        {(item.isClaim || item.isOwnerBadge) && (
+                            <div className="flex items-baseline gap-1.5 shrink-0">
+                                {(item.validatorName || item.validatorAddress) && (
+                                    <span className="text-[10px] text-[var(--color-text-muted)] truncate max-w-[100px]" title={item.validatorName || item.validatorAddress}>
+                                        {item.validatorName || truncateAddress(item.validatorAddress || '', 4, 4)}
+                                    </span>
+                                )}
+                                {item.isClaim && item.claimXrdTotal !== undefined && item.claimXrdTotal > 0 && (
+                                    <span className="text-[10px] font-mono font-bold text-[var(--color-primary)] whitespace-nowrap">
+                                        ~{item.claimXrdTotal.toLocaleString(locale || 'en-US', { maximumFractionDigits: 4 })} XRD
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

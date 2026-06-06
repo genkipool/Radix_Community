@@ -22,6 +22,8 @@ export interface ParsedResource {
     isClaim: boolean;
     ids?: string[];
     isNft: boolean;
+    claimXrdTotal?: number;
+    isOwnerBadge?: boolean;
 }
 
 export interface StakingEntry {

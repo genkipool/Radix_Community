@@ -26,8 +26,8 @@ export interface SelectedAsset {
 
 interface MetadataItem {
     key: string;
-    typed?: {
-        value?: {
+    value?: {
+        typed?: {
             value?: string;
         }
     }
@@ -81,10 +81,10 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     const fungibles = (() => {
         if (!entityData?.fungible_resources?.items) return [];
         return entityData.fungible_resources.items.filter((f: ResourceItem) => {
-            const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown';
-            let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+            const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Unknown';
+            let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.value?.typed?.value || 'Unknown';
             
-            const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.typed?.value?.value;
+            const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.value?.typed?.value;
             if (valAddr) {
                 const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
                 symbol = valName ? `${valName} LSU` : 'LSU';
@@ -98,8 +98,28 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     const nonFungibles = (() => {
         if (!entityData?.non_fungible_resources?.items) return [];
         return entityData.non_fungible_resources.items.filter((nf: ResourceItem) => {
-            const name = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown NFT';
-            return name.toLowerCase().includes(query);
+            const rawName = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Unknown NFT';
+            const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator');
+            const isOwnerBadgeCollection = rawName.toLowerCase().includes('owner badge');
+            
+            let searchableText = rawName.toLowerCase();
+            
+            if (isClaim) {
+                const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                if (valByClaim) searchableText += ` ${valByClaim.name.toLowerCase()}`;
+            } else if (isOwnerBadgeCollection) {
+                // For owner badges, we can't easily filter by ID here since it's the whole collection,
+                // but we can append all validator names that match any ID in the vault to make them searchable
+                const vault = nf.vaults?.items?.[0];
+                if (vault?.items) {
+                    vault.items.forEach(id => {
+                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                        if (valByOwnerBadge) searchableText += ` ${valByOwnerBadge.name.toLowerCase()}`;
+                    });
+                }
+            }
+            
+            return searchableText.includes(query);
         });
     })();
 
@@ -108,7 +128,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     const poolUnits = (() => {
         if (!entityWithPools?.pool_units?.items) return [];
         return entityWithPools.pool_units.items.filter((pu: ResourceItem) => {
-            const name = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Pool Unit';
+            const name = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Pool Unit';
             return name.toLowerCase().includes(query);
         });
     })();
@@ -190,16 +210,16 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                         {activeTab === 'fungible' && (
                                             fungibles.length === 0 ? <div className="p-4 text-center text-sm text-[var(--color-text-muted)]">No se encontraron tokens</div> :
                                             fungibles.map((f: ResourceItem) => {
-                                                const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown';
-                                                let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'Unknown';
+                                                const name = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Unknown';
+                                                let symbol = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.value?.typed?.value || 'Unknown';
                                                 
-                                                const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.typed?.value?.value;
+                                                const valAddr = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'validator')?.value?.typed?.value;
                                                 if (valAddr) {
                                                     const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
                                                     symbol = valName ? `${valName} LSU` : 'LSU';
                                                 }
                                                 
-                                                const icon = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.typed?.value?.value || '';
+                                                const icon = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.value?.typed?.value || '';
                                                 return (
                                                     <button
                                                         key={f.resource_address}
@@ -224,39 +244,53 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                         {activeTab === 'non_fungible' && (
                                             nonFungibles.length === 0 ? <div className="p-4 text-center text-sm text-[var(--color-text-muted)]">No se encontraron NFTs</div> :
                                             nonFungibles.flatMap((nf: ResourceItem) => {
-                                                const name = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Unknown NFT';
-                                                const icon = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.typed?.value?.value || '';
+                                                const baseName = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Unknown NFT';
+                                                const icon = nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.value?.typed?.value || '';
                                                 
                                                 // If we have specific vault items, map each ID
                                                 const vault = nf.vaults?.items?.[0];
                                                 if (!vault || !vault.items) return [];
 
-                                                return vault.items.map((id: string) => (
-                                                    <button
-                                                        key={`${nf.resource_address}-${id}`}
-                                                        onClick={() => handleSelect({ type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name, iconUrl: icon, id })}
-                                                        className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="size-8 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                                                {icon ? <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" /> : <ImageIcon className="size-4 m-auto mt-2 text-[var(--color-text-muted)]" />}
+                                                const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator');
+                                                const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
+
+                                                return vault.items.map((id: string) => {
+                                                    let finalName = baseName;
+                                                    if (isClaim) {
+                                                        const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                                                        if (valByClaim) finalName = `Stake Claim (${valByClaim.name})`;
+                                                    } else if (isOwnerBadgeCollection) {
+                                                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                                                        if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            key={`${nf.resource_address}-${id}`}
+                                                            onClick={() => handleSelect({ type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id })}
+                                                            className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="size-8 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                                                                    {icon ? <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" /> : <ImageIcon className="size-4 m-auto mt-2 text-[var(--color-text-muted)]" />}
+                                                                </div>
+                                                                <div className="flex flex-col min-w-0">
+                                                                    <span className="font-semibold text-sm group-hover:text-[var(--color-primary)] transition-colors truncate">{finalName}</span>
+                                                                    <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">{id}</span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="font-semibold text-sm group-hover:text-[var(--color-primary)] transition-colors truncate">{name}</span>
-                                                                <span className="text-[10px] font-mono text-[var(--color-text-muted)] truncate">{id}</span>
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                ));
+                                                        </button>
+                                                    );
+                                                });
                                             })
                                         )}
 
                                         {activeTab === 'pool_unit' && (
                                             poolUnits.length === 0 ? <div className="p-4 text-center text-sm text-[var(--color-text-muted)]">No se encontraron Pool Units</div> :
                                             poolUnits.map((pu: ResourceItem) => {
-                                                const name = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.typed?.value?.value || 'Pool Unit';
-                                                const symbol = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.typed?.value?.value || 'POOL';
-                                                const icon = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.typed?.value?.value || '';
+                                                const name = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'name')?.value?.typed?.value || 'Pool Unit';
+                                                const symbol = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'symbol')?.value?.typed?.value || 'POOL';
+                                                const icon = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.value?.typed?.value || '';
                                                 return (
                                                     <button
                                                         key={pu.resource_address}

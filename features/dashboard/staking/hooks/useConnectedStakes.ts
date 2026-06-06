@@ -51,7 +51,7 @@ export function useConnectedStakes(accountAddresses: string[], network: 'mainnet
         // Check for owner badges
         let allIds: string[] = [];
         const vaults = nft.vaults?.items || [];
-        vaults.forEach((v: any) => {
+        vaults.forEach((v: { items?: string[] }) => {
             if (v.items && Array.isArray(v.items)) {
                 allIds = [...allIds, ...v.items];
             }

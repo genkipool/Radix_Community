@@ -30,6 +30,8 @@ interface ParsedResource {
     isNft: boolean;
     rawResourceData?: unknown;
     metadataItems?: MetadataItem[];
+    isOwnerBadge?: boolean;
+    claimXrdTotal?: number;
 }
 export function AccountTokensTab({
     address: _address,
@@ -164,8 +166,8 @@ function ExpandableResourceCard({
     const { address, name, symbol, iconUrl, amount, isNft, ids } = item;
     const [expanded, setExpanded] = useState(false);
 
-    const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleToggle = (e?: React.SyntheticEvent) => {
+        e?.stopPropagation();
         if (window.getSelection()?.toString()) return;
         setExpanded(v => !v);
     };
@@ -190,9 +192,12 @@ function ExpandableResourceCard({
     return (
         <div className={`flex flex-col bg-[var(--color-surface)] border ${burned ? 'border-red-500/20 opacity-70' : 'border-[var(--color-card-border)]'} rounded-xl transition-all shadow-sm`}>
             {/* Clickable Header */}
-            <button type="button"
+            <div
+                role="button"
+                tabIndex={0}
                 className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors rounded-xl w-full text-left"
                 onClick={handleToggle}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(e); } }}
             >
                 {/* Left side: Icon + Name + Address */}
                 <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
@@ -223,17 +228,33 @@ function ExpandableResourceCard({
 
                 {/* Right side: Amount + Chevron */}
                 <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-baseline gap-1.5">
-                        <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight">
-                            {parseFloat(amount).toLocaleString(locale || 'en-US')}
-                        </span>
-                        <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right truncate max-w-[80px]" title={symbol || name}>
-                            {symbol || name}
-                        </span>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs font-mono font-black text-[var(--color-text-main)] tracking-tight">
+                                {parseFloat(amount).toLocaleString(locale || 'en-US')}
+                            </span>
+                            <span className="text-[10px] font-bold text-[var(--color-text-muted)] text-right" title={symbol || name}>
+                                {symbol || name}
+                            </span>
+                        </div>
+                        {(item.isClaim || item.isOwnerBadge) && (
+                            <div className="flex items-center gap-1.5 justify-end">
+                                {(item.validatorName || item.validatorAddress) && (
+                                    <span className="text-[10px] text-[var(--color-text-muted)] truncate max-w-[100px]" title={item.validatorName || item.validatorAddress}>
+                                        {item.validatorName || truncateAddress(item.validatorAddress || '', 4, 4)}
+                                    </span>
+                                )}
+                                {item.isClaim && item.claimXrdTotal !== undefined && item.claimXrdTotal > 0 && (
+                                    <span className="text-[10px] font-mono font-bold text-[var(--color-primary)]">
+                                        ~{item.claimXrdTotal.toLocaleString(locale || 'en-US', { maximumFractionDigits: 4 })} XRD
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <ChevronDown className={`size-4 ml-1 text-[var(--color-text-muted)] transition-transform duration-200 ${expanded ? 'rotate-180 text-[var(--color-primary)]' : ''}`} />
                 </div>
-            </button>
+            </div>
 
             {/* Expandable Content Overlay using AnimatePresence */}
             <AnimatePresence>
@@ -260,6 +281,8 @@ function ExpandableResourceCard({
                                 locale={locale || 'en-US'}
                                 validatorAddress={item.validatorAddress}
                                 validatorName={item.validatorName}
+                                isClaim={item.isClaim}
+                                claimXrdTotal={item.claimXrdTotal}
                             />
                         ) : (
                             <ResourceInlinePanel

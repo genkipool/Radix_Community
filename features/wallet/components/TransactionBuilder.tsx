@@ -8,7 +8,7 @@ import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { buildMultiTransferManifest, TransferGroup } from '@/features/wallet/lib/manifest-builders';
-import { apiFetchEntityDetails, apiFetchTransactionDetails } from '@/features/dashboard/services/apiClient';
+import { apiFetchEntityDetails, apiFetchTransactionDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
@@ -32,6 +32,7 @@ interface AssetItem {
     nftId?: string;
     destAddress?: string;
     groupId?: string;
+    claimAmount?: string;
 }
 
 interface MetadataItem {
@@ -68,6 +69,7 @@ interface SelectedAsset {
     iconUrl?: string;
     amount?: string;
     id?: string;
+    claimAmount?: string;
 }
 
 function getMetadataValue(items: MetadataItem[] | undefined, key: string): string | undefined {
@@ -218,7 +220,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     // Default asset replacement logic when data is loaded
     useEffect(() => {
         if (!entityData || assets.length !== 1 || assets[0].internalId !== 'default-xrd' || assets[0].amount !== '') return;
-        
+
         const xrdResource = entityData.fungible_resources?.items?.find((f: ResourceItem) => f.resource_address === xrdAddress);
         if (!xrdResource && hasAnyTokens) {
             // No XRD found. Pick the first available fungible or non-fungible.
@@ -276,6 +278,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 iconUrl: selected.iconUrl,
                 amount: '',
                 nftId: selected.id,
+                claimAmount: selected.claimAmount,
             }]);
         } else {
             setAssets(prev => prev.map(a => a.internalId === editingAssetId ? {
@@ -286,6 +289,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 name: selected.name,
                 iconUrl: selected.iconUrl,
                 nftId: selected.id,
+                claimAmount: selected.claimAmount,
             } : a));
         }
         setPopupOpen(false);
@@ -576,12 +580,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     name: 'Radix',
                     amount: '',
                 }]);
-                
+
                 // Polling logic to wait for transaction to be committed before invalidating cache
                 const hash = result.value.transactionIntentHash;
                 const netName = activeNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
                 const maxAttempts = 15;
-                
+
                 const pollOnce = async (attempt: number) => {
                     if (attempt > maxAttempts) {
                         invalidateAccountStakingData(queryClient, accountAddress, netName);
@@ -724,8 +728,28 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         if (!entityData?.non_fungible_resources?.items) return [];
         return entityData.non_fungible_resources.items.filter((nf: ResourceItem) => {
             if (!hasAvailableBalance(nf)) return false;
-            const name = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
-            return name.toLowerCase().includes(query);
+
+            const rawName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
+            const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
+            const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+            const isOwnerBadgeCollection = rawName.toLowerCase().includes('owner badge');
+
+            let searchableText = rawName.toLowerCase();
+
+            if (isClaim) {
+                const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                if (valByClaim) searchableText += ` ${valByClaim.name.toLowerCase()}`;
+            } else if (isOwnerBadgeCollection) {
+                const vault = nf.vaults?.items?.[0];
+                if (vault?.items) {
+                    vault.items.forEach(id => {
+                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                        if (valByOwnerBadge) searchableText += ` ${valByOwnerBadge.name.toLowerCase()}`;
+                    });
+                }
+            }
+
+            return searchableText.includes(query);
         });
     })();
 
@@ -763,7 +787,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         { type: 'non_fungible', label: 'NFTs', count: getIndividualNftCount() },
         { type: 'pool_unit', label: 'Pools', count: ((entityData as { pool_units?: { items?: ResourceItem[] } } | undefined)?.pool_units?.items?.filter(hasAvailableBalance).length) || 0 },
     ];
-    const tabs = (popupMode === 'asset' || popupDestTarget !== null) ? allTabs.filter(t => t.type !== 'address') : allTabs;
+    const tabs = popupMode === 'asset' ? allTabs.filter(t => t.type !== 'address') : allTabs;
 
     const isAddressMode = popupMode === 'address';
 
@@ -840,13 +864,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             : fungibles.map((f: ResourceItem) => {
                 const name = getMetadataValue(f.explicit_metadata?.items, 'name') || 'Unknown';
                 let symbol = getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown';
-                
+
                 if (isLsuToken(f.explicit_metadata?.items)) {
                     const valAddr = getMetadataValue(f.explicit_metadata?.items, 'validator');
                     const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
                     symbol = valName ? `${valName} LSU` : 'LSU';
                 }
-                
+
                 const icon = getMetadataValue(f.explicit_metadata?.items, 'icon_url') || '';
                 const item: SelectedAsset = { type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon };
                 const sel = isItemSelected(item);
@@ -893,26 +917,99 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             })
     );
 
+    const [claimAmounts, setClaimAmounts] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (!entityData?.non_fungible_resources?.items) return;
+
+        const fetchClaims = async () => {
+            const newAmounts = { ...claimAmounts };
+            let hasChanges = false;
+
+            for (const nf of entityData.non_fungible_resources!.items!) {
+                const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
+                const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+
+                if (isClaim && nf.vaults?.items?.[0]?.items) {
+                    const idsToFetch = nf.vaults.items[0].items.filter(id => !newAmounts[`${nf.resource_address}-${id}`]);
+                    if (idsToFetch.length > 0) {
+                        try {
+                            const nftData = await apiFetchNonFungibleData(nf.resource_address, idsToFetch, network);
+                            
+                            type NftField = { field_name: string; value: string };
+                            type NftPayload = { programmatic_json?: { fields?: NftField[] } };
+                            type NftResponseItem = { non_fungible_id?: string; details?: NftPayload; data?: NftPayload };
+
+                            (nftData as NftResponseItem[]).forEach((item) => {
+                                const id = item.non_fungible_id;
+                                const data = item.details || item.data;
+                                const amountRaw = data?.programmatic_json?.fields?.find((f: NftField) => f.field_name === 'claim_amount')?.value;
+                                if (id && amountRaw) {
+                                    newAmounts[`${nf.resource_address}-${id}`] = parseFloat(amountRaw).toLocaleString(undefined, { maximumFractionDigits: 4 });
+                                    hasChanges = true;
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Error fetching claim amounts', e);
+                        }
+                    }
+                }
+            }
+
+            if (hasChanges) {
+                setClaimAmounts(newAmounts);
+                setAssets(prev => prev.map(a => {
+                    if (a.type === 'non_fungible' && a.nftId && newAmounts[`${a.resourceAddress}-${a.nftId}`]) {
+                        const amt = newAmounts[`${a.resourceAddress}-${a.nftId}`];
+                        if (a.claimAmount !== amt) {
+                            return { ...a, claimAmount: amt };
+                        }
+                    }
+                    return a;
+                }));
+            }
+        };
+
+        fetchClaims();
+    }, [entityData, network, validatorsData, claimAmounts]);
+
     const renderNftItems = () => (
         nonFungibles.length === 0
             ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron NFTs</div>
             : nonFungibles.flatMap((nf: ResourceItem) => {
-                const name = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
+                const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
                 const icon = getMetadataValue(nf.explicit_metadata?.items, 'icon_url') || '';
                 const vault = nf.vaults?.items?.[0];
                 if (!vault || !vault.items) return [];
+
+                const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
+                const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
+
                 return vault.items.map((id: string) => {
-                    const item: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name, iconUrl: icon, id };
-                    const sel = isItemSelected(item);
+                    let finalName = baseName;
+                    let amt: string | undefined = undefined;
+                    if (isClaim) {
+                        const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                        if (valByClaim) finalName = `Stake Claim (${valByClaim.name})`;
+
+                        amt = claimAmounts[`${nf.resource_address}-${id}`];
+                    } else if (isOwnerBadgeCollection) {
+                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                        if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
+                    }
+
+                    const selItem: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id, claimAmount: amt };
+                    const sel = isItemSelected(selItem);
                     return (
                         <button
                             key={`${nf.resource_address}-${id}`}
                             type="button"
                             onClick={() => {
                                 if (isAddressMode) {
-                                    toggleSelectedItem(item);
+                                    toggleSelectedItem(selItem);
                                 } else {
-                                    handleAssetSelect(item);
+                                    handleAssetSelect(selItem);
                                 }
                             }}
                             onKeyDown={(e) => {
@@ -922,7 +1019,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         // eslint-disable-next-line react-hooks/refs
                                         handleConfirmSelection();
                                     } else {
-                                        handleAssetSelect(item);
+                                        handleAssetSelect(selItem);
                                     }
                                 }
                             }}
@@ -930,10 +1027,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 }`}
                         >
                             <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
+                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{name}</span>
+                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
+                                    {finalName}
+                                    {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
+                                </span>
                                 <span className={`text-[9px] font-mono truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
                             </div>
                             {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
@@ -1013,19 +1113,26 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     >
                         {/* Tabs and Close */}
                         <div className="px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
-                            <div className="flex gap-3 overflow-x-auto custom-scrollbar flex-1">
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1">
                                 {tabs.map(tab => (
-                                    <button
+                                    <div
                                         key={tab.type}
-                                        type="button"
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => setActiveTab(tab.type)}
-                                        className={`pb-2 text-[10px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === tab.type
-                                            ? 'text-[var(--color-primary)] border-[var(--color-primary)]'
-                                            : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
-                                            }`}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveTab(tab.type); }}
+                                        className="relative py-2 px-1 cursor-pointer outline-none flex items-center justify-center group"
                                     >
-                                        {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
-                                    </button>
+                                        <span className={`text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-opacity duration-200 ${activeTab === tab.type
+                                            ? 'text-[var(--color-primary)] opacity-100'
+                                            : 'text-[var(--color-text-muted)] opacity-80 group-hover:opacity-100'
+                                            }`}>
+                                            {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+                                        </span>
+                                        {activeTab === tab.type && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--color-primary)] rounded-t-full" />
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                             <button
@@ -1105,12 +1212,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     <div className="relative z-10">
                         <input
                             type="text"
-                            placeholder="Dirección de destino (account_...)"
+                            placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
                             value={formatAddress(destinationAddress, isDestFocused)}
                             onFocus={() => setIsDestFocused(true)}
                             onBlur={() => setIsDestFocused(false)}
                             onChange={(e) => setDestinationAddress(e.target.value)}
-                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)] truncate"
+                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
@@ -1140,19 +1247,27 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         return (
                             <div key={asset.internalId} className="relative flex">
                                 <div className="relative w-6 shrink-0">
-                                    <div className="absolute left-1/2 -translate-x-1/2 top-[-36px] bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
+                                    <div className="absolute left-1/2 -translate-x-1/2 top-[-45px] bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] bg-[var(--color-card-border)]"></div>
                                     <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 size-[7px] rounded-full bg-[var(--color-card-border)]"></div>
                                 </div>
-                                <div className="flex items-stretch flex-1">
-                                    <div className="flex-1 min-w-0">
+                                <div className="flex items-stretch flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         {asset.type === 'non_fungible' ? (
-                                            <div className="w-full bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2 pl-4 text-sm text-[var(--color-text-main)] opacity-70 font-mono h-[56px] flex items-center">
-                                                <div className="flex flex-col">
-                                                    <span className="text-xs font-medium">{asset.name}</span>
-                                                    <span className="text-[11px] text-[var(--color-text-muted)] font-mono">{asset.nftId ? `${asset.nftId.slice(0, 16)}...${asset.nftId.slice(-8)}` : 'Sin ID'}</span>
-                                                </div>
-                                            </div>
+                                            (() => {
+                                                const dynClaimAmt = asset.claimAmount || (asset.nftId ? claimAmounts[`${asset.resourceAddress}-${asset.nftId}`] : undefined);
+                                                return (
+                                                    <div className={`w-full h-full bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-3 pl-4 text-sm text-[var(--color-text-main)] opacity-70 font-mono flex items-center min-w-0 overflow-hidden`}>
+                                                        <div className="flex flex-col min-w-0 w-full gap-0.5 justify-center">
+                                                            <span className="text-xs font-medium truncate" title={asset.name}>{asset.name}</span>
+                                                            <span className="text-[10px] text-[var(--color-text-muted)] font-mono truncate">{asset.nftId ? `${asset.nftId.slice(0, 16)}...${asset.nftId.slice(-8)}` : 'Sin ID'}</span>
+                                                            {dynClaimAmt && (
+                                                                <span className="text-xs font-bold text-[var(--color-primary)] truncate mt-0.5">{dynClaimAmt} XRD</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()
                                         ) : (
                                             <input
                                                 type="number"
@@ -1166,7 +1281,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             />
                                         )}
                                     </div>
-                                    <div className={`flex items-center gap-0 ${asset.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${asset.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
+                                    <div className={`flex items-center gap-0 ${asset.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50 h-full' : 'bg-[var(--color-surface)] h-[42px]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl px-1.5 shrink-0`}>
                                         <button
                                             type="button"
                                             disabled={isWalletEmpty}
@@ -1210,16 +1325,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     const header = items[0];
                     return (
                         <div key={groupId} className="flex flex-col">
-                            <div className="relative z-10">
+                            <div className={`relative ${popupDestTarget === groupId ? 'z-50' : 'z-10'}`}>
                                 <input
                                     type="text"
-                                    placeholder="Destino (account_...)"
+                                    placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
                                     value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
                                     onFocus={() => setFocusedGroupId(groupId)}
                                     onBlur={() => setFocusedGroupId(null)}
                                     disabled={isWalletEmpty}
                                     onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                    className="w-full border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder-[var(--color-text-muted)]/50 font-mono pr-10 truncate disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
@@ -1237,19 +1352,27 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                             {items.map((item) => (
                                 <div key={item.internalId} className="relative flex items-stretch mt-1.5">
                                     <div className="relative w-6 shrink-0">
-                                        <div className="absolute left-1/2 -translate-x-1/2 top-[-36px] bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
+                                        <div className="absolute left-1/2 -translate-x-1/2 top-[-45px] bottom-1/2 w-[2px] bg-[var(--color-card-border)]"></div>
                                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] bg-[var(--color-card-border)]"></div>
                                         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 size-[7px] rounded-full bg-[var(--color-card-border)]"></div>
                                     </div>
-                                    <div className="flex items-stretch flex-1">
-                                        <div className="flex-1 min-w-0">
+                                    <div className="flex items-stretch flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
                                             {item.type === 'non_fungible' ? (
-                                                <div className="w-full bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-2 pl-4 text-sm text-[var(--color-text-main)] opacity-70 font-mono h-[56px] flex items-center">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-medium">{item.name}</span>
-                                                        <span className="text-[11px] text-[var(--color-text-muted)] font-mono">{item.nftId ? `${item.nftId.slice(0, 16)}...${item.nftId.slice(-8)}` : 'Sin ID'}</span>
-                                                    </div>
-                                                </div>
+                                                (() => {
+                                                    const dynClaimAmt = item.claimAmount || (item.nftId ? claimAmounts[`${item.resourceAddress}-${item.nftId}`] : undefined);
+                                                    return (
+                                                        <div className={`w-full h-full bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] border-r-0 rounded-l-xl py-3 pl-4 text-sm text-[var(--color-text-main)] opacity-70 font-mono flex items-center min-w-0 overflow-hidden`}>
+                                                            <div className="flex flex-col min-w-0 w-full gap-0.5 justify-center">
+                                                                <span className="text-xs font-medium truncate" title={item.name}>{item.name}</span>
+                                                                <span className="text-[10px] text-[var(--color-text-muted)] font-mono truncate">{item.nftId ? `${item.nftId.slice(0, 16)}...${item.nftId.slice(-8)}` : 'Sin ID'}</span>
+                                                                {dynClaimAmt && (
+                                                                    <span className="text-xs font-bold text-[var(--color-primary)] truncate mt-0.5">{dynClaimAmt} XRD</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()
                                             ) : (
                                                 <input
                                                     type="number"
@@ -1263,7 +1386,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                 />
                                             )}
                                         </div>
-                                        <div className={`flex items-center gap-0 ${item.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50' : 'bg-[var(--color-surface)]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl ${item.type === 'non_fungible' ? 'h-[56px]' : 'h-[42px]'} px-1.5 shrink-0`}>
+                                        <div className={`flex items-center gap-0 ${item.type === 'non_fungible' ? 'bg-[var(--color-bg)]/50 h-full' : 'bg-[var(--color-surface)] h-[42px]'} border-r border-y border-[var(--color-card-border)] rounded-r-xl px-1.5 shrink-0`}>
                                             <button
                                                 type="button"
                                                 disabled={isWalletEmpty}

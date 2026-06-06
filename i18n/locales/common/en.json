@@ -87,7 +87,8 @@
     "wallet_confirm_selection": "Add",
     "wallet_send_transaction": "Send Transaction",
     "wallet_sending": "Sending...",
-    "wallet_add_dest_input": "Add destination address input"
+    "wallet_add_dest_input": "Add destination address input",
+    "wallet_dest_placeholder": "Destination address (account_...)"
   },
   "roadmap_status": {
     "done": "Done",

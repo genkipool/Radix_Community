@@ -94,7 +94,7 @@ export function NftCollectionPanel({
     ] as { key: NftPanelTab; label: string; tooltip?: string }[]).filter(tab => tab.key !== 'items' || ids.length > 0);
 
     return (
-        <button type="button"
+        <div role="presentation"
             className="border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)] w-full text-left cursor-auto block"
             onClick={e => e.stopPropagation()}
         >
@@ -319,7 +319,7 @@ export function NftCollectionPanel({
                     />
                 )}
             </div>
-        </button>
+        </div>
     );
 }
 

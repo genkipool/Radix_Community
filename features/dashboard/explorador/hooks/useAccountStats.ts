@@ -128,33 +128,50 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         let totalCount = 0;
         const vaults = nftWithVaults.vaults?.items || [];
         
-        vaults.forEach((vaultObj) => {
-            const v = vaultObj as { total_count?: number; items?: string[] };
-            if (v.total_count) {
-                totalCount += v.total_count;
-            } else if (v.items && Array.isArray(v.items)) {
-                totalCount += v.items.length;
+        vaults.forEach((vaultObj: { items?: string[], non_fungible_ids?: { items?: string[], total_count?: number }, total_count?: number }) => {
+            const items = vaultObj.items || vaultObj.non_fungible_ids?.items || [];
+            const count = vaultObj.total_count || vaultObj.non_fungible_ids?.total_count || 0;
+            
+            if (count > 0) {
+                totalCount += count;
+            } else if (items.length > 0) {
+                totalCount += items.length;
             }
-            if (v.items && Array.isArray(v.items)) {
-                allIds = [...allIds, ...v.items];
+            
+            if (items.length > 0) {
+                allIds = [...allIds, ...items];
             }
         });
 
         const nftAmount = getNonFungibleAmount(nftWithVaults, totalCount);
 
+        const nftName = extractMetadata(meta, 'name') || 'Unknown NFT';
+        const isOwnerBadgeCollection = nftName.toLowerCase().includes('owner badge');
+        let valAddress = extractMetadata(meta, 'validator') || valByClaim?.address;
+        let valName = valByClaim?.name;
+
+        if (isOwnerBadgeCollection && allIds.length > 0) {
+            const firstVal = validatorsData?.validators.find((v: Validator) => v.ownerBadge === allIds[0]);
+            if (firstVal) {
+                valAddress = firstVal.address;
+                valName = allIds.length > 1 ? `${firstVal.name} (+${allIds.length - 1})` : firstVal.name;
+            }
+        }
+
         const r: ParsedResource = {
             address: nft.resource_address,
-            name: extractMetadata(meta, 'name') || 'Unknown NFT',
+            name: nftName,
             symbol: extractMetadata(meta, 'symbol') || '',
             iconUrl: extractMetadata(meta, 'icon_url') || '',
             amount: String(nftAmount),
             isPoolUnit: false,
             isLsu: false,
-            validatorAddress: extractMetadata(meta, 'validator') || valByClaim?.address,
-            validatorName: valByClaim?.name,
+            validatorAddress: valAddress,
+            validatorName: valName,
             isClaim: !!meta.find((m: MetadataItem) => m.key === 'claim_nft' || m.key === 'validator') || !!valByClaim,
             ids: allIds,
-            isNft: true
+            isNft: true,
+            isOwnerBadge: isOwnerBadgeCollection
         };
 
         if (r.isClaim && r.validatorAddress && r.ids && r.ids.length > 0) {
@@ -220,12 +237,15 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             const valAddr = extractMetadata(nftEntity?.explicit_metadata?.items || [], 'validator') ||
                 validatorsData?.validators.find((v: Validator) => v.claimTokenResourceAddress === resAddr)?.address;
 
+            let totalXrdForThisClaimNFT = 0;
+
             if (valAddr) {
                 const entry = getStakingEntry(valAddr);
                 items.forEach((item: Record<string, unknown>) => {
                     const data = item.data as { programmatic_json?: { fields?: { field_name: string; value: string }[] } } | undefined;
                     const fields = data?.programmatic_json?.fields;
                     const amt = parseFloat(fields?.find(f => f.field_name === 'claim_amount')?.value || '0');
+                    totalXrdForThisClaimNFT += amt;
                     // The claim_epoch indicates when the tokens will be unlocked
                     const claimEpochStr = fields?.find(f => f.field_name === 'claim_epoch')?.value;
                     const claimEpoch = claimEpochStr ? parseInt(claimEpochStr, 10) : 0;
@@ -239,6 +259,11 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
                         entry.xrdInClaim += amt;
                     }
                 });
+            }
+
+            const resourceInActive = activeNfts.find(n => n.address === resAddr);
+            if (resourceInActive) {
+                resourceInActive.claimXrdTotal = totalXrdForThisClaimNFT;
             }
         });
     }
