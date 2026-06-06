@@ -145,6 +145,16 @@ export const AccountValidatorStakeAction = ({
         return err;
     };
 
+    // Update activeTab when selections are completely cleared (e.g. from Reset button)
+    const [prevSelectionsLength, setPrevSelectionsLength] = useState(Object.keys(selections).length);
+    const currentSelectionsLength = Object.keys(selections).length;
+    if (prevSelectionsLength !== currentSelectionsLength) {
+        setPrevSelectionsLength(currentSelectionsLength);
+        if (currentSelectionsLength === 0 && activeTab !== 'Stake') {
+            setActiveTab('Stake');
+        }
+    }
+
     // Obtiene el valor a mostrar en el input según el modo y el tab activo
     const currentInputVal = activeTab === 'Stake' && selections.stake !== undefined
         ? selections.stake
@@ -163,18 +173,18 @@ export const AccountValidatorStakeAction = ({
 
         if (onUpdateSelections) {
             const newSelections = { ...selections };
+            newSelections.amountStr = val; // always sync to amountStr so it doesn't disappear
+
             if (activeTab === 'Stake' && newSelections.stake !== undefined) {
                 newSelections.stake = val;
             } else if (activeTab === 'Unstake' && newSelections.unstake !== undefined) {
                 newSelections.unstake = val;
-            } else if (activeTab !== 'Claim') {
-                newSelections.amountStr = val;
             }
 
             if (val === '') {
                 if (activeTab === 'Stake') delete newSelections.stake;
                 if (activeTab === 'Unstake') delete newSelections.unstake;
-                if (activeTab !== 'Claim') delete newSelections.amountStr;
+                delete newSelections.amountStr;
             }
             onUpdateSelections(newSelections);
         }
@@ -184,10 +194,22 @@ export const AccountValidatorStakeAction = ({
         setActionError(null);
         if (clearError) clearError();
 
-        let rawAmountStr = '0';
-        if (actionToPerform === 'Stake' && selections.stake !== undefined) rawAmountStr = selections.stake;
-        else if (actionToPerform === 'Unstake' && selections.unstake !== undefined) rawAmountStr = selections.unstake;
-        else rawAmountStr = selections.amountStr || '0';
+        let rawAmountStr = '';
+        if (actionToPerform === 'Stake' && selections.stake !== undefined) {
+            rawAmountStr = selections.stake;
+        } else if (actionToPerform === 'Unstake' && selections.unstake !== undefined) {
+            rawAmountStr = selections.unstake;
+        } else {
+            // We are toggling ON a new action.
+            // If another amount action is already ON, start empty. Otherwise use amountStr.
+            if (actionToPerform === 'Stake' && selections.unstake !== undefined) {
+                rawAmountStr = '';
+            } else if (actionToPerform === 'Unstake' && selections.stake !== undefined) {
+                rawAmountStr = '';
+            } else {
+                rawAmountStr = selections.amountStr || '';
+            }
+        }
 
         if (isMultiMode && onUpdateSelections) {
             const newSelections = { ...selections };
@@ -195,28 +217,34 @@ export const AccountValidatorStakeAction = ({
             if (actionToPerform === 'Claim') {
                 if (selections.claim) {
                     delete newSelections.claim;
-                    setActiveTab('Stake');
+                    const newTab = newSelections.stake !== undefined ? 'Stake' : (newSelections.unstake !== undefined ? 'Unstake' : null);
+                    setActiveTab(newTab);
+                    if (newTab === 'Stake') newSelections.amountStr = newSelections.stake;
+                    else if (newTab === 'Unstake') newSelections.amountStr = newSelections.unstake;
                 } else {
                     newSelections.claim = true;
-                    newSelections.amountStr = ''; // clear general input
                     setActiveTab('Claim');
                 }
             } else if (actionToPerform === 'Stake') {
                 if (selections.stake !== undefined) {
                     delete newSelections.stake; // toggle off
-                    if (activeTab === 'Stake') setActiveTab(newSelections.unstake !== undefined ? 'Unstake' : (newSelections.claim ? 'Claim' : null));
+                    const newTab = newSelections.unstake !== undefined ? 'Unstake' : (newSelections.claim ? 'Claim' : null);
+                    setActiveTab(newTab);
+                    if (newTab === 'Unstake') newSelections.amountStr = newSelections.unstake;
                 } else {
                     newSelections.stake = rawAmountStr; // toggle on with current amount
-                    newSelections.amountStr = ''; // clear general input
+                    newSelections.amountStr = rawAmountStr; // keep synced
                     setActiveTab('Stake');
                 }
             } else if (actionToPerform === 'Unstake') {
                 if (selections.unstake !== undefined) {
                     delete newSelections.unstake; // toggle off
-                    if (activeTab === 'Unstake') setActiveTab(newSelections.stake !== undefined ? 'Stake' : (newSelections.claim ? 'Claim' : null));
+                    const newTab = newSelections.stake !== undefined ? 'Stake' : (newSelections.claim ? 'Claim' : null);
+                    setActiveTab(newTab);
+                    if (newTab === 'Stake') newSelections.amountStr = newSelections.stake;
                 } else {
                     newSelections.unstake = rawAmountStr; // toggle on with current amount
-                    newSelections.amountStr = ''; // clear general input
+                    newSelections.amountStr = rawAmountStr; // keep synced
                     setActiveTab('Unstake');
                 }
             }
@@ -343,8 +371,20 @@ export const AccountValidatorStakeAction = ({
         pollOnce(1);
     };
 
-    // Solo mostramos el input si no es multimodo, o si en multimodo hay una tab activa
-    const showInput = !isMultiMode || (activeTab === 'Stake' || activeTab === 'Unstake');
+    // Siempre mostramos el input
+    const showInput = true;
+
+    let limitAmount = 0;
+    if (activeTab === 'Stake') limitAmount = xrdBalance;
+    else if (activeTab === 'Unstake') limitAmount = effectiveStakedXrd;
+    else if (activeTab === 'Claim') limitAmount = effectiveClaimableXrd;
+    else if (!activeTab) {
+        if (selections.claim) limitAmount = effectiveClaimableXrd;
+        else if (selections.unstake !== undefined) limitAmount = effectiveStakedXrd;
+        else limitAmount = xrdBalance; // defaults to stake context
+    }
+    const valAmount = parseFloat(currentInputVal || '0');
+    const isExceeded = currentInputVal !== '' && valAmount > limitAmount;
 
     return (
         <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-card-border)]/30">
@@ -360,19 +400,24 @@ export const AccountValidatorStakeAction = ({
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
                             onWheel={(e) => (e.target as HTMLElement).blur()}
-                            placeholder={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' ? `(${activeTab})` : ''}`}
+                            placeholder={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' && activeTab ? `(${activeTab})` : ''}`}
                             disabled={isTransacting || activeTab === 'Claim'}
-                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${hasTxError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-bg)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-32 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield] ${hasTxError || isExceeded ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${ghostAmount && !currentInputVal ? 'bg-[var(--color-primary)]/5 text-[var(--color-text-muted)] italic' : 'bg-[var(--color-bg)]'} ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={e => e.stopPropagation()}
                         />
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleSetMax(); }}
-                            disabled={isTransacting || activeTab === 'Claim'}
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
-                        >
-                            {accT?.max || 'MAX'}
-                        </button>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                            <span className={`text-[10px] font-mono ${isExceeded ? 'text-red-500' : 'text-[var(--color-text-muted)]'}`}>
+                                {limitAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleSetMax(); }}
+                                disabled={isTransacting || activeTab === 'Claim'}
+                                className={`text-[10px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded transition-colors pointer-events-auto ${(isTransacting || activeTab === 'Claim') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-primary)]/20'}`}
+                            >
+                                {accT?.max || 'MAX'}
+                            </button>
+                        </div>
                     </div>
                     {hasTxError && (
                         <div className="text-[10px] text-red-500 mt-1 flex justify-between">
@@ -421,7 +466,7 @@ export const AccountValidatorStakeAction = ({
                                 handleAction(action);
                             }}
                             disabled={isDisabled && !isSelected}
-                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
+                            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isSelected ? 'bg-[var(--color-primary)] text-white shadow-md border border-transparent' : 'bg-[var(--color-bg)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'} leading-tight`}
                         >
                             {isThisActionTransacting ? (
                                 <span className="flex items-center justify-center">

@@ -137,7 +137,7 @@ function ValidatorStakingRow({
 
     const { data: validatorEntityData } = useQuery({
         queryKey: dashboardKeys.entities.detail(row.validatorAddress, network),
-        queryFn: () => apiFetchEntityDetails(row.validatorAddress, network),
+        queryFn: () => apiFetchEntityDetails(row.validatorAddress, network, true),
         enabled: ownerMode && !!row.validatorAddress,
         staleTime: CACHE_TIMES.VOLATILE,
     });
@@ -148,6 +148,7 @@ function ValidatorStakingRow({
         : null;
     const ownerLockedStakeXrd = ownerData?.ownerLockedStakeXrd ?? 0;
     const ownerUnlockedXrd = ownerData?.ownerUnlockedXrd ?? 0;
+    const ownerPendingUnlockXrd = ownerData?.ownerPendingUnlockXrd ?? 0;
 
     const ownerToggleLabel = (tt as any)?.dashboard?.staking?.owner_toggle || (locale === 'es' ? 'Propietario' : 'Owner');
 
@@ -212,9 +213,9 @@ function ValidatorStakingRow({
                             return `Epoch ${u.epoch} ~ ${dateStr}`;
                         });
                     return lines.length > 0 ? lines.join('\n') : undefined;
-                })() : undefined}>
+                })() : (ownerData?.unstakeTooltip || undefined)}>
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.unstake_xrd || 'UNSTAKE XRD'}</span>
-                    <span className="text-sm font-mono font-black text-orange-500">{formatNumber(ownerMode ? 0 : row.xrdInUnstake, 2, locale)} XRD</span>
+                    <span className="text-sm font-mono font-black text-orange-500">{formatNumber(ownerMode ? ownerPendingUnlockXrd : row.xrdInUnstake, 2, locale)} XRD</span>
                 </div>
                 <div className="flex flex-col items-center text-center" title={ownerMode ? ((tt as any)?.dashboard?.staking?.claim_tooltip || 'The claimed LSU tokens are added to the delegator stake of this validator.') : undefined}>
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.claim_xrd || 'CLAIM XRD'}</span>
@@ -310,33 +311,18 @@ export function AccountSummaryTab({
                 updated[vAddr] = newSelections;
             }
 
-            const activeAddresses = Object.keys(updated).filter(addr => {
-                const s = updated[addr];
-                return s && (s.amountStr || s.stake || s.unstake || s.claim);
-            });
 
-            if (activeAddresses.length > 1) {
-                activeAddresses.forEach(addr => {
-                    const sel = updated[addr];
-                    if (sel && sel.amountStr && !sel.stake && !sel.unstake && !sel.claim) {
-                        sel.stake = sel.amountStr;
-                        delete sel.amountStr;
-                    }
-                });
-            }
+
+
 
             return updated;
         });
     };
 
-    const activeValidatorAddresses = Object.keys(validatorSelections).filter(vAddr => {
-        const s = validatorSelections[vAddr];
-        return (s.amountStr && parseFloat(s.amountStr) > 0) || s.stake || s.unstake || s.claim;
-    });
 
-    // MultiMode se activa si más de un validador tiene alguna cantidad o selección manual, o si un validador tiene múltiples selecciones.
-    const isMultiMode = activeValidatorAddresses.length > 1 ||
-        Object.values(validatorSelections).some(s => (s.stake ? 1 : 0) + (s.unstake ? 1 : 0) + (s.claim ? 1 : 0) > 1);
+
+    // El modo carrito (multiMode) está activado siempre por defecto
+    const isMultiMode = true;
 
     const canDistribute = selectedValidatorAddresses.some(addr => !ownerModeAddresses.has(addr));
 
@@ -954,7 +940,18 @@ export function AccountSummaryTab({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="mt-6 pt-4 border-t border-[var(--color-border)]"
                             >
-                                <h5 className="text-xs font-bold text-[var(--color-text-main)] mb-3 uppercase tracking-wider">{accT?.info_modal_title_operations || 'Operation Summary'}</h5>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h5 className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider">{accT?.info_modal_title_operations || 'Operation Summary'}</h5>
+                                    <button 
+                                        type="button" 
+                                        onClick={(e) => { e.stopPropagation(); setValidatorSelections({}); setGlobalAmountStr(''); }} 
+                                        className="text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 text-[var(--color-text-muted)] hover:opacity-70 flex items-center gap-1"
+                                    >
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                        {(contextT?.dashboard as any)?.calendar?.reset_button || 'Reset'}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                    </button>
+                                </div>
                                 <div className="space-y-3 mb-6">
                                     {Object.keys(validatorSelections).map(vAddr => {
                                         const selections = validatorSelections[vAddr];
@@ -999,21 +996,45 @@ export function AccountSummaryTab({
                                     })}
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={handleMixedBatchAction}
-                                    disabled={isTransacting}
-                                    className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
-                                >
-                                    {isTransacting ? (
-                                        <>
-                                            <svg className="animate-spin -ml-1 mr-2 size-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                            {accT?.sending_to_wallet || 'Sending to Wallet...'}
-                                        </>
-                                    ) : (
-                                        accT?.send_to_wallet || 'Send to wallet'
-                                    )}
-                                </button>
+                                {(() => {
+                                    const hasAnyValidationError = Object.keys(validatorSelections).some(vAddr => {
+                                        const sel = validatorSelections[vAddr];
+                                        if (!sel) return false;
+                                        const row = displayRows.find(r => r.validatorAddress === vAddr);
+                                        if (!row) return false;
+
+                                        const unstakeAmt = parseFloat(sel.unstake || '0');
+                                        const maxStaked = ownerModeAddresses.has(vAddr) ? Number.POSITIVE_INFINITY : row.xrdInStake;
+                                        if (unstakeAmt > maxStaked) return true;
+
+                                        const amountStrAmt = parseFloat(sel.amountStr || '0');
+                                        if (sel.stake === undefined && sel.unstake === undefined && !sel.claim && amountStrAmt > parseFloat(xrdAmount)) {
+                                            return true;
+                                        }
+                                        return false;
+                                    });
+                                    const totalStakeAmount = Object.values(validatorSelections).reduce((sum, sel) => sum + parseFloat(sel.stake || '0'), 0);
+                                    const isSendDisabled = isTransacting || hasAnyValidationError || totalStakeAmount > parseFloat(xrdAmount);
+
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={handleMixedBatchAction}
+                                            disabled={isSendDisabled}
+                                            className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform enabled:hover:scale-[1.02] enabled:active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
+                                        >
+                                            {isTransacting ? (
+                                                <>
+                                                    <svg className="animate-spin -ml-1 mr-2 size-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                    {accT?.sending_to_wallet || 'Sending to Wallet...'}
+                                                </>
+                                            ) : (
+                                                accT?.send_to_wallet || 'Send to wallet'
+                                            )}
+                                        </button>
+                                    );
+                                })()}
+
 
                                 {actionError && (
                                     <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">

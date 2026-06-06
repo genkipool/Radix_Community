@@ -115,7 +115,7 @@ export const useAccountStakingData = (
         queryKey: entityKeys.detail(accountAddress || '', networkName),
         queryFn: () => {
             if (!accountAddress) return null;
-            return apiFetchEntityDetails(accountAddress, networkName);
+            return apiFetchEntityDetails(accountAddress, networkName, true);
         },
         enabled: !!accountAddress,
         staleTime: CACHE_TIMES.MEDIUM,
@@ -138,7 +138,7 @@ export const useAccountStakingData = (
         queryKey: dashboardKeys.entities.detail(validator?.address || '', networkName),
         queryFn: () => {
             if (!validator?.address) return null;
-            return apiFetchEntityDetails(validator.address, networkName);
+            return apiFetchEntityDetails(validator.address, networkName, true);
         },
         enabled: !!validator?.address && isOwner,
         staleTime: CACHE_TIMES.SHORT,
