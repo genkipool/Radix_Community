@@ -50,7 +50,11 @@ export function AccountStakingTab({
                         dt: dt,
                         startExpanded: false,
                         forcedOpenTab: "summary",
-                        variant: 'resource-card'
+                        variant: 'resource-card',
+                        stakeAmount: row.xrdInStake,
+                        unstakeAmount: row.xrdInUnstake,
+                        claimAmount: row.xrdInClaim,
+                        unstakes: row.unstakes
                     })
                 ))}
             </div>
