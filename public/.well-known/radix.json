@@ -2,6 +2,9 @@
   "dApps": [
     {
       "dAppDefinitionAddress": "account_tdx_2_129grv2vv4q3w7aqzzwesc5k0xp4lg5dj4p78q80ca79rj5rct8mujk"
+    },
+    {
+      "dAppDefinitionAddress": "account_rdx1283533slsjtx5r5efdj8c9864vsrg3p3vrw9cr25qyq8f0adlvvuc7"
     }
   ]
 }
