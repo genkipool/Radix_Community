@@ -783,7 +783,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
             if (isClaim) {
                 const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
-                if (valByClaim) searchableText += ` ${valByClaim.name.toLowerCase()}`;
+                const fallbackVal = valAddrFromMeta ? validatorsData?.validators.find(v => v.address === valAddrFromMeta) : undefined;
+                const finalValName = valByClaim?.name || fallbackVal?.name;
+                if (finalValName) searchableText += ` ${finalValName.toLowerCase()}`;
             } else if (isOwnerBadgeCollection) {
                 const vault = nf.vaults?.items?.[0];
                 if (vault?.items) {
@@ -1149,7 +1151,9 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 let amt: string | undefined = undefined;
                 if (isClaim) {
                     const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
-                    if (valByClaim) finalName = `Stake Claim (${valByClaim.name})`;
+                    const fallbackVal = valAddrFromMeta ? validatorsData?.validators.find(v => v.address === valAddrFromMeta) : undefined;
+                    const finalValName = valByClaim?.name || fallbackVal?.name;
+                    if (finalValName) finalName = `Stake Claim (${finalValName})`;
 
                     amt = claimAmounts[`${nf.resource_address}-${id}`];
                 } else if (isOwnerBadgeCollection) {

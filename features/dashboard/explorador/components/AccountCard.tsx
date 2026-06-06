@@ -354,7 +354,7 @@ export function AccountCard({
                                             <AccountStakingTab
                                                 stakingRows={stakingRows}
                                                 tt={tt as Record<string, unknown>}
-
+                                                dt={t?.dashboard as import('@/features/dashboard/types').DashboardDict | undefined}
                                                 network={network as 'mainnet' | 'stokenet'}
                                                 locale={locale}
                                                 marketData={marketData ?? undefined}

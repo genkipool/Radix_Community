@@ -148,7 +148,7 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
         const nftName = extractMetadata(meta, 'name') || 'Unknown NFT';
         const isOwnerBadgeCollection = nftName.toLowerCase().includes('owner badge');
         let valAddress = extractMetadata(meta, 'validator') || valByClaim?.address;
-        let valName = valByClaim?.name;
+        let valName = valByClaim?.name || (valAddress ? validatorsData?.validators.find((v: Validator) => v.address === valAddress)?.name : undefined);
 
         if (isOwnerBadgeCollection && allIds.length > 0) {
             const firstVal = validatorsData?.validators.find((v: Validator) => v.ownerBadge === allIds[0]);

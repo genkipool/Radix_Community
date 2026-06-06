@@ -54,7 +54,7 @@ export function AccountTokensTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt?.account_summary?.tokens_tab || 'Tokens'} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.tokens_tab || 'Tokens'} (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
             {tokens.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No tokens found.</p>
             )}
@@ -83,7 +83,7 @@ export function AccountPoolUnitsTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt?.account_summary?.pool_units || 'Pool Units'} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.pool_units || 'Pool Units'} (${poolUnits.length})`} items={poolUnits} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
             {poolUnits.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No pool units found.</p>
             )}
@@ -112,8 +112,8 @@ export function AccountNftsTab({
 
     return (
         <div className="space-y-6">
-            <AssetSection title={tt?.account_summary?.nfts_tab || 'NFTs'} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
-            <AssetSection title={tt?.account_summary?.burned_nfts || 'Burned NFTs'} items={burnedNfts} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.nfts_tab || 'NFTs'} (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} tt={tt} network={network} locale={locale} />
+            <AssetSection title={`${tt?.account_summary?.burned_nfts || 'Burned, sent or deposited NFTs'} (${burnedNfts.length})`} items={burnedNfts} onCopy={onCopy} copiedAddress={copiedAddress} burned tt={tt} network={network} locale={locale} />
             {activeNfts.length === 0 && burnedNfts.length === 0 && (
                 <p className="text-xs text-[var(--color-text-muted)] italic text-center py-6">No NFTs found.</p>
             )}
@@ -135,7 +135,7 @@ function AssetSection({ title, items, onCopy, copiedAddress, burned = false, tt,
     return (
         <div className="mt-4">
             <h4 className={`text-xs font-black uppercase mb-3 tracking-wider ${burned ? 'text-red-500/80' : 'text-[var(--color-text-muted)]'}`}>
-                {title} ({items.length})
+                {title}
             </h4>
             <div className="flex flex-col gap-2">
                 {items.map((item) => (

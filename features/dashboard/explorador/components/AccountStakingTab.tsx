@@ -49,7 +49,8 @@ export function AccountStakingTab({
                         marketData: marketData,
                         dt: dt,
                         startExpanded: false,
-                        forcedOpenTab: "summary"
+                        forcedOpenTab: "summary",
+                        variant: 'resource-card'
                     })
                 ))}
             </div>

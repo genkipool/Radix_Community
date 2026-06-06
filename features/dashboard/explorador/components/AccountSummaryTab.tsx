@@ -1055,11 +1055,11 @@ export function AccountSummaryTab({
 
             {/* Assets */}
             <AssetSection title={`Tokens (${tokens.length})`} items={tokens} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
-            <AssetSection title={`NFTs (${activeNfts.length})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
+            <AssetSection title={`NFTs (${activeNfts.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)})`} items={activeNfts} onCopy={onCopy} copiedAddress={copiedAddress} locale={locale} isModal={isModal} />
 
             {burnedNfts.length > 0 && (
                 <AssetSection
-                    title={`${accT?.burned_nfts || 'NFTs Quemados'} (${burnedNfts.length})`}
+                    title={`${accT?.burned_nfts || 'NFTs quemados, enviados o depositados'} (${burnedNfts.length})`}
                     items={burnedNfts}
                     onCopy={onCopy}
                     copiedAddress={copiedAddress}

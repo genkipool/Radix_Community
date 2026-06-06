@@ -243,7 +243,7 @@ export function ExpandableEntityBadge({
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
-                    {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined) ? null : (
+                    {(stakeAmount !== undefined || unstakeAmount !== undefined || claimAmount !== undefined || isResourceCard) ? null : (
                         <span
                             className={`text-[9px] uppercase font-black tracking-wider px-1.5 pt-[2px] pb-[1px] leading-none rounded ${bg} ${color} shrink-0 ${wellKnownTip ? 'cursor-help' : ''}`}
                             title={wellKnownTip ?? undefined}

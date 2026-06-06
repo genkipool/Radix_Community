@@ -469,7 +469,7 @@
         "contributed_tokens_concept": "Concept",
         "contributed_tokens_value": "Value",
         "contributed_tokens_entitlement": "{symbol} corresponding to you",
-        "burned_nfts": "Burned NFTs",
+        "burned_nfts": "Burned, sent or deposited NFTs",
         "download_account_rewards": "Download Rewards",
         "download_rewards_tooltip": "Download movements and rewards CSV",
         "account_rewards_modal_title": "Download Account Reward History",
