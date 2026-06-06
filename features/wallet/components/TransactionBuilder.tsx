@@ -143,35 +143,23 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     }, [assets]);
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const destContainerRef = useRef<HTMLDivElement>(null);
+
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
-    const [activeTriggerElement, setActiveTriggerElement] = useState<HTMLElement | null>(null);
+
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
                 setPopupOpen(false);
                 setPopupDestTarget(null);
-                setActiveTriggerElement(null);
+
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    useEffect(() => {
-        const el = activeTriggerElement || destContainerRef.current;
-        if (popupOpen && el) {
-            const rect = el.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            if (spaceBelow < 400 && spaceAbove > spaceBelow) {
-                setPopupDirection('up');
-            } else {
-                setPopupDirection('down');
-            }
-        }
-    }, [popupOpen, activeTriggerElement]);
+
 
     // Validate all destination addresses (no loading state to avoid flashing "Validando...")
     useEffect(() => {
@@ -224,12 +212,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     useEffect(() => {
         if (!entityData || assets.length !== 1 || assets[0].internalId !== 'default-xrd' || assets[0].amount !== '') return;
 
+        let timeoutId: ReturnType<typeof setTimeout>;
+
         const xrdResource = entityData.fungible_resources?.items?.find((f: ResourceItem) => f.resource_address === xrdAddress);
         if (!xrdResource && hasAnyTokens) {
             // No XRD found. Pick the first available fungible or non-fungible.
             const firstFungible = entityData.fungible_resources?.items?.[0];
             if (firstFungible) {
-                setTimeout(() => {
+                timeoutId = setTimeout(() => {
                     setAssets([{
                         internalId: 'default-xrd', // Keep same internalId to not break other assumptions
                         type: 'fungible',
@@ -244,7 +234,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 const firstNonFungible = entityData.non_fungible_resources?.items?.[0];
                 if (firstNonFungible) {
                     const firstId = firstNonFungible.vaults?.items?.[0]?.items?.[0];
-                    setTimeout(() => {
+                    timeoutId = setTimeout(() => {
                         setAssets([{
                             internalId: 'default-xrd', // Keep same internalId
                             type: 'non_fungible',
@@ -259,6 +249,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 }
             }
         }
+        
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [entityData, xrdAddress, assets, hasAnyTokens]);
 
     const handleAssetSelect = (selected: SelectedAsset) => {
@@ -345,9 +339,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             // Diff mode: compute initial group state from live assets, diff against selectedItems
             const assetKey = (s: { resourceAddress: string; id?: string }) => s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
             const initialGroupKeys = new Set(
-                assetsRef.current
-                    .filter(a => a.groupId === popupDestTarget)
-                    .map(a => a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress)
+                assetsRef.current.reduce<string[]>((acc, a) => {
+                    if (a.groupId === popupDestTarget) {
+                        acc.push(a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress);
+                    }
+                    return acc;
+                }, [])
             );
 
             // Items user toggled ON that are NOT already in the group → add
@@ -355,10 +352,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
             // Items user toggled OFF that ARE in the group → remove
             const removedKeys = new Set(
-                selectedItems
-                    .filter(s => s.type !== 'address')
-                    .filter(s => initialGroupKeys.has(assetKey(s)))
-                    .map(assetKey)
+                selectedItems.reduce<string[]>((acc, s) => {
+                    if (s.type !== 'address' && initialGroupKeys.has(assetKey(s))) {
+                        acc.push(assetKey(s));
+                    }
+                    return acc;
+                }, [])
             );
 
             if (added.length > 0) {
@@ -427,7 +426,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             const assetKey = (s: { resourceAddress: string; id?: string }) => s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
 
             // --- 1. Identify selected addresses vs existing addresses ---
-            const selectedAddresses = selectedItems.filter(s => s.type === 'address').map(s => s.resourceAddress);
+            const selectedAddresses = selectedItems.reduce<string[]>((acc, s) => {
+                if (s.type === 'address') acc.push(s.resourceAddress);
+                return acc;
+            }, []);
             const formAddresses = [
                 destinationAddress,
                 ...assetsRef.current.map(a => a.destAddress).filter(Boolean)
@@ -450,9 +452,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             // --- 3. Diff-based logic for global assets ---
             const selectedAssetItems = selectedItems.filter(s => s.type !== 'address');
             const existingGlobalKeys = new Set(
-                assetsRef.current
-                    .filter(a => a.groupId === undefined)
-                    .map(a => a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress)
+                assetsRef.current.reduce<string[]>((acc, a) => {
+                    if (a.groupId === undefined) acc.push(a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress);
+                    return acc;
+                }, [])
             );
 
             const toAddAssets = selectedAssetItems.filter(s => !existingGlobalKeys.has(assetKey(s)));
@@ -498,7 +501,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
                 // Process added addresses (fill empty groups or create new)
                 for (const addr of toAddAddrs) {
-                    const emptyGroupIds = new Set(next.filter(a => a.groupId !== undefined && !a.destAddress).map(a => a.groupId));
+                    const emptyGroupIds = new Set(
+                        next.reduce<string[]>((acc, a) => {
+                            if (a.groupId !== undefined && !a.destAddress) acc.push(a.groupId);
+                            return acc;
+                        }, [])
+                    );
                     if (emptyGroupIds.size > 0) {
                         const groupIdToFill = Array.from(emptyGroupIds)[0];
                         next = next.map(a => a.groupId === groupIdToFill ? { ...a, destAddress: addr } : a);
@@ -605,7 +613,11 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             const manifest = buildMultiTransferManifest(accountAddress, groups);
 
             const toolkit = getOrCreateToolkit(activeNetworkId || RadixNetworkId.Mainnet);
-            if (!toolkit) throw new Error('Radix Toolkit no inicializado');
+            if (!toolkit) {
+                setError('Radix Toolkit no inicializado');
+                setIsTransacting(false);
+                return;
+            }
 
             const result = await toolkit.walletApi.sendTransaction({
                 transactionManifest: manifest,
@@ -682,13 +694,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             setPopupOpen(false);
             setPopupDestTarget(null);
             setEditingAssetId(null);
-            setActiveTriggerElement(null);
+
             return;
         }
 
         setPopupMode(mode);
         setPopupDestTarget(targetDest);
-        setActiveTriggerElement(triggerElement ?? null);
+
         if (mode === 'address') {
             setActiveTab('address');
         } else {
@@ -697,6 +709,18 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         setEditingAssetId(targetAsset);
         setSearchQuery('');
         setAddressCount(0);
+
+        const el = triggerElement;
+        if (el) {
+            const rect = el.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 400 && spaceAbove > spaceBelow) {
+                setPopupDirection('up');
+            } else {
+                setPopupDirection('down');
+            }
+        }
 
         // For global address popup: initialize selection from already-added assets
         // so previously added items appear checked when reopening.
@@ -1098,15 +1122,6 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
             if (hasChanges) {
                 setClaimAmounts(newAmounts);
-                setAssets(prev => prev.map(a => {
-                    if (a.type === 'non_fungible' && a.nftId && newAmounts[`${a.resourceAddress}-${a.nftId}`]) {
-                        const amt = newAmounts[`${a.resourceAddress}-${a.nftId}`];
-                        if (a.claimAmount !== amt) {
-                            return { ...a, claimAmount: amt };
-                        }
-                    }
-                    return a;
-                }));
             }
         };
 
@@ -1310,7 +1325,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 );
             })
     );
-    const renderSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {
+    const getSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {
         const targetDest = context.destTarget ?? null;
         const targetAsset = context.assetId ?? null;
         const isMatch = popupMode === (context.assetId ? 'asset' : 'address') &&
@@ -1356,7 +1371,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 onClick={() => {
                                     setPopupOpen(false);
                                     setPopupDestTarget(null);
-                                    setActiveTriggerElement(null);
+
                                 }}
                                 className="mb-2 size-6 flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors shrink-0 ml-2"
                                 title="Cerrar"
@@ -1423,7 +1438,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             {/* Global dest tree */}
             <div className="flex flex-col">
                 {/* Destination input + popup (wrapped together for popup positioning) */}
-                <div className="relative" ref={destContainerRef}>
+                <div className="relative">
                     {/* Destination Address Input with embedded + */}
                     <div className="relative z-10">
                         {(() => {
@@ -1463,7 +1478,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
                     {/* Validation text removed here, moved to the bottom */}
 
-                    {renderSelectionPopup({ destTarget: null })}
+                    {getSelectionPopup({ destTarget: null })}
                 </div>
 
                 {/* Global dest assets (without per-row destination) */}
@@ -1543,7 +1558,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         )}
                                     </div>
                                 </div>
-                                {renderSelectionPopup({ assetId: asset.internalId })}
+                                {getSelectionPopup({ assetId: asset.internalId })}
                             </div>
                         );
                     })}
@@ -1553,10 +1568,12 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             {/* Per-dest groups */}
             {(() => {
                 const groups = new Map<string, AssetItem[]>();
-                assets.filter(a => a.groupId !== undefined).forEach(a => {
-                    const list = groups.get(a.groupId!) || [];
-                    list.push(a);
-                    groups.set(a.groupId!, list);
+                assets.forEach(a => {
+                    if (a.groupId !== undefined) {
+                        const list = groups.get(a.groupId) || [];
+                        list.push(a);
+                        groups.set(a.groupId, list);
+                    }
                 });
                 return [...groups.entries()].map(([groupId, items]) => {
                     const header = items[0];
@@ -1597,7 +1614,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                         <Plus className="size-3.5" strokeWidth={3} />
                                     </button>
                                 </div>
-                                {renderSelectionPopup({ destTarget: groupId })}
+                                {getSelectionPopup({ destTarget: groupId })}
                             </div>
                             {items.map((item) => (
                                 <div key={item.internalId} className="relative flex items-stretch mt-1.5">
@@ -1670,7 +1687,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             </button>
                                         </div>
                                     </div>
-                                    {renderSelectionPopup({ assetId: item.internalId })}
+                                    {getSelectionPopup({ assetId: item.internalId })}
                                 </div>
                             ))}
                         </div>

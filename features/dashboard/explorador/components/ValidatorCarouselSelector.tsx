@@ -66,18 +66,7 @@ export function ValidatorCarouselSelector({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    useEffect(() => {
-        if (isOpen && containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            if (spaceBelow < 350 && spaceAbove > spaceBelow) {
-                setPopupDirection('up');
-            } else {
-                setPopupDirection('down');
-            }
-        }
-    }, [isOpen]);
+
 
     const filteredOptions = options.filter(opt =>
         opt.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -96,7 +85,22 @@ export function ValidatorCarouselSelector({
                 </button>
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); setSearchQuery(''); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        const nextIsOpen = !isOpen;
+                        setIsOpen(nextIsOpen);
+                        setSearchQuery('');
+                        if (nextIsOpen && containerRef.current) {
+                            const rect = containerRef.current.getBoundingClientRect();
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const spaceAbove = rect.top;
+                            if (spaceBelow < 350 && spaceAbove > spaceBelow) {
+                                setPopupDirection('up');
+                            } else {
+                                setPopupDirection('down');
+                            }
+                        }
+                    }}
                     className={`flex-1 px-4 text-[13px] font-bold transition-colors text-center truncate ${isOpen ? 'text-[var(--color-primary)]' : selectedValues.includes(options[activeIndex]?.value) ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}
                 >
                     {activeLabel}

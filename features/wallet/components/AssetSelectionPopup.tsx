@@ -54,6 +54,33 @@ interface AssetSelectionPopupProps {
     onSelectAsset: (asset: SelectedAsset) => void;
 }
 
+const TabButton = ({
+    type,
+    label,
+    icon,
+    count,
+    isActive,
+    onClick
+}: {
+    type: AssetType;
+    label: string;
+    icon: React.ReactNode;
+    count?: number;
+    isActive: boolean;
+    onClick: (type: AssetType) => void;
+}) => (
+    <button
+        type="button"
+        onClick={() => onClick(type)}
+        className={`flex items-center gap-2 pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap px-1 ${
+            isActive ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
+        }`}
+    >
+        {icon}
+        {label} {count !== undefined && `(${count})`}
+    </button>
+);
+
 export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelectAsset }: AssetSelectionPopupProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<AssetType>('fungible');
@@ -134,17 +161,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
     })();
     const poolUnitCount = entityWithPools?.pool_units?.items?.length || 0;
 
-    const renderTabButton = (type: AssetType, label: string, icon: React.ReactNode, count?: number) => (
-        <button
-            onClick={() => setActiveTab(type)}
-            className={`flex items-center gap-2 pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap px-1 \${
-                activeTab === type ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'
-            }`}
-        >
-            {icon}
-            {label} {count !== undefined && `(\${count})`}
-        </button>
-    );
+
 
     return (
         <Portal>
@@ -162,7 +179,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                             {/* Header */}
                             <div className="p-4 border-b border-[var(--color-card-border)] flex items-center justify-between">
                                 <h3 className="text-sm font-bold tracking-wider uppercase">Seleccionar Activo</h3>
-                                <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                                <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
                                     <X strokeWidth={2} className="size-4" />
                                 </button>
                             </div>
@@ -181,10 +198,10 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
 
                             {/* Tabs */}
                             <div className="px-4 pt-4 flex gap-4 overflow-x-auto custom-scrollbar border-b border-[var(--color-card-border)]">
-                                {renderTabButton('address', 'Direcciones', <BookUser className="size-3.5" />, availableAddresses.length)}
-                                {renderTabButton('fungible', 'Tokens', <Coins className="size-3.5" />, entityData?.fungible_resources?.items?.length || 0)}
-                                {renderTabButton('non_fungible', 'NFTs', <ImageIcon className="size-3.5" />, entityData?.non_fungible_resources?.items?.length || 0)}
-                                {renderTabButton('pool_unit', 'Pools', <Layers className="size-3.5" />, poolUnitCount)}
+                                <TabButton type="address" label="Direcciones" icon={<BookUser className="size-3.5" />} count={availableAddresses.length} isActive={activeTab === 'address'} onClick={setActiveTab} />
+                                <TabButton type="fungible" label="Tokens" icon={<Coins className="size-3.5" />} count={entityData?.fungible_resources?.items?.length || 0} isActive={activeTab === 'fungible'} onClick={setActiveTab} />
+                                <TabButton type="non_fungible" label="NFTs" icon={<ImageIcon className="size-3.5" />} count={entityData?.non_fungible_resources?.items?.length || 0} isActive={activeTab === 'non_fungible'} onClick={setActiveTab} />
+                                <TabButton type="pool_unit" label="Pools" icon={<Layers className="size-3.5" />} count={poolUnitCount} isActive={activeTab === 'pool_unit'} onClick={setActiveTab} />
                             </div>
 
                             {/* Content */}
@@ -197,6 +214,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                             availableAddresses.length === 0 ? <div className="p-4 text-center text-sm text-[var(--color-text-muted)]">No se encontraron direcciones</div> :
                                             availableAddresses.map(acc => (
                                                 <button
+                                                    type="button"
                                                     key={acc.address}
                                                     onClick={() => handleSelect({ type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label })}
                                                     className="w-full text-left flex flex-col p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"
@@ -222,6 +240,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                                 const icon = f.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.value?.typed?.value || '';
                                                 return (
                                                     <button
+                                                        type="button"
                                                         key={f.resource_address}
                                                         onClick={() => handleSelect({ type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon })}
                                                         className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"
@@ -266,6 +285,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
 
                                                     return (
                                                         <button
+                                                            type="button"
                                                             key={`${nf.resource_address}-${id}`}
                                                             onClick={() => handleSelect({ type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id })}
                                                             className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"
@@ -293,6 +313,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                                 const icon = pu.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'icon_url')?.value?.typed?.value || '';
                                                 return (
                                                     <button
+                                                        type="button"
                                                         key={pu.resource_address}
                                                         onClick={() => handleSelect({ type: 'pool_unit', resourceAddress: pu.resource_address, symbol, name, iconUrl: icon })}
                                                         className="w-full text-left flex items-center justify-between p-3 rounded-xl hover:bg-[var(--color-bg)] transition-colors group"

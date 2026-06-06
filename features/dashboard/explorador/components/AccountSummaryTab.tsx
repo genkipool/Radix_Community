@@ -204,14 +204,15 @@ function ValidatorStakingRow({
                 </div>
                 <div className="flex flex-col items-center text-center" title={!ownerMode ? (() => {
                     const currentEpoch = (entityData as any)?.ledger_state?.epoch ?? 0;
-                    const lines = (row.unstakes || [])
-                        .filter(u => u.epoch > currentEpoch)
-                        .map(u => {
+                    const lines = (row.unstakes || []).reduce<string[]>((acc, u) => {
+                        if (u.epoch > currentEpoch) {
                             const epochsRemaining = u.epoch - currentEpoch;
                             const date = new Date(mountTime + epochsRemaining * 5 * 60 * 1000);
                             const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                            return `Epoch ${u.epoch} ~ ${dateStr}`;
-                        });
+                            acc.push(`Epoch ${u.epoch} ~ ${dateStr}`);
+                        }
+                        return acc;
+                    }, []);
                     return lines.length > 0 ? lines.join('\n') : undefined;
                 })() : (ownerData?.unstakeTooltip || undefined)}>
                     <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-widest mb-1">{accT?.unstake_xrd || 'UNSTAKE XRD'}</span>
@@ -328,7 +329,7 @@ export function AccountSummaryTab({
 
     const { submitBatchTransaction, submitMixedBatchTransaction, isTransacting, error: batchError, clearError } = useStakingTransaction();
 
-    const renderStakingError = (err: string) => {
+    const getStakingError = (err: string) => {
         const lower = err.toLowerCase();
         if (lower.includes('failed to prepare') || lower.includes('failedtoprepare')) return stakingErrors?.failedToPrepareTransaction || accT?.failed_to_prepare || err;
         if (lower.includes('rejected') || lower.includes('rejectedbyuser')) return stakingErrors?.rejectedByUser || accT?.rejected_by_user || err;
@@ -352,15 +353,16 @@ export function AccountSummaryTab({
         totalLsuXrdEquivalent,
     } = useAccountStats(address, network, entityData);
 
+    // Initialize selections with existing delegations once data loads
+    if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
+        setHasInitializedSelections(true);
+        setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
+    }
+
     if (isLoading) {
         return <PanelLoadingState tt={tt} />;
     }
 
-    // Initialize selections with existing delegations once data loads
-    if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
-        setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
-        setHasInitializedSelections(true);
-    }
     // Show all staked validators always, plus any additionally selected ones
     const displayRows: StakingEntry[] = [...new Set([
         ...stakingRows.map(r => r.validatorAddress),
@@ -886,7 +888,7 @@ export function AccountSummaryTab({
                                 onBatchAction={handleBatchAction}
                                 isTransacting={isTransacting}
                                 transactingAction={transactingAction}
-                                actionError={actionError || renderStakingError(batchError || '')}
+                                actionError={actionError || getStakingError(batchError || '')}
                                 setActionError={setActionError}
                                 clearError={clearError}
                                 tt={tt}
@@ -1038,12 +1040,12 @@ export function AccountSummaryTab({
 
                                 {actionError && (
                                     <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
-                                        {renderStakingError(actionError)}
+                                        {getStakingError(actionError)}
                                     </div>
                                 )}
                                 {(batchError && !actionError) && (
                                     <div className="text-xs text-red-500 mt-3 p-2 bg-red-500/10 rounded border border-red-500/20 text-center">
-                                        {renderStakingError(batchError)}
+                                        {getStakingError(batchError)}
                                     </div>
                                 )}
                             </m.div>
