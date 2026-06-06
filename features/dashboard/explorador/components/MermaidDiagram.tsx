@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import mermaid from 'mermaid';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 
 interface MermaidDiagramProps {
     chart: string;
@@ -169,7 +169,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 [&_.mermaid-node-copied_polygon]:![stroke-width:4px]
                 [&_.mermaid-node-copied_circle]:![stroke-width:4px]"
         >
-            <div className="w-full" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg) }} />
+            <div className="w-full" dangerouslySetInnerHTML={{ __html: sanitizeHtml(svg) }} />
         </div>
     );
 }

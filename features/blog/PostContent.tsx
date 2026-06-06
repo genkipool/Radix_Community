@@ -15,7 +15,7 @@ import { HighlightText } from '@/components/ui/HighlightText';
 import React from 'react';
 import type { PostContentProps } from './types';
 import { sanitizeUserHtml } from '@/utils/sanitize';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
 import { CodeHighlighter } from '@/components/ui/CodeHighlighter';
 
@@ -26,7 +26,7 @@ export function PostContent({ content, query, isSummary = false }: PostContentPr
   const rawHtml = applyMarkdownToHtml(content);
 
   // 2. Sanitize HTML
-  let finalHtml = DOMPurify.sanitize(sanitizeUserHtml(rawHtml));
+  let finalHtml = sanitizeHtml(sanitizeUserHtml(rawHtml));
 
   // 3. Highlight search query if present
   if (query && query.trim()) {

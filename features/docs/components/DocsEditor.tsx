@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 import { AnimatePresence, m } from "motion/react";
 import { Upload, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -247,7 +247,7 @@ export default function DocsEditor({ onClose, onPublish, initialDoc }: DocsEdito
                     lineHeight: '1.85',
                     fontSize: '1rem'
                   }}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
                 />
               )}
               <div

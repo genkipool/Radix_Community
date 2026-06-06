@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { createHighlighter, type Highlighter } from 'shiki';
 import { useTheme } from '@/context/ThemeContext';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 
 interface CodeHighlighterProps {
   html: string;
@@ -192,7 +192,7 @@ export function CodeHighlighter({ html, className = '' }: CodeHighlighterProps) 
     <div
       className={`rich-text-content ${className}`}
       suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightedHtml) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightedHtml) }}
       style={{
         opacity: isLoaded ? 1 : 0.8,
         transition: 'opacity 0.2s',

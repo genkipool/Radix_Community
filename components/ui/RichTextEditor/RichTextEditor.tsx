@@ -8,7 +8,7 @@ import EditorToolbar from './EditorToolbar';
 import { useFormattingState } from './useFormattingState';
 import { LinkDialog } from './EditorDialogs';
 import { useRichTextLogic } from './hooks/useRichTextLogic';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 
 import { applyMarkdownToHtml } from '@/features/docs/utils/markdownParser';
 import { sanitizeUserHtml } from '@/utils/sanitize';
@@ -127,7 +127,7 @@ export function RichTextEditor({
                             lineHeight: '1.6', 
                             fontSize: '0.95rem'
                         }}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(sanitizeUserHtml(applyMarkdownToHtml(previewContent))) }}
                     />
                 )}
                 <div

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
 import { m, AnimatePresence } from "motion/react";
 import { Portal } from './Portal';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from '@/utils/sanitizeHtml';
 
 interface InfoTooltipProps {
   content: string;
@@ -174,7 +174,7 @@ export function InfoTooltip({ content, children }: InfoTooltipProps) {
                 >
                   <div
                     className="text-[11px] leading-relaxed text-[var(--color-text-main)] font-medium space-y-2 [&>strong]:text-[var(--color-text-strong,var(--color-text-main))] max-h-[60vh] overflow-y-auto overscroll-contain pr-1 custom-scrollbar select-text"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
                   />
                   {/* Arrow */}
                   <div
