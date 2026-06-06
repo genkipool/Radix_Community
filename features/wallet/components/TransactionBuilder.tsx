@@ -320,6 +320,13 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             return sk === key;
         });
         if (popupDestTarget !== null) {
+            if (item.type === 'address') {
+                const groupExisting = assets.filter(a => a.groupId === popupDestTarget);
+                const currentGroupDest = groupExisting.length > 0 ? groupExisting[0].destAddress : '';
+                const isCurrent = currentGroupDest === item.resourceAddress;
+                return isCurrent ? !inSelected : inSelected;
+            }
+
             const inGroup = assets.some(a => {
                 if (a.groupId !== popupDestTarget) return false;
                 const ak = a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress;
@@ -377,6 +384,41 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     const aKey = a.nftId ? `${a.resourceAddress}-${a.nftId}` : a.resourceAddress;
                     return !removedKeys.has(aKey);
                 }));
+            }
+
+            const addressDelta = selectedItems.filter(s => s.type === 'address');
+            if (addressDelta.length > 0) {
+                const groupExisting = assetsRef.current.filter(a => a.groupId === popupDestTarget);
+                const currentGroupDest = groupExisting.length > 0 ? groupExisting[0].destAddress : '';
+                const toggledOn = addressDelta.filter(s => s.resourceAddress !== currentGroupDest);
+                
+                let nextGroupDest = currentGroupDest;
+                if (toggledOn.length > 0) {
+                    nextGroupDest = toggledOn[toggledOn.length - 1].resourceAddress;
+                } else if (addressDelta.some(s => s.resourceAddress === currentGroupDest)) {
+                    nextGroupDest = '';
+                }
+
+                if (nextGroupDest !== currentGroupDest) {
+                    setAssets(prev => prev.map(a => a.groupId === popupDestTarget ? { ...a, destAddress: nextGroupDest } : a));
+                }
+            }
+
+            if (addressCount > 0) {
+                setAssets(prev => {
+                    const pairs = Array.from({ length: addressCount }, () => ({
+                        internalId: Math.random().toString(36).substring(7),
+                        type: 'fungible' as const,
+                        resourceAddress: xrdAddress,
+                        symbol: 'XRD',
+                        name: 'Radix',
+                        iconUrl: xrdIconUrl,
+                        amount: '',
+                        destAddress: '',
+                        groupId: Math.random().toString(36).substring(7),
+                    }));
+                    return [...prev, ...pairs];
+                });
             }
         } else {
             const assetKey = (s: { resourceAddress: string; id?: string }) => s.id ? `${s.resourceAddress}-${s.id}` : s.resourceAddress;
@@ -644,7 +686,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         setPopupMode(mode);
         setPopupDestTarget(targetDest);
         setActiveTriggerElement(triggerElement ?? null);
-        if (mode === 'address' && destTarget === undefined) {
+        if (mode === 'address') {
             setActiveTab('address');
         } else {
             setActiveTab('fungible');
@@ -658,7 +700,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         // For per-dest popup: start empty — isItemSelected uses diff-based XOR
         // that derives selection from live group assets automatically.
         if (mode === 'address' && destTarget === undefined) {
-            const existingSelection: SelectedAsset[] = assetsRef.current
+            const existingSelection: SelectedAsset[] = assets
                 .filter(a => a.groupId === undefined)
                 .map(a => ({
                     type: a.type === 'fungible' ? 'fungible' as const : 'non_fungible' as const,
@@ -670,7 +712,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 }));
 
             // Also include all current destination addresses as selected address items
-            const allDestAddresses = new Set([destinationAddress, ...assetsRef.current.map(a => a.destAddress)].filter(Boolean));
+            const allDestAddresses = new Set([destinationAddress, ...assets.map(a => a.destAddress)].filter(Boolean));
             allDestAddresses.forEach(addr => {
                 const matchingAccount = accounts.find(acc => acc.address === addr);
                 if (matchingAccount) {
@@ -794,7 +836,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
 
     const renderAddressTab = () => {
-        if (!isAddressMode || popupDestTarget !== null) return null;
+        if (!isAddressMode) return null;
+
+        const inputAddresses = new Map<string | null, string>();
+        if (destinationAddress) inputAddresses.set(null, destinationAddress);
+        assets.forEach(a => {
+            if (a.groupId && a.destAddress) {
+                inputAddresses.set(a.groupId, a.destAddress);
+            }
+        });
+
         return (
             <>
                 {/* Add destination input section */}
@@ -826,30 +877,77 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 {availableAddresses.length === 0
                     ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron direcciones</div>
                     : availableAddresses.map(acc => {
-                        const isAddrSelected = selectedItems.some(s => s.type === 'address' && s.resourceAddress === acc.address);
+                        const addr = acc.address;
+                        
+                        let isUsedByOther = false;
+                        let isUsedByCurrent = false;
+
+                        for (const [groupId, destAddr] of inputAddresses.entries()) {
+                            if (destAddr === addr) {
+                                if (groupId === popupDestTarget) {
+                                    isUsedByCurrent = true;
+                                } else {
+                                    isUsedByOther = true;
+                                }
+                            }
+                        }
+
+                        const inSelected = selectedItems.some(s => s.type === 'address' && s.resourceAddress === addr);
+
+                        let isAddrSelectedVisually = false;
+                        let isDisabled = false;
+
+                        if (popupDestTarget !== null) {
+                            if (isUsedByOther) {
+                                isAddrSelectedVisually = true;
+                                isDisabled = true;
+                            } else if (isUsedByCurrent) {
+                                isAddrSelectedVisually = !inSelected;
+                                isDisabled = false;
+                            } else {
+                                isAddrSelectedVisually = inSelected;
+                                isDisabled = false;
+                            }
+                        } else {
+                            if (isUsedByOther) {
+                                isAddrSelectedVisually = true;
+                                isDisabled = true;
+                            } else {
+                                isAddrSelectedVisually = inSelected;
+                                isDisabled = false;
+                            }
+                        }
+
                         return (
                             <button
                                 key={acc.address}
                                 type="button"
+                                disabled={isDisabled}
                                 onClick={() => {
+                                    if (isDisabled) return;
                                     const addrItem: SelectedAsset = { type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label };
                                     toggleSelectedItem(addrItem);
                                 }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         e.preventDefault();
-                                        // eslint-disable-next-line react-hooks/refs
-                                        handleConfirmSelection();
+                                        if (!isDisabled) {
+                                            // eslint-disable-next-line react-hooks/refs
+                                            handleConfirmSelection();
+                                        }
                                     }
                                 }}
-                                className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${isAddrSelected ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
-                                    }`}
+                                className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
+                                    isAddrSelectedVisually 
+                                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' 
+                                        : 'hover:bg-[var(--color-bg)]'
+                                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <div className="flex flex-col min-w-0 flex-1">
-                                    <span className={`text-xs transition-colors ${isAddrSelected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
-                                    <span className={`text-[10px] truncate ${isAddrSelected ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
+                                    <span className={`text-xs transition-colors ${isAddrSelectedVisually && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
+                                    <span className={`text-[10px] truncate ${isAddrSelectedVisually && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
                                 </div>
-                                {isAddrSelected && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
+                                {isAddrSelectedVisually && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
                             </button>
                         );
                     })
@@ -973,75 +1071,142 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         fetchClaims();
     }, [entityData, network, validatorsData, claimAmounts]);
 
-    const renderNftItems = () => (
-        nonFungibles.length === 0
-            ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron NFTs</div>
-            : nonFungibles.flatMap((nf: ResourceItem) => {
-                const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
-                const icon = getMetadataValue(nf.explicit_metadata?.items, 'icon_url') || '';
-                const vault = nf.vaults?.items?.[0];
-                if (!vault || !vault.items) return [];
+    const renderNftItems = () => {
+        if (nonFungibles.length === 0) {
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron NFTs</div>;
+        }
 
-                const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
-                const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
-                const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
+        const nftOwners = new Map<string, string | null>();
+        assets.forEach(a => {
+            if (a.type === 'non_fungible' && a.nftId) {
+                const key = `${a.resourceAddress}-${a.nftId}`;
+                nftOwners.set(key, a.groupId ?? null);
+            }
+        });
 
-                return vault.items.map((id: string) => {
-                    let finalName = baseName;
-                    let amt: string | undefined = undefined;
-                    if (isClaim) {
-                        const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
-                        if (valByClaim) finalName = `Stake Claim (${valByClaim.name})`;
+        let currentOwner: string | null | undefined = undefined;
+        if (isAddressMode) {
+            currentOwner = popupDestTarget;
+        } else if (editingAssetId) {
+            const editingAsset = assets.find(a => a.internalId === editingAssetId);
+            if (editingAsset) {
+                currentOwner = editingAsset.groupId ?? null;
+            }
+        }
 
-                        amt = claimAmounts[`${nf.resource_address}-${id}`];
-                    } else if (isOwnerBadgeCollection) {
-                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
-                        if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
+        return nonFungibles.flatMap((nf: ResourceItem) => {
+            const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
+            const icon = getMetadataValue(nf.explicit_metadata?.items, 'icon_url') || '';
+            const vault = nf.vaults?.items?.[0];
+            if (!vault || !vault.items) return [];
+
+            const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
+            const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+            const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
+
+            return vault.items.map((id: string) => {
+                let finalName = baseName;
+                let amt: string | undefined = undefined;
+                if (isClaim) {
+                    const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                    if (valByClaim) finalName = `Stake Claim (${valByClaim.name})`;
+
+                    amt = claimAmounts[`${nf.resource_address}-${id}`];
+                } else if (isOwnerBadgeCollection) {
+                    const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                    if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
+                }
+
+                const key = `${nf.resource_address}-${id}`;
+                const owner = nftOwners.get(key);
+                
+                let isUsedByOther = false;
+                let isUsedByCurrent = false;
+
+                if (owner !== undefined) {
+                    if (owner === currentOwner) {
+                        isUsedByCurrent = true;
+                    } else {
+                        isUsedByOther = true;
                     }
+                }
 
-                    const selItem: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id, claimAmount: amt };
-                    const sel = isItemSelected(selItem);
-                    return (
-                        <button
-                            key={`${nf.resource_address}-${id}`}
-                            type="button"
-                            onClick={() => {
+                const selItem: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id, claimAmount: amt };
+                
+                let sel = false;
+                let isDisabled = false;
+
+                if (isAddressMode) {
+                    const inSelected = selectedItems.some(s => s.type === 'non_fungible' && s.resourceAddress === nf.resource_address && s.id === id);
+                    if (popupDestTarget !== null) {
+                        if (isUsedByOther) {
+                            sel = true;
+                            isDisabled = true;
+                        } else if (isUsedByCurrent) {
+                            sel = !inSelected;
+                        } else {
+                            sel = inSelected;
+                        }
+                    } else {
+                        if (isUsedByOther) {
+                            sel = true;
+                            isDisabled = true;
+                        } else {
+                            sel = inSelected;
+                        }
+                    }
+                } else {
+                    sel = isItemSelected(selItem);
+                    if (isUsedByOther) {
+                        isDisabled = true;
+                    }
+                }
+
+                return (
+                    <button
+                        key={`${nf.resource_address}-${id}`}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => {
+                            if (isDisabled) return;
+                            if (isAddressMode) {
+                                toggleSelectedItem(selItem);
+                            } else {
+                                handleAssetSelect(selItem);
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (isDisabled) return;
                                 if (isAddressMode) {
-                                    toggleSelectedItem(selItem);
+                                    // eslint-disable-next-line react-hooks/refs
+                                    handleConfirmSelection();
                                 } else {
                                     handleAssetSelect(selItem);
                                 }
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (isAddressMode) {
-                                        // eslint-disable-next-line react-hooks/refs
-                                        handleConfirmSelection();
-                                    } else {
-                                        handleAssetSelect(selItem);
-                                    }
-                                }
-                            }}
-                            className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
-                                }`}
-                        >
-                            <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0 flex-1">
-                                <span className={`text-xs transition-colors truncate ${sel ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
-                                    {finalName}
-                                    {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
-                                </span>
-                                <span className={`text-[9px] font-mono truncate ${sel ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
-                            </div>
-                            {isAddressMode && sel && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
-                        </button>
-                    );
-                });
-            })
-    );
+                            }
+                        }}
+                        className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${
+                            sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
+                        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                            <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
+                                {finalName}
+                                {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
+                            </span>
+                            <span className={`text-[9px] font-mono truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
+                        </div>
+                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                    </button>
+                );
+            });
+        });
+    };
 
     const renderPoolUnitItems = () => (
         poolUnits.length === 0
@@ -1210,15 +1375,28 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 <div className="relative" ref={destContainerRef}>
                     {/* Destination Address Input with embedded + */}
                     <div className="relative z-10">
-                        <input
-                            type="text"
-                            placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
-                            value={formatAddress(destinationAddress, isDestFocused)}
-                            onFocus={() => setIsDestFocused(true)}
-                            onBlur={() => setIsDestFocused(false)}
-                            onChange={(e) => setDestinationAddress(e.target.value)}
-                            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate"
-                        />
+                        {(() => {
+                            const acc = accounts.find(a => a.address === destinationAddress);
+                            const hasLabel = acc && acc.label;
+                            return (
+                                <>
+                                    {hasLabel && (
+                                        <div className="absolute left-3 top-1.5 text-[10px] text-[var(--color-text-main)] font-bold opacity-80 pointer-events-none">
+                                            {acc.label}
+                                        </div>
+                                    )}
+                                    <input
+                                        type="text"
+                                        placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
+                                        value={formatAddress(destinationAddress, isDestFocused)}
+                                        onFocus={() => setIsDestFocused(true)}
+                                        onBlur={() => setIsDestFocused(false)}
+                                        onChange={(e) => setDestinationAddress(e.target.value)}
+                                        className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate`}
+                                    />
+                                </>
+                            );
+                        })()}
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
                                 type="button"
@@ -1326,16 +1504,29 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     return (
                         <div key={groupId} className="flex flex-col">
                             <div className={`relative ${popupDestTarget === groupId ? 'z-50' : 'z-10'}`}>
-                                <input
-                                    type="text"
-                                    placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
-                                    value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
-                                    onFocus={() => setFocusedGroupId(groupId)}
-                                    onBlur={() => setFocusedGroupId(null)}
-                                    disabled={isWalletEmpty}
-                                    onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                {(() => {
+                                    const acc = accounts.find(a => a.address === (header.destAddress || ''));
+                                    const hasLabel = acc && acc.label;
+                                    return (
+                                        <>
+                                            {hasLabel && (
+                                                <div className="absolute left-3 top-1.5 text-[10px] text-[var(--color-text-main)] font-bold opacity-80 pointer-events-none">
+                                                    {acc.label}
+                                                </div>
+                                            )}
+                                            <input
+                                                type="text"
+                                                placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
+                                                value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
+                                                onFocus={() => setFocusedGroupId(groupId)}
+                                                onBlur={() => setFocusedGroupId(null)}
+                                                disabled={isWalletEmpty}
+                                                onChange={(e) => updateGroupDestAddress(groupId, e.target.value)}
+                                                className={`w-full border rounded-lg px-3 ${hasLabel ? 'pt-5 pb-1.5' : 'py-2'} text-sm focus:outline-none transition-colors pr-16 border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 truncate disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            />
+                                        </>
+                                    );
+                                })()}
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
                                         type="button"
