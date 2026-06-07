@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { X, User, LogOut, RefreshCcw, Wallet } from 'lucide-react';
+import { X, User, LogOut, RefreshCcw, Wallet, Anchor } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -82,6 +82,42 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
 
     const navT = (t.nav || {}) as Record<string, string>;
 
+    const [isPinned, setIsPinned] = useState(() => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return localStorage.getItem('walletPinned') === 'true';
+        }
+        return false;
+    });
+
+    React.useEffect(() => {
+        if (isOpen && isPinned && window.innerWidth >= 1024) {
+            document.body.style.marginRight = '420px';
+            document.body.style.transition = 'margin-right 0.3s ease';
+            document.documentElement.style.setProperty('--sidebar-width', '420px');
+        } else {
+            document.body.style.marginRight = '0';
+            document.documentElement.style.setProperty('--sidebar-width', '0px');
+        }
+        return () => {
+            document.body.style.marginRight = '0';
+            document.documentElement.style.setProperty('--sidebar-width', '0px');
+        };
+    }, [isOpen, isPinned]);
+
+    const togglePin = () => {
+        const newPinned = !isPinned;
+        setIsPinned(newPinned);
+        localStorage.setItem('walletPinned', newPinned.toString());
+    };
+
+    const handleClose = () => {
+        if (isPinned) {
+            setIsPinned(false);
+            localStorage.setItem('walletPinned', 'false');
+        }
+        onClose();
+    };
+
     const personaName = persona?.label || navT.wallet_connected || 'Persona';
     const personaIcon = ''; // Replace with persona icon if available in future
 
@@ -103,7 +139,11 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden"
+                            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-all duration-300 ${
+                                isPinned
+                                    ? 'bg-[var(--color-bg)] border-l border-[var(--color-card-border)] shadow-none'
+                                    : 'bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]'
+                            }`}
                         >
                             <div className="flex flex-col h-full">
                                 {/* Header */}
@@ -136,10 +176,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         >
                                             {navT.full_profile ?? 'Perfil Completo'}
                                         </button>
+                                        <button
+                                            type="button"
+                                            onClick={togglePin}
+                                            className={`hidden lg:flex items-center justify-center transition-all duration-300 ${isPinned ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                            title={isPinned ? 'Desanclar barra lateral' : 'Anclar como barra lateral'}
+                                        >
+                                            <Anchor className={`size-4 transition-transform duration-300 ${isPinned ? 'scale-110' : ''}`} />
+                                        </button>
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={onClose}
+                                        onClick={handleClose}
                                         className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors opacity-80 hover:opacity-100 duration-300"
                                     >
                                         <X strokeWidth={2} className="size-5" />
@@ -180,7 +228,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             type="button"
                                             onClick={() => {
                                                 disconnect();
-                                                onClose();
+                                                handleClose();
                                             }}
                                             className="flex items-center justify-end gap-2 text-[12px] font-medium text-red-500 opacity-80 hover:opacity-100 transition-all duration-300"
                                         >

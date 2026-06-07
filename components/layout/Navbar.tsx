@@ -662,6 +662,15 @@ export default function Navbar() {
     }
   }, [language]);
 
+  useEffect(() => {
+    // Restore pinned wallet profile modal
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (localStorage.getItem('walletPinned') === 'true') {
+        dispatch({ type: 'SET_PROFILE_MODAL', value: true });
+      }
+    }
+  }, []);
+
   // Prefetch the alternate language path so language switches feel instant.
   // Uses window.location.search instead of useSearchParams() to avoid Suspense.
   useEffect(() => {
@@ -745,7 +754,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 w-full z-50 bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-card-border)] transition-transform duration-300"
+        className="fixed top-0 z-50 w-[calc(100%-var(--sidebar-width,0px))] bg-[var(--color-bg)]/80 backdrop-blur-md border-b border-[var(--color-card-border)] transition-[width,transform] duration-300"
         style={{ transform: theaterMode ? 'translateY(-100%)' : 'translateY(0)', pointerEvents: theaterMode ? 'none' : undefined }}
       >
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
