@@ -220,7 +220,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
                                 )}
                             </div>
                         )}
-                        {activeTab === 'metadata' && <PanelMetadataTab metadataItems={metadataItems} tt={tt} />}
+                        {activeTab === 'metadata' && <PanelMetadataTab metadataItems={metadataItems} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />}
                         {activeTab === 'contributed_tokens' && isPoolUnit && resolvedPoolAddress && totalSupply && (
                             <UnderlyingTokensTab
                                 poolAddress={resolvedPoolAddress}

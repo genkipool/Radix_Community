@@ -39,7 +39,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
 
     return (
         <div
-            className="relative w-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col cursor-auto text-left"
+            className="relative w-full h-full rounded-[20px] overflow-hidden bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-[0_32px_80px_rgba(0,0,0,0.45),0_0_0_1px_color-mix(in_srgb,var(--color-primary)_10%,transparent)] flex flex-col cursor-auto text-left"
             onClick={e => e.stopPropagation()}
         >
             <AnimatePresence mode="popLayout" initial={false} custom={activeDirection}>

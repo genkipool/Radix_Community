@@ -1,6 +1,6 @@
 'use client';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { parseTags, deriveBehaviors, getConfigEntries } from '../../utils/resourceUtils';
+import { parseTags, deriveBehaviors, getConfigEntries, parseProgrammaticJson } from '../../utils/resourceUtils';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
 import { Check, Copy, ChevronDown, Box, FileJson, Activity } from 'lucide-react';
@@ -58,13 +58,23 @@ export function NftCollectionPanel({
         const f = fields.find((f) => (f as Record<string, string>).field_name === 'name');
         return f?.value ? String(f.value) : null;
     };
-    const getNftFields = (nft: Record<string, unknown>): { name: string; value: string }[] => {
+    const getNftFields = (nft: Record<string, unknown>): { name: string; value: unknown }[] => {
         const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
         if (!Array.isArray(fields)) return [];
-        return fields.map((f) => ({
-            name: f.field_name || f.type_name || 'field',
-            value: f.value != null ? String(f.value) : (f.fields?.[0]?.value != null ? String(f.fields[0].value) : JSON.stringify(f)),
-        }));
+        return fields.map((f) => {
+            let parsedVal: unknown;
+            if (f.value != null) {
+                parsedVal = f.value;
+            } else if (f.fields?.[0]?.value != null) {
+                parsedVal = f.fields[0].value;
+            } else {
+                parsedVal = parseProgrammaticJson(f);
+            }
+            return {
+                name: f.field_name || f.type_name || 'field',
+                value: parsedVal,
+            };
+        });
     };
     const getStakeClaimXrd = (nft: Record<string, unknown>): number | null => {
         const fields = ((nft?.data as Record<string, unknown>)?.programmatic_json as Record<string, unknown>)?.fields;
@@ -127,9 +137,10 @@ export function NftCollectionPanel({
                                 const isReceived = type === 'added';
                                 return (
                                     <div key={id} className={`rounded-xl border border-[var(--color-card-border)] overflow-hidden transition-all ${isOpen ? 'border-[var(--color-primary)]/30' : ''}`}>
-                                        <button type="button"
-                                            className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)]' : 'cursor-auto'} w-full text-left`}
+                                        <div role="button" tabIndex={hasData ? 0 : -1}
+                                            className={`flex items-center gap-3 p-3 transition-colors ${hasData ? 'cursor-pointer hover:bg-[var(--color-surface-hover)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]' : 'cursor-auto'} w-full text-left`}
                                             onClick={hasData ? (e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); }) : undefined}
+                                            onKeyDown={hasData ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); } }) : undefined}
                                         >
                                             <div className="size-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
                                                 {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" />
@@ -188,13 +199,9 @@ export function NftCollectionPanel({
                                                             <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-[var(--color-accent)]' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
                                                     </div>
-                                                ) : (
-                                                    <Pill color={isReceived ? 'accent' : 'red'}>
-                                                        {isReceived ? (tt?.nft_received || 'Received') : (tt?.nft_sent || 'Sent')}
-                                                    </Pill>
-                                                )}
+                                                ) : null}
                                             </div>
-                                        </button>
+                                        </div>
                                         <AnimatePresence>
                                             {isOpen && hasData && (
                                                 <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
@@ -234,13 +241,21 @@ export function NftCollectionPanel({
                                                                         </div>
                                                                     )}
                                                                     {fields.map((f) => {
-                                                                        const isUrl = typeof f.value === 'string' && (f.value.startsWith('http') || f.value.startsWith('ipfs'));
+                                                                        const valArray = Array.isArray(f.value) ? f.value : [f.value];
                                                                         return (
                                                                             <div key={f.name}>
                                                                                 <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{f.name}</p>
-                                                                                <p className="text-xs text-[var(--color-text-main)] break-words leading-relaxed">
-                                                                                    {isUrl ? <a href={f.value as string} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{(f.value as string).length > 60 ? (f.value as string).slice(0, 60) + '...' : (f.value as string)}</a> : String(f.value)}
-                                                                                </p>
+                                                                                <div className="text-xs text-[var(--color-text-main)] break-words leading-relaxed space-y-1 pl-3">
+                                                                                    {valArray.map((vItem, vi) => {
+                                                                                        const strVal = typeof vItem === 'object' && vItem !== null ? JSON.stringify(vItem) : String(vItem);
+                                                                                        const isUrl = strVal.startsWith('http') || strVal.startsWith('ipfs');
+                                                                                        return (
+                                                                                            <div key={vi}>
+                                                                                                {isUrl ? <a href={strVal} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{strVal.length > 60 ? strVal.slice(0, 60) + '...' : strVal}</a> : strVal}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
                                                                         );
                                                                     })}
@@ -298,7 +313,7 @@ export function NftCollectionPanel({
                 )}
 
                 {activeTab === 'metadata' && (
-                    <PanelMetadataTab metadataItems={metadataItems} tt={tt} />
+                    <PanelMetadataTab metadataItems={metadataItems} tt={tt} onCopy={onCopy ?? (() => {})} copiedAddress={copiedAddress} />
                 )}
 
                 {activeTab === 'configuration' && (

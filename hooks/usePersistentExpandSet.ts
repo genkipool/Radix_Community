@@ -51,7 +51,7 @@ export function usePersistentExpandSet({
   const queryClient = useQueryClient();
 
   // 1. Query for Auto-collapse preference
-  const autoCollapseQuery = useQuery({
+  const { data: autoCollapse } = useQuery({
     queryKey: [cookieKeyAutoCollapse],
     queryFn: () => {
       // On the client, we can still read the cookie to be latest
@@ -66,7 +66,7 @@ export function usePersistentExpandSet({
   });
 
   // 2. Query for Expanded IDs
-  const expandedQuery = useQuery({
+  const { data: expandedIds } = useQuery({
     queryKey: [cookieKeyItems],
     queryFn: () => {
       if (typeof window !== 'undefined') {
@@ -82,9 +82,6 @@ export function usePersistentExpandSet({
       : (defaultExpandAll ? new Set(allIds) : new Set<string>()),
     staleTime: Infinity,
   });
-
-  const autoCollapse = autoCollapseQuery.data;
-  const expandedIds = expandedQuery.data;
 
   // 4. Handlers
   const handleToggle = (id: string) => {

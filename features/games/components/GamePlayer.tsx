@@ -29,8 +29,8 @@ import { GamePlayerProps } from '../types/components.types';
 
 export default function GamePlayer({ game }: GamePlayerProps) {
   const { t: dict } = useLanguage();
-  const t = dict.games.player;
-  const gamesT = dict.games;
+  const t = dict.games?.player ?? {};
+  const gamesT = dict.games ?? {};
   const gameTitles = (gamesT.titles ?? {}) as Record<string, string>;
   const gameTitle = gameTitles[game.titleKey] ?? game.titleKey;
 

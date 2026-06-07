@@ -19,7 +19,7 @@ export default function Wallet({ t }: BaseSectionProps) {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-[var(--color-text-main)] mb-6 tracking-tight">
               {t.wallet.h2a}<br />
-              <span className="text-white">{t.wallet.h2b}</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)]">{t.wallet.h2b}</span>
             </h2>
             <p className="text-xl text-[var(--color-text-muted)] mb-10 leading-relaxed">
               {t.wallet.sub}

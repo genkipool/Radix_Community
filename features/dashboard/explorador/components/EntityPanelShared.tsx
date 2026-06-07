@@ -12,13 +12,15 @@
  * loading states, and the metadata / configuration / raw tab bodies.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { m } from "motion/react";
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Download } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
 import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip, parseProgrammaticJson } from '../../utils/resourceUtils';
 import type { ConfigEntry, MetadataItem } from '@/features/dashboard/types/shared.types';
+import type { AccountRewardsCsvModalDict } from '../types/components.types';
+import { AddressDisplay } from './EntityBadge';
 export type { ConfigEntry };
 export { getConfigEntries, resolutionTooltip };
 
@@ -116,12 +118,12 @@ function PanelRoleRow({
                     {entry.name.replace(/_/g, ' ')}
                 </dt>
                 {entry.desc && (
-                    <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 leading-relaxed pr-4">
+                    <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 leading-relaxed pr-4 pl-3">
                         {entry.desc}
                     </p>
                 )}
                 {entry.ruleAddress && (
-                    <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 mt-1 pl-3">
                         <span
                             className="text-[9px] font-mono text-[var(--color-text-muted)] break-all"
                             title={entry.ruleAddress}
@@ -176,7 +178,7 @@ export function PanelTabBar<T extends string>({
     layoutId?: string;
 }) {
     return (
-        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar">
+        <div className="flex border-b border-[var(--color-card-border)] px-4 overflow-x-auto hide-scrollbar shrink-0">
             {tabs.map(tab => (
                 <m.button
                     key={tab.key}
@@ -238,11 +240,12 @@ export function PanelLoadingState({ tt: _tt }: { tt?: Partial<TranslationsT['das
    URLs as anchor links.
 ───────────────────────────────────────── */
 export function PanelMetadataTab({
-    metadataItems, tt, onCopy, copiedAddress }: {
+    metadataItems, tt, onCopy, copiedAddress, network }: {
     metadataItems: MetadataItem[];
-    tt?: Partial<TranslationsT['dashboard']['transactions']>;
+    tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict };
     onCopy?: (v: string) => void;
     copiedAddress?: string | null;
+    network?: 'mainnet' | 'stokenet';
 }) {
     if (metadataItems.length === 0) {
         return (
@@ -255,15 +258,24 @@ export function PanelMetadataTab({
         <div className="space-y-4">
             {metadataItems.map((meta: MetadataItem) => {
                 const tagValues = parseTags(meta);
-                const isTags = meta.key === 'tags' || (meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray';
+                const isTags = meta.key === 'tags' || ((meta.value as Record<string, Record<string, string>>)?.typed?.type === 'StringArray' && meta.key !== 'dapp_definitions' && meta.key !== 'dapp_definition');
 
-                const rawVal = isTags ? null : (
+                let parsedVal = isTags ? null : (
                     meta.value.typed?.values ??
                     meta.value.typed?.value ??
                     meta.value.typed?.url ??
                     (meta.value.programmatic_json ? parseProgrammaticJson(meta.value.programmatic_json) : undefined) ??
+                    (meta.value.typed?.elements ? meta.value.typed : undefined) ??
                     meta.value.typed?.kind
                 );
+
+                if (typeof parsedVal === 'string' && (parsedVal.trim().startsWith('{') || parsedVal.trim().startsWith('['))) {
+                    try {
+                        parsedVal = JSON.parse(parsedVal);
+                    } catch (e) {
+                        // ignore
+                    }
+                }
 
                 // Deep flatten any arrays returned by parseProgrammaticJson
                 // This ensures that nested Enum/Array structures (like owner_keys)
@@ -275,11 +287,16 @@ export function PanelMetadataTab({
                     return val === null || val === undefined ? [] : [val];
                 };
 
-                const valueItems = flatten(rawVal).map(v => {
+                const parsedArray = flatten([parsedVal]).map(v => {
+                    if (typeof v === 'object' && v !== null) {
+                        return parseProgrammaticJson(v);
+                    }
+                    return v;
+                });
+
+                const valueItems = flatten(parsedArray).map(v => {
                     if (typeof v === 'string') return v;
                     if (typeof v === 'object' && v !== null) {
-                        const parsed = parseProgrammaticJson(v);
-                        if (typeof parsed === 'string') return parsed;
                         return JSON.stringify(v);
                     }
                     return String(v);
@@ -291,11 +308,11 @@ export function PanelMetadataTab({
                             {metaKeyLabel(meta.key as string, tt)}
                         </dt>
                         {isTags ? (
-                            <dd className="flex flex-wrap gap-1.5">
+                            <dd className="flex flex-wrap gap-1.5 pl-3">
                                 {tagValues.map((tag: string) => <Pill key={tag}>{tag}</Pill>)}
                             </dd>
                         ) : (
-                            <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words space-y-1">
+                            <dd className="text-xs text-[var(--color-text-main)] leading-relaxed break-words space-y-1 pl-3">
                                 {valueItems.map((vItem, vi) => {
                                     const isUrl = typeof vItem === 'string' && (vItem.startsWith('http') || vItem.startsWith('ipfs'));
                                     const isAddress = typeof vItem === 'string' && (
@@ -313,18 +330,18 @@ export function PanelMetadataTab({
                                         <div key={`${vi}-${typeof vItem === 'string' ? vItem : ''}`} className="flex items-center gap-1 group/meta-item">
                                             {isUrl && typeof vItem === 'string' ? (
                                                 <a href={vItem} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{vItem}</a>
+                                            ) : isAddress && typeof vItem === 'string' ? (
+                                                <AddressDisplay
+                                                    label=""
+                                                    address={vItem}
+                                                    tt={tt as Partial<TranslationsT['dashboard']['transactions']>}
+                                                    onCopy={onCopy || (() => {})}
+                                                    copiedAddress={copiedAddress || null}
+                                                    network={network || 'mainnet'}
+                                                    hideLabel={true}
+                                                />
                                             ) : (
-                                                <span className={isAddress ? 'font-mono' : ''}>{vItem}</span>
-                                            )}
-
-                                            {isAddress && onCopy && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); onCopy(vItem); }}
-                                                    className={`p-0.5 rounded transition-all opacity-0 group-hover/meta-item:opacity-100 ${copiedAddress === vItem ? 'text-[var(--color-accent)] opacity-100' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                                >
-                                                    {copiedAddress === vItem ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
-                                                </button>
+                                                <span>{vItem}</span>
                                             )}
                                         </div>
                                     );

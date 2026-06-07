@@ -155,9 +155,10 @@ export function AccountCard({
         <>
             <Card
                 onClick={(!isModal && onExpand) ? () => onExpand(address) : undefined}
-                className={`p-0 shadow-md transition-all duration-300 group ${(!isModal && onExpand) ? 'cursor-pointer' : 'cursor-default'} overflow-hidden col-span-full border border-[var(--color-accent)]/30 ${isModal ? 'bg-[var(--color-bg)]' : 'bg-[var(--color-surface)]'} ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
+                className={`p-0 shadow-md transition-all duration-300 group ${(!isModal && onExpand) ? 'cursor-pointer' : 'cursor-default'} overflow-hidden col-span-full border border-[var(--color-accent)]/30 ${isModal ? 'bg-[var(--color-bg)] h-full flex flex-col' : 'bg-[var(--color-surface)]'} ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
+                innerClassName={isModal ? "flex flex-col h-full min-h-0 flex-1" : ""}
             >
-                <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'}`}>
+                <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'} shrink-0`}>
                     {/* ── AVATAR / SIDEBAR (Matching TransactionCard) ── */}
                     <div aria-hidden="true"
                         className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
@@ -279,13 +280,13 @@ export function AccountCard({
                 <AnimatePresence initial={false}>
                     {isExpanded && (
                         <m.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
+                            initial={isModal ? false : { height: 0, opacity: 0 }}
+                            animate={isModal ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
-                            className="overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)]"
+                            className={`overflow-hidden bg-[var(--color-bg)] w-full border-t border-[var(--color-card-border)] ${isModal ? 'flex-1 flex flex-col min-h-0' : ''}`}
                         >
-                            <div role="presentation" onClick={(e) => e.stopPropagation()} className="cursor-auto w-full">
+                            <div role="presentation" onClick={(e) => e.stopPropagation()} className={`cursor-auto w-full ${isModal ? 'flex-1 flex flex-col min-h-0' : ''}`}>
                                 <PanelTabBar
                                     tabs={tabsData}
                                     activeTab={activeTab}
@@ -298,7 +299,7 @@ export function AccountCard({
                                     layoutId={`accountCardTabs-${address}`}
                                 />
 
-                                <div className="px-4 py-3 pb-6">
+                                <div className={`px-4 py-3 pb-6 ${isModal ? 'flex-1 overflow-y-auto min-h-0 custom-scrollbar' : ''}`}>
                                     {/* CSS Grid Wrapper injecting logic specifically for Token/NFT tabs */}
                                     <div className={`account-assets-grid-wrapper 
                                         ${columns === 1 ? 'is-grid-1' : 'is-grid-multi'} 
@@ -413,7 +414,7 @@ export function AccountCard({
 
                                         {/* ── METADATA ── */}
                                         {activeTab === 'metadata' && (
-                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt as Record<string, unknown>} />
+                                            <PanelMetadataTab metadataItems={metadataItems} tt={tt as Record<string, unknown>} onCopy={onCopy} copiedAddress={copiedAddress} />
                                         )}
 
                                         {/* ── CONFIGURATION ── */}

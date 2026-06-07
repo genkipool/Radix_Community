@@ -245,7 +245,7 @@ export function ValidatorInlinePanel({
 
                                         {/* ── METADATA (ordered) ── */}
                                         {activeTab === 'metadata' && (
-                                            <PanelMetadataTab metadataItems={orderedMeta} tt={tt} />
+                                            <PanelMetadataTab metadataItems={orderedMeta} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
                                         )}
 
                                         {activeTab === 'configuration' && (

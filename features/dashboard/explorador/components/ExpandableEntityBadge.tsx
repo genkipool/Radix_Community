@@ -340,17 +340,6 @@ export function ExpandableEntityBadge({
                             )}
                         </div>
                     )}
-                    {isAccountAddr && network === 'mainnet' && (
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
-                            onPointerEnter={() => prefetchAccountRewards(clean)}
-                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
-                            title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
-                        >
-                            <Download className="size-3" />
-                        </button>
-                    )}
                     {!isResourceCard && (
                         <button
                             type="button"
@@ -364,6 +353,17 @@ export function ExpandableEntityBadge({
                             {copiedAddress === clean
                                 ? <Check className="size-3" />
                                 : <Copy className="size-3" />}
+                        </button>
+                    )}
+                    {isAccountAddr && network === 'mainnet' && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setIsCsvModalOpen(true); }}
+                            onPointerEnter={() => prefetchAccountRewards(clean)}
+                            className="p-1 rounded transition-colors text-[var(--color-text-muted)] hover:text-[var(--color-primary)]"
+                            title={tt?.account_summary?.download_rewards_tooltip || tt?.account_summary?.download_account_rewards}
+                        >
+                            <Download className="size-3" />
                         </button>
                     )}
                     <ChevronDown

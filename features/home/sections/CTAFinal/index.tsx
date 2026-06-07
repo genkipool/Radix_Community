@@ -21,7 +21,7 @@ export default function CTAFinal({ t, locale }: LocaleSectionProps) {
         <FadeIn className="text-5xl md:text-7xl font-extrabold text-[var(--color-text-main)] mb-8 tracking-tight leading-tight">
           <h2>
             {t.cta?.h2a}<br />
-            <span className="text-white">{t.cta?.h2b}</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)]">{t.cta?.h2b}</span>
           </h2>
         </FadeIn>
 

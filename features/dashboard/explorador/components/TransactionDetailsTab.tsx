@@ -697,10 +697,10 @@ export function TransactionDetailsTab({
                     )}
 
                     <div className="space-y-3">
-                        {receipt.events.map((ev) => {
+                        {receipt.events.map((ev, idx) => {
                             const { titleText, description, tooltip } = classifyEvent(ev);
                             return (
-                                <div key={'event-' + JSON.stringify(ev).slice(0, 50)} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
+                                <div key={`event-${idx}`} className="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-card-border)] shadow-sm">
                                     <div
                                         title={tooltip as string}
                                         className={`font-bold text-sm text-[var(--color-primary)] mb-3 bg-[var(--color-primary)]/10 inline-block px-2 py-1 rounded ${tooltip ? 'cursor-help' : ''}`}

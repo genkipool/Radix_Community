@@ -275,7 +275,6 @@ export function AccountSummaryTab({
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
 
     const [selectedValidatorAddresses, setSelectedValidatorAddresses] = useState<string[]>([]);
-    const [hasInitializedSelections, setHasInitializedSelections] = useState(false);
     const [mountTime] = useState(() => Date.now());
 
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -353,9 +352,10 @@ export function AccountSummaryTab({
         totalLsuXrdEquivalent,
     } = useAccountStats(address, network, entityData);
 
+    const [hasInitializedSelectionsValue, setHasInitializedSelectionsValue] = useState(false);
     // Initialize selections with existing delegations once data loads
-    if (!hasInitializedSelections && !isLoading && stakingRows.length > 0) {
-        setHasInitializedSelections(true);
+    if (!hasInitializedSelectionsValue && !isLoading && stakingRows.length > 0) {
+        setHasInitializedSelectionsValue(true);
         setSelectedValidatorAddresses(stakingRows.map(r => r.validatorAddress));
     }
 
@@ -610,6 +610,7 @@ export function AccountSummaryTab({
 
     return (
         <div className="space-y-6">
+            <div style={{ display: 'none' }} data-init={String(hasInitializedSelectionsValue)} />
             {/* Header: Name + Icon */}
             <div className="flex items-center gap-3">
                 {iconUrl && (
@@ -642,6 +643,13 @@ export function AccountSummaryTab({
                         <span className="text-xs font-mono text-[var(--color-text-muted)] truncate select-all">
                             {address}
                         </span>
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onCopy(address); }}
+                            className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                        >
+                            {copiedAddress === address ? <Check className="size-3" /> : <Copy className="size-3" />}
+                        </button>
                         {address.startsWith('account_') && network === 'mainnet' && (
                             <button
                                 type="button"
@@ -653,13 +661,6 @@ export function AccountSummaryTab({
                                 <Download className="size-3" />
                             </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); onCopy(address); }}
-                            className={`p-1 rounded transition-colors ${copiedAddress === address ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                        >
-                            {copiedAddress === address ? <Check className="size-3" /> : <Copy className="size-3" />}
-                        </button>
                     </div>
                 </div>
             </div>

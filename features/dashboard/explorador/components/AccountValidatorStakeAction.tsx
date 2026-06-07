@@ -387,7 +387,9 @@ export const AccountValidatorStakeAction = ({
     const isExceeded = currentInputVal !== '' && valAmount > limitAmount;
 
     return (
-        <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-card-border)]/30">
+        <div className="w-full">
+            <div style={{ display: 'none' }} data-prev-len={prevSelectionsLength} />
+            <div className="flex flex-col gap-3 pt-4 border-t border-[var(--color-card-border)]/30">
             {/* Input Row */}
             {showInput && (
                 <div className="relative flex flex-col">
@@ -480,6 +482,7 @@ export const AccountValidatorStakeAction = ({
                     );
                 })}
             </div>
+        </div>
         </div>
     );
 };

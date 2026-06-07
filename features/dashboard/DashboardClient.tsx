@@ -334,7 +334,7 @@ export default function DashboardClient({
   const expandedPost = expandedPostId ? realValidators.find(v => v.id === expandedPostId) ?? null : null;
   const expandedTx = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
   const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
-  const expandedAccount = (isAccountSearch && expandedPostId === deferredSearch.trim()) ? expandedPostId : null;
+  const expandedAccount = expandedPostId?.startsWith('account_') ? expandedPostId : null;
 
   // Compute accounts to show for the explorer view using deferred values
   const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);

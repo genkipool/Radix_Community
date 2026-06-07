@@ -1082,12 +1082,14 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     );
 
     const [claimAmounts, setClaimAmounts] = useState<Record<string, string>>({});
+    const fetchedIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
+        let isMounted = true;
         if (!entityData?.non_fungible_resources?.items) return;
 
         const fetchClaims = async () => {
-            const newAmounts = { ...claimAmounts };
+            const newAmounts: Record<string, string> = {};
             let hasChanges = false;
 
             for (const nf of entityData.non_fungible_resources!.items!) {
@@ -1095,7 +1097,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
 
                 if (isClaim && nf.vaults?.items?.[0]?.items) {
-                    const idsToFetch = nf.vaults.items[0].items.filter(id => !newAmounts[`${nf.resource_address}-${id}`]);
+                    const idsToFetch = nf.vaults.items[0].items.filter(id => !fetchedIdsRef.current.has(`${nf.resource_address}-${id}`));
                     if (idsToFetch.length > 0) {
                         try {
                             const nftData = await apiFetchNonFungibleData(nf.resource_address, idsToFetch, network);
@@ -1110,6 +1112,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 const amountRaw = data?.programmatic_json?.fields?.find((f: NftField) => f.field_name === 'claim_amount')?.value;
                                 if (id && amountRaw) {
                                     newAmounts[`${nf.resource_address}-${id}`] = parseFloat(amountRaw).toLocaleString(undefined, { maximumFractionDigits: 4 });
+                                    fetchedIdsRef.current.add(`${nf.resource_address}-${id}`);
                                     hasChanges = true;
                                 }
                             });
@@ -1120,13 +1123,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 }
             }
 
-            if (hasChanges) {
-                setClaimAmounts(newAmounts);
+            if (isMounted && hasChanges) {
+                setClaimAmounts(prev => ({ ...prev, ...newAmounts }));
             }
         };
 
         fetchClaims();
-    }, [entityData, network, validatorsData, claimAmounts]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [entityData, network, validatorsData]);
 
     const renderNftItems = () => {
         if (nonFungibles.length === 0) {

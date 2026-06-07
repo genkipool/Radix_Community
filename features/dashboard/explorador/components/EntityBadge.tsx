@@ -116,6 +116,16 @@ export function AddressDisplay({
                         >
                             {displayText}
                         </span>
+                        <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); onCopy(copyableAddr); }}
+                            className="hover:text-[var(--color-primary)] transition-colors shrink-0"
+                            title="Copy Address"
+                        >
+                            {copiedAddress === copyableAddr
+                                ? <Check className="size-3 text-green-500" />
+                                : <Copy className="size-3" />}
+                        </button>
                         {isAccountAddr && network === 'mainnet' && (
                             <button
                                 type="button"
@@ -127,16 +137,6 @@ export function AddressDisplay({
                                 <Download className="size-3" />
                             </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); onCopy(copyableAddr); }}
-                            className="hover:text-[var(--color-primary)] transition-colors shrink-0"
-                            title="Copy Address"
-                        >
-                            {copiedAddress === copyableAddr
-                                ? <Check className="size-3 text-green-500" />
-                                : <Copy className="size-3" />}
-                        </button>
                     </div>
                 </div>
             </div>
