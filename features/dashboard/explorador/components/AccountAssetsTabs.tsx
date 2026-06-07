@@ -245,7 +245,7 @@ function ExpandableResourceCard({
                                     </span>
                                 )}
                                 {item.isClaim && item.claimXrdTotal !== undefined && item.claimXrdTotal > 0 && (
-                                    <span className="text-[10px] font-mono font-bold text-[var(--color-primary)]">
+                                    <span className="text-[10px] font-mono font-bold text-[var(--color-accent)]">
                                         ~{item.claimXrdTotal.toLocaleString(locale || 'en-US', { maximumFractionDigits: 4 })} XRD
                                     </span>
                                 )}

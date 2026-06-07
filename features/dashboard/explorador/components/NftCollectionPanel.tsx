@@ -157,26 +157,14 @@ export function NftCollectionPanel({
                                                         {copiedAddress === id ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
                                                     </button>
                                                 </div>
-                                                {(isStakeClaim || claimXrd != null) && (
-                                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 border border-amber-600/30 bg-amber-600/10 px-1.5 rounded leading-none py-0.5"
-                                                            title={tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period'}>
-                                                            Stake Claim
-                                                        </span>
-                                                        {claimXrd != null && (
-                                                            <span className="text-[9px] font-bold font-mono text-[var(--color-primary)]">
-                                                                ~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} XRD
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                )}
+
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 {isClaim && type === 'removed' ? (
                                                     <div className="text-right" title={isClaimRedeemed ? (tt?.claim_nft_redeemed_tooltip || 'NFT Burned/Redeemed') : isClaimAuthorized ? (tt?.claim_nft_authorized_tooltip || 'Claim Authorized') : (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD')}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-[var(--color-accent)]">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className="font-mono font-bold text-base tabular-nums text-red-600 dark:text-red-400">−1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -185,7 +173,7 @@ export function NftCollectionPanel({
                                                     <div className="text-right" title={isClaimRedeemed ? (tt?.claim_nft_redeemed_tooltip || 'NFT Burned/Redeemed') : isClaimAuthorized ? (tt?.claim_nft_authorized_tooltip || 'Claim Authorized') : (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD')}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_claimed || 'XRD Reclamados'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-[var(--color-accent)]">{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className="font-mono font-bold text-base tabular-nums text-[var(--color-accent)]">+1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -194,7 +182,7 @@ export function NftCollectionPanel({
                                                     <div className="text-right" title={tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period'}>
                                                         <div className="text-[9px] uppercase tracking-wider text-[var(--color-text-muted)] font-black opacity-70 mb-0.5">{tt?.stake_claim_xrd_amount || 'XRD Reclamables'}</div>
                                                         {claimXrd != null ? (
-                                                            <div className="font-mono font-bold text-base tabular-nums text-amber-600">~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
+                                                            <div className="font-mono font-bold text-base tabular-nums text-[var(--color-accent)]">~{parseFloat(String(claimXrd)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span></div>
                                                         ) : (
                                                             <div className={`font-mono font-bold text-sm tabular-nums ${isReceived ? 'text-[var(--color-accent)]' : 'text-red-600 dark:text-red-400'}`}>{isReceived ? '+' : '-'}1 <span className="text-xs font-semibold opacity-70">NFT</span></div>
                                                         )}
@@ -206,21 +194,7 @@ export function NftCollectionPanel({
                                             {isOpen && hasData && (
                                                 <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                                                     <div className="border-t border-[var(--color-card-border)] px-4 py-3 space-y-3">
-                                                        {(claimXrd != null || (isClaim && claimXrdTotal) || (isStakeClaim && unstakeXrdExpected)) && (
-                                                            <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-600/8 border border-amber-600/20">
-                                                                <div>
-                                                                    <p className="text-[9px] uppercase tracking-wider font-black text-amber-600 mb-0.5">
-                                                                        {isClaim ? (tt?.stake_claim_xrd_claimed || 'XRD Reclamados') : (tt?.stake_claim_xrd_amount || 'XRD Reclamables')}
-                                                                    </p>
-                                                                    <p className="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-                                                                        {isClaimRedeemed ? (tt?.claim_nft_redeemed_tooltip || 'NFT Burned/Redeemed') : isClaimAuthorized ? (tt?.claim_nft_authorized_tooltip || 'Claim Authorized') : isClaim ? (tt?.stake_claim_nft_claimed_title || 'Este NFT fue presentado para reclamar los XRD') : (tt?.stake_claim_nft_title || 'Present this NFT to claim your XRD after the unbonding period')}
-                                                                    </p>
-                                                                </div>
-                                                                <span className="text-base font-black font-mono text-amber-600 shrink-0 tabular-nums">
-                                                                    {isClaim ? '' : '~'}{parseFloat(String(claimXrd ?? claimXrdTotal ?? unstakeXrdExpected)).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 })} <span className="text-xs font-semibold opacity-70">XRD</span>
-                                                                </span>
-                                                            </div>
-                                                        )}
+
                                                         {imageUrl && (
                                                             <div className="rounded-xl overflow-hidden border border-[var(--color-card-border)] max-w-[140px]">
                                                                 <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full object-cover" />
@@ -235,13 +209,14 @@ export function NftCollectionPanel({
                                                                     {(isStakeClaim || isClaim) && validatorAddress && (
                                                                         <div>
                                                                             <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{((tt as unknown) as Record<string, string>)?.staking_validator || 'validator'}</p>
-                                                                            <p className="text-xs text-[var(--color-primary)] break-words leading-relaxed truncate">
+                                                                            <p className="text-xs text-[var(--color-primary)] break-words leading-relaxed truncate pl-3">
                                                                                 {validatorName || validatorAddress}
                                                                             </p>
                                                                         </div>
                                                                     )}
                                                                     {fields.map((f) => {
                                                                         const valArray = Array.isArray(f.value) ? f.value : [f.value];
+                                                                        const isClaimField = f.name === 'claim_amount' || f.name === 'claimable_amount' || f.name === 'xrd_amount' || f.name === 'amount';
                                                                         return (
                                                                             <div key={f.name}>
                                                                                 <p className="text-[9px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-0.5">{f.name}</p>
@@ -252,6 +227,7 @@ export function NftCollectionPanel({
                                                                                         return (
                                                                                             <div key={vi}>
                                                                                                 {isUrl ? <a href={strVal} target="_blank" rel="noopener noreferrer" className="text-[var(--color-primary)] hover:underline" onClick={e => e.stopPropagation()}>{strVal.length > 60 ? strVal.slice(0, 60) + '...' : strVal}</a> : strVal}
+                                                                                                {isClaimField && !isUrl ? ' XRD' : ''}
                                                                                             </div>
                                                                                         );
                                                                                     })}

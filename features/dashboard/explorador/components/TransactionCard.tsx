@@ -47,7 +47,10 @@ const RenderSymbol = ({ address, fallback, network, enrichedName }: { address: s
     if (!address) return null;
     if (address === 'XRD') return 'XRD';
 
-    const finalName = enrichedName || meta?.symbol || meta?.name || fallback || formatEntity(address);
+    let finalName = enrichedName || meta?.symbol || meta?.name || fallback || formatEntity(address);
+    if (finalName === 'Liquid Stake Units') {
+        finalName = 'LSU';
+    }
 
     const displayVal = finalName.length > 40 ? finalName.slice(0, 37).trim() + '...' : finalName;
 
@@ -331,9 +334,9 @@ const TransactionCard = ({ tx, index: _index, isExpanded, columns, onExpand, onC
                                 </div>
                                 <div className={`${isVertical ? 'text-[11px]' : 'text-base sm:text-lg'} font-bold text-[var(--color-text-main)] truncate`}>
                                     {tx.displayAmount !== undefined ? (
-                                        <div className="flex items-baseline gap-1.5">
-                                            <span>{formatAmount(tx.displayAmount, locale)}</span>
-                                            <span className="uppercase">
+                                        <div className="flex items-baseline gap-1.5 min-w-0">
+                                            <span className="shrink-0">{formatAmount(tx.displayAmount, locale)}</span>
+                                            <span className="uppercase truncate min-w-0 flex-1">
                                                 {tx.displayIsXrd || tx.displayResource === 'XRD' ? (
                                                     'XRD'
                                                 ) : (

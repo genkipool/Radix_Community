@@ -1303,7 +1303,7 @@ function ResourceCard({ item, onCopy, copiedAddress, burned = false, locale, isM
                                     </span>
                                 )}
                                 {item.isClaim && item.claimXrdTotal !== undefined && item.claimXrdTotal > 0 && (
-                                    <span className="text-[10px] font-mono font-bold text-[var(--color-primary)] whitespace-nowrap">
+                                    <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] whitespace-nowrap">
                                         ~{item.claimXrdTotal.toLocaleString(locale || 'en-US', { maximumFractionDigits: 4 })} XRD
                                     </span>
                                 )}

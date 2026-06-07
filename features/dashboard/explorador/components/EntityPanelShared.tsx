@@ -12,9 +12,9 @@
  * loading states, and the metadata / configuration / raw tab bodies.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { m } from "motion/react";
-import { Check, Copy, Download } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { Pill } from '@/components/ui/Pill';
 import { parseTags, metaKeyLabel, getConfigEntries, resolutionTooltip, parseProgrammaticJson } from '../../utils/resourceUtils';
@@ -265,14 +265,14 @@ export function PanelMetadataTab({
                     meta.value.typed?.value ??
                     meta.value.typed?.url ??
                     (meta.value.programmatic_json ? parseProgrammaticJson(meta.value.programmatic_json) : undefined) ??
-                    (meta.value.typed?.elements ? meta.value.typed : undefined) ??
+                    ((meta.value.typed as Record<string, unknown>)?.elements ? meta.value.typed : undefined) ??
                     meta.value.typed?.kind
                 );
 
                 if (typeof parsedVal === 'string' && (parsedVal.trim().startsWith('{') || parsedVal.trim().startsWith('['))) {
                     try {
                         parsedVal = JSON.parse(parsedVal);
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                 }

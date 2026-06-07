@@ -98,7 +98,11 @@ export function useAccountStats(address: string, network: 'mainnet' | 'stokenet'
             isNft: false
         };
 
-        if (r.isLsu) lsuTokens.push(r);
+        if (r.isLsu) {
+            r.symbol = 'LSU';
+            lsuTokens.push(r);
+            tokens.push(r);
+        }
         else if (r.isPoolUnit) poolUnits.push(r);
         else tokens.push(r);
     });
