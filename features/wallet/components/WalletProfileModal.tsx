@@ -134,12 +134,23 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
             <AnimatePresence>
                 {isOpen && (
                     <>
+                        {/* Backdrop – closes modal on mousedown (not mouseup/click) */}
+                        {!isPinned && (
+                            <m.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+                                className="fixed inset-0 z-[9000]"
+                                onMouseDown={handleClose}
+                            />
+                        )}
                         <m.div
                             initial={{ x: '100%', opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: '100%', opacity: 0 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-all duration-300 ${
+                            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+                            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
                                 isPinned
                                     ? 'bg-[var(--color-bg)] border-l border-[var(--color-card-border)] shadow-none'
                                     : 'bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]'
