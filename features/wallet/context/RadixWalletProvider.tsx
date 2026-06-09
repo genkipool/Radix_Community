@@ -115,17 +115,62 @@ export function RadixWalletProvider({
   // ── Connection Timeout Ref ──
   const connectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  // ── Sync with RDT updates ──
+  const subscriptionsRef = React.useRef(new Map<string, { unsubscribe: () => void }>());
+
+  const subscribeToNetwork = React.useCallback((netName: 'mainnet' | 'stokenet') => {
+    if (subscriptionsRef.current.has(netName)) return;
+
+    const rdt = getOrCreateToolkit(networkIdFromName(netName));
+    if (!rdt) return;
+
+    const sub = rdt.walletApi.walletData$.subscribe((walletData) => {
+      setSessions(prev => {
+        const currentSession = prev[netName];
+        if (!currentSession) return prev;
+
+        const newAccounts = walletData.accounts || [];
+        const oldAccounts = currentSession.accounts || [];
+        
+        const isSame = newAccounts.length === oldAccounts.length &&
+                       newAccounts.every((acc, i) => acc.address === oldAccounts[i].address);
+                       
+        if (isSame) return prev;
+
+        return {
+          ...prev,
+          [netName]: {
+            ...currentSession,
+            identityAddress: walletData.persona?.identityAddress || currentSession.identityAddress,
+            personaLabel: walletData.persona?.label || currentSession.personaLabel,
+            accounts: newAccounts,
+          }
+        };
+      });
+    });
+
+    subscriptionsRef.current.set(netName, sub);
+  }, []);
+
   // ── Initialize RDT for networks that have active sessions ──
   React.useEffect(() => {
+    const currentSubscriptions = subscriptionsRef.current;
+
     // For each network with a session, ensure the toolkit is initialized
-    // so walletData$ can pick up reconnections from the extension
+    // and subscribe to walletData$ to pick up updates from the extension
     const initial = sessionsFromPayload(initialSession);
     for (const net of ['mainnet', 'stokenet'] as const) {
       if (initial[net]) {
         getOrCreateToolkit(networkIdFromName(net));
+        subscribeToNetwork(net);
       }
     }
-  }, [initialSession]);
+
+    return () => {
+      currentSubscriptions.forEach(sub => sub.unsubscribe());
+      currentSubscriptions.clear();
+    };
+  }, [initialSession, subscribeToNetwork]);
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 
@@ -151,6 +196,8 @@ export function RadixWalletProvider({
         setError('Wallet toolkit failed to initialize. Check dApp address configuration.');
         return;
       }
+
+      subscribeToNetwork(netName);
 
       // Provide challenge generator
       rdt.walletApi.provideChallengeGenerator(async () => {
