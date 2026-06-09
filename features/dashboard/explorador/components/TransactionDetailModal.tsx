@@ -42,6 +42,7 @@ export function TransactionDetailModal({
             exit={{ opacity: 0, scale: 0.97, y: 24 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
             className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-2 sm:px-4 overflow-y-auto"
+            style={{ right: 'var(--sidebar-width, 0px)' }}
             onClick={onClose}
         >
             <FloatingNav

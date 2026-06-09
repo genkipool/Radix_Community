@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import { m, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Calendar, User, Eye, Heart, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { CloseButton } from '@/components/ui/CloseButton';
@@ -54,7 +54,7 @@ export function BlogOverlay({
     const initialPostId = post.id; // For the initial open animation
 
     // Restore smooth layout transition and specific layoutId before closing so it morphs back to the *current* card!
-    const handleInternalClose = () => {
+    const handleInternalClose = React.useCallback(() => {
         setMorphState('closing');
         // Wait two frames so Framer Motion registers the new layoutId before unmounting
         requestAnimationFrame(() => {
@@ -62,7 +62,7 @@ export function BlogOverlay({
                 onClose();
             });
         });
-    };
+    }, [onClose]);
 
     let activeLayoutId: string | undefined;
     if (morphState === 'opening') {
@@ -74,7 +74,7 @@ export function BlogOverlay({
     return (
         <>
             {/* Dark backdrop */}
-            <m.div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } }}
+            <motion.div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } }}
                 key="blog-overlay-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -97,11 +97,12 @@ export function BlogOverlay({
 
             {/* Scroll container — no animation on this, just positioning */}
             <div role="presentation"
-                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto pointer-events-none w-full cursor-auto"
+                className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto pointer-events-none cursor-auto"
                 onClick={handleInternalClose}
+                style={{ right: 'var(--sidebar-width, 0px)' }}
             >
                 {/* Card shell — layoutId drives the shared element transition. Detached when 'open' to avoid flashes/diagonal leaks */}
-                <m.div
+                <motion.div
                     layoutId={activeLayoutId}
                     className="w-full max-w-3xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-card-border)] shadow-2xl overflow-hidden my-auto pointer-events-auto"
                     onClick={e => e.stopPropagation()}
@@ -135,7 +136,7 @@ export function BlogOverlay({
                                     />
                                 </div>
 
-                                <m.div
+                                <motion.div
                                     className="p-8 md:p-10 touch-pan-y"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -196,11 +197,11 @@ export function BlogOverlay({
                                             </div>
                                         </div>
                                     </div>
-                                </m.div>
+                                </motion.div>
                             </SwipeableContainer>
                         </AnimatePresence>
                     </div>
-                </m.div>
+                </motion.div>
             </div>
         </>
     );

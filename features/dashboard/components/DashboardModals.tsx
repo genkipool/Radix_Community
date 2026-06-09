@@ -62,6 +62,7 @@ export const DashboardModals = ({
             exit={{ opacity: 0, scale: 0.95, y: 40 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex items-start justify-center pt-6 pb-6 px-4 overflow-y-auto"
+            style={{ right: 'var(--sidebar-width, 0px)' }}
             onClick={closeExpanded}
           >
             <FloatingNav
@@ -165,6 +166,7 @@ export const DashboardModals = ({
             exit={{ opacity: 0, scale: 0.95, y: 40 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-4 px-2 sm:px-4 overflow-y-auto"
+            style={{ right: 'var(--sidebar-width, 0px)' }}
             onClick={closeExpanded}
           >
             <div className="w-full max-w-[1600px] mx-auto pointer-events-auto flex flex-col h-[calc(100dvh-2rem)]">
