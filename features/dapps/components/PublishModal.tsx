@@ -204,7 +204,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                     {DAPP_TAGS.map(tag => {
                       const isSelected = selectedTags.includes(tag);
                       return (
-                        <button aria-label="button action"
+                        <button aria-label={`Seleccionar tag ${tag}`}
                           key={tag}
                           type="button"
                           onClick={() => toggleTag(tag)}
@@ -228,7 +228,7 @@ export function PublishModal({ onClose, onPublish, t, setShowUnderConstruction }
                       <Wallet className="size-5" />
                     </div>
                     <div>
-                      <button aria-label="button action"
+                      <button aria-label={t.dapps_page.modal.badge_title}
                         type="button"
                         onClick={() => setShowUnderConstruction(true)}
                         className="text-left font-bold text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors"

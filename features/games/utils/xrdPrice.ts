@@ -54,22 +54,18 @@ async function fromBinance(): Promise<XRDPrice> {
  * Throws if all sources fail.
  */
 export async function fetchXRDPrice(): Promise<XRDPrice> {
-  const sources = [fromCoinGecko, fromCoinPaprika, fromBinance];
-  const errors: unknown[] = [];
-
-  for (const source of sources) {
-    try {
-      return await source();
-    } catch (error) {
-      if (error instanceof Error) {
-        errors.push(error);
-      } else {
-        errors.push(new Error(String(error)));
-      }
+  const trySources = async (sourcesToTry: (() => Promise<XRDPrice>)[], errors: unknown[] = []): Promise<XRDPrice> => {
+    if (sourcesToTry.length === 0) {
+      throw new AggregateError(errors, 'All XRD price sources failed');
     }
-  }
-
-  throw new AggregateError(errors, 'All XRD price sources failed');
+    try {
+      return await sourcesToTry[0]();
+    } catch (error) {
+      errors.push(error instanceof Error ? error : new Error(String(error)));
+      return trySources(sourcesToTry.slice(1), errors);
+    }
+  };
+  return trySources([fromCoinGecko, fromCoinPaprika, fromBinance]);
 }
 
 /**

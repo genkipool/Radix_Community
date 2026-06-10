@@ -54,7 +54,7 @@ export function BlogOverlay({
     const initialPostId = post.id; // For the initial open animation
 
     // Restore smooth layout transition and specific layoutId before closing so it morphs back to the *current* card!
-    const handleInternalClose = React.useCallback(() => {
+    const handleInternalClose = () => {
         setMorphState('closing');
         // Wait two frames so Framer Motion registers the new layoutId before unmounting
         requestAnimationFrame(() => {
@@ -62,7 +62,7 @@ export function BlogOverlay({
                 onClose();
             });
         });
-    }, [onClose]);
+    };
 
     let activeLayoutId: string | undefined;
     if (morphState === 'opening') {

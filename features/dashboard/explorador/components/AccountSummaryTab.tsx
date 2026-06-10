@@ -580,10 +580,10 @@ export function AccountSummaryTab({
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        for (const acc of accounts || []) {
+                        await Promise.all((accounts || []).map(async (acc) => {
                             await apiFetchEntityDetails(acc.address, netName, true);
                             invalidateAccountStakingData(queryClient, acc.address, netName);
-                        }
+                        }));
                     } catch (e) {
                         console.error('Failed to pre-fetch entity details after transaction for accounts', e);
                     }
@@ -1185,14 +1185,18 @@ function BalanceCard({ title, amount, symbol, valueColor, marketData, locale, ra
 
     if (isModal) {
         const alignClass = align === 'right' ? 'items-end text-right' : align === 'center' ? 'items-center text-center' : 'items-start text-left';
+        
+        // Dynamically reduce font size for large numbers to prevent grid overlap
+        const amountLen = formattedAmount.length;
+        const textSizeClass = amountLen > 12 ? 'text-sm' : amountLen > 8 ? 'text-base' : 'text-xl';
 
         return (
-            <div className={`flex flex-col gap-0.5 w-full py-2 ${alignClass}`}>
-                <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider mb-0.5">
+            <div className={`flex flex-col gap-0.5 w-full py-2 min-w-0 overflow-hidden ${alignClass}`}>
+                <span className="text-[10px] uppercase font-black text-[var(--color-text-muted)] tracking-wider mb-0.5 truncate max-w-full">
                     {title}
                 </span>
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className={`text-2xl font-black font-mono tracking-tight ${valueColor} truncate`} title={amount}>
+                <div className="flex items-baseline gap-1.5 min-w-0 max-w-full">
+                    <span className={`${textSizeClass} font-black font-mono tracking-tight ${valueColor} truncate`} title={amount}>
                         {formattedAmount}
                     </span>
                     <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase shrink-0">

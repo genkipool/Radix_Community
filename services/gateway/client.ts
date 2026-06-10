@@ -74,19 +74,16 @@ function _getRetryAfterMs(err: unknown): number | null {
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = RETRY_MAX,
+  attempt = 0
 ): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      if (!_is429(err) || attempt === maxRetries) throw err;
-      const ms = _getRetryAfterMs(err) ?? RETRY_BASE_MS * 2 ** attempt;
-      await new Promise(r => setTimeout(r, ms));
-    }
+  try {
+    return await fn();
+  } catch (err) {
+    if (!_is429(err) || attempt >= maxRetries) throw err;
+    const ms = _getRetryAfterMs(err) ?? RETRY_BASE_MS * 2 ** attempt;
+    await new Promise(r => setTimeout(r, ms));
+    return withRetry(fn, maxRetries, attempt + 1);
   }
-  throw lastErr;
 }
 
 export async function runWithLimit<T>(
@@ -95,11 +92,11 @@ export async function runWithLimit<T>(
 ): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
   let next = 0;
-  async function worker() {
-    while (next < tasks.length) {
-      const i = next++;
-      results[i] = await tasks[i]();
-    }
+  async function worker(): Promise<void> {
+    if (next >= tasks.length) return;
+    const i = next++;
+    results[i] = await tasks[i]();
+    await worker();
   }
   await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
   return results;

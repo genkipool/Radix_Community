@@ -76,7 +76,7 @@ function CurrencyToggle({ currency, onChange, loading }: { currency: Currency; o
         const active = currency === opt.value;
         const disabled = opt.value === 'xrd' && loading;
         return (
-          <button aria-label="button action"
+          <button aria-label={opt.label}
             type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}

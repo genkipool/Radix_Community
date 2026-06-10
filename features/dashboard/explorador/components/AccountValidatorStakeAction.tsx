@@ -343,10 +343,10 @@ export const AccountValidatorStakeAction = ({
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        for (const acc of accounts || []) {
+                        await Promise.all((accounts || []).map(async (acc) => {
                             await apiFetchEntityDetails(acc.address, networkName, true);
                             invalidateAccountStakingData(queryClient, acc.address, networkName);
-                        }
+                        }));
                     } catch (e) {
                         console.error('Failed to pre-fetch entity details after transaction for accounts', e);
                     }
@@ -398,6 +398,7 @@ export const AccountValidatorStakeAction = ({
                             ref={inputRef}
                             type="number"
                             min="0"
+                            aria-label={ghostAmount ? `${ghostAmount} (${accT?.auto_placeholder || 'Auto'})` : `${accT?.amount_xrd || 'Amount of XRD'} ${isMultiMode && activeTab !== 'Claim' && activeTab ? `(${activeTab})` : ''}`}
                             value={currentInputVal}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}

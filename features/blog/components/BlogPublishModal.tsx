@@ -185,23 +185,24 @@ export function BlogPublishModal({ isOpen, onClose, t, customTagValue, setCustom
                         >
                             {isEditingCustom ? (
                                 <div className="inline-flex items-center px-4 py-2 rounded-full border border-[var(--color-primary)] bg-[var(--color-bg-alt)] shadow-lg shadow-[var(--color-primary)]/10">
-                                    <input
-                                        className="bg-transparent border-none outline-none text-[9px] uppercase font-bold tracking-wider text-[var(--color-text-main)] w-[100px]"
-                                        value={customTagValue}
-                                        onChange={(e) => setCustomTagValue(e.target.value.slice(0, 16))}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
+                                        <input
+                                            aria-label={t?.blog?.tags?.Custom || 'Custom tag'}
+                                            className="bg-transparent border-none outline-none text-[9px] uppercase font-bold tracking-wider text-[var(--color-text-main)] w-[100px]"
+                                            value={customTagValue}
+                                            onChange={(e) => setCustomTagValue(e.target.value.slice(0, 16))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    setIsEditingCustom(false);
+                                                    if (customTagValue.trim()) setSelectedTag('Custom');
+                                                }
+                                            }}
+                                            onBlur={() => {
                                                 setIsEditingCustom(false);
                                                 if (customTagValue.trim()) setSelectedTag('Custom');
-                                            }
-                                        }}
-                                        onBlur={() => {
-                                            setIsEditingCustom(false);
-                                            if (customTagValue.trim()) setSelectedTag('Custom');
-                                        }}
-                                        maxLength={16}
-                                        placeholder={t?.blog?.tags?.Custom || 'Custom'}
-                                    />
+                                            }}
+                                            maxLength={16}
+                                            placeholder={t?.blog?.tags?.Custom || 'Custom'}
+                                        />
                                 </div>
                             ) : (
                                 <LabelBadge

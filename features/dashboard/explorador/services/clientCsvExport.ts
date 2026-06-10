@@ -18,70 +18,65 @@ import type {
 
 // ── Gateway Operations ────────────────────────────────────────────────────────
 
-async function gatewayPost(endpoint: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-    let backoff = 1000;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-            const res = await fetch(`${GATEWAY_URL}${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-                signal,
-            });
-            if (res.status === 429) {
-                const retryAfter = parseFloat(res.headers.get('Retry-After') || '0') * 1000;
-                await new Promise((r) => setTimeout(r, Math.max(retryAfter, backoff)));
-                backoff *= 2;
-                continue;
-            }
-            if (!res.ok) throw new Error(`Gateway returned ${res.status}`);
-            return await res.json() as Record<string, unknown>;
-        } catch (err: unknown) {
-            if (err instanceof Error && (err.name === 'AbortError' || err.message === 'Aborted')) {
-                throw err;
-            }
-            if (attempt === 3) throw err;
-            await new Promise((r) => setTimeout(r, backoff));
-            backoff *= 2;
+async function gatewayPost(endpoint: string, body: Record<string, unknown>, signal?: AbortSignal, attempt = 1, backoff = 1000): Promise<Record<string, unknown>> {
+    try {
+        const res = await fetch(`${GATEWAY_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal,
+        });
+        if (res.status === 429) {
+            const retryAfter = parseFloat(res.headers.get('Retry-After') || '0') * 1000;
+            if (attempt >= 3) throw new Error(`Gateway returned ${res.status}`);
+            await new Promise((r) => setTimeout(r, Math.max(retryAfter, backoff)));
+            return gatewayPost(endpoint, body, signal, attempt + 1, backoff * 2);
         }
+        if (!res.ok) throw new Error(`Gateway returned ${res.status}`);
+        return await res.json() as Record<string, unknown>;
+    } catch (err: unknown) {
+        if (err instanceof Error && (err.name === 'AbortError' || err.message === 'Aborted')) {
+            throw err;
+        }
+        if (attempt >= 3) throw err;
+        await new Promise((r) => setTimeout(r, backoff));
+        return gatewayPost(endpoint, body, signal, attempt + 1, backoff * 2);
     }
-    throw new Error(`Exhausted retries in gatewayPost: ${endpoint}`);
 }
 
-async function fetchAllValidators(signal?: AbortSignal): Promise<Record<string, ValidatorMapEntry>> {
-    const result: Record<string, ValidatorMapEntry> = {};
-    let cursor: string | null = null;
-    do {
-        const body: Record<string, unknown> = {
-            limit_per_page: 100,
-            opt_ins: { validator_active_in_epoch: true, explicit_metadata: true, component_state: true },
-        };
-        if (cursor) body.cursor = cursor;
+async function fetchAllValidators(signal?: AbortSignal, cursor: string | null = null, result: Record<string, ValidatorMapEntry> = {}): Promise<Record<string, ValidatorMapEntry>> {
+    const body: Record<string, unknown> = {
+        limit_per_page: 100,
+        opt_ins: { validator_active_in_epoch: true, explicit_metadata: true, component_state: true },
+    };
+    if (cursor) body.cursor = cursor;
 
-        const rawData = await gatewayPost('/state/validators/list', body, signal);
-        const data = rawData as unknown as GatewayValidatorListResponse;
-        const validatorsObj = data.validators;
-        const items = validatorsObj?.items ?? data.items ?? [];
+    const rawData = await gatewayPost('/state/validators/list', body, signal);
+    const data = rawData as unknown as GatewayValidatorListResponse;
+    const validatorsObj = data.validators;
+    const items = validatorsObj?.items ?? data.items ?? [];
 
-        for (const v of items) {
-            const addr = v.address ?? v.state?.address ?? '';
-            const state = v.state ?? {};
-            const lsu = state.stake_unit_resource_address ?? v.stake_unit_resource_address ?? '';
-            const vault = state.stake_xrd_vault?.entity_address ?? '';
-            let name = '';
-            const metaItems = v.metadata?.items ?? [];
-            for (const mi of metaItems) {
-                if (mi.key === 'name') {
-                    name = mi.value?.typed?.value ?? '';
-                    break;
-                }
-            }
-            if (addr) {
-                result[addr] = { lsuResource: lsu, vaultAddress: vault, name: name || `${addr.slice(0, 25)}…` };
+    for (const v of items) {
+        const addr = v.address ?? v.state?.address ?? '';
+        const state = v.state ?? {};
+        const lsu = state.stake_unit_resource_address ?? v.stake_unit_resource_address ?? '';
+        const vault = state.stake_xrd_vault?.entity_address ?? '';
+        let name = '';
+        const metaItems = v.metadata?.items ?? [];
+        for (const mi of metaItems) {
+            if (mi.key === 'name') {
+                name = mi.value?.typed?.value ?? '';
+                break;
             }
         }
-        cursor = validatorsObj?.next_cursor ?? data.next_cursor ?? null;
-    } while (cursor);
+        if (addr) {
+            result[addr] = { lsuResource: lsu, vaultAddress: vault, name: name || `${addr.slice(0, 25)}…` };
+        }
+    }
+    const nextCursor = validatorsObj?.next_cursor ?? data.next_cursor ?? null;
+    if (nextCursor) {
+        return fetchAllValidators(signal, nextCursor, result);
+    }
     return result;
 }
 
@@ -145,126 +140,125 @@ async function fetchAccountTransactions(
     startDate: string,
     endDate: string,
     onProgress?: (p: number) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    cursor: string | null = null,
+    pages = 0,
+    txs: AccountTx[] = []
 ): Promise<AccountTx[]> {
-    const txs: AccountTx[] = [];
-    let cursor: string | null = null;
-    let done = false;
-    let pages = 0;
-
     const nowStr = new Date().toISOString().slice(0, 10);
 
-    while (!done) {
-        const body: Record<string, unknown> = {
-            limit_per_page: 100,
-            affected_global_entities_filter: [accountAddress],
-            opt_ins: { receipt_events: true, balance_changes: true },
-            kind_filter: 'User',
-            order: 'Asc',
-            from_ledger_state: { timestamp: `${startDate}T00:00:00Z` },
-        };
-        if (endDate < nowStr) {
-            body.at_ledger_state = { timestamp: `${endDate}T23:59:59Z` };
-        }
-        if (cursor) body.cursor = cursor;
+    const body: Record<string, unknown> = {
+        limit_per_page: 100,
+        affected_global_entities_filter: [accountAddress],
+        opt_ins: { receipt_events: true, balance_changes: true },
+        kind_filter: 'User',
+        order: 'Asc',
+        from_ledger_state: { timestamp: `${startDate}T00:00:00Z` },
+    };
+    if (endDate < nowStr) {
+        body.at_ledger_state = { timestamp: `${endDate}T23:59:59Z` };
+    }
+    if (cursor) body.cursor = cursor;
 
-        let rawData;
-        try {
-            rawData = await gatewayPost('/stream/transactions', body, signal);
-        } catch {
+    let rawData;
+    try {
+        rawData = await gatewayPost('/stream/transactions', body, signal);
+    } catch {
+        if (onProgress) onProgress(1);
+        return txs;
+    }
+    const data = rawData as unknown as GatewayTransactionStreamResponse;
+
+    const items = data.items ?? [];
+    let done = false;
+    for (const item of items) {
+        const ts = item.confirmed_at ?? '';
+        const dayStr = ts ? ts.slice(0, 10) : 'unknown';
+        const txHash = item.intent_hash ?? item.transaction_hash ?? '';
+
+        if (dayStr && dayStr > endDate) {
+            done = true;
             break;
         }
-        const data = rawData as unknown as GatewayTransactionStreamResponse;
-
-        const items = data.items ?? [];
-        for (const item of items) {
-            const ts = item.confirmed_at ?? '';
-            const dayStr = ts ? ts.slice(0, 10) : 'unknown';
-            const txHash = item.intent_hash ?? item.transaction_hash ?? '';
-
-            if (dayStr && dayStr > endDate) {
-                done = true;
-                break;
-            }
-            if (dayStr && dayStr < startDate) {
-                continue;
-            }
-
-            let feePaid = 0;
-            const balanceChangesObj = item.balance_changes ?? {};
-            const feeChanges = balanceChangesObj.fungible_fee_balance_changes ?? [];
-            for (const fbc of feeChanges) {
-                if (fbc.entity_address === accountAddress) {
-                    const delta = parseFloat(fbc.balance_change ?? '0');
-                    if (delta < 0) feePaid += Math.abs(delta);
-                }
-            }
-
-            const changes: AccountTx['balanceChanges'] = [];
-            const fungibleChanges = balanceChangesObj.fungible_balance_changes ?? [];
-            for (const bc of fungibleChanges) {
-                if (bc.entity_address !== accountAddress) continue;
-                const delta = parseFloat(bc.balance_change ?? '0');
-                if (delta !== 0) {
-                    changes.push({
-                        resource: bc.resource_address ?? '',
-                        amount: Math.abs(delta),
-                        direction: delta > 0 ? 'in' : 'out',
-                    });
-                }
-            }
-
-            const valOps: AccountTx['validatorOps'] = [];
-            const receiptEvents = item.receipt?.events ?? [];
-            for (const ev of receiptEvents) {
-                const evName = ev.name ?? '';
-                const emitter = ev.emitter?.entity?.entity_address ?? '';
-                if (!emitter.startsWith('validator_')) continue;
-
-                const fields = ev.data?.fields ?? ev.data?.programmatic_json?.fields ?? [];
-                const gf = (name: string): string => {
-                    for (const f of fields) {
-                        if (f.field_name === name) return f.value ?? '0';
-                    }
-                    return '0';
-                };
-
-                if (evName.includes('StakeEvent')) {
-                    valOps.push({ validator: emitter, op: 'stake', xrd: parseFloat(gf('xrd_staked') || gf('amount') || '0'), lsu: parseFloat(gf('stake_units') || '0') });
-                } else if (evName.includes('UnstakeEvent')) {
-                    valOps.push({ validator: emitter, op: 'unstake', xrd: 0, lsu: parseFloat(gf('stake_units') || gf('amount') || '0') });
-                } else if (evName.includes('ClaimXrdEvent') || evName.includes('ClaimEvent')) {
-                    valOps.push({ validator: emitter, op: 'claim', xrd: parseFloat(gf('claimed_xrd') || gf('amount') || '0'), lsu: 0 });
-                }
-            }
-
-            const opsSet = new Set(valOps.map((o) => o.op));
-            let txType: AccountTx['txType'] = 'other';
-            if (opsSet.has('stake')) txType = 'stake';
-            else if (opsSet.has('unstake')) txType = 'unstake';
-            else if (opsSet.has('claim')) txType = 'claim';
-            else if (changes.length > 0) {
-                const hasIn = changes.some((c) => c.direction === 'in');
-                const hasOut = changes.some((c) => c.direction === 'out');
-                txType = hasIn && hasOut ? 'trade' : hasIn ? 'deposit' : 'withdrawal';
-            }
-
-            if (changes.length > 0 || valOps.length > 0 || feePaid > 0) {
-                txs.push({ date: dayStr, timestamp: ts, hash: txHash, txType, balanceChanges: changes, validatorOps: valOps, fee: feePaid });
-            }
-        }
-        
-        pages++;
-        if (onProgress) {
-            const p = pages / (pages + 50);
-            onProgress(p);
+        if (dayStr && dayStr < startDate) {
+            continue;
         }
 
-        if (!data.next_cursor || items.length === 0 || done) break;
-        cursor = data.next_cursor;
+        let feePaid = 0;
+        const balanceChangesObj = item.balance_changes ?? {};
+        const feeChanges = balanceChangesObj.fungible_fee_balance_changes ?? [];
+        for (const fbc of feeChanges) {
+            if (fbc.entity_address === accountAddress) {
+                const delta = parseFloat(fbc.balance_change ?? '0');
+                if (delta < 0) feePaid += Math.abs(delta);
+            }
+        }
+
+        const changes: AccountTx['balanceChanges'] = [];
+        const fungibleChanges = balanceChangesObj.fungible_balance_changes ?? [];
+        for (const bc of fungibleChanges) {
+            if (bc.entity_address !== accountAddress) continue;
+            const delta = parseFloat(bc.balance_change ?? '0');
+            if (delta !== 0) {
+                changes.push({
+                    resource: bc.resource_address ?? '',
+                    amount: Math.abs(delta),
+                    direction: delta > 0 ? 'in' : 'out',
+                });
+            }
+        }
+
+        const valOps: AccountTx['validatorOps'] = [];
+        const receiptEvents = item.receipt?.events ?? [];
+        for (const ev of receiptEvents) {
+            const evName = ev.name ?? '';
+            const emitter = ev.emitter?.entity?.entity_address ?? '';
+            if (!emitter.startsWith('validator_')) continue;
+
+            const fields = ev.data?.fields ?? ev.data?.programmatic_json?.fields ?? [];
+            const gf = (name: string): string => {
+                for (const f of fields) {
+                    if (f.field_name === name) return f.value ?? '0';
+                }
+                return '0';
+            };
+
+            if (evName.includes('StakeEvent')) {
+                valOps.push({ validator: emitter, op: 'stake', xrd: parseFloat(gf('xrd_staked') || gf('amount') || '0'), lsu: parseFloat(gf('stake_units') || '0') });
+            } else if (evName.includes('UnstakeEvent')) {
+                valOps.push({ validator: emitter, op: 'unstake', xrd: 0, lsu: parseFloat(gf('stake_units') || gf('amount') || '0') });
+            } else if (evName.includes('ClaimXrdEvent') || evName.includes('ClaimEvent')) {
+                valOps.push({ validator: emitter, op: 'claim', xrd: parseFloat(gf('claimed_xrd') || gf('amount') || '0'), lsu: 0 });
+            }
+        }
+
+        const opsSet = new Set(valOps.map((o) => o.op));
+        let txType: AccountTx['txType'] = 'other';
+        if (opsSet.has('stake')) txType = 'stake';
+        else if (opsSet.has('unstake')) txType = 'unstake';
+        else if (opsSet.has('claim')) txType = 'claim';
+        else if (changes.length > 0) {
+            const hasIn = changes.some((c) => c.direction === 'in');
+            const hasOut = changes.some((c) => c.direction === 'out');
+            txType = hasIn && hasOut ? 'trade' : hasIn ? 'deposit' : 'withdrawal';
+        }
+
+        if (changes.length > 0 || valOps.length > 0 || feePaid > 0) {
+            txs.push({ date: dayStr, timestamp: ts, hash: txHash, txType, balanceChanges: changes, validatorOps: valOps, fee: feePaid });
+        }
     }
-    if (onProgress) onProgress(1);
-    return txs;
+    
+    const nextPages = pages + 1;
+    if (onProgress) {
+        const p = nextPages / (nextPages + 50);
+        onProgress(p);
+    }
+
+    if (!data.next_cursor || items.length === 0 || done) {
+        if (onProgress) onProgress(1);
+        return txs;
+    }
+    return fetchAccountTransactions(accountAddress, startDate, endDate, onProgress, signal, data.next_cursor, nextPages, txs);
 }
 
 async function fetchResourceLabels(resourceAddresses: string[], signal?: AbortSignal): Promise<Record<string, string>> {
@@ -380,8 +374,9 @@ async function computeStakingRewardsMath(
     }
 
     const BATCH_SIZE = 15;
-    for (let i = 0; i < prefetchTasks.length; i += BATCH_SIZE) {
-        const batch = prefetchTasks.slice(i, i + BATCH_SIZE);
+    const fetchBatches = async (startIndex: number): Promise<void> => {
+        if (startIndex >= prefetchTasks.length) return;
+        const batch = prefetchTasks.slice(startIndex, startIndex + BATCH_SIZE);
         await Promise.all(batch.map(async (task) => {
             if (signal?.aborted) return;
             const valInfo = validatorMap[task.valAddr];
@@ -389,7 +384,9 @@ async function computeStakingRewardsMath(
             const key = `${task.valAddr}_${task.dateStr}`;
             snapshotCache[key] = await getLedgerStateForDay(accountAddress, valInfo.lsuResource, valInfo.vaultAddress, task.dateStr, signal);
         }));
-    }
+        await fetchBatches(startIndex + BATCH_SIZE);
+    };
+    await fetchBatches(0);
 
     let processed = 0;
     const totalVals = usedValidators.size;

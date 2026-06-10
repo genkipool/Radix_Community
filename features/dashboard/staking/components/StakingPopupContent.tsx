@@ -199,10 +199,10 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
                     // Wait 2 seconds for Gateway to sync new ledger state before refetching
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     try {
-                        for (const acc of accounts || []) {
+                        await Promise.all((accounts || []).map(async (acc) => {
                             await apiFetchEntityDetails(acc.address, networkName, true);
                             invalidateAccountStakingData(queryClient, acc.address, networkName);
-                        }
+                        }));
                         if (activeTab === 'validator' && stakingData.isOwner) {
                             await apiFetchEntityDetails(validator.address, networkName, true);
                         }

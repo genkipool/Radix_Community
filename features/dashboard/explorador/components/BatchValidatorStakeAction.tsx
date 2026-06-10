@@ -64,6 +64,7 @@ export const BatchValidatorStakeAction = ({
                         ref={inputRef}
                         type="number"
                         min="0"
+                        aria-label={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
                         value={globalAmountStr}
                         onChange={(e) => {
                             if (e.target.value.includes('-')) return;

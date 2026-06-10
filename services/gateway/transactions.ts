@@ -1125,15 +1125,18 @@ export async function fetchStakeHistoryRaw(
     let pageCount = 0;
     const MAX_PAGES = 20;
 
-    while (!done && pageCount < MAX_PAGES) {
+    const fetchHistoryPages = async (currCursor: string | undefined, count: number): Promise<void> => {
+        if (done || count >= MAX_PAGES) {
+            pageCount = count;
+            return;
+        }
         const page = await searchTransactionsByAddress(
             validatorAddress,
-            cursor,
+            currCursor,
             100,
             network,
             { start: startDate },
         );
-        pageCount++;
 
         for (const tx of page.transactions) {
             const confirmedAt =
@@ -1150,8 +1153,9 @@ export async function fetchStakeHistoryRaw(
         }
 
         if (!page.nextCursor) done = true;
-        else cursor = page.nextCursor;
-    }
+        else await fetchHistoryPages(page.nextCursor, count + 1);
+    };
+    await fetchHistoryPages(cursor, 0);
 
     // If we reached the page limit without finishing, it's an incomplete history.
     // Throw to avoid caching a partial state.
@@ -1247,18 +1251,19 @@ export async function fetchStakeHistoryIncremental(
     // Paginate the Gateway only from startDate (usually 1–2 pages)
     let cursor: string | undefined;
     let done = false;
-    let pageCount = 0;
     const MAX_PAGES = 5; // For incremental, 5 pages is more than enough; if exceeded, something went wrong
 
-    while (!done && pageCount < MAX_PAGES) {
+    const fetchHistoryPagesIncremental = async (currCursor: string | undefined, count: number): Promise<void> => {
+        if (done || count >= MAX_PAGES) {
+            return;
+        }
         const page = await searchTransactionsByAddress(
             validatorAddress,
-            cursor,
+            currCursor,
             100,
             network,
             { start: startDate },
         );
-        pageCount++;
 
         for (const tx of page.transactions) {
             const confirmedAt = tx.confirmedAt instanceof Date ? tx.confirmedAt : new Date(tx.confirmedAt);
@@ -1274,8 +1279,9 @@ export async function fetchStakeHistoryIncremental(
         }
 
         if (!page.nextCursor) done = true;
-        else cursor = page.nextCursor;
-    }
+        else await fetchHistoryPagesIncremental(page.nextCursor, count + 1);
+    };
+    await fetchHistoryPagesIncremental(cursor, 0);
 
     // ── Merge: combine existing history with new days ─────────────────────────
     const cutoffDate = new Date(today);

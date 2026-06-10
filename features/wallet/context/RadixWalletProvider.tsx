@@ -55,6 +55,44 @@ interface RadixWalletProviderProps {
   initialSession?: SessionPayload | null;
 }
 
+function subscribeToNetwork(
+  netName: 'mainnet' | 'stokenet',
+  setSessions: React.Dispatch<React.SetStateAction<NetworkSessions>>,
+  subscriptionsRef: React.MutableRefObject<Map<string, { unsubscribe: () => void }>>
+) {
+  if (subscriptionsRef.current.has(netName)) return;
+
+  const rdt = getOrCreateToolkit(networkIdFromName(netName));
+  if (!rdt) return;
+
+  const sub = rdt.walletApi.walletData$.subscribe((walletData) => {
+    setSessions(prev => {
+      const currentSession = prev[netName];
+      if (!currentSession) return prev;
+
+      const newAccounts = walletData.accounts || [];
+      const oldAccounts = currentSession.accounts || [];
+      
+      const isSame = newAccounts.length === oldAccounts.length &&
+                     newAccounts.every((acc, i) => acc.address === oldAccounts[i].address);
+                     
+      if (isSame) return prev;
+
+      return {
+        ...prev,
+        [netName]: {
+          ...currentSession,
+          identityAddress: walletData.persona?.identityAddress || currentSession.identityAddress,
+          personaLabel: walletData.persona?.label || currentSession.personaLabel,
+          accounts: newAccounts,
+        }
+      };
+    });
+  });
+
+  subscriptionsRef.current.set(netName, sub);
+}
+
 export function RadixWalletProvider({
   children,
   initialSession = null,
@@ -118,39 +156,7 @@ export function RadixWalletProvider({
   // ── Sync with RDT updates ──
   const subscriptionsRef = React.useRef(new Map<string, { unsubscribe: () => void }>());
 
-  const subscribeToNetwork = React.useCallback((netName: 'mainnet' | 'stokenet') => {
-    if (subscriptionsRef.current.has(netName)) return;
 
-    const rdt = getOrCreateToolkit(networkIdFromName(netName));
-    if (!rdt) return;
-
-    const sub = rdt.walletApi.walletData$.subscribe((walletData) => {
-      setSessions(prev => {
-        const currentSession = prev[netName];
-        if (!currentSession) return prev;
-
-        const newAccounts = walletData.accounts || [];
-        const oldAccounts = currentSession.accounts || [];
-        
-        const isSame = newAccounts.length === oldAccounts.length &&
-                       newAccounts.every((acc, i) => acc.address === oldAccounts[i].address);
-                       
-        if (isSame) return prev;
-
-        return {
-          ...prev,
-          [netName]: {
-            ...currentSession,
-            identityAddress: walletData.persona?.identityAddress || currentSession.identityAddress,
-            personaLabel: walletData.persona?.label || currentSession.personaLabel,
-            accounts: newAccounts,
-          }
-        };
-      });
-    });
-
-    subscriptionsRef.current.set(netName, sub);
-  }, []);
 
   // ── Initialize RDT for networks that have active sessions ──
   React.useEffect(() => {
@@ -162,7 +168,7 @@ export function RadixWalletProvider({
     for (const net of ['mainnet', 'stokenet'] as const) {
       if (initial[net]) {
         getOrCreateToolkit(networkIdFromName(net));
-        subscribeToNetwork(net);
+        subscribeToNetwork(net, setSessions, subscriptionsRef);
       }
     }
 
@@ -170,7 +176,7 @@ export function RadixWalletProvider({
       currentSubscriptions.forEach(sub => sub.unsubscribe());
       currentSubscriptions.clear();
     };
-  }, [initialSession, subscribeToNetwork]);
+  }, [initialSession]);
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 
@@ -197,7 +203,7 @@ export function RadixWalletProvider({
         return;
       }
 
-      subscribeToNetwork(netName);
+      subscribeToNetwork(netName, setSessions, subscriptionsRef);
 
       // Provide challenge generator
       rdt.walletApi.provideChallengeGenerator(async () => {

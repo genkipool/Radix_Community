@@ -86,6 +86,7 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('prev')}
+                    aria-label="Anterior"
                     className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-l-full"
                 >
                     <ChevronLeft className="size-4" aria-hidden="true" />
@@ -116,6 +117,7 @@ export function ValidatorCarouselSelector({
                 <button
                     type="button"
                     onClick={() => cycle('next')}
+                    aria-label="Siguiente"
                     className="p-2 w-10 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors shrink-0 rounded-r-full"
                 >
                     <ChevronRight className="size-4" aria-hidden="true" />
@@ -138,6 +140,7 @@ export function ValidatorCarouselSelector({
                             <button 
                                 type="button"
                                 onClick={() => setIsOpen(false)}
+                                aria-label="Cerrar"
                                 className="size-6 flex items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)] transition-colors"
                             >
                                 <X className="size-4" />
@@ -148,6 +151,7 @@ export function ValidatorCarouselSelector({
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
                                     type="text"
+                                    aria-label="Buscar validadores"
                                     placeholder={placeholder || (tt?.account_summary?.search_validators_placeholder || 'Search validators...')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}

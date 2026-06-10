@@ -18,6 +18,7 @@ function ModalShell({ children, onBackdropClick }: ModalShellProps) {
             <button type="button"
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full cursor-auto"
                 onClick={onBackdropClick}
+                aria-label="Cerrar modal"
             />
             <m.div
                 initial={{ scale: 0.95, opacity: 0, y: 8 }}

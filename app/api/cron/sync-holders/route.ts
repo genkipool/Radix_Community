@@ -67,7 +67,7 @@ export async function GET(request: Request) {
         }));
 
         // 4. Fetch the N oldest updated LSUs from the Queue (score = timestamp)
-        const oldestLsus = await redis.zrange(HOLDER_ZSET, 0, BATCH_SIZE - 1);
+        const oldestLsus = (await redis.zrange(HOLDER_ZSET, 0, BATCH_SIZE - 1)) as string[];
 
         if (!oldestLsus || oldestLsus.length === 0) {
             return NextResponse.json({ success: true, message: 'Queue is empty' });
@@ -78,7 +78,8 @@ export async function GET(request: Request) {
         const updatedCounts: Record<string, number> = {};
 
         // 5. Throttled processing to respect the 160rq/min global restriction
-        for (const addr of oldestLsus) {
+        await oldestLsus.reduce(async (promise, addr) => {
+            await promise;
             try {
                 const res = await fetch(`${gatewayBaseUrl}/extensions/resource-holders/page`, {
                     method: 'POST',
@@ -89,10 +90,10 @@ export async function GET(request: Request) {
 
                 if (res.status === 429) {
                     logger.warn({ addr, network }, '[SyncHoldersCron] Hit 429 Rate Limit. Pausing batch execution.');
-                    break; // Abort this run immediately if we hit a limit to save the server IP
+                    return Promise.reject(new Error('RATE_LIMIT'));
                 }
 
-                if (!res.ok) continue;
+                if (!res.ok) return;
 
                 const data = await res.json().catch(() => ({})) as Record<string, unknown>;
                 const totalCount = (data.total_count as number) || 0;
@@ -105,13 +106,14 @@ export async function GET(request: Request) {
                 const finalCount = Math.max(0, totalCount - nonAccountHoldersCount);
                 updatedCounts[addr as string] = finalCount;
 
-                // Throttling: Enforce a strict 1-second delay between requests to remain well below 160 rq/minute
                 await new Promise(r => setTimeout(r, 1000));
-
             } catch (err) {
+                if (err instanceof Error && err.message === 'RATE_LIMIT') throw err;
                 logger.error({ err, addr }, '[SyncHoldersCron] Failed to fetch holders for LSU');
             }
-        }
+        }, Promise.resolve()).catch(err => {
+            if (err.message !== 'RATE_LIMIT') logger.error({ err }, '[SyncHoldersCron] Fatal error in reduce');
+        });
 
         const lsusProcessedCount = Object.keys(updatedCounts).length;
 

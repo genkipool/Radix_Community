@@ -179,7 +179,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                             {/* Header */}
                             <div className="p-4 border-b border-[var(--color-card-border)] flex items-center justify-between">
                                 <h3 className="text-sm font-bold tracking-wider uppercase">Seleccionar Activo</h3>
-                                <button type="button" onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+                                <button type="button" onClick={onClose} aria-label="Cerrar popup" className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
                                     <X strokeWidth={2} className="size-4" />
                                 </button>
                             </div>
@@ -189,6 +189,7 @@ export function AssetSelectionPopup({ isOpen, onClose, network, address, onSelec
                                 <Search className="absolute left-7 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
                                     type="text"
+                                    aria-label="Buscar activo"
                                     placeholder="Buscar por nombre o símbolo..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}

@@ -153,7 +153,7 @@ export default function InstitutionalPilotModal({
                       <p className="text-[var(--color-text-muted)] leading-relaxed max-w-md mx-auto text-sm">
                         {c.successBody}
                       </p>
-                      <button aria-label="button action"
+                      <button aria-label={c.close}
                         type="button"
                         onClick={onClose}
                         className="mt-8 px-6 py-2.5 rounded-full bg-[var(--color-bg)] border border-[var(--color-card-border)] text-sm font-semibold text-[var(--color-text-main)] hover:border-[var(--color-primary)]/50 transition-colors"
@@ -182,6 +182,7 @@ export default function InstitutionalPilotModal({
                         id="pilot-email"
                         name="email"
                         type="email"
+                        aria-label={c.emailLabel}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         onBlur={() => setEmailTouched(true)}
@@ -204,6 +205,7 @@ export default function InstitutionalPilotModal({
                         ref={textareaRef}
                         id="pilot-message"
                         name="message"
+                        aria-label={c.label}
                         value={message}
                         onChange={e => {
                           if (e.target.value.length <= MAX + 20) setMessage(e.target.value);
@@ -236,7 +238,7 @@ export default function InstitutionalPilotModal({
                         </div>
                       )}
 
-                      <button aria-label="button action"
+                      <button aria-label={status === 'sending' ? c.sending : c.send}
                         type="button"
                         onClick={handleSend}
                         disabled={!message.trim() || !validateEmail(email) || isOverLimit || status === 'sending'}

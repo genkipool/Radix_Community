@@ -693,7 +693,7 @@ export async function fetchValidatorsWithLedger(
             const badgeChunks = chunkArray(validatorsWithBadges, 100);
             const locationMap = new Map<string, string>();
 
-            for (const chunk of badgeChunks) {
+            await Promise.all(badgeChunks.map(async (chunk) => {
                 const ids = chunk.map(v => v.ownerBadge);
 
                 logger.info({ network, badgeCount: ids.length, resource: ownerBadgeResource }, '[ValidatorsService] Resolving owner badge locations via REST');
@@ -728,7 +728,7 @@ export async function fetchValidatorsWithLedger(
                     const errText = await res.text();
                     logger.error({ status: res.status, err: errText }, '[ValidatorsService] Location resolution API failed');
                 }
-            }
+            }));
 
             // Apply discovered real owner addresses to validators
             validators.forEach((v) => {

@@ -912,6 +912,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     <span className="text-xs text-[var(--color-text-main)] font-medium mb-1">{navT.wallet_add_dest_input || 'Añadir input dirección de destino'}</span>
                     <input
                         type="number"
+                        aria-label="Cantidad de inputs"
                         min={0}
                         max={99}
                         value={addressCount}
@@ -1375,6 +1376,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                             </div>
                             <button
                                 type="button"
+                                aria-label="Cerrar popup"
                                 onClick={() => {
                                     setPopupOpen(false);
                                     setPopupDestTarget(null);
@@ -1393,6 +1395,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
                                     type="text"
+                                    aria-label={popupMode === 'address' ? 'Buscar dirección' : 'Buscar activo'}
                                     placeholder={popupMode === 'address' ? 'Buscar dirección...' : 'Buscar activo...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1460,6 +1463,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                     )}
                                     <input
                                         type="text"
+                                        aria-label={navT.wallet_dest_placeholder || 'Dirección de destino'}
                                         placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
                                         value={formatAddress(destinationAddress, isDestFocused)}
                                         onFocus={() => setIsDestFocused(true)}
@@ -1473,6 +1477,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             <button
                                 type="button"
+                                aria-label="Seleccionar dirección"
                                 disabled={isWalletEmpty}
                                 onClick={(e) => handleOpenPopup('address', undefined, undefined, e.currentTarget)}
                                 className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1524,6 +1529,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                     <div className="relative w-full h-[42px]">
                                                         <input
                                                             type="number"
+                                                            aria-label="Cantidad de activo"
                                                             min="0"
                                                             step="any"
                                                             placeholder="0.00"
@@ -1599,6 +1605,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                             )}
                                             <input
                                                 type="text"
+                                                aria-label={navT.wallet_dest_placeholder || 'Dirección de destino'}
                                                 placeholder={navT.wallet_dest_placeholder || 'Dirección de destino (account_...)'}
                                                 value={formatAddress(header.destAddress || '', focusedGroupId === groupId)}
                                                 onFocus={() => setFocusedGroupId(groupId)}
@@ -1613,6 +1620,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                                     <button
                                         type="button"
+                                        aria-label="Seleccionar dirección"
                                         disabled={isWalletEmpty}
                                         onClick={(e) => handleOpenPopup('address', undefined, groupId, e.currentTarget)}
                                         className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1655,6 +1663,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                                                         <div className="relative w-full h-[42px]">
                                                             <input
                                                                 type="number"
+                                                                aria-label="Cantidad de activo"
                                                                 min="0"
                                                                 step="any"
                                                                 placeholder="0.00"

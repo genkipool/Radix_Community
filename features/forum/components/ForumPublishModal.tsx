@@ -124,7 +124,7 @@ export function ForumPublishModal() {
                             <h4 className="text-xl font-bold text-[var(--color-text-main)] mb-3">
                                 {replyingToPost.title || 'Post sin título'}
                             </h4>
-                            <button aria-label="button action"
+                            <button aria-label={showOriginalContent ? t.forum.modal.hide_original : t.forum.modal.view_original}
                                 type="button"
                                 onClick={() => setShowOriginalContent(!showOriginalContent)}
                                 className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-2 mb-2"
@@ -231,6 +231,7 @@ export function ForumPublishModal() {
                                 {isEditingCustom ? (
                                     <div className="inline-flex items-center px-4 py-2 rounded-full border border-[var(--color-primary)] bg-[var(--color-bg-alt)] shadow-lg shadow-[var(--color-primary)]/10">
                                         <input
+                                            aria-label={(t.forum.tags as Record<string, string>).Custom || 'Custom tag'}
                                             className="bg-transparent border-none outline-none text-[9px] uppercase font-bold tracking-wider text-[var(--color-text-main)] w-[100px]"
                                             value={customTagValue}
                                             onChange={(e) => setCustomTagValue(e.target.value.slice(0, 16))}

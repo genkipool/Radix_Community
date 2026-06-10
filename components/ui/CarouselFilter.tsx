@@ -97,6 +97,7 @@ export function CarouselFilter({
                                 <input
                                     type="text"
                                     placeholder={placeholder}
+                                    aria-label={placeholder || 'Search filter'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)]/50"
