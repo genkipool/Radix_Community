@@ -116,11 +116,11 @@ export function ComponentCard({
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Versión Blueprint' : 'Blueprint Version'}
+                                    {locale === 'es' ? 'Nombre Blueprint' : 'Blueprint Name'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                        {blueprintVersion}
+                                        {blueprintName}
                                     </span>
                                 </div>
                             </div>
@@ -136,11 +136,11 @@ export function ComponentCard({
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {tt?.resource_panel_blueprint || 'Blueprint'}
+                                    {locale === 'es' ? 'Versión Blueprint' : 'Blueprint Version'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-blue-500 font-mono truncate">
-                                        {blueprintName}
+                                        {blueprintVersion}
                                     </span>
                                 </div>
                             </div>
