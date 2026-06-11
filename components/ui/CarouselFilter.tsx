@@ -43,6 +43,8 @@ export function CarouselFilter({
     if (activeValues.length === 0) {
         if (options.length === 1 && options[0].value !== null) {
             activeLabel = options[0].label;
+        } else if (options.length === 0) {
+            activeLabel = placeholder;
         } else {
             activeLabel = options.find(o => o.value === null)?.label || 'Todas';
         }
@@ -52,11 +54,14 @@ export function CarouselFilter({
             activeLabel = foundOption.label;
         } else if (options.length === 1 && options[0].value !== null) {
             activeLabel = options[0].label;
+        } else if (options.length === 0) {
+            activeLabel = placeholder;
         } else {
             activeLabel = options.find(o => o.value === null)?.label || 'Todas';
         }
     } else {
-        activeLabel = `${activeValues.length} ${multiSelectLabel}`;
+        const firstOption = options.find(o => o.value === activeValues[0]);
+        activeLabel = firstOption ? firstOption.label : `${activeValues.length} ${multiSelectLabel}`;
     }
 
     const cycle = (direction: 'next' | 'prev') => {

@@ -47,7 +47,7 @@ function AllProviders({ children, locale = 'en', theme = 'radix-dark' }: { child
             <MockThemeProvider theme={theme}>
                 <LanguageProvider language={locale} dictionary={dictionary}>
                     <LayoutProvider>
-                        <RadixWalletContext.Provider value={{ isConnected: false, isLoading: false, isExtensionAvailable: true, accounts: [], personaData: [], persona: undefined, error: null, activeNetworkId: null, sessions: { mainnet: null, stokenet: null }, activeNetwork: 'mainnet', connect: () => {}, disconnect: () => {}, switchNetwork: () => {} }}>
+                        <RadixWalletContext.Provider value={{ isConnected: false, isLoading: false, isExtensionAvailable: true, accounts: [], personaData: [], persona: undefined, error: null, activeNetworkId: null, sessions: { mainnet: null, stokenet: null }, activeNetwork: 'mainnet', connect: () => {}, disconnect: () => {}, switchNetwork: () => {}, selectedAccountAddresses: [], setSelectedAccountAddresses: () => {} }}>
                             {children}
                         </RadixWalletContext.Provider>
                     </LayoutProvider>

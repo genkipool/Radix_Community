@@ -141,6 +141,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
     // Multi-selection state (only used in 'address' mode)
     const [selectedItems, setSelectedItems] = useState<SelectedAsset[]>([]);
+    const [initialSelectedItems, setInitialSelectedItems] = useState<SelectedAsset[]>([]);
     const [addressCount, setAddressCount] = useState(0);
     const [popupDestTarget, setPopupDestTarget] = useState<string | null>(null);
 
@@ -767,8 +768,10 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             });
 
             setSelectedItems(existingSelection);
+            setInitialSelectedItems(existingSelection);
         } else {
             setSelectedItems([]);
+            setInitialSelectedItems([]);
         }
 
         setPopupOpen(true);
@@ -957,154 +960,177 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         title="Cantidad de inputs"
                     />
                 </div>
-                {/* Account list */}
-                {availableAddresses.length === 0
-                    ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron direcciones</div>
-                    : availableAddresses.map(acc => {
-                        const addr = acc.address;
-                        
-                        let isUsedByOther = false;
-                        let isUsedByCurrent = false;
-
-                        for (const [groupId, destAddr] of inputAddresses.entries()) {
-                            if (destAddr === addr) {
-                                if (groupId === popupDestTarget) {
-                                    isUsedByCurrent = true;
-                                } else {
-                                    isUsedByOther = true;
-                                }
-                            }
-                        }
-
-                        const inSelected = selectedItems.some(s => s.type === 'address' && s.resourceAddress === addr);
-
-                        let isAddrSelectedVisually = false;
-                        let isDisabled = false;
-
-                        if (popupDestTarget !== null) {
-                            if (isUsedByOther) {
-                                isAddrSelectedVisually = true;
-                                isDisabled = true;
-                            } else if (isUsedByCurrent) {
-                                isAddrSelectedVisually = !inSelected;
-                                isDisabled = false;
-                            } else {
-                                isAddrSelectedVisually = inSelected;
-                                isDisabled = false;
-                            }
-                        } else {
-                            if (isUsedByOther) {
-                                isAddrSelectedVisually = true;
-                                isDisabled = true;
-                            } else {
-                                isAddrSelectedVisually = inSelected;
-                                isDisabled = false;
-                            }
-                        }
-
-                        return (
-                            <button
-                                key={acc.address}
-                                type="button"
-                                disabled={isDisabled}
-                                onClick={() => {
-                                    if (isDisabled) return;
-                                    const addrItem: SelectedAsset = { type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label };
-                                    toggleSelectedItem(addrItem);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        if (!isDisabled) {
-                                            // eslint-disable-next-line react-hooks/refs
-                                            handleConfirmSelection();
-                                        }
-                                    }
-                                }}
-                                className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
-                                    isAddrSelectedVisually 
-                                        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' 
-                                        : 'hover:bg-[var(--color-bg)]'
-                                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <div className="flex flex-col min-w-0 flex-1">
-                                    <span className={`text-xs transition-colors ${isAddrSelectedVisually && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
-                                    <span className={`text-[10px] truncate ${isAddrSelectedVisually && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
-                                </div>
-                                {isAddrSelectedVisually && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                            </button>
-                        );
-                    })
-                }
+                {renderAddressItems()}
             </>
         );
     };
 
-    const renderFungibleItems = () => (
-        fungibles.length === 0
-            ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron tokens</div>
-            : fungibles.map((f: ResourceItem) => {
-                const name = getMetadataValue(f.explicit_metadata?.items, 'name') || 'Unknown';
-                let symbol = getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown';
+    const renderAddressItems = () => {
+        if (availableAddresses.length === 0) {
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron otras direcciones</div>;
+        }
 
-                if (isLsuToken(f.explicit_metadata?.items)) {
-                    const valAddr = getMetadataValue(f.explicit_metadata?.items, 'validator');
-                    const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
-                    symbol = valName ? `${valName} LSU` : 'LSU';
+        const itemsWithState = availableAddresses.map((acc: { address: string; label: string }) => {
+            const addr = acc.address;
+            const isUsedByOther = assets.some(a => a.destAddress === addr && a.groupId !== popupDestTarget) || (destinationAddress === addr && popupDestTarget !== null);
+            const isUsedByCurrent = assets.some(a => a.destAddress === addr && a.groupId === popupDestTarget) || (destinationAddress === addr && popupDestTarget === null);
+
+            const inSelected = selectedItems.some(s => s.type === 'address' && s.resourceAddress === addr);
+            const inInitialSelected = initialSelectedItems.some(s => s.type === 'address' && s.resourceAddress === addr);
+
+            let isAddrSelectedVisually = false;
+            let initialSel = false;
+            let isDisabled = false;
+
+            if (popupDestTarget !== null) {
+                if (isUsedByOther) {
+                    isAddrSelectedVisually = true;
+                    initialSel = true;
+                    isDisabled = true;
+                } else if (isUsedByCurrent) {
+                    isAddrSelectedVisually = !inSelected;
+                    initialSel = !inInitialSelected;
+                    isDisabled = false;
+                } else {
+                    isAddrSelectedVisually = inSelected;
+                    initialSel = inInitialSelected;
+                    isDisabled = false;
                 }
+            } else {
+                if (isUsedByOther) {
+                    isAddrSelectedVisually = true;
+                    initialSel = true;
+                    isDisabled = true;
+                } else {
+                    isAddrSelectedVisually = inSelected;
+                    initialSel = inInitialSelected;
+                    isDisabled = false;
+                }
+            }
 
-                const icon = getMetadataValue(f.explicit_metadata?.items, 'icon_url') || '';
-                const item: SelectedAsset = { type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon };
-                
-                let sel = isAddressMode ? selectedItems.some(s => s.type === 'fungible' && s.resourceAddress === f.resource_address) : isItemSelected(item);
-                const liveAmount = getAvailableBalance(f.resource_address);
-                const isDisabled = liveAmount <= 0 && !sel;
+            const jsx = (
+                <button
+                    key={acc.address}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                        if (isDisabled) return;
+                        const addrItem: SelectedAsset = { type: 'address', resourceAddress: acc.address, symbol: 'ADDR', name: acc.label };
+                        toggleSelectedItem(addrItem);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!isDisabled) {
+                                // eslint-disable-next-line react-hooks/refs
+                                handleConfirmSelection();
+                            }
+                        }
+                    }}
+                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
+                        isAddrSelectedVisually 
+                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' 
+                            : 'hover:bg-[var(--color-bg)]'
+                    } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <span className={`text-xs transition-colors ${isAddrSelectedVisually && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{acc.label}</span>
+                        <span className={`text-[10px] truncate ${isAddrSelectedVisually && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{acc.address}</span>
+                    </div>
+                    {isAddrSelectedVisually && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                </button>
+            );
 
-                return (
-                    <button
-                        key={f.resource_address}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => {
+            return { initialSel, jsx };
+        });
+
+        itemsWithState.sort((a, b) => {
+            if (a.initialSel && !b.initialSel) return -1;
+            if (!a.initialSel && b.initialSel) return 1;
+            return 0;
+        });
+
+        return <>{itemsWithState.map(i => i.jsx)}</>;
+    };
+
+    const renderFungibleItems = () => {
+        if (fungibles.length === 0) {
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron tokens</div>;
+        }
+
+        const itemsWithState = fungibles.map((f: ResourceItem) => {
+            const name = getMetadataValue(f.explicit_metadata?.items, 'name') || 'Unknown';
+            let symbol = getMetadataValue(f.explicit_metadata?.items, 'symbol') || 'Unknown';
+
+            if (isLsuToken(f.explicit_metadata?.items)) {
+                const valAddr = getMetadataValue(f.explicit_metadata?.items, 'validator');
+                const valName = validatorsData?.validators?.find(v => v.address === valAddr)?.name;
+                symbol = valName ? `${valName} LSU` : 'LSU';
+            }
+
+            const icon = getMetadataValue(f.explicit_metadata?.items, 'icon_url') || '';
+            const item: SelectedAsset = { type: 'fungible', resourceAddress: f.resource_address, symbol, name, iconUrl: icon };
+            
+            let sel = isAddressMode ? selectedItems.some(s => s.type === 'fungible' && s.resourceAddress === f.resource_address) : isItemSelected(item);
+            let initialSel = isAddressMode ? initialSelectedItems.some(s => s.type === 'fungible' && s.resourceAddress === f.resource_address) : isItemSelected(item);
+
+            const liveAmount = getAvailableBalance(f.resource_address);
+            const isDisabled = liveAmount <= 0 && !sel;
+
+            const jsx = (
+                <button
+                    key={f.resource_address}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                        if (isDisabled) return;
+                        if (isAddressMode) {
+                            toggleSelectedItem(item);
+                        } else {
+                            handleAssetSelect(item);
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
                             if (isDisabled) return;
                             if (isAddressMode) {
-                                toggleSelectedItem(item);
+                                // eslint-disable-next-line react-hooks/refs
+                                handleConfirmSelection();
                             } else {
                                 handleAssetSelect(item);
                             }
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (isDisabled) return;
-                                if (isAddressMode) {
-                                    // eslint-disable-next-line react-hooks/refs
-                                    handleConfirmSelection();
-                                } else {
-                                    handleAssetSelect(item);
-                                }
-                            }
-                        }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'
-                            }`}
-                    >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                                <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
-                            </div>
+                        }
+                    }}
+                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'}`}
+                >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                            <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                        <div className="flex flex-col min-w-0">
+                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                            <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                         </div>
-                    </button>
-                );
-            })
-    );
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                    </div>
+                </button>
+            );
+
+            return { initialSel, jsx };
+        });
+
+        itemsWithState.sort((a, b) => {
+            if (a.initialSel && !b.initialSel) return -1;
+            if (!a.initialSel && b.initialSel) return 1;
+            return 0;
+        });
+
+        return <>{itemsWithState.map(i => i.jsx)}</>;
+    };
 
     const [claimAmounts, setClaimAmounts] = useState<Record<string, string>>({});
     const fetchedIdsRef = useRef<Set<string>>(new Set());
@@ -1183,180 +1209,214 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             }
         }
 
-        return nonFungibles.flatMap((nf: ResourceItem) => {
-            const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
-            const icon = getMetadataValue(nf.explicit_metadata?.items, 'icon_url') || '';
-            const vault = nf.vaults?.items?.[0];
-            if (!vault || !vault.items) return [];
+        const itemsWithState: { initialSel: boolean, jsx: React.ReactNode }[] = [];
 
+        nonFungibles.forEach((nf: ResourceItem) => {
+            const baseName = getMetadataValue(nf.explicit_metadata?.items, 'name') || 'Unknown NFT';
             const valAddrFromMeta = getMetadataValue(nf.explicit_metadata?.items, 'validator');
             const isClaim = !!nf.explicit_metadata?.items?.find((m: MetadataItem) => m.key === 'claim_nft') || !!valAddrFromMeta || !!validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
             const isOwnerBadgeCollection = baseName.toLowerCase().includes('owner badge');
+            const icon = getMetadataValue(nf.explicit_metadata?.items, 'icon_url') || '';
 
-            return vault.items.map((id: string) => {
-                let finalName = baseName;
-                let amt: string | undefined = undefined;
-                if (isClaim) {
-                    const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
-                    const fallbackVal = valAddrFromMeta ? validatorsData?.validators.find(v => v.address === valAddrFromMeta) : undefined;
-                    const finalValName = valByClaim?.name || fallbackVal?.name;
-                    if (finalValName) finalName = `Stake Claim (${finalValName})`;
+            if (!nf.vaults?.items) return;
 
-                    amt = claimAmounts[`${nf.resource_address}-${id}`];
-                } else if (isOwnerBadgeCollection) {
-                    const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
-                    if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
-                }
+            nf.vaults.items.forEach(vault => {
+                if (!vault.items) return;
+                vault.items.forEach(id => {
+                    let finalName = baseName;
+                    let amt: string | undefined = undefined;
+                    if (isClaim) {
+                        const valByClaim = validatorsData?.validators.find(v => v.claimTokenResourceAddress === nf.resource_address);
+                        const fallbackVal = valAddrFromMeta ? validatorsData?.validators.find(v => v.address === valAddrFromMeta) : undefined;
+                        const finalValName = valByClaim?.name || fallbackVal?.name;
+                        if (finalValName) finalName = `Stake Claim (${finalValName})`;
 
-                const key = `${nf.resource_address}-${id}`;
-                const owner = nftOwners.get(key);
-                
-                let isUsedByOther = false;
-                let isUsedByCurrent = false;
-
-                if (owner !== undefined) {
-                    if (owner === currentOwner) {
-                        isUsedByCurrent = true;
-                    } else {
-                        isUsedByOther = true;
+                        amt = claimAmounts[`${nf.resource_address}-${id}`];
+                    } else if (isOwnerBadgeCollection) {
+                        const valByOwnerBadge = validatorsData?.validators.find(v => v.ownerBadge === id);
+                        if (valByOwnerBadge) finalName = `Owner Badge (${valByOwnerBadge.name})`;
                     }
-                }
 
-                const selItem: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id, claimAmount: amt };
-                
-                let sel = false;
-                let isDisabled = false;
+                    const key = `${nf.resource_address}-${id}`;
+                    const owner = nftOwners.get(key);
+                    
+                    let isUsedByOther = false;
+                    let isUsedByCurrent = false;
 
-                if (isAddressMode) {
-                    const inSelected = selectedItems.some(s => s.type === 'non_fungible' && s.resourceAddress === nf.resource_address && s.id === id);
-                    if (popupDestTarget !== null) {
-                        if (isUsedByOther) {
-                            sel = true;
-                            isDisabled = true;
-                        } else if (isUsedByCurrent) {
-                            sel = !inSelected;
+                    if (owner !== undefined) {
+                        if (owner === currentOwner) {
+                            isUsedByCurrent = true;
                         } else {
-                            sel = inSelected;
-                        }
-                    } else {
-                        if (isUsedByOther) {
-                            sel = true;
-                            isDisabled = true;
-                        } else {
-                            sel = inSelected;
+                            isUsedByOther = true;
                         }
                     }
-                } else {
-                    sel = isItemSelected(selItem);
-                    if (isUsedByOther) {
-                        isDisabled = true;
-                    }
-                }
 
-                return (
-                    <button
-                        key={`${nf.resource_address}-${id}`}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => {
-                            if (isDisabled) return;
-                            if (isAddressMode) {
-                                toggleSelectedItem(selItem);
+                    const selItem: SelectedAsset = { type: 'non_fungible', resourceAddress: nf.resource_address, symbol: 'NFT', name: finalName, iconUrl: icon, id, claimAmount: amt };
+                    
+                    let sel = false;
+                    let initialSel = false;
+                    let isDisabled = false;
+
+                    if (isAddressMode) {
+                        const inSelected = selectedItems.some(s => s.type === 'non_fungible' && s.resourceAddress === nf.resource_address && s.id === id);
+                        const inInitialSelected = initialSelectedItems.some(s => s.type === 'non_fungible' && s.resourceAddress === nf.resource_address && s.id === id);
+                        if (popupDestTarget !== null) {
+                            if (isUsedByOther) {
+                                sel = true;
+                                initialSel = true;
+                                isDisabled = true;
+                            } else if (isUsedByCurrent) {
+                                sel = !inSelected;
+                                initialSel = !inInitialSelected;
                             } else {
-                                handleAssetSelect(selItem);
+                                sel = inSelected;
+                                initialSel = inInitialSelected;
                             }
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
+                        } else {
+                            if (isUsedByOther) {
+                                sel = true;
+                                initialSel = true;
+                                isDisabled = true;
+                            } else {
+                                sel = inSelected;
+                                initialSel = inInitialSelected;
+                            }
+                        }
+                    } else {
+                        sel = isItemSelected(selItem);
+                        initialSel = isItemSelected(selItem);
+                    }
+
+                    const jsx = (
+                        <button
+                            key={id}
+                            type="button"
+                            disabled={isDisabled}
+                            onClick={() => {
                                 if (isDisabled) return;
                                 if (isAddressMode) {
-                                    // eslint-disable-next-line react-hooks/refs
-                                    handleConfirmSelection();
+                                    toggleSelectedItem(selItem);
                                 } else {
                                     handleAssetSelect(selItem);
                                 }
-                            }
-                        }}
-                        className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${
-                            sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
-                        } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                            <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
-                                {finalName}
-                                {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
-                            </span>
-                            <span className={`text-[9px] font-mono truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
-                        </div>
-                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
-                    </button>
-                );
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (isDisabled) return;
+                                    if (isAddressMode) {
+                                        // eslint-disable-next-line react-hooks/refs
+                                        handleConfirmSelection();
+                                    } else {
+                                        handleAssetSelect(selItem);
+                                    }
+                                }
+                            }}
+                            className={`w-full text-left flex items-center gap-2.5 p-2.5 rounded-lg transition-colors group ${
+                                sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
+                            } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
+                                    {finalName}
+                                    {amt && <span className="ml-1 text-[var(--color-primary)]">{amt} XRD</span>}
+                                </span>
+                                <span className={`text-[9px] font-mono truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{id.length > 20 ? id.slice(0, 8) + '...' + id.slice(-8) : id}</span>
+                            </div>
+                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                        </button>
+                    );
+
+                    itemsWithState.push({ initialSel, jsx });
+                });
             });
         });
+
+        itemsWithState.sort((a, b) => {
+            if (a.initialSel && !b.initialSel) return -1;
+            if (!a.initialSel && b.initialSel) return 1;
+            return 0;
+        });
+
+        return <>{itemsWithState.map(i => i.jsx)}</>;
     };
 
-    const renderPoolUnitItems = () => (
-        poolUnits.length === 0
-            ? <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron Pool Units</div>
-            : poolUnits.map((pu: ResourceItem) => {
-                const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || 'Pool Unit';
-                const symbol = getMetadataValue(pu.explicit_metadata?.items, 'symbol') || 'POOL';
-                const icon = getMetadataValue(pu.explicit_metadata?.items, 'icon_url') || '';
-                const item: SelectedAsset = { type: 'pool_unit', resourceAddress: pu.resource_address, symbol, name, iconUrl: icon };
-                
-                let sel = isAddressMode ? selectedItems.some(s => s.type === 'pool_unit' && s.resourceAddress === pu.resource_address) : isItemSelected(item);
-                const liveAmount = getAvailableBalance(pu.resource_address);
-                const isDisabled = liveAmount <= 0 && !sel;
+    const renderPoolUnitItems = () => {
+        if (poolUnits.length === 0) {
+            return <div className="p-4 text-center text-xs text-[var(--color-text-muted)]">No se encontraron Pool Units</div>;
+        }
 
-                return (
-                    <button
-                        key={pu.resource_address}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => {
+        const itemsWithState = poolUnits.map((pu: ResourceItem) => {
+            const name = getMetadataValue(pu.explicit_metadata?.items, 'name') || 'Pool Unit';
+            const symbol = getMetadataValue(pu.explicit_metadata?.items, 'symbol') || 'POOL';
+            const icon = getMetadataValue(pu.explicit_metadata?.items, 'icon_url') || '';
+            const item: SelectedAsset = { type: 'pool_unit', resourceAddress: pu.resource_address, symbol, name, iconUrl: icon };
+            
+            let sel = isAddressMode ? selectedItems.some(s => s.type === 'pool_unit' && s.resourceAddress === pu.resource_address) : isItemSelected(item);
+            let initialSel = isAddressMode ? initialSelectedItems.some(s => s.type === 'pool_unit' && s.resourceAddress === pu.resource_address) : isItemSelected(item);
+
+            const liveAmount = getAvailableBalance(pu.resource_address);
+            const isDisabled = liveAmount <= 0 && !sel;
+
+            const jsx = (
+                <button
+                    key={pu.resource_address}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                        if (isDisabled) return;
+                        if (isAddressMode) {
+                            toggleSelectedItem(item);
+                        } else {
+                            handleAssetSelect(item);
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
                             if (isDisabled) return;
                             if (isAddressMode) {
-                                toggleSelectedItem(item);
+                                // eslint-disable-next-line react-hooks/refs
+                                handleConfirmSelection();
                             } else {
                                 handleAssetSelect(item);
                             }
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (isDisabled) return;
-                                if (isAddressMode) {
-                                    // eslint-disable-next-line react-hooks/refs
-                                    handleConfirmSelection();
-                                } else {
-                                    handleAssetSelect(item);
-                                }
-                            }
-                        }}
-                        className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${sel && !isDisabled ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg)]'
-                            }`}
-                    >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
-                                <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
-                            </div>
+                        }
+                    }}
+                    className={`w-full text-left flex items-center justify-between p-2.5 rounded-lg transition-colors group ${
+                        sel ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold' : 'hover:bg-[var(--color-bg)]'
+                    } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
+                            <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                            {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                        <div className="flex flex-col min-w-0">
+                            <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
+                            <span className={`text-[10px] truncate ${sel && !isDisabled ? 'text-[var(--color-primary)]/80 font-normal' : isDisabled ? 'opacity-60' : 'text-[var(--color-text-muted)]'}`}>{name}</span>
                         </div>
-                    </button>
-                );
-            })
-    );
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono shrink-0 ${sel && !isDisabled ? '' : isDisabled ? 'opacity-60' : 'font-bold'}`}>{liveAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                        {isAddressMode && sel && <Check className={`size-4 shrink-0 ml-2 ${isDisabled ? 'opacity-50' : ''}`} strokeWidth={2} />}
+                    </div>
+                </button>
+            );
+
+            return { initialSel, jsx };
+        });
+
+        itemsWithState.sort((a, b) => {
+            if (a.initialSel && !b.initialSel) return -1;
+            if (!a.initialSel && b.initialSel) return 1;
+            return 0;
+        });
+
+        return <>{itemsWithState.map(i => i.jsx)}</>;
+    };
     const getSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {
         const targetDest = context.destTarget ?? null;
         const targetAsset = context.assetId ?? null;

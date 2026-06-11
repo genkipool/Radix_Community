@@ -794,7 +794,7 @@ export async function searchTransactionsByAddress(
 
             try {
                 const isResource = addr.startsWith('resource_');
-                const streamTransactionsRequest: any = {
+                const streamTransactionsRequest: Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest'] = {
                     limit_per_page: limit,
                     cursor: cursors[addr],
                     opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
@@ -865,7 +865,7 @@ export async function searchTransactionsByAddress(
     const others = affectedEntities.filter(a => !a.startsWith('resource_'));
 
     try {
-        const streamTransactionsRequest: any = {
+        const streamTransactionsRequest: Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest'] = {
             limit_per_page: limit,
             cursor,
             opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],

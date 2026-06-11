@@ -12,6 +12,10 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
 import type { Dictionary } from '@/types/i18n';
+import dashboardExploradorEn from '@/features/dashboard/explorador/locales/en.json';
+import dashboardExploradorEs from '@/features/dashboard/explorador/locales/es.json';
+import dashboardStakingEn from '@/features/dashboard/staking/locales/en.json';
+import dashboardStakingEs from '@/features/dashboard/staking/locales/es.json';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import { TransactionBuilder } from './TransactionBuilder';
@@ -423,13 +427,13 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                                       <WalletAccountSummaryWrapper
                                                                           address={account.address}
                                                                           entityName={account.label || `${navT.account ?? 'Cuenta'} ${accounts.findIndex(a => a.address === account.address) + 1}`}
-                                                                          tt={t as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
+                                                                          tt={(t?.dashboard?.transactions || (locale === 'es' ? dashboardExploradorEs.dashboard.transactions : dashboardExploradorEn.dashboard.transactions)) as unknown as Parameters<typeof AccountSummaryTab>[0]['tt']}
                                                                           onCopy={copy}
                                                                           copiedAddress={copiedText}
                                                                           network={networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet'}
                                                                           locale={locale}
                                                                           isOpen={isOpen}
-                                                                          stakingErrors={t?.dashboard?.staking?.errors}
+                                                                          stakingErrors={(t?.dashboard?.staking?.errors || (locale === 'es' ? dashboardStakingEs.dashboard.staking.errors : dashboardStakingEn.dashboard.staking.errors)) as unknown as Parameters<typeof AccountSummaryTab>[0]['stakingErrors']}
                                                                           sendTransactionSection={<TransactionBuilder accountAddress={account.address} t={t} />}
                                                                       />
                                                                 </div>]

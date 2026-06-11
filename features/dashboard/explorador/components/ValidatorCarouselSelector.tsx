@@ -42,6 +42,7 @@ export function ValidatorCarouselSelector({
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
+    const [tempValues, setTempValues] = useState<string[]>(selectedValues);
 
     const activeLabel = options[activeIndex]?.label || (tt?.account_summary?.validators_label || 'Validators');
 
@@ -56,12 +57,14 @@ export function ValidatorCarouselSelector({
     };
 
     const toggleSelection = (val: string) => {
-        if (selectedValues.includes(val)) {
-            onChange(selectedValues.filter(v => v !== val));
+        if (tempValues.includes(val)) {
+            setTempValues(tempValues.filter(v => v !== val));
         } else {
-            onChange([...selectedValues, val]);
+            setTempValues([...tempValues, val]);
         }
     };
+
+    const [initialSelectedValues, setInitialSelectedValues] = useState<string[]>([]);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -74,11 +77,18 @@ export function ValidatorCarouselSelector({
     }, []);
 
 
-
-    const filteredOptions = options.filter(opt =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        opt.value.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredOptions = [...options]
+        .filter(opt =>
+            opt.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            const aSelected = initialSelectedValues.includes(a.value);
+            const bSelected = initialSelectedValues.includes(b.value);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+        });
 
     return (
         <div className={`relative shrink-0 ${className}`} ref={containerRef}>
@@ -96,6 +106,10 @@ export function ValidatorCarouselSelector({
                     onClick={(e) => {
                         e.stopPropagation();
                         const nextIsOpen = !isOpen;
+                        if (nextIsOpen) {
+                            setInitialSelectedValues(selectedValues);
+                            setTempValues(selectedValues);
+                        }
                         setIsOpen(nextIsOpen);
                         setSearchQuery('');
                         if (nextIsOpen && containerRef.current) {
@@ -161,7 +175,7 @@ export function ValidatorCarouselSelector({
                         </div>
                         <div className="max-h-60 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                             {filteredOptions.map(opt => {
-                                const isSelected = selectedValues.includes(opt.value);
+                                const isSelected = tempValues.includes(opt.value);
                                 return (
                                     <button
                                         key={opt.value}
@@ -193,6 +207,7 @@ export function ValidatorCarouselSelector({
                             <button
                                 type="button"
                                 onClick={() => {
+                                    onChange(tempValues);
                                     if (onFooterAction) onFooterAction();
                                     else setIsOpen(false);
                                 }}
