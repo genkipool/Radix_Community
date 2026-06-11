@@ -148,7 +148,7 @@ export function SystemCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-blue-500 font-mono truncate">
-                                            {formatNumber(validator.validatorFee * 100)}%
+                                            {formatNumber(validator.feePercent)}%
                                         </span>
                                     </div>
                                 </div>
@@ -168,9 +168,9 @@ export function SystemCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
-                                            {validator.infoUrl ? (
-                                                <a href={validator.infoUrl} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[var(--color-primary)]" onClick={(e) => e.stopPropagation()}>
-                                                    {validator.infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                            {validator.website ? (
+                                                <a href={validator.website.startsWith('http') ? validator.website : `https://${validator.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[var(--color-primary)]" onClick={(e) => e.stopPropagation()}>
+                                                    {validator.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                                                 </a>
                                             ) : '-'}
                                         </span>
