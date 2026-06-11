@@ -15,6 +15,8 @@ import type { Dictionary } from '@/types/i18n';
 import { useCopyToClipboard } from '@/features/dashboard/hooks/useCopyToClipboard';
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import { TransactionBuilder } from './TransactionBuilder';
+import { InlineAddressBook } from './InlineAddressBook';
+import { BookUser } from 'lucide-react';
 interface WalletProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -75,9 +77,10 @@ function WalletAccountSummaryWrapper({
 }
 
 export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfileModalProps) {
-    const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork, selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
+    const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork, selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
+    const [isAddressBookVisible, setIsAddressBookVisible] = useState(false);
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;
@@ -287,24 +290,41 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             ) : (
                                                 <>
                                                     {accounts.length > 1 && (
-                                                        <div className="mb-4">
-                                                            <CarouselFilter
-                                                                options={[
-                                                                    { value: null, label: navT.all_accounts ?? 'Todas' },
-                                                                    ...accounts.map((acc, idx) => ({
-                                                                        value: acc.address,
-                                                                        label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
-                                                                    }))
-                                                                ]}
-                                                                activeValue={selectedAccountAddress}
-                                                                onChange={(val) => setSelectedAccountAddress(val)}
-                                                            />
+                                                        <div className="mb-4 flex items-center relative">
+                                                            <div className="flex-1 min-w-0">
+                                                                <CarouselFilter
+                                                                    options={[
+                                                                        { value: null, label: navT.all_accounts ?? 'Todas' },
+                                                                        ...accounts.map((acc, idx) => ({
+                                                                            value: acc.address,
+                                                                            label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
+                                                                        }))
+                                                                    ]}
+                                                                    activeValues={selectedAccountAddresses}
+                                                                    onChange={(vals) => setSelectedAccountAddresses(vals)}
+                                                                    title={navT.filter_addresses || 'Filtrar direcciones'}
+                                                                    filterText={navT.filter || 'Filtrar'}
+                                                                    multiSelectLabel={navT.selected || 'seleccionadas'}
+                                                                    isRelative={false}
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                className={`p-2 w-10 flex items-center justify-center transition-colors shrink-0 ml-1 rounded-full ${isAddressBookVisible ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary)]'}`}
+                                                                onClick={() => setIsAddressBookVisible(!isAddressBookVisible)}
+                                                                title="Agenda de direcciones"
+                                                            >
+                                                                <BookUser className="size-5" />
+                                                            </button>
                                                         </div>
                                                     )}
 
+                                                    <AnimatePresence>
+                                                        {isAddressBookVisible && <InlineAddressBook navT={navT} />}
+                                                    </AnimatePresence>
+
                                                     <div className="space-y-6">
                                                         {accounts.flatMap(account =>
-                                                            !selectedAccountAddress || account.address === selectedAccountAddress
+                                                            selectedAccountAddresses.length === 0 || selectedAccountAddresses.includes(account.address)
                                                                 ? [<div key={account.address} className="relative group">
                                                                       <WalletAccountSummaryWrapper
                                                                           address={account.address}

@@ -49,7 +49,7 @@ interface StakingTranslations {
 
 export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) => {
     const queryClient = useQueryClient();
-    const { accounts, activeNetworkId, selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
+    const { accounts, activeNetworkId, selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<StakingTab>('delegator');
     const inputRef = useRef<HTMLInputElement>(null);
     const [amountStr, setAmountStr] = useState('');
@@ -58,10 +58,12 @@ export const StakingPopupContent = ({ validator, t }: StakingPopupContentProps) 
     const [showOwnerClaimInfo, setShowOwnerClaimInfo] = useState(false);
     const { price } = useXrdPrice();
 
-    const activeAccount = accounts.find(a => a.address === selectedAccountAddress) || (accounts.length > 0 ? accounts[0] : null);
+    const activeAccount = selectedAccountAddresses.length > 0 
+        ? accounts.find(a => selectedAccountAddresses.includes(a.address)) || (accounts.length > 0 ? accounts[0] : null)
+        : (accounts.length > 0 ? accounts[0] : null);
 
     const handleAccountSelect = (account: WalletAccount) => {
-        setSelectedAccountAddress(account.address);
+        setSelectedAccountAddresses([account.address]);
         if (typeof window !== 'undefined') {
             localStorage.setItem('stakingPopupLastAccount', account.address);
         }

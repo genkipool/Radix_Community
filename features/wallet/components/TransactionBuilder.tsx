@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Search, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
@@ -85,6 +86,7 @@ const transactionStateCache = new Map<string, { destinationAddress: string; asse
 export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProps) {
     const navT = (t?.nav || {}) as Record<string, string>;
     const { activeNetworkId, activeNetwork, accounts } = useRadixWallet();
+    const { entries: addressBookEntries } = useAddressBook();
     const network = activeNetwork || 'mainnet';
     const xrdAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId || RadixNetworkId.Mainnet].XRD;
 
@@ -106,6 +108,17 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             amount: '',
         }
     ]);
+
+    const [showMessageInput, setShowMessageInput] = useState(false);
+    const [messageText, setMessageText] = useState('');
+
+    const nativeAddresses = new Set(accounts.map(a => a.address));
+    const combinedAddresses = [
+        ...accounts.map(a => ({ address: a.address, label: a.label })),
+        ...addressBookEntries
+            .filter(e => !nativeAddresses.has(e.address))
+            .map(e => ({ address: e.address, label: e.name }))
+    ];
 
     useEffect(() => {
         transactionStateCache.set(cacheKey, { destinationAddress, assets });
@@ -622,6 +635,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             const result = await toolkit.walletApi.sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                ...(showMessageInput && messageText.trim() ? { message: messageText.trim() } : {}),
             });
 
             if (result.isErr()) {
@@ -741,7 +755,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
             // Also include all current destination addresses as selected address items
             const allDestAddresses = new Set([destinationAddress, ...assets.map(a => a.destAddress)].filter(Boolean));
             allDestAddresses.forEach(addr => {
-                const matchingAccount = accounts.find(acc => acc.address === addr);
+                const matchingAccount = combinedAddresses.find(acc => acc.address === addr);
                 if (matchingAccount) {
                     existingSelection.push({
                         type: 'address',
@@ -763,7 +777,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     // Popup data helpers
     const query = searchQuery.toLowerCase();
 
-    const availableAddresses = accounts.filter(a =>
+    const availableAddresses = combinedAddresses.filter(a =>
         a.address !== accountAddress &&
         (a.label.toLowerCase().includes(query) || a.address.toLowerCase().includes(query))
     );
@@ -907,6 +921,16 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
 
         return (
             <>
+                <div className="flex items-center justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3 mt-2">
+                    <span className="text-xs text-[var(--color-text-main)] font-medium">Añadir mensaje a la transacción</span>
+                    <button
+                        type="button"
+                        onClick={() => setShowMessageInput(prev => !prev)}
+                        className={`w-10 h-6 rounded-full flex items-center transition-colors px-1 ${showMessageInput ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-card-border)]'}`}
+                    >
+                        <div className={`size-4 bg-white rounded-full shadow-sm transition-transform ${showMessageInput ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </button>
+                </div>
                 {/* Add destination input section */}
                 <div className="flex items-end justify-between px-1 mb-2 border-b border-[var(--color-card-border)] pb-3">
                     <span className="text-xs text-[var(--color-text-main)] font-medium mb-1">{navT.wallet_add_dest_input || 'Añadir input dirección de destino'}</span>
@@ -1452,7 +1476,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                     {/* Destination Address Input with embedded + */}
                     <div className="relative z-10">
                         {(() => {
-                            const acc = accounts.find(a => a.address === destinationAddress);
+                            const acc = combinedAddresses.find(a => a.address === destinationAddress);
                             const hasLabel = acc && acc.label;
                             return (
                                 <>
@@ -1594,7 +1618,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                         <div key={groupId} className="flex flex-col">
                             <div className={`relative ${popupDestTarget === groupId ? 'z-50' : 'z-10'}`}>
                                 {(() => {
-                                    const acc = accounts.find(a => a.address === (header.destAddress || ''));
+                                    const acc = combinedAddresses.find(a => a.address === (header.destAddress || ''));
                                     const hasLabel = acc && acc.label;
                                     return (
                                         <>
@@ -1718,6 +1742,29 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
                 
                 return (
                     <>
+                        <AnimatePresence>
+                            {showMessageInput && (
+                                <m.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden mb-3"
+                                >
+                                    <div className="relative pt-2">
+                                        <textarea
+                                            placeholder="Mensaje de la transacción (opcional)..."
+                                            value={messageText}
+                                            onChange={(e) => setMessageText(e.target.value.slice(0, 255))}
+                                            className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg py-3 px-3 text-sm text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-text-muted)] placeholder:opacity-70 resize-none h-[72px]"
+                                        />
+                                        <div className="absolute right-2 bottom-2 text-[10px] text-[var(--color-text-muted)] opacity-70">
+                                            {messageText.length}/255
+                                        </div>
+                                    </div>
+                                </m.div>
+                            )}
+                        </AnimatePresence>
+
                         <button
                             type="button"
                             onClick={handleSend}

@@ -20,6 +20,9 @@
   "nav": {
     "full_profile": "Full Profile",
     "view_profile": "View full profile",
+    "filter_addresses": "Filter addresses",
+    "filter": "Filter",
+    "selected": "selected",
     "institutions": "Institutions",
     "developers": "Developers",
     "ecosystem": "Ecosystem",
@@ -89,7 +92,22 @@
     "wallet_sending": "Sending...",
     "wallet_add_dest_input": "Add destination address input",
     "wallet_dest_placeholder": "Destination address (account_...)",
-    "wallet_insufficient_balance": "Insufficient balance"
+    "wallet_insufficient_balance": "Insufficient balance",
+    "agenda_title": "My Address Book",
+    "agenda_add_btn": "+ Add address to book",
+    "agenda_new_contact": "New Contact",
+    "agenda_edit_contact": "Edit Contact",
+    "agenda_name_placeholder": "Name",
+    "agenda_address_placeholder": "Address (e.g. account_rdx1...)",
+    "agenda_note_placeholder": "Note (optional)",
+    "agenda_add": "Add",
+    "agenda_save": "Save",
+    "agenda_cancel": "Cancel",
+    "agenda_empty": "Your address book is empty.",
+    "agenda_error_dup_name": "A contact with this name already exists.",
+    "agenda_error_dup_addr": "A contact with this address already exists.",
+    "agenda_error_invalid": "The address does not exist on the network or is invalid.",
+    "agenda_verifying": "Verifying on network..."
   },
   "roadmap_status": {
     "done": "Done",

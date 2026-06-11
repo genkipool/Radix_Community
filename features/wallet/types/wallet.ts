@@ -59,8 +59,8 @@ export interface RadixWalletState {
   /** Active network ID (numeric, for backward compat with staking hooks) */
   activeNetworkId: RadixNetworkId | null;
 
-  /** Currently selected account address for filtering (globally synced) */
-  selectedAccountAddress: string | null;
+  /** Currently selected account addresses for filtering (globally synced) */
+  selectedAccountAddresses: string[];
 }
 
 // ─── Context value ──────────────────────────────────────────────────────────────
@@ -75,6 +75,6 @@ export interface RadixWalletContextValue extends RadixWalletState {
   /** Switch the UI active network without reconnecting */
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
 
-  /** Set the globally selected account address */
-  setSelectedAccountAddress: (address: string | null) => void;
+  /** Set the globally selected account addresses */
+  setSelectedAccountAddresses: (addresses: string[]) => void;
 }

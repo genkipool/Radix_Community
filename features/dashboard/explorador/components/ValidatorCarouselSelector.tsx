@@ -131,7 +131,7 @@ export function ValidatorCarouselSelector({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute left-1/2 -translate-x-1/2 ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-72 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden`}
+                        className={`absolute left-0 right-0 ${popupDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} w-full rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden`}
                     >
                         <div className="flex items-center justify-between p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/80">
                             <span className="text-xs font-bold text-[var(--color-text-main)] uppercase tracking-wider leading-none">

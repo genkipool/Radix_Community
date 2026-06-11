@@ -19,6 +19,7 @@ vi.mock('@/features/wallet/hooks/useRadixWallet', () => ({
     useRadixWallet: () => ({
         accounts: [{ address: 'account_rdx123', label: 'My Account' }],
         activeNetworkId: 1,
+        selectedAccountAddresses: ['account_rdx123'],
     }),
 }));
 

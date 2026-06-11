@@ -449,7 +449,7 @@ function ConnectedWalletPopupContent({
   sessions,
   switchNetwork
 }: ConnectedWalletPopupContentProps) {
-  const { selectedAccountAddress, setSelectedAccountAddress } = useRadixWallet();
+  const { selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
   const navT = (t.nav || {}) as Record<string, string>;
 
   const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
@@ -520,8 +520,11 @@ function ConnectedWalletPopupContent({
                 label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
               }))
             ]}
-            activeValue={selectedAccountAddress}
-            onChange={(val) => setSelectedAccountAddress(val)}
+            activeValues={selectedAccountAddresses}
+            onChange={(vals) => setSelectedAccountAddresses(vals)}
+            title={navT.filter_addresses || 'Filtrar direcciones'}
+            filterText={navT.filter || 'Filtrar'}
+            multiSelectLabel={navT.selected || 'seleccionadas'}
           />
         </div>
       )}

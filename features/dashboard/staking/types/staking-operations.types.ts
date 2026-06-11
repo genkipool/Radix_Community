@@ -4,7 +4,7 @@ export type StakingAction = 'Stake' | 'Unstake' | 'Claim';
 export interface StakingPopupState {
     isOpen: boolean;
     activeTab: StakingTab;
-    selectedAccountAddress: string | null;
+    selectedAccountAddresses: string[];
     amount: string;
 }
 

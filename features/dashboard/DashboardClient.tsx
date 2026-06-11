@@ -121,7 +121,7 @@ export default function DashboardClient({
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
   
-  const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddress } = useRadixWallet();
+  const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses } = useRadixWallet();
 
   // Derive wallet filter from connection state (avoid useEffect sync anti-pattern)
   const [walletFilterToggled, setWalletFilterToggled] = useState(isConnected && accounts.length > 0);
@@ -244,7 +244,7 @@ export default function DashboardClient({
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
   const connectedAddresses = (isConnected && accounts.length > 0) 
-    ? (selectedAccountAddress ? [selectedAccountAddress] : accounts.map(a => a.address))
+    ? (selectedAccountAddresses.length > 0 ? selectedAccountAddresses : accounts.map(a => a.address))
     : (initialIsWalletConnected ? initialConnectedAccounts : undefined);
     
   const deferredConnectedAddresses = useDeferredValue(connectedAddresses);
@@ -282,7 +282,7 @@ export default function DashboardClient({
 
   /* ── Validator filters ───────────────────────────────────── */
   const connectedAccountAddresses = (isConnected && accounts.length > 0) 
-    ? (selectedAccountAddress ? [selectedAccountAddress] : accounts.map(a => a.address))
+    ? (selectedAccountAddresses.length > 0 ? selectedAccountAddresses : accounts.map(a => a.address))
     : (initialIsWalletConnected ? initialConnectedAccounts : []);
     
   const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
