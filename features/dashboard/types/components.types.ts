@@ -84,6 +84,7 @@ export interface DashboardCardGridProps {
     accountsToShow?: string[];
     packagesToShow?: string[];
     componentsToShow?: string[];
+    resourcesToShow?: string[];
     t?: Partial<TranslationsT>;
     dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;

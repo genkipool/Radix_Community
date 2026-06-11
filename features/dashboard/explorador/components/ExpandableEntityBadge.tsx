@@ -23,7 +23,7 @@ import {
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { getMetaValue } from '../utils/metadataUtils';
 import { getConfigEntries } from '../../utils/resourceUtils';
-import { parseTags } from '../../utils/resourceUtils';
+import { parseTags, deriveBehaviors } from '../../utils/resourceUtils';
 import { getWellKnownKey, getGenericTooltipKey } from '@/features/dashboard/explorador/constants/wellKnownAddresses';
 import {
     SummaryInlineRow,
@@ -639,6 +639,9 @@ export function EntitySummaryTab({
         address.startsWith('package_')
     );
 
+    const ra = entityData?.details?.role_assignments;
+    const behaviors = deriveBehaviors(ra, tt);
+
     return (
         <div>
             {/* Header with icon + name */}
@@ -818,7 +821,7 @@ export function EntitySummaryTab({
                 )}
 
                 {/* Info URL */}
-                {infoUrl && !address.startsWith('validator_') && (
+                {infoUrl && !address.startsWith('validator_') && !address.startsWith('resource_') && (
                     <SummaryInlineRow label={tt?.meta_key_info_url || 'Website'}>
                         <a
                             href={infoUrl}
@@ -830,6 +833,23 @@ export function EntitySummaryTab({
                             {infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                         </a>
                     </SummaryInlineRow>
+                )}
+
+                {/* Behavior */}
+                {behaviors.length > 0 && address.startsWith('resource_') && (
+                    <div className="flex flex-col gap-1">
+                        <dt className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)] mb-1">
+                            {tt?.resource_panel_behavior || 'Behavior'}
+                        </dt>
+                        <dd className="space-y-1.5 pl-4 pt-1">
+                            {behaviors.map((b) => (
+                                <div key={b} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
+                                    <span className="size-1 rounded-full bg-[var(--color-primary)]/60 mt-1.5 shrink-0" />
+                                    {b}
+                                </div>
+                            ))}
+                        </dd>
+                    </div>
                 )}
 
                 {/* Multi-item fields (Vertical format) */}

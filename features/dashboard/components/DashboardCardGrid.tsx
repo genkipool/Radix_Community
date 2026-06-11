@@ -16,6 +16,7 @@ import { TransactionCard } from '../explorador/components/TransactionCard';
 import { AccountCard } from '../explorador/components/AccountCard';
 import { PackageCard } from '../explorador/components/PackageCard';
 import { ComponentCard } from '../explorador/components/ComponentCard';
+import { ResourceCard } from '../explorador/components/ResourceCard';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -46,6 +47,7 @@ export const DashboardCardGrid = ({
   accountsToShow = EMPTY_ACCOUNTS,
   packagesToShow = EMPTY_ACCOUNTS,
   componentsToShow = EMPTY_ACCOUNTS,
+  resourcesToShow = EMPTY_ACCOUNTS,
 }: DashboardCardGridProps) => {
   return (
     <>
@@ -116,6 +118,22 @@ export const DashboardCardGrid = ({
             ))}
             {componentsToShow.length > 0 && componentsToShow.map((address) => (
               <ComponentCard
+                key={address}
+                address={address}
+                columns={columns}
+                isExpanded={expandedPosts.has(address) && !readingMode}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                readingMode={readingMode}
+              />
+            ))}
+            {resourcesToShow.length > 0 && resourcesToShow.map((address) => (
+              <ResourceCard
                 key={address}
                 address={address}
                 columns={columns}

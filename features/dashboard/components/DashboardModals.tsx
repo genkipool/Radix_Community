@@ -20,6 +20,7 @@ import { TransactionDetailModal } from '../explorador/components/TransactionDeta
 import { AccountCard } from '../explorador/components/AccountCard';
 import { PackageCard } from '../explorador/components/PackageCard';
 import { ComponentCard } from '../explorador/components/ComponentCard';
+import { ResourceCard } from '../explorador/components/ResourceCard';
 
 import type { DashboardModalsProps } from '../types/components.types';
 
@@ -188,6 +189,20 @@ export const DashboardModals = ({
                   />
               ) : expandedAccount.startsWith('component_') ? (
                   <ComponentCard
+                    address={expandedAccount}
+                    columns={1}
+                    isExpanded={true}
+                    onExpand={closeExpanded}
+                    onCopy={copyAddress}
+                    copiedAddress={copiedAddress}
+                    t={t}
+                    network={network}
+                    locale={locale}
+                    marketData={marketData}
+                    isModal={true}
+                  />
+              ) : expandedAccount.startsWith('resource_') ? (
+                  <ResourceCard
                     address={expandedAccount}
                     columns={1}
                     isExpanded={true}

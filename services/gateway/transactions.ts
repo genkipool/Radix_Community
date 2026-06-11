@@ -793,15 +793,22 @@ export async function searchTransactionsByAddress(
             if (cursor && cursors[addr] === null) return { addr, transactions: [], nextCursor: null };
 
             try {
+                const isResource = addr.startsWith('resource_');
+                const streamTransactionsRequest: any = {
+                    limit_per_page: limit,
+                    cursor: cursors[addr],
+                    opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
+                    ...dateParams,
+                };
+                if (isResource) {
+                    streamTransactionsRequest.balance_change_resources_filter = [addr];
+                } else {
+                    streamTransactionsRequest.affected_global_entities_filter = [addr];
+                }
+
                 const res = await withRetry(() =>
                     gateway.stream.innerClient.streamTransactions({
-                        streamTransactionsRequest: {
-                            limit_per_page: limit,
-                            cursor: cursors[addr],
-                            affected_global_entities_filter: [addr],
-                            opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
-                            ...dateParams,
-                        },
+                        streamTransactionsRequest,
                     }),
                 );
                 const transactions = (res.items || []).map((item) =>
@@ -854,17 +861,27 @@ export async function searchTransactionsByAddress(
     }
 
     const affectedEntities = Array.isArray(address) ? address : [address];
+    const resources = affectedEntities.filter(a => a.startsWith('resource_'));
+    const others = affectedEntities.filter(a => !a.startsWith('resource_'));
 
     try {
+        const streamTransactionsRequest: any = {
+            limit_per_page: limit,
+            cursor,
+            opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
+            ...dateParams,
+        };
+        
+        if (resources.length > 0) {
+            streamTransactionsRequest.balance_change_resources_filter = resources;
+        }
+        if (others.length > 0) {
+            streamTransactionsRequest.affected_global_entities_filter = others;
+        }
+
         const res = await withRetry(() =>
             gateway.stream.innerClient.streamTransactions({
-                streamTransactionsRequest: {
-                    limit_per_page: limit,
-                    cursor,
-                    affected_global_entities_filter: affectedEntities,
-                    opt_ins: STREAM_OPT_INS as Parameters<typeof gateway.stream.innerClient.streamTransactions>[0]['streamTransactionsRequest']['opt_ins'],
-                    ...dateParams,
-                },
+                streamTransactionsRequest,
             }),
         );
 

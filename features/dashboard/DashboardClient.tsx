@@ -336,13 +336,15 @@ export default function DashboardClient({
   const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
   const isPackageSearch = deferredSearch.trim().startsWith('package_') && deferredSearch.trim().length >= 60;
   const isComponentSearch = deferredSearch.trim().startsWith('component_') && deferredSearch.trim().length >= 60;
+  const isResourceSearch = deferredSearch.trim().startsWith('resource_') && deferredSearch.trim().length >= 60;
   
-  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_') || expandedPostId?.startsWith('component_')) ? expandedPostId : null;
+  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_') || expandedPostId?.startsWith('component_') || expandedPostId?.startsWith('resource_')) ? expandedPostId : null;
 
   // Compute accounts to show for the explorer view using deferred values
   const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);
   const packagesToShow = isPackageSearch ? [deferredSearch.trim()] : [];
   const componentsToShow = isComponentSearch ? [deferredSearch.trim()] : [];
+  const resourcesToShow = isResourceSearch ? [deferredSearch.trim()] : [];
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -509,6 +511,7 @@ export default function DashboardClient({
             accountsToShow={accountsToShow}
             packagesToShow={packagesToShow}
             componentsToShow={componentsToShow}
+            resourcesToShow={resourcesToShow}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}
