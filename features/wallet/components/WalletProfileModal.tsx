@@ -380,7 +380,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                 </div>
                                             ) : (
                                                 <>
-                                                    {accounts.length > 1 && (
                                                         <div className="mb-4">
                                                             <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)] border-b border-[var(--color-card-border)]/50 pb-2 mb-3 px-1">
                                                                 {navT.filter_addresses || 'Filtrar direcciones'}
@@ -412,7 +411,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                             </button>
                                                             </div>
                                                         </div>
-                                                    )}
 
                                                     <AnimatePresence>
                                                         {isAddressBookVisible && <InlineAddressBook navT={navT} />}

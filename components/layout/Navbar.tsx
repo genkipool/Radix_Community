@@ -510,7 +510,7 @@ function ConnectedWalletPopupContent({
       </button>
 
       {/* Account Filter Carousel */}
-      {accounts && accounts.length > 1 && (
+      {accounts && accounts.length > 0 && (
         <div className="mb-4">
           <CarouselFilter
             options={[
