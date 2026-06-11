@@ -146,7 +146,7 @@ export function ResourceCard({
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    Supply
+                                    {tt?.resource_panel_total_supply || (locale === 'es' ? 'Suministro' : 'Supply')}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-primary)] font-mono truncate">
