@@ -514,7 +514,7 @@ function ConnectedWalletPopupContent({
         <div className="mb-4">
           <CarouselFilter
             options={[
-              { value: null, label: navT.all_accounts ?? 'Todas' },
+              ...(accounts.length > 1 ? [{ value: null, label: navT.all_accounts ?? 'Todas' }] : []),
               ...accounts.map((acc, idx) => ({
                 value: acc.address,
                 label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`

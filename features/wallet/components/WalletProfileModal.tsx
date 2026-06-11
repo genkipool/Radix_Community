@@ -388,7 +388,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                                                 <div className="flex-1 min-w-0">
                                                                 <CarouselFilter
                                                                     options={[
-                                                                        { value: null, label: navT.all_accounts ?? 'Todas' },
+                                                                        ...(accounts.length > 1 ? [{ value: null, label: navT.all_accounts ?? 'Todas' }] : []),
                                                                         ...accounts.map((acc, idx) => ({
                                                                             value: acc.address,
                                                                             label: acc.label || `${navT.account ?? 'Cuenta'} ${idx + 1}`
