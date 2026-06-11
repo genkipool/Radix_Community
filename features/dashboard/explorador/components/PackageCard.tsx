@@ -63,13 +63,13 @@ export function PackageCard({
             <m.div
                 layoutId={`entityCard-${address}`}
                 className="bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-2xl overflow-hidden flex flex-col sm:flex-row hover:border-[var(--color-primary)]/50 transition-colors cursor-pointer min-h-[140px]"
-                onClick={() => onExpand(address)}
+                onClick={() => onExpand?.(address)}
             >
                 <div className="flex-1 p-5 flex flex-col justify-center">
                     <div className="flex items-start gap-4">
                         <div className="size-12 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0 flex items-center justify-center overflow-hidden">
                             {iconUrl ? (
-                                <SafeImage src={iconUrl} alt={name || 'Package'} className="w-full h-full object-cover" />
+                                <SafeImage src={iconUrl} alt={name || 'Package'} fallbackName={name || 'Package'} className="w-full h-full object-cover" />
                             ) : (
                                 <Package className="size-6 text-[var(--color-text-muted)]" />
                             )}
