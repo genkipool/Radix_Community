@@ -74,7 +74,7 @@ export function AccountCard({
     // AccountCard has a fixed layout regardless of grid columns
     const isVertical = false;
 
-    const { data: entityData } = useQuery({
+    const { data: entityData, isError } = useQuery({
         queryKey: entityKeys.detail(address, network),
         queryFn: () => apiFetchEntityDetails(address, network as 'mainnet' | 'stokenet'),
         enabled: true, // Always fetch for the card
@@ -115,6 +115,8 @@ export function AccountCard({
     };
 
     const queryClient = useQueryClient();
+    if (isError) return null;
+
     const handleTransactionsMouseEnter = () => {
         queryClient.prefetchInfiniteQuery({
             queryKey: ['account-transactions', address, network],

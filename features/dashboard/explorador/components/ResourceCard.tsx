@@ -38,7 +38,7 @@ export function ResourceCard({
     const tt = t?.dashboard?.transactions;
     const instanceId = useId();
 
-    const { data: entityData, isLoading } = useQuery({
+    const { data: entityData, isLoading, isError } = useQuery({
         queryKey: entityKeys.detail(address, network),
         queryFn: () => apiFetchEntityDetails(address, network as 'mainnet' | 'stokenet'),
         enabled: true,
@@ -58,6 +58,7 @@ export function ResourceCard({
     const isCopied = copiedAddress === address;
 
     const [activeTab, setActiveTab] = useState<'summary' | 'metadata' | 'configuration' | 'raw'>('summary');
+    if (isError) return null;
 
     const tabs = getTabsForEntity(address, tt);
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
