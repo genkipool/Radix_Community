@@ -115,37 +115,37 @@ export function PackageCard({
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    Name
+                                    {locale === 'es' ? 'Nombre' : 'Name'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                        {name || tt?.entity_type_package || 'Package'}
+                                        {name || (locale === 'es' ? 'Paquete' : 'Package')}
                                     </span>
                                 </div>
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {tt?.resource_panel_type || 'Type'}
+                                    {tt?.resource_panel_type || (locale === 'es' ? 'Tipo' : 'Type')}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-secondary)] font-mono truncate">
-                                        {tt?.entity_type_package || 'Package'}
+                                        {locale === 'es' ? 'Paquete' : 'Package'}
                                     </span>
                                 </div>
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    dApp Linked
+                                    dApp {locale === 'es' ? 'Vinculada' : 'Linked'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-primary)] font-mono truncate">
-                                        {dAppDefinition ? 'Yes' : 'No'}
+                                        {dAppDefinition ? (locale === 'es' ? 'Sí' : 'Yes') : 'No'}
                                     </span>
                                 </div>
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    Websites
+                                    {locale === 'es' ? 'Sitios web' : 'Websites'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-blue-500 font-mono truncate">
@@ -155,7 +155,7 @@ export function PackageCard({
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {tt?.resource_panel_blueprint || 'Description'}
+                                    {tt?.resource_panel_blueprint || (locale === 'es' ? 'Descripción' : 'Description')}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
