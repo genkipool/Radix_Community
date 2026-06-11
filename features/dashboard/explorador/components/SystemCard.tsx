@@ -54,13 +54,19 @@ export function SystemCard({
     const metadataItems = entityData?.metadata?.items ?? [];
     const getMeta = (key: string) => metadataItems.find(m => m.key === key)?.value?.typed?.value ?? '';
     const name = getMeta('name');
-    const symbol = getMeta('symbol');
-    const description = getMeta('description');
     const iconUrl = getMeta('icon_url');
+    const realType = (entityData?.details as Record<string, unknown>)?.type as string | undefined;
+
     const entityType = address.startsWith('validator_') ? (locale === 'es' ? 'Validador' : 'Validator') :
-        address.startsWith('transactiontracker_') ? 'Transaction Tracker' :
-        address.startsWith('consensusmanager_') ? 'Consensus Manager' :
+        realType ? realType :
+        address.startsWith('transactiontracker_') ? 'TransactionTracker' :
+        address.startsWith('consensusmanager_') ? 'ConsensusManager' :
         (locale === 'es' ? 'Entidad del Sistema' : 'System Entity');
+
+    const blueprintName = (entityData?.details as Record<string, unknown>)?.blueprint_name as string || '-';
+    const blueprintVersion = (entityData?.details as Record<string, unknown>)?.blueprint_version as string || '-';
+    const packageAddress = (entityData?.details as Record<string, unknown>)?.package_address as string || '-';
+    const infoUrl = getMeta('info_url');
 
     const isCopied = copiedAddress === address;
 
@@ -181,21 +187,21 @@ export function SystemCard({
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {locale === 'es' ? 'Nombre' : 'Name'}
+                                        {locale === 'es' ? 'Nombre Blueprint' : 'Blueprint Name'}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                            {name || (locale === 'es' ? 'Entidad' : 'Entity')}
+                                            {blueprintName !== '-' ? blueprintName : name || (locale === 'es' ? 'Entidad' : 'Entity')}
                                         </span>
                                     </div>
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {locale === 'es' ? 'Símbolo' : 'Symbol'}
+                                        {locale === 'es' ? 'Versión Blueprint' : 'Blueprint Version'}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-[var(--color-secondary)] font-mono truncate">
-                                            {symbol || '-'}
+                                            {blueprintVersion !== '-' ? blueprintVersion : '-'}
                                         </span>
                                     </div>
                                 </div>
@@ -211,11 +217,25 @@ export function SystemCard({
                                 </div>
                                 <div>
                                     <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                        {locale === 'es' ? 'Descripción' : 'Description'}
+                                        {locale === 'es' ? 'Paquete Padre' : 'Parent Package'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-text-main)] font-mono truncate" title={packageAddress}>
+                                            {packageAddress !== '-' ? `${packageAddress.slice(0, 12)}...${packageAddress.slice(-6)}` : '-'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        Web / Info URL
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
-                                            {description || '-'}
+                                            {infoUrl ? (
+                                                <a href={infoUrl.startsWith('http') ? infoUrl : `https://${infoUrl}`} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[var(--color-primary)]" onClick={(e) => e.stopPropagation()}>
+                                                    {infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                                </a>
+                                            ) : '-'}
                                         </span>
                                     </div>
                                 </div>
