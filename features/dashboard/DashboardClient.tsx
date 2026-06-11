@@ -125,7 +125,8 @@ export default function DashboardClient({
 
   // Derive wallet filter from connection state (avoid useEffect sync anti-pattern)
   const [walletFilterToggled, setWalletFilterToggled] = useState(isConnected && accounts.length > 0);
-  const isWalletFilterActive = walletFilterToggled && isConnected && accounts.length > 0;
+  const hasActiveSearch = searchQuery.trim().length > 0;
+  const isWalletFilterActive = !hasActiveSearch && walletFilterToggled && isConnected && accounts.length > 0;
 
   const isMounted = useRef(false);
 

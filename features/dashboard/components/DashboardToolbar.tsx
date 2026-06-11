@@ -42,6 +42,7 @@ export const DashboardToolbar = ({
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
     const { isConnected } = useRadixWallet();
+    const isSearchActive = searchQuery.trim().length > 0;
 
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
         // Prefetch validators
@@ -122,8 +123,9 @@ export const DashboardToolbar = ({
                                 {isConnected && (
                                     <button
                                         type="button"
+                                        disabled={isSearchActive}
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
                                     >
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
@@ -142,8 +144,9 @@ export const DashboardToolbar = ({
                                 {isConnected && (
                                     <button
                                         type="button"
+                                        disabled={isSearchActive}
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
                                     >
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
@@ -179,8 +182,9 @@ export const DashboardToolbar = ({
                                 {isConnected && (
                                     <button
                                         type="button"
+                                        disabled={isSearchActive}
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
                                     >
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
@@ -202,8 +206,9 @@ export const DashboardToolbar = ({
                                 {isConnected && (
                                     <button
                                         type="button"
+                                        disabled={isSearchActive}
                                         onClick={() => onWalletFilterChange(!isWalletFilterActive)}
-                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]/40'}`}
+                                        className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 shrink-0 ${isWalletFilterActive ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-[var(--color-card-border)] bg-[var(--color-surface)]'} ${isSearchActive ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-primary)]/40'}`}
                                     >
                                         {(dt?.tags as Record<string, string>)?.my_wallet || 'Mi Billetera'}
                                     </button>
