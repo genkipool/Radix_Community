@@ -7,8 +7,7 @@ import { Copy, Check, Package, Info, ShieldAlert } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import type { AccountCardProps } from '../types/components.types';
 import { m } from 'motion/react';
-import { EntitySummaryTab } from './ExpandableEntityBadge';
-import { getTabsForEntity } from '../hooks/useEntityData';
+import { EntitySummaryTab, getTabsForEntity } from './ExpandableEntityBadge';
 import {
     PanelTabBar,
     PanelMetadataTab,

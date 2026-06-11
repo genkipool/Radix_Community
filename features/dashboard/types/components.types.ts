@@ -82,6 +82,7 @@ export interface DashboardCardGridProps {
     timezone: string;
     locale: string;
     accountsToShow?: string[];
+    packagesToShow?: string[];
     t?: Partial<TranslationsT>;
     dt?: Partial<TranslationsT['dashboard']>;
     onExpand: (id: string) => void;

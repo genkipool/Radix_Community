@@ -80,7 +80,7 @@ interface ExpandableEntityBadgeProps {
 /* ─── Helpers ───────────────────────────────────────── */
 
 /** Determines which tabs to show based on entity prefix */
-function getTabsForEntity(
+export function getTabsForEntity(
     prefix: string,
     tt?: Partial<TranslationsT['dashboard']['transactions']> & { account_summary?: AccountRewardsCsvModalDict },
 ): { key: EntityTab; label: string; tooltip?: string }[] {
