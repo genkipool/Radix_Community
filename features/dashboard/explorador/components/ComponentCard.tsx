@@ -53,6 +53,7 @@ export function ComponentCard({
     const iconUrl = getMeta('icon_url');
     const dAppDefinition = getMeta('dapp_definition');
     const blueprintName = (entityData?.details as Record<string, unknown>)?.blueprint_name as string || '-';
+    const blueprintVersion = (entityData?.details as Record<string, unknown>)?.blueprint_version as string || '-';
 
     const isCopied = copiedAddress === address;
 
@@ -115,11 +116,11 @@ export function ComponentCard({
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Nombre' : 'Name'}
+                                    {locale === 'es' ? 'Versión Blueprint' : 'Blueprint Version'}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                        {name || (locale === 'es' ? 'Componente' : 'Component')}
+                                        {blueprintVersion}
                                     </span>
                                 </div>
                             </div>
