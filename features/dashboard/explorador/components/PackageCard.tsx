@@ -3,10 +3,9 @@ import React, { useState, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
-import { Copy, Check, Package, Info, ShieldAlert } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import type { AccountCardProps } from '../types/components.types';
-import { m } from 'motion/react';
 import { EntitySummaryTab, getTabsForEntity } from './ExpandableEntityBadge';
 import {
     PanelTabBar,
@@ -15,6 +14,10 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { getConfigEntries } from '../../utils/resourceUtils';
+
+import { Card } from '@/components/ui/Card';
+import { CloseButton } from '@/components/ui/CloseButton';
+import { CopyButton } from '@/components/ui/CopyButton';
 
 export function PackageCard({
     address,
@@ -30,6 +33,7 @@ export function PackageCard({
     readingMode: _readingMode,
     isModal
 }: AccountCardProps) {
+    const isVertical = false; // PackageCard uses a horizontal layout internally like AccountCard
     const tt = t?.dashboard?.transactions;
     const instanceId = useId();
 
@@ -47,7 +51,6 @@ export function PackageCard({
     const description = getMeta('description');
     const iconUrl = getMeta('icon_url');
     const dAppDefinition = getMeta('dapp_definition');
-    const claimedWebsites = metadataItems.find(m => m.key === 'claimed_websites')?.value?.typed?.values ?? [];
 
     const isCopied = copiedAddress === address;
 
@@ -57,128 +60,164 @@ export function PackageCard({
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
     const configEntries = getConfigEntries(ra, tt);
 
-    // Collapsed state
-    if (!isExpanded && !isModal) {
-        return (
-            <m.div
-                layoutId={`entityCard-${address}`}
-                className="bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-2xl overflow-hidden flex flex-col sm:flex-row hover:border-[var(--color-primary)]/50 transition-colors cursor-pointer min-h-[140px]"
-                onClick={() => onExpand?.(address)}
-            >
-                <div className="flex-1 p-5 flex flex-col justify-center">
-                    <div className="flex items-start gap-4">
-                        <div className="size-12 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0 flex items-center justify-center overflow-hidden">
-                            {iconUrl ? (
-                                <SafeImage src={iconUrl} alt={name || 'Package'} fallbackName={name || 'Package'} className="w-full h-full object-cover" />
-                            ) : (
-                                <Package className="size-6 text-[var(--color-text-muted)]" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-[var(--color-text-main)] truncate mb-1">
-                                {name || tt?.entity_type_package || 'Package'}
-                            </h3>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-mono text-[var(--color-text-muted)] truncate" title={address}>
-                                    {address.slice(0, 12)}...{address.slice(-12)}
-                                </span>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onCopy(address); }}
-                                    className={`p-1 rounded-md transition-colors ${isCopied ? 'text-[var(--color-accent)] bg-[var(--color-accent)]/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface)]'}`}
-                                >
-                                    {isCopied ? <Check className="size-3" /> : <Copy className="size-3" />}
-                                </button>
-                            </div>
-                            
-                            {description && (
-                                <p className="text-sm text-[var(--color-text-muted)] line-clamp-2 mb-3">
-                                    {description}
-                                </p>
-                            )}
+    return (
+        <Card
+            onClick={(!isModal && onExpand) ? () => onExpand?.(address) : undefined}
+            className={`p-0 shadow-md transition-all duration-300 group ${(!isModal && onExpand) ? 'cursor-pointer' : 'cursor-default'} overflow-hidden col-span-full border border-[var(--color-accent)]/30 ${isModal ? 'bg-[var(--color-bg)] h-full flex flex-col' : 'bg-[var(--color-surface)]'} ${isExpanded ? 'ring-2 ring-[var(--color-primary)]' : 'hover:shadow-lg'}`}
+            innerClassName={isModal ? "flex flex-col h-full min-h-0 flex-1" : ""}
+        >
+            <div className={`flex ${isVertical ? 'flex-col' : 'flex-col sm:flex-row'} shrink-0`}>
+                {/* ── AVATAR / SIDEBAR (Matching AccountCard/TransactionCard) ── */}
+                <div aria-hidden="true"
+                    className={`${isVertical ? 'w-full p-3' : 'w-full sm:w-[140px] p-4 sm:p-6 border-r'} shrink-0 border-b sm:border-b-0 border-[var(--color-card-border)] bg-[var(--color-surface)] flex flex-row ${isVertical ? 'justify-between' : 'sm:flex-col'} items-center gap-3 text-center relative overflow-hidden cursor-pointer self-stretch justify-center`}>
+                    <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
+                    <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
+                        {iconUrl ? (
+                            <SafeImage src={iconUrl} alt={name || 'Package'} fallbackName={name || 'Package'} className="size-8 object-cover rounded-xl" />
+                        ) : (
+                            <Package className="size-8" style={{ color: 'var(--color-accent)' }} />
+                        )}
+                    </div>
+                </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-[var(--color-surface)] text-[var(--color-text-main)] rounded-md border border-[var(--color-card-border)]">
-                                    {tt?.entity_type_package || 'Package'}
-                                </span>
-                                {dAppDefinition && (
-                                    <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-md border border-[var(--color-primary)]/20 flex items-center gap-1">
-                                        <ShieldAlert className="size-3" />
-                                        dApp Linked
-                                    </span>
+                {/* ── MAIN CONTENT ── */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    <div className={`${isVertical ? 'p-3 pt-4' : 'p-5'} flex-1 min-w-0`}>
+                        {/* Header: Address + Close Button */}
+                        <div className={`flex items-start justify-between gap-4 mb-3 sm:flex-nowrap`}>
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <div className="flex items-center gap-2 overflow-hidden shrink min-w-0 pr-2">
+                                    <h3 className={`${isVertical ? 'text-[11px] sm:text-xs' : 'text-xs sm:text-sm'} font-mono font-black text-[var(--color-text-main)] group-hover:text-[var(--color-secondary)] transition-colors truncate flex items-center gap-1.5 sm:gap-2 mr-2`}
+                                        title={address}>
+                                        <span className="truncate">{address}</span>
+                                    </h3>
+                                    <CopyButton
+                                        value={address}
+                                        variant="card-inline"
+                                        size="sm"
+                                        forceCopied={isCopied}
+                                        onClick={(e) => { e.stopPropagation(); onCopy(address); }}
+                                        className="shrink-0"
+                                    />
+                                </div>
+                            </div>
+                            <div className="shrink-0 flex items-center mt-1 sm:mt-0 gap-3">
+                                {isModal && onExpand && (
+                                    <CloseButton
+                                        onClose={() => onExpand?.(address)}
+                                        title={t?.dashboard?.reading?.close || 'Close'}
+                                        iconSize={20}
+                                        className="shrink-0 ml-1"
+                                    />
                                 )}
-                                {claimedWebsites.length > 0 && (
-                                    <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-500 rounded-md border border-blue-500/20 flex items-center gap-1">
-                                        <Info className="size-3" />
-                                        {claimedWebsites.length} Website{claimedWebsites.length !== 1 ? 's' : ''}
+                            </div>
+                        </div>
+
+                        {/* Stats Rows - 5 grid items corresponding to package main info */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                            <div className="col-span-2 sm:col-span-2">
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    {tt?.resource_panel_summary || 'Name'}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
+                                        {name || tt?.entity_type_package || 'Package'}
                                     </span>
-                                )}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    {tt?.resource_panel_type || 'Type'}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[var(--color-secondary)] font-mono">
+                                        {tt?.entity_type_package || 'Package'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    dApp
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-[var(--color-primary)] font-mono">
+                                        {dAppDefinition ? 'Linked' : 'No'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="col-span-2 sm:col-span-5 mt-2">
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    {tt?.resource_panel_blueprint || 'Description'}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-[var(--color-text-main)] line-clamp-1">
+                                        {description || '-'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </m.div>
-        );
-    }
-
-    // Expanded state
-    return (
-        <m.div
-            layoutId={`entityCard-${address}`}
-            className="bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-2xl overflow-hidden flex flex-col shadow-2xl h-full"
-        >
-            <div className="border-b border-[var(--color-card-border)] bg-[var(--color-surface)]">
-                <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab as (tab: string) => void} layoutId={`pkgTabs-${instanceId}`} />
             </div>
 
-            <div className="p-4 sm:p-6 min-h-[300px] overflow-y-auto">
-                {isLoading ? (
-                    <div className="flex items-center justify-center h-40">
-                        <div className="size-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+            {/* ── Expanded Content (Modal Only) ── */}
+            {isModal && (
+                <div className="flex-1 flex flex-col min-h-0 bg-[var(--color-bg)]">
+                    <div className="border-b border-t border-[var(--color-card-border)] bg-[var(--color-surface)] shrink-0">
+                        <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab as (tab: string) => void} layoutId={`pkgTabs-${instanceId}`} />
                     </div>
-                ) : (
-                    <>
-                        {activeTab === 'summary' && (
-                            <EntitySummaryTab
-                                address={address}
-                                entityData={entityData ?? null}
-                                entityName={name}
-                                iconUrl={iconUrl}
-                                metadataItems={metadataItems}
-                                getMeta={getMeta}
-                                tt={tt}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                                locale={locale}
-                                network={network}
-                            />
+
+                    <div className="p-4 sm:p-6 min-h-[300px] overflow-y-auto flex-1">
+                        {isLoading ? (
+                            <div className="flex items-center justify-center h-40">
+                                <div className="size-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        ) : (
+                            <>
+                                {activeTab === 'summary' && (
+                                    <EntitySummaryTab
+                                        address={address}
+                                        entityData={entityData ?? null}
+                                        entityName={name}
+                                        iconUrl={iconUrl}
+                                        metadataItems={metadataItems}
+                                        getMeta={getMeta}
+                                        tt={tt}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                        locale={locale}
+                                        network={network}
+                                    />
+                                )}
+                                {activeTab === 'metadata' && (
+                                    <PanelMetadataTab
+                                        metadataItems={metadataItems}
+                                        tt={tt}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                    />
+                                )}
+                                {activeTab === 'configuration' && (
+                                    <PanelConfigurationTab
+                                        configEntries={configEntries}
+                                        tt={tt}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                    />
+                                )}
+                                {activeTab === 'raw' && (
+                                    <PanelRawTab
+                                        data={entityData}
+                                        tt={tt}
+                                        onCopy={onCopy}
+                                        copiedAddress={copiedAddress}
+                                    />
+                                )}
+                            </>
                         )}
-                        {activeTab === 'metadata' && (
-                            <PanelMetadataTab
-                                metadataItems={metadataItems}
-                                tt={tt}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                            />
-                        )}
-                        {activeTab === 'configuration' && (
-                            <PanelConfigurationTab
-                                configEntries={configEntries}
-                                tt={tt}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                            />
-                        )}
-                        {activeTab === 'raw' && (
-                            <PanelRawTab
-                                data={entityData}
-                                tt={tt}
-                                onCopy={onCopy}
-                                copiedAddress={copiedAddress}
-                            />
-                        )}
-                    </>
-                )}
-            </div>
-        </m.div>
+                    </div>
+                </div>
+            )}
+        </Card>
     );
 }
