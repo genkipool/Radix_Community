@@ -337,14 +337,18 @@ export default function DashboardClient({
   const isPackageSearch = deferredSearch.trim().startsWith('package_') && deferredSearch.trim().length >= 60;
   const isComponentSearch = deferredSearch.trim().startsWith('component_') && deferredSearch.trim().length >= 60;
   const isResourceSearch = deferredSearch.trim().startsWith('resource_') && deferredSearch.trim().length >= 60;
+  const isSystemSearch = (deferredSearch.trim().startsWith('transactiontracker_') || deferredSearch.trim().startsWith('consensusmanager_')) && deferredSearch.trim().length >= 60;
+  const isValidatorSearch = deferredSearch.trim().startsWith('validator_') && deferredSearch.trim().length >= 60;
   
-  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_') || expandedPostId?.startsWith('component_') || expandedPostId?.startsWith('resource_')) ? expandedPostId : null;
+  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_') || expandedPostId?.startsWith('component_') || expandedPostId?.startsWith('resource_') || expandedPostId?.startsWith('transactiontracker_') || expandedPostId?.startsWith('consensusmanager_') || expandedPostId?.startsWith('validator_')) ? expandedPostId : null;
 
   // Compute accounts to show for the explorer view using deferred values
   const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);
   const packagesToShow = isPackageSearch ? [deferredSearch.trim()] : [];
   const componentsToShow = isComponentSearch ? [deferredSearch.trim()] : [];
   const resourcesToShow = isResourceSearch ? [deferredSearch.trim()] : [];
+  const systemEntitiesToShow = isSystemSearch ? [deferredSearch.trim()] : [];
+  const validatorsToShow = isValidatorSearch ? [deferredSearch.trim()] : [];
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -512,6 +516,8 @@ export default function DashboardClient({
             packagesToShow={packagesToShow}
             componentsToShow={componentsToShow}
             resourcesToShow={resourcesToShow}
+            systemEntitiesToShow={systemEntitiesToShow}
+            validatorsToShow={validatorsToShow}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}

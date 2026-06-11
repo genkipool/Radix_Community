@@ -17,6 +17,7 @@ import { AccountCard } from '../explorador/components/AccountCard';
 import { PackageCard } from '../explorador/components/PackageCard';
 import { ComponentCard } from '../explorador/components/ComponentCard';
 import { ResourceCard } from '../explorador/components/ResourceCard';
+import { SystemCard } from '../explorador/components/SystemCard';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -48,6 +49,8 @@ export const DashboardCardGrid = ({
   packagesToShow = EMPTY_ACCOUNTS,
   componentsToShow = EMPTY_ACCOUNTS,
   resourcesToShow = EMPTY_ACCOUNTS,
+  systemEntitiesToShow = EMPTY_ACCOUNTS,
+  validatorsToShow = EMPTY_ACCOUNTS,
 }: DashboardCardGridProps) => {
   return (
     <>
@@ -134,6 +137,38 @@ export const DashboardCardGrid = ({
             ))}
             {resourcesToShow.length > 0 && resourcesToShow.map((address) => (
               <ResourceCard
+                key={address}
+                address={address}
+                columns={columns}
+                isExpanded={expandedPosts.has(address) && !readingMode}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                readingMode={readingMode}
+              />
+            ))}
+            {systemEntitiesToShow.length > 0 && systemEntitiesToShow.map((address) => (
+              <SystemCard
+                key={address}
+                address={address}
+                columns={columns}
+                isExpanded={expandedPosts.has(address) && !readingMode}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                readingMode={readingMode}
+              />
+            ))}
+            {validatorsToShow.length > 0 && validatorsToShow.map((address) => (
+              <SystemCard
                 key={address}
                 address={address}
                 columns={columns}
