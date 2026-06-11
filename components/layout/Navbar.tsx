@@ -666,11 +666,26 @@ export default function Navbar() {
   }, [language]);
 
   useEffect(() => {
+    // Register Service Worker for PWA
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Service Worker registration failed:', err);
+      });
+    }
+
     // Restore pinned wallet profile modal
     if (typeof window !== 'undefined' && window.localStorage) {
       if (localStorage.getItem('walletPinned') === 'true') {
         dispatch({ type: 'SET_PROFILE_MODAL', value: true });
       }
+
+      // Store PWA install prompt globally
+      const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        (window as Window & { deferredPrompt?: Event }).deferredPrompt = e;
+      };
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     }
   }, []);
 
@@ -1239,6 +1254,7 @@ export default function Navbar() {
         )}
       </nav>
 
+      {/* Wallet Profile Modal */}
       <WalletProfileModal
         isOpen={isWalletProfileModalOpen}
         onClose={() => dispatch({ type: 'SET_PROFILE_MODAL', value: false })}

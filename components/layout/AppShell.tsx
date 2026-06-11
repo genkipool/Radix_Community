@@ -12,6 +12,7 @@ const UnderConstructionModal = dynamic(() => import('@/components/shared/UnderCo
 const DeleteDocModal = dynamic(() => import('@/components/shared/DeleteDocModal').then(mod => mod.DeleteDocModal), { ssr: false });
 const InstitutionalPilotModal = dynamic(() => import('@/features/home/components/InstitutionalPilotModal'), { ssr: false });
 
+
 export function AppShell({ children }: { children: ReactNode }) {
   const {
     showFooter,
@@ -23,8 +24,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t, language } = useLanguage();
 
   useScrollRestoration();
-
-
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-primary)]/30 relative" style={{ overflowX: 'clip' }}>

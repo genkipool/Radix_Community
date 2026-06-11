@@ -31,6 +31,7 @@ export async function generateMetadata({
     description: t.seo.root.description,
     keywords: t.seo.root.keywords,
     alternates: buildAlternates(locale, ''),
+    manifest: '/manifest.json',
   };
 }
 

@@ -12,10 +12,10 @@ import { createPortal } from 'react-dom';
  *
  * Prevents hydration mismatches by only rendering on the client.
  */
-export function Portal({ children }: { children: ReactNode }) {
+export function Portal({ children, target }: { children: ReactNode, target?: HTMLElement }) {
   const mounted = useMounted();
 
   if (!mounted) return null;
 
-  return createPortal(children, document.body);
+  return createPortal(children, target || document.body);
 }

@@ -28,6 +28,18 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
 
   useEffect(() => {
     document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
+    
+    // Set initial PWA window frame color
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+    if (primaryColor) {
+      let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+      if (!metaThemeColor) {
+        metaThemeColor = document.createElement('meta');
+        metaThemeColor.setAttribute('name', 'theme-color');
+        document.head.appendChild(metaThemeColor);
+      }
+      metaThemeColor.setAttribute('content', primaryColor);
+    }
   }, [theme]);
 
   const setTheme = (t: Theme) => {
@@ -54,6 +66,18 @@ export function ThemeProvider({ children, initialTheme }: { children: ReactNode;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         document.head.removeChild(freeze);
+        
+        // Update the PWA window frame color to match the new background
+        const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+        if (primaryColor) {
+          let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (!metaThemeColor) {
+            metaThemeColor = document.createElement('meta');
+            metaThemeColor.setAttribute('name', 'theme-color');
+            document.head.appendChild(metaThemeColor);
+          }
+          metaThemeColor.setAttribute('content', primaryColor);
+        }
       });
     });
 

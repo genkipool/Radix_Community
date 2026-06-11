@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { X, User, LogOut, RefreshCcw, Wallet, Anchor } from 'lucide-react';
+import { X, User, LogOut, RefreshCcw, Wallet, MoreVertical, LayoutPanelLeft, PictureInPicture2, AppWindow } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -22,6 +22,7 @@ interface WalletProfileModalProps {
     onClose: () => void;
     t: Dictionary;
     locale: string;
+    isStandalone?: boolean;
 }
 
 type TabType = 'profile' | 'accounts' | 'notifications';
@@ -76,11 +77,12 @@ function WalletAccountSummaryWrapper({
     );
 }
 
-export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfileModalProps) {
+export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = false }: WalletProfileModalProps) {
     const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork, selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isAddressBookVisible, setIsAddressBookVisible] = useState(false);
+    const [externalWindow, setExternalWindow] = useState<Window | null>(null);
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;
@@ -113,10 +115,74 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
         localStorage.setItem('walletPinned', newPinned.toString());
     };
 
+    const handlePiP = async () => {
+        if ('documentPictureInPicture' in window) {
+            try {
+                const pipWindow = await (window as Window & { documentPictureInPicture?: { requestWindow: (opts: { width: number; height: number }) => Promise<Window> } }).documentPictureInPicture!.requestWindow({
+                    width: 420,
+                    height: 800,
+                });
+                
+                const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+                styles.forEach((style) => {
+                    pipWindow.document.head.appendChild(style.cloneNode(true));
+                });
+                
+                pipWindow.document.documentElement.className = document.documentElement.className;
+                pipWindow.document.documentElement.style.cssText = document.documentElement.style.cssText;
+                pipWindow.document.body.className = 'bg-[var(--color-bg)]';
+                
+                pipWindow.addEventListener('pagehide', () => {
+                    setExternalWindow(null);
+                });
+                
+                setExternalWindow(pipWindow);
+            } catch (e) {
+                console.error(e);
+                alert('No se pudo abrir la ventana Picture-in-Picture.');
+            }
+        } else {
+            alert('La API Document Picture-in-Picture no está soportada en tu navegador (requiere Chrome/Edge 111+).');
+        }
+    };
+
+    const handlePopupWindow = () => {
+        const popup = window.open(
+            '',
+            'RadixWalletPopup',
+            'width=420,height=800,scrollbars=yes,resizable=yes'
+        );
+        if (!popup) {
+            alert('El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes para este sitio.');
+            return;
+        }
+
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+        styles.forEach((style) => {
+            popup.document.head.appendChild(style.cloneNode(true));
+        });
+
+        popup.document.documentElement.className = document.documentElement.className;
+        popup.document.documentElement.style.cssText = document.documentElement.style.cssText;
+        popup.document.body.className = 'bg-[var(--color-bg)]';
+        
+        popup.addEventListener('beforeunload', () => {
+            setExternalWindow(null);
+        });
+
+        setExternalWindow(popup);
+    };
+
+
+
     const handleClose = () => {
         if (isPinned) {
             setIsPinned(false);
             localStorage.setItem('walletPinned', 'false');
+        }
+        if (externalWindow) {
+            externalWindow.close();
+            setExternalWindow(null);
         }
         onClose();
     };
@@ -132,13 +198,15 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
         }
     };
 
+    const isStandaloneMode = isStandalone || !!externalWindow;
+
     return (
-        <Portal>
+        <Portal target={externalWindow ? externalWindow.document.body : undefined}>
             <AnimatePresence>
                 {isOpen && (
                     <>
                         {/* Backdrop – closes modal on mousedown (not mouseup/click) */}
-                        {!isPinned && (
+                        {!isPinned && !isStandaloneMode && (
                             <m.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -149,24 +217,28 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                             />
                         )}
                         <m.div
-                            initial={{ x: '100%', opacity: 0 }}
+                            initial={isStandaloneMode ? undefined : { x: '100%', opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: '100%', opacity: 0 }}
+                            exit={isStandaloneMode ? undefined : { x: '100%', opacity: 0 }}
                             transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-                            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
-                                isPinned
-                                    ? 'bg-[var(--color-bg)] border-l border-[var(--color-card-border)] shadow-none'
-                                    : 'bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]'
-                            }`}
+                            className={
+                                isStandaloneMode
+                                    ? 'w-full h-full flex flex-col text-[var(--color-text-main)] overflow-x-hidden bg-[var(--color-bg)]'
+                                    : `fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
+                                        isPinned
+                                            ? 'bg-[var(--color-bg)] border-l border-[var(--color-card-border)] shadow-none'
+                                            : 'bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]'
+                                    }`
+                            }
                         >
                             <div className="flex flex-col h-full">
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[var(--color-surface)]/85 mb-2">
-                                    <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pr-4">
                                         <button
                                             type="button"
                                             onClick={() => sessions['mainnet'] ? switchNetwork('mainnet') : connect(RadixNetworkId.Mainnet)}
-                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group shrink-0 ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                         >
                                             Mainnet
                                             {activeNetwork === 'mainnet' && (
@@ -176,7 +248,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         <button
                                             type="button"
                                             onClick={() => sessions['stokenet'] ? switchNetwork('stokenet') : connect(RadixNetworkId.Stokenet)}
-                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group shrink-0 ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                         >
                                             Stokenet
                                             {activeNetwork === 'stokenet' && (
@@ -186,26 +258,45 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                         <button
                                             type="button"
                                             onClick={() => setIsConstructionOpen(true)}
-                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+                                            className={`text-[10px] font-bold tracking-[0.15em] uppercase transition-all duration-300 relative group text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] shrink-0`}
                                         >
                                             {navT.full_profile ?? 'Perfil Completo'}
                                         </button>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <div className="relative group/menu">
+                                            <button
+                                                type="button"
+                                                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg)] transition-colors opacity-80 hover:opacity-100 duration-300"
+                                                aria-label="Más opciones"
+                                            >
+                                                <MoreVertical strokeWidth={2} className="size-5" />
+                                            </button>
+                                            <div className="absolute top-full right-0 mt-1 w-64 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-[9999] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 overflow-hidden transform origin-top-right scale-95 group-hover/menu:scale-100">
+                                                <div className="flex flex-col p-1.5 space-y-0.5">
+                                                    <button type="button" onClick={togglePin} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
+                                                        <LayoutPanelLeft className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
+                                                        <span>{isPinned ? t.nav.wallet_pin_sidebar_remove || 'Desanclar barra lateral' : t.nav.wallet_pin_sidebar || 'Anclar como barra lateral'}</span>
+                                                    </button>
+                                                    <button type="button" onClick={handlePiP} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
+                                                        <PictureInPicture2 className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
+                                                        <span>{t.nav.wallet_picture_in_picture || 'Convertir a ventana picture in picture'}</span>
+                                                    </button>
+                                                    <button type="button" onClick={handlePopupWindow} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
+                                                        <AppWindow className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
+                                                        <span>{t.nav.wallet_popup_window || 'Convertir en ventana emergente'}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <button
                                             type="button"
-                                            onClick={togglePin}
-                                            className={`hidden lg:flex items-center justify-center transition-all duration-300 ${isPinned ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
-                                            title={isPinned ? 'Desanclar barra lateral' : 'Anclar como barra lateral'}
+                                            onClick={handleClose}
+                                            className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg)] transition-colors opacity-80 hover:opacity-100 duration-300"
                                         >
-                                            <Anchor className={`size-4 transition-transform duration-300 ${isPinned ? 'scale-110' : ''}`} />
+                                            <X strokeWidth={2} className="size-5" />
                                         </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleClose}
-                                        className="text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors opacity-80 hover:opacity-100 duration-300"
-                                    >
-                                        <X strokeWidth={2} className="size-5" />
-                                    </button>
                                 </div>
 
                                 {/* User Info & Actions */}
@@ -290,8 +381,12 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                             ) : (
                                                 <>
                                                     {accounts.length > 1 && (
-                                                        <div className="mb-4 flex items-center relative">
-                                                            <div className="flex-1 min-w-0">
+                                                        <div className="mb-4">
+                                                            <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)] border-b border-[var(--color-card-border)]/50 pb-2 mb-3 px-1">
+                                                                {navT.filter_addresses || 'Filtrar direcciones'}
+                                                            </h3>
+                                                            <div className="flex items-center relative">
+                                                                <div className="flex-1 min-w-0">
                                                                 <CarouselFilter
                                                                     options={[
                                                                         { value: null, label: navT.all_accounts ?? 'Todas' },
@@ -315,6 +410,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale }: WalletProfile
                                                             >
                                                                 <BookUser className="size-5" />
                                                             </button>
+                                                            </div>
                                                         </div>
                                                     )}
 
