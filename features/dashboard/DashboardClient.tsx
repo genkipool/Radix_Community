@@ -334,10 +334,13 @@ export default function DashboardClient({
   const expandedPost = expandedPostId ? realValidators.find(v => v.id === expandedPostId) ?? null : null;
   const expandedTx = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
   const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
-  const expandedAccount = expandedPostId?.startsWith('account_') ? expandedPostId : null;
+  const isPackageSearch = deferredSearch.trim().startsWith('package_') && deferredSearch.trim().length >= 60;
+  
+  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_')) ? expandedPostId : null;
 
   // Compute accounts to show for the explorer view using deferred values
   const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);
+  const packagesToShow = isPackageSearch ? [deferredSearch.trim()] : [];
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
@@ -502,6 +505,7 @@ export default function DashboardClient({
             searchQuery={deferredSearch}
             network={deferredNetwork}
             accountsToShow={accountsToShow}
+            packagesToShow={packagesToShow}
             t={t}
             dt={dt}
             onExpand={expanded.handleExpandPost}
@@ -533,7 +537,7 @@ export default function DashboardClient({
         timezone={timezone}
         locale={language}
         marketData={initialMarketData}
-        expandedAccount={expandedAccount}
+        expandedAccount={expandedEntity}
       />
     </div>
     </EntityBadgeContext.Provider>

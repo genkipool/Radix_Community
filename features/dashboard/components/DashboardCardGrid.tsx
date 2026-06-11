@@ -14,6 +14,7 @@ import { Shield } from 'lucide-react';
 import { ValidatorCard } from '../staking/components/ValidatorCard';
 import { TransactionCard } from '../explorador/components/TransactionCard';
 import { AccountCard } from '../explorador/components/AccountCard';
+import { PackageCard } from '../explorador/components/PackageCard';
 
 import type { DashboardCardGridProps } from '../types';
 
@@ -42,6 +43,7 @@ export const DashboardCardGrid = ({
   onCopy,
   marketData,
   accountsToShow = EMPTY_ACCOUNTS,
+  packagesToShow = EMPTY_ACCOUNTS,
 }: DashboardCardGridProps) => {
   return (
     <>
@@ -80,6 +82,22 @@ export const DashboardCardGrid = ({
           <>
             {accountsToShow.length > 0 && accountsToShow.map((address) => (
               <AccountCard
+                key={address}
+                address={address}
+                columns={columns}
+                isExpanded={expandedPosts.has(address) && !readingMode}
+                onExpand={onExpand}
+                onCopy={onCopy}
+                copiedAddress={copiedAddress}
+                t={t}
+                network={network}
+                locale={locale}
+                marketData={marketData}
+                readingMode={readingMode}
+              />
+            ))}
+            {packagesToShow.length > 0 && packagesToShow.map((address) => (
+              <PackageCard
                 key={address}
                 address={address}
                 columns={columns}

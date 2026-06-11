@@ -569,7 +569,7 @@ export function ExpandableEntityBadge({
 
 /* ─── Summary Sub-Component ─────────────────────── */
 
-function EntitySummaryTab({
+export function EntitySummaryTab({
     address,
     entityData,
     entityName,
