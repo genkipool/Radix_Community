@@ -41,9 +41,20 @@ export function CarouselFilter({
 
     let activeLabel = '';
     if (activeValues.length === 0) {
-        activeLabel = options.find(o => o.value === null)?.label || 'Todas';
+        if (options.length === 1 && options[0].value !== null) {
+            activeLabel = options[0].label;
+        } else {
+            activeLabel = options.find(o => o.value === null)?.label || 'Todas';
+        }
     } else if (activeValues.length === 1) {
-        activeLabel = options.find(o => o.value === activeValues[0])?.label || '1';
+        const foundOption = options.find(o => o.value === activeValues[0]);
+        if (foundOption) {
+            activeLabel = foundOption.label;
+        } else if (options.length === 1 && options[0].value !== null) {
+            activeLabel = options[0].label;
+        } else {
+            activeLabel = options.find(o => o.value === null)?.label || 'Todas';
+        }
     } else {
         activeLabel = `${activeValues.length} ${multiSelectLabel}`;
     }
