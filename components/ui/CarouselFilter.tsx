@@ -86,7 +86,20 @@ export function CarouselFilter({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredOptions = options.filter(opt =>
+    const sortedOptions = [...options].sort((a, b) => {
+        if (a.value === null) return -1;
+        if (b.value === null) return 1;
+        
+        if (activeValues.length > 0) {
+            const aSelected = activeValues.includes(a.value);
+            const bSelected = activeValues.includes(b.value);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+        }
+        return 0;
+    });
+
+    const filteredOptions = sortedOptions.filter(opt =>
         opt.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
