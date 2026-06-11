@@ -13,6 +13,8 @@ import {
     PanelRawTab,
 } from './EntityPanelShared';
 import { getConfigEntries } from '../../utils/resourceUtils';
+import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
+import { formatNumber } from '@/utils/formatters';
 
 import { Box } from 'lucide-react';
 import { AnimatePresence, m } from 'motion/react';
@@ -45,6 +47,9 @@ export function SystemCard({
         staleTime: Infinity,
         gcTime: 10 * 60_000,
     });
+
+    const { data: validatorsData } = useValidatorsQuery(network);
+    const validator = address.startsWith('validator_') ? validatorsData?.validators?.find(v => v.address === address) : null;
 
     const metadataItems = entityData?.metadata?.items ?? [];
     const getMeta = (key: string) => metadataItems.find(m => m.key === key)?.value?.typed?.value ?? '';
@@ -115,48 +120,107 @@ export function SystemCard({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
-                            <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Nombre' : 'Name'}
+                        {address.startsWith('validator_') && validator ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Nombre' : 'Name'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
+                                            {validator.name || name || (locale === 'es' ? 'Validador' : 'Validator')}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                        {name || (locale === 'es' ? 'Entidad' : 'Entity')}
-                                    </span>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        Stake
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-primary)] font-mono truncate">
+                                            {formatNumber(validator.totalStakeXRD)} XRD
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Comisión' : 'Commission'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-blue-500 font-mono truncate">
+                                            {formatNumber(validator.validatorFee * 100)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        Uptime
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-green-500 font-mono truncate">
+                                            {formatNumber(validator.uptimePercent)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        Web
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
+                                            {validator.infoUrl ? (
+                                                <a href={validator.infoUrl} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[var(--color-primary)]" onClick={(e) => e.stopPropagation()}>
+                                                    {validator.infoUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                                                </a>
+                                            ) : '-'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Símbolo' : 'Symbol'}
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 text-sm mt-3 items-center">
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Nombre' : 'Name'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
+                                            {name || (locale === 'es' ? 'Entidad' : 'Entity')}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-[var(--color-secondary)] font-mono truncate">
-                                        {symbol || '-'}
-                                    </span>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Símbolo' : 'Symbol'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-secondary)] font-mono truncate">
+                                            {symbol || '-'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Tipo' : 'Type'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-blue-500 font-mono truncate">
+                                            {entityType}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                        {locale === 'es' ? 'Descripción' : 'Description'}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
+                                            {description || '-'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Tipo' : 'Type'}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-blue-500 font-mono truncate">
-                                        {entityType}
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {locale === 'es' ? 'Descripción' : 'Description'}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
-                                        {description || '-'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
