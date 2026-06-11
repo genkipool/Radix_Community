@@ -3,7 +3,6 @@ import React, { useState, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
 import { entityKeys } from '@/features/dashboard/utils/entityCache';
-import { Package } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import type { AccountCardProps } from '../types/components.types';
 import { EntitySummaryTab, getTabsForEntity } from './ExpandableEntityBadge';
@@ -15,12 +14,15 @@ import {
 } from './EntityPanelShared';
 import { getConfigEntries } from '../../utils/resourceUtils';
 
+import { Box } from 'lucide-react';
+import { SafeImage } from '@/components/ui/SafeImage';
+import type { AccountCardProps } from '../types/components.types';
 import { AnimatePresence, m } from 'motion/react';
 import { Card } from '@/components/ui/Card';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { CopyButton } from '@/components/ui/CopyButton';
 
-export function PackageCard({
+export function ComponentCard({
     address,
     columns: _columns,
     isExpanded,
@@ -52,7 +54,7 @@ export function PackageCard({
     const description = getMeta('description');
     const iconUrl = getMeta('icon_url');
     const dAppDefinition = getMeta('dapp_definition');
-    const claimedWebsites = metadataItems.find(m => m.key === 'claimed_websites')?.value?.typed?.values ?? [];
+    const blueprintName = (entityData?.details as Record<string, unknown>)?.blueprint_name as string || '-';
 
     const isCopied = copiedAddress === address;
 
@@ -74,9 +76,9 @@ export function PackageCard({
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10" style={{ background: `radial-gradient(circle at top, var(--color-accent), transparent)` }} />
                     <div className="relative z-10 p-3 sm:p-4 rounded-2xl border-2 shadow-lg bg-[var(--color-bg)] transition-all duration-300 flex items-center justify-center border-[var(--color-accent)]" style={{ boxShadow: `0 0 15px var(--color-accent)30` }}>
                         {iconUrl ? (
-                            <SafeImage src={iconUrl} alt={name || 'Package'} fallbackName={name || 'Package'} className="size-8 object-cover rounded-xl" />
+                            <SafeImage src={iconUrl} alt={name || 'Component'} fallbackName={name || 'Component'} className="size-8 object-cover rounded-xl" />
                         ) : (
-                            <Package className="size-8" style={{ color: 'var(--color-accent)' }} />
+                            <Box className="size-8" style={{ color: 'var(--color-accent)' }} />
                         )}
                     </div>
                 </div>
@@ -119,7 +121,7 @@ export function PackageCard({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold font-mono text-[var(--color-accent)] truncate">
-                                        {name || tt?.entity_type_package || 'Package'}
+                                        {name || 'Component'}
                                     </span>
                                 </div>
                             </div>
@@ -129,7 +131,17 @@ export function PackageCard({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-secondary)] font-mono truncate">
-                                        {tt?.entity_type_package || 'Package'}
+                                        Component
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
+                                    {tt?.resource_panel_blueprint || 'Blueprint'}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-blue-500 font-mono truncate">
+                                        {blueprintName}
                                     </span>
                                 </div>
                             </div>
@@ -145,17 +157,7 @@ export function PackageCard({
                             </div>
                             <div>
                                 <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    Websites
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-blue-500 font-mono truncate">
-                                        {claimedWebsites.length}
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold truncate flex items-center gap-1">
-                                    {tt?.resource_panel_blueprint || 'Description'}
+                                    Description
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold text-[var(--color-text-main)] truncate">
