@@ -15,8 +15,6 @@ import {
 import { getConfigEntries } from '../../utils/resourceUtils';
 
 import { Box } from 'lucide-react';
-import { SafeImage } from '@/components/ui/SafeImage';
-import type { AccountCardProps } from '../types/components.types';
 import { AnimatePresence, m } from 'motion/react';
 import { Card } from '@/components/ui/Card';
 import { CloseButton } from '@/components/ui/CloseButton';
