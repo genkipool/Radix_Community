@@ -99,7 +99,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     });
 
     React.useEffect(() => {
-        if (isOpen && isPinned && window.innerWidth >= 1024) {
+        if (isOpen && isPinned && !externalWindow && window.innerWidth >= 1024) {
             document.body.style.marginRight = '420px';
             document.body.style.transition = 'margin-right 0.3s ease';
             document.documentElement.style.setProperty('--sidebar-width', '420px');
@@ -111,7 +111,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
             document.body.style.marginRight = '0';
             document.documentElement.style.setProperty('--sidebar-width', '0px');
         };
-    }, [isOpen, isPinned]);
+    }, [isOpen, isPinned, externalWindow]);
 
     const togglePin = () => {
         const newPinned = !isPinned;
