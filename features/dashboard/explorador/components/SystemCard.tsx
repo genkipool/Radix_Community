@@ -70,7 +70,7 @@ export function SystemCard({
     const isCopied = copiedAddress === address;
 
     const [activeTab, setActiveTab] = useState<'summary' | 'metadata' | 'configuration' | 'raw'>('summary');
-    if (isError) return null;
+    if (isError || isLoading) return null;
 
     const tabs = getTabsForEntity(address, tt);
     const ra = (entityData?.details as Record<string, unknown>)?.role_assignments;
