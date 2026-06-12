@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut
+  User, RefreshCcw, LogOut, Terminal
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -53,6 +53,7 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   developers: [
     { key: 'doc', href: '/docs', icon: <BookOpen className="size-4" />, descKey: 'popup_dev_docs_desc' },
     { key: 'academy', href: '/academy', icon: <GraduationCap className="size-4" />, descKey: 'popup_dev_academy_desc' },
+    { key: 'console', href: '/console', icon: <Terminal className="size-4" />, descKey: 'popup_dev_console_desc' },
   ],
   wallet: [
     { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_ios_desc' },

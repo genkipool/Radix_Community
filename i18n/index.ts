@@ -10,6 +10,9 @@ import blogEs from '@/features/blog/locales/es.json';
 import communityEn from '@/features/community/locales/en.json';
 import communityEs from '@/features/community/locales/es.json';
 
+import consoleEn from '@/features/console/locales/en.json';
+import consoleEs from '@/features/console/locales/es.json';
+
 import dappsEn from '@/features/dapps/locales/en.json';
 import dappsEs from '@/features/dapps/locales/es.json';
 
@@ -76,6 +79,7 @@ const en = mergeTranslations(commonEn, [
   academyEn,
   blogEn,
   communityEn,
+  consoleEn,
   dappsEn,
   dashboardEn,
   dashboardStakingEn,
@@ -91,6 +95,7 @@ const es = mergeTranslations(commonEs, [
   academyEs,
   blogEs,
   communityEs,
+  consoleEs,
   dappsEs,
   dashboardEs,
   dashboardStakingEs,
@@ -106,6 +111,7 @@ export type Dictionary = typeof commonEn &
   typeof academyEn &
   typeof blogEn &
   typeof communityEn &
+  typeof consoleEn &
   typeof dappsEn &
   typeof dashboardEn &
   typeof dashboardStakingEn &
@@ -122,7 +128,7 @@ export const translations = {
 };
 
 export type FeatureKey =
-  | 'academy' | 'blog' | 'community' | 'dapps' | 'dashboard'
+  | 'academy' | 'blog' | 'community' | 'console' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
   | 'games' | 'home' | 'infrastructure';
 
@@ -131,6 +137,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     academy: () => import('@/features/academy/locales/en.json'),
     blog: () => import('@/features/blog/locales/en.json'),
     community: () => import('@/features/community/locales/en.json'),
+    console: () => import('@/features/console/locales/en.json'),
     dapps: () => import('@/features/dapps/locales/en.json'),
     dashboard: () => import('@/features/dashboard/locales/en.json'),
     dashboardStaking: () => import('@/features/dashboard/staking/locales/en.json'),
@@ -145,6 +152,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     academy: () => import('@/features/academy/locales/es.json'),
     blog: () => import('@/features/blog/locales/es.json'),
     community: () => import('@/features/community/locales/es.json'),
+    console: () => import('@/features/console/locales/es.json'),
     dapps: () => import('@/features/dapps/locales/es.json'),
     dashboard: () => import('@/features/dashboard/locales/es.json'),
     dashboardStaking: () => import('@/features/dashboard/staking/locales/es.json'),

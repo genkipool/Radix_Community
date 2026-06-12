@@ -224,7 +224,7 @@ function SidebarCardRow({
         <div className="relative group/row">
             <Component
                 {...componentProps}
-                className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium"
+                className="block w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium"
                 style={commonStyle}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}

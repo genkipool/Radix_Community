@@ -8,7 +8,7 @@ import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
-import { buildMultiTransferManifest, TransferGroup } from '@/features/wallet/lib/manifest-builders';
+import { buildMultiTransferManifest, TransferGroup, TransferItem } from '@/features/wallet/lib/manifest-builders';
 import { apiFetchEntityDetails, apiFetchTransactionDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -20,6 +20,8 @@ interface TransactionBuilderProps {
     accountAddress: string;
     t?: Record<string, unknown>;
     locale?: string;
+    /** Reports the manifest of the currently configured transfer ('' while incomplete) */
+    onManifestChange?: (manifest: string) => void;
 }
 
 interface AssetItem {
@@ -83,7 +85,36 @@ function isLsuToken(metadataItems: MetadataItem[] | undefined): boolean {
 
 const transactionStateCache = new Map<string, { destinationAddress: string; assets: AssetItem[] }>();
 
-export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProps) {
+/** Groups the configured assets per destination, dropping incomplete entries. */
+function buildTransferGroups(assets: AssetItem[], destinationAddress: string): TransferGroup[] {
+    const destGroups = new Map<string, TransferItem[]>();
+
+    assets.forEach(a => {
+        const effDest = a.destAddress || destinationAddress;
+        if (!effDest) return;
+
+        const item: TransferItem = a.type === 'non_fungible'
+            ? { type: 'non_fungible', resourceAddress: a.resourceAddress, nonFungibleLocalIds: a.nftId ? [a.nftId] : [] }
+            : { type: 'fungible', resourceAddress: a.resourceAddress, amount: parseFloat(a.amount || '0') };
+
+        const existing = destGroups.get(effDest);
+        if (existing) {
+            existing.push(item);
+        } else {
+            destGroups.set(effDest, [item]);
+        }
+    });
+
+    const groups: TransferGroup[] = [];
+    for (const [dest, items] of destGroups) {
+        const validItems = items.filter(i => (i.type === 'fungible' && (i.amount || 0) > 0) || (i.type === 'non_fungible' && i.nonFungibleLocalIds && i.nonFungibleLocalIds.length > 0));
+        if (validItems.length === 0) continue;
+        groups.push({ toAccountAddress: dest, items: validItems });
+    }
+    return groups;
+}
+
+export function TransactionBuilder({ accountAddress, t, onManifestChange }: TransactionBuilderProps) {
     const navT = (t?.nav || {}) as Record<string, string>;
     const { activeNetworkId, activeNetwork, accounts } = useRadixWallet();
     const { entries: addressBookEntries } = useAddressBook();
@@ -123,6 +154,15 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
     useEffect(() => {
         transactionStateCache.set(cacheKey, { destinationAddress, assets });
     }, [cacheKey, destinationAddress, assets]);
+
+    // Live manifest preview for consumers that render it (e.g. the console)
+    const previewGroups = buildTransferGroups(assets, destinationAddress);
+    const previewManifest = previewGroups.length > 0
+        ? buildMultiTransferManifest(accountAddress, previewGroups)
+        : '';
+    useEffect(() => {
+        onManifestChange?.(previewManifest);
+    }, [previewManifest, onManifestChange]);
 
     const [popupOpen, setPopupOpen] = useState(false);
     const [popupMode, setPopupMode] = useState<PopupMode>('asset');
@@ -587,36 +627,7 @@ export function TransactionBuilder({ accountAddress, t }: TransactionBuilderProp
         setIsTransacting(true);
 
         try {
-            const destGroups = new Map<string, { type: 'fungible' | 'non_fungible'; resourceAddress: string; amount?: number; nonFungibleLocalIds?: string[] }[]>();
-
-            assets.forEach(a => {
-                const effDest = a.destAddress || destinationAddress;
-                if (!effDest) return;
-
-                const item = a.type === 'non_fungible'
-                    ? { type: 'non_fungible' as const, resourceAddress: a.resourceAddress, nonFungibleLocalIds: a.nftId ? [a.nftId] : [] }
-                    : { type: 'fungible' as const, resourceAddress: a.resourceAddress, amount: parseFloat(a.amount || '0') };
-
-                const existing = destGroups.get(effDest);
-                if (existing) {
-                    existing.push(item);
-                } else {
-                    destGroups.set(effDest, [item]);
-                }
-            });
-
-            if (destGroups.size === 0) {
-                setError('No hay direcciones de destino configuradas.');
-                setIsTransacting(false);
-                return;
-            }
-
-            const groups: TransferGroup[] = [];
-            for (const [dest, items] of destGroups) {
-                const validItems = items.filter(i => (i.type === 'fungible' && (i.amount || 0) > 0) || (i.type === 'non_fungible' && i.nonFungibleLocalIds && i.nonFungibleLocalIds.length > 0));
-                if (validItems.length === 0) continue;
-                groups.push({ toAccountAddress: dest, items: validItems });
-            }
+            const groups = buildTransferGroups(assets, destinationAddress);
 
             if (groups.length === 0) {
                 setError('No has ingresado ninguna cantidad válida a transferir.');

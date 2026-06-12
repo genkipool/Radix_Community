@@ -63,6 +63,8 @@ interface SidebarControlsProps {
   expandAllLabel?: string;
   autoCollapseActiveTitle?: string;
   autoCollapseInactiveTitle?: string;
+  /** Optional control rendered at the far left, before the expand button */
+  leading?: React.ReactNode;
   // New
   gridView?: boolean;
   onGridViewToggle?: () => void;
@@ -82,6 +84,7 @@ export function SidebarControls({
   expandAllLabel = 'Expand all',
   autoCollapseActiveTitle = 'Auto-collapse on',
   autoCollapseInactiveTitle = 'Auto-collapse off',
+  leading,
   gridView = false,
   onGridViewToggle,
   gridViewTitle = 'Grid view',
@@ -100,6 +103,8 @@ export function SidebarControls({
 
   return (
     <div className="flex items-center gap-2">
+      {leading}
+
       {/* Expand/Collapse all */}
       <button
         type="button"

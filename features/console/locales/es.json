@@ -1,0 +1,346 @@
+{
+  "seo": {
+    "console": {
+      "title": "Consola Radix — Herramientas para desarrolladores",
+      "description": "Envía tokens y NFTs, crea recursos, despliega paquetes, envía manifiestos, configura metadatos y convierte direcciones Olympia en la Red Radix."
+    }
+  },
+  "console": {
+    "heroTitle": "Consola",
+    "heroDescription": "La consola para desarrolladores de la Red Radix. Envía tokens y NFTs, crea recursos fungibles y no fungibles, despliega paquetes Scrypto, envía manifiestos de transacción, configura metadatos on-ledger y convierte direcciones Olympia. Conecta tu billetera para empezar a construir.",
+    "cta_connect_wallet": "Conecta tu billetera",
+    "featured": "Herramientas destacadas",
+    "openTool": "Abrir herramienta",
+    "searchPlaceholder": "Buscar herramientas...",
+    "noResults": "Sin resultados para",
+    "sidebar": {
+      "appName": "Consola de Desarrolladores Radix",
+      "title": "Consola Radix",
+      "subtitle": "Construye, despliega y gestiona activos en la Red Radix.",
+      "home_aria": "Ir al inicio de la consola",
+      "expand_all": "Expandir todo",
+      "collapse_all": "Contraer todo",
+      "flat_view": "Vista de lista"
+    },
+    "groups": {
+      "assets": "Activos",
+      "deploy": "Construir y Desplegar",
+      "utilities": "Utilidades"
+    },
+    "tools": {
+      "send-transaction": {
+        "title": "Enviar Transacción",
+        "description": "Construye una transferencia de tokens y NFTs a una o varias cuentas con el constructor de transacciones de la billetera, e inspecciona el manifiesto generado."
+      },
+      "create-token": {
+        "title": "Crear Token",
+        "description": "Crea un recurso fungible o no fungible con metadatos, suministro y comportamiento personalizados, y despliégalo en la Red Radix."
+      },
+      "deploy-package": {
+        "title": "Desplegar Paquete",
+        "description": "Despliega un nuevo paquete de blueprints en la red adjuntando tus archivos WASM y RPD y enviando una transacción con tu Radix Wallet."
+      },
+      "transaction-manifest": {
+        "title": "Manifiesto de Transacción",
+        "description": "Escribe un manifiesto de transacción en crudo y envíalo como solicitud de transacción a tu Radix Wallet."
+      },
+      "configure-metadata": {
+        "title": "Configurar Metadatos",
+        "description": "Inspecciona y actualiza los metadatos on-ledger de cuentas, recursos, componentes y validadores."
+      },
+      "convert-olympia-address": {
+        "title": "Convertir Dirección Olympia",
+        "description": "Convierte una dirección de cuenta o de recurso de Olympia en su equivalente de Babylon."
+      }
+    },
+    "common": {
+      "fromAccount": "Retirar desde",
+      "createProof": "Crear prueba desde",
+      "sendToWallet": "Enviar a la Radix Wallet",
+      "sending": "Esperando a la billetera...",
+      "txSuccessTitle": "Transacción confirmada",
+      "txFailedTitle": "La transacción ha fallado",
+      "txId": "ID de transacción",
+      "txStatus": "Estado",
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "viewInDashboard": "Ver en el dashboard",
+      "newTransaction": "Nueva transacción",
+      "connectTitle": "Conecta tu billetera",
+      "connectDescription": "Esta herramienta envía transacciones a través de la Radix Wallet. Elige una red y conecta tu billetera para continuar.",
+      "connectMainnet": "Conectar a Mainnet",
+      "connectStokenet": "Conectar a Stokenet",
+      "back": "Volver a la consola",
+      "ownerRole": "Rol de propietario",
+      "ownerRoleHint": "Quién puede actuar como propietario de esta entidad.",
+      "ownerRoleUpdatable": "Rol de propietario actualizable",
+      "ownerRole_none": "Ninguno",
+      "ownerRole_allowAll": "Permitir a todos",
+      "ownerRole_badge": "Badge",
+      "updatable_None": "Ninguno",
+      "updatable_Updatable": "Actualizable",
+      "updatable_Fixed": "Fijo",
+      "badgeResource": "Recurso de badge",
+      "selectBadge": "Selecciona un recurso de badge",
+      "anyNft": "Cualquiera",
+      "nonFungibleId": "No fungible",
+      "createNewBadge": "Crear nuevo badge",
+      "errors": {
+        "wallet_not_connected": "Conecta tu billetera antes de enviar la transacción.",
+        "toolkit_not_initialized": "No se pudo inicializar el toolkit de la billetera para esta red.",
+        "timeout": "La solicitud a la billetera ha caducado. Inténtalo de nuevo.",
+        "rejected": "La transacción fue rechazada o cancelada en la billetera.",
+        "unknown": "Algo salió mal al enviar la transacción."
+      }
+    },
+    "createToken": {
+      "depositAccount": "Depositar el suministro inicial en la cuenta",
+      "tokenType": "Tipo de token",
+      "fungible": "Token fungible",
+      "nonFungible": "Token no fungible",
+      "config": "Configuración",
+      "trackSupply": "Rastrear suministro",
+      "trackSupplyHint": "Si el motor debe rastrear el suministro total",
+      "yes": "Sí",
+      "no": "No",
+      "initialSupply": "Suministro inicial",
+      "initialSupplyPlaceholder": "Introduce el suministro inicial",
+      "divisibility": "Divisibilidad (0-18)",
+      "divisibilityPlaceholder": "Introduce la divisibilidad",
+      "metadata": "Metadatos",
+      "name": "Nombre",
+      "namePlaceholder": "Nombre del token (truncado tras 32 caracteres)",
+      "symbol": "Símbolo",
+      "symbolPlaceholder": "Introduce el símbolo (truncado tras 5 caracteres)",
+      "iconUrl": "URL del icono",
+      "iconUrlPlaceholder": "Introduce la URL del icono",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Introduce la descripción (truncada tras 256 caracteres)",
+      "tags": "Etiquetas",
+      "tagsPlaceholder": "Introduce etiquetas separadas por comas",
+      "infoUrl": "URL de información",
+      "infoUrlPlaceholder": "Introduce la URL de información",
+      "lock": "Bloquear",
+      "lockHint": "Bloquea este campo para que nunca pueda cambiarse",
+      "authRoles": "Roles de autorización",
+      "authRolesHint": "Comportamiento detallado del recurso. Los valores por defecto crean un token simple sin emisión ni quema.",
+      "owner": "Propietario",
+      "allowAll": "Permitir a todos",
+      "denyAll": "Denegar a todos",
+      "nfts": "No fungibles",
+      "addNft": "Añadir no fungible",
+      "remove": "Eliminar",
+      "nftName": "Nombre",
+      "nftDescription": "Descripción",
+      "nftImageUrl": "URL de imagen (key_image_url)",
+      "successResource": "Recurso creado",
+      "invalidSupply": "Debe ser un número positivo",
+      "invalidDivisibility": "Debe ser un entero entre 0 y 18",
+      "invalidUrl": "Debe comenzar por https://",
+      "optionHints": {
+        "owner": "Solo el rol de propietario definido arriba puede realizar esta acción.",
+        "denyAll": "Nadie podrá realizar nunca esta acción: queda deshabilitada permanentemente.",
+        "allowAll": "Cualquiera puede realizar esta acción sin restricciones."
+      },
+      "roleHints": {
+        "minter": "Quién puede acuñar (crear) nuevas unidades de este token, aumentando su suministro.",
+        "minter_updater": "Quién puede cambiar más adelante la regla de acuñación.",
+        "burner": "Quién puede quemar (destruir) unidades de este token, reduciendo su suministro.",
+        "burner_updater": "Quién puede cambiar más adelante la regla de quema.",
+        "freezer": "Quién puede congelar bóvedas que contengan este token, bloqueando sus transferencias.",
+        "freezer_updater": "Quién puede cambiar más adelante la regla de congelación.",
+        "recaller": "Quién puede retirar (recuperar) tokens directamente de las bóvedas de otras cuentas.",
+        "recaller_updater": "Quién puede cambiar más adelante la regla de recuperación.",
+        "withdrawer": "Quién puede retirar este token de las bóvedas. \"Permitir a todos\" lo hace libremente transferible.",
+        "withdrawer_updater": "Quién puede cambiar más adelante la regla de retirada.",
+        "depositer": "Quién puede depositar este token en bóvedas. Se mantiene abierto para que cualquiera pueda recibirlo.",
+        "depositer_updater": "Quién puede cambiar más adelante la regla de depósito.",
+        "metadata_setter": "Quién puede editar los metadatos del token (nombre, símbolo, icono, ...).",
+        "metadata_setter_updater": "Quién puede cambiar más adelante la regla de edición de metadatos.",
+        "metadata_locker": "Quién puede bloquear permanentemente campos de metadatos para que no cambien nunca más.",
+        "metadata_locker_updater": "Quién puede cambiar más adelante la regla de bloqueo de metadatos.",
+        "nft_data_setter": "Quién puede modificar los datos almacenados dentro de cada NFT después de acuñarlo.",
+        "nft_data_setter_updater": "Quién puede cambiar más adelante la regla de edición de datos de NFT."
+      }
+    },
+    "deployPackage": {
+      "files": "Archivos del paquete",
+      "wasmLabel": "Archivo WASM del paquete",
+      "rpdLabel": "Archivo RPD del paquete",
+      "dropWasm": "Suelta aquí el archivo .wasm, o haz clic para buscarlo",
+      "dropRpd": "Suelta aquí el archivo .rpd, o haz clic para buscarlo",
+      "decoding": "Decodificando el esquema...",
+      "decodeError": "No se pudo decodificar el archivo RPD",
+      "successPackage": "Paquete desplegado"
+    },
+    "manifest": {
+      "label": "Manifiesto de transacción",
+      "placeholder": "Introduce un manifiesto de transacción en crudo",
+      "note": "No incluyas instrucciones reservadas como \"lock_fee\": la billetera las añade por sí misma según las preferencias del usuario y rechazará los manifiestos que las contengan.",
+      "docsLink": "Documentación de manifiestos",
+      "viewFlow": "Ver diagrama de flujo",
+      "hideFlow": "Ocultar diagrama",
+      "flowTitle": "Diagrama de flujo",
+      "flowEmpty": "Escribe un manifiesto de transacción para generar su diagrama de flujo.",
+      "flow": {
+        "start": "La Radix Wallet firma la transacción",
+        "startHint": "Tu billetera añade el pago de comisiones (lock_fee), te muestra una vista previa y pide tu aprobación antes de ejecutar nada.",
+        "end": "Transacción completada",
+        "endHint": "Todos los pasos se aplican de forma atómica: si uno solo falla, la transacción entera se rechaza y nada cambia.",
+        "stepLabel": "Paso",
+        "detailLabels": {
+          "account": "Cuenta",
+          "resource": "Recurso",
+          "amount": "Cantidad",
+          "method": "Método",
+          "metadataKey": "Clave",
+          "nfts": "NFTs",
+          "target": "Entidad",
+          "blueprint": "Blueprint",
+          "function": "Función",
+          "supply": "Suministro inicial",
+          "bucket": "Bucket"
+        },
+        "steps": {
+          "withdraw": {
+            "title": "Retirada",
+            "description": "Saca {amount} del recurso de la bóveda de la cuenta y lo coloca en el worktop, la superficie de trabajo temporal de la transacción."
+          },
+          "withdrawNfts": {
+            "title": "Retirada de NFTs",
+            "description": "Saca {count} no fungible(s) de la bóveda de la cuenta y los coloca en el worktop."
+          },
+          "take": {
+            "title": "Bucket del worktop",
+            "description": "Recoge {amount} del recurso desde el worktop en un bucket con nombre, listo para pasarlo a la siguiente llamada."
+          },
+          "takeAll": {
+            "title": "Bucket del worktop",
+            "description": "Recoge todo el saldo del recurso desde el worktop en un bucket con nombre."
+          },
+          "takeNfts": {
+            "title": "Bucket de NFTs del worktop",
+            "description": "Recoge {count} no fungible(s) concretos del worktop en un bucket con nombre."
+          },
+          "deposit": {
+            "title": "Depósito",
+            "description": "Entrega el bucket a la cuenta de destino. Si la cuenta rechaza el depósito (p. ej. reglas frente a terceros), toda la transacción aborta de forma segura."
+          },
+          "depositBatch": {
+            "title": "Depósito total",
+            "description": "Deposita todos los recursos que queden en el worktop en la cuenta de destino, para que no se pierda nada."
+          },
+          "proof": {
+            "title": "Prueba de badge",
+            "description": "Presenta una prueba de posesión del badge — sin moverlo — para autorizar las acciones protegidas que vienen después."
+          },
+          "setMetadata": {
+            "title": "Establecer metadato",
+            "description": "Escribe el campo de metadatos on-ledger \"{key}\" de la entidad. Billeteras y exploradores leen estos campos para mostrar la entidad."
+          },
+          "removeMetadata": {
+            "title": "Eliminar metadato",
+            "description": "Borra el campo de metadatos on-ledger \"{key}\" de la entidad."
+          },
+          "createFungible": {
+            "title": "Nuevo recurso fungible",
+            "description": "Crea un recurso fungible completamente nuevo con un suministro inicial de {supply} y lo deja en el worktop para depositarlo."
+          },
+          "createNonFungible": {
+            "title": "Nuevo recurso no fungible",
+            "description": "Crea un recurso no fungible completamente nuevo, acuñando sus NFTs iniciales en el worktop."
+          },
+          "publish": {
+            "title": "Publicar paquete",
+            "description": "Sube un paquete Scrypto compilado (WASM + definición) a la red para poder instanciar sus blueprints."
+          },
+          "burn": {
+            "title": "Quema",
+            "description": "Destruye permanentemente el recurso del bucket. No se puede deshacer."
+          },
+          "call": {
+            "title": "Llamada a método",
+            "description": "Invoca el método on-ledger \"{method}\" del componente, que ejecuta su lógica Scrypto."
+          },
+          "callFunction": {
+            "title": "Llamada a función",
+            "description": "Invoca la función \"{func}\" del blueprint \"{blueprint}\", normalmente para instanciar un nuevo componente."
+          },
+          "generic": {
+            "title": "Instrucción",
+            "description": "Ejecuta la instrucción {name} del manifiesto."
+          }
+        }
+      }
+    },
+    "metadata": {
+      "searchLabel": "Dirección de la entidad",
+      "searchPlaceholder": "account_..., resource_..., component_..., validator_...",
+      "load": "Cargar entidad",
+      "myAccounts": "Tus cuentas",
+      "loadError": "No se pudo cargar la entidad. Comprueba la dirección y la red seleccionada.",
+      "entityType": "Tipo de entidad",
+      "type_account": "Cuenta",
+      "type_fungible": "Recurso fungible",
+      "type_nonFungible": "Recurso no fungible",
+      "type_component": "Componente",
+      "type_validator": "Validador",
+      "type_package": "Paquete",
+      "currentValues": "Metadatos actuales",
+      "locked": "Bloqueado",
+      "display": "Metadatos de presentación",
+      "verification": "Metadatos de verificación",
+      "proofs": "Prueba de badge",
+      "proofsHint": "Si la entidad solo permite al propietario actualizar metadatos, presenta el badge de propietario desde una de tus cuentas.",
+      "proofNone": "Sin prueba",
+      "accountType": "account_type",
+      "accountTypeSet": "dapp definition",
+      "accountTypeUnset": "Sin establecer",
+      "addItem": "+ Añadir",
+      "noChanges": "No hay cambios que enviar",
+      "fields": {
+        "name": "name",
+        "namePlaceholder": "Nombre simple de la entidad",
+        "symbol": "symbol",
+        "symbolPlaceholder": "Identificador corto y único, usado a menudo en exchanges",
+        "description": "description",
+        "descriptionPlaceholder": "Descripción resumida de la entidad y su uso",
+        "tags": "tags",
+        "tagsPlaceholder": "Lista de etiquetas descriptivas, separadas por comas",
+        "icon_url": "icon_url",
+        "iconUrlPlaceholder": "Ubicación de la imagen que representa la entidad",
+        "info_url": "info_url",
+        "infoUrlPlaceholder": "Enlace directo a una página informativa",
+        "account_locker": "account_locker",
+        "accountLockerPlaceholder": "Introduce la dirección del locker (locker_...)",
+        "claimed_entities": "claimed_entities",
+        "claimedEntitiesPlaceholder": "Introduce la dirección de la entidad",
+        "claimed_websites": "claimed_websites",
+        "claimedWebsitesPlaceholder": "Introduce la URL de la página (sin / final)",
+        "dapp_definitions": "dapp_definitions",
+        "dappDefinitionsPlaceholder": "Dirección de cuenta de definición de dApp",
+        "dapp_definition": "dapp_definition",
+        "dappDefinitionPlaceholder": "Dirección de cuenta de definición de dApp"
+      },
+      "invalidHttps": "Debe comenzar por https://",
+      "invalidLocker": "Debe comenzar por locker_",
+      "invalidTrailingSlash": "No debe terminar en /"
+    },
+    "olympia": {
+      "inputLabel": "Dirección Olympia",
+      "placeholder": "Dirección de cuenta (rdx...) o de recurso (..._rr1...) de Olympia",
+      "convert": "Convertir",
+      "result": "Dirección Babylon",
+      "error": "No se pudo convertir la dirección. Comprueba que sea una dirección de Olympia válida.",
+      "hint": "Las direcciones de cuenta derivan una cuenta virtual de Babylon; las de recurso (con _rr1) derivan la dirección del recurso en Babylon.",
+      "network": "Red de destino"
+    },
+    "sendTransaction": {
+      "builder": "Constructor de transacciones",
+      "viewManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "manifestTitle": "Manifiesto de la transacción",
+      "manifestEmpty": "Configura una transferencia válida (activos, cantidades y destino) para generar el manifiesto."
+    }
+  }
+}

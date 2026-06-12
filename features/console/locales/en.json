@@ -1,0 +1,346 @@
+{
+  "seo": {
+    "console": {
+      "title": "Radix Console — Developer tools",
+      "description": "Send tokens and NFTs, create resources, deploy packages, send raw manifests, configure metadata and convert Olympia addresses on the Radix Network."
+    }
+  },
+  "console": {
+    "heroTitle": "Console",
+    "heroDescription": "The developer console for the Radix Network. Send tokens and NFTs, create fungible and non-fungible resources, deploy Scrypto packages, send raw transaction manifests, configure on-ledger metadata and convert Olympia addresses. Connect your wallet to start building.",
+    "cta_connect_wallet": "Connect your wallet",
+    "featured": "Featured tools",
+    "openTool": "Open tool",
+    "searchPlaceholder": "Search tools...",
+    "noResults": "No results for",
+    "sidebar": {
+      "appName": "Radix Developer Console",
+      "title": "Radix Console",
+      "subtitle": "Build, deploy and manage assets on the Radix Network.",
+      "home_aria": "Go to the console home",
+      "expand_all": "Expand all",
+      "collapse_all": "Collapse all",
+      "flat_view": "List view"
+    },
+    "groups": {
+      "assets": "Assets",
+      "deploy": "Build & Deploy",
+      "utilities": "Utilities"
+    },
+    "tools": {
+      "send-transaction": {
+        "title": "Send Transaction",
+        "description": "Build a transfer of tokens and NFTs to one or several accounts with the wallet transaction builder, and inspect the generated manifest."
+      },
+      "create-token": {
+        "title": "Create Token",
+        "description": "Create a fungible or non-fungible resource with custom metadata, supply and behaviour, and deploy it to the Radix Network."
+      },
+      "deploy-package": {
+        "title": "Deploy Package",
+        "description": "Deploy a new blueprint package to the network by attaching your WASM and RPD files and submitting a transaction with your Radix Wallet."
+      },
+      "transaction-manifest": {
+        "title": "Transaction Manifest",
+        "description": "Write a raw transaction manifest and send it as a transaction request to your Radix Wallet."
+      },
+      "configure-metadata": {
+        "title": "Configure Metadata",
+        "description": "Inspect and update the on-ledger metadata of accounts, resources, components and validators."
+      },
+      "convert-olympia-address": {
+        "title": "Convert Olympia Address",
+        "description": "Convert an Olympia account or resource address into its Babylon equivalent."
+      }
+    },
+    "common": {
+      "fromAccount": "Withdraw from",
+      "createProof": "Create proof from",
+      "sendToWallet": "Send to the Radix Wallet",
+      "sending": "Waiting for the wallet...",
+      "txSuccessTitle": "Transaction committed",
+      "txFailedTitle": "Transaction failed",
+      "txId": "Transaction ID",
+      "txStatus": "Status",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "viewInDashboard": "View in dashboard",
+      "newTransaction": "New transaction",
+      "connectTitle": "Connect your wallet",
+      "connectDescription": "This tool sends transactions through the Radix Wallet. Choose a network and connect your wallet to continue.",
+      "connectMainnet": "Connect to Mainnet",
+      "connectStokenet": "Connect to Stokenet",
+      "back": "Back to console",
+      "ownerRole": "Owner role",
+      "ownerRoleHint": "Who is allowed to act as the owner of this entity.",
+      "ownerRoleUpdatable": "Owner role updatable",
+      "ownerRole_none": "None",
+      "ownerRole_allowAll": "Allow all",
+      "ownerRole_badge": "Badge",
+      "updatable_None": "None",
+      "updatable_Updatable": "Updatable",
+      "updatable_Fixed": "Fixed",
+      "badgeResource": "Badge resource",
+      "selectBadge": "Select a badge resource",
+      "anyNft": "Any",
+      "nonFungibleId": "Non-fungible",
+      "createNewBadge": "Create new badge",
+      "errors": {
+        "wallet_not_connected": "Connect your wallet before sending the transaction.",
+        "toolkit_not_initialized": "The wallet toolkit could not be initialised for this network.",
+        "timeout": "The wallet request timed out. Please try again.",
+        "rejected": "The transaction was rejected or cancelled in the wallet.",
+        "unknown": "Something went wrong while sending the transaction."
+      }
+    },
+    "createToken": {
+      "depositAccount": "Deposit initial supply to account",
+      "tokenType": "Token type",
+      "fungible": "Fungible token",
+      "nonFungible": "Non-fungible token",
+      "config": "Configuration",
+      "trackSupply": "Track supply",
+      "trackSupplyHint": "Whether the engine should track the total supply",
+      "yes": "Yes",
+      "no": "No",
+      "initialSupply": "Initial supply",
+      "initialSupplyPlaceholder": "Enter initial supply",
+      "divisibility": "Divisibility (0-18)",
+      "divisibilityPlaceholder": "Enter divisibility",
+      "metadata": "Metadata",
+      "name": "Name",
+      "namePlaceholder": "Token name (truncated after 32 characters)",
+      "symbol": "Symbol",
+      "symbolPlaceholder": "Enter symbol (truncated after 5 characters)",
+      "iconUrl": "Icon URL",
+      "iconUrlPlaceholder": "Enter icon URL",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description (truncated after 256 characters)",
+      "tags": "Tags",
+      "tagsPlaceholder": "Enter tags, separated by commas",
+      "infoUrl": "Info URL",
+      "infoUrlPlaceholder": "Enter info URL",
+      "lock": "Lock",
+      "lockHint": "Lock this field so it can never be changed",
+      "authRoles": "Auth roles",
+      "authRolesHint": "Fine-grained behaviour of the resource. The defaults create a simple token without minting or burning.",
+      "owner": "Owner",
+      "allowAll": "Allow all",
+      "denyAll": "Deny all",
+      "nfts": "Non-fungibles",
+      "addNft": "Add non-fungible",
+      "remove": "Remove",
+      "nftName": "Name",
+      "nftDescription": "Description",
+      "nftImageUrl": "Image URL (key_image_url)",
+      "successResource": "Created resource",
+      "invalidSupply": "Must be a positive number",
+      "invalidDivisibility": "Must be an integer between 0 and 18",
+      "invalidUrl": "Must start with https://",
+      "optionHints": {
+        "owner": "Only the owner role defined above can perform this action.",
+        "denyAll": "Nobody can ever perform this action — it is permanently disabled.",
+        "allowAll": "Anyone can perform this action without restrictions."
+      },
+      "roleHints": {
+        "minter": "Who can mint (create) new units of this token, increasing its supply.",
+        "minter_updater": "Who can change the minter rule later.",
+        "burner": "Who can burn (destroy) units of this token, reducing its supply.",
+        "burner_updater": "Who can change the burner rule later.",
+        "freezer": "Who can freeze vaults holding this token, blocking transfers from them.",
+        "freezer_updater": "Who can change the freezer rule later.",
+        "recaller": "Who can recall (pull back) tokens directly from other accounts’ vaults.",
+        "recaller_updater": "Who can change the recaller rule later.",
+        "withdrawer": "Who can withdraw this token from vaults. \"Allow all\" makes it freely transferable.",
+        "withdrawer_updater": "Who can change the withdrawer rule later.",
+        "depositer": "Who can deposit this token into vaults. Kept open so anyone can receive it.",
+        "depositer_updater": "Who can change the depositer rule later.",
+        "metadata_setter": "Who can edit the token metadata (name, symbol, icon, ...).",
+        "metadata_setter_updater": "Who can change the metadata setter rule later.",
+        "metadata_locker": "Who can permanently lock metadata fields so they can never change again.",
+        "metadata_locker_updater": "Who can change the metadata locker rule later.",
+        "nft_data_setter": "Who can modify the data stored inside each NFT after minting.",
+        "nft_data_setter_updater": "Who can change the NFT data setter rule later."
+      }
+    },
+    "deployPackage": {
+      "files": "Package files",
+      "wasmLabel": "Package WASM file",
+      "rpdLabel": "Package RPD file",
+      "dropWasm": "Drop the .wasm file here, or click to browse",
+      "dropRpd": "Drop the .rpd file here, or click to browse",
+      "decoding": "Decoding schema...",
+      "decodeError": "Could not decode the RPD file",
+      "successPackage": "Deployed package"
+    },
+    "manifest": {
+      "label": "Transaction manifest",
+      "placeholder": "Enter a raw transaction manifest",
+      "note": "Do not include reserved instructions like \"lock_fee\" — the wallet adds them itself according to user preferences and will reject manifests that contain them.",
+      "docsLink": "Manifest documentation",
+      "viewFlow": "View flow diagram",
+      "hideFlow": "Hide diagram",
+      "flowTitle": "Flow diagram",
+      "flowEmpty": "Write a transaction manifest to generate its flow diagram.",
+      "flow": {
+        "start": "The Radix Wallet signs the transaction",
+        "startHint": "Your wallet adds the fee payment (lock_fee), shows you a preview and asks for your approval before anything runs.",
+        "end": "Transaction completed",
+        "endHint": "Every step is applied atomically: if any single step fails, the whole transaction is rejected and nothing changes.",
+        "stepLabel": "Step",
+        "detailLabels": {
+          "account": "Account",
+          "resource": "Resource",
+          "amount": "Amount",
+          "method": "Method",
+          "metadataKey": "Key",
+          "nfts": "NFTs",
+          "target": "Entity",
+          "blueprint": "Blueprint",
+          "function": "Function",
+          "supply": "Initial supply",
+          "bucket": "Bucket"
+        },
+        "steps": {
+          "withdraw": {
+            "title": "Withdrawal",
+            "description": "Takes {amount} of the resource out of the account vault and places it on the worktop, the temporary work surface of the transaction."
+          },
+          "withdrawNfts": {
+            "title": "NFT withdrawal",
+            "description": "Takes {count} non-fungible(s) out of the account vault and places them on the worktop."
+          },
+          "take": {
+            "title": "Bucket from worktop",
+            "description": "Picks up {amount} of the resource from the worktop into a named bucket, ready to be passed to the next call."
+          },
+          "takeAll": {
+            "title": "Bucket from worktop",
+            "description": "Picks up the entire balance of the resource from the worktop into a named bucket."
+          },
+          "takeNfts": {
+            "title": "NFT bucket from worktop",
+            "description": "Picks up {count} specific non-fungible(s) from the worktop into a named bucket."
+          },
+          "deposit": {
+            "title": "Deposit",
+            "description": "Hands the bucket to the destination account. If the account refuses the deposit (e.g. third-party deposit rules), the whole transaction aborts safely."
+          },
+          "depositBatch": {
+            "title": "Deposit everything",
+            "description": "Deposits every resource still left on the worktop into the destination account, so nothing is lost."
+          },
+          "proof": {
+            "title": "Badge proof",
+            "description": "Presents a proof of holding the badge — without moving it — to authorise the protected actions that follow."
+          },
+          "setMetadata": {
+            "title": "Set metadata",
+            "description": "Writes the on-ledger metadata field \"{key}\" of the entity. Wallets and explorers read these fields to display the entity."
+          },
+          "removeMetadata": {
+            "title": "Remove metadata",
+            "description": "Deletes the on-ledger metadata field \"{key}\" from the entity."
+          },
+          "createFungible": {
+            "title": "New fungible resource",
+            "description": "Creates a brand-new fungible resource with an initial supply of {supply} and leaves it on the worktop to be deposited."
+          },
+          "createNonFungible": {
+            "title": "New non-fungible resource",
+            "description": "Creates a brand-new non-fungible resource, minting its initial NFTs onto the worktop."
+          },
+          "publish": {
+            "title": "Publish package",
+            "description": "Uploads a compiled Scrypto package (WASM + definition) to the network so its blueprints can be instantiated."
+          },
+          "burn": {
+            "title": "Burn",
+            "description": "Permanently destroys the resource in the bucket. This cannot be undone."
+          },
+          "call": {
+            "title": "Method call",
+            "description": "Invokes the on-ledger method \"{method}\" of the component, which executes its Scrypto logic."
+          },
+          "callFunction": {
+            "title": "Function call",
+            "description": "Invokes the function \"{func}\" of the blueprint \"{blueprint}\", typically instantiating a new component."
+          },
+          "generic": {
+            "title": "Instruction",
+            "description": "Executes the manifest instruction {name}."
+          }
+        }
+      }
+    },
+    "metadata": {
+      "searchLabel": "Entity address",
+      "searchPlaceholder": "account_..., resource_..., component_..., validator_...",
+      "load": "Load entity",
+      "myAccounts": "Your accounts",
+      "loadError": "Could not load the entity. Check the address and the selected network.",
+      "entityType": "Entity type",
+      "type_account": "Account",
+      "type_fungible": "Fungible resource",
+      "type_nonFungible": "Non-fungible resource",
+      "type_component": "Component",
+      "type_validator": "Validator",
+      "type_package": "Package",
+      "currentValues": "Current metadata",
+      "locked": "Locked",
+      "display": "Metadata for display",
+      "verification": "Metadata for verification",
+      "proofs": "Badge proof",
+      "proofsHint": "If the entity only allows its owner to update metadata, present the owner badge from one of your accounts.",
+      "proofNone": "No proof",
+      "accountType": "account_type",
+      "accountTypeSet": "dapp definition",
+      "accountTypeUnset": "Not set",
+      "addItem": "+ Add",
+      "noChanges": "There are no changes to send",
+      "fields": {
+        "name": "name",
+        "namePlaceholder": "Simple name of the entity",
+        "symbol": "symbol",
+        "symbolPlaceholder": "A short unique identifier, often used on exchanges",
+        "description": "description",
+        "descriptionPlaceholder": "Summarised description of the entity and its usage",
+        "tags": "tags",
+        "tagsPlaceholder": "List of descriptive tags, separated by commas",
+        "icon_url": "icon_url",
+        "iconUrlPlaceholder": "Location of the image used to represent the entity",
+        "info_url": "info_url",
+        "infoUrlPlaceholder": "Direct link to an informational webpage",
+        "account_locker": "account_locker",
+        "accountLockerPlaceholder": "Enter locker address (locker_...)",
+        "claimed_entities": "claimed_entities",
+        "claimedEntitiesPlaceholder": "Enter entity address",
+        "claimed_websites": "claimed_websites",
+        "claimedWebsitesPlaceholder": "Enter page URL (without trailing /)",
+        "dapp_definitions": "dapp_definitions",
+        "dappDefinitionsPlaceholder": "dApp definition account address",
+        "dapp_definition": "dapp_definition",
+        "dappDefinitionPlaceholder": "dApp definition account address"
+      },
+      "invalidHttps": "Must start with https://",
+      "invalidLocker": "Must start with locker_",
+      "invalidTrailingSlash": "Must not end with /"
+    },
+    "olympia": {
+      "inputLabel": "Olympia address",
+      "placeholder": "Olympia account (rdx...) or resource (..._rr1...) address",
+      "convert": "Convert",
+      "result": "Babylon address",
+      "error": "The address could not be converted. Check that it is a valid Olympia address.",
+      "hint": "Account addresses derive a virtual Babylon account; resource addresses (containing _rr1) derive the Babylon resource address.",
+      "network": "Target network"
+    },
+    "sendTransaction": {
+      "builder": "Transaction builder",
+      "viewManifest": "View manifest",
+      "hideManifest": "Hide manifest",
+      "manifestTitle": "Transaction manifest",
+      "manifestEmpty": "Configure a valid transfer (assets, amounts and destination) to generate the manifest."
+    }
+  }
+}

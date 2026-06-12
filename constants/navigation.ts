@@ -15,6 +15,7 @@ export const NAV_LINKS = [
     sublinks: [
       { key: 'doc', path: '/docs' },
       { key: 'academy', path: '/academy' },
+      { key: 'console', path: '/console' },
     ],
   },
   {

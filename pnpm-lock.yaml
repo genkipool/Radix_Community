@@ -34,6 +34,9 @@ importers:
       '@radixdlt/radix-dapp-toolkit':
         specifier: ^2.3.0
         version: 2.3.0(typescript@5.8.3)
+      '@radixdlt/radix-engine-toolkit':
+        specifier: ^1.0.6
+        version: 1.0.6
       '@radixdlt/rola':
         specifier: ^2.1.0
         version: 2.1.0
@@ -55,6 +58,9 @@ importers:
       big.js:
         specifier: ^7.0.1
         version: 7.0.1
+      blakejs:
+        specifier: ^1.2.1
+        version: 1.2.1
       jose:
         specifier: ^6.2.3
         version: 6.2.3
