@@ -5,10 +5,17 @@
 export const CONSOLE_TOOL_SLUGS = [
   'send-transaction',
   'create-token',
+  'my-resources',
+  'build-manifest',
   'deploy-package',
   'transaction-manifest',
+  'component-panel',
   'configure-metadata',
   'convert-olympia-address',
+  'sbor-decoder',
+  'address-utils',
+  'faucet',
+  'wallet-playground',
 ] as const;
 
 export type ConsoleToolSlug = (typeof CONSOLE_TOOL_SLUGS)[number];

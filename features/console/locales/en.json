@@ -36,6 +36,14 @@
         "title": "Create Token",
         "description": "Create a fungible or non-fungible resource with custom metadata, supply and behaviour, and deploy it to the Radix Network."
       },
+      "my-resources": {
+        "title": "My Resources",
+        "description": "Manage the tokens you control: mint more units or NFTs, burn, lock metadata, change the owner role, recall and freeze vaults."
+      },
+      "build-manifest": {
+        "title": "Build Manifest",
+        "description": "Compose a transaction manifest visually — from ready-made templates or by stacking instruction blocks — with a live preview and flow diagram."
+      },
       "deploy-package": {
         "title": "Deploy Package",
         "description": "Deploy a new blueprint package to the network by attaching your WASM and RPD files and submitting a transaction with your Radix Wallet."
@@ -44,6 +52,10 @@
         "title": "Transaction Manifest",
         "description": "Write a raw transaction manifest and send it as a transaction request to your Radix Wallet."
       },
+      "component-panel": {
+        "title": "Component Panel",
+        "description": "Read the blueprint of any on-ledger component live from the network and get an instant control panel to execute its public methods."
+      },
       "configure-metadata": {
         "title": "Configure Metadata",
         "description": "Inspect and update the on-ledger metadata of accounts, resources, components and validators."
@@ -51,6 +63,22 @@
       "convert-olympia-address": {
         "title": "Convert Olympia Address",
         "description": "Convert an Olympia account or resource address into its Babylon equivalent."
+      },
+      "sbor-decoder": {
+        "title": "SBOR Decoder",
+        "description": "Paste any hex-encoded SBOR payload (state, events, schemas) and read it decoded, human-readable."
+      },
+      "address-utils": {
+        "title": "Address Utilities",
+        "description": "Inspect and validate any Radix address, derive accounts from public keys and browse the well-known network addresses."
+      },
+      "faucet": {
+        "title": "Test Faucet",
+        "description": "Fund a Stokenet account with 10,000 test XRD in one click, straight from the network faucet."
+      },
+      "wallet-playground": {
+        "title": "Wallet Playground",
+        "description": "Experiment with Radix Wallet data requests: ask for accounts with ownership proofs and verify them with ROLA, like a real dApp."
       }
     },
     "common": {
@@ -271,7 +299,19 @@
             "description": "Executes the manifest instruction {name}."
           }
         }
-      }
+      },
+      "sendModeLabel": "Send as",
+      "sendModeTransaction": "Transaction",
+      "sendModeTransactionHint": "Signs and submits the manifest to the network right away",
+      "sendModeSubintent": "Pre-authorization",
+      "sendModeSubintentHint": "The wallet signs a subintent that a third party can embed into their transaction before it expires",
+      "subintentNote": "Subintent manifests must end with YIELD_TO_PARENT. The wallet returns a signed partial transaction that you can hand to the party who will execute it.",
+      "expirationHint": "How long the signed pre-authorization remains usable",
+      "sendSubintent": "Sign pre-authorization",
+      "subintentSuccess": "Pre-authorization signed",
+      "subintentHash": "Subintent hash",
+      "signedPartial": "Signed partial transaction",
+      "signedPartialHint": "Hex blob to deliver to whoever will include this subintent in their transaction"
     },
     "metadata": {
       "searchLabel": "Entity address",
@@ -324,7 +364,9 @@
       },
       "invalidHttps": "Must start with https://",
       "invalidLocker": "Must start with locker_",
-      "invalidTrailingSlash": "Must not end with /"
+      "invalidTrailingSlash": "Must not end with /",
+      "linkVerifiedHint": "Two-way link verified: the other side links back to this entity",
+      "linkUnverifiedHint": "Could not verify the two-way link: the other side does not (yet) link back to this entity"
     },
     "olympia": {
       "inputLabel": "Olympia address",
@@ -341,6 +383,464 @@
       "hideManifest": "Hide manifest",
       "manifestTitle": "Transaction manifest",
       "manifestEmpty": "Configure a valid transfer (assets, amounts and destination) to generate the manifest."
+    },
+    "buildManifest": {
+      "modeLabel": "Building mode",
+      "modeTemplates": "Templates",
+      "modeTemplatesHint": "Pick a ready-made recipe and just fill in its parameters.",
+      "modeBlocks": "Blocks",
+      "modeBlocksHint": "Stack instruction blocks in order to compose any manifest step by step.",
+      "chooseTemplate": "Choose a template",
+      "templateFields": "Parameters",
+      "panelTitle": "Live preview",
+      "tabManifest": "Manifest",
+      "tabFlow": "Flow diagram",
+      "emptyPreview": "Fill in the parameters (or complete your blocks) to generate the manifest here, with its flow diagram.",
+      "addBlocks": "Add blocks",
+      "emptyBlocks": "Add blocks from the palette above to build your manifest step by step. The order of the blocks is the order of execution.",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "removeBlock": "Remove block",
+      "incompleteBadge": "Incomplete",
+      "optional": "optional",
+      "fieldPlaceholders": {
+        "account": "",
+        "address": "account_... / component_... / validator_...",
+        "resource": "resource_...",
+        "decimal": "0.0",
+        "text": "",
+        "nonFungibleId": "#1# (separate several with commas)",
+        "bucket": "Select a bucket",
+        "multiline": "Address(\"...\")\\nDecimal(\"10\")"
+      },
+      "templates": {
+        "transfer-tokens": {
+          "name": "Send tokens",
+          "description": "Transfer an amount of a fungible token from one of your accounts to any account.",
+          "fields": {
+            "from": "From account",
+            "to": "Destination account",
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "transfer-nft": {
+          "name": "Send NFTs",
+          "description": "Transfer one or more NFTs of a collection from one of your accounts to any account.",
+          "fields": {
+            "from": "From account",
+            "to": "Destination account",
+            "resource": "Collection (resource address)",
+            "nftId": "NFT id(s)"
+          }
+        },
+        "stake": {
+          "name": "Stake XRD",
+          "description": "Stake an amount of XRD to a validator and receive its liquid stake units.",
+          "fields": {
+            "account": "Account",
+            "validator": "Validator address",
+            "amount": "XRD amount"
+          }
+        },
+        "unstake": {
+          "name": "Unstake",
+          "description": "Return liquid stake units to a validator to start the unstake period.",
+          "fields": {
+            "account": "Account",
+            "validator": "Validator address",
+            "lsuResource": "Stake units (LSU resource)",
+            "amount": "LSU amount"
+          }
+        },
+        "mint-fungible": {
+          "name": "Mint tokens",
+          "description": "Mint new units of a token you control with a minter badge, and deposit them.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Minter badge (resource address)",
+            "resource": "Token to mint (resource address)",
+            "amount": "Amount",
+            "to": "Deposit to account"
+          }
+        },
+        "burn": {
+          "name": "Burn tokens",
+          "description": "Withdraw an amount of a token and destroy it permanently.",
+          "fields": {
+            "account": "Account",
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "set-metadata": {
+          "name": "Set metadata",
+          "description": "Write a text metadata field on any entity you control.",
+          "fields": {
+            "entity": "Entity address",
+            "metadataKey": "Metadata key",
+            "value": "Value"
+          }
+        },
+        "call-method": {
+          "name": "Call a method",
+          "description": "Invoke a method of a component without arguments and deposit anything it returns.",
+          "fields": {
+            "component": "Component address",
+            "method": "Method name",
+            "account": "Deposit returns to account"
+          }
+        },
+        "create-pool": {
+          "name": "Create pool",
+          "description": "Instantiate a native liquidity pool (one, two or multi-resource) from the network pool package.",
+          "fields": {
+            "poolType": "Pool type",
+            "resources": "Resource addresses (comma separated)"
+          }
+        },
+        "contribute-pool": {
+          "name": "Contribute to pool",
+          "description": "Deposit resources into a native pool and receive its pool units.",
+          "fields": {
+            "account": "Account",
+            "pool": "Pool component address",
+            "resource1": "Resource 1",
+            "amount1": "Amount 1",
+            "resource2": "Resource 2",
+            "amount2": "Amount 2"
+          }
+        },
+        "redeem-pool": {
+          "name": "Redeem from pool",
+          "description": "Return pool units to a native pool and get the underlying resources back.",
+          "fields": {
+            "account": "Account",
+            "pool": "Pool component address",
+            "poolUnit": "Pool unit (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "set-royalty": {
+          "name": "Set royalty",
+          "description": "Set the royalty a component method charges (component owners only).",
+          "fields": {
+            "badgeAccount": "Account holding the owner badge",
+            "badgeResource": "Owner badge (resource address)",
+            "component": "Component address",
+            "method": "Method name",
+            "currency": "Royalty type",
+            "amount": "Amount"
+          }
+        },
+        "claim-royalties": {
+          "name": "Claim royalties",
+          "description": "Collect the royalties accumulated by a component you own.",
+          "fields": {
+            "badgeAccount": "Account holding the owner badge",
+            "badgeResource": "Owner badge (resource address)",
+            "component": "Component address",
+            "account": "Deposit to account"
+          }
+        }
+      },
+      "blocks": {
+        "withdraw": {
+          "name": "Withdraw tokens",
+          "description": "Takes an amount of a token out of an account onto the worktop.",
+          "fields": {
+            "account": "Account",
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "withdrawNfts": {
+          "name": "Withdraw NFTs",
+          "description": "Takes specific NFTs out of an account onto the worktop.",
+          "fields": {
+            "account": "Account",
+            "resource": "Collection (resource address)",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "takeFromWorktop": {
+          "name": "Take to bucket",
+          "description": "Picks an amount of a token from the worktop into a named bucket.",
+          "fields": {
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "takeAllFromWorktop": {
+          "name": "Take all to bucket",
+          "description": "Picks the whole worktop balance of a token into a named bucket.",
+          "fields": {
+            "resource": "Token (resource address)"
+          }
+        },
+        "depositBucket": {
+          "name": "Deposit bucket",
+          "description": "Deposits a previously created bucket into an account (aborts if rejected).",
+          "fields": {
+            "account": "Destination account",
+            "bucket": "Bucket"
+          }
+        },
+        "depositAll": {
+          "name": "Deposit everything",
+          "description": "Deposits all remaining worktop resources into an account.",
+          "fields": {
+            "account": "Destination account"
+          }
+        },
+        "proof": {
+          "name": "Badge proof",
+          "description": "Presents a badge proof to authorise the protected actions that follow.",
+          "fields": {
+            "account": "Account holding the badge",
+            "resource": "Badge (resource address)",
+            "nftId": "NFT id"
+          }
+        },
+        "setMetadata": {
+          "name": "Set metadata",
+          "description": "Writes a text metadata field on an entity.",
+          "fields": {
+            "entity": "Entity address",
+            "metadataKey": "Metadata key",
+            "value": "Value"
+          }
+        },
+        "callMethod": {
+          "name": "Call method",
+          "description": "Invokes a method of a component, optionally with raw manifest arguments.",
+          "fields": {
+            "component": "Component address",
+            "method": "Method name",
+            "args": "Arguments (manifest syntax, one per line)"
+          }
+        },
+        "raw": {
+          "name": "Raw instruction",
+          "description": "Inserts raw manifest instructions verbatim — the escape hatch for anything else.",
+          "fields": {
+            "instructions": "Instructions"
+          }
+        }
+      }
+    },
+    "componentPanel": {
+      "searchLabel": "Component address",
+      "searchPlaceholder": "component_...",
+      "load": "Read blueprint",
+      "loadHint": "Reads the component and its blueprint schema live from the network",
+      "loadError": "Could not read the blueprint. Check that the address is a component on the selected network.",
+      "infoBlueprint": "Blueprint",
+      "infoPackage": "Package",
+      "methods": "Public methods",
+      "methodsHint": "Methods act on this component instance. Fill in the arguments using manifest value syntax and execute with your wallet.",
+      "functions": "Blueprint functions",
+      "functionsHint": "Functions belong to the package (not this instance) — they are typically used to instantiate new components.",
+      "noMethods": "This blueprint does not expose public methods.",
+      "receiver_method": "Read",
+      "receiver_method_hint": "Method with read-only access to the component state (&self).",
+      "receiver_mutMethod": "Write",
+      "receiver_mutMethod_hint": "Method that can modify the component state (&mut self).",
+      "receiver_function": "Function",
+      "receiver_function_hint": "Package-level function without access to this component instance.",
+      "argHint": "Type: {type} — write the value in manifest syntax",
+      "rawArgs": "Arguments (manifest syntax)",
+      "rawArgsHint": "The argument schema could not be resolved; write each argument in manifest syntax on its own line.",
+      "execute": "Execute",
+      "executeHint": "Builds the transaction and sends it to your Radix Wallet for approval",
+      "viewManifest": "View manifest",
+      "hideManifest": "Hide manifest",
+      "reservedHint": "Reserved instruction: the wallet adds it automatically and rejects manifests that include it.",
+      "options": "Execution options",
+      "optionsHint": "Applied to every call: an optional badge proof presented before the call, and a final deposit of any returned resources.",
+      "depositLabel": "Deposit returned resources",
+      "depositOn": "Yes",
+      "depositOff": "No",
+      "depositHint": "Appends a final deposit_batch so any resources the method returns end up in your account instead of aborting the transaction.",
+      "stateTitle": "Current state",
+      "stateHint": "On-ledger state fields of this component, read live from the network.",
+      "rolesTitle": "Roles",
+      "rolesHint": "Who is allowed to call the protected methods of this component."
+    },
+    "simulate": {
+      "button": "Simulate",
+      "buttonHint": "Dry-runs the transaction against the network without signing or paying anything",
+      "successTitle": "Simulation succeeded",
+      "failedTitle": "Simulation failed",
+      "fee": "Estimated fee",
+      "feeHint": "Total network fee the transaction would pay (execution + storage + royalties + tip)",
+      "balanceChanges": "Balance changes"
+    },
+    "validation": {
+      "checking": "Validating manifest…",
+      "valid": "Valid manifest",
+      "validHint": "The manifest passes the Radix Engine Toolkit static validation",
+      "invalid": "Invalid manifest"
+    },
+    "library": {
+      "save": "Save",
+      "saveHint": "Stores the manifest in this browser",
+      "confirmSave": "Save",
+      "namePlaceholder": "Manifest name",
+      "savedTitle": "Saved manifests",
+      "loadHint": "Load this manifest into the editor",
+      "deleteHint": "Delete saved manifest",
+      "export": "Export .rtm",
+      "exportHint": "Download the manifest as a .rtm file",
+      "import": "Import",
+      "importHint": "Load a .rtm file into the editor",
+      "share": "Share URL",
+      "shareHint": "Copies a link that opens this manifest in the editor",
+      "shareCopied": "Link copied!",
+      "shareTooLong": "The manifest is too long to share by URL — export it as a file instead"
+    },
+    "myResources": {
+      "accountTitle": "Account and resource",
+      "resourceTitle": "Resource to manage",
+      "loading": "Loading holdings…",
+      "proofHint": "Protected actions (mint, recall, freeze, …) need the matching badge presented as proof.",
+      "actionTitle": "Action",
+      "viewManifest": "View manifest",
+      "actions": {
+        "mint": {
+          "name": "Mint",
+          "hint": "Create new units of this token (requires the minter badge)"
+        },
+        "mintNft": {
+          "name": "Mint NFT",
+          "hint": "Mint a new NFT with the standard name/description/image data (requires the minter badge)"
+        },
+        "burn": {
+          "name": "Burn",
+          "hint": "Withdraw an amount and destroy it permanently"
+        },
+        "lockMetadata": {
+          "name": "Lock metadata",
+          "hint": "Permanently lock a metadata field so it can never change again"
+        },
+        "setOwnerRole": {
+          "name": "Owner role",
+          "hint": "Change who can act as the owner of this resource"
+        },
+        "recall": {
+          "name": "Recall",
+          "hint": "Pull tokens back from a specific vault (requires the recaller badge)"
+        },
+        "freeze": {
+          "name": "Freeze",
+          "hint": "Freeze or unfreeze a specific vault (requires the freezer badge)"
+        }
+      },
+      "fields": {
+        "amount": "Amount",
+        "nftId": "NFT id",
+        "nftIdHint": "Integer local id, e.g. #12#",
+        "nftName": "Name",
+        "nftDescription": "Description",
+        "nftImageUrl": "Image URL",
+        "metadataKey": "Metadata key",
+        "metadataKeyHint": "name, symbol, description, icon_url, tags, info_url, …",
+        "vault": "Vault address",
+        "vaultHint": "The internal_vault_… address holding the tokens (find it in the dashboard)",
+        "freeze": "Freeze",
+        "freezeHint": "Blocks the selected operations on the vault",
+        "unfreeze": "Unfreeze",
+        "unfreezeHint": "Re-enables the selected operations on the vault",
+        "flags": {
+          "withdraw": "Withdrawals",
+          "deposit": "Deposits",
+          "burn": "Burns",
+          "all": "Everything"
+        }
+      }
+    },
+    "faucet": {
+      "accountTitle": "Deposit to account",
+      "hint": "Requests 10,000 test XRD from the Stokenet faucet and deposits them into the selected account.",
+      "button": "Get 10,000 test XRD",
+      "buttonHint": "Sends the faucet transaction to your wallet for approval",
+      "mainnetNotice": "The faucet only exists on Stokenet, the test network. Switch to Stokenet to request test XRD.",
+      "switchToStokenet": "Switch to Stokenet"
+    },
+    "sborDecoder": {
+      "inputLabel": "Hex payload",
+      "hint": "Scrypto SBOR (0x5c…) and Manifest SBOR (0x4d…) payloads are auto-detected.",
+      "placeholder": "5c21022022…",
+      "button": "Decode",
+      "buttonHint": "Decodes the payload with the Radix Engine Toolkit",
+      "error": "The payload could not be decoded. Check that it is valid SBOR hex.",
+      "resultManifest": "Decoded (manifest syntax)",
+      "resultScrypto": "Decoded (programmatic JSON)"
+    },
+    "addressUtils": {
+      "inspectTitle": "Inspect an address",
+      "inspectHint": "Validates the bech32m checksum and identifies the entity type and network, fully offline.",
+      "inspectPlaceholder": "account_… / resource_… / component_… / txid_…",
+      "checksumOk": "Valid address",
+      "checksumOkHint": "The bech32m checksum is correct",
+      "checksumBad": "Invalid address",
+      "checksumBadHint": "The checksum does not match — the address contains a typo",
+      "entityType": "Entity",
+      "network": "Network",
+      "entityTypes": {
+        "account": "Account",
+        "resource": "Resource",
+        "component": "Component",
+        "package": "Package",
+        "validator": "Validator",
+        "identity": "Identity",
+        "pool": "Pool",
+        "accessController": "Access controller",
+        "locker": "Locker",
+        "consensusManager": "Consensus manager",
+        "transactionTracker": "Transaction tracker",
+        "internalVault": "Internal vault",
+        "internalComponent": "Internal component",
+        "internalKeyValueStore": "Internal key-value store",
+        "transactionId": "Transaction id",
+        "subintentId": "Subintent id",
+        "unknown": "Unknown"
+      },
+      "deriveTitle": "Derive from public key",
+      "deriveHint": "Computes the virtual account and identity addresses a public key controls on the active network.",
+      "publicKey": "Public key (hex)",
+      "publicKeyPlaceholder": "32-byte Ed25519 or 33-byte Secp256k1 key, hex encoded",
+      "ed25519Hint": "Curve used by Radix Wallet personas and accounts",
+      "secp256k1Hint": "Curve used by Olympia-era and hardware accounts",
+      "deriveButton": "Derive",
+      "deriveError": "Invalid public key for the selected curve.",
+      "derivedAccount": "Account",
+      "derivedIdentity": "Identity",
+      "knownTitle": "Well-known addresses",
+      "knownHint": "Native addresses of the active network (XRD, system packages, faucet, pool package, …)."
+    },
+    "walletPlayground": {
+      "configTitle": "Data request",
+      "configHint": "Builds a one-time data request, exactly like a dApp integrating the Radix Wallet would. It does not affect your session.",
+      "accountsLabel": "Accounts to request",
+      "atLeast": "At least",
+      "atLeastHint": "The user may share more accounts than requested",
+      "exactly": "Exactly",
+      "exactlyHint": "The user must share exactly this number of accounts",
+      "proofLabel": "Ownership proof (ROLA)",
+      "proofOff": "Without proof",
+      "proofOffHint": "Only asks for the account addresses",
+      "proofOn": "With proof",
+      "proofOnHint": "The wallet signs a challenge proving the user owns the accounts",
+      "requestButton": "Request from wallet",
+      "requestHint": "Opens the Radix Wallet with this data request",
+      "responseTitle": "Wallet response",
+      "accountsReceived": "Accounts received",
+      "rolaButton": "Verify proofs (ROLA)",
+      "rolaHint": "Verifies the signatures server-side, like a dApp backend would",
+      "rolaOkHint": "Ownership proof verified",
+      "rolaFailHint": "The proof could not be verified",
+      "rawResponse": "Raw response (JSON)"
     }
   }
 }

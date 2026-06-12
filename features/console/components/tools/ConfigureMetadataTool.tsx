@@ -27,6 +27,7 @@ import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
 import { TextField, TextAreaField } from '../shared/fields';
 import { StringListField } from '../shared/StringListField';
+import { TwoWayLinkStatus, type TwoWayLinkKind } from '../shared/TwoWayLinkStatus';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { TxResultBanner } from '../shared/TxResultBanner';
@@ -250,18 +251,39 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
     const placeholderKey = `${def.key.replace(/_(.)/g, (_, c: string) => c.toUpperCase())}Placeholder`;
     const placeholder = fieldLabels[placeholderKey];
 
+    // Verification fields get live two-way link checks per declared value
+    const linkKind: TwoWayLinkKind | null =
+      def.key === 'claimed_websites'
+        ? 'website'
+        : ['claimed_entities', 'dapp_definitions', 'dapp_definition'].includes(def.key)
+          ? 'entity'
+          : null;
+
+    const linkStatuses = (values: string[]) =>
+      linkKind && values.some((v) => v.trim()) ? (
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {values.flatMap((v, i) =>
+            v.trim()
+              ? [<TwoWayLinkStatus key={`${v}-${i}`} t={labels} kind={linkKind} value={v} entityAddress={entity.address} />]
+              : [],
+          )}
+        </div>
+      ) : null;
+
     if (def.list) {
       return (
-        <StringListField
-          key={def.key}
-          label={label}
-          values={form[def.key] as string[]}
-          onChange={(values) => setValue(def.key, values)}
-          placeholder={placeholder}
-          addLabel={labels.addItem}
-          disabled={isSending || isLocked}
-          error={errorMessage}
-        />
+        <div key={def.key}>
+          <StringListField
+            label={label}
+            values={form[def.key] as string[]}
+            onChange={(values) => setValue(def.key, values)}
+            placeholder={placeholder}
+            addLabel={labels.addItem}
+            disabled={isSending || isLocked}
+            error={errorMessage}
+          />
+          {linkStatuses(form[def.key] as string[])}
+        </div>
       );
     }
     if (def.multiline) {
@@ -280,16 +302,18 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
       );
     }
     return (
-      <TextField
-        key={def.key}
-        label={label}
-        labelEnd={labelEnd}
-        value={form[def.key] as string}
-        onChange={(value) => setValue(def.key, value)}
-        placeholder={placeholder}
-        disabled={isSending || isLocked}
-        error={errorMessage}
-      />
+      <div key={def.key}>
+        <TextField
+          label={label}
+          labelEnd={labelEnd}
+          value={form[def.key] as string}
+          onChange={(value) => setValue(def.key, value)}
+          placeholder={placeholder}
+          disabled={isSending || isLocked}
+          error={errorMessage}
+        />
+        {linkStatuses([form[def.key] as string])}
+      </div>
     );
   };
 

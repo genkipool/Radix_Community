@@ -26,6 +26,13 @@ const toolLoading = () => (
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': dynamic(() => import('./tools/SendTransactionTool'), { loading: toolLoading }),
   'create-token': dynamic(() => import('./tools/CreateTokenTool'), { loading: toolLoading }),
+  'build-manifest': dynamic(() => import('./tools/BuildManifestTool'), { loading: toolLoading }),
+  'component-panel': dynamic(() => import('./tools/ComponentPanelTool'), { loading: toolLoading }),
+  'my-resources': dynamic(() => import('./tools/MyResourcesTool'), { loading: toolLoading }),
+  'sbor-decoder': dynamic(() => import('./tools/SborDecoderTool'), { loading: toolLoading }),
+  'address-utils': dynamic(() => import('./tools/AddressUtilsTool'), { loading: toolLoading }),
+  faucet: dynamic(() => import('./tools/FaucetTool'), { loading: toolLoading }),
+  'wallet-playground': dynamic(() => import('./tools/WalletPlaygroundTool'), { loading: toolLoading }),
   'deploy-package': dynamic(() => import('./tools/DeployPackageTool'), { loading: toolLoading }),
   'transaction-manifest': dynamic(() => import('./tools/TransactionManifestTool'), { loading: toolLoading }),
   'configure-metadata': dynamic(() => import('./tools/ConfigureMetadataTool'), { loading: toolLoading }),

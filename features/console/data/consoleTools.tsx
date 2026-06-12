@@ -1,9 +1,16 @@
 import {
   ArrowLeftRight,
+  Binary,
+  Blocks,
   Coins,
+  Droplets,
   FileCode2,
+  FlaskConical,
+  LayoutDashboard,
   Rocket,
+  ScanSearch,
   Settings2,
+  Sparkles,
   Wrench,
 } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
@@ -39,11 +46,26 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '251,191,36',
     requiresWallet: true,
   },
+  'build-manifest': {
+    slug: 'build-manifest',
+    icon: <Blocks className="size-5" />,
+    gradient: 'from-indigo-500 to-violet-500',
+    accentRgb: '99,102,241',
+    requiresWallet: true,
+    wide: true,
+  },
   'deploy-package': {
     slug: 'deploy-package',
     icon: <Rocket className="size-5" />,
     gradient: 'from-violet-600 to-fuchsia-500',
     accentRgb: '139,92,246',
+    requiresWallet: true,
+  },
+  'component-panel': {
+    slug: 'component-panel',
+    icon: <LayoutDashboard className="size-5" />,
+    gradient: 'from-cyan-500 to-blue-500',
+    accentRgb: '6,182,212',
     requiresWallet: true,
   },
   'transaction-manifest': {
@@ -68,6 +90,41 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '244,63,94',
     requiresWallet: false,
   },
+  'my-resources': {
+    slug: 'my-resources',
+    icon: <Sparkles className="size-5" />,
+    gradient: 'from-amber-400 to-orange-500',
+    accentRgb: '251,191,36',
+    requiresWallet: true,
+  },
+  'sbor-decoder': {
+    slug: 'sbor-decoder',
+    icon: <Binary className="size-5" />,
+    gradient: 'from-slate-500 to-slate-400',
+    accentRgb: '100,116,139',
+    requiresWallet: false,
+  },
+  'address-utils': {
+    slug: 'address-utils',
+    icon: <ScanSearch className="size-5" />,
+    gradient: 'from-teal-500 to-emerald-400',
+    accentRgb: '20,184,166',
+    requiresWallet: false,
+  },
+  faucet: {
+    slug: 'faucet',
+    icon: <Droplets className="size-5" />,
+    gradient: 'from-sky-400 to-blue-500',
+    accentRgb: '56,189,248',
+    requiresWallet: true,
+  },
+  'wallet-playground': {
+    slug: 'wallet-playground',
+    icon: <FlaskConical className="size-5" />,
+    gradient: 'from-fuchsia-500 to-purple-500',
+    accentRgb: '217,70,239',
+    requiresWallet: true,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -84,28 +141,34 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'assets',
     icon: <Coins className="size-5" />,
     gradient: 'from-blue-600 to-cyan-500',
-    tools: ['send-transaction', 'create-token'],
+    tools: ['send-transaction', 'create-token', 'my-resources', 'faucet'],
   },
   {
     id: 'deploy',
     icon: <Rocket className="size-5" />,
     gradient: 'from-violet-600 to-fuchsia-500',
-    tools: ['deploy-package', 'transaction-manifest'],
+    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
   },
   {
     id: 'utilities',
     icon: <Wrench className="size-5" />,
     gradient: 'from-emerald-500 to-teal-400',
-    tools: ['configure-metadata', 'convert-olympia-address'],
+    tools: [
+      'configure-metadata',
+      'address-utils',
+      'sbor-decoder',
+      'convert-olympia-address',
+      'wallet-playground',
+    ],
   },
 ];
 
 /** Tools highlighted on the console landing page. */
 export const FEATURED_TOOL_SLUGS: ConsoleToolSlug[] = [
   'send-transaction',
+  'build-manifest',
+  'component-panel',
   'create-token',
-  'deploy-package',
-  'transaction-manifest',
 ];
 
 export const groupForTool = (slug: ConsoleToolSlug): ConsoleGroup =>

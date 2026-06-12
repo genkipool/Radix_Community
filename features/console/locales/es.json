@@ -36,6 +36,14 @@
         "title": "Crear Token",
         "description": "Crea un recurso fungible o no fungible con metadatos, suministro y comportamiento personalizados, y despliégalo en la Red Radix."
       },
+      "my-resources": {
+        "title": "Mis Recursos",
+        "description": "Gestiona los tokens que controlas: acuña más unidades o NFTs, quema, bloquea metadatos, cambia el rol de propietario, recupera y congela bóvedas."
+      },
+      "build-manifest": {
+        "title": "Construir Manifiesto",
+        "description": "Compón un manifiesto de transacción visualmente — con plantillas listas para usar o apilando bloques de instrucciones — con vista previa y diagrama de flujo en vivo."
+      },
       "deploy-package": {
         "title": "Desplegar Paquete",
         "description": "Despliega un nuevo paquete de blueprints en la red adjuntando tus archivos WASM y RPD y enviando una transacción con tu Radix Wallet."
@@ -44,6 +52,10 @@
         "title": "Manifiesto de Transacción",
         "description": "Escribe un manifiesto de transacción en crudo y envíalo como solicitud de transacción a tu Radix Wallet."
       },
+      "component-panel": {
+        "title": "Panel de Componente",
+        "description": "Lee el plano técnico de cualquier componente en vivo desde la red y obtén al instante un panel de control para ejecutar sus métodos públicos."
+      },
       "configure-metadata": {
         "title": "Configurar Metadatos",
         "description": "Inspecciona y actualiza los metadatos on-ledger de cuentas, recursos, componentes y validadores."
@@ -51,6 +63,22 @@
       "convert-olympia-address": {
         "title": "Convertir Dirección Olympia",
         "description": "Convierte una dirección de cuenta o de recurso de Olympia en su equivalente de Babylon."
+      },
+      "sbor-decoder": {
+        "title": "Decodificador SBOR",
+        "description": "Pega cualquier payload SBOR en hexadecimal (estado, eventos, esquemas) y léelo decodificado, en formato legible."
+      },
+      "address-utils": {
+        "title": "Utilidades de Direcciones",
+        "description": "Inspecciona y valida cualquier dirección de Radix, deriva cuentas desde claves públicas y consulta las direcciones conocidas de la red."
+      },
+      "faucet": {
+        "title": "Faucet de Pruebas",
+        "description": "Fondea una cuenta de Stokenet con 10.000 XRD de prueba en un clic, directamente desde el faucet de la red."
+      },
+      "wallet-playground": {
+        "title": "Playground de Wallet",
+        "description": "Experimenta con las solicitudes de datos de la Radix Wallet: pide cuentas con pruebas de propiedad y verifícalas con ROLA, como una dApp real."
       }
     },
     "common": {
@@ -271,7 +299,19 @@
             "description": "Ejecuta la instrucción {name} del manifiesto."
           }
         }
-      }
+      },
+      "sendModeLabel": "Enviar como",
+      "sendModeTransaction": "Transacción",
+      "sendModeTransactionHint": "Firma y envía el manifiesto a la red inmediatamente",
+      "sendModeSubintent": "Pre-autorización",
+      "sendModeSubintentHint": "La billetera firma un subintent que un tercero puede incrustar en su transacción antes de que caduque",
+      "subintentNote": "Los manifiestos de subintent deben terminar con YIELD_TO_PARENT. La billetera devuelve una transacción parcial firmada que puedes entregar a quien la vaya a ejecutar.",
+      "expirationHint": "Cuánto tiempo sigue siendo utilizable la pre-autorización firmada",
+      "sendSubintent": "Firmar pre-autorización",
+      "subintentSuccess": "Pre-autorización firmada",
+      "subintentHash": "Hash del subintent",
+      "signedPartial": "Transacción parcial firmada",
+      "signedPartialHint": "Blob hexadecimal para entregar a quien incluirá este subintent en su transacción"
     },
     "metadata": {
       "searchLabel": "Dirección de la entidad",
@@ -324,7 +364,9 @@
       },
       "invalidHttps": "Debe comenzar por https://",
       "invalidLocker": "Debe comenzar por locker_",
-      "invalidTrailingSlash": "No debe terminar en /"
+      "invalidTrailingSlash": "No debe terminar en /",
+      "linkVerifiedHint": "Enlace bidireccional verificado: la otra parte enlaza de vuelta a esta entidad",
+      "linkUnverifiedHint": "No se pudo verificar el enlace bidireccional: la otra parte no enlaza (todavía) de vuelta a esta entidad"
     },
     "olympia": {
       "inputLabel": "Dirección Olympia",
@@ -341,6 +383,464 @@
       "hideManifest": "Ocultar manifiesto",
       "manifestTitle": "Manifiesto de la transacción",
       "manifestEmpty": "Configura una transferencia válida (activos, cantidades y destino) para generar el manifiesto."
+    },
+    "buildManifest": {
+      "modeLabel": "Modo de construcción",
+      "modeTemplates": "Plantillas",
+      "modeTemplatesHint": "Elige una receta lista para usar y solo rellena sus parámetros.",
+      "modeBlocks": "Bloques",
+      "modeBlocksHint": "Apila bloques de instrucciones en orden para componer cualquier manifiesto paso a paso.",
+      "chooseTemplate": "Elige una plantilla",
+      "templateFields": "Parámetros",
+      "panelTitle": "Vista previa en vivo",
+      "tabManifest": "Manifiesto",
+      "tabFlow": "Diagrama de flujo",
+      "emptyPreview": "Rellena los parámetros (o completa tus bloques) para generar aquí el manifiesto, con su diagrama de flujo.",
+      "addBlocks": "Añadir bloques",
+      "emptyBlocks": "Añade bloques desde la paleta superior para construir tu manifiesto paso a paso. El orden de los bloques es el orden de ejecución.",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "removeBlock": "Eliminar bloque",
+      "incompleteBadge": "Incompleto",
+      "optional": "opcional",
+      "fieldPlaceholders": {
+        "account": "",
+        "address": "account_... / component_... / validator_...",
+        "resource": "resource_...",
+        "decimal": "0.0",
+        "text": "",
+        "nonFungibleId": "#1# (separa varios con comas)",
+        "bucket": "Selecciona un bucket",
+        "multiline": "Address(\"...\")\\nDecimal(\"10\")"
+      },
+      "templates": {
+        "transfer-tokens": {
+          "name": "Enviar tokens",
+          "description": "Transfiere una cantidad de un token fungible desde una de tus cuentas a cualquier cuenta.",
+          "fields": {
+            "from": "Cuenta de origen",
+            "to": "Cuenta de destino",
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "transfer-nft": {
+          "name": "Enviar NFTs",
+          "description": "Transfiere uno o varios NFTs de una colección desde una de tus cuentas a cualquier cuenta.",
+          "fields": {
+            "from": "Cuenta de origen",
+            "to": "Cuenta de destino",
+            "resource": "Colección (dirección del recurso)",
+            "nftId": "Id(s) del NFT"
+          }
+        },
+        "stake": {
+          "name": "Stake de XRD",
+          "description": "Haz stake de una cantidad de XRD a un validador y recibe sus unidades líquidas de stake.",
+          "fields": {
+            "account": "Cuenta",
+            "validator": "Dirección del validador",
+            "amount": "Cantidad de XRD"
+          }
+        },
+        "unstake": {
+          "name": "Unstake",
+          "description": "Devuelve unidades líquidas de stake a un validador para iniciar el periodo de unstake.",
+          "fields": {
+            "account": "Cuenta",
+            "validator": "Dirección del validador",
+            "lsuResource": "Unidades de stake (recurso LSU)",
+            "amount": "Cantidad de LSU"
+          }
+        },
+        "mint-fungible": {
+          "name": "Acuñar tokens",
+          "description": "Acuña nuevas unidades de un token que controlas con un badge de acuñación, y deposítalas.",
+          "fields": {
+            "badgeAccount": "Cuenta con el badge",
+            "badgeResource": "Badge de acuñación (dirección del recurso)",
+            "resource": "Token a acuñar (dirección del recurso)",
+            "amount": "Cantidad",
+            "to": "Depositar en la cuenta"
+          }
+        },
+        "burn": {
+          "name": "Quemar tokens",
+          "description": "Retira una cantidad de un token y destrúyela permanentemente.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "set-metadata": {
+          "name": "Establecer metadato",
+          "description": "Escribe un campo de metadatos de texto en cualquier entidad que controles.",
+          "fields": {
+            "entity": "Dirección de la entidad",
+            "metadataKey": "Clave del metadato",
+            "value": "Valor"
+          }
+        },
+        "call-method": {
+          "name": "Llamar a un método",
+          "description": "Invoca un método de un componente sin argumentos y deposita lo que devuelva.",
+          "fields": {
+            "component": "Dirección del componente",
+            "method": "Nombre del método",
+            "account": "Depositar el resultado en la cuenta"
+          }
+        },
+        "create-pool": {
+          "name": "Crear pool",
+          "description": "Instancia un pool de liquidez nativo (de uno, dos o varios recursos) desde el paquete de pools de la red.",
+          "fields": {
+            "poolType": "Tipo de pool",
+            "resources": "Direcciones de recursos (separadas por comas)"
+          }
+        },
+        "contribute-pool": {
+          "name": "Aportar al pool",
+          "description": "Deposita recursos en un pool nativo y recibe sus unidades de pool.",
+          "fields": {
+            "account": "Cuenta",
+            "pool": "Dirección del componente del pool",
+            "resource1": "Recurso 1",
+            "amount1": "Cantidad 1",
+            "resource2": "Recurso 2",
+            "amount2": "Cantidad 2"
+          }
+        },
+        "redeem-pool": {
+          "name": "Retirar del pool",
+          "description": "Devuelve unidades de pool a un pool nativo y recupera los recursos subyacentes.",
+          "fields": {
+            "account": "Cuenta",
+            "pool": "Dirección del componente del pool",
+            "poolUnit": "Unidad de pool (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "set-royalty": {
+          "name": "Establecer royalty",
+          "description": "Configura la royalty que cobra un método de un componente (solo propietarios).",
+          "fields": {
+            "badgeAccount": "Cuenta con el badge de propietario",
+            "badgeResource": "Badge de propietario (dirección del recurso)",
+            "component": "Dirección del componente",
+            "method": "Nombre del método",
+            "currency": "Tipo de royalty",
+            "amount": "Cantidad"
+          }
+        },
+        "claim-royalties": {
+          "name": "Reclamar royalties",
+          "description": "Recoge las royalties acumuladas por un componente de tu propiedad.",
+          "fields": {
+            "badgeAccount": "Cuenta con el badge de propietario",
+            "badgeResource": "Badge de propietario (dirección del recurso)",
+            "component": "Dirección del componente",
+            "account": "Depositar en la cuenta"
+          }
+        }
+      },
+      "blocks": {
+        "withdraw": {
+          "name": "Retirar tokens",
+          "description": "Saca una cantidad de un token de una cuenta al worktop.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "withdrawNfts": {
+          "name": "Retirar NFTs",
+          "description": "Saca NFTs concretos de una cuenta al worktop.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Colección (dirección del recurso)",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "takeFromWorktop": {
+          "name": "Tomar a bucket",
+          "description": "Recoge una cantidad de un token del worktop en un bucket con nombre.",
+          "fields": {
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "takeAllFromWorktop": {
+          "name": "Tomar todo a bucket",
+          "description": "Recoge todo el saldo del worktop de un token en un bucket con nombre.",
+          "fields": {
+            "resource": "Token (dirección del recurso)"
+          }
+        },
+        "depositBucket": {
+          "name": "Depositar bucket",
+          "description": "Deposita un bucket creado antes en una cuenta (aborta si lo rechaza).",
+          "fields": {
+            "account": "Cuenta de destino",
+            "bucket": "Bucket"
+          }
+        },
+        "depositAll": {
+          "name": "Depositar todo",
+          "description": "Deposita todos los recursos restantes del worktop en una cuenta.",
+          "fields": {
+            "account": "Cuenta de destino"
+          }
+        },
+        "proof": {
+          "name": "Prueba de badge",
+          "description": "Presenta una prueba de badge para autorizar las acciones protegidas posteriores.",
+          "fields": {
+            "account": "Cuenta con el badge",
+            "resource": "Badge (dirección del recurso)",
+            "nftId": "Id del NFT"
+          }
+        },
+        "setMetadata": {
+          "name": "Establecer metadato",
+          "description": "Escribe un campo de metadatos de texto en una entidad.",
+          "fields": {
+            "entity": "Dirección de la entidad",
+            "metadataKey": "Clave del metadato",
+            "value": "Valor"
+          }
+        },
+        "callMethod": {
+          "name": "Llamar a método",
+          "description": "Invoca un método de un componente, opcionalmente con argumentos en sintaxis de manifiesto.",
+          "fields": {
+            "component": "Dirección del componente",
+            "method": "Nombre del método",
+            "args": "Argumentos (sintaxis de manifiesto, uno por línea)"
+          }
+        },
+        "raw": {
+          "name": "Instrucción en crudo",
+          "description": "Inserta instrucciones de manifiesto tal cual — la vía de escape para todo lo demás.",
+          "fields": {
+            "instructions": "Instrucciones"
+          }
+        }
+      }
+    },
+    "componentPanel": {
+      "searchLabel": "Dirección del componente",
+      "searchPlaceholder": "component_...",
+      "load": "Leer blueprint",
+      "loadHint": "Lee el componente y el esquema de su blueprint en vivo desde la red",
+      "loadError": "No se pudo leer el blueprint. Comprueba que la dirección sea un componente de la red seleccionada.",
+      "infoBlueprint": "Blueprint",
+      "infoPackage": "Paquete",
+      "methods": "Métodos públicos",
+      "methodsHint": "Los métodos actúan sobre esta instancia del componente. Rellena los argumentos en sintaxis de manifiesto y ejecútalos con tu billetera.",
+      "functions": "Funciones del blueprint",
+      "functionsHint": "Las funciones pertenecen al paquete (no a esta instancia) — normalmente se usan para instanciar nuevos componentes.",
+      "noMethods": "Este blueprint no expone métodos públicos.",
+      "receiver_method": "Lectura",
+      "receiver_method_hint": "Método con acceso de solo lectura al estado del componente (&self).",
+      "receiver_mutMethod": "Escritura",
+      "receiver_mutMethod_hint": "Método que puede modificar el estado del componente (&mut self).",
+      "receiver_function": "Función",
+      "receiver_function_hint": "Función a nivel de paquete, sin acceso a esta instancia del componente.",
+      "argHint": "Tipo: {type} — escribe el valor en sintaxis de manifiesto",
+      "rawArgs": "Argumentos (sintaxis de manifiesto)",
+      "rawArgsHint": "No se pudo resolver el esquema de argumentos; escribe cada argumento en sintaxis de manifiesto, uno por línea.",
+      "execute": "Ejecutar",
+      "executeHint": "Construye la transacción y la envía a tu Radix Wallet para su aprobación",
+      "viewManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "reservedHint": "Instrucción reservada: la billetera la añade automáticamente y rechaza manifiestos que la incluyan.",
+      "options": "Opciones de ejecución",
+      "optionsHint": "Se aplican a cada llamada: una prueba de badge opcional presentada antes de la llamada, y un depósito final de los recursos devueltos.",
+      "depositLabel": "Depositar los recursos devueltos",
+      "depositOn": "Sí",
+      "depositOff": "No",
+      "depositHint": "Añade un deposit_batch final para que cualquier recurso que devuelva el método acabe en tu cuenta en lugar de abortar la transacción.",
+      "stateTitle": "Estado actual",
+      "stateHint": "Campos de estado on-ledger de este componente, leídos en vivo desde la red.",
+      "rolesTitle": "Roles",
+      "rolesHint": "Quién puede llamar a los métodos protegidos de este componente."
+    },
+    "simulate": {
+      "button": "Simular",
+      "buttonHint": "Ejecuta la transacción en seco contra la red, sin firmar ni pagar nada",
+      "successTitle": "Simulación correcta",
+      "failedTitle": "La simulación ha fallado",
+      "fee": "Comisión estimada",
+      "feeHint": "Comisión total de red que pagaría la transacción (ejecución + almacenamiento + royalties + propina)",
+      "balanceChanges": "Cambios de saldo"
+    },
+    "validation": {
+      "checking": "Validando manifiesto…",
+      "valid": "Manifiesto válido",
+      "validHint": "El manifiesto supera la validación estática del Radix Engine Toolkit",
+      "invalid": "Manifiesto inválido"
+    },
+    "library": {
+      "save": "Guardar",
+      "saveHint": "Guarda el manifiesto en este navegador",
+      "confirmSave": "Guardar",
+      "namePlaceholder": "Nombre del manifiesto",
+      "savedTitle": "Manifiestos guardados",
+      "loadHint": "Cargar este manifiesto en el editor",
+      "deleteHint": "Eliminar manifiesto guardado",
+      "export": "Exportar .rtm",
+      "exportHint": "Descarga el manifiesto como archivo .rtm",
+      "import": "Importar",
+      "importHint": "Carga un archivo .rtm en el editor",
+      "share": "Compartir URL",
+      "shareHint": "Copia un enlace que abre este manifiesto en el editor",
+      "shareCopied": "¡Enlace copiado!",
+      "shareTooLong": "El manifiesto es demasiado largo para compartirlo por URL: expórtalo como archivo"
+    },
+    "myResources": {
+      "accountTitle": "Cuenta y recurso",
+      "resourceTitle": "Recurso a gestionar",
+      "loading": "Cargando activos…",
+      "proofHint": "Las acciones protegidas (acuñar, recuperar, congelar, …) necesitan presentar el badge correspondiente como prueba.",
+      "actionTitle": "Acción",
+      "viewManifest": "Ver manifiesto",
+      "actions": {
+        "mint": {
+          "name": "Acuñar",
+          "hint": "Crea nuevas unidades de este token (requiere el badge de acuñación)"
+        },
+        "mintNft": {
+          "name": "Acuñar NFT",
+          "hint": "Acuña un nuevo NFT con los datos estándar nombre/descripción/imagen (requiere el badge de acuñación)"
+        },
+        "burn": {
+          "name": "Quemar",
+          "hint": "Retira una cantidad y destrúyela permanentemente"
+        },
+        "lockMetadata": {
+          "name": "Bloquear metadato",
+          "hint": "Bloquea permanentemente un campo de metadatos para que no pueda cambiar nunca más"
+        },
+        "setOwnerRole": {
+          "name": "Rol de propietario",
+          "hint": "Cambia quién puede actuar como propietario de este recurso"
+        },
+        "recall": {
+          "name": "Recuperar",
+          "hint": "Recupera tokens directamente desde una bóveda concreta (requiere el badge de recuperación)"
+        },
+        "freeze": {
+          "name": "Congelar",
+          "hint": "Congela o descongela una bóveda concreta (requiere el badge de congelación)"
+        }
+      },
+      "fields": {
+        "amount": "Cantidad",
+        "nftId": "Id del NFT",
+        "nftIdHint": "Id local entero, p. ej. #12#",
+        "nftName": "Nombre",
+        "nftDescription": "Descripción",
+        "nftImageUrl": "URL de imagen",
+        "metadataKey": "Clave del metadato",
+        "metadataKeyHint": "name, symbol, description, icon_url, tags, info_url, …",
+        "vault": "Dirección de la bóveda",
+        "vaultHint": "La dirección internal_vault_… que contiene los tokens (encuéntrala en el dashboard)",
+        "freeze": "Congelar",
+        "freezeHint": "Bloquea las operaciones seleccionadas en la bóveda",
+        "unfreeze": "Descongelar",
+        "unfreezeHint": "Reactiva las operaciones seleccionadas en la bóveda",
+        "flags": {
+          "withdraw": "Retiradas",
+          "deposit": "Depósitos",
+          "burn": "Quemas",
+          "all": "Todo"
+        }
+      }
+    },
+    "faucet": {
+      "accountTitle": "Depositar en la cuenta",
+      "hint": "Solicita 10.000 XRD de prueba al faucet de Stokenet y los deposita en la cuenta seleccionada.",
+      "button": "Obtener 10.000 XRD de prueba",
+      "buttonHint": "Envía la transacción del faucet a tu billetera para su aprobación",
+      "mainnetNotice": "El faucet solo existe en Stokenet, la red de pruebas. Cambia a Stokenet para solicitar XRD de prueba.",
+      "switchToStokenet": "Cambiar a Stokenet"
+    },
+    "sborDecoder": {
+      "inputLabel": "Payload hexadecimal",
+      "hint": "Los payloads Scrypto SBOR (0x5c…) y Manifest SBOR (0x4d…) se detectan automáticamente.",
+      "placeholder": "5c21022022…",
+      "button": "Decodificar",
+      "buttonHint": "Decodifica el payload con el Radix Engine Toolkit",
+      "error": "No se pudo decodificar el payload. Comprueba que sea SBOR hexadecimal válido.",
+      "resultManifest": "Decodificado (sintaxis de manifiesto)",
+      "resultScrypto": "Decodificado (JSON programático)"
+    },
+    "addressUtils": {
+      "inspectTitle": "Inspeccionar una dirección",
+      "inspectHint": "Valida el checksum bech32m e identifica el tipo de entidad y la red, totalmente offline.",
+      "inspectPlaceholder": "account_… / resource_… / component_… / txid_…",
+      "checksumOk": "Dirección válida",
+      "checksumOkHint": "El checksum bech32m es correcto",
+      "checksumBad": "Dirección inválida",
+      "checksumBadHint": "El checksum no coincide: la dirección contiene algún error",
+      "entityType": "Entidad",
+      "network": "Red",
+      "entityTypes": {
+        "account": "Cuenta",
+        "resource": "Recurso",
+        "component": "Componente",
+        "package": "Paquete",
+        "validator": "Validador",
+        "identity": "Identidad",
+        "pool": "Pool",
+        "accessController": "Controlador de acceso",
+        "locker": "Locker",
+        "consensusManager": "Gestor de consenso",
+        "transactionTracker": "Rastreador de transacciones",
+        "internalVault": "Bóveda interna",
+        "internalComponent": "Componente interno",
+        "internalKeyValueStore": "Almacén clave-valor interno",
+        "transactionId": "Id de transacción",
+        "subintentId": "Id de subintent",
+        "unknown": "Desconocido"
+      },
+      "deriveTitle": "Derivar desde clave pública",
+      "deriveHint": "Calcula las direcciones virtuales de cuenta e identidad que controla una clave pública en la red activa.",
+      "publicKey": "Clave pública (hex)",
+      "publicKeyPlaceholder": "Clave Ed25519 de 32 bytes o Secp256k1 de 33 bytes, en hexadecimal",
+      "ed25519Hint": "Curva usada por las personas y cuentas de la Radix Wallet",
+      "secp256k1Hint": "Curva usada por cuentas de la era Olympia y hardware",
+      "deriveButton": "Derivar",
+      "deriveError": "Clave pública inválida para la curva seleccionada.",
+      "derivedAccount": "Cuenta",
+      "derivedIdentity": "Identidad",
+      "knownTitle": "Direcciones conocidas",
+      "knownHint": "Direcciones nativas de la red activa (XRD, paquetes del sistema, faucet, paquete de pools, …)."
+    },
+    "walletPlayground": {
+      "configTitle": "Solicitud de datos",
+      "configHint": "Construye una solicitud de datos puntual, exactamente como lo haría una dApp que integra la Radix Wallet. No afecta a tu sesión.",
+      "accountsLabel": "Cuentas a solicitar",
+      "atLeast": "Al menos",
+      "atLeastHint": "El usuario puede compartir más cuentas de las solicitadas",
+      "exactly": "Exactamente",
+      "exactlyHint": "El usuario debe compartir exactamente este número de cuentas",
+      "proofLabel": "Prueba de propiedad (ROLA)",
+      "proofOff": "Sin prueba",
+      "proofOffHint": "Solo pide las direcciones de las cuentas",
+      "proofOn": "Con prueba",
+      "proofOnHint": "La billetera firma un desafío demostrando que el usuario posee las cuentas",
+      "requestButton": "Solicitar a la billetera",
+      "requestHint": "Abre la Radix Wallet con esta solicitud de datos",
+      "responseTitle": "Respuesta de la billetera",
+      "accountsReceived": "Cuentas recibidas",
+      "rolaButton": "Verificar pruebas (ROLA)",
+      "rolaHint": "Verifica las firmas en el servidor, como haría el backend de una dApp",
+      "rolaOkHint": "Prueba de propiedad verificada",
+      "rolaFailHint": "No se pudo verificar la prueba",
+      "rawResponse": "Respuesta en crudo (JSON)"
     }
   }
 }

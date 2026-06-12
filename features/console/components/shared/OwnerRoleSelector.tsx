@@ -1,6 +1,8 @@
 'use client';
 
-import { Ban, BadgeCheck, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Ban, BadgeCheck, Users, Search } from 'lucide-react';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
 import type { AccessRule, OwnerRoleUpdatable } from '../../lib/access-rules';
 import type { AccountHoldings } from '../../types/console.types';
@@ -61,6 +63,8 @@ interface OwnerRoleSelectorProps {
 
 /** Owner-role controls: rule kind, updatability and badge resource. */
 export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: OwnerRoleSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const selectedNonFungible = holdings?.nonFungibles.find(
     (nf) => nf.resourceAddress === value.badgeResource,
   );
@@ -68,13 +72,22 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
   const badgeOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
-      label: `${f.name || f.symbol || 'Unnamed resource'} (${truncateAddress(f.resourceAddress, 8, 6)})`,
+      name: f.name || f.symbol || 'Unnamed resource',
+      iconUrl: f.iconUrl,
+      address: truncateAddress(f.resourceAddress, 8, 6),
     })),
     ...(holdings?.nonFungibles ?? []).map((nf) => ({
       value: nf.resourceAddress,
-      label: `${nf.name || 'Unnamed resource'} (${truncateAddress(nf.resourceAddress, 8, 6)})`,
+      name: nf.name || 'Unnamed resource',
+      iconUrl: nf.iconUrl,
+      address: truncateAddress(nf.resourceAddress, 8, 6),
     })),
   ];
+
+  const filteredBadgeOptions = badgeOptions.filter((opt) =>
+    opt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
@@ -113,15 +126,71 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
       )}
 
       {value.kind === 'badge' && (
-        <>
-          <SelectField
-            label={t.badgeResource}
-            placeholder={t.selectBadge}
-            value={value.badgeResource}
-            onChange={(badgeResource) => onChange({ ...value, badgeResource, badgeNftId: ANY_NFT })}
-            options={badgeOptions}
-            disabled={disabled}
-          />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
+            <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+              {t.badgeResource}
+            </span>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: 'var(--color-text-muted)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full rounded-xl border pl-9 pr-3.5 py-2 text-xs outline-none transition-colors focus:border-[var(--color-primary)] disabled:opacity-50"
+                style={{
+                  background: 'var(--color-surface)',
+                  borderColor: 'var(--color-card-border)',
+                  color: 'var(--color-text-main)',
+                }}
+                disabled={disabled}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+            {filteredBadgeOptions.map((opt) => {
+              const isActive = opt.value === value.badgeResource;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onChange({ ...value, badgeResource: opt.value, badgeNftId: ANY_NFT })}
+                  className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
+                  style={{
+                    background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                    borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
+                  }}
+                  title={opt.value}
+                >
+                  <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
+                    <div className="col-start-1 row-span-2 flex items-center justify-center">
+                      <SafeImage
+                        src={opt.iconUrl}
+                        alt={opt.name}
+                        fallbackName={opt.name}
+                        className="size-9 rounded-full object-cover shadow-sm bg-white/10"
+                      />
+                    </div>
+                    <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
+                      {opt.name}
+                    </div>
+                    <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                      {opt.address}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            {filteredBadgeOptions.length === 0 && (
+              <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                No se encontraron resultados
+              </div>
+            )}
+          </div>
+
           {selectedNonFungible && (
             <SelectField
               label={t.nonFungibleId}
@@ -134,7 +203,7 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
               disabled={disabled}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
