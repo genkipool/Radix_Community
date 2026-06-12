@@ -39,12 +39,11 @@ export function ManifestPreviewPanel({ t, manifest }: ManifestPreviewPanelProps)
     >
       <OptionButtons<PreviewTab>
         options={[
-          { value: 'manifest', label: labels.tabManifest, icon: <FileCode2 className="size-3.5" /> },
-          { value: 'flow', label: labels.tabFlow, icon: <GitBranch className="size-3.5" /> },
+          { value: 'manifest', label: labels.tabManifest, icon: <FileCode2 className="size-4" /> },
+          { value: 'flow', label: labels.tabFlow, icon: <GitBranch className="size-4" /> },
         ]}
         value={tab}
         onChange={setTab}
-        size="sm"
       />
 
       {!manifest ? (

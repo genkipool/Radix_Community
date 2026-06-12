@@ -42,7 +42,7 @@
       },
       "build-manifest": {
         "title": "Construir Manifiesto",
-        "description": "Compón un manifiesto de transacción visualmente — con plantillas listas para usar o apilando bloques de instrucciones — con vista previa y diagrama de flujo en vivo."
+        "description": "Crea manifiestos visualmente usando plantillas o bloques interactivos con vista previa en tiempo real."
       },
       "deploy-package": {
         "title": "Desplegar Paquete",
@@ -564,7 +564,7 @@
           }
         },
         "takeFromWorktop": {
-          "name": "Tomar a bucket",
+          "name": "Extraer a un bucket",
           "description": "Recoge una cantidad de un token del worktop en un bucket con nombre.",
           "fields": {
             "resource": "Token (dirección del recurso)",
@@ -572,7 +572,7 @@
           }
         },
         "takeAllFromWorktop": {
-          "name": "Tomar todo a bucket",
+          "name": "Extraer todo a un bucket",
           "description": "Recoge todo el saldo del worktop de un token en un bucket con nombre.",
           "fields": {
             "resource": "Token (dirección del recurso)"
@@ -668,10 +668,11 @@
       "rolesHint": "Quién puede llamar a los métodos protegidos de este componente."
     },
     "simulate": {
-      "button": "Simular",
+      "button": "Simular transacción",
       "buttonHint": "Ejecuta la transacción en seco contra la red, sin firmar ni pagar nada",
       "successTitle": "Simulación correcta",
       "failedTitle": "La simulación ha fallado",
+      "genericError": "Ha ocurrido uno o más errores de sintaxis",
       "fee": "Comisión estimada",
       "feeHint": "Comisión total de red que pagaría la transacción (ejecución + almacenamiento + royalties + propina)",
       "balanceChanges": "Cambios de saldo"

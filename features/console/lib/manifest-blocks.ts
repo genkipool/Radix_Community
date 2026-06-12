@@ -318,7 +318,6 @@ export function buildManifestFromBlocks(blocks: BlockInstance[]): BlocksManifest
   for (const block of blocks) {
     if (!isBlockComplete(block)) {
       incompleteIds.push(block.id);
-      continue;
     }
     parts.push(blockToManifest(block, bucketNames.get(block.id)));
   }

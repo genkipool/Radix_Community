@@ -10,7 +10,6 @@ import {
   Code2,
   Image as ImageIcon,
   PackageOpen,
-  Plus,
   Tags,
   Trash2,
   Upload,
@@ -86,13 +85,17 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
   return (
     <div className="space-y-5">
       {/* Palette */}
-      <div className="space-y-1.5">
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-          {labels.addBlocks}
-        </span>
-        <div className="flex flex-wrap gap-2">
+      <div className="space-y-4">
+        <div
+          className="flex items-center justify-between gap-3 pb-2 border-b"
+          style={{ borderColor: 'var(--color-card-border)' }}
+        >
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+            {labels.addBlocks}
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {BLOCK_PALETTE.map((type) => {
-            const def = BLOCK_DEFS[type];
             const meta = blockLabels[type] ?? { name: type, description: '', fields: {} };
             return (
               <button
@@ -101,20 +104,16 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
                 disabled={disabled}
                 onClick={() => addBlock(type)}
                 title={meta.description}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all duration-150 cursor-pointer hover:-translate-y-px hover:border-[var(--color-primary)] active:scale-95 disabled:opacity-50"
+                className="flex items-center justify-center px-3 py-2 rounded-xl border text-xs font-semibold transition-all duration-150 cursor-pointer hover:opacity-90 hover:shadow-sm active:scale-95 disabled:opacity-50 text-center"
                 style={{
                   background: 'var(--color-surface)',
                   borderColor: 'var(--color-card-border)',
                   color: 'var(--color-text-main)',
                 }}
               >
-                <span
-                  className={`size-6 rounded-md bg-gradient-to-br ${def.gradient} flex items-center justify-center text-white`}
-                >
-                  {BLOCK_ICONS[def.icon]}
+                <span className="truncate max-w-full block">
+                  {meta.name}
                 </span>
-                {meta.name}
-                <Plus className="size-3" style={{ color: 'var(--color-text-muted)' }} />
               </button>
             );
           })}

@@ -43,10 +43,15 @@ export default function BuildManifestTool({ t }: ConsoleToolProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
       <div className="space-y-5 min-w-0">
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.modeLabel}
-          </span>
+        <div className="space-y-4">
+          <div
+            className="flex items-center justify-between gap-3 pb-2 border-b"
+            style={{ borderColor: 'var(--color-card-border)' }}
+          >
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+              {labels.modeLabel}
+            </h3>
+          </div>
           <OptionButtons<BuilderMode>
             options={[
               {
@@ -81,7 +86,7 @@ export default function BuildManifestTool({ t }: ConsoleToolProps) {
         <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />
         <TxResultBanner t={common} result={result} error={error} onReset={reset} />
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full items-center gap-3">
           <SendToWalletButton
             onClick={() => sendTransaction(manifest)}
             disabled={!manifest.trim() || isSending}

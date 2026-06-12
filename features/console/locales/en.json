@@ -42,7 +42,7 @@
       },
       "build-manifest": {
         "title": "Build Manifest",
-        "description": "Compose a transaction manifest visually — from ready-made templates or by stacking instruction blocks — with a live preview and flow diagram."
+        "description": "Build manifests visually using templates or interactive blocks with real-time code and flow previews."
       },
       "deploy-package": {
         "title": "Deploy Package",
@@ -668,10 +668,11 @@
       "rolesHint": "Who is allowed to call the protected methods of this component."
     },
     "simulate": {
-      "button": "Simulate",
+      "button": "Simulate transaction",
       "buttonHint": "Dry-runs the transaction against the network without signing or paying anything",
       "successTitle": "Simulation succeeded",
       "failedTitle": "Simulation failed",
+      "genericError": "One or more syntax errors occurred",
       "fee": "Estimated fee",
       "feeHint": "Total network fee the transaction would pay (execution + storage + royalties + tip)",
       "balanceChanges": "Balance changes"

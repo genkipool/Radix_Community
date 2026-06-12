@@ -179,7 +179,7 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full items-center gap-3">
           <SendToWalletButton
             onClick={handleSend}
             disabled={!manifest.trim() || busy || validation.status === 'invalid'}

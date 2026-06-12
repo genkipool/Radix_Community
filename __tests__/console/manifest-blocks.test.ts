@@ -52,7 +52,7 @@ describe('manifest blocks', () => {
     expect(manifest).toContain('account_rdx1dest');
   });
 
-  it('skips incomplete blocks and reports their ids', () => {
+  it('includes incomplete blocks in the manifest but reports their ids', () => {
     const blocks = [
       block('withdraw', { account: 'account_rdx1a', resource: 'resource_rdx1r', amount: '1' }, 'ok'),
       block('depositAll', {}, 'missing'),
@@ -60,7 +60,7 @@ describe('manifest blocks', () => {
     const { manifest, incompleteIds } = buildManifestFromBlocks(blocks);
     expect(incompleteIds).toEqual(['missing']);
     expect(manifest).toContain('"withdraw"');
-    expect(manifest).not.toContain('deposit_batch');
+    expect(manifest).toContain('deposit_batch');
   });
 
   it('escapes quotes in metadata blocks and appends ; to raw blocks', () => {

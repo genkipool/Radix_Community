@@ -23,17 +23,16 @@ export function SimulateButton({ t, onClick, disabled, loading }: SimulateButton
       onClick={onClick}
       disabled={disabled || loading}
       title={t.buttonHint}
-      className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-full font-bold text-sm border transition-all hover:-translate-y-px active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+      className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-full font-bold text-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer w-full flex-1"
       style={{
-        background: 'var(--color-surface)',
-        borderColor: 'var(--color-card-border)',
-        color: 'var(--color-text-main)',
+        background: 'var(--color-primary)',
+        color: '#ffffff',
       }}
     >
       {loading ? (
-        <span className="size-4 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
+        <span className="size-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
       ) : (
-        <FlaskConical className="size-4" style={{ color: 'var(--color-primary)' }} />
+        <FlaskConical className="size-4 text-white" />
       )}
       {t.button}
     </button>
@@ -66,7 +65,10 @@ export function SimulateResultCard({ t, preview, error }: SimulateResultCardProp
             )}
           </p>
           <p className="text-xs mt-1 break-words font-mono" style={{ color: 'var(--color-text-muted)' }}>
-            {error ?? preview?.errorMessage ?? ''}
+            {(() => {
+              const msg = error ?? preview?.errorMessage ?? '';
+              return msg.includes('One or more errors occurred') ? t.genericError : msg;
+            })()}
           </p>
         </div>
       </div>
