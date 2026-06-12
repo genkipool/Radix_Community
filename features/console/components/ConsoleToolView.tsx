@@ -2,9 +2,6 @@
 
 import { ComponentType } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
 import type { Dictionary } from '@/i18n';
 import { CONSOLE_TOOLS } from '../data/consoleTools';
 import { useConsoleDictionary } from '../hooks/useConsoleDictionary';
@@ -43,7 +40,6 @@ interface ConsoleToolViewProps {
 /** Tool page — header (icon, title, description) plus the tool itself. */
 export default function ConsoleToolView({ slug, dictionary }: ConsoleToolViewProps) {
   const t = useConsoleDictionary(dictionary);
-  const { language } = useLanguage();
 
   const meta = CONSOLE_TOOLS[slug];
   const labels = ((t.tools ?? {}) as Record<string, { title?: string; description?: string }>)[slug] ?? {};
@@ -54,15 +50,6 @@ export default function ConsoleToolView({ slug, dictionary }: ConsoleToolViewPro
   return (
     <div className={`${meta.wide ? 'max-w-6xl' : 'max-w-4xl'} mx-auto px-4 sm:px-6 lg:px-10 py-10 space-y-8`}>
       <div>
-        <Link
-          href={`/${language}/console`}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold mb-6 transition-colors hover:text-[var(--color-accent)]"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          <ArrowLeft className="size-3.5" />
-          {t.common?.back}
-        </Link>
-
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--color-text-main)' }}>
             {labels.title ?? slug}

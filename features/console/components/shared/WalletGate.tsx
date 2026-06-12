@@ -53,7 +53,7 @@ export function WalletGate({ t, children }: WalletGateProps) {
           type="button"
           disabled={isLoading}
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all hover:-translate-y-px active:scale-95 disabled:opacity-50"
+          className="flex flex-1 justify-center items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all hover:bg-[var(--color-surface)] active:scale-95 disabled:opacity-50"
           style={{
             background: 'var(--color-surface)',
             borderColor: 'var(--color-card-border)',
@@ -67,7 +67,7 @@ export function WalletGate({ t, children }: WalletGateProps) {
           type="button"
           disabled={isLoading}
           onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all hover:-translate-y-px active:scale-95 disabled:opacity-50"
+          className="flex flex-1 justify-center items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all hover:bg-[var(--color-surface)] active:scale-95 disabled:opacity-50"
           style={{
             background: 'var(--color-surface)',
             borderColor: 'var(--color-card-border)',

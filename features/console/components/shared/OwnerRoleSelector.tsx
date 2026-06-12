@@ -79,9 +79,6 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-          {t.ownerRole}
-        </span>
         <OptionButtons
           options={[
             { value: 'none', label: t.ownerRole_none, icon: <Ban className="size-4" /> },
@@ -97,8 +94,8 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
       </div>
 
       {value.kind !== 'none' && (
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="flex flex-col gap-4">
+          <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
             {t.ownerRoleUpdatable}
           </span>
           <OptionButtons

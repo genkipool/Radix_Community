@@ -297,8 +297,8 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
     <div className="space-y-5">
       <ToolSection title={labels.display}>
         {entity.kind === 'account' && (
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+          <div className="flex flex-col gap-4">
+            <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
               {labels.accountType}
             </span>
             <OptionButtons
@@ -410,8 +410,8 @@ export default function ConfigureMetadataTool({ t }: ConsoleToolProps) {
         </div>
 
         {accounts.length > 0 && (
-          <div className="space-y-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+          <div className="flex flex-col gap-4">
+            <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
               {labels.myAccounts}
             </span>
             <div className="flex flex-wrap gap-2">
@@ -420,7 +420,7 @@ export default function ConfigureMetadataTool({ t }: ConsoleToolProps) {
                   key={account.address}
                   type="button"
                   onClick={() => load(account.address)}
-                  className="px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all hover:-translate-y-px active:scale-95 cursor-pointer"
+                  className="flex-1 text-center px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all hover:opacity-90 active:scale-95 cursor-pointer"
                   style={{
                     background: loadedAddress === account.address
                       ? 'rgba(var(--color-primary-rgb), 0.1)'

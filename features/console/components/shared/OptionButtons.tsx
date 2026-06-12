@@ -48,9 +48,9 @@ export function OptionButtons<T extends string>({
             aria-pressed={isActive}
             title={opt.title}
             className={[
-              'flex items-center gap-2 rounded-xl border font-semibold transition-all duration-150 cursor-pointer',
+              'flex flex-1 justify-center items-center gap-2 rounded-xl border font-semibold transition-all duration-150 cursor-pointer',
               size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm',
-              isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-px active:scale-95',
+              isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95',
             ].join(' ')}
             style={{
               background: isActive ? 'rgba(var(--color-primary-rgb), 0.1)' : 'var(--color-surface)',

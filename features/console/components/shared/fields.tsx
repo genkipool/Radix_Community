@@ -16,7 +16,7 @@ interface FieldShellProps {
 
 export function FieldShell({ label, hint, error, labelEnd, children, className = '' }: FieldShellProps) {
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
+    <div className={`flex flex-col gap-4 ${className}`}>
       {(label || labelEnd) && (
         <div className="flex items-center justify-between gap-2">
           {label && (

@@ -121,21 +121,19 @@ function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; s
         className="flex-1 min-w-0 rounded-xl px-3.5 py-3 -mt-0.5 transition-colors duration-200"
         style={{ background: `linear-gradient(135deg, rgba(${style.accentRgb},0.08) 0%, transparent 60%)` }}
       >
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <div className="flex flex-col gap-y-1">
           <span className="sr-only">{`${stepLabel} ${index + 1}`}</span>
           <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-text-main)' }}>
             {step.title}
+            <code
+              className="relative -top-[1px] text-[10px] font-bold tracking-wide uppercase ml-2.5"
+              style={{
+                color: `rgb(${style.accentRgb})`,
+              }}
+            >
+              {step.instruction}
+            </code>
           </p>
-          <code
-            className="text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded-md border"
-            style={{
-              color: `rgb(${style.accentRgb})`,
-              borderColor: `rgba(${style.accentRgb},0.35)`,
-              background: `rgba(${style.accentRgb},0.08)`,
-            }}
-          >
-            {step.instruction}
-          </code>
         </div>
         <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           {step.description}

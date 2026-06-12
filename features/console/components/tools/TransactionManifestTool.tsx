@@ -5,14 +5,14 @@ import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { buildManifestFlowSteps, type FlowLabels } from '../../lib/manifest-flow';
 import type { ConsoleToolProps } from '../ConsoleToolView';
-import { ToolSection } from '../shared/ToolSection';
+
 import { ManifestEditor } from '../shared/ManifestEditor';
 import { ManifestFlowDiagram } from '../shared/ManifestFlowDiagram';
 import { PanelToggleButton, SidePanel } from '../shared/SidePanel';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { TxResultBanner } from '../shared/TxResultBanner';
 
-const MANIFEST_DOCS_URL = 'https://docs.radixdlt.com/docs/transaction-manifest';
+const MANIFEST_DOCS_URL = 'https://docs.radixdlt.com/docs/manifest';
 const FLOW_DEBOUNCE_MS = 500;
 
 /** Debounced copy of the manifest so the diagram doesn't re-render per keystroke. */
@@ -43,11 +43,11 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
   };
 
   return (
-    <div className={`grid grid-cols-1 gap-6 items-start ${showFlow ? 'lg:grid-cols-2' : ''}`}>
+    <div className={`grid grid-cols-1 gap-6 items-start ${showFlow ? 'lg:grid-cols-2' : ''} -mt-4`}>
       <div className="space-y-5 min-w-0">
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+        <div className="flex items-start gap-2 text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           <AlertTriangle className="size-4 shrink-0 text-amber-500 mt-0.5" />
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          <p>
             {labels.note}{' '}
             <a
               href={MANIFEST_DOCS_URL}
@@ -62,17 +62,18 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
           </p>
         </div>
 
-        <ToolSection
-          title={labels.label}
-          action={
+        <div className="space-y-4">
+          <header className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+              {labels.label}
+            </h3>
             <PanelToggleButton
               open={showFlow}
               onToggle={() => setShowFlow((prev) => !prev)}
               showLabel={labels.viewFlow}
               hideLabel={labels.hideFlow}
             />
-          }
-        >
+          </header>
           <ManifestEditor
             value={manifest}
             onChange={setManifest}
@@ -81,7 +82,7 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
             disabled={isSending}
             ariaLabel={labels.label}
           />
-        </ToolSection>
+        </div>
 
         <TxResultBanner t={common} result={result} error={error} onReset={reset} />
 

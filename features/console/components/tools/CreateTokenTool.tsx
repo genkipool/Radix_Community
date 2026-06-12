@@ -132,6 +132,7 @@ function AuthRoleRow({
         onChange={onChange}
         size="sm"
         disabled={disabled}
+        className="flex-1"
       />
     </div>
   );
@@ -304,8 +305,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           disabled={isSending}
         />
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="flex flex-col gap-4">
+          <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
             {labels.trackSupply}
           </span>
           <OptionButtons

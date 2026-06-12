@@ -3,10 +3,10 @@ import {
   Coins,
   FileCode2,
   Rocket,
-  Send,
   Settings2,
   Wrench,
 } from 'lucide-react';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 import type { ReactNode } from 'react';
 import type { ConsoleToolSlug } from '../types/console.types';
 
@@ -26,7 +26,7 @@ export interface ConsoleToolMeta {
 export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
   'send-transaction': {
     slug: 'send-transaction',
-    icon: <Send className="size-5" />,
+    icon: <RadixIcon className="size-5 text-white" strokeColor="currentColor" />,
     gradient: 'from-blue-500 to-cyan-400',
     accentRgb: '59,130,246',
     requiresWallet: true,

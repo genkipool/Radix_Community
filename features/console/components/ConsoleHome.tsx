@@ -73,7 +73,7 @@ export default function ConsoleHome({ dictionary }: ConsoleHomeProps) {
                   key={slug}
                   type="button"
                   onClick={() => openTool(slug)}
-                  className="group flex items-start gap-3.5 p-5 rounded-2xl border text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
+                  className="group flex items-start gap-3.5 p-5 rounded-2xl border text-left transition-all duration-300 hover:shadow-lg cursor-pointer"
                   style={{
                     borderColor: 'var(--color-card-border)',
                     background: `linear-gradient(135deg, rgba(${meta.accentRgb},0.06) 0%, transparent 55%)`,
