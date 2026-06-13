@@ -182,7 +182,7 @@ export function ValidatorInlinePanel({
                         className="overflow-hidden"
                     >
                         <button type="button" className="border-t border-[var(--color-card-border)] bg-[var(--color-surface)] w-full text-left cursor-auto block" onClick={e => e.stopPropagation()}>
-                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId="validatorInlineTabs" />
+                            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`validatorInlineTabs-${validatorAddress}`} />
 
                             <div className="px-5 py-4">
                                 {isLoading ? (

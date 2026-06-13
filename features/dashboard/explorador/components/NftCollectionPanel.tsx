@@ -112,7 +112,7 @@ export function NftCollectionPanel({
                 tabs={tabs}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                layoutId="nftCollectionTabs"
+                layoutId={`nftCollectionTabs-${_resourceAddress}`}
             />
 
             <div className="px-5 py-4">

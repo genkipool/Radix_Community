@@ -146,7 +146,7 @@ export function ResourceInlinePanel({ address, details, loading, onCopy, copiedA
             className="block w-full text-left border border-t-0 border-[var(--color-card-border)] rounded-b-xl overflow-hidden bg-[var(--color-surface)]"
             onClick={e => e.stopPropagation()}
         >
-            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId="resourceInlineTabs" />
+            <PanelTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} layoutId={`resourceInlineTabs-${address}`} />
             <div className="px-5 py-4">
                 {loading ? (
                     <PanelLoadingState tt={tt} />
