@@ -143,7 +143,7 @@ export function NftCollectionPanel({
                                             onKeyDown={hasData ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpandedNfts(prev => { const n = new Set(prev); void (n.has(id) ? n.delete(id) : n.add(id)); return n; }); } }) : undefined}
                                         >
                                             <div className="size-10 rounded-lg shrink-0 border border-[var(--color-card-border)] overflow-hidden bg-[var(--color-bg)]/50 flex items-center justify-center">
-                                                {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" />
+                                                {imageUrl ? <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full h-full object-cover" zoomable={true} />
                                                     : <Box className="size-4 text-[var(--color-text-muted)] opacity-40" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -197,7 +197,7 @@ export function NftCollectionPanel({
 
                                                         {imageUrl && (
                                                             <div className="rounded-xl overflow-hidden border border-[var(--color-card-border)] max-w-[140px]">
-                                                                <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full object-cover" />
+                                                                <SafeImage src={imageUrl} alt={shortId} fallbackName={shortId} className="w-full object-cover" zoomable={true} />
                                                             </div>
                                                         )}
                                                         {(fields.length > 0 || ((isStakeClaim || isClaim) && validatorAddress)) && (

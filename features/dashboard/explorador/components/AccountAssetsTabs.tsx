@@ -203,7 +203,7 @@ function ExpandableResourceCard({
                 <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
                     <div className="size-8 rounded-full shrink-0 overflow-hidden bg-[var(--color-card-border)] flex items-center justify-center border border-[var(--color-card-border)]">
                         {iconUrl ? (
-                            <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className={`w-full h-full object-cover ${burned ? 'grayscale' : ''}`} />
+                            <SafeImage src={iconUrl} alt={name} fallbackName={symbol || name} className={`w-full h-full object-cover ${burned ? 'grayscale' : ''}`} zoomable={true} />
                         ) : (
                             <Info className="size-4 text-[var(--color-text-muted)]" />
                         )}
