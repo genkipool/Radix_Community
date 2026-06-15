@@ -53,3 +53,9 @@ wrangler.toml
 scratch/
 *.py
 test_gateway.js
+report.json
+doctor.config.js
+doctor.config.ts
+.agents/
+.claude/
+skills-lock.json
