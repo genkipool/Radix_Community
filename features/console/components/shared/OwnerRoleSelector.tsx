@@ -196,16 +196,45 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
               <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                 {t.nonFungibleId}
               </span>
-              <OptionButtons
-                options={[
-                  { value: ANY_NFT, label: t.anyNft },
-                  ...selectedNonFungible.ids.map((id) => ({ value: id, label: id })),
-                ]}
-                value={value.badgeNftId}
-                onChange={(badgeNftId) => onChange({ ...value, badgeNftId })}
-                size="sm"
-                disabled={disabled}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                {[
+                  { value: ANY_NFT, name: t.anyNft, address: selectedNonFungible.name || 'Resource' },
+                  ...selectedNonFungible.ids.map((id) => ({ value: id, name: id, address: selectedNonFungible.name || 'Resource' }))
+                ].map((opt) => {
+                  const isActive = opt.value === value.badgeNftId;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onChange({ ...value, badgeNftId: isActive ? ANY_NFT : opt.value })}
+                      className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
+                      style={{
+                        background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                        borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
+                      }}
+                      title={opt.name}
+                    >
+                      <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
+                        <div className="col-start-1 row-span-2 flex items-center justify-center">
+                          <SafeImage
+                            src={selectedNonFungible.iconUrl}
+                            alt={opt.name}
+                            fallbackName={opt.name}
+                            className="size-9 rounded-full object-cover shadow-sm bg-white/10"
+                          />
+                        </div>
+                        <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
+                          {opt.name}
+                        </div>
+                        <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                          {opt.address}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
