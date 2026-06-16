@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { Search } from 'lucide-react';
 
 /* ─── Field shell (label + control + hint/error) ──────────────────────────── */
 
@@ -183,5 +184,35 @@ export function SelectField({
         ))}
       </select>
     </FieldShell>
+  );
+}
+
+/* ─── Search Field ─────────────────────────────────────────────────────────── */
+
+interface SearchFieldProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+export function SearchField({ value, onChange, placeholder = 'Search...', disabled }: SearchFieldProps) {
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: 'var(--color-text-muted)' }} />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border pl-9 pr-3.5 py-2 text-xs outline-none transition-colors focus:border-[var(--color-primary)] disabled:opacity-50"
+        style={{
+          background: 'var(--color-surface)',
+          borderColor: 'var(--color-card-border)',
+          color: 'var(--color-text-main)',
+        }}
+        disabled={disabled}
+      />
+    </div>
   );
 }

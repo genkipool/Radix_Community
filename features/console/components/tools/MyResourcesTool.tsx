@@ -30,7 +30,7 @@ import { AccountPicker } from '../shared/AccountPicker';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
 import { ManifestCode } from '../shared/ManifestCode';
 import { OptionButtons } from '../shared/OptionButtons';
-import { SelectField, TextField } from '../shared/fields';
+import { SelectField, TextField, SearchField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
@@ -64,6 +64,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
   const [account, setAccount] = useState<string | null>(null);
   const [resource, setResource] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [proof, setProof] = useState<BadgeProofSelection | null>(null);
@@ -159,9 +160,16 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           {holdingsLoading ? (
             <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>{labels.loading}</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-              {[
-                ...(holdings?.fungibles ?? []).map((f) => ({
+            <>
+              <SearchField
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Buscar..."
+                disabled={isSending}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                {[
+                  ...(holdings?.fungibles ?? []).map((f) => ({
                   value: f.resourceAddress,
                   name: f.symbol || f.name || truncateAddress(f.resourceAddress, 8, 6),
                   address: `${formatNumber(Number(f.amount), 4, language)} · ${truncateAddress(f.resourceAddress, 6, 5)}`,
@@ -173,7 +181,12 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   address: `${nf.ids.length} NFT · ${truncateAddress(nf.resourceAddress, 6, 5)}`,
                   iconUrl: nf.iconUrl,
                 })),
-              ].map((opt) => {
+              ]
+              .filter((opt) => 
+                opt.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((opt) => {
                 const isActive = opt.value === resource;
                 return (
                   <button
@@ -207,7 +220,18 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   </button>
                 );
               })}
+              {holdings && (holdings.fungibles.length > 0 || holdings.nonFungibles.length > 0) && (
+                [...(holdings.fungibles), ...(holdings.nonFungibles)].filter((r) => 
+                  (r.name || r.symbol || r.resourceAddress).toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  r.resourceAddress.toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0
+              ) && (
+                <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  No se encontraron resultados
+                </div>
+              )}
             </div>
+            </>
           )}
         </div>
 

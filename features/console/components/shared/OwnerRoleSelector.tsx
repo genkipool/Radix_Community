@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Ban, BadgeCheck, Users, Search } from 'lucide-react';
+import { Ban, BadgeCheck, Users } from 'lucide-react';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
 import type { AccessRule, OwnerRoleUpdatable } from '../../lib/access-rules';
 import type { AccountHoldings } from '../../types/console.types';
 import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import { OptionButtons } from './OptionButtons';
-
+import { SearchField } from './fields';
 
 export type OwnerRoleKind = 'none' | 'allowAll' | 'badge';
 
@@ -131,22 +131,12 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
             <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
               {t.badgeResource}
             </span>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: 'var(--color-text-muted)' }} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full rounded-xl border pl-9 pr-3.5 py-2 text-xs outline-none transition-colors focus:border-[var(--color-primary)] disabled:opacity-50"
-                style={{
-                  background: 'var(--color-surface)',
-                  borderColor: 'var(--color-card-border)',
-                  color: 'var(--color-text-main)',
-                }}
-                disabled={disabled}
-              />
-            </div>
+            <SearchField
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Buscar..."
+              disabled={disabled}
+            />
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>

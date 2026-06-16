@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { truncateAddress } from '@/utils/formatters';
 import type { AccountHoldings, BadgeProofSelection } from '../../types/console.types';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { SearchField } from './fields';
 
 interface BadgeProofPickerProps {
   label: string;
@@ -28,7 +30,9 @@ export function BadgeProofPicker({
   disabled,
   hint,
 }: BadgeProofPickerProps) {
-  const options = [
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const allOptions = [
     { value: NONE, name: noneLabel, address: 'Ninguna', iconUrl: '' },
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
@@ -45,6 +49,11 @@ export function BadgeProofPicker({
       })),
     ),
   ];
+
+  const filteredOptions = allOptions.filter((opt) =>
+    opt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const encoded = value
     ? value.nonFungibleId
@@ -63,15 +72,23 @@ export function BadgeProofPicker({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col">
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-          {label}
-        </span>
-        {hint && <span className="text-[11px] opacity-70 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{hint}</span>}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+            {label}
+          </span>
+          {hint && <span className="text-[11px] opacity-70 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{hint}</span>}
+        </div>
+        <SearchField
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Buscar..."
+          disabled={disabled || !accountAddress}
+        />
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-        {options.map((opt) => {
+        {filteredOptions.map((opt) => {
           const isActive = opt.value === encoded;
           return (
             <button
@@ -105,6 +122,11 @@ export function BadgeProofPicker({
             </button>
           );
         })}
+        {filteredOptions.length === 0 && (
+          <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            No se encontraron resultados
+          </div>
+        )}
       </div>
     </div>
   );
