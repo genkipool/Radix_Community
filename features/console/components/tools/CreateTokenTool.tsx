@@ -516,7 +516,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
             <div className="space-y-6 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
               {nfts.map((nft, index) => (
                 <div key={nft.id} className="flex flex-col gap-3">
-                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                  <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-end">
                     <div className="w-full sm:w-1/4">
                       <TextField
                         label={`${labels.nftName || 'Name'} #${index + 1}`}

@@ -16,7 +16,7 @@ interface FieldShellProps {
 
 export function FieldShell({ label, hint, error, labelEnd, children, className = '' }: FieldShellProps) {
   return (
-    <div className={`flex flex-col gap-4 ${className}`}>
+    <div className={`flex flex-col gap-2 ${className}`}>
       {(label || labelEnd) && (
         <div className="flex items-center justify-between gap-2">
           {label && (
@@ -27,12 +27,16 @@ export function FieldShell({ label, hint, error, labelEnd, children, className =
           {labelEnd}
         </div>
       )}
-      {children}
-      {error ? (
-        <p className="text-xs font-medium text-red-500">{error}</p>
-      ) : hint ? (
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>
-      ) : null}
+      <div className="relative flex flex-col">
+        {children}
+        <div className="absolute top-full left-0 mt-1 w-full">
+          {error ? (
+            <p className="text-[11px] leading-tight font-medium text-red-500">{error}</p>
+          ) : hint ? (
+            <p className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
