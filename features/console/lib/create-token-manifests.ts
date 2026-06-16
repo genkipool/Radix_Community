@@ -137,19 +137,20 @@ export interface NftItemData {
   name: string;
   description: string;
   key_image_url: string;
+  customData: Record<string, string>;
 }
 
 const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 /** `NonFungibleLocalId("#i#") => Tuple(...)` entries for the initial supply map. */
-export const nftItemsToManifestSyntax = (items: NftItemData[]) =>
+export const nftItemsToManifestSyntax = (items: NftItemData[], customKeys: string[] = []) =>
   items
     .map(
-      ({ name, description, key_image_url }, index) => `NonFungibleLocalId("#${index}#") => Tuple(
+      ({ name, description, key_image_url, customData }, index) => `NonFungibleLocalId("#${index}#") => Tuple(
         Tuple(
           "${escape(name)}",
           "${escape(description)}",
-          "${escape(key_image_url)}"
+          "${escape(key_image_url)}"${customKeys.length > 0 ? ',\n          ' + customKeys.map(k => `"${escape(customData[k] || '')}"`).join(',\n          ') : ''}
         )
       )`,
     )
@@ -164,6 +165,7 @@ export interface CreateNonFungibleTokenInput {
   metadata: string;
   authRoles: ResourceAuthRoles;
   nfts: NftItemData[];
+  nftCustomKeys: string[];
 }
 
 export const createNonFungibleTokenManifest = ({
@@ -174,6 +176,7 @@ export const createNonFungibleTokenManifest = ({
   metadata,
   authRoles,
   nfts,
+  nftCustomKeys,
 }: CreateNonFungibleTokenInput) => `CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     ${accessRuleToManifestSyntax(ownerAccessRule, ownerRoleUpdatable)}
     Enum<1u8>()
@@ -192,7 +195,7 @@ export const createNonFungibleTokenManifest = ({
                           ),
                           Enum<0u8>(
                               198u8
-                          )
+                          )${nftCustomKeys.length > 0 ? ',\n                          ' + nftCustomKeys.map(() => `Enum<0u8>(\n                              12u8\n                          )`).join(',\n                          ') : ''}
                       )
                   )
               ),
@@ -206,7 +209,7 @@ export const createNonFungibleTokenManifest = ({
                               Array<String>(
                                   "name",
                                   "description",
-                                  "key_image_url"
+                                  "key_image_url"${nftCustomKeys.length > 0 ? ',\n                                  ' + nftCustomKeys.map(k => `"${escape(k)}"`).join(',\n                                  ') : ''}
                               )
                           )
                       )
@@ -223,7 +226,7 @@ export const createNonFungibleTokenManifest = ({
       Array<String>()
     )
     Map<NonFungibleLocalId, Tuple>(
-      ${nftItemsToManifestSyntax(nfts)}
+      ${nftItemsToManifestSyntax(nfts, nftCustomKeys)}
     )
     Tuple(
       ${buildAuthRolesTuple(authRoles, true)}
