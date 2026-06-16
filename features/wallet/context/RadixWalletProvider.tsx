@@ -53,6 +53,8 @@ interface RadixWalletProviderProps {
   children: ReactNode;
   /** Server-side session data passed from layout via cookie verification. */
   initialSession?: SessionPayload | null;
+  /** Initial network from cookie to prevent race conditions on remount */
+  initialNetwork?: 'mainnet' | 'stokenet' | null;
 }
 
 function subscribeToNetwork(
@@ -96,6 +98,7 @@ function subscribeToNetwork(
 export function RadixWalletProvider({
   children,
   initialSession = null,
+  initialNetwork = null,
 }: RadixWalletProviderProps) {
   const [sessions, setSessions] = useState<NetworkSessions>(
     () => sessionsFromPayload(initialSession),
@@ -104,6 +107,13 @@ export function RadixWalletProvider({
     // Server-side default (no localStorage available to prevent hydration mismatch)
     () => {
       const initial = sessionsFromPayload(initialSession);
+      if (initialNetwork === 'mainnet' || initialNetwork === 'stokenet') {
+        if (initialNetwork === 'mainnet' && initial.mainnet) return 'mainnet';
+        if (initialNetwork === 'stokenet' && initial.stokenet) return 'stokenet';
+        if (initial.mainnet && !initial.stokenet) return 'mainnet';
+        if (!initial.mainnet && initial.stokenet) return 'stokenet';
+        if (!initial.mainnet && !initial.stokenet) return initialNetwork;
+      }
       if (initial.mainnet && initial.stokenet) return 'mainnet';
       if (initial.mainnet) return 'mainnet';
       if (initial.stokenet) return 'stokenet';
@@ -111,10 +121,15 @@ export function RadixWalletProvider({
     },
   );
 
+  const initialSessionStr = JSON.stringify(initialSession);
+  const stableInitialSession = React.useMemo(() => {
+    return JSON.parse(initialSessionStr) as typeof initialSession;
+  }, [initialSessionStr]);
+
   // Restore preferred network from cookie on mount (client-side)
   React.useEffect(() => {
     const stored = getCookie('radix_active_network');
-    const initial = sessionsFromPayload(initialSession);
+    const initial = sessionsFromPayload(stableInitialSession);
 
     const timer = setTimeout(() => {
       if (stored === 'mainnet' || stored === 'stokenet') {
@@ -139,7 +154,7 @@ export function RadixWalletProvider({
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [initialSession]);
+  }, [stableInitialSession]);
 
   // Persist selected network to cookie
   React.useEffect(() => {
@@ -164,7 +179,7 @@ export function RadixWalletProvider({
 
     // For each network with a session, ensure the toolkit is initialized
     // and subscribe to walletData$ to pick up updates from the extension
-    const initial = sessionsFromPayload(initialSession);
+    const initial = sessionsFromPayload(stableInitialSession);
     for (const net of ['mainnet', 'stokenet'] as const) {
       if (initial[net]) {
         getOrCreateToolkit(networkIdFromName(net));
@@ -176,7 +191,7 @@ export function RadixWalletProvider({
       currentSubscriptions.forEach(sub => sub.unsubscribe());
       currentSubscriptions.clear();
     };
-  }, [initialSession]);
+  }, [stableInitialSession]);
 
   // ── Connect flow ──────────────────────────────────────────────────────────
 

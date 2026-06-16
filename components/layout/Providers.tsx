@@ -27,12 +27,14 @@ export function Providers({
   dictionary,
   theme,
   walletSession,
+  initialNetwork,
 }: {
   children: ReactNode;
   locale: Locale;
   dictionary: typeof translations.en;
   theme: Theme;
   walletSession?: SessionPayload | null;
+  initialNetwork?: 'mainnet' | 'stokenet' | null;
 }) {
   const queryClient = getQueryClient();
 
@@ -42,7 +44,7 @@ export function Providers({
         <LanguageProvider language={locale} dictionary={dictionary}>
           <LayoutProvider>
             <AnimationProvider>
-              <RadixWalletProvider initialSession={walletSession}>
+              <RadixWalletProvider initialSession={walletSession} initialNetwork={initialNetwork}>
                 <LazyMotion features={domAnimation}>
                   {children}
                 </LazyMotion>

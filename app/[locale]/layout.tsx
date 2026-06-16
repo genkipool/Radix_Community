@@ -73,6 +73,7 @@ export default async function RootLayout({
   // Read and verify wallet session from HttpOnly cookie
   const sessionToken = cookieStore.get('radix-session')?.value;
   const walletSession = sessionToken ? await verifySessionJWT(sessionToken) : null;
+  const activeNetworkCookie = cookieStore.get('radix_active_network')?.value as 'mainnet' | 'stokenet' | undefined;
 
   return (
     <html lang={locale} className={`${inter.variable} ${theme}`} suppressHydrationWarning>
@@ -85,7 +86,7 @@ export default async function RootLayout({
           >{`(function(){try{var z=Intl.DateTimeFormat().resolvedOptions().timeZone;var c=document.cookie.match(/(^|;\\s*)client-tz=([^;]+)/);if(!c||decodeURIComponent(c[2])!==z){document.cookie='client-tz='+encodeURIComponent(z)+';path=/;max-age=31536000';}}catch(e){}})();`}</Script>
       </head>
       <body suppressHydrationWarning>
-        <Providers locale={locale} dictionary={dictionary} theme={theme} walletSession={walletSession}>
+        <Providers locale={locale} dictionary={dictionary} theme={theme} walletSession={walletSession} initialNetwork={activeNetworkCookie || null}>
           <AppShell>{children}</AppShell>
         </Providers>
         <Analytics />
