@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Ban, BadgeCheck, Users } from 'lucide-react';
-import { SafeImage } from '@/components/ui/SafeImage';
 import { truncateAddress } from '@/utils/formatters';
 import type { AccessRule, OwnerRoleUpdatable } from '../../lib/access-rules';
 import type { AccountHoldings } from '../../types/console.types';
 import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import { OptionButtons } from './OptionButtons';
 import { SearchField } from './fields';
+import { ResourceCard } from './ResourceCard';
 
 export type OwnerRoleKind = 'none' | 'allowAll' | 'badge';
 
@@ -143,35 +143,16 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
             {filteredBadgeOptions.map((opt) => {
               const isActive = opt.value === value.badgeResource;
               return (
-                <button
+                <ResourceCard
                   key={opt.value}
-                  type="button"
+                  isActive={isActive}
                   disabled={disabled}
                   onClick={() => onChange({ ...value, badgeResource: isActive ? '' : opt.value, badgeNftId: ANY_NFT })}
-                  className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
-                  style={{
-                    background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
-                    borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
-                  }}
+                  name={opt.name}
+                  address={opt.address}
+                  iconUrl={opt.iconUrl}
                   title={opt.value}
-                >
-                  <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
-                    <div className="col-start-1 row-span-2 flex items-center justify-center">
-                      <SafeImage
-                        src={opt.iconUrl}
-                        alt={opt.name}
-                        fallbackName={opt.name}
-                        className="size-9 rounded-full object-cover shadow-sm bg-white/10"
-                      />
-                    </div>
-                    <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
-                      {opt.name}
-                    </div>
-                    <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
-                      {opt.address}
-                    </div>
-                  </div>
-                </button>
+                />
               );
             })}
             {filteredBadgeOptions.length === 0 && (
@@ -193,35 +174,15 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
                 ].map((opt) => {
                   const isActive = opt.value === value.badgeNftId;
                   return (
-                    <button
+                    <ResourceCard
                       key={opt.value}
-                      type="button"
+                      isActive={isActive}
                       disabled={disabled}
                       onClick={() => onChange({ ...value, badgeNftId: isActive ? ANY_NFT : opt.value })}
-                      className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
-                      style={{
-                        background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
-                        borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
-                      }}
-                      title={opt.name}
-                    >
-                      <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
-                        <div className="col-start-1 row-span-2 flex items-center justify-center">
-                          <SafeImage
-                            src={selectedNonFungible.iconUrl}
-                            alt={opt.name}
-                            fallbackName={opt.name}
-                            className="size-9 rounded-full object-cover shadow-sm bg-white/10"
-                          />
-                        </div>
-                        <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
-                          {opt.name}
-                        </div>
-                        <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
-                          {opt.address}
-                        </div>
-                      </div>
-                    </button>
+                      name={opt.name}
+                      address={opt.address}
+                      iconUrl={selectedNonFungible.iconUrl}
+                    />
                   );
                 })}
               </div>

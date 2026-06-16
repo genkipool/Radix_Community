@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SafeImage } from '@/components/ui/SafeImage';
+import { ResourceCard } from '../shared/ResourceCard';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import { useLanguage } from '@/context/LanguageContext';
@@ -79,6 +79,26 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
   const isFungible = !!holdings?.fungibles.some((f) => f.resourceAddress === resource);
   const isNonFungible = !!holdings?.nonFungibles.some((nf) => nf.resourceAddress === resource);
+
+  const resourceOptions = [
+    ...(holdings?.fungibles ?? []).map((f) => ({
+      value: f.resourceAddress,
+      name: f.symbol || f.name || truncateAddress(f.resourceAddress, 8, 6),
+      address: `${formatNumber(Number(f.amount), 4, language)} · ${truncateAddress(f.resourceAddress, 6, 5)}`,
+      iconUrl: f.iconUrl,
+    })),
+    ...(holdings?.nonFungibles ?? []).map((nf) => ({
+      value: nf.resourceAddress,
+      name: nf.name || truncateAddress(nf.resourceAddress, 8, 6),
+      address: `${nf.ids.length} NFT · ${truncateAddress(nf.resourceAddress, 6, 5)}`,
+      iconUrl: nf.iconUrl,
+    })),
+  ];
+
+  const filteredResourceOptions = resourceOptions.filter((opt) =>
+    opt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const actionLabels = labels.actions as Record<string, { name: string; hint: string }>;
   const availableActions: ResourceAction[] = (
@@ -177,64 +197,21 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
           {!holdingsLoading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-              {[
-                  ...(holdings?.fungibles ?? []).map((f) => ({
-                  value: f.resourceAddress,
-                  name: f.symbol || f.name || truncateAddress(f.resourceAddress, 8, 6),
-                  address: `${formatNumber(Number(f.amount), 4, language)} · ${truncateAddress(f.resourceAddress, 6, 5)}`,
-                  iconUrl: f.iconUrl,
-                })),
-                ...(holdings?.nonFungibles ?? []).map((nf) => ({
-                  value: nf.resourceAddress,
-                  name: nf.name || truncateAddress(nf.resourceAddress, 8, 6),
-                  address: `${nf.ids.length} NFT · ${truncateAddress(nf.resourceAddress, 6, 5)}`,
-                  iconUrl: nf.iconUrl,
-                })),
-              ]
-              .filter((opt) => 
-                opt.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                opt.value.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((opt) => {
+              {filteredResourceOptions.map((opt) => {
                 const isActive = opt.value === resource;
                 return (
-                  <button
+                  <ResourceCard
                     key={opt.value}
-                    type="button"
+                    isActive={isActive}
                     disabled={isSending}
                     onClick={() => setResource(isActive ? '' : opt.value)}
-                    className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
-                    style={{
-                      background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
-                      borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
-                    }}
-                    title={opt.name}
-                  >
-                    <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
-                      <div className="col-start-1 row-span-2 flex items-center justify-center">
-                        <SafeImage
-                          src={opt.iconUrl}
-                          alt={opt.name}
-                          fallbackName={opt.name}
-                          className="size-9 rounded-full object-cover shadow-sm bg-white/10"
-                        />
-                      </div>
-                      <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
-                        {opt.name}
-                      </div>
-                      <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
-                        {opt.address}
-                      </div>
-                    </div>
-                  </button>
+                    name={opt.name}
+                    address={opt.address}
+                    iconUrl={opt.iconUrl}
+                  />
                 );
               })}
-              {holdings && (holdings.fungibles.length > 0 || holdings.nonFungibles.length > 0) && (
-                [...(holdings.fungibles), ...(holdings.nonFungibles)].filter((r) => 
-                  (r.name || r.symbol || r.resourceAddress).toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  r.resourceAddress.toLowerCase().includes(searchQuery.toLowerCase())
-                ).length === 0
-              ) && (
+              {resourceOptions.length > 0 && filteredResourceOptions.length === 0 && (
                 <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                   No se encontraron resultados
                 </div>
