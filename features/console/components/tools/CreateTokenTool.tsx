@@ -257,10 +257,18 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const supplyValid = Number(initialSupply) > 0;
   const divisibilityValid =
     /^\d+$/.test(divisibility) && Number(divisibility) >= 0 && Number(divisibility) <= 18;
-  const urlValid = (value: string) => !value.trim() || value.trim().startsWith('https://');
+  const urlValid = (value: string) => {
+    if (!value.trim()) return true;
+    try {
+      new URL(value.trim());
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const iconUrlValid = urlValid(metadata.icon_url.value);
   const infoUrlValid = urlValid(metadata.info_url.value);
-  const nftsValid = nfts.length > 0 && nfts.every((nft) => nft.data.name.trim());
+  const nftsValid = nfts.length > 0 && nfts.every((nft) => nft.data.name.trim() && urlValid(nft.data.key_image_url));
 
   const customMetaValid = customMetadata.every((m) => m.key.trim() && m.value.trim());
 
@@ -559,6 +567,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                         }
                         value={nft.data.key_image_url}
                         onChange={(value) => setNftField(nft.id, 'key_image_url', value)}
+                        error={!urlValid(nft.data.key_image_url) ? (labels.invalidUrl || 'Invalid URL') : undefined}
                         disabled={isSending}
                       />
                     </div>
