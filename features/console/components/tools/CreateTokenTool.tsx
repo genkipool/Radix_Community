@@ -213,10 +213,10 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
 
   /** Preset that prefills the form to mint a simple owner badge. */
   const applyBadgePreset = () => {
-    setTokenType('nonFungible');
     setMetadata({
       ...EMPTY_METADATA,
       name: { value: 'Owner Badges', locked: false },
+      symbol: { value: tokenType === 'fungible' ? 'OB' : '', locked: false },
       icon_url: { value: OWNER_BADGE_ICON, locked: false },
       tags: { value: 'badge', locked: false },
       description: {
@@ -225,8 +225,15 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       },
     });
     setOwnerRole(DEFAULT_OWNER_ROLE);
-    setNfts([]);
-    addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON });
+
+    if (tokenType === 'fungible') {
+      setTrackSupply(true);
+      setDivisibility('0');
+      setInitialSupply('1');
+    } else {
+      setNfts([]);
+      addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON });
+    }
   };
 
   /* ── Validation ── */
