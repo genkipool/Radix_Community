@@ -1301,7 +1301,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
                     const jsx = (
                         <button
-                            key={id}
+                            key={`${nf.resource_address}-${id}`}
                             type="button"
                             disabled={isDisabled}
                             onClick={() => {
