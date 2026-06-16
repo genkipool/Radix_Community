@@ -1118,7 +1118,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                            <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
+                            <SafeImage src={icon} alt={name} fallbackName={name} zoomable={false} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col min-w-0">
                             <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
@@ -1329,7 +1329,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <div className="size-7 rounded-lg bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} className="w-full h-full object-cover" />
+                                <SafeImage src={icon} alt={finalName} fallbackName={finalName} zoomable={false} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                                 <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`} title={finalName}>
@@ -1404,7 +1404,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="size-7 rounded-full bg-[var(--color-card-border)] overflow-hidden shrink-0">
-                            <SafeImage src={icon} alt={name} fallbackName={name} className="w-full h-full object-cover" />
+                            <SafeImage src={icon} alt={name} fallbackName={name} zoomable={false} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col min-w-0">
                             <span className={`text-xs transition-colors truncate ${sel && !isDisabled ? '' : isDisabled ? 'opacity-80' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{symbol}</span>
@@ -1651,7 +1651,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                             title="Cambiar Activo"
                                         >
                                             <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} className="w-full h-full object-cover" />
+                                                <SafeImage src={asset.resourceAddress === xrdAddress ? (xrdIconUrl || asset.iconUrl) : asset.iconUrl} alt={asset.symbol} fallbackName={asset.name || asset.symbol} zoomable={false} className="w-full h-full object-cover" />
                                             </div>
                                             <span className="font-semibold text-[10px] truncate">{asset.symbol}</span>
                                         </button>
@@ -1785,7 +1785,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                                 title="Cambiar Activo"
                                             >
                                                 <div className="size-4 rounded-full overflow-hidden shrink-0 bg-[var(--color-bg)]">
-                                                    <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} className="w-full h-full object-cover" />
+                                                    <SafeImage src={item.resourceAddress === xrdAddress ? (xrdIconUrl || item.iconUrl) : item.iconUrl} alt={item.symbol} fallbackName={item.name || item.symbol} zoomable={false} className="w-full h-full object-cover" />
                                                 </div>
                                                 <span className="font-semibold text-[10px] truncate">{item.symbol}</span>
                                             </button>
