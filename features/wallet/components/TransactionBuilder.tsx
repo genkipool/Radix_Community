@@ -12,6 +12,7 @@ import { buildMultiTransferManifest, TransferGroup, TransferItem } from '@/featu
 import { apiFetchEntityDetails, apiFetchTransactionDetails, apiFetchNonFungibleData } from '@/features/dashboard/services/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
@@ -1850,7 +1851,10 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                         <span>{navT.wallet_sending || 'Enviando...'}</span>
                                     </>
                                 ) : (
-                                    <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
+                                    <>
+                                        <RadixIcon className="size-5 relative -top-[1px]" strokeColor="currentColor" />
+                                        <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
+                                    </>
                                 )}
                             </button>
                             {actions}
