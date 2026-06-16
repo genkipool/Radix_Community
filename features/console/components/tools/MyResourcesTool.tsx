@@ -153,22 +153,28 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
       <ToolSection title={labels.accountTitle}>
         <AccountPicker value={account} onChange={setAccount} disabled={isSending} />
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.resourceTitle}
-          </span>
-          {holdingsLoading ? (
-            <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>{labels.loading}</p>
-          ) : (
-            <>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                {labels.resourceTitle}
+              </span>
+            </div>
+            {holdingsLoading ? (
+              <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>{labels.loading}</p>
+            ) : (
               <SearchField
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Buscar..."
                 disabled={isSending}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                {[
+            )}
+          </div>
+
+          {!holdingsLoading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+              {[
                   ...(holdings?.fungibles ?? []).map((f) => ({
                   value: f.resourceAddress,
                   name: f.symbol || f.name || truncateAddress(f.resourceAddress, 8, 6),
@@ -231,7 +237,6 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                 </div>
               )}
             </div>
-            </>
           )}
         </div>
 
