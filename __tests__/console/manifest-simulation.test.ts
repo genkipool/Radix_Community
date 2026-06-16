@@ -15,11 +15,13 @@ async function expectValidManifest(manifestStr: string) {
       1 // Mainnet network ID
     );
     if (result.kind === 'Invalid') {
-      throw new Error((result as any).error);
+      const invalidResult = result as { kind: 'Invalid'; error: unknown };
+      throw new Error(String(invalidResult.error));
     }
     expect(result.kind).toBe('Valid');
-  } catch (error: any) {
-    throw new Error(`Manifest validation failed: ${error.message}\nManifest:\n${manifestStr}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Manifest validation failed: ${message}\nManifest:\n${manifestStr}`);
   }
 }
 
