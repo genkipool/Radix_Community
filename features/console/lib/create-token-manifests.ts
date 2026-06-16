@@ -231,14 +231,12 @@ export const createNonFungibleTokenManifest = ({
           )
       ),
       Enum<1u8>(
-          Array<String>(
-              ${[
-                !nftBaseFieldsLocked.name ? '"name"' : null,
-                !nftBaseFieldsLocked.description ? '"description"' : null,
-                !nftBaseFieldsLocked.key_image_url ? '"key_image_url"' : null,
-                ...customFieldsToUse.map(f => !f.locked ? `"${escape(f.key)}"` : null)
-              ].filter(Boolean).join(',\n              ')}
-          )
+          ${[
+            !nftBaseFieldsLocked.name,
+            !nftBaseFieldsLocked.description,
+            !nftBaseFieldsLocked.key_image_url,
+            ...customFieldsToUse.map(f => !f.locked)
+          ].reduce((mask, isUnlocked, i) => mask + (isUnlocked ? (1n << BigInt(i)) : 0n), 0n)}u64
       ),
       Array<String>()
     )
