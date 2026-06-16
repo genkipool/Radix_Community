@@ -8,7 +8,7 @@ import type { AccessRule, OwnerRoleUpdatable } from '../../lib/access-rules';
 import type { AccountHoldings } from '../../types/console.types';
 import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import { OptionButtons } from './OptionButtons';
-import { SelectField } from './fields';
+
 
 export type OwnerRoleKind = 'none' | 'allowAll' | 'badge';
 
@@ -157,7 +157,7 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
                   key={opt.value}
                   type="button"
                   disabled={disabled}
-                  onClick={() => onChange({ ...value, badgeResource: opt.value, badgeNftId: ANY_NFT })}
+                  onClick={() => onChange({ ...value, badgeResource: isActive ? '' : opt.value, badgeNftId: ANY_NFT })}
                   className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
                   style={{
                     background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
@@ -192,16 +192,21 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
           </div>
 
           {selectedNonFungible && (
-            <SelectField
-              label={t.nonFungibleId}
-              value={value.badgeNftId}
-              onChange={(badgeNftId) => onChange({ ...value, badgeNftId })}
-              options={[
-                { value: ANY_NFT, label: t.anyNft },
-                ...selectedNonFungible.ids.map((id) => ({ value: id, label: id })),
-              ]}
-              disabled={disabled}
-            />
+            <div className="flex flex-col gap-3">
+              <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                {t.nonFungibleId}
+              </span>
+              <OptionButtons
+                options={[
+                  { value: ANY_NFT, label: t.anyNft },
+                  ...selectedNonFungible.ids.map((id) => ({ value: id, label: id })),
+                ]}
+                value={value.badgeNftId}
+                onChange={(badgeNftId) => onChange({ ...value, badgeNftId })}
+                size="sm"
+                disabled={disabled}
+              />
+            </div>
           )}
         </div>
       )}
