@@ -56,19 +56,25 @@ interface SimulateResultCardProps {
   t: ConsoleDictionary['simulate'];
   preview: TransactionPreviewResult | null;
   error: string | null;
+  onClose?: () => void;
 }
 
 /** Outcome of a simulation: status, estimated fee and balance changes. */
-export function SimulateResultCard({ t, preview, error }: SimulateResultCardProps) {
+export function SimulateResultCard({ t, preview, error, onClose }: SimulateResultCardProps) {
   const { language } = useLanguage();
 
   if (!preview && !error) return null;
 
   if (error || (preview && preview.status !== 'Succeeded')) {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3">
+      <div className="relative rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3">
+        {onClose && (
+          <button onClick={onClose} className="absolute top-3 right-3 text-red-500/60 hover:text-red-500 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        )}
         <XCircle className="size-5 shrink-0 text-red-500 mt-0.5" />
-        <div className="min-w-0">
+        <div className="min-w-0 pr-6">
           <p className="text-sm font-bold text-red-500">
             {t.failedTitle}
             {preview?.status && preview.status !== 'Succeeded' && (
@@ -89,8 +95,13 @@ export function SimulateResultCard({ t, preview, error }: SimulateResultCardProp
   if (!preview) return null;
 
   return (
-    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-3">
+      {onClose && (
+        <button onClick={onClose} className="absolute top-3 right-3 text-emerald-500/60 hover:text-emerald-500 transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      )}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-6">
         <p className="inline-flex items-center gap-2 text-sm font-bold text-emerald-500">
           <CheckCircle2 className="size-5" />
           {t.successTitle}

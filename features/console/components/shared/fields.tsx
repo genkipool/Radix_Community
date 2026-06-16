@@ -86,8 +86,8 @@ export function TextField({
           placeholder={placeholder}
           maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
-          className={`${controlClass} ${trailing ? 'pr-16' : ''}`}
-          style={controlStyle}
+          className={`${controlClass} ${trailing ? 'pr-16' : ''} ${shell.error ? '!border-red-500' : ''}`}
+          style={{ ...controlStyle, ...(shell.error ? { borderColor: '#ef4444' } : {}) }}
         />
         {trailing && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">{trailing}</div>
@@ -132,8 +132,8 @@ export function TextAreaField({
           rows={rows}
           maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
-          className={`${controlClass} resize-y leading-relaxed ${mono ? 'font-mono text-xs' : ''}`}
-          style={controlStyle}
+          className={`${controlClass} resize-y leading-relaxed ${mono ? 'font-mono text-xs' : ''} ${shell.error ? '!border-red-500' : ''}`}
+          style={{ ...controlStyle, ...(shell.error ? { borderColor: '#ef4444' } : {}) }}
         />
         {maxLength && (
           <div className="absolute bottom-3 right-3 text-[10px] pointer-events-none opacity-50" style={{ color: 'var(--color-text-main)' }}>

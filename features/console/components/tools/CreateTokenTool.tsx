@@ -728,7 +728,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         createdEntityLabel={labels.successResource}
         onReset={reset}
       />
-      {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />}
+      {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />}
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 w-full">

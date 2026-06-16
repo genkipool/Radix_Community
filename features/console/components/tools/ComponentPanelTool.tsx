@@ -223,7 +223,7 @@ function MethodCard({ t, blueprint, fn, options, onExecute, isSending, isActive 
       )}
 
       {!isReserved && showManifest && <ManifestCode code={manifest} />}
-      {!isReserved && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />}
+      {!isReserved && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />}
     </div>
   );
 }

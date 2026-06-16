@@ -152,7 +152,7 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
           )}
         </div>
 
-        <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />
+        <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
         <TxResultBanner t={common} result={result} error={error} onReset={reset} />
 
         {subintent.error && (

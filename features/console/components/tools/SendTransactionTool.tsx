@@ -60,7 +60,7 @@ export default function SendTransactionTool({ t }: ConsoleToolProps) {
               }
             />
             <div className="mt-4">
-              <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />
+              <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
             </div>
           </ToolSection>
         )}
