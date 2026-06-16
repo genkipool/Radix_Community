@@ -137,7 +137,7 @@ export interface NftItemData {
   name: string;
   description: string;
   key_image_url: string;
-  customData: Record<string, string>;
+  customData: Array<{ id: string; key: string; value: string }>;
 }
 
 const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -146,13 +146,19 @@ const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\
 export const nftItemsToManifestSyntax = (items: NftItemData[], customKeys: string[] = []) =>
   items
     .map(
-      ({ name, description, key_image_url, customData }, index) => `NonFungibleLocalId("#${index}#") => Tuple(
+      ({ name, description, key_image_url, customData }, index) => {
+        const customValues = customKeys.map(k => {
+          const field = customData.find(f => f.key.trim() === k);
+          return `"${escape(field ? field.value : '')}"`;
+        });
+        return `NonFungibleLocalId("#${index}#") => Tuple(
         Tuple(
           "${escape(name)}",
           "${escape(description)}",
-          "${escape(key_image_url)}"${customKeys.length > 0 ? ',\n          ' + customKeys.map(k => `"${escape(customData[k] || '')}"`).join(',\n          ') : ''}
+          "${escape(key_image_url)}"${customValues.length > 0 ? ',\n          ' + customValues.join(',\n          ') : ''}
         )
-      )`,
+      )`;
+      }
     )
     .join(',');
 
@@ -165,7 +171,6 @@ export interface CreateNonFungibleTokenInput {
   metadata: string;
   authRoles: ResourceAuthRoles;
   nfts: NftItemData[];
-  nftCustomKeys: string[];
 }
 
 export const createNonFungibleTokenManifest = ({
@@ -176,8 +181,16 @@ export const createNonFungibleTokenManifest = ({
   metadata,
   authRoles,
   nfts,
-  nftCustomKeys,
-}: CreateNonFungibleTokenInput) => `CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+}: CreateNonFungibleTokenInput) => {
+  const uniqueKeys = new Set<string>();
+  for (const nft of nfts) {
+    for (const f of nft.customData) {
+      if (f.key.trim()) uniqueKeys.add(f.key.trim());
+    }
+  }
+  const nftCustomKeys = Array.from(uniqueKeys);
+
+  return `CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     ${accessRuleToManifestSyntax(ownerAccessRule, ownerRoleUpdatable)}
     Enum<1u8>()
     ${trackSupply}
@@ -249,3 +262,4 @@ CALL_METHOD
     Enum<0u8>()
 ;
 `;
+};

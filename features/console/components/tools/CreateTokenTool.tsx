@@ -207,7 +207,6 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const [authRoles, setAuthRoles] = useState<ResourceAuthRoles>(DEFAULT_AUTH_ROLES);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [nfts, setNfts] = useState<Array<{ id: string; data: NftItemData }>>([]);
-  const [nftCustomFields, setNftCustomFields] = useState<Array<{ id: string; key: string }>>([]);
 
   const { data: holdings } = useAccountResources(ownerRole.kind === 'badge' ? account : null);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
@@ -235,18 +234,19 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       ...prev,
       {
         id: crypto.randomUUID(),
-        data: { name: data?.name ?? '', description: data?.description ?? '', key_image_url: data?.key_image_url ?? '', customData: data?.customData ?? {} },
+        data: { name: data?.name ?? '', description: data?.description ?? '', key_image_url: data?.key_image_url ?? '', customData: data?.customData ?? [] },
       },
     ]);
   const removeNft = (id: string) => setNfts((prev) => prev.filter((nft) => nft.id !== id));
   const setNftField = (id: string, field: keyof NftItemData, value: string) =>
     setNfts((prev) => prev.map((nft) => (nft.id === id ? { ...nft, data: { ...nft.data, [field]: value } } : nft)));
 
-  const addNftCustomField = () => setNftCustomFields(prev => [...prev, { id: crypto.randomUUID(), key: '' }]);
-  const removeNftCustomField = (id: string) => setNftCustomFields(prev => prev.filter(f => f.id !== id));
-  const updateNftCustomField = (id: string, key: string) => setNftCustomFields(prev => prev.map(f => f.id === id ? { ...f, key } : f));
-  const setNftCustomDataField = (nftId: string, key: string, value: string) =>
-    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: { ...nft.data.customData, [key]: value } } } : nft));
+  const addNftCustomField = (nftId: string) =>
+    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: [...nft.data.customData, { id: crypto.randomUUID(), key: '', value: '' }] } } : nft));
+  const removeNftCustomField = (nftId: string, fieldId: string) =>
+    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: nft.data.customData.filter(f => f.id !== fieldId) } } : nft));
+  const setNftCustomDataField = (nftId: string, fieldId: string, keyOrValue: 'key' | 'value', val: string) =>
+    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: nft.data.customData.map(f => f.id === fieldId ? { ...f, [keyOrValue]: val } : f) } } : nft));
 
   /** Preset that prefills the form to mint a simple owner badge. */
   const applyBadgePreset = () => {
@@ -263,9 +263,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
     });
     setOwnerRole(DEFAULT_OWNER_ROLE);
     setCustomMetadata([]);
-    setNftCustomFields([]);
     setNfts([]);
-    addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON, customData: {} });
+    addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON, customData: [] });
   };
 
   /* ── Validation ── */
@@ -306,7 +305,6 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           metadata: metadataEntries,
           authRoles,
           nfts: nfts.map((nft) => nft.data),
-          nftCustomKeys: nftCustomFields.map(f => f.key.trim()).filter(Boolean),
         });
   };
 
@@ -518,54 +516,6 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
 
       {tokenType === 'nonFungible' && (
         <ToolSection title={labels.nfts}>
-          <div className="mb-4">
-            <span className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              {labels.customMetadata || 'Custom Metadata'} (Schema)
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-surface)] border" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
-                {labels.nftName || 'Name'}
-              </span>
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-surface)] border" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
-                {labels.nftDescription || 'Description'}
-              </span>
-              <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-surface)] border" style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}>
-                {labels.nftImageUrl || 'Image URL'}
-              </span>
-              {nftCustomFields.map(f => (
-                <span key={f.id} className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 border border-[var(--color-primary)] text-[var(--color-primary)]">
-                  {f.key || 'Custom'}
-                  <button type="button" onClick={() => removeNftCustomField(f.id)} className="ml-1.5 hover:text-red-500 opacity-70 hover:opacity-100 transition-opacity"><Trash2 className="size-3" /></button>
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={addNftCustomField}
-                disabled={isSending}
-                className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-[var(--color-surface)] border border-dashed transition-colors cursor-pointer"
-                style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-muted)' }}
-              >
-                <Plus className="size-3 mr-1" />
-                {labels.addCustomField || 'Add Field'}
-              </button>
-            </div>
-            {nftCustomFields.length > 0 && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {nftCustomFields.map((f, index) => (
-                  <TextField
-                    key={f.id}
-                    label={(labels.customKey || 'Key #{index}').replace('#{index}', String(index + 1))}
-                    placeholder={labels.customKeyPlaceholder || 'e.g. power_level'}
-                    value={f.key}
-                    onChange={(val) => updateNftCustomField(f.id, val)}
-                    maxLength={64}
-                    disabled={isSending}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
           {nfts.length > 0 && (
             <div className="space-y-6 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
               {nfts.map((nft, index) => (
@@ -608,21 +558,56 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     </button>
                   </div>
                   
-                  {nftCustomFields.length > 0 && (
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-end pl-0 sm:pl-4 border-l-2" style={{ borderColor: 'var(--color-card-border)' }}>
-                      {nftCustomFields.map(f => f.key ? (
-                        <div key={f.id} className="w-full sm:flex-1 min-w-[200px]">
-                          <TextField
-                            label={f.key}
-                            value={nft.data.customData?.[f.key] || ''}
-                            onChange={(val) => setNftCustomDataField(nft.id, f.key, val)}
-                            maxLength={256}
+                  {nft.data.customData.length > 0 && (
+                    <div className="flex flex-col gap-3 pl-0 sm:pl-4 border-l-2" style={{ borderColor: 'var(--color-card-border)' }}>
+                      {nft.data.customData.map((f) => (
+                        <div key={f.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                          <div className="w-full sm:w-1/3">
+                            <TextField
+                              label={labels.customKey || 'Key'}
+                              placeholder={labels.customKeyPlaceholder || 'e.g. power_level'}
+                              value={f.key}
+                              onChange={(val) => setNftCustomDataField(nft.id, f.id, 'key', val)}
+                              maxLength={64}
+                              disabled={isSending}
+                            />
+                          </div>
+                          <div className="w-full sm:flex-1">
+                            <TextField
+                              label={labels.customValue || 'Value'}
+                              placeholder={labels.customValuePlaceholder || 'e.g. 100'}
+                              value={f.value}
+                              onChange={(val) => setNftCustomDataField(nft.id, f.id, 'value', val)}
+                              maxLength={256}
+                              disabled={isSending}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeNftCustomField(nft.id, f.id)}
                             disabled={isSending}
-                          />
+                            className="mb-[2px] p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            title={labels.remove}
+                          >
+                            <Trash2 className="size-4.5" />
+                          </button>
                         </div>
-                      ) : null)}
+                      ))}
                     </div>
                   )}
+                  
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => addNftCustomField(nft.id)}
+                      disabled={isSending}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
+                      style={{ color: 'var(--color-primary)' }}
+                    >
+                      <Plus className="size-3.5" />
+                      {labels.addCustomField || 'Add custom field'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
