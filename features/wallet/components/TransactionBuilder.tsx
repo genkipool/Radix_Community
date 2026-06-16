@@ -22,6 +22,7 @@ interface TransactionBuilderProps {
     locale?: string;
     /** Reports the manifest of the currently configured transfer ('' while incomplete) */
     onManifestChange?: (manifest: string) => void;
+    actions?: React.ReactNode;
 }
 
 interface AssetItem {
@@ -114,7 +115,7 @@ function buildTransferGroups(assets: AssetItem[], destinationAddress: string): T
     return groups;
 }
 
-export function TransactionBuilder({ accountAddress, t, onManifestChange }: TransactionBuilderProps) {
+export function TransactionBuilder({ accountAddress, t, onManifestChange, actions }: TransactionBuilderProps) {
     const navT = (t?.nav || {}) as Record<string, string>;
     const { activeNetworkId, activeNetwork, accounts } = useRadixWallet();
     const { entries: addressBookEntries } = useAddressBook();
@@ -1836,21 +1837,24 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange }: Tran
                             )}
                         </AnimatePresence>
 
-                        <button
-                            type="button"
-                            onClick={handleSend}
-                            disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress}
-                            className="w-full font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 transform-gpu origin-center will-change-transform [backface-visibility:hidden] [-webkit-font-smoothing:antialiased] [&:not(:disabled):hover]:brightness-110 [&:not(:disabled):hover]:shadow-xl [&:not(:disabled):active]:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
-                        >
-                            {isTransacting ? (
-                                <>
-                                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    <span>{navT.wallet_sending || 'Enviando...'}</span>
-                                </>
-                            ) : (
-                                <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
-                            )}
-                        </button>
+                        <div className="flex w-full items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleSend}
+                                disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress}
+                                className="flex-1 font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 transform-gpu origin-center will-change-transform [backface-visibility:hidden] [-webkit-font-smoothing:antialiased] [&:not(:disabled):hover]:brightness-110 [&:not(:disabled):hover]:shadow-xl [&:not(:disabled):active]:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
+                            >
+                                {isTransacting ? (
+                                    <>
+                                        <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>{navT.wallet_sending || 'Enviando...'}</span>
+                                    </>
+                                ) : (
+                                    <span>{navT.wallet_send_transaction || 'Enviar Transacción'}</span>
+                                )}
+                            </button>
+                            {actions}
+                        </div>
 
                         {isAnyOverdrawn && (
                             <div className="text-red-400 text-xs font-medium px-2 bg-red-400/10 py-2 rounded-lg border border-red-400/20 text-center">

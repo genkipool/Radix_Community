@@ -3,8 +3,19 @@
 import { CheckCircle2, FlaskConical, Fuel, XCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
-import type { TransactionPreviewResult } from '../../services/transactionPreview';
+import type { TransactionPreviewResult, PreviewBalanceChange } from '../../services/transactionPreview';
 import type { ConsoleDictionary } from '../../types/i18n.types';
+import type { MetadataItem } from '@/features/dashboard/types';
+import { useQuery } from '@tanstack/react-query';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { SafeImage } from '@/components/ui/SafeImage';
+import { CopyButton } from '@/components/ui/CopyButton';
+
+function getMetadataValue(items: MetadataItem[] | undefined, key: string): string | undefined {
+  return items?.find((m: MetadataItem) => m.key === key)?.value?.typed?.value;
+}
 
 /* ─── Simulate button ─────────────────────────────────────────────────────── */
 
@@ -100,29 +111,75 @@ export function SimulateResultCard({ t, preview, error }: SimulateResultCardProp
             {t.balanceChanges}
           </p>
           <div className="space-y-1">
-            {preview.balanceChanges.map((change, index) => {
-              const isNegative = change.amount.startsWith('-');
-              return (
-                <div key={index} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <code title={change.entityAddress} style={{ color: 'var(--color-text-main)' }}>
-                    {truncateAddress(change.entityAddress, 10, 6)}
-                  </code>
-                  <span
-                    className="font-mono font-bold"
-                    style={{ color: isNegative ? '#f43f5e' : '#10b981' }}
-                  >
-                    {isNegative ? '' : '+'}
-                    {formatNumber(Number(change.amount), 4, language)}
-                  </span>
-                  <code title={change.resourceAddress} style={{ color: 'var(--color-text-muted)' }}>
-                    {truncateAddress(change.resourceAddress, 10, 6)}
-                  </code>
-                </div>
-              );
-            })}
+            {preview.balanceChanges.map((change, index) => (
+              <BalanceChangeRow key={index} change={change} language={language} />
+            ))}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function BalanceChangeRow({ change, language }: { change: PreviewBalanceChange; language: string }) {
+  const { accounts, activeNetwork } = useRadixWallet();
+  const { entries: addressBookEntries } = useAddressBook();
+
+  const account = accounts.find(a => a.address === change.entityAddress);
+  const addressBookEntry = addressBookEntries.find(e => e.address === change.entityAddress);
+  const localName = account?.label || addressBookEntry?.name;
+
+  const { data: entityData } = useQuery({
+    queryKey: ['entityDetails', change.entityAddress, activeNetwork],
+    queryFn: () => apiFetchEntityDetails(change.entityAddress, activeNetwork || 'mainnet'),
+    enabled: !localName,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const entityName = localName || getMetadataValue(entityData?.explicit_metadata?.items, 'name');
+
+  const { data: resourceData } = useQuery({
+    queryKey: ['entityDetails', change.resourceAddress, activeNetwork],
+    queryFn: () => apiFetchEntityDetails(change.resourceAddress, activeNetwork || 'mainnet'),
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const symbol = getMetadataValue(resourceData?.explicit_metadata?.items, 'symbol') || 
+                 getMetadataValue(resourceData?.explicit_metadata?.items, 'name') || 'Token';
+  const iconUrl = getMetadataValue(resourceData?.explicit_metadata?.items, 'icon_url');
+
+  const isNegative = change.amount.startsWith('-');
+  const amountStr = isNegative ? '' : '+';
+  
+  return (
+    <div className="flex flex-col gap-1 mb-3">
+      {entityName && (
+         <div className="text-[10px] font-semibold text-[var(--color-text-main)]">{entityName}</div>
+      )}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+         <code title={change.entityAddress} style={{ color: 'var(--color-text-main)' }}>
+            {truncateAddress(change.entityAddress, 10, 6)}
+         </code>
+         <span
+            className="font-mono font-bold"
+            style={{ color: isNegative ? '#f43f5e' : '#10b981' }}
+         >
+            {amountStr}{formatNumber(Number(change.amount), 4, language)}
+         </span>
+         
+         <span className="font-semibold" style={{ color: 'var(--color-text-main)' }}>{symbol}</span>
+         
+         {iconUrl && (
+             <SafeImage src={iconUrl} alt={symbol} fallbackName={symbol} className="size-5 rounded-full object-cover" />
+         )}
+
+         <div className="flex items-center gap-1">
+             <code title={change.resourceAddress} style={{ color: 'var(--color-text-muted)' }}>
+                {truncateAddress(change.resourceAddress, 10, 6)}
+             </code>
+             <CopyButton value={change.resourceAddress} size="xs" variant="ghost" />
+         </div>
+      </div>
     </div>
   );
 }

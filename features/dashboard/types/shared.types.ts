@@ -41,6 +41,9 @@ export interface GatewayEntityDetails {
   metadata: {
     items: MetadataItem[];
   };
+  explicit_metadata?: {
+    items: MetadataItem[];
+  };
   details?: {
     type?: string;
     divisibility?: number;

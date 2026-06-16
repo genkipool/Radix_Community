@@ -9,6 +9,8 @@ import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { PanelToggleButton, SidePanel } from '../shared/SidePanel';
 import { ManifestCode } from '../shared/ManifestCode';
+import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
+import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 
 /**
  * Send-transaction tool — the same transfer builder used in the wallet
@@ -21,6 +23,8 @@ export default function SendTransactionTool({ t }: ConsoleToolProps) {
   const [account, setAccount] = useState<string | null>(null);
   const [manifest, setManifest] = useState('');
   const [showManifest, setShowManifest] = useState(false);
+
+  const preview = useTransactionPreview();
 
   return (
     <div className={`grid grid-cols-1 gap-6 items-start ${showManifest ? 'lg:grid-cols-2' : ''}`}>
@@ -46,7 +50,18 @@ export default function SendTransactionTool({ t }: ConsoleToolProps) {
               t={fullDictionary}
               locale={language}
               onManifestChange={setManifest}
+              actions={
+                <SimulateButton
+                  t={t.simulate}
+                  onClick={() => preview.simulate(manifest)}
+                  disabled={!manifest.trim() || preview.isSimulating}
+                  loading={preview.isSimulating}
+                />
+              }
             />
+            <div className="mt-4">
+              <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />
+            </div>
           </ToolSection>
         )}
       </div>
