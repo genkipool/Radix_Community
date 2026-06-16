@@ -44,6 +44,13 @@ interface MetaFieldState {
   locked: boolean;
 }
 
+interface CustomMetaFieldState {
+  id: string;
+  key: string;
+  value: string;
+  locked: boolean;
+}
+
 type MetadataState = Record<MetaKey, MetaFieldState>;
 
 const EMPTY_METADATA: MetadataState = {
@@ -66,9 +73,9 @@ const META_TYPES: Record<MetaKey, MetadataTypeValue> = {
 
 const OWNER_BADGE_ICON = 'https://assets.radixdlt.com/icons/icon-package_owner_badge.png';
 
-function buildMetadataEntries(metadata: MetadataState, tokenType: TokenType): string {
+function buildMetadataEntries(metadata: MetadataState, customMetadata: CustomMetaFieldState[], tokenType: TokenType): string {
   const keys: MetaKey[] = ['name', 'symbol', 'icon_url', 'description', 'tags', 'info_url'];
-  return keys
+  const standardEntries = keys
     .flatMap((key) => {
       const { value, locked } = metadata[key];
       if (!value.trim()) return [];
@@ -78,8 +85,14 @@ function buildMetadataEntries(metadata: MetadataState, tokenType: TokenType): st
         return tags.length ? [initialMetadataArrayEntry(key, tags, locked)] : [];
       }
       return [initialMetadataEntry(key, value.trim(), locked, META_TYPES[key])];
-    })
-    .join(',');
+    });
+
+  const customEntries = customMetadata.flatMap(({ key, value, locked }) => {
+    if (!key.trim() || !value.trim()) return [];
+    return [initialMetadataEntry(key.trim(), value.trim(), locked, MetadataType.String)];
+  });
+
+  return [...standardEntries, ...customEntries].join(',');
 }
 
 /* ─── Auth roles ──────────────────────────────────────────────────────────── */
@@ -186,6 +199,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const [initialSupply, setInitialSupply] = useState('');
   const [divisibility, setDivisibility] = useState('0');
   const [metadata, setMetadata] = useState<MetadataState>(EMPTY_METADATA);
+  const [customMetadata, setCustomMetadata] = useState<CustomMetaFieldState[]>([]);
   const [ownerRole, setOwnerRole] = useState<OwnerRoleState>(DEFAULT_OWNER_ROLE);
   const [authRoles, setAuthRoles] = useState<ResourceAuthRoles>(DEFAULT_AUTH_ROLES);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
@@ -198,6 +212,18 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
     setMetadata((prev) => ({ ...prev, [key]: { ...prev[key], value } }));
   const toggleMetaLock = (key: MetaKey) =>
     setMetadata((prev) => ({ ...prev, [key]: { ...prev[key], locked: !prev[key].locked } }));
+
+  const addCustomMeta = () =>
+    setCustomMetadata((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), key: '', value: '', locked: false },
+    ]);
+  const removeCustomMeta = (id: string) =>
+    setCustomMetadata((prev) => prev.filter((m) => m.id !== id));
+  const setCustomMetaField = (id: string, field: 'key' | 'value', value: string) =>
+    setCustomMetadata((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
+  const toggleCustomMetaLock = (id: string) =>
+    setCustomMetadata((prev) => prev.map((m) => (m.id === id ? { ...m, locked: !m.locked } : m)));
 
   const addNft = (data?: Partial<NftItemData>) =>
     setNfts((prev) => [
@@ -225,6 +251,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       },
     });
     setOwnerRole(DEFAULT_OWNER_ROLE);
+    setCustomMetadata([]);
     setNfts([]);
     addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON });
   };
@@ -238,14 +265,16 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const infoUrlValid = urlValid(metadata.info_url.value);
   const nftsValid = nfts.length > 0 && nfts.every((nft) => nft.data.name.trim());
 
+  const customMetaValid = customMetadata.every((m) => m.key.trim() && m.value.trim());
+
   const accessRule = resolveAccessRule(ownerRole, holdings);
   const typeValid = tokenType === 'fungible' ? supplyValid && divisibilityValid : nftsValid;
   const canSend =
-    !!account && !!accessRule && typeValid && iconUrlValid && infoUrlValid && !isSending && !walletLoading;
+    !!account && !!accessRule && typeValid && iconUrlValid && infoUrlValid && customMetaValid && !isSending && !walletLoading;
 
   const handleSend = () => {
     if (!account || !accessRule) return;
-    const metadataEntries = buildMetadataEntries(metadata, tokenType);
+    const metadataEntries = buildMetadataEntries(metadata, customMetadata, tokenType);
     const manifest =
       tokenType === 'fungible'
         ? createFungibleTokenManifest({
@@ -402,6 +431,64 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           rows={3}
           disabled={isSending}
         />
+
+        {customMetadata.length > 0 && (
+          <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
+            <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+              Metadatos Personalizados
+            </span>
+            {customMetadata.map((m, index) => (
+              <div key={m.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                <div className="w-full sm:w-1/3">
+                  <TextField
+                    label={`Clave #${index + 1}`}
+                    value={m.key}
+                    onChange={(val) => setCustomMetaField(m.id, 'key', val)}
+                    placeholder="ej. twitter_url"
+                    disabled={isSending}
+                  />
+                </div>
+                <div className="w-full sm:flex-1">
+                  <TextField
+                    label="Valor"
+                    labelEnd={
+                      <LockToggle
+                        locked={m.locked}
+                        onToggle={() => toggleCustomMetaLock(m.id)}
+                        label={labels.lock}
+                        hint={labels.lockHint}
+                        disabled={isSending}
+                      />
+                    }
+                    value={m.value}
+                    onChange={(val) => setCustomMetaField(m.id, 'value', val)}
+                    placeholder="Valor del metadato"
+                    disabled={isSending}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeCustomMeta(m.id)}
+                  disabled={isSending}
+                  className="mb-[2px] p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                  title={labels.remove}
+                >
+                  <Trash2 className="size-4.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={addCustomMeta}
+          disabled={isSending}
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          <Plus className="size-3.5" />
+          Añadir campo personalizado
+        </button>
       </ToolSection>
 
       <ToolSection title={common.ownerRole}>
