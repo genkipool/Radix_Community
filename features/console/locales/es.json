@@ -16,7 +16,7 @@
     "sidebar": {
       "appName": "Consola de Desarrolladores Radix",
       "title": "Consola Radix",
-      "subtitle": "Construye, despliega y gestiona activos en la Red Radix.",
+      "subtitle": "Construye, despliega.",
       "home_aria": "Ir al inicio de la consola",
       "expand_all": "Expandir todo",
       "collapse_all": "Contraer todo",
@@ -712,6 +712,7 @@
     "myResources": {
       "accountTitle": "Cuenta y recurso",
       "resourceTitle": "Recurso a gestionar",
+      "resourceHint": "Selecciona un token o NFT para gestionar sus roles, metadatos o suministro.",
       "loading": "Cargando activos…",
       "proofHint": "Las acciones protegidas (acuñar, recuperar, congelar, …) necesitan presentar el badge correspondiente como prueba.",
       "actionTitle": "Acción",

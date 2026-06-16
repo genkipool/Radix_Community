@@ -16,7 +16,7 @@
     "sidebar": {
       "appName": "Radix Developer Console",
       "title": "Radix Console",
-      "subtitle": "Build, deploy and manage assets on the Radix Network.",
+      "subtitle": "Build, deploy.",
       "home_aria": "Go to the console home",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
@@ -711,6 +711,7 @@
     "myResources": {
       "accountTitle": "Account and resource",
       "resourceTitle": "Resource to manage",
+      "resourceHint": "Select a token or NFT to manage its roles, metadata, or supply.",
       "loading": "Loading holdings…",
       "proofHint": "Protected actions (mint, recall, freeze, …) need the matching badge presented as proof.",
       "actionTitle": "Action",

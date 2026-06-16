@@ -159,6 +159,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                 {labels.resourceTitle}
               </span>
+              <span className="text-[11px] opacity-70 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                {labels.resourceHint}
+              </span>
             </div>
             {holdingsLoading ? (
               <p className="text-sm py-2" style={{ color: 'var(--color-text-muted)' }}>{labels.loading}</p>
