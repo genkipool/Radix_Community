@@ -18,7 +18,7 @@ interface SafeImageProps {
 }
 
 function resolveSrc(src: string | undefined, fallback: string): string {
-    return src && src.trim() ? src : fallback;
+    return src && src.trim() ? src.trim() : fallback;
 }
 
 export function SafeImage({

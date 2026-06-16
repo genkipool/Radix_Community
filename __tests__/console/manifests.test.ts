@@ -83,9 +83,11 @@ describe('create token manifests', () => {
       metadata: '',
       authRoles: DEFAULT_AUTH_ROLES,
       nfts: [
-        { name: 'One', description: 'First', key_image_url: 'https://img/1.png' },
-        { name: 'Two', description: 'Second', key_image_url: 'https://img/2.png' },
+        { name: 'One', description: 'First', key_image_url: 'https://img/1.png', customData: {} },
+        { name: 'Two', description: 'Second', key_image_url: 'https://img/2.png', customData: {} },
       ],
+      nftBaseFieldsLocked: { name: false, description: false, key_image_url: false },
+      nftCustomFields: [],
     });
     expect(manifest).toContain('CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY');
     expect(manifest).toContain('NonFungibleLocalId("#0#")');
@@ -95,8 +97,8 @@ describe('create token manifests', () => {
 
   it('escapes quotes in nft data', () => {
     const syntax = nftItemsToManifestSyntax([
-      { name: 'Say "hi"', description: '', key_image_url: '' },
-    ]);
+      { name: 'Say "hi"', description: '', key_image_url: '', customData: {} },
+    ], []);
     expect(syntax).toContain('Say \\"hi\\"');
   });
 });

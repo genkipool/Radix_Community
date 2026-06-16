@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BadgePlus, ChevronDown, Coins, Layers, Lock, LockOpen, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Coins, Layers, Lock, LockOpen, Plus, Trash2 } from 'lucide-react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
@@ -74,7 +74,6 @@ const META_TYPES: Record<MetaKey, MetadataTypeValue> = {
   info_url: MetadataType.Url,
 };
 
-const OWNER_BADGE_ICON = 'https://assets.radixdlt.com/icons/icon-package_owner_badge.png';
 
 function buildMetadataEntries(metadata: MetadataState, customMetadata: CustomMetaFieldState[], tokenType: TokenType): string {
   const keys: MetaKey[] = ['name', 'symbol', 'icon_url', 'description', 'tags', 'info_url'];
@@ -207,6 +206,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const [authRoles, setAuthRoles] = useState<ResourceAuthRoles>(DEFAULT_AUTH_ROLES);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [nfts, setNfts] = useState<Array<{ id: string; data: NftItemData }>>([]);
+  const [nftBaseFieldsLocked, setNftBaseFieldsLocked] = useState({ name: false, description: false, key_image_url: false });
+  const [nftCustomFields, setNftCustomFields] = useState<Array<{ id: string; key: string; locked: boolean }>>([]);
 
   const { data: holdings } = useAccountResources(ownerRole.kind === 'badge' ? account : null);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
@@ -234,38 +235,23 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       ...prev,
       {
         id: crypto.randomUUID(),
-        data: { name: data?.name ?? '', description: data?.description ?? '', key_image_url: data?.key_image_url ?? '', customData: data?.customData ?? [] },
+        data: { name: data?.name ?? '', description: data?.description ?? '', key_image_url: data?.key_image_url ?? '', customData: data?.customData ?? {} },
       },
     ]);
   const removeNft = (id: string) => setNfts((prev) => prev.filter((nft) => nft.id !== id));
   const setNftField = (id: string, field: keyof NftItemData, value: string) =>
     setNfts((prev) => prev.map((nft) => (nft.id === id ? { ...nft, data: { ...nft.data, [field]: value } } : nft)));
 
-  const addNftCustomField = (nftId: string) =>
-    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: [...nft.data.customData, { id: crypto.randomUUID(), key: '', value: '' }] } } : nft));
-  const removeNftCustomField = (nftId: string, fieldId: string) =>
-    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: nft.data.customData.filter(f => f.id !== fieldId) } } : nft));
-  const setNftCustomDataField = (nftId: string, fieldId: string, keyOrValue: 'key' | 'value', val: string) =>
-    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: nft.data.customData.map(f => f.id === fieldId ? { ...f, [keyOrValue]: val } : f) } } : nft));
+  const addNftCustomField = () => setNftCustomFields(prev => [...prev, { id: crypto.randomUUID(), key: '', locked: false }]);
+  const removeNftCustomField = (id: string) => setNftCustomFields(prev => prev.filter(f => f.id !== id));
+  const updateNftCustomField = (id: string, key: string) => setNftCustomFields(prev => prev.map(f => f.id === id ? { ...f, key } : f));
+  const toggleNftCustomFieldLock = (id: string) => setNftCustomFields(prev => prev.map(f => f.id === id ? { ...f, locked: !f.locked } : f));
+  const toggleNftBaseFieldLock = (key: keyof typeof nftBaseFieldsLocked) => setNftBaseFieldsLocked(prev => ({ ...prev, [key]: !prev[key] }));
+  
+  const setNftCustomDataField = (nftId: string, fieldId: string, val: string) =>
+    setNfts(prev => prev.map(nft => nft.id === nftId ? { ...nft, data: { ...nft.data, customData: { ...nft.data.customData, [fieldId]: val } } } : nft));
 
-  /** Preset that prefills the form to mint a simple owner badge. */
-  const applyBadgePreset = () => {
-    setTokenType('nonFungible');
-    setMetadata({
-      ...EMPTY_METADATA,
-      name: { value: 'Owner Badges', locked: false },
-      icon_url: { value: OWNER_BADGE_ICON, locked: false },
-      tags: { value: 'badge', locked: false },
-      description: {
-        value: 'Badges created by the Radix system that provide individual control over resources deployed by developers.',
-        locked: false,
-      },
-    });
-    setOwnerRole(DEFAULT_OWNER_ROLE);
-    setCustomMetadata([]);
-    setNfts([]);
-    addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON, customData: [] });
-  };
+
 
   /* ── Validation ── */
   const supplyValid = Number(initialSupply) > 0;
@@ -305,6 +291,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           metadata: metadataEntries,
           authRoles,
           nfts: nfts.map((nft) => nft.data),
+          nftBaseFieldsLocked,
+          nftCustomFields,
         });
   };
 
@@ -524,6 +512,15 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     <div className="w-full sm:w-1/4">
                       <TextField
                         label={`${labels.nftName || 'Name'} #${index + 1}`}
+                        labelEnd={
+                          <LockToggle
+                            locked={nftBaseFieldsLocked.name}
+                            onToggle={() => toggleNftBaseFieldLock('name')}
+                            disabled={isSending}
+                            label={labels.lock || 'Lock'}
+                            hint={labels.lockHint || 'Toggle mutability'}
+                          />
+                        }
                         value={nft.data.name}
                         onChange={(value) => setNftField(nft.id, 'name', value)}
                         maxLength={32}
@@ -533,6 +530,15 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     <div className="w-full sm:flex-1">
                       <TextField
                         label={labels.nftDescription}
+                        labelEnd={
+                          <LockToggle
+                            locked={nftBaseFieldsLocked.description}
+                            onToggle={() => toggleNftBaseFieldLock('description')}
+                            disabled={isSending}
+                            label={labels.lock || 'Lock'}
+                            hint={labels.lockHint || 'Toggle mutability'}
+                          />
+                        }
                         value={nft.data.description}
                         onChange={(value) => setNftField(nft.id, 'description', value)}
                         maxLength={256}
@@ -542,6 +548,15 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     <div className="w-full sm:w-1/3">
                       <TextField
                         label={labels.nftImageUrl}
+                        labelEnd={
+                          <LockToggle
+                            locked={nftBaseFieldsLocked.key_image_url}
+                            onToggle={() => toggleNftBaseFieldLock('key_image_url')}
+                            disabled={isSending}
+                            label={labels.lock || 'Lock'}
+                            hint={labels.lockHint || 'Toggle mutability'}
+                          />
+                        }
                         value={nft.data.key_image_url}
                         onChange={(value) => setNftField(nft.id, 'key_image_url', value)}
                         disabled={isSending}
@@ -558,16 +573,16 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     </button>
                   </div>
                   
-                  {nft.data.customData.length > 0 && (
+                  {nftCustomFields.length > 0 && (
                     <div className="flex flex-col gap-3 pl-0 sm:pl-4 border-l-2" style={{ borderColor: 'var(--color-card-border)' }}>
-                      {nft.data.customData.map((f) => (
+                      {nftCustomFields.map((f, fieldIndex) => (
                         <div key={f.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
                           <div className="w-full sm:w-1/3">
                             <TextField
-                              label={labels.customKey || 'Key'}
+                              label={(labels.customKey || 'Key #{index}').replace('#{index}', String(fieldIndex + 1))}
                               placeholder={labels.customKeyPlaceholder || 'e.g. power_level'}
                               value={f.key}
-                              onChange={(val) => setNftCustomDataField(nft.id, f.id, 'key', val)}
+                              onChange={(val) => updateNftCustomField(f.id, val)}
                               maxLength={64}
                               disabled={isSending}
                             />
@@ -575,16 +590,25 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                           <div className="w-full sm:flex-1">
                             <TextField
                               label={labels.customValue || 'Value'}
+                              labelEnd={
+                                <LockToggle
+                                  locked={f.locked}
+                                  onToggle={() => toggleNftCustomFieldLock(f.id)}
+                                  disabled={isSending}
+                                  label={labels.lock || 'Lock'}
+                                  hint={labels.lockHint || 'Toggle mutability'}
+                                />
+                              }
                               placeholder={labels.customValuePlaceholder || 'e.g. 100'}
-                              value={f.value}
-                              onChange={(val) => setNftCustomDataField(nft.id, f.id, 'value', val)}
+                              value={nft.data.customData?.[f.id] || ''}
+                              onChange={(val) => setNftCustomDataField(nft.id, f.id, val)}
                               maxLength={256}
                               disabled={isSending}
                             />
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeNftCustomField(nft.id, f.id)}
+                            onClick={() => removeNftCustomField(f.id)}
                             disabled={isSending}
                             className="mb-[2px] p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                             title={labels.remove}
@@ -599,7 +623,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                   <div>
                     <button
                       type="button"
-                      onClick={() => addNftCustomField(nft.id)}
+                      onClick={addNftCustomField}
                       disabled={isSending}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
                       style={{ color: 'var(--color-primary)' }}
@@ -681,6 +705,13 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
 
 
 
+      <CollapsibleManifest
+        manifest={getManifest()}
+        showLabel={labels.showManifest}
+        hideLabel={labels.hideManifest}
+        copyLabel={common.copy}
+      />
+
       <TxResultBanner
         t={common}
         result={result}
@@ -689,13 +720,6 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         onReset={reset}
       />
       {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />}
-
-      <CollapsibleManifest
-        manifest={getManifest()}
-        showLabel={labels.showManifest}
-        hideLabel={labels.hideManifest}
-        copyLabel={common.copy}
-      />
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 w-full">

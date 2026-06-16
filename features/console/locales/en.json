@@ -166,7 +166,7 @@
       "customValuePlaceholder": "Metadata value",
       "nftName": "Name",
       "nftDescription": "Description",
-      "nftImageUrl": "Image URL (key_image_url)",
+      "nftImageUrl": "Image URL",
       "successResource": "Created resource",
       "invalidSupply": "Must be a positive number",
       "invalidDivisibility": "Must be an integer between 0 and 18",
