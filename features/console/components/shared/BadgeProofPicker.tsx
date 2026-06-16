@@ -2,7 +2,7 @@
 
 import { truncateAddress } from '@/utils/formatters';
 import type { AccountHoldings, BadgeProofSelection } from '../../types/console.types';
-import { SelectField } from './fields';
+import { SafeImage } from '@/components/ui/SafeImage';
 
 interface BadgeProofPickerProps {
   label: string;
@@ -18,11 +18,6 @@ interface BadgeProofPickerProps {
 const NONE = '';
 const NFT_SEPARATOR = '|';
 
-/**
- * Optional badge-proof selector. A native select is intentionally used here:
- * the list (every fungible plus every NFT of the account) can be arbitrarily
- * long, which button groups handle poorly.
- */
 export function BadgeProofPicker({
   label,
   noneLabel,
@@ -34,15 +29,19 @@ export function BadgeProofPicker({
   hint,
 }: BadgeProofPickerProps) {
   const options = [
-    { value: NONE, label: noneLabel },
+    { value: NONE, name: noneLabel, address: 'Ninguna', iconUrl: '' },
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
-      label: `${f.name || f.symbol || 'Unnamed resource'} (${truncateAddress(f.resourceAddress, 8, 6)})`,
+      name: f.name || f.symbol || 'Unnamed resource',
+      address: truncateAddress(f.resourceAddress, 8, 6),
+      iconUrl: f.iconUrl,
     })),
     ...(holdings?.nonFungibles ?? []).flatMap((nf) =>
       nf.ids.map((id) => ({
         value: `${nf.resourceAddress}${NFT_SEPARATOR}${id}`,
-        label: `${nf.name || 'Unnamed resource'} — ${id}`,
+        name: `${nf.name || 'Unnamed'} — ${id}`,
+        address: truncateAddress(nf.resourceAddress, 8, 6),
+        iconUrl: nf.iconUrl,
       })),
     ),
   ];
@@ -54,7 +53,7 @@ export function BadgeProofPicker({
     : NONE;
 
   const handleChange = (next: string) => {
-    if (!next || !accountAddress) {
+    if (!next || !accountAddress || next === NONE) {
       onChange(null);
       return;
     }
@@ -63,13 +62,50 @@ export function BadgeProofPicker({
   };
 
   return (
-    <SelectField
-      label={label}
-      hint={hint}
-      value={encoded}
-      onChange={handleChange}
-      options={options}
-      disabled={disabled || !accountAddress}
-    />
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col">
+        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+          {label}
+        </span>
+        {hint && <span className="text-[11px] opacity-70 mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{hint}</span>}
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+        {options.map((opt) => {
+          const isActive = opt.value === encoded;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={disabled || !accountAddress}
+              onClick={() => handleChange(isActive ? NONE : opt.value)}
+              className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
+              style={{
+                background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
+              }}
+              title={opt.name}
+            >
+              <div className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-2.5 gap-y-0.5 w-full p-2">
+                <div className="col-start-1 row-span-2 flex items-center justify-center">
+                  <SafeImage
+                    src={opt.iconUrl}
+                    alt={opt.name}
+                    fallbackName={opt.name}
+                    className="size-9 rounded-full object-cover shadow-sm bg-white/10"
+                  />
+                </div>
+                <div className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}>
+                  {opt.name}
+                </div>
+                <div className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5" style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                  {opt.address}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

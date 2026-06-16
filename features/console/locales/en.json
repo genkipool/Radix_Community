@@ -83,7 +83,7 @@
     },
     "common": {
       "fromAccount": "Withdraw from",
-      "createProof": "Create proof from",
+      "createProof": "Present proof",
       "sendToWallet": "Send transaction",
       "sending": "Waiting for the wallet...",
       "txSuccessTitle": "Transaction committed",
