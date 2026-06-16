@@ -15,7 +15,7 @@ const INITIAL: PreviewState = { isSimulating: false, preview: null, error: null 
 /** Dry-runs a manifest against the Gateway preview endpoint (no signatures). */
 export function useTransactionPreview() {
   const { activeNetwork } = useRadixWallet();
-  const networkName = activeNetwork.networkName;
+  const networkName = activeNetwork;
   const [states, setStates] = useState<Record<string, PreviewState>>({});
 
   const state = states[networkName] || INITIAL;
