@@ -213,10 +213,10 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
 
   /** Preset that prefills the form to mint a simple owner badge. */
   const applyBadgePreset = () => {
+    setTokenType('nonFungible');
     setMetadata({
       ...EMPTY_METADATA,
       name: { value: 'Owner Badges', locked: false },
-      symbol: { value: tokenType === 'fungible' ? 'OB' : '', locked: false },
       icon_url: { value: OWNER_BADGE_ICON, locked: false },
       tags: { value: 'badge', locked: false },
       description: {
@@ -225,15 +225,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       },
     });
     setOwnerRole(DEFAULT_OWNER_ROLE);
-
-    if (tokenType === 'fungible') {
-      setTrackSupply(true);
-      setDivisibility('0');
-      setInitialSupply('1');
-    } else {
-      setNfts([]);
-      addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON });
-    }
+    setNfts([]);
+    addNft({ name: 'Badge', description: 'A simple badge', key_image_url: OWNER_BADGE_ICON });
   };
 
   /* ── Validation ── */
@@ -419,16 +412,18 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           onChange={setOwnerRole}
           disabled={isSending}
         />
-        <button
-          type="button"
-          onClick={applyBadgePreset}
-          disabled={isSending}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
-          style={{ color: 'var(--color-primary)' }}
-        >
-          <BadgePlus className="size-3.5" />
-          {common.createNewBadge}
-        </button>
+        {tokenType === 'nonFungible' && (
+          <button
+            type="button"
+            onClick={applyBadgePreset}
+            disabled={isSending}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            <BadgePlus className="size-3.5" />
+            {common.createNewBadge}
+          </button>
+        )}
       </ToolSection>
 
       <ToolSection title={labels.authRoles} hint={labels.authRolesHint}>
