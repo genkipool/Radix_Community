@@ -91,7 +91,8 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
+      <div className="space-y-3">
+        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t.ownerRoleHint}</p>
         <OptionButtons
           options={[
             { value: 'none', label: t.ownerRole_none, icon: <Ban className="size-4" /> },
@@ -103,7 +104,6 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
           size="sm"
           disabled={disabled}
         />
-        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t.ownerRoleHint}</p>
       </div>
 
       {value.kind !== 'none' && (

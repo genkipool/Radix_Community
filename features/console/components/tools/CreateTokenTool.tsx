@@ -23,6 +23,8 @@ import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
+import { useTransactionPreview } from '../../hooks/useTransactionPreview';
+import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { TextField, TextAreaField } from '../shared/fields';
 import {
   DEFAULT_OWNER_ROLE,
@@ -200,13 +202,14 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const [divisibility, setDivisibility] = useState('0');
   const [metadata, setMetadata] = useState<MetadataState>(EMPTY_METADATA);
   const [customMetadata, setCustomMetadata] = useState<CustomMetaFieldState[]>([]);
-  const [ownerRole, setOwnerRole] = useState<OwnerRoleState>(DEFAULT_OWNER_ROLE);
+  const [ownerRole, setOwnerRole] = useState<OwnerRoleState>({ ...DEFAULT_OWNER_ROLE, kind: 'badge' });
   const [authRoles, setAuthRoles] = useState<ResourceAuthRoles>(DEFAULT_AUTH_ROLES);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [nfts, setNfts] = useState<Array<{ id: string; data: NftItemData }>>([]);
 
   const { data: holdings } = useAccountResources(ownerRole.kind === 'badge' ? account : null);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
+  const preview = useTransactionPreview();
 
   const setMetaValue = (key: MetaKey, value: string) =>
     setMetadata((prev) => ({ ...prev, [key]: { ...prev[key], value } }));
@@ -272,31 +275,34 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const canSend =
     !!account && !!accessRule && typeValid && iconUrlValid && infoUrlValid && customMetaValid && !isSending && !walletLoading;
 
-  const handleSend = () => {
-    if (!account || !accessRule) return;
+  const getManifest = () => {
+    if (!account || !accessRule) return '';
     const metadataEntries = buildMetadataEntries(metadata, customMetadata, tokenType);
-    const manifest =
-      tokenType === 'fungible'
-        ? createFungibleTokenManifest({
-            ownerAccessRule: accessRule,
-            ownerRoleUpdatable: ownerRole.updatable,
-            accountAddress: account,
-            trackSupply,
-            divisibility,
-            initialSupply,
-            metadata: metadataEntries,
-            authRoles,
-          })
-        : createNonFungibleTokenManifest({
-            ownerAccessRule: accessRule,
-            ownerRoleUpdatable: ownerRole.updatable,
-            accountAddress: account,
-            trackSupply,
-            metadata: metadataEntries,
-            authRoles,
-            nfts: nfts.map((nft) => nft.data),
-          });
-    sendTransaction(manifest);
+    return tokenType === 'fungible'
+      ? createFungibleTokenManifest({
+          ownerAccessRule: accessRule,
+          ownerRoleUpdatable: ownerRole.updatable,
+          accountAddress: account,
+          trackSupply,
+          divisibility,
+          initialSupply,
+          metadata: metadataEntries,
+          authRoles,
+        })
+      : createNonFungibleTokenManifest({
+          ownerAccessRule: accessRule,
+          ownerRoleUpdatable: ownerRole.updatable,
+          accountAddress: account,
+          trackSupply,
+          metadata: metadataEntries,
+          authRoles,
+          nfts: nfts.map((nft) => nft.data),
+        });
+  };
+
+  const handleSend = () => {
+    const manifest = getManifest();
+    if (manifest) sendTransaction(manifest);
   };
 
   const authRoleLabels: Record<AuthRoleValue, string> = {
@@ -365,7 +371,11 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
             <TextField
               label={labels.divisibility}
               value={divisibility}
-              onChange={setDivisibility}
+              onChange={(val) => {
+                if (val === '') { setDivisibility(''); return; }
+                const num = Number(val);
+                if (!isNaN(num) && num <= 18) setDivisibility(num.toString());
+              }}
               type="number"
               placeholder={labels.divisibilityPlaceholder}
               error={divisibility && !divisibilityValid ? labels.invalidDivisibility : undefined}
@@ -383,6 +393,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
             value={metadata.name.value}
             onChange={(value) => setMetaValue('name', value)}
             placeholder={labels.namePlaceholder}
+            maxLength={32}
             disabled={isSending}
           />
           {tokenType === 'fungible' && (
@@ -392,6 +403,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
               value={metadata.symbol.value}
               onChange={(value) => setMetaValue('symbol', value)}
               placeholder={labels.symbolPlaceholder}
+              maxLength={5}
               disabled={isSending}
             />
           )}
@@ -428,6 +440,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           value={metadata.description.value}
           onChange={(value) => setMetaValue('description', value)}
           placeholder={labels.descriptionPlaceholder}
+          maxLength={256}
           rows={3}
           disabled={isSending}
         />
@@ -435,22 +448,23 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         {customMetadata.length > 0 && (
           <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
             <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-              Metadatos Personalizados
+              {labels.customMetadata || 'Custom Metadata'}
             </span>
             {customMetadata.map((m, index) => (
               <div key={m.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
                 <div className="w-full sm:w-1/3">
                   <TextField
-                    label={`Clave #${index + 1}`}
+                    label={(labels.customKey || 'Key #{index}').replace('#{index}', String(index + 1))}
                     value={m.key}
                     onChange={(val) => setCustomMetaField(m.id, 'key', val)}
-                    placeholder="ej. twitter_url"
+                    placeholder={labels.customKeyPlaceholder || 'e.g. project_roadmap'}
+                    maxLength={64}
                     disabled={isSending}
                   />
                 </div>
                 <div className="w-full sm:flex-1">
                   <TextField
-                    label="Valor"
+                    label={labels.customValue || 'Value'}
                     labelEnd={
                       <LockToggle
                         locked={m.locked}
@@ -462,7 +476,8 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                     }
                     value={m.value}
                     onChange={(val) => setCustomMetaField(m.id, 'value', val)}
-                    placeholder="Valor del metadato"
+                    placeholder={labels.customValuePlaceholder || 'Metadata value'}
+                    maxLength={256}
                     disabled={isSending}
                   />
                 </div>
@@ -487,7 +502,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           style={{ color: 'var(--color-primary)' }}
         >
           <Plus className="size-3.5" />
-          Añadir campo personalizado
+          {labels.addCustomField || 'Add custom field'}
         </button>
       </ToolSection>
 
@@ -588,12 +603,14 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
                   label={labels.nftName}
                   value={nft.data.name}
                   onChange={(value) => setNftField(nft.id, 'name', value)}
+                  maxLength={32}
                   disabled={isSending}
                 />
                 <TextField
                   label={labels.nftDescription}
                   value={nft.data.description}
                   onChange={(value) => setNftField(nft.id, 'description', value)}
+                  maxLength={256}
                   disabled={isSending}
                 />
                 <TextField
@@ -625,14 +642,27 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         createdEntityLabel={labels.successResource}
         onReset={reset}
       />
+      {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />}
 
-      <SendToWalletButton
-        onClick={handleSend}
-        disabled={!canSend}
-        loading={isSending}
-        label={common.sendToWallet}
-        loadingLabel={common.sending}
-      />
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex-1 w-full">
+          <SendToWalletButton
+            onClick={handleSend}
+            disabled={!canSend || preview.isSimulating}
+            loading={isSending}
+            label={common.sendToWallet}
+            loadingLabel={common.sending}
+          />
+        </div>
+        <div className="flex-1 w-full">
+          <SimulateButton
+            t={t.simulate}
+            onClick={() => preview.simulate(getManifest())}
+            disabled={!canSend || preview.isSimulating}
+            loading={preview.isSimulating}
+          />
+        </div>
+      </div>
     </div>
   );
 }

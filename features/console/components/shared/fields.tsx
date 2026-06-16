@@ -57,6 +57,7 @@ interface TextFieldProps extends Omit<FieldShellProps, 'children'> {
   type?: 'text' | 'number';
   trailing?: ReactNode;
   id?: string;
+  maxLength?: number;
 }
 
 export function TextField({
@@ -67,6 +68,7 @@ export function TextField({
   type = 'text',
   trailing,
   id,
+  maxLength,
   ...shell
 }: TextFieldProps) {
   return (
@@ -78,6 +80,7 @@ export function TextField({
           value={value}
           disabled={disabled}
           placeholder={placeholder}
+          maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
           className={`${controlClass} ${trailing ? 'pr-16' : ''}`}
           style={controlStyle}
@@ -100,6 +103,7 @@ interface TextAreaFieldProps extends Omit<FieldShellProps, 'children'> {
   rows?: number;
   mono?: boolean;
   id?: string;
+  maxLength?: number;
 }
 
 export function TextAreaField({
@@ -110,20 +114,29 @@ export function TextAreaField({
   rows = 3,
   mono = false,
   id,
+  maxLength,
   ...shell
 }: TextAreaFieldProps) {
   return (
     <FieldShell {...shell}>
-      <textarea
-        id={id}
-        value={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        rows={rows}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${controlClass} resize-y leading-relaxed ${mono ? 'font-mono text-xs' : ''}`}
-        style={controlStyle}
-      />
+      <div className="relative">
+        <textarea
+          id={id}
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          rows={rows}
+          maxLength={maxLength}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${controlClass} resize-y leading-relaxed ${mono ? 'font-mono text-xs' : ''}`}
+          style={controlStyle}
+        />
+        {maxLength && (
+          <div className="absolute bottom-3 right-3 text-[10px] pointer-events-none opacity-50" style={{ color: 'var(--color-text-main)' }}>
+            {value.length}/{maxLength}
+          </div>
+        )}
+      </div>
     </FieldShell>
   );
 }
