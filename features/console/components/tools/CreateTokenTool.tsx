@@ -25,6 +25,7 @@ import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
+import { CollapsibleManifest } from '../shared/CollapsibleManifest';
 import { TextField, TextAreaField } from '../shared/fields';
 import {
   DEFAULT_OWNER_ROLE,
@@ -643,6 +644,13 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         onReset={reset}
       />
       {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} />}
+
+      <CollapsibleManifest
+        manifest={getManifest()}
+        showLabel={labels.showManifest}
+        hideLabel={labels.hideManifest}
+        copyLabel={common.copy}
+      />
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 w-full">

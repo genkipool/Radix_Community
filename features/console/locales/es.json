@@ -169,8 +169,11 @@
       "nftImageUrl": "URL de imagen (key_image_url)",
       "successResource": "Recurso creado",
       "invalidSupply": "Debe ser un número positivo",
-      "invalidDivisibility": "Debe ser un entero entre 0 y 18",
-      "invalidUrl": "Debe comenzar por https://",
+      "invalidDivisibility": "Debe estar entre 0 y 18",
+      "invalidUrl": "Debe ser una URL válida",
+      "invalidMetadata": "Por favor revisa tus metadatos personalizados",
+      "showManifest": "Mostrar manifiesto",
+      "hideManifest": "Ocultar manifiesto",
       "optionHints": {
         "owner": "Solo el rol de propietario definido arriba puede realizar esta acción.",
         "denyAll": "Nadie podrá realizar nunca esta acción: queda deshabilitada permanentemente.",

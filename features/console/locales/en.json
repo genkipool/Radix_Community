@@ -171,6 +171,8 @@
       "invalidSupply": "Must be a positive number",
       "invalidDivisibility": "Must be an integer between 0 and 18",
       "invalidUrl": "Must start with https://",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
       "optionHints": {
         "owner": "Only the owner role defined above can perform this action.",
         "denyAll": "Nobody can ever perform this action — it is permanently disabled.",
