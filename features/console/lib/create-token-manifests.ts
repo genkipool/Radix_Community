@@ -204,7 +204,7 @@ export const createNonFungibleTokenManifest = ({
                               12u8
                           ),
                           Enum<0u8>(
-                              198u8
+                              12u8
                           )${customFieldsToUse.length > 0 ? ',\n                          ' + customFieldsToUse.map(() => `Enum<0u8>(\n                              12u8\n                          )`).join(',\n                          ') : ''}
                       )
                   )
