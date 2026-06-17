@@ -122,8 +122,8 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
         <ManifestLibrary t={t.library} manifest={manifest} onLoad={setManifest} disabled={busy} />
 
         {/* Send mode: regular transaction vs. signed pre-authorization */}
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="space-y-3">
+          <span className="block text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-muted)' }}>
             {labels.sendModeLabel}
           </span>
           <OptionButtons<SendMode>

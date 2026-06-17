@@ -706,8 +706,10 @@
       "importHint": "Carga un archivo .rtm en el editor",
       "share": "Compartir URL",
       "shareHint": "Copia un enlace que abre este manifiesto en el editor",
-      "shareCopied": "¡Enlace copiado!",
-      "shareTooLong": "El manifiesto es demasiado largo para compartirlo por URL: expórtalo como archivo"
+      "shareCopied": "¡Copiado!",
+      "shareTooLong": "El manifiesto es demasiado largo para compartirlo por URL; expórtalo como archivo en su lugar.",
+      "fetchHashPlaceholder": "Pegar hash (txid_...)",
+      "fetchHashHint": "Cargar manifiesto de la transacción"
     },
     "myResources": {
       "accountTitle": "Cuenta y recurso",

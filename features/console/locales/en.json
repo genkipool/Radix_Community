@@ -706,7 +706,9 @@
       "share": "Share URL",
       "shareHint": "Copies a link that opens this manifest in the editor",
       "shareCopied": "Link copied!",
-      "shareTooLong": "The manifest is too long to share by URL — export it as a file instead"
+      "shareTooLong": "The manifest is too long to share by URL — export it as a file instead",
+      "fetchHashPlaceholder": "Paste tx hash",
+      "fetchHashHint": "Load manifest from transaction"
     },
     "myResources": {
       "accountTitle": "Account and resource",

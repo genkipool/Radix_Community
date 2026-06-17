@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { m, AnimatePresence } from "motion/react";
 import { Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -49,19 +48,19 @@ export function CopyButton({
     const variants = {
         solid: {
             base: 'bg-[var(--color-surface)] border-[var(--color-card-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]/30 hover:text-[var(--color-text-main)]',
-            active: 'bg-green-500/10 border-green-500/30 text-green-500 shadow-[0_0_12px_rgba(34,197,94,0.1)]'
+            active: 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]/30 text-[var(--color-accent)] shadow-[0_0_12px_var(--color-accent)]'
         },
         ghost: {
             base: 'bg-transparent border-transparent text-[var(--color-text-muted)] hover:bg-white/5 hover:text-[var(--color-text-main)]',
-            active: 'bg-green-500/10 border-transparent text-green-500'
+            active: 'bg-[var(--color-accent)]/10 border-transparent text-[var(--color-accent)]'
         },
         minimal: {
             base: 'bg-transparent border-transparent text-[var(--color-text-muted)] opacity-60 hover:opacity-100',
-            active: 'bg-transparent border-transparent text-green-500 opacity-100'
+            active: 'bg-transparent border-transparent text-[var(--color-accent)] opacity-100'
         },
         'card-inline': {
             base: 'bg-transparent border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors',
-            active: 'bg-transparent border-transparent text-green-500 transition-colors'
+            active: 'bg-transparent border-transparent text-[var(--color-accent)] transition-colors'
         }
     };
 
@@ -86,44 +85,10 @@ export function CopyButton({
             className={`relative inline-flex items-center justify-center gap-1.5 rounded-lg border font-bold transition-all duration-300 isolate ${padding} ${fontSize} ${currentStyle} ${className}`}
             aria-label={label ?? 'Copy'}
         >
-            <AnimatePresence mode="wait" initial={false}>
-                {isCopied ? (
-                    <m.div
-                        key="check"
-                        initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
-                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                        exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
-                        transition={{ duration: 0.2, ease: "backOut" }}
-                        className="flex items-center gap-1.5"
-                    >
-                        <Check size={iconSize} />
-                        {label && <span>{copiedText}</span>}
-                    </m.div>
-                ) : (
-                    <m.div
-                        key="copy"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-center gap-1.5"
-                    >
-                        <Copy size={iconSize} />
-                        {label && <span>{label}</span>}
-                    </m.div>
-                )}
-            </AnimatePresence>
-
-            {/* Subtle glow effect on copy */}
-            {isCopied && (
-                <m.div
-                    layoutId="copy-glow"
-                    className="absolute inset-0 z-[-1] rounded-lg bg-green-500/10 blur-md"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                />
-            )}
+            <div className="flex items-center gap-1.5">
+                {isCopied ? <Check size={iconSize} /> : <Copy size={iconSize} />}
+                {label && <span>{isCopied ? copiedText : label}</span>}
+            </div>
         </button>
     );
 }

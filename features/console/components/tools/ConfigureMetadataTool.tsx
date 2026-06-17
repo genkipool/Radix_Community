@@ -369,11 +369,6 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
           label={common.sendToWallet}
           loadingLabel={common.sending}
         />
-        {!hasChanges && (
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {labels.noChanges}
-          </span>
-        )}
       </div>
     </div>
   );

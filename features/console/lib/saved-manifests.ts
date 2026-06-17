@@ -9,40 +9,40 @@ export interface SavedManifest {
   savedAt: number;
 }
 
-const STORAGE_KEY = 'console_saved_manifests';
+const STORAGE_KEY_PREFIX = 'console_saved_manifests_';
 const MAX_SAVED = 30;
 /** Above this size the share URL becomes unreliable across browsers/servers */
 export const SHARE_URL_LIMIT = 6000;
 
-export function loadSavedManifests(): SavedManifest[] {
+export function loadSavedManifests(network: string): SavedManifest[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}${network}`);
     return raw ? (JSON.parse(raw) as SavedManifest[]) : [];
   } catch {
     return [];
   }
 }
 
-export function saveManifest(name: string, manifest: string): SavedManifest[] {
+export function saveManifest(name: string, manifest: string, network: string): SavedManifest[] {
   const entry: SavedManifest = {
     id: crypto.randomUUID(),
     name: name.trim(),
     manifest,
     savedAt: Date.now(),
   };
-  const next = [entry, ...loadSavedManifests()].slice(0, MAX_SAVED);
+  const next = [entry, ...loadSavedManifests(network)].slice(0, MAX_SAVED);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${network}`, JSON.stringify(next));
   } catch {
     /* quota */
   }
   return next;
 }
 
-export function removeSavedManifest(id: string): SavedManifest[] {
-  const next = loadSavedManifests().filter((entry) => entry.id !== id);
+export function removeSavedManifest(id: string, network: string): SavedManifest[] {
+  const next = loadSavedManifests(network).filter((entry) => entry.id !== id);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(`${STORAGE_KEY_PREFIX}${network}`, JSON.stringify(next));
   } catch {
     /* quota */
   }
