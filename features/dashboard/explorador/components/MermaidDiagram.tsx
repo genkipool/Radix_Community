@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import mermaid from 'mermaid';
-import sanitizeHtml from '@/utils/sanitizeHtml';
 
 interface MermaidDiagramProps {
     chart: string;
@@ -14,16 +12,77 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
     const rawId = useId().replace(/:/g, '');
     const [svg, setSvg] = useState('');
     const { theme } = useTheme();
-    const cancelledRef = useRef(false);
 
     useEffect(() => {
-        cancelledRef.current = false;
         let cancelled = false;
-        let t1: ReturnType<typeof setTimeout> | undefined;
-        let t2: ReturnType<typeof setTimeout> | undefined;
-        let t3: ReturnType<typeof setTimeout> | undefined;
+        async function render() {
+            try {
+                const computed = getComputedStyle(document.documentElement);
+                const labelBg = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
+                const labelText = computed.getPropertyValue('--color-text-main').trim() || '#171717';
 
-        function syncHighlight() {
+                // Determine if it's dark based on background brightness or class
+                const isDark = labelBg !== '#ffffff' && labelBg !== 'white';
+
+                const m = (await import('mermaid')).default;
+                m.initialize({
+                    startOnLoad: false,
+                    theme: 'base',
+                    securityLevel: 'loose',
+                    themeVariables: {
+                        darkMode: isDark,
+                        background: 'transparent',
+                        primaryColor: 'transparent',
+                        primaryBorderColor: '#94a3b8',
+                        lineColor: '#94a3b8',
+                        textColor: labelText,
+                        fontFamily: 'inherit',
+                        edgeLabelBackground: labelBg,
+                    },
+                    flowchart: { curve: 'basis', nodeSpacing: 80, rankSpacing: 140, padding: 40 },
+                });
+                const { svg: s } = await m.render(`mc${rawId}${Date.now()}`, chart);
+
+                // Extract the font size from the chart initialization block
+                const sizeMatch = chart.match(/'clusterFontSize':\s*'(\d+)px'/);
+                const clusterSize = sizeMatch ? `${sizeMatch[1]}px` : '20px';
+
+                // Inject the style at the END of the <style> block for maximum priority, 
+                // being very specific to NOT affect the subgraphs (clusters)
+                const scaledSvg = s.replace(
+                    '</style>',
+                    `
+                    .cluster-label, .cluster-label span { font-size: ${clusterSize} !important; font-weight: bold !important; }
+                    
+                    /* Make the background SVG rectangle transparent to avoid the "double layer" effect */
+                    .edgeLabel rect, .labelBkg { fill: none !important; stroke: none !important; }
+                    
+                    /* Apply the card's solid background and text color to the HTML label and its children */
+                    .edgeLabel, .edgeLabel span, .edgeLabel div, .edgeLabel text { 
+                        background-color: var(--color-surface) !important; 
+                        color: var(--color-text-main) !important; 
+                        fill: var(--color-text-main) !important;
+                        opacity: 1 !important;
+                        padding: 1px 4px !important;
+                        border-radius: 4px !important;
+                    }
+                    
+                    .cluster rect { fill: transparent !important; }
+                    </style>`
+                );
+
+                if (!cancelled) setSvg(scaledSvg);
+            } catch (err) {
+                console.error("Mermaid render error:", err);
+                if (!cancelled) setSvg('<div class="text-red-500 text-[10px]">Error rendering diagram</div>');
+            }
+        }
+        render();
+        return () => { cancelled = true; };
+    }, [chart, rawId, theme]);
+
+    useEffect(() => {
+        const sync = () => {
             document.querySelectorAll('.mermaid-node-copied').forEach(el => {
                 el.classList.remove('mermaid-node-copied');
                 const inner = el.querySelector('rect, path, polygon, circle');
@@ -33,6 +92,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 }
             });
             if (copiedAddress) {
+                // Use a more permissive selector in case there are special characters
                 const allCopies = document.querySelectorAll('[data-diag-copy]');
                 const container = Array.from(allCopies).find(c => c.getAttribute('data-diag-copy') === copiedAddress);
                 const node = container?.closest('.node');
@@ -41,92 +101,17 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                     const inner = node.querySelector('rect, path, polygon, circle');
                     if (inner) {
                         (inner as HTMLElement).style.setProperty('stroke', 'var(--color-accent)', 'important');
-                        (inner as HTMLElement).style.setProperty('stroke-width', '6px', 'important');
+                        (inner as HTMLElement).style.setProperty('stroke-width', '6px', 'important'); // Thicker to make it obvious
                     }
                 }
             }
-        }
-
-        async function render() {
-            try {
-                const computed = getComputedStyle(document.documentElement);
-                const labelBg = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
-                const labelText = computed.getPropertyValue('--color-text-main').trim() || '#171717';
-                const borderColor = computed.getPropertyValue('--color-border').trim() || '#94a3b8';
-                const primaryColor = computed.getPropertyValue('--color-primary').trim() || '#3b82f6';
-                const bgAltColor = computed.getPropertyValue('--color-bg-alt').trim() || 'transparent';
-
-                const isDark = labelBg !== '#ffffff' && labelBg !== 'white';
-
-                mermaid.initialize({
-                    startOnLoad: false,
-                    theme: 'base',
-                    securityLevel: 'loose',
-                    themeVariables: {
-                        darkMode: isDark,
-                        background: 'transparent',
-                        primaryColor: bgAltColor,
-                        primaryBorderColor: borderColor,
-                        primaryTextColor: labelText,
-                        lineColor: borderColor,
-                        textColor: labelText,
-                        fontFamily: 'inherit',
-                        edgeLabelBackground: labelBg,
-                        nodeBorder: borderColor,
-                        mainBkg: bgAltColor,
-                        clusterBkg: 'transparent',
-                        clusterBorder: borderColor,
-                        titleColor: primaryColor,
-                    },
-                    flowchart: { curve: 'basis', nodeSpacing: 80, rankSpacing: 140, padding: 40 },
-                });
-                const { svg: s } = await mermaid.render(`mc${rawId}${Date.now()}`, chart);
-
-                const sizeMatch = chart.match(/'clusterFontSize':\s*'(\d+)px'/);
-                const clusterSize = sizeMatch ? `${sizeMatch[1]}px` : '20px';
-
-                const scaledSvg = s.replace(
-                    '</style>',
-                    `
-                    .cluster-label, .cluster-label span { font-size: ${clusterSize} !important; font-weight: bold !important; }
-                    .edgeLabel rect, .labelBkg { fill: none !important; stroke: none !important; }
-                    .edgeLabel, .edgeLabel span, .edgeLabel div, .edgeLabel text { 
-                        background-color: var(--color-surface) !important; 
-                        color: var(--color-text-main) !important; 
-                        fill: var(--color-text-main) !important;
-                        opacity: 1 !important;
-                        padding: 1px 4px !important;
-                        border-radius: 4px !important;
-                    }
-                    .cluster rect { fill: transparent !important; }
-                    </style>`
-                );
-
-                if (!cancelled) {
-                    setSvg(scaledSvg);
-                    requestAnimationFrame(() => {
-                        if (!cancelled) {
-                            syncHighlight();
-                            t1 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 100);
-                            t2 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 500);
-                            t3 = setTimeout(() => { if (!cancelledRef.current) syncHighlight(); }, 1000);
-                        }
-                    });
-                }
-            } catch (err) {
-                console.error("Mermaid render error:", err);
-                if (!cancelled) setSvg('<div class="text-red-500 text-[10px]">Error rendering diagram</div>');
-            }
-        }
-        render();
-        return () => {
-            cancelled = true;
-            cancelledRef.current = true;
-            clearTimeout(t1);
-            clearTimeout(t2);
-            clearTimeout(t3);
         };
-    }, [chart, rawId, theme, copiedAddress]);
+        sync();
+        const t1 = setTimeout(sync, 100);
+        const t2 = setTimeout(sync, 500);
+        const t3 = setTimeout(sync, 1000); // One more just in case
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }, [svg, copiedAddress]);
 
     if (!svg) {
         return (
@@ -178,7 +163,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 [&_.mermaid-node-copied_polygon]:![stroke-width:4px]
                 [&_.mermaid-node-copied_circle]:![stroke-width:4px]"
         >
-            <div className="w-full" dangerouslySetInnerHTML={{ __html: sanitizeHtml(svg) }} />
+            <div className="w-full" dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
     );
 }
