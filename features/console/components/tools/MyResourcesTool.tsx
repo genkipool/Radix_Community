@@ -447,6 +447,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   size="sm"
                   disabled={isSending}
                   layout="grid"
+                  hideCheck={true}
                   className="grid-flow-col auto-cols-fr overflow-x-auto pb-1"
                 />
 

@@ -21,6 +21,7 @@ export type OptionButtonsProps<T extends string> = {
   className?: string;
   buttonClassName?: string;
   layout?: 'wrap' | 'grid';
+  hideCheck?: boolean;
 } & (
   | { multiple: true; value: T[]; onChange: (value: T[]) => void }
   | { multiple?: false; value: T | null; onChange: (value: T) => void }
@@ -30,7 +31,7 @@ export type OptionButtonsProps<T extends string> = {
  * Selectable button group — the console's replacement for dropdown selects.
  */
 export function OptionButtons<T extends string>(props: OptionButtonsProps<T>) {
-  const { options, size = 'md', disabled = false, className = '', buttonClassName = '', layout = 'wrap', multiple } = props;
+  const { options, size = 'md', disabled = false, className = '', buttonClassName = '', layout = 'wrap', hideCheck = false, multiple } = props;
 
   const handleToggle = (optValue: T) => {
     if (multiple) {
@@ -82,7 +83,7 @@ export function OptionButtons<T extends string>(props: OptionButtonsProps<T>) {
                 <span className={`block text-[11px] font-normal opacity-80 ${layout === 'grid' ? 'whitespace-normal' : 'whitespace-nowrap overflow-hidden text-ellipsis'}`}>{opt.description}</span>
               )}
             </span>
-            {isActive && <Check className={`shrink-0 ${size === 'sm' ? 'size-3' : 'size-3.5'}`} />}
+            {!hideCheck && <Check className={`shrink-0 ${size === 'sm' ? 'size-3' : 'size-3.5'} ${isActive ? 'opacity-100' : 'opacity-0 max-w-0 overflow-hidden'}`} />}
           </button>
         );
       })}
