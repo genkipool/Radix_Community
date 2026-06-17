@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Coins, Layers, Lock, LockOpen, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Coins, Layers, Lock, LockOpen, Plus, Trash2, Dices } from 'lucide-react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
@@ -237,6 +237,46 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
   const canSend =
     !!account && !!accessRule && typeValid && iconUrlValid && infoUrlValid && customMetaValid && !isSending && !walletLoading;
 
+  const handleRandomize = () => {
+    const isFungible = tokenType === 'fungible';
+    const randId = Math.floor(Math.random() * 10000);
+    
+    setMetadata(prev => ({
+      ...prev,
+      name: { ...prev.name, value: isFungible ? `Radix Token ${randId}` : `Radix NFT Collection ${randId}` },
+      symbol: { ...prev.symbol, value: isFungible ? `RTX${randId}` : '' },
+      description: { ...prev.description, value: `Un asombroso recurso creado automáticamente con el ID ${randId} para pruebas.` },
+      icon_url: { ...prev.icon_url, value: `https://picsum.photos/seed/${randId}/200` },
+      info_url: { ...prev.info_url, value: `https://radixdlt.com` },
+    }));
+
+    if (isFungible) {
+      setInitialSupply('1000000');
+      setDivisibility('18');
+    } else {
+      setNfts([
+        {
+          id: crypto.randomUUID(),
+          data: {
+            name: `NFT Místico #${randId}-1`,
+            description: `El primer NFT de la colección ${randId}`,
+            key_image_url: `https://picsum.photos/seed/${randId}1/400`,
+            customData: {}
+          }
+        },
+        {
+          id: crypto.randomUUID(),
+          data: {
+            name: `NFT Épico #${randId}-2`,
+            description: `El segundo NFT de la colección ${randId}`,
+            key_image_url: `https://picsum.photos/seed/${randId}2/400`,
+            customData: {}
+          }
+        }
+      ]);
+    }
+  };
+
   const getManifest = () => {
     if (!account || !accessRule) return '';
     const metadataEntries = buildMetadataEntries(metadata, customMetadata, tokenType);
@@ -294,15 +334,33 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       </ToolSection>
 
       <ToolSection title={labels.tokenType}>
-        <OptionButtons<TokenType>
-          options={[
-            { value: 'fungible', label: labels.fungible, icon: <Coins className="size-4" /> },
-            { value: 'nonFungible', label: labels.nonFungible, icon: <Layers className="size-4" /> },
-          ]}
-          value={tokenType}
-          onChange={setTokenType}
-          disabled={isSending}
-        />
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex-1">
+            <OptionButtons<TokenType>
+              options={[
+                { value: 'fungible', label: labels.fungible, icon: <Coins className="size-4" /> },
+                { value: 'nonFungible', label: labels.nonFungible, icon: <Layers className="size-4" /> },
+              ]}
+              value={tokenType}
+              onChange={setTokenType}
+              disabled={isSending}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleRandomize}
+            disabled={isSending}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border font-semibold transition-all duration-150 hover:opacity-90 active:scale-95"
+            style={{
+              background: 'var(--color-surface)',
+              borderColor: 'var(--color-card-border)',
+              color: 'var(--color-text-main)',
+            }}
+          >
+            <Dices className="size-4 text-[var(--color-primary)]" />
+            <span className="text-sm">Rellenar Aleatorio</span>
+          </button>
+        </div>
 
         <div className="flex flex-col gap-4">
           <span className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
