@@ -62,7 +62,6 @@ describe('MermaidDiagram Component', () => {
     });
 
     it('renders with correct CSS classes injected to avoid CSS collision', async () => {
-        const mermaid = (await import('mermaid')).default;
         
         render(
             <ThemeProvider>

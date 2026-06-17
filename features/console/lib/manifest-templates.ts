@@ -3,11 +3,7 @@
  * All user-facing labels live in the locales under console.buildManifest.
  */
 
-import {
-  buildStakeManifest,
-  buildTransferManifest,
-  buildUnstakeManifest,
-} from '@/features/wallet/lib/manifest-builders';
+
 import { buildBadgeProofManifest } from './badge-proof-manifest';
 import { setStringMetadata } from './metadata-manifests';
 
