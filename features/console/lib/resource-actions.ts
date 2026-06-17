@@ -99,6 +99,15 @@ SET_OWNER_ROLE
 ;
 `;
 
+export const setAuthRoleManifest = (entity: string, moduleName: 'Main' | 'Metadata', roleKey: string, rule: SimpleAccessRule) => `
+SET_ROLE
+    Address("${entity}")
+    Enum<ModuleId::${moduleName}>()
+    "${escape(roleKey)}"
+    ${accessRuleSyntax(rule)}
+;
+`;
+
 /* ─── Vault-level actions (recall / freeze) ───────────────────────────────── */
 
 export const recallManifest = (vaultAddress: string, amount: string) => `
