@@ -34,7 +34,7 @@ export const accessRuleToManifestSyntax = (
         Enum<2u8>(
             Enum<0u8>(
                 Enum<0u8>(
-                    Enum<1u8>(
+                    Enum<0u8>(
                         Address("${rule.address}")
                     )
                 )
@@ -46,7 +46,7 @@ export const accessRuleToManifestSyntax = (
         Enum<2u8>(
             Enum<0u8>(
                 Enum<0u8>(
-                    Enum<0u8>(
+                    Enum<1u8>(
                         NonFungibleGlobalId("${rule.address}")
                     )
                 )
