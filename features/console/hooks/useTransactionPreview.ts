@@ -20,10 +20,10 @@ export function useTransactionPreview() {
 
   const state = states[networkName] || INITIAL;
 
-  const simulate = async (manifest: string) => {
+  const simulate = async (manifest: string, blobsHex?: string[]) => {
     setStates(prev => ({ ...prev, [networkName]: { isSimulating: true, preview: null, error: null } }));
     try {
-      const preview = await previewTransaction(manifest, activeNetwork);
+      const preview = await previewTransaction(manifest, activeNetwork, blobsHex);
       setStates(prev => ({ ...prev, [networkName]: { isSimulating: false, preview, error: null } }));
     } catch (err) {
       setStates(prev => ({

@@ -19,6 +19,8 @@ import {
 } from '../shared/OwnerRoleSelector';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { TxResultBanner } from '../shared/TxResultBanner';
+import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
+import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 
 export default function DeployPackageTool({ t }: ConsoleToolProps) {
   const common = t.common;
@@ -36,6 +38,7 @@ export default function DeployPackageTool({ t }: ConsoleToolProps) {
 
   const { data: holdings } = useAccountResources(ownerRole.kind === 'badge' ? badgeAccount : null);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
+  const preview = useTransactionPreview();
 
   const handleWasmFile = async (file: File | null) => {
     setWasmFile(file);
@@ -64,6 +67,12 @@ export default function DeployPackageTool({ t }: ConsoleToolProps) {
     if (!accessRule) return;
     const manifest = getDeployPackageManifest(wasmHex, rpdDecoded, accessRule, ownerRole.updatable);
     sendTransaction(manifest, { blobs: [wasmHex] });
+  };
+
+  const handleSimulate = () => {
+    if (!accessRule) return;
+    const manifest = getDeployPackageManifest(wasmHex, rpdDecoded, accessRule, ownerRole.updatable);
+    preview.simulate(manifest, [wasmHex]);
   };
 
   return (
@@ -110,13 +119,30 @@ export default function DeployPackageTool({ t }: ConsoleToolProps) {
         onReset={reset}
       />
 
-      <SendToWalletButton
-        onClick={handleSend}
-        disabled={!canSend}
-        loading={isSending}
-        label={common.sendToWallet}
-        loadingLabel={common.sending}
-      />
+      {!result && !error && (
+        <SimulateResultCard
+          t={t.simulate}
+          preview={preview.preview}
+          error={preview.error}
+          onClose={preview.reset}
+        />
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-4 pt-4">
+        <SendToWalletButton
+          onClick={handleSend}
+          disabled={!canSend}
+          loading={isSending}
+          label={common.sendToWallet}
+          loadingLabel={common.sending}
+        />
+        <SimulateButton
+          t={t.simulate}
+          onClick={handleSimulate}
+          disabled={!canSend}
+          loading={preview.isSimulating}
+        />
+      </div>
     </div>
   );
 }

@@ -67,6 +67,7 @@ async function gatewayPost<T>(network: Network, path: string, body: Record<strin
 export async function previewTransaction(
   manifest: string,
   network: Network,
+  blobsHex?: string[],
 ): Promise<TransactionPreviewResult> {
   const construction = await gatewayPost<{ ledger_state?: { epoch?: number } }>(
     network,
@@ -77,6 +78,7 @@ export async function previewTransaction(
 
   const preview = await gatewayPost<GatewayPreviewResponse>(network, '/transaction/preview', {
     manifest,
+    blobs_hex: blobsHex ?? [],
     start_epoch_inclusive: epoch,
     end_epoch_exclusive: epoch + 2,
     nonce: Math.floor(Math.random() * 0xffffffff),
