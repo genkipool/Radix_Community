@@ -1439,10 +1439,6 @@
           "name": "Rol de propietario",
           "hint": "Cambia quién puede actuar como propietario de este recurso"
         },
-        "setAuthRole": {
-          "name": "Configurar rol",
-          "hint": "Actualiza las reglas de acceso para roles específicos (ej. acuñador, quemador)"
-        },
         "recall": {
           "name": "Recuperar",
           "hint": "Recupera tokens directamente desde una bóveda concreta (requiere el badge de recuperación)"
