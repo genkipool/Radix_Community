@@ -37,10 +37,19 @@ const KIND_STYLE: Record<FlowStepKind, { icon: ReactNode; gradient: string; acce
 
 
 
-function TerminalNode({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
+function TerminalNode({ icon, title, hint, isLast }: { icon: ReactNode; title: string; hint: string; isLast?: boolean }) {
   return (
-    <div className="flex items-start gap-3.5">
-      <div className="size-9 shrink-0 rounded-full p-0.5 bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md">
+    <div className="flex items-stretch gap-3.5 relative">
+      {/* Timeline line connecting to the next node */}
+      {!isLast && (
+        <div 
+          className="absolute left-[18px] top-[36px] bottom-0 w-px -translate-x-1/2" 
+          style={{
+            background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
+          }}
+        />
+      )}
+      <div className="size-9 shrink-0 rounded-full p-0.5 bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md relative z-10">
         <div
           className="size-full rounded-full flex items-center justify-center"
           style={{ background: 'var(--color-bg)', color: 'var(--color-primary)' }}
@@ -48,7 +57,7 @@ function TerminalNode({ icon, title, hint }: { icon: ReactNode; title: string; h
           {icon}
         </div>
       </div>
-      <div className="min-w-0 pt-0.5">
+      <div className="min-w-0 pt-0.5 pb-8">
         <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-text-main)' }}>
           {title}
         </p>
@@ -84,7 +93,15 @@ function DetailChip({ label, value, mono }: { label: string; value: string; mono
 function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; stepLabel: string }) {
   const style = KIND_STYLE[step.kind];
   return (
-    <div className="flex items-start gap-3.5 group relative">
+    <div className="flex items-stretch gap-3.5 group relative">
+      {/* Timeline line connecting to the next node */}
+      <div 
+        className="absolute left-[18px] top-[36px] bottom-0 w-px -translate-x-1/2" 
+        style={{
+          background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
+        }}
+      />
+      
       {/* Medallion */}
       <div className="relative shrink-0">
         <div
@@ -105,34 +122,36 @@ function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; s
       </div>
 
       {/* Content */}
-      <div
-        className="flex-1 min-w-0 rounded-xl px-3.5 py-3 -mt-0.5 transition-colors duration-200 relative z-10"
-        style={{ background: `linear-gradient(135deg, rgba(var(--color-primary-rgb),0.08) 0%, transparent 60%)` }}
-      >
-        <div className="flex flex-col gap-y-1">
-          <span className="sr-only">{`${stepLabel} ${index + 1}`}</span>
-          <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-text-main)' }}>
-            {step.title}
-            <code
-              className="relative -top-[1px] text-[10px] font-bold tracking-wide uppercase ml-2.5"
-              style={{
-                color: `var(--color-primary)`,
-              }}
-            >
-              {step.instruction}
-            </code>
-          </p>
-        </div>
-        <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          {step.description}
-        </p>
-        {step.details.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {step.details.map((detail, detailIndex) => (
-              <DetailChip key={`${detail.label}-${detailIndex}`} {...detail} />
-            ))}
+      <div className="flex-1 min-w-0 pb-8">
+        <div
+          className="rounded-xl px-3.5 py-3 transition-colors duration-200 relative z-10"
+          style={{ background: `linear-gradient(135deg, rgba(var(--color-primary-rgb),0.08) 0%, transparent 60%)` }}
+        >
+          <div className="flex flex-col gap-y-1">
+            <span className="sr-only">{`${stepLabel} ${index + 1}`}</span>
+            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-text-main)' }}>
+              {step.title}
+              <code
+                className="relative -top-[1px] text-[10px] font-bold tracking-wide uppercase ml-2.5"
+                style={{
+                  color: `var(--color-primary)`,
+                }}
+              >
+                {step.instruction}
+              </code>
+            </p>
           </div>
-        )}
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {step.description}
+          </p>
+          {step.details.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {step.details.map((detail, detailIndex) => (
+                <DetailChip key={`${detail.label}-${detailIndex}`} {...detail} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -151,28 +170,14 @@ interface ManifestFlowDiagramProps {
  */
 export function ManifestFlowDiagram({ steps, labels }: ManifestFlowDiagramProps) {
   return (
-    <div className="min-w-0 relative flex flex-col gap-6 z-0">
-      {/* Continuous Timeline Line */}
-      <div 
-        className="absolute left-[18px] top-[18px] bottom-[18px] w-px -translate-x-1/2 -z-10"
-        style={{
-          background: 'linear-gradient(to bottom, transparent, var(--color-card-border) 10%, rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border) 90%, transparent)'
-        }}
-      />
+    <div className="min-w-0 flex flex-col">
+      <TerminalNode icon={<Wallet className="size-4" />} title={labels.start} hint={labels.startHint} />
       
-      <div className="relative z-10 bg-[var(--color-bg)] rounded-full self-start">
-        <TerminalNode icon={<Wallet className="size-4" />} title={labels.start} hint={labels.startHint} />
-      </div>
-
       {steps.map((step, index) => (
-        <div key={index} className="relative z-10 bg-[var(--color-bg)] rounded-xl self-stretch">
-          <StepNode step={step} index={index} stepLabel={labels.stepLabel} />
-        </div>
+        <StepNode key={index} step={step} index={index} stepLabel={labels.stepLabel} />
       ))}
 
-      <div className="relative z-10 bg-[var(--color-bg)] rounded-full self-start">
-        <TerminalNode icon={<CheckCircle2 className="size-4" />} title={labels.end} hint={labels.endHint} />
-      </div>
+      <TerminalNode icon={<CheckCircle2 className="size-4" />} title={labels.end} hint={labels.endHint} isLast />
     </div>
   );
 }
