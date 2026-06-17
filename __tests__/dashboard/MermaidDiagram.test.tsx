@@ -39,7 +39,7 @@ describe('MermaidDiagram Component', () => {
         expect(screen.getByText(/Loading diagram/i)).toBeDefined();
     });
 
-    it('initializes mermaid with colors from CSS variables', async () => {
+    it('initializes mermaid with transparent backgrounds to let CSS handle it', async () => {
         const mermaid = (await import('mermaid')).default;
         
         render(
@@ -53,8 +53,29 @@ describe('MermaidDiagram Component', () => {
                 themeVariables: expect.objectContaining({
                     textColor: '#ffffff',
                     edgeLabelBackground: '#1a1a1a',
+                    // CRITICAL: MUST be transparent to let the external CSS target the SVG elements
+                    background: 'transparent',
+                    primaryColor: 'transparent',
                 }),
             }));
+        });
+    });
+
+    it('renders with correct CSS classes injected to avoid CSS collision', async () => {
+        const mermaid = (await import('mermaid')).default;
+        
+        render(
+            <ThemeProvider>
+                <MermaidDiagram chart="graph TD; A-->B" />
+            </ThemeProvider>
+        );
+
+        await waitFor(() => {
+            const container = screen.getByTestId('mermaid-container');
+            // Check that the container includes the critical CSS classes
+            expect(container.className).toContain('[&_.node.user_rect]:!stroke-[var(--color-primary)]');
+            expect(container.className).toContain('[&_.node.vault_rect]:!stroke-[var(--color-secondary)]');
+            expect(container.className).toContain('[&_.node.asset_rect]:!stroke-[var(--color-accent)]');
         });
     });
 
