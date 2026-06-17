@@ -39,25 +39,29 @@ const KIND_STYLE: Record<FlowStepKind, { icon: ReactNode; gradient: string; acce
 
 function TerminalNode({ icon, title, hint, isLast }: { icon: ReactNode; title: string; hint: string; isLast?: boolean }) {
   return (
-    <div className="flex items-stretch gap-3.5 relative">
-      {/* Timeline line connecting to the next node */}
-      {!isLast && (
-        <div 
-          className="absolute left-[18px] top-[36px] bottom-0 w-px -translate-x-1/2" 
-          style={{
-            background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
-          }}
-        />
-      )}
-      <div className="size-9 shrink-0 rounded-full p-0.5 bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md relative z-10">
-        <div
-          className="size-full rounded-full flex items-center justify-center"
-          style={{ background: 'var(--color-bg)', color: 'var(--color-primary)' }}
-        >
-          {icon}
+    <div className="flex items-stretch gap-3.5">
+      {/* Left Column: Medallion + Line */}
+      <div className="flex flex-col items-center shrink-0 w-9">
+        <div className="size-9 shrink-0 rounded-full p-0.5 bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md relative z-10">
+          <div
+            className="size-full rounded-full flex items-center justify-center"
+            style={{ background: 'var(--color-bg)', color: 'var(--color-primary)' }}
+          >
+            {icon}
+          </div>
         </div>
+        {!isLast && (
+          <div 
+            className="w-[2px] flex-1 my-1" 
+            style={{
+              background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
+            }}
+          />
+        )}
       </div>
-      <div className="min-w-0 pt-0.5 pb-8">
+
+      {/* Right Column: Content */}
+      <div className="min-w-0 pt-0.5 pb-6">
         <p className="text-sm font-bold leading-tight" style={{ color: 'var(--color-text-main)' }}>
           {title}
         </p>
@@ -93,36 +97,36 @@ function DetailChip({ label, value, mono }: { label: string; value: string; mono
 function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; stepLabel: string }) {
   const style = KIND_STYLE[step.kind];
   return (
-    <div className="flex items-stretch gap-3.5 group relative">
-      {/* Timeline line connecting to the next node */}
-      <div 
-        className="absolute left-[18px] top-[36px] bottom-0 w-px -translate-x-1/2" 
-        style={{
-          background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
-        }}
-      />
-      
-      {/* Medallion */}
-      <div className="relative shrink-0">
-        <div
-          className={`size-9 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center text-white shadow-md transition-transform duration-200 group-hover:scale-110 relative z-10`}
-        >
-          {style.icon}
+    <div className="flex items-stretch gap-3.5 group">
+      {/* Left Column: Medallion + Line */}
+      <div className="flex flex-col items-center shrink-0 w-9">
+        <div className="relative shrink-0">
+          <div
+            className={`size-9 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center text-white shadow-md transition-transform duration-200 group-hover:scale-110 relative z-10`}
+          >
+            {style.icon}
+          </div>
+          <span
+            className="absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-bold flex items-center justify-center border z-20"
+            style={{
+              background: 'var(--color-bg)',
+              borderColor: 'var(--color-card-border)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            {index + 1}
+          </span>
         </div>
-        <span
-          className="absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-bold flex items-center justify-center border z-20"
+        <div 
+          className="w-[2px] flex-1 my-1" 
           style={{
-            background: 'var(--color-bg)',
-            borderColor: 'var(--color-card-border)',
-            color: 'var(--color-text-muted)',
+            background: 'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border))'
           }}
-        >
-          {index + 1}
-        </span>
+        />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 pb-8">
+      {/* Right Column: Content */}
+      <div className="flex-1 min-w-0 pb-6">
         <div
           className="rounded-xl px-3.5 py-3 transition-colors duration-200 relative z-10"
           style={{ background: `linear-gradient(135deg, rgba(var(--color-primary-rgb),0.08) 0%, transparent 60%)` }}
