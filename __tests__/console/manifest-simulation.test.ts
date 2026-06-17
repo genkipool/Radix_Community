@@ -50,8 +50,8 @@ describe('Manifest Simulation Validation', () => {
       authRoles: DEFAULT_AUTH_ROLES,
       nftBaseFieldsLocked: { name: false, description: false, key_image_url: false },
       nftCustomFields: [
-        { key: 'power', locked: false },
-        { key: 'speed', locked: false },
+        { id: '1', key: 'power', locked: false },
+        { id: '2', key: 'speed', locked: false },
       ],
       nfts: [
         { name: 'Hero 1', description: 'Desc 1', key_image_url: 'https://img.com/1', customData: { power: '100', speed: '50' } },
@@ -71,8 +71,8 @@ describe('Manifest Simulation Validation', () => {
       authRoles: DEFAULT_AUTH_ROLES,
       nftBaseFieldsLocked: { name: true, description: false, key_image_url: true },
       nftCustomFields: [
-        { key: 'power', locked: true },
-        { key: 'speed', locked: false },
+        { id: '1', key: 'power', locked: true },
+        { id: '2', key: 'speed', locked: false },
       ],
       nfts: [
         { name: 'Hero 1', description: 'Desc 1', key_image_url: 'https://img.com/1', customData: { power: '100', speed: '50' } },
@@ -91,8 +91,8 @@ describe('Manifest Simulation Validation', () => {
       authRoles: DEFAULT_AUTH_ROLES,
       nftBaseFieldsLocked: { name: true, description: true, key_image_url: true },
       nftCustomFields: [
-        { key: 'power', locked: true },
-        { key: 'speed', locked: true },
+        { id: '1', key: 'power', locked: true },
+        { id: '2', key: 'speed', locked: true },
       ],
       nfts: [
         { name: 'Hero 1', description: 'Desc 1', key_image_url: 'https://img.com/1', customData: { power: '100', speed: '50' } },
@@ -111,7 +111,7 @@ describe('Manifest Simulation Validation', () => {
       authRoles: DEFAULT_AUTH_ROLES,
       nftBaseFieldsLocked: { name: false, description: false, key_image_url: false },
       nftCustomFields: [
-        { key: 'element', locked: false },
+        { id: '1', key: 'element', locked: false },
       ],
       nfts: [
         { name: 'Hero 1', description: 'Desc 1', key_image_url: 'https://img.com/1', customData: { element: 'fire' } },

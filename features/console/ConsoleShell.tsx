@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useEffect, useCallback } from 'react';
+import { ReactNode, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { Dictionary } from '@/i18n';
 import ConsoleSidebar from './components/ConsoleSidebar';
@@ -39,24 +39,25 @@ export default function ConsoleShell({
   const pathname = usePathname();
   const { language } = useLanguage();
   const [activeSlug, setActiveSlug] = useState<ConsoleToolSlug | null>(null);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Sync with Next.js pathname changes (e.g. back/forward buttons or initial load)
-  useEffect(() => {
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setActiveSlug(slugFromPathname(pathname));
-  }, [pathname]);
+  }
 
-  const handleSelectTool = useCallback((slug: ConsoleToolSlug) => {
+  const handleSelectTool = (slug: ConsoleToolSlug) => {
     setActiveSlug(slug);
     const href = `/${language}/console/${slug}`;
     window.history.pushState(null, '', href);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [language]);
+  };
 
-  const handleHomeClick = useCallback(() => {
+  const handleHomeClick = () => {
     setActiveSlug(null);
     window.history.pushState(null, '', `/${language}/console`);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [language]);
+  };
 
   // Use the active client state if available, fallback to path-derived slug
   const currentSlug = activeSlug ?? slugFromPathname(pathname);

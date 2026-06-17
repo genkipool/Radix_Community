@@ -1,7 +1,6 @@
 'use client';
 
 import { ComponentType } from 'react';
-import dynamic from 'next/dynamic';
 import type { Dictionary } from '@/i18n';
 import { CONSOLE_TOOLS } from '../data/consoleTools';
 import { useConsoleDictionary } from '../hooks/useConsoleDictionary';
