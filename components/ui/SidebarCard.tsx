@@ -196,7 +196,6 @@ function SidebarCardRow({
             onClick: (e: React.MouseEvent) => {
                 // Native open in new tab support
                 if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
                     onSelectItem(id);
                 }
             }

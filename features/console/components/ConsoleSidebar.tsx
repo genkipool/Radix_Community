@@ -152,8 +152,7 @@ export default function ConsoleSidebar({
                   href={toolHref(slug)}
                   onClick={(e) => {
                     if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
-                      e.preventDefault();
-                      navigate(slug);
+                      // Let native next/link handle the transition for smooth UI
                     }
                   }}
                   className="block flex-1 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -253,7 +252,7 @@ export default function ConsoleSidebar({
                 }
                 onToggle={() => handleToggle(group.id)}
                 items={items}
-                onSelectItem={(id) => navigate(id as ConsoleToolSlug)}
+                onSelectItem={() => {}}
               />
             );
           })}
