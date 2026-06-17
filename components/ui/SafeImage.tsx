@@ -108,15 +108,14 @@ export function SafeImage({
                         <X className="w-6 h-6" />
                     </button>
                     <div 
-                        className="relative max-w-[90vw] max-h-[90vh] w-auto h-auto animate-in zoom-in-95 duration-200" 
+                        className="relative w-[90vw] h-[90vh] animate-in zoom-in-95 duration-200" 
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Image
                             src={imgSrc}
                             alt={alt}
-                            width={1200}
-                            height={1200}
-                            className="w-auto h-auto max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            fill
+                            className="object-contain drop-shadow-2xl rounded-lg"
                             unoptimized={true}
                         />
                     </div>

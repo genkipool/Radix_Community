@@ -1,4 +1,5 @@
 import { SafeImage } from '@/components/ui/SafeImage';
+import { CopyButton } from '@/components/ui/CopyButton';
 
 export interface ResourceCardProps {
   isActive: boolean;
@@ -6,6 +7,7 @@ export interface ResourceCardProps {
   onClick: () => void;
   name: string;
   address: string;
+  fullAddress?: string;
   iconUrl?: string;
   title?: string;
 }
@@ -16,6 +18,7 @@ export function ResourceCard({
   onClick,
   name,
   address,
+  fullAddress,
   iconUrl,
   title,
 }: ResourceCardProps) {
@@ -41,16 +44,21 @@ export function ResourceCard({
           />
         </div>
         <div
-          className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight mt-0.5"
+          className="col-start-2 row-start-1 truncate font-bold text-xs leading-tight self-end"
           style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-main)' }}
         >
           {name}
         </div>
         <div
-          className="col-start-2 row-start-2 truncate text-[11px] font-medium opacity-70 mb-0.5"
+          className="col-start-2 row-start-2 flex items-center gap-1.5 mb-0.5 min-w-0"
           style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
         >
-          {address}
+          <span className="truncate text-[11px] font-medium opacity-70">{address}</span>
+          {fullAddress && (
+            <div onClick={(e) => e.stopPropagation()} className="shrink-0 opacity-80 hover:opacity-100">
+              <CopyButton value={fullAddress} variant="minimal" size="xs" />
+            </div>
+          )}
         </div>
       </div>
     </button>

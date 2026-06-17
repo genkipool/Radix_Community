@@ -300,7 +300,7 @@ export function parseFloatSafe(value: unknown): number {
 //  extractRuleAddress
 // ─────────────────────────────────────────
 /** Extracts the badge/resource address from a Protected rule in role assignments. */
-function extractRuleAddress(rule: unknown): string | null {
+export function extractRuleAddress(rule: unknown): string | null {
   try {
     const r = rule as Record<string, unknown>;
     const ar = (r?.access_rule as Record<string, unknown>) || {};

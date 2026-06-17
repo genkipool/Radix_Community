@@ -10,7 +10,8 @@ import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { TxResultBanner } from '../shared/TxResultBanner';
 
-const freeXrdManifest = (faucet: string, account: string) => `
+const freeXrdManifest = (faucet: string, accounts: string[]) => {
+  return accounts.map(account => `
 CALL_METHOD
     Address("${faucet}")
     "free"
@@ -20,7 +21,8 @@ CALL_METHOD
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
 ;
-`;
+`).join('\n');
+};
 
 /** Stokenet faucet: one click to fund a test account with 10,000 XRD. */
 export default function FaucetTool({ t }: ConsoleToolProps) {
@@ -29,7 +31,7 @@ export default function FaucetTool({ t }: ConsoleToolProps) {
   const { activeNetwork, switchNetwork, isLoading: walletLoading } = useRadixWallet();
   const { data: knownAddresses } = useKnownAddresses();
 
-  const [account, setAccount] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<string[]>([]);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
 
   if (activeNetwork !== 'stokenet') {
@@ -58,15 +60,15 @@ export default function FaucetTool({ t }: ConsoleToolProps) {
   return (
     <div className="space-y-5">
       <ToolSection title={labels.accountTitle} hint={labels.hint}>
-        <AccountPicker value={account} onChange={setAccount} disabled={isSending} />
+        <AccountPicker multiple value={accounts} onChange={setAccounts} disabled={isSending} />
       </ToolSection>
 
       <TxResultBanner t={common} result={result} error={error} onReset={reset} />
 
       <button
         type="button"
-        disabled={!account || !faucet || isSending || walletLoading}
-        onClick={() => account && sendTransaction(freeXrdManifest(faucet, account))}
+        disabled={accounts.length === 0 || !faucet || isSending || walletLoading}
+        onClick={() => accounts.length > 0 && sendTransaction(freeXrdManifest(faucet, accounts))}
         title={labels.buttonHint}
         className="inline-flex items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 hover:-translate-y-px active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
       >

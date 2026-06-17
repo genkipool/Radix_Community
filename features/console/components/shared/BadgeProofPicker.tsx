@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { truncateAddress } from '@/utils/formatters';
 import type { AccountHoldings, BadgeProofSelection } from '../../types/console.types';
 import { ResourceCard } from './ResourceCard';
@@ -15,6 +15,8 @@ interface BadgeProofPickerProps {
   onChange: (value: BadgeProofSelection | null) => void;
   disabled?: boolean;
   hint?: string;
+  requiredBadges?: string[];
+  rolesLoading?: boolean;
 }
 
 const NONE = '';
@@ -29,6 +31,8 @@ export function BadgeProofPicker({
   onChange,
   disabled,
   hint,
+  requiredBadges,
+  rolesLoading,
 }: BadgeProofPickerProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -50,7 +54,11 @@ export function BadgeProofPicker({
     ),
   ];
 
-  const filteredOptions = allOptions.filter((opt) =>
+  const allowedOptions = requiredBadges && requiredBadges.length > 0
+    ? allOptions.filter((opt) => opt.value !== NONE && requiredBadges.includes(opt.value.split(NFT_SEPARATOR)[0]))
+    : allOptions.filter((opt) => opt.value === NONE);
+
+  const filteredOptions = allowedOptions.filter((opt) =>
     opt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     opt.value.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -60,6 +68,30 @@ export function BadgeProofPicker({
       ? `${value.resourceAddress}${NFT_SEPARATOR}${value.nonFungibleId}`
       : value.resourceAddress
     : NONE;
+
+  // Stable key for auto-selection (avoids re-triggering on every render)
+  const allowedKey = allowedOptions.map(o => o.value).join(',');
+
+  // Auto-selection: whenever the allowed options change, pick the first one
+  // if the current selection is not among them.
+  useEffect(() => {
+    if (rolesLoading) return;
+
+    const allowedValues = allowedKey ? allowedKey.split(',') : [];
+    const currentlyValid = allowedValues.includes(encoded);
+    if (currentlyValid) return;
+
+    // Auto-select the first allowed option
+    const first = allowedValues[0];
+    if (first === undefined) {
+      onChange(null);
+    } else if (first === NONE) {
+      onChange(null);
+    } else {
+      const [resourceAddress, nonFungibleId] = first.split(NFT_SEPARATOR);
+      onChange({ accountAddress: accountAddress!, resourceAddress, nonFungibleId });
+    }
+  }, [rolesLoading, allowedKey, encoded, accountAddress, onChange]);
 
   const handleChange = (next: string) => {
     if (!next || !accountAddress || next === NONE) {
@@ -98,11 +130,24 @@ export function BadgeProofPicker({
             onClick={() => handleChange(isActive ? NONE : opt.value)}
             name={opt.name}
             address={opt.address}
+            fullAddress={opt.value.includes(NFT_SEPARATOR) ? opt.value.split(NFT_SEPARATOR)[0] : (opt.value || undefined)}
             iconUrl={opt.iconUrl}
           />
           );
         })}
-        {filteredOptions.length === 0 && (
+        {allowedOptions.length === 0 && requiredBadges && requiredBadges.length > 0 && !rolesLoading ? (
+          <div className="col-span-1 sm:col-span-3">
+            <ResourceCard
+              isActive={false}
+              disabled={true}
+              onClick={() => {}}
+              name="Prueba requerida faltante"
+              address={requiredBadges.map(b => truncateAddress(b, 6, 4)).join(', ')}
+              fullAddress={requiredBadges[0]}
+              iconUrl=""
+            />
+          </div>
+        ) : filteredOptions.length === 0 && (
           <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             No se encontraron resultados
           </div>

@@ -28,15 +28,17 @@ export function FieldShell({ label, hint, error, labelEnd, children, className =
           {labelEnd}
         </div>
       )}
-      <div className="relative flex flex-col">
+      <div className="flex flex-col">
         {children}
-        <div className="absolute top-full left-0 mt-1 w-full">
-          {error ? (
-            <p className="text-[11px] leading-tight font-medium text-red-500">{error}</p>
-          ) : hint ? (
-            <p className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>
-          ) : null}
-        </div>
+        {(error || hint) && (
+          <div className="mt-1.5">
+            {error ? (
+              <p className="text-[11px] leading-tight font-medium text-red-500">{error}</p>
+            ) : hint ? (
+              <p className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>{hint}</p>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );

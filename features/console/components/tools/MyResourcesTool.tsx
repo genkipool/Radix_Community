@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2 } from 'lucide-react';
+import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAccountResources } from '../../hooks/useAccountResources';
+import { useResourceRoles } from '../../hooks/useResourceRoles';
+import type { GatewayRoleEntry } from '@/features/dashboard/types';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
@@ -28,8 +30,10 @@ import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
+import { extractRuleAddress } from '@/features/dashboard/utils/resourceUtils';
 import { ManifestCode } from '../shared/ManifestCode';
 import { OptionButtons } from '../shared/OptionButtons';
+import { AuthRoleRow } from '../shared/AuthRoleRow';
 import { SelectField, TextField, SearchField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
@@ -56,21 +60,69 @@ const ACTION_ICONS: Record<ResourceAction, ReactNode> = {
 
 const FREEZE_FLAGS: FreezeFlag[] = ['withdraw', 'deposit', 'burn', 'all'];
 
+const ACTION_TO_ROLES: Record<ResourceAction, { setter: string; updater: string } | null> = {
+  mint: { setter: 'minter', updater: 'minter_updater' },
+  mintNft: { setter: 'minter', updater: 'minter_updater' },
+  burn: { setter: 'burner', updater: 'burner_updater' },
+  lockMetadata: { setter: 'metadata_locker', updater: 'metadata_locker_updater' },
+  setOwnerRole: null,
+  recall: { setter: 'recaller', updater: 'recaller_updater' },
+  freeze: { setter: 'freezer', updater: 'freezer_updater' },
+};
+
+const AUTH_ROLE_PAIRS = [
+  { setter: 'minter', updater: 'minter_updater' },
+  { setter: 'burner', updater: 'burner_updater' },
+  { setter: 'freezer', updater: 'freezer_updater' },
+  { setter: 'recaller', updater: 'recaller_updater' },
+  { setter: 'withdrawer', updater: 'withdrawer_updater' },
+  { setter: 'depositor', updater: 'depositor_updater', setterOptions: ['allowAll'] },
+  { setter: 'metadata_setter', updater: 'metadata_setter_updater' },
+  { setter: 'metadata_locker', updater: 'metadata_locker_updater' },
+  { setter: 'non_fungible_data_updater', updater: 'non_fungible_data_updater_updater', nftOnly: true },
+];
+
 export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const common = t.common;
   const labels = t.myResources;
   const { language } = useLanguage();
   const { isLoading: walletLoading } = useRadixWallet();
 
-  const [account, setAccount] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<string[]>([]);
   const [resource, setResource] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [proof, setProof] = useState<BadgeProofSelection | null>(null);
   const [showManifest, setShowManifest] = useState(false);
+  const [showAuthRoles, setShowAuthRoles] = useState(false);
 
-  const { data: holdings, isLoading: holdingsLoading } = useAccountResources(account);
+  // For backwards compatibility in queries
+  const account = accounts[0] || null;
+
+  const { data: holdings, isLoading: holdingsLoading } = useAccountResources(accounts);
+  const { data: rolesData, isLoading: rolesLoading } = useResourceRoles(resource);
+
+  let normalizedRoles: Record<string, string> | undefined = undefined;
+  if (rolesData?.roleAssignments) {
+    normalizedRoles = {};
+    const r = rolesData.roleAssignments;
+    if (r.owner) {
+      normalizedRoles['owner'] = r.owner.rule?.type === 'DenyAll' ? 'denyAll' : (r.owner.rule?.type === 'AllowAll' ? 'allowAll' : 'badge');
+    }
+    if (Array.isArray(r.entries)) {
+      for (const entry of r.entries) {
+        if (entry.role_key && entry.role_key.name) {
+          if (entry.assignment?.resolution === 'Owner') {
+            normalizedRoles[entry.role_key.name] = 'owner';
+          } else {
+            const t = entry.assignment?.explicit_rule?.type;
+            normalizedRoles[entry.role_key.name] = t === 'DenyAll' ? 'denyAll' : (t === 'AllowAll' ? 'allowAll' : 'badge');
+          }
+        }
+      }
+    }
+  }
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
   const preview = useTransactionPreview();
 
@@ -83,13 +135,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
-      name: f.symbol || f.name || truncateAddress(f.resourceAddress, 8, 6),
+      name: f.name || f.symbol || 'Unnamed resource',
       address: `${formatNumber(Number(f.amount), 4, language)} · ${truncateAddress(f.resourceAddress, 6, 5)}`,
       iconUrl: f.iconUrl,
     })),
     ...(holdings?.nonFungibles ?? []).map((nf) => ({
       value: nf.resourceAddress,
-      name: nf.name || truncateAddress(nf.resourceAddress, 8, 6),
+      name: nf.name || 'Unnamed resource',
       address: `${nf.ids.length} NFT · ${truncateAddress(nf.resourceAddress, 6, 5)}`,
       iconUrl: nf.iconUrl,
     })),
@@ -168,10 +220,48 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
     })),
   ];
 
+  const roleInfo = ACTION_TO_ROLES[activeAction];
+  let requiredBadgeForAction: string[] | undefined = undefined;
+
+  // Extract the owner badge address (used as fallback)
+  const ownerBadgeAddr = rolesData?.roleAssignments?.owner?.rule
+    ? extractRuleAddress(rolesData.roleAssignments.owner.rule)
+    : null;
+
+  if (roleInfo && rolesData?.roleAssignments) {
+    const r = rolesData.roleAssignments;
+    if (Array.isArray(r.entries)) {
+      const entry = r.entries.find((e: GatewayRoleEntry) => e.role_key?.name === roleInfo.setter);
+      if (entry?.assignment) {
+        if (entry.assignment.resolution === 'Owner') {
+          // Role inherits from Owner → use the owner badge
+          if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
+        } else if (entry.assignment.explicit_rule?.type === 'Protected') {
+          // Role has its own explicit Protected rule with a badge
+          const addr = extractRuleAddress(entry.assignment.explicit_rule);
+          if (addr) requiredBadgeForAction = [addr];
+        }
+        // DenyAll / AllowAll → no badge needed for this specific action,
+        // but fall back to owner badge so the user can still present it
+        // for other operations (e.g. setOwnerRole)
+        if (!requiredBadgeForAction && ownerBadgeAddr) {
+          requiredBadgeForAction = [ownerBadgeAddr];
+        }
+      } else {
+        // No assignment at all → fall back to owner badge
+        if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
+      }
+    } else {
+      if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
+    }
+  } else if (activeAction === 'setOwnerRole') {
+    if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
+  }
+
   return (
     <div className="space-y-5">
       <ToolSection title={labels.accountTitle}>
-        <AccountPicker value={account} onChange={setAccount} disabled={isSending} />
+        <AccountPicker multiple value={accounts} onChange={setAccounts} disabled={isSending} />
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3">
@@ -207,6 +297,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     onClick={() => setResource(isActive ? '' : opt.value)}
                     name={opt.name}
                     address={opt.address}
+                    fullAddress={opt.value}
                     iconUrl={opt.iconUrl}
                   />
                 );
@@ -229,8 +320,62 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           value={proof}
           onChange={setProof}
           disabled={isSending}
+          requiredBadges={requiredBadgeForAction}
+          rolesLoading={rolesLoading}
         />
       </ToolSection>
+
+      {resource && normalizedRoles && (
+        <ToolSection title={t.createToken.authRoles} hint={t.createToken.authRolesHint}>
+          <button
+            type="button"
+            onClick={() => setShowAuthRoles((prev) => !prev)}
+            aria-expanded={showAuthRoles}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            <ChevronDown className={`size-3.5 transition-transform ${showAuthRoles ? 'rotate-180' : ''}`} />
+            {t.createToken.authRoles}
+          </button>
+          {showAuthRoles && (
+            <div className="divide-y" style={{ borderColor: 'var(--color-card-border)' }}>
+              {AUTH_ROLE_PAIRS.flatMap(({ setter, updater, nftOnly, setterOptions }) => {
+                if (nftOnly && !isNonFungible) return [];
+                const setterVal = normalizedRoles[setter] || 'owner';
+                const updaterVal = normalizedRoles[updater] || 'owner';
+                const authRoleLabels: Record<string, string> = {
+                  owner: t.createToken.owner,
+                  allowAll: t.createToken.allowAll,
+                  denyAll: t.createToken.denyAll,
+                  badge: common.ownerRole_badge,
+                };
+                return [
+                  <AuthRoleRow
+                    key={setter}
+                    roleKey={setter}
+                    roleHint={(t.createToken.roleHints as Record<string, string>)[setter]}
+                    value={setterVal as string}
+                    options={setterOptions ?? ['owner', 'denyAll', 'allowAll']}
+                    labels={authRoleLabels}
+                    optionHints={t.createToken.optionHints}
+                    readOnly
+                  />,
+                  <AuthRoleRow
+                    key={updater}
+                    roleKey={updater}
+                    roleHint={(t.createToken.roleHints as Record<string, string>)[updater]}
+                    value={updaterVal as string}
+                    options={['owner', 'denyAll', 'allowAll']}
+                    labels={authRoleLabels}
+                    optionHints={t.createToken.optionHints}
+                    readOnly
+                  />
+                ];
+              })}
+            </div>
+          )}
+        </ToolSection>
+      )}
 
       {resource && (
         <ToolSection
@@ -248,140 +393,204 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
             </button>
           }
         >
-          <OptionButtons<ResourceAction>
-            options={availableActions.map((candidate) => ({
-              value: candidate,
-              label: actionLabels[candidate]?.name ?? candidate,
-              icon: ACTION_ICONS[candidate],
-              title: actionLabels[candidate]?.hint,
-            }))}
-            value={activeAction}
-            onChange={setAction}
-            size="sm"
-            disabled={isSending}
-          />
+          {(() => {
+            // roleInfo is already defined at the component root
+            let roleStr = '';
+            let isActionLocked = false;
+            let ruleType = 'allowAll';
+            if (roleInfo && normalizedRoles) {
+              const setterVal = normalizedRoles[roleInfo.setter] || 'owner';
+              const updaterVal = normalizedRoles[roleInfo.updater] || 'owner';
+              const authRoleLabels: Record<string, string> = {
+                owner: t.createToken.owner,
+                allowAll: t.createToken.allowAll,
+                denyAll: t.createToken.denyAll,
+                badge: common.ownerRole_badge,
+              };
+              roleStr = authRoleLabels[setterVal] || setterVal;
+              isActionLocked = updaterVal === 'denyAll';
+              ruleType = setterVal;
+            } else if (activeAction === 'setOwnerRole' && normalizedRoles) {
+              const authRoleLabels: Record<string, string> = {
+                owner: t.createToken.owner,
+                allowAll: t.createToken.allowAll,
+                denyAll: t.createToken.denyAll,
+                badge: common.ownerRole_badge,
+              };
+              const ownerVal = normalizedRoles['owner'] || 'badge';
+              roleStr = authRoleLabels[ownerVal] || ownerVal;
+              ruleType = ownerVal;
+              isActionLocked = false;
+            }
 
-          {(activeAction === 'mint' || activeAction === 'burn') && (
-            <TextField
-              label={labels.fields.amount}
-              value={fields.amount ?? ''}
-              onChange={(value) => setField('amount', value)}
-              type="number"
-              disabled={isSending}
-            />
-          )}
+            const isActionDenied = ruleType === 'denyAll';
 
-          {activeAction === 'mintNft' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <TextField
-                label={labels.fields.nftId}
-                hint={labels.fields.nftIdHint}
-                value={fields.nftId ?? ''}
-                onChange={(value) => setField('nftId', value)}
-                placeholder="#1#"
-                disabled={isSending}
-              />
-              <TextField
-                label={labels.fields.nftName}
-                value={fields.nftName ?? ''}
-                onChange={(value) => setField('nftName', value)}
-                disabled={isSending}
-              />
-              <TextField
-                label={labels.fields.nftDescription}
-                value={fields.nftDescription ?? ''}
-                onChange={(value) => setField('nftDescription', value)}
-                disabled={isSending}
-              />
-              <TextField
-                label={labels.fields.nftImageUrl}
-                value={fields.nftImageUrl ?? ''}
-                onChange={(value) => setField('nftImageUrl', value)}
-                disabled={isSending}
-              />
-            </div>
-          )}
-
-          {activeAction === 'lockMetadata' && (
-            <TextField
-              label={labels.fields.metadataKey}
-              hint={labels.fields.metadataKeyHint}
-              value={fields.metadataKey ?? ''}
-              onChange={(value) => setField('metadataKey', value)}
-              placeholder="name"
-              disabled={isSending}
-            />
-          )}
-
-          {activeAction === 'setOwnerRole' && (
-            <>
-              <OptionButtons
-                options={[
-                  { value: 'allowAll', label: common.ownerRole_allowAll, title: t.createToken.optionHints.allowAll },
-                  { value: 'denyAll', label: t.createToken.denyAll, title: t.createToken.optionHints.denyAll },
-                  { value: 'badge', label: common.ownerRole_badge },
-                ]}
-                value={fields.ruleKind ?? ''}
-                onChange={(value) => setField('ruleKind', value)}
-                size="sm"
-                disabled={isSending}
-              />
-              {fields.ruleKind === 'badge' && (
-                <SelectField
-                  label={common.badgeResource}
-                  placeholder={common.selectBadge}
-                  value={fields.badgeResource ?? ''}
-                  onChange={(value) => setField('badgeResource', value)}
-                  options={badgeOptions}
+            return (
+              <>
+                <OptionButtons<ResourceAction>
+                  options={availableActions.map((candidate) => ({
+                    value: candidate,
+                    label: actionLabels[candidate]?.name ?? candidate,
+                    icon: ACTION_ICONS[candidate],
+                    title: actionLabels[candidate]?.hint,
+                  }))}
+                  value={activeAction}
+                  onChange={setAction}
+                  size="sm"
                   disabled={isSending}
+                  layout="grid"
+                  className="grid-flow-col auto-cols-fr overflow-x-auto pb-1"
                 />
-              )}
-            </>
-          )}
 
-          {(activeAction === 'recall' || activeAction === 'freeze') && (
-            <TextField
-              label={labels.fields.vault}
-              hint={labels.fields.vaultHint}
-              value={fields.vault ?? ''}
-              onChange={(value) => setField('vault', value)}
-              placeholder="internal_vault_..."
-              disabled={isSending}
-            />
-          )}
-          {activeAction === 'recall' && (
-            <TextField
-              label={labels.fields.amount}
-              value={fields.amount ?? ''}
-              onChange={(value) => setField('amount', value)}
-              type="number"
-              disabled={isSending}
-            />
-          )}
-          {activeAction === 'freeze' && (
-            <>
-              <OptionButtons
-                options={[
-                  { value: 'freeze', label: labels.fields.freeze, title: labels.fields.freezeHint },
-                  { value: 'unfreeze', label: labels.fields.unfreeze, title: labels.fields.unfreezeHint },
-                ]}
-                value={fields.mode ?? 'freeze'}
-                onChange={(value) => setField('mode', value)}
-                size="sm"
-                disabled={isSending}
-              />
-              <OptionButtons
-                options={FREEZE_FLAGS.map((flag) => ({
-                  value: flag,
-                  label: (labels.fields.flags as Record<string, string>)[flag] ?? flag,
-                }))}
-                value={fields.flag ?? ''}
-                onChange={(value) => setField('flag', value)}
-                size="sm"
-                disabled={isSending}
-              />
-            </>
-          )}
+                {roleStr && (
+                  <div className={`mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-xs font-medium border ${isActionDenied ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-[var(--color-primary)]/5 text-[var(--color-primary)] border-[var(--color-primary)]/20'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="opacity-80">Requisito para {actionLabels[activeAction]?.name || activeAction}:</span>
+                      <span className="font-bold flex items-center gap-1.5">
+                        {ruleType === 'allowAll' && <Check className="size-3.5" />}
+                        {ruleType === 'denyAll' && <Lock className="size-3.5" />}
+                        {ruleType === 'badge' && <Crown className="size-3.5" />}
+                        {roleStr}
+                      </span>
+                    </div>
+                    {isActionLocked && (
+                      <div className="flex items-center gap-1.5 opacity-80" title="La regla de acceso para esta acción no se puede modificar">
+                        <Lock className="size-3" />
+                        <span>Regla bloqueada</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(activeAction === 'mint' || activeAction === 'burn') && (
+                  <TextField
+                    label={labels.fields.amount}
+                    value={fields.amount ?? ''}
+                    onChange={(value) => setField('amount', value)}
+                    type="number"
+                    disabled={isSending || isActionDenied}
+                  />
+                )}
+
+                {activeAction === 'mintNft' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <TextField
+                      label={labels.fields.nftId}
+                      hint={labels.fields.nftIdHint}
+                      value={fields.nftId ?? ''}
+                      onChange={(value) => setField('nftId', value)}
+                      placeholder="#1#"
+                      disabled={isSending || isActionDenied}
+                    />
+                    <TextField
+                      label={labels.fields.nftName}
+                      value={fields.nftName ?? ''}
+                      onChange={(value) => setField('nftName', value)}
+                      disabled={isSending || isActionDenied}
+                    />
+                    <TextField
+                      label={labels.fields.nftDescription}
+                      value={fields.nftDescription ?? ''}
+                      onChange={(value) => setField('nftDescription', value)}
+                      disabled={isSending || isActionDenied}
+                    />
+                    <TextField
+                      label={labels.fields.nftImageUrl}
+                      value={fields.nftImageUrl ?? ''}
+                      onChange={(value) => setField('nftImageUrl', value)}
+                      disabled={isSending || isActionDenied}
+                    />
+                  </div>
+                )}
+
+                {activeAction === 'lockMetadata' && (
+                  <TextField
+                    label={labels.fields.metadataKey}
+                    hint={labels.fields.metadataKeyHint}
+                    value={fields.metadataKey ?? ''}
+                    onChange={(value) => setField('metadataKey', value)}
+                    placeholder="name"
+                    disabled={isSending || isActionDenied}
+                  />
+                )}
+
+                {activeAction === 'setOwnerRole' && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                        Regla de Acceso
+                      </span>
+                      <OptionButtons
+                        options={[
+                          { value: 'allowAll', label: common.ownerRole_allowAll, title: t.createToken.optionHints.allowAll },
+                          { value: 'denyAll', label: t.createToken.denyAll, title: t.createToken.optionHints.denyAll },
+                          { value: 'badge', label: common.ownerRole_badge },
+                        ]}
+                        value={fields.ruleKind || ruleType}
+                        onChange={(value) => setField('ruleKind', value)}
+                        size="sm"
+                        disabled={isSending || isActionDenied}
+                      />
+                    </div>
+                    {(fields.ruleKind || ruleType) === 'badge' && (
+                      <SelectField
+                        label={common.badgeResource}
+                        placeholder={common.selectBadge}
+                        value={fields.badgeResource ?? ''}
+                        onChange={(value) => setField('badgeResource', value)}
+                        options={badgeOptions}
+                        disabled={isSending || isActionDenied}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {(activeAction === 'recall' || activeAction === 'freeze') && (
+                  <TextField
+                    label={labels.fields.vault}
+                    hint={labels.fields.vaultHint}
+                    value={fields.vault ?? ''}
+                    onChange={(value) => setField('vault', value)}
+                    placeholder="internal_vault_..."
+                    disabled={isSending || isActionDenied}
+                  />
+                )}
+                {activeAction === 'recall' && (
+                  <TextField
+                    label={labels.fields.amount}
+                    value={fields.amount ?? ''}
+                    onChange={(value) => setField('amount', value)}
+                    type="number"
+                    disabled={isSending || isActionDenied}
+                  />
+                )}
+                {activeAction === 'freeze' && (
+                  <>
+                    <OptionButtons
+                      options={[
+                        { value: 'freeze', label: labels.fields.freeze, title: labels.fields.freezeHint },
+                        { value: 'unfreeze', label: labels.fields.unfreeze, title: labels.fields.unfreezeHint },
+                      ]}
+                      value={fields.mode ?? 'freeze'}
+                      onChange={(value) => setField('mode', value)}
+                      size="sm"
+                      disabled={isSending || isActionDenied}
+                    />
+                    <OptionButtons
+                      options={FREEZE_FLAGS.map((flag) => ({
+                        value: flag,
+                        label: (labels.fields.flags as Record<string, string>)[flag] ?? flag,
+                      }))}
+                      value={fields.flag ?? ''}
+                      onChange={(value) => setField('flag', value)}
+                      size="sm"
+                      disabled={isSending || isActionDenied}
+                    />
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {showManifest && manifest && <ManifestCode code={manifest} />}
         </ToolSection>

@@ -150,6 +150,7 @@ export function OwnerRoleSelector({ t, holdings, value, onChange, disabled }: Ow
                   onClick={() => onChange({ ...value, badgeResource: isActive ? '' : opt.value, badgeNftId: ANY_NFT })}
                   name={opt.name}
                   address={opt.address}
+                  fullAddress={opt.value}
                   iconUrl={opt.iconUrl}
                   title={opt.value}
                 />

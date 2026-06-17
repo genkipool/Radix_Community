@@ -111,47 +111,7 @@ const AUTH_ROLE_PAIRS: Array<{ setter: keyof ResourceAuthRoles; updater: keyof R
   { setter: 'nft_data_setter', updater: 'nft_data_setter_updater', nftOnly: true },
 ];
 
-function AuthRoleRow({
-  roleKey,
-  roleHint,
-  value,
-  onChange,
-  options,
-  labels,
-  optionHints,
-  disabled,
-}: {
-  roleKey: string;
-  /** Tooltip explaining what this role controls */
-  roleHint?: string;
-  value: AuthRoleValue;
-  onChange: (value: AuthRoleValue) => void;
-  options: AuthRoleValue[];
-  labels: Record<AuthRoleValue, string>;
-  /** Tooltips explaining each access-rule choice */
-  optionHints: Record<AuthRoleValue, string>;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-1.5">
-      <code
-        className="text-xs sm:w-64 shrink-0 cursor-help"
-        style={{ color: 'var(--color-text-muted)' }}
-        title={roleHint}
-      >
-        {roleKey}
-      </code>
-      <OptionButtons<AuthRoleValue>
-        options={options.map((opt) => ({ value: opt, label: labels[opt], title: optionHints[opt] }))}
-        value={value}
-        onChange={onChange}
-        size="sm"
-        disabled={disabled}
-        className="flex-1"
-      />
-    </div>
-  );
-}
+import { AuthRoleRow } from '../shared/AuthRoleRow';
 
 /* ─── Lock toggle ─────────────────────────────────────────────────────────── */
 
