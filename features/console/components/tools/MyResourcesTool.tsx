@@ -34,7 +34,7 @@ import { extractRuleAddress } from '@/features/dashboard/utils/resourceUtils';
 import { ManifestCode } from '../shared/ManifestCode';
 import { OptionButtons } from '../shared/OptionButtons';
 import { AuthRoleRow } from '../shared/AuthRoleRow';
-import { SelectField, TextField, SearchField } from '../shared/fields';
+import { TextField, SearchField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
@@ -213,16 +213,6 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
     : '';
   const canSend = !!manifest && !isSending && !walletLoading;
 
-  const badgeOptions = [
-    ...(holdings?.fungibles ?? []).map((f) => ({
-      value: f.resourceAddress,
-      label: `${f.name || f.symbol || 'Unnamed'} (${truncateAddress(f.resourceAddress, 8, 6)})`,
-    })),
-    ...(holdings?.nonFungibles ?? []).map((nf) => ({
-      value: nf.resourceAddress,
-      label: `${nf.name || 'Unnamed'} (${truncateAddress(nf.resourceAddress, 8, 6)})`,
-    })),
-  ];
 
   const roleInfo = ACTION_TO_ROLES[activeAction];
   let requiredBadgeForAction: string[] | undefined = undefined;
@@ -541,14 +531,33 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       />
                     </div>
                     {(fields.ruleKind || ruleType) === 'badge' && (
-                      <SelectField
-                        label={common.badgeResource}
-                        placeholder={common.selectBadge}
-                        value={fields.badgeResource ?? ''}
-                        onChange={(value) => setField('badgeResource', value)}
-                        options={badgeOptions}
-                        disabled={isSending || isActionDenied}
-                      />
+                      <div className="flex flex-col gap-2 mt-2">
+                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                          {common.badgeResource}
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                          {resourceOptions.map((opt) => {
+                            const isActive = opt.value === fields.badgeResource;
+                            return (
+                              <ResourceCard
+                                key={opt.value}
+                                isActive={isActive}
+                                disabled={isSending || isActionDenied}
+                                onClick={() => setField('badgeResource', isActive ? '' : opt.value)}
+                                name={opt.name}
+                                address={opt.address}
+                                fullAddress={opt.value}
+                                iconUrl={opt.iconUrl}
+                              />
+                            );
+                          })}
+                          {resourceOptions.length === 0 && (
+                            <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                              No hay badges disponibles
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
