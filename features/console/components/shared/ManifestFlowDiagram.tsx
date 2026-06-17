@@ -35,19 +35,7 @@ const KIND_STYLE: Record<FlowStepKind, { icon: ReactNode; gradient: string; acce
 
 /* ─── Building blocks ─────────────────────────────────────────────────────── */
 
-function Connector() {
-  return (
-    <div className="flex justify-center w-9 shrink-0" aria-hidden>
-      <div
-        className="w-px h-6"
-        style={{
-          background:
-            'linear-gradient(to bottom, var(--color-card-border), rgba(var(--color-primary-rgb), 0.45), var(--color-card-border))',
-        }}
-      />
-    </div>
-  );
-}
+
 
 function TerminalNode({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
   return (
@@ -96,16 +84,16 @@ function DetailChip({ label, value, mono }: { label: string; value: string; mono
 function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; stepLabel: string }) {
   const style = KIND_STYLE[step.kind];
   return (
-    <div className="flex items-start gap-3.5 group">
+    <div className="flex items-start gap-3.5 group relative">
       {/* Medallion */}
       <div className="relative shrink-0">
         <div
-          className={`size-9 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center text-white shadow-md transition-transform duration-200 group-hover:scale-110`}
+          className={`size-9 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center text-white shadow-md transition-transform duration-200 group-hover:scale-110 relative z-10`}
         >
           {style.icon}
         </div>
         <span
-          className="absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-bold flex items-center justify-center border"
+          className="absolute -top-1.5 -right-1.5 size-4 rounded-full text-[9px] font-bold flex items-center justify-center border z-20"
           style={{
             background: 'var(--color-bg)',
             borderColor: 'var(--color-card-border)',
@@ -118,8 +106,8 @@ function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; s
 
       {/* Content */}
       <div
-        className="flex-1 min-w-0 rounded-xl px-3.5 py-3 -mt-0.5 transition-colors duration-200"
-        style={{ background: `linear-gradient(135deg, rgba(${style.accentRgb},0.08) 0%, transparent 60%)` }}
+        className="flex-1 min-w-0 rounded-xl px-3.5 py-3 -mt-0.5 transition-colors duration-200 relative z-10"
+        style={{ background: `linear-gradient(135deg, rgba(var(--color-primary-rgb),0.08) 0%, transparent 60%)` }}
       >
         <div className="flex flex-col gap-y-1">
           <span className="sr-only">{`${stepLabel} ${index + 1}`}</span>
@@ -128,7 +116,7 @@ function StepNode({ step, index, stepLabel }: { step: FlowStep; index: number; s
             <code
               className="relative -top-[1px] text-[10px] font-bold tracking-wide uppercase ml-2.5"
               style={{
-                color: `rgb(${style.accentRgb})`,
+                color: `var(--color-primary)`,
               }}
             >
               {step.instruction}
@@ -163,16 +151,28 @@ interface ManifestFlowDiagramProps {
  */
 export function ManifestFlowDiagram({ steps, labels }: ManifestFlowDiagramProps) {
   return (
-    <div className="min-w-0">
-      <TerminalNode icon={<Wallet className="size-4" />} title={labels.start} hint={labels.startHint} />
-      <Connector />
+    <div className="min-w-0 relative flex flex-col gap-6 z-0">
+      {/* Continuous Timeline Line */}
+      <div 
+        className="absolute left-[18px] top-[18px] bottom-[18px] w-px -translate-x-1/2 -z-10"
+        style={{
+          background: 'linear-gradient(to bottom, transparent, var(--color-card-border) 10%, rgba(var(--color-primary-rgb), 0.45) 50%, var(--color-card-border) 90%, transparent)'
+        }}
+      />
+      
+      <div className="relative z-10 bg-[var(--color-bg)] rounded-full self-start">
+        <TerminalNode icon={<Wallet className="size-4" />} title={labels.start} hint={labels.startHint} />
+      </div>
+
       {steps.map((step, index) => (
-        <div key={index}>
+        <div key={index} className="relative z-10 bg-[var(--color-bg)] rounded-xl self-stretch">
           <StepNode step={step} index={index} stepLabel={labels.stepLabel} />
-          <Connector />
         </div>
       ))}
-      <TerminalNode icon={<CheckCircle2 className="size-4" />} title={labels.end} hint={labels.endHint} />
+
+      <div className="relative z-10 bg-[var(--color-bg)] rounded-full self-start">
+        <TerminalNode icon={<CheckCircle2 className="size-4" />} title={labels.end} hint={labels.endHint} />
+      </div>
     </div>
   );
 }
