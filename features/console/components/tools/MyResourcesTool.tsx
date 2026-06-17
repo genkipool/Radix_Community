@@ -434,7 +434,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   disabled={isSending}
                   layout="grid"
                   hideCheck={true}
-                  buttonClassName="py-2.5"
+                  buttonClassName="!flex-col py-3 gap-1.5 min-h-[64px]"
                   className="grid-flow-col auto-cols-fr overflow-x-auto pb-1"
                 />
 

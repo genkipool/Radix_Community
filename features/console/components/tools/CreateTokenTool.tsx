@@ -742,7 +742,7 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
       <TxResultBanner
         t={common}
         result={result}
-        error={error === 'failedToPrepareTransaction' ? (common.failedToPrepareTransaction || 'Error al preparar la transacción. Comprueba que todo esté bien rellenado.') : error}
+        error={(error && error.toLowerCase().includes('failedtopreparetransaction')) ? (common.errors?.failedToPrepareTransaction || 'Error al preparar la transacción. Comprueba que todo esté bien rellenado.') : error}
         createdEntityLabel={labels.successResource}
         onReset={reset}
       />

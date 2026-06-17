@@ -817,7 +817,8 @@
         "toolkit_not_initialized": "The wallet toolkit could not be initialised for this network.",
         "timeout": "The wallet request timed out. Please try again.",
         "rejected": "The transaction was rejected or cancelled in the wallet.",
-        "unknown": "Something went wrong while sending the transaction."
+        "unknown": "Something went wrong while sending the transaction.",
+        "failedToPrepareTransaction": "Failed to prepare transaction. Check that all fields are filled correctly."
       }
     },
     "createToken": {

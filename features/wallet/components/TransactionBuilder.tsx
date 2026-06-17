@@ -26,6 +26,30 @@ interface TransactionBuilderProps {
     actions?: React.ReactNode;
 }
 
+type GatewayRuleInfo = {
+    type?: string;
+    access_rule?: {
+        proof_rule?: {
+            requirement?: { non_fungible?: { resource_address?: string }, resource_address?: string };
+        };
+    };
+    requirement?: { non_fungible?: { resource_address?: string }, resource_address?: string };
+};
+
+type GatewayEntityDataExt = {
+    details?: {
+        role_assignments?: {
+            entries?: Array<{
+                role_key?: { name: string };
+                assignment?: { resolution?: string; explicit_rule?: GatewayRuleInfo };
+            }>;
+            owner?: {
+                rule?: GatewayRuleInfo;
+            };
+        };
+    };
+};
+
 interface AssetItem {
     internalId: string;
     type: 'fungible' | 'non_fungible' | 'pool_unit';
@@ -157,14 +181,6 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         transactionStateCache.set(cacheKey, { destinationAddress, assets });
     }, [cacheKey, destinationAddress, assets]);
 
-    // Live manifest preview for consumers that render it (e.g. the console)
-    const previewGroups = buildTransferGroups(assets, destinationAddress);
-    const previewManifest = previewGroups.length > 0
-        ? buildMultiTransferManifest(accountAddress, previewGroups)
-        : '';
-    useEffect(() => {
-        onManifestChange?.(previewManifest);
-    }, [previewManifest, onManifestChange]);
 
     const [popupOpen, setPopupOpen] = useState(false);
     const [popupMode, setPopupMode] = useState<PopupMode>('asset');
@@ -247,6 +263,84 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         queryFn: () => apiFetchEntityDetails(accountAddress, network),
     });
 
+    const activeResourceAddresses = Array.from(new Set(assets.map(a => a.resourceAddress).filter(Boolean)));
+    const { data: resourceDetails } = useQuery({
+        queryKey: ['resourceDetails', network, activeResourceAddresses],
+        queryFn: async () => {
+            if (activeResourceAddresses.length === 0) return {};
+            const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
+            const res = await fetch(`${baseUrl}/state/entity/details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    addresses: activeResourceAddresses,
+                    opt_ins: {
+                        explicit_metadata: ['name', 'symbol', 'icon_url'],
+                    },
+                    aggregation_level: 'Vault'
+                }),
+            });
+            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            const data = await res.json();
+            const map: Record<string, GatewayEntityDataExt> = {};
+            for (const item of data.items || []) {
+                map[item.address] = item;
+            }
+            return map;
+        },
+        enabled: activeResourceAddresses.length > 0,
+    });
+
+    const requiredBadges = React.useMemo(() => {
+        if (!resourceDetails || !entityData) return [];
+        const badges: Array<{ badgeAddress: string; badgeLocalId?: string; hasBadge: boolean }> = [];
+        
+        for (const asset of assets) {
+            const res = resourceDetails[asset.resourceAddress];
+            if (!res || !res.details?.role_assignments) continue;
+            
+            // Check withdrawer role
+            const entries = res.details.role_assignments.entries || [];
+            const withdrawerEntry = entries.find(e => e.role_key?.name === 'withdrawer');
+            if (!withdrawerEntry) continue;
+            
+            const assignment = withdrawerEntry.assignment || {};
+            let ruleToCheck: GatewayRuleInfo | null | undefined = null;
+            
+            if (assignment.resolution === 'Owner') {
+                ruleToCheck = res.details.role_assignments.owner?.rule;
+            } else if (assignment.resolution === 'Explicit') {
+                ruleToCheck = assignment.explicit_rule;
+            }
+            
+            if (ruleToCheck?.type === 'Protected') {
+                const req = ruleToCheck.access_rule?.proof_rule?.requirement || ruleToCheck.requirement || {};
+                const nf = req.non_fungible || {};
+                
+                const badgeAddress = nf.resource_address || req.resource_address;
+                
+                if (badgeAddress) {
+                    let hasBadge = false;
+                    
+                    const nfResource = entityData.non_fungible_resources?.items?.find((i: { resource_address: string, vaults?: { items?: Array<{ items?: string[] }> } }) => i.resource_address === badgeAddress);
+                    if (nfResource && (nfResource.vaults?.items?.[0]?.items?.length || 0) > 0) {
+                        hasBadge = true;
+                    }
+                    
+                    const fResource = entityData.fungible_resources?.items?.find((i: { resource_address: string, amount: string }) => i.resource_address === badgeAddress);
+                    if (fResource && parseFloat(fResource.amount) > 0) {
+                        hasBadge = true;
+                    }
+                    
+                    if (!badges.find(b => b.badgeAddress === badgeAddress)) {
+                        badges.push({ badgeAddress, hasBadge });
+                    }
+                }
+            }
+        }
+        return badges;
+    }, [resourceDetails, entityData, assets]);
+
     // Derive XRD icon URL from entity data at render time (avoid cascading setState in effects)
     const xrdIconUrl = (() => {
         if (!entityData?.fungible_resources?.items) return '';
@@ -310,6 +404,31 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [entityData, xrdAddress, assets, hasAnyTokens]);
+
+    const buildProofManifest = React.useCallback(() => {
+        let proofs = '';
+        requiredBadges.forEach(b => {
+            if (b.hasBadge) {
+                const nfResource = entityData?.non_fungible_resources?.items?.find((i: { resource_address: string, vaults?: { items?: Array<{ items?: string[] }> } }) => i.resource_address === b.badgeAddress);
+                if (nfResource && (nfResource.vaults?.items?.[0]?.items?.length || 0) > 0) {
+                    const localId = nfResource.vaults!.items![0].items![0];
+                    proofs += `CALL_METHOD\n    Address("${accountAddress}")\n    "create_proof_of_non_fungibles"\n    Address("${b.badgeAddress}")\n    Array<NonFungibleLocalId>(NonFungibleLocalId("${localId}"))\n;\n`;
+                } else {
+                    proofs += `CALL_METHOD\n    Address("${accountAddress}")\n    "create_proof_of_amount"\n    Address("${b.badgeAddress}")\n    Decimal("1")\n;\n`;
+                }
+            }
+        });
+        return proofs;
+    }, [requiredBadges, accountAddress, entityData]);
+
+    // Live manifest preview for consumers that render it (e.g. the console)
+    const previewGroups = buildTransferGroups(assets, destinationAddress);
+    const previewManifest = previewGroups.length > 0
+        ? buildProofManifest() + buildMultiTransferManifest(accountAddress, previewGroups)
+        : '';
+    useEffect(() => {
+        onManifestChange?.(previewManifest);
+    }, [previewManifest, onManifestChange]);
 
     const handleAssetSelect = (selected: SelectedAsset) => {
         if (selected.type === 'address') {
@@ -637,7 +756,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 return;
             }
 
-            const manifest = buildMultiTransferManifest(accountAddress, groups);
+            const baseManifest = buildMultiTransferManifest(accountAddress, groups);
+            const manifest = buildProofManifest() + baseManifest;
 
             const toolkit = getOrCreateToolkit(activeNetworkId || RadixNetworkId.Mainnet);
             if (!toolkit) {
@@ -1807,8 +1927,44 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                     );
                 });
             })()}
+            {requiredBadges.length > 0 && (
+                <div className="flex flex-col gap-2 mt-2 p-3 bg-[var(--color-bg)]/50 border border-[var(--color-card-border)] rounded-xl">
+                    <div className="text-xs font-bold text-[var(--color-text-main)] opacity-80 uppercase tracking-wider mb-1">
+                        Requisitos de Seguridad
+                    </div>
+                    {requiredBadges.map((badge, idx) => {
+                        const nfRes = entityData?.non_fungible_resources?.items?.find(i => i.resource_address === badge.badgeAddress);
+                        const fRes = entityData?.fungible_resources?.items?.find(i => i.resource_address === badge.badgeAddress);
+                        const badgeName = nfRes?.explicit_metadata?.items?.find(m => m.key === 'name')?.value?.typed?.value 
+                            || fRes?.explicit_metadata?.items?.find(m => m.key === 'name')?.value?.typed?.value 
+                            || `${badge.badgeAddress.slice(0,12)}...${badge.badgeAddress.slice(-6)}`;
+                        return (
+                            <div key={idx} className="flex items-center gap-2 text-sm bg-[var(--color-surface)] p-2 rounded-lg border border-[var(--color-border)]">
+                                {badge.hasBadge ? (
+                                    <>
+                                        <Check className="size-4 text-green-500" />
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[var(--color-text-main)] font-medium text-xs truncate">Presentando insignia</span>
+                                            <span className="text-[var(--color-text-muted)] text-[10px] font-mono truncate">{badgeName}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <X className="size-4 text-red-500" />
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-red-400 font-medium text-xs truncate">Se necesita insignia (No la tienes)</span>
+                                            <span className="text-red-400/70 text-[10px] font-mono truncate">{badge.badgeAddress}</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
             {/* Compute global states inline or use a precomputed variable */}
             {(() => {
+                const isMissingBadges = requiredBadges.some(b => !b.hasBadge);
                 const isAnyOverdrawn = assets.some(a => a.type === 'fungible' && getAvailableBalance(a.resourceAddress) < 0);
                 const hasAnyInvalidAddress = (destinationAddress && addressValidity[destinationAddress] === false) ||
                                              assets.some(a => a.destAddress && addressValidity[a.destAddress] === false);
@@ -1842,7 +1998,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             <button
                                 type="button"
                                 onClick={handleSend}
-                                disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress}
+                                disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress || isMissingBadges}
                                 className="flex-1 font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 transform-gpu origin-center will-change-transform [backface-visibility:hidden] [-webkit-font-smoothing:antialiased] [&:not(:disabled):hover]:brightness-110 [&:not(:disabled):hover]:shadow-xl [&:not(:disabled):active]:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
                             >
                                 {isTransacting ? (

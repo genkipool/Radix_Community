@@ -817,7 +817,8 @@
         "toolkit_not_initialized": "No se pudo inicializar el toolkit de la billetera para esta red.",
         "timeout": "La solicitud a la billetera ha caducado. Inténtalo de nuevo.",
         "rejected": "La transacción fue rechazada o cancelada en la billetera.",
-        "unknown": "Algo salió mal al enviar la transacción."
+        "unknown": "Algo salió mal al enviar la transacción.",
+        "failedToPrepareTransaction": "Error al preparar la transacción. Comprueba que todo esté bien rellenado."
       }
     },
     "createToken": {
