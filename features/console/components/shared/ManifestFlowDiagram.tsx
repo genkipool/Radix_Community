@@ -21,16 +21,16 @@ import type { FlowLabels, FlowStep, FlowStepKind } from '../../lib/manifest-flow
 /* ─── Per-kind visual identity ────────────────────────────────────────────── */
 
 const KIND_STYLE: Record<FlowStepKind, { icon: ReactNode; gradient: string; accentRgb: string }> = {
-  withdraw: { icon: <ArrowUpFromLine className="size-4" />, gradient: 'from-blue-500 to-cyan-400', accentRgb: '59,130,246' },
-  take: { icon: <PackageOpen className="size-4" />, gradient: 'from-indigo-500 to-violet-500', accentRgb: '99,102,241' },
-  deposit: { icon: <ArrowDownToLine className="size-4" />, gradient: 'from-emerald-500 to-teal-400', accentRgb: '16,185,129' },
-  proof: { icon: <BadgeCheck className="size-4" />, gradient: 'from-amber-400 to-orange-500', accentRgb: '245,158,11' },
-  metadata: { icon: <Tags className="size-4" />, gradient: 'from-sky-500 to-indigo-500', accentRgb: '14,165,233' },
-  create: { icon: <Sparkles className="size-4" />, gradient: 'from-fuchsia-500 to-pink-500', accentRgb: '217,70,239' },
-  publish: { icon: <Rocket className="size-4" />, gradient: 'from-violet-600 to-fuchsia-500', accentRgb: '139,92,246' },
-  call: { icon: <Braces className="size-4" />, gradient: 'from-slate-500 to-slate-400', accentRgb: '100,116,139' },
-  burn: { icon: <Flame className="size-4" />, gradient: 'from-rose-500 to-orange-400', accentRgb: '244,63,94' },
-  other: { icon: <CircleDot className="size-4" />, gradient: 'from-slate-500 to-slate-400', accentRgb: '100,116,139' },
+  withdraw: { icon: <ArrowUpFromLine className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '59,130,246' },
+  take: { icon: <PackageOpen className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '99,102,241' },
+  deposit: { icon: <ArrowDownToLine className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '16,185,129' },
+  proof: { icon: <BadgeCheck className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '245,158,11' },
+  metadata: { icon: <Tags className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '14,165,233' },
+  create: { icon: <Sparkles className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '217,70,239' },
+  publish: { icon: <Rocket className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '139,92,246' },
+  call: { icon: <Braces className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '100,116,139' },
+  burn: { icon: <Flame className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '244,63,94' },
+  other: { icon: <CircleDot className="size-4" />, gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]', accentRgb: '100,116,139' },
 };
 
 /* ─── Building blocks ─────────────────────────────────────────────────────── */

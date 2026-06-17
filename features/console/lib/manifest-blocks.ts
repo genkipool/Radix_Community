@@ -48,7 +48,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   withdraw: {
     type: 'withdraw',
     icon: 'upload',
-    gradient: 'from-blue-500 to-cyan-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '59,130,246',
     fields: [
       { key: 'account', kind: 'account' },
@@ -59,7 +59,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   withdrawNfts: {
     type: 'withdrawNfts',
     icon: 'image',
-    gradient: 'from-fuchsia-500 to-pink-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '217,70,239',
     fields: [
       { key: 'account', kind: 'account' },
@@ -70,7 +70,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   takeFromWorktop: {
     type: 'takeFromWorktop',
     icon: 'package',
-    gradient: 'from-indigo-500 to-violet-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '99,102,241',
     producesBucket: true,
     fields: [
@@ -81,7 +81,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   takeAllFromWorktop: {
     type: 'takeAllFromWorktop',
     icon: 'package',
-    gradient: 'from-indigo-500 to-violet-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '99,102,241',
     producesBucket: true,
     fields: [{ key: 'resource', kind: 'resource' }],
@@ -89,7 +89,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   depositBucket: {
     type: 'depositBucket',
     icon: 'download',
-    gradient: 'from-emerald-500 to-teal-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '16,185,129',
     fields: [
       { key: 'account', kind: 'account' },
@@ -99,14 +99,14 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   depositAll: {
     type: 'depositAll',
     icon: 'download',
-    gradient: 'from-emerald-500 to-teal-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '16,185,129',
     fields: [{ key: 'account', kind: 'account' }],
   },
   proof: {
     type: 'proof',
     icon: 'badge',
-    gradient: 'from-amber-400 to-orange-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '245,158,11',
     fields: [
       { key: 'account', kind: 'account' },
@@ -117,7 +117,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   setMetadata: {
     type: 'setMetadata',
     icon: 'tags',
-    gradient: 'from-sky-500 to-indigo-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '14,165,233',
     fields: [
       { key: 'entity', kind: 'address' },
@@ -128,7 +128,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   callMethod: {
     type: 'callMethod',
     icon: 'braces',
-    gradient: 'from-slate-500 to-slate-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '100,116,139',
     fields: [
       { key: 'component', kind: 'address' },
@@ -139,7 +139,7 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
   raw: {
     type: 'raw',
     icon: 'code',
-    gradient: 'from-rose-500 to-orange-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '244,63,94',
     fields: [{ key: 'instructions', kind: 'multiline' }],
   },

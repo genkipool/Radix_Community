@@ -68,7 +68,7 @@ export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
   {
     id: 'transfer-tokens',
     icon: 'send',
-    gradient: 'from-blue-500 to-cyan-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'from', kind: 'account' },
       { key: 'to', kind: 'address' },
@@ -98,7 +98,7 @@ CALL_METHOD
   {
     id: 'transfer-nft',
     icon: 'image',
-    gradient: 'from-fuchsia-500 to-pink-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'from', kind: 'account' },
       { key: 'to', kind: 'address' },
@@ -135,7 +135,7 @@ CALL_METHOD
   {
     id: 'stake',
     icon: 'landmark',
-    gradient: 'from-emerald-500 to-teal-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
@@ -167,7 +167,7 @@ CALL_METHOD
   {
     id: 'unstake',
     icon: 'undo',
-    gradient: 'from-amber-400 to-orange-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
@@ -200,7 +200,7 @@ CALL_METHOD
   {
     id: 'mint-fungible',
     icon: 'coins',
-    gradient: 'from-violet-600 to-fuchsia-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'badgeAccount', kind: 'account' },
       { key: 'badgeResource', kind: 'resource' },
@@ -228,7 +228,7 @@ CALL_METHOD
   {
     id: 'burn',
     icon: 'flame',
-    gradient: 'from-rose-500 to-orange-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'resource', kind: 'resource' },
@@ -253,7 +253,7 @@ BURN_RESOURCE
   {
     id: 'set-metadata',
     icon: 'tags',
-    gradient: 'from-sky-500 to-indigo-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'entity', kind: 'address' },
       { key: 'metadataKey', kind: 'text' },
@@ -265,7 +265,7 @@ BURN_RESOURCE
   {
     id: 'call-method',
     icon: 'braces',
-    gradient: 'from-slate-500 to-slate-400',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'component', kind: 'address' },
       { key: 'method', kind: 'text' },
@@ -286,7 +286,7 @@ CALL_METHOD
   {
     id: 'create-pool',
     icon: 'droplets',
-    gradient: 'from-cyan-500 to-blue-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'poolType', kind: 'choice', options: ['OneResourcePool', 'TwoResourcePool', 'MultiResourcePool'] },
       { key: 'resources', kind: 'text' },
@@ -316,7 +316,7 @@ CALL_FUNCTION
   {
     id: 'contribute-pool',
     icon: 'droplets',
-    gradient: 'from-cyan-500 to-blue-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'pool', kind: 'address' },
@@ -363,7 +363,7 @@ ${DEPOSIT_ALL(account)}`;
   {
     id: 'redeem-pool',
     icon: 'droplets',
-    gradient: 'from-cyan-500 to-blue-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'pool', kind: 'address' },
@@ -391,7 +391,7 @@ ${DEPOSIT_ALL(v(values, 'account'))}`,
   {
     id: 'set-royalty',
     icon: 'crown',
-    gradient: 'from-amber-400 to-orange-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'badgeAccount', kind: 'account' },
       { key: 'badgeResource', kind: 'resource' },
@@ -423,7 +423,7 @@ SET_COMPONENT_ROYALTY
   {
     id: 'claim-royalties',
     icon: 'crown',
-    gradient: 'from-amber-400 to-orange-500',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'badgeAccount', kind: 'account' },
       { key: 'badgeResource', kind: 'resource' },
