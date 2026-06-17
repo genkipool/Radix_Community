@@ -1,16 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Braces } from 'lucide-react';
+import { Braces, Code } from 'lucide-react';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { CopyButton } from '@/components/ui/CopyButton';
 import type { ConsoleToolProps } from '../ConsoleToolView';
-import { ToolSection } from '../shared/ToolSection';
 import { TextAreaField } from '../shared/fields';
 import { ManifestCode } from '../shared/ManifestCode';
 
 interface DecodeResult {
-  kind: 'scrypto' | 'manifest';
+  kind: 'scrypto' | 'manifest' | 'hex';
   decoded: string;
 }
 
@@ -21,15 +20,14 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
 
   const [hex, setHex] = useState('');
   const [result, setResult] = useState<DecodeResult | null>(null);
-  const [isDecoding, setIsDecoding] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const cleanHex = hex.replace(/\s+/g, '').replace(/^0x/i, '');
+  const cleanHex = hex.trim();
 
   const handleDecode = async () => {
     setResult(null);
-    setHasError(false);
-    setIsDecoding(true);
+    setIsLoading(true);
     try {
       const res = await fetch('/api/ret/sbor-decode', {
         method: 'POST',
@@ -47,16 +45,45 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
         }
       }
       setResult(data);
+      setHasError(false);
     } catch {
       setHasError(true);
     } finally {
-      setIsDecoding(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleEncode = async () => {
+    setResult(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/ret/sbor-encode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: hex, network: activeNetwork }),
+      });
+      if (!res.ok) throw new Error('encode failed');
+      const data = (await res.json()) as DecodeResult;
+      setResult(data);
+      setHasError(false);
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-5">
-      <ToolSection title={labels.inputLabel} hint={labels.hint}>
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <header className="space-y-1">
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+            {labels.inputLabel}
+          </h3>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {labels.hint}
+          </p>
+        </header>
         <TextAreaField
           value={hex}
           onChange={setHex}
@@ -64,28 +91,55 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
           rows={6}
           mono
           error={hasError ? labels.error : undefined}
+          hint={!hasError ? <span className="font-medium opacity-0 select-none pointer-events-none" aria-hidden="true">{labels.error}</span> : undefined}
         />
-        <button
-          type="button"
-          onClick={handleDecode}
-          disabled={!cleanHex || isDecoding}
-          title={labels.buttonHint}
-          className="inline-flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-        >
-          {isDecoding ? (
-            <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            <Braces className="size-4" />
-          )}
-          {labels.button}
-        </button>
-      </ToolSection>
+        <div className="flex w-full gap-3">
+          <button
+            type="button"
+            onClick={handleEncode}
+            disabled={!cleanHex || isLoading}
+            title={labels.encodeHint}
+            className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {isLoading ? (
+              <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : (
+              <Code className="size-4" />
+            )}
+            {labels.encodeButton}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleDecode}
+            disabled={!cleanHex || isLoading}
+            title={labels.buttonHint}
+            className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {isLoading ? (
+              <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : (
+              <Braces className="size-4" />
+            )}
+            {labels.button}
+          </button>
+        </div>
+      </div>
 
       {result && (
-        <ToolSection
-          title={result.kind === 'manifest' ? labels.resultManifest : labels.resultScrypto}
-          action={<CopyButton value={result.decoded} size="xs" variant="ghost" label={t.common.copy} />}
-        >
+        <div className="space-y-4 pt-6 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
+          <header className="space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+                {result.kind === 'manifest' 
+                  ? labels.resultManifest 
+                  : result.kind === 'hex' 
+                    ? labels.resultHex 
+                    : labels.resultScrypto}
+              </h3>
+              <CopyButton value={result.decoded} size="xs" variant="ghost" label={t.common.copy} />
+            </div>
+          </header>
           {result.kind === 'manifest' ? (
             <ManifestCode code={result.decoded} />
           ) : (
@@ -96,7 +150,7 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
               {result.decoded}
             </pre>
           )}
-        </ToolSection>
+        </div>
       )}
     </div>
   );

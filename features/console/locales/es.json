@@ -65,7 +65,7 @@
         "description": "Convierte una dirección de cuenta o de recurso de Olympia en su equivalente de Babylon."
       },
       "sbor-decoder": {
-        "title": "Decodificador SBOR",
+        "title": "Codificador / Decodificador SBOR",
         "description": "Pega cualquier payload SBOR en hexadecimal (estado, eventos, esquemas) y léelo decodificado, en formato legible."
       },
       "address-utils": {
@@ -783,10 +783,13 @@
       "hint": "Los payloads Scrypto SBOR (0x5c…) y Manifest SBOR (0x4d…) se detectan automáticamente.",
       "placeholder": "5c21022022…",
       "button": "Decodificar",
+      "encodeButton": "Codificar",
       "buttonHint": "Decodifica el payload con el Radix Engine Toolkit",
+      "encodeHint": "Codifica JSON/Manifiesto a SBOR con el Radix Engine Toolkit",
       "error": "No se pudo decodificar el payload. Comprueba que sea SBOR hexadecimal válido.",
       "resultManifest": "Decodificado (sintaxis de manifiesto)",
-      "resultScrypto": "Decodificado (JSON programático)"
+      "resultScrypto": "Decodificado (JSON programático)",
+      "resultHex": "Codificado (SBOR Hexadecimal)"
     },
     "addressUtils": {
       "inspectTitle": "Inspeccionar una dirección",

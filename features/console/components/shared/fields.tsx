@@ -7,8 +7,8 @@ import { Search } from 'lucide-react';
 
 interface FieldShellProps {
   label?: string;
-  hint?: string;
-  error?: string;
+  hint?: ReactNode;
+  error?: ReactNode;
   /** Element rendered to the right of the label (e.g. a lock toggle) */
   labelEnd?: ReactNode;
   children: ReactNode;
