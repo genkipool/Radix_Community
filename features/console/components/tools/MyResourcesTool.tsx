@@ -448,6 +448,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   disabled={isSending}
                   layout="grid"
                   hideCheck={true}
+                  buttonClassName="py-2.5"
                   className="grid-flow-col auto-cols-fr overflow-x-auto pb-1"
                 />
 
