@@ -465,7 +465,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     onChange={(value) => setField('amount', value)}
                     type="number"
                     disabled={isSending || isActionDenied}
-                    placeholder={selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : ''}
+                    placeholder={activeAction === 'mint' 
+                      ? (rolesData?.details?.details?.total_supply ? `Suministro: ${formatNumber(Number(rolesData.details.details.total_supply), 4, language)}` : '') 
+                      : (selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : '')}
                   />
                 )}
 

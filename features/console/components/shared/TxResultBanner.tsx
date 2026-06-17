@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -51,11 +51,17 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3">
+      <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 flex items-start gap-3 overflow-hidden shadow-sm mt-4">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+        {onReset && (
+          <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
+            <X className="size-4" />
+          </button>
+        )}
         <XCircle className="size-5 shrink-0 text-red-500 mt-0.5" />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-red-500">{t.txFailedTitle}</p>
-          <p className="text-xs mt-1 break-words" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="min-w-0 pr-6">
+          <p className="text-sm font-bold text-[var(--color-text-main)]">{t.txFailedTitle}</p>
+          <p className="text-xs mt-1 break-words text-red-400">
             {errorMessages[error] ?? error}
           </p>
         </div>
@@ -68,45 +74,90 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
   const dashboardHref = `/${language}/dashboard?view=transactions&tx=${encodeURIComponent(result.transactionIntentHash)}&network=${activeNetwork}`;
 
   return (
-    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-4">
+    <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 space-y-5 overflow-hidden mt-4">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+      {onReset && (
+        <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+          <X className="size-4" />
+        </button>
+      )}
+      
       <div className="flex items-start gap-3">
         <CheckCircle2 className="size-5 shrink-0 text-emerald-500 mt-0.5" />
-        <div className="min-w-0 space-y-2">
-          <p className="text-sm font-bold text-emerald-500">{t.txSuccessTitle}</p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            <span className="font-semibold">{t.txId}:</span>
-            <CopyValue value={result.transactionIntentHash} copyLabel={t.copy} copiedLabel={t.copied} />
-            <span className="font-semibold">{t.txStatus}:</span>
-            <span style={{ color: 'var(--color-text-main)' }}>{result.status}</span>
-          </div>
-          {createdEntityLabel && result.createdEntities.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              <span className="font-semibold">{createdEntityLabel}:</span>
-              {result.createdEntities.map((address) => (
-                <CopyValue key={address} value={address} copyLabel={t.copy} copiedLabel={t.copied} />
-              ))}
-            </div>
-          )}
+        <div className="min-w-0 space-y-1 pr-6 w-full">
+          <p className="text-base font-bold text-[var(--color-text-main)]">{t.txSuccessTitle}</p>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            La transacción se ha procesado y confirmado en la red correctamente.
+          </p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-3 pl-8">
+
+      <div className="space-y-4 pl-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txId}</span>
+            <div className="flex items-center gap-2">
+              <CopyValue value={result.transactionIntentHash} copyLabel={t.copy} copiedLabel={t.copied} />
+            </div>
+          </div>
+          
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txStatus}</span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-500">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                {result.status}
+              </span>
+            </div>
+          </div>
+          
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Red</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[var(--color-text-main)] capitalize">{activeNetwork}</span>
+            </div>
+          </div>
+          
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fecha</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[var(--color-text-main)]">
+                {new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {createdEntityLabel && result.createdEntities.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{createdEntityLabel}</span>
+            <div className="flex flex-wrap gap-2">
+                {result.createdEntities.map((address) => (
+                  <CopyValue key={address} value={address} copyLabel={t.copy} copiedLabel={t.copied} />
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4 pl-8 pt-2">
         <Link
           href={dashboardHref}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)]"
-          style={{ color: 'var(--color-primary)' }}
+          className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-[var(--color-accent)] text-[var(--color-primary)]"
         >
-          <ExternalLink className="size-3.5" />
+          <ExternalLink className="size-4" />
           {t.viewInDashboard}
         </Link>
         {onReset && (
           <button
-            type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer"
-            style={{ color: 'var(--color-text-muted)' }}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
           >
-            <RotateCcw className="size-3.5" />
-            {t.newTransaction}
+            <RotateCcw className="size-4" />
+            Nueva transacción
           </button>
         )}
       </div>

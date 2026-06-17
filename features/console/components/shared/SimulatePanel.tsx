@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, FlaskConical, Fuel, XCircle } from 'lucide-react';
+import { CheckCircle2, FlaskConical, Fuel, XCircle, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { TransactionPreviewResult, PreviewBalanceChange } from '../../services/transactionPreview';
@@ -67,21 +67,22 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
 
   if (error || (preview && preview.status !== 'Succeeded')) {
     return (
-      <div className="relative rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3">
+      <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 flex items-start gap-3 overflow-hidden shadow-sm mt-4">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
         {onClose && (
-          <button onClick={onClose} className="absolute top-3 right-3 text-red-500/60 hover:text-red-500 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
+            <X className="size-4" />
           </button>
         )}
         <XCircle className="size-5 shrink-0 text-red-500 mt-0.5" />
         <div className="min-w-0 pr-6">
-          <p className="text-sm font-bold text-red-500">
+          <p className="text-sm font-bold text-[var(--color-text-main)]">
             {t.failedTitle}
             {preview?.status && preview.status !== 'Succeeded' && (
-              <span className="ml-2 font-mono text-xs opacity-80">{preview.status}</span>
+              <span className="ml-2 font-mono text-xs opacity-80 text-red-400">{preview.status}</span>
             )}
           </p>
-          <p className="text-xs mt-1 break-words font-mono" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-xs mt-1 break-words font-mono text-red-400">
             {(() => {
               const msg = error ?? preview?.errorMessage ?? '';
               return msg.includes('One or more errors occurred') ? t.genericError : msg;
@@ -95,19 +96,20 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
   if (!preview) return null;
 
   return (
-    <div className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-3">
+    <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 space-y-4 overflow-hidden shadow-sm mt-4">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
       {onClose && (
-        <button onClick={onClose} className="absolute top-3 right-3 text-emerald-500/60 hover:text-emerald-500 transition-colors">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
+          <X className="size-4" />
         </button>
       )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-6">
-        <p className="inline-flex items-center gap-2 text-sm font-bold text-emerald-500">
-          <CheckCircle2 className="size-5" />
+        <p className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
+          <CheckCircle2 className="size-5 text-emerald-500" />
           {t.successTitle}
         </p>
         <p
-          className="inline-flex items-center gap-1.5 text-xs font-semibold"
+          className="inline-flex items-center gap-1.5 text-sm font-medium"
           style={{ color: 'var(--color-text-muted)' }}
           title={t.feeHint}
         >
