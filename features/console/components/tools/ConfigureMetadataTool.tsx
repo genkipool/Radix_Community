@@ -6,6 +6,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
+import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { useEntityMetadata, type MetadataEntity, type MetadataEntityKind } from '../../hooks/useEntityMetadata';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
 import {
@@ -31,6 +32,7 @@ import { TwoWayLinkStatus, type TwoWayLinkKind } from '../shared/TwoWayLinkStatu
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { TxResultBanner } from '../shared/TxResultBanner';
+import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 
 /* ─── Field definitions per entity kind ───────────────────────────────────── */
 
@@ -189,6 +191,7 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
 
   const { data: proofHoldings } = useAccountResources(proofAccount);
   const { sendTransaction, isSending, result, error, reset } = useConsoleTransaction();
+  const preview = useTransactionPreview();
 
   const locked = initial.locked;
   const isDappDefinition = form[ACCOUNT_TYPE_KEY] === DAPP_DEFINITION;
@@ -217,7 +220,7 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
   const hasChanges = changedDefs.length > 0 || accountTypeChanged;
   const canSend = hasChanges && !hasErrors && !isSending && !walletLoading;
 
-  const handleSend = () => {
+  const buildManifest = () => {
     const instructions: string[] = [];
     if (proof) instructions.push(buildBadgeProofManifest([proof]));
     if (accountTypeChanged) {
@@ -230,7 +233,15 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
     for (const def of changedDefs) {
       instructions.push(fieldToManifest(entity.address, def, form[def.key]));
     }
-    sendTransaction(instructions.join(''));
+    return instructions.join('');
+  };
+
+  const handleSend = () => {
+    sendTransaction(buildManifest());
+  };
+
+  const handleSimulate = () => {
+    preview.simulate(buildManifest());
   };
 
   const fieldLabels = labels.fields as Record<string, string>;
@@ -360,14 +371,21 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
       </ToolSection>
 
       <TxResultBanner t={common} result={result} error={error} onReset={reset} />
+      <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
 
       <div className="flex items-center gap-4">
         <SendToWalletButton
           onClick={handleSend}
-          disabled={!canSend}
+          disabled={!canSend || preview.isSimulating}
           loading={isSending}
           label={common.sendToWallet}
           loadingLabel={common.sending}
+        />
+        <SimulateButton
+          t={t.simulate}
+          onClick={handleSimulate}
+          disabled={!canSend || isSending}
+          loading={preview.isSimulating}
         />
       </div>
     </div>

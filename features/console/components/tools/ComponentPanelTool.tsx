@@ -374,8 +374,8 @@ export default function ComponentPanelTool({ t }: ConsoleToolProps) {
               onChange={setProof}
               disabled={isSending}
             />
-            <div className="space-y-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider cursor-help" style={{ color: 'var(--color-text-muted)' }} title={labels.depositHint}>
+            <div className="space-y-3">
+              <span className="block text-xs font-bold uppercase tracking-wider cursor-help mb-3" style={{ color: 'var(--color-text-muted)' }} title={labels.depositHint}>
                 {labels.depositLabel}
               </span>
               <OptionButtons

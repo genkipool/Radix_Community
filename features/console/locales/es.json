@@ -345,7 +345,7 @@
       "accountType": "account_type",
       "accountTypeSet": "dapp definition",
       "accountTypeUnset": "Sin establecer",
-      "addItem": "+ Añadir",
+      "addItem": "Añadir",
       "noChanges": "No hay cambios que enviar",
       "fields": {
         "name": "name",
