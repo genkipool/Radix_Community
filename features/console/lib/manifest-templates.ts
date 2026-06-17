@@ -75,10 +75,25 @@ export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
       { key: 'resource', kind: 'resource' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) =>
-      buildTransferManifest(v(values, 'from'), v(values, 'to'), [
-        { type: 'fungible', resourceAddress: v(values, 'resource'), amount: Number(v(values, 'amount')) },
-      ]),
+    build: (values) => `
+CALL_METHOD
+    Address("${v(values, 'from') || '{from}'}")
+    "withdraw"
+    Address("${v(values, 'resource') || '{resource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_FROM_WORKTOP
+    Address("${v(values, 'resource') || '{resource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'to') || '{to}'}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+    Enum<0u8>()
+;
+`.trim(),
   },
   {
     id: 'transfer-nft',
@@ -90,14 +105,32 @@ export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
       { key: 'resource', kind: 'resource' },
       { key: 'nftId', kind: 'nonFungibleId' },
     ],
-    build: (values) =>
-      buildTransferManifest(v(values, 'from'), v(values, 'to'), [
-        {
-          type: 'non_fungible',
-          resourceAddress: v(values, 'resource'),
-          nonFungibleLocalIds: v(values, 'nftId').split(',').map((id) => id.trim()).filter(Boolean),
-        },
-      ]),
+    build: (values) => {
+      const ids = v(values, 'nftId');
+      const formattedIds = ids
+        ? ids.split(',').map((id) => `NonFungibleLocalId("${id.trim()}")`).join(', ')
+        : 'NonFungibleLocalId("{nftId}")';
+        
+      return `
+CALL_METHOD
+    Address("${v(values, 'from') || '{from}'}")
+    "withdraw_non_fungibles"
+    Address("${v(values, 'resource') || '{resource}'}")
+    Array<NonFungibleLocalId>(${formattedIds})
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${v(values, 'resource') || '{resource}'}")
+    Array<NonFungibleLocalId>(${formattedIds})
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'to') || '{to}'}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+    Enum<0u8>()
+;
+`.trim();
+    },
   },
   {
     id: 'stake',
@@ -108,8 +141,28 @@ export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
       { key: 'validator', kind: 'address' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values, ctx) =>
-      buildStakeManifest(v(values, 'account'), v(values, 'validator'), Number(v(values, 'amount')), ctx.xrdAddress),
+    build: (values, ctx) => `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${ctx.xrdAddress}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "stake"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`.trim(),
   },
   {
     id: 'unstake',
@@ -121,13 +174,28 @@ export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
       { key: 'lsuResource', kind: 'resource' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) =>
-      buildUnstakeManifest(
-        v(values, 'account'),
-        v(values, 'validator'),
-        Number(v(values, 'amount')),
-        v(values, 'lsuResource'),
-      ),
+    build: (values) => `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "unstake"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`.trim(),
   },
   {
     id: 'mint-fungible',
