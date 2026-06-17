@@ -22,7 +22,6 @@ import {
   mintNonFungibleManifest,
   recallManifest,
   setOwnerRoleManifest,
-  setAuthRoleManifest,
   type FreezeFlag,
   type SimpleAccessRule,
 } from '../../lib/resource-actions';
@@ -46,7 +45,6 @@ type ResourceAction =
   | 'burn'
   | 'lockMetadata'
   | 'setOwnerRole'
-  | 'setAuthRole'
   | 'recall'
   | 'freeze';
 
@@ -56,7 +54,6 @@ const ACTION_ICONS: Record<ResourceAction, ReactNode> = {
   burn: <Flame className="size-4" />,
   lockMetadata: <Lock className="size-4" />,
   setOwnerRole: <Crown className="size-4" />,
-  setAuthRole: <Crown className="size-4" />,
   recall: <Undo2 className="size-4" />,
   freeze: <Snowflake className="size-4" />,
 };
@@ -69,7 +66,6 @@ const ACTION_TO_ROLES: Record<ResourceAction, { setter: string; updater: string 
   burn: { setter: 'burner', updater: 'burner_updater' },
   lockMetadata: { setter: 'metadata_locker', updater: 'metadata_locker_updater' },
   setOwnerRole: null,
-  setAuthRole: null,
   recall: { setter: 'recaller', updater: 'recaller_updater' },
   freeze: { setter: 'freezer', updater: 'freezer_updater' },
 };
@@ -162,7 +158,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
   const actionLabels = labels.actions as Record<string, { name: string; hint: string }>;
   const availableActions: ResourceAction[] = (
-    ['mint', 'mintNft', 'burn', 'lockMetadata', 'setOwnerRole', 'setAuthRole', 'recall', 'freeze'] as ResourceAction[]
+    ['mint', 'mintNft', 'burn', 'lockMetadata', 'setOwnerRole', 'recall', 'freeze'] as ResourceAction[]
   ).filter((candidate) => {
     if (candidate === 'mint') return isFungible;
     if (candidate === 'mintNft') return isNonFungible;
@@ -199,16 +195,6 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         const rule: SimpleAccessRule =
           kind === 'badge' ? { kind, resourceAddress: field('badgeResource') } : { kind };
         return setOwnerRoleManifest(resource, rule);
-      }
-      case 'setAuthRole': {
-        const roleKey = field('authRoleKey');
-        const kind = field('ruleKind') as SimpleAccessRule['kind'] | '';
-        if (!roleKey || !kind) return '';
-        if (kind === 'badge' && !field('badgeResource')) return '';
-        const rule: SimpleAccessRule =
-          kind === 'badge' ? { kind, resourceAddress: field('badgeResource') } : { kind };
-        const moduleName = roleKey.startsWith('metadata') || roleKey === 'non_fungible_data_updater' || roleKey === 'non_fungible_data_updater_updater' ? 'Metadata' : 'Main';
-        return setAuthRoleManifest(resource, moduleName, roleKey, rule);
       }
       case 'recall':
         return field('vault') && field('amount')
@@ -262,7 +248,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
     } else {
       if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
     }
-  } else if (activeAction === 'setOwnerRole' || activeAction === 'setAuthRole') {
+  } else if (activeAction === 'setOwnerRole') {
     if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
   }
 
@@ -528,33 +514,8 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   />
                 )}
 
-                {(activeAction === 'setOwnerRole' || activeAction === 'setAuthRole') && (
+                {activeAction === 'setOwnerRole' && (
                   <div className="flex flex-col gap-4">
-                    {activeAction === 'setAuthRole' && (
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                          Rol a Modificar
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          <select
-                            className="bg-transparent border rounded-md px-3 py-2 text-sm w-full"
-                            style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
-                            value={fields.authRoleKey || ''}
-                            onChange={(e) => setField('authRoleKey', e.target.value)}
-                            disabled={isSending || isActionDenied}
-                          >
-                            <option value="" disabled>Selecciona un rol</option>
-                            {AUTH_ROLE_PAIRS.map(({ setter, updater }) => (
-                              <optgroup key={setter} label={setter.replace(/_/g, ' ')}>
-                                <option value={setter}>{setter}</option>
-                                <option value={updater}>{updater}</option>
-                              </optgroup>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    )}
-
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
                         Regla de Acceso
