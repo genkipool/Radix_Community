@@ -13,30 +13,34 @@ export interface ConsoleToolProps {
   t: ConsoleDictionary;
 }
 
-const toolLoading = () => (
-  <div className="flex items-center justify-center py-24">
-    <div
-      className="size-9 rounded-full border-2 animate-spin"
-      style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
-    />
-  </div>
-);
+import SendTransactionTool from './tools/SendTransactionTool';
+import CreateTokenTool from './tools/CreateTokenTool';
+import BuildManifestTool from './tools/BuildManifestTool';
+import ComponentPanelTool from './tools/ComponentPanelTool';
+import MyResourcesTool from './tools/MyResourcesTool';
+import SborDecoderTool from './tools/SborDecoderTool';
+import AddressUtilsTool from './tools/AddressUtilsTool';
+import FaucetTool from './tools/FaucetTool';
+import WalletPlaygroundTool from './tools/WalletPlaygroundTool';
+import DeployPackageTool from './tools/DeployPackageTool';
+import TransactionManifestTool from './tools/TransactionManifestTool';
+import ConfigureMetadataTool from './tools/ConfigureMetadataTool';
+import ConvertOlympiaTool from './tools/ConvertOlympiaTool';
 
-/* Lazy-loaded tools — only the active tool's bundle is downloaded. */
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
-  'send-transaction': dynamic(() => import('./tools/SendTransactionTool'), { loading: toolLoading }),
-  'create-token': dynamic(() => import('./tools/CreateTokenTool'), { loading: toolLoading }),
-  'build-manifest': dynamic(() => import('./tools/BuildManifestTool'), { loading: toolLoading }),
-  'component-panel': dynamic(() => import('./tools/ComponentPanelTool'), { loading: toolLoading }),
-  'my-resources': dynamic(() => import('./tools/MyResourcesTool'), { loading: toolLoading }),
-  'sbor-decoder': dynamic(() => import('./tools/SborDecoderTool'), { loading: toolLoading }),
-  'address-utils': dynamic(() => import('./tools/AddressUtilsTool'), { loading: toolLoading }),
-  faucet: dynamic(() => import('./tools/FaucetTool'), { loading: toolLoading }),
-  'wallet-playground': dynamic(() => import('./tools/WalletPlaygroundTool'), { loading: toolLoading }),
-  'deploy-package': dynamic(() => import('./tools/DeployPackageTool'), { loading: toolLoading }),
-  'transaction-manifest': dynamic(() => import('./tools/TransactionManifestTool'), { loading: toolLoading }),
-  'configure-metadata': dynamic(() => import('./tools/ConfigureMetadataTool'), { loading: toolLoading }),
-  'convert-olympia-address': dynamic(() => import('./tools/ConvertOlympiaTool'), { loading: toolLoading }),
+  'send-transaction': SendTransactionTool,
+  'create-token': CreateTokenTool,
+  'build-manifest': BuildManifestTool,
+  'component-panel': ComponentPanelTool,
+  'my-resources': MyResourcesTool,
+  'sbor-decoder': SborDecoderTool,
+  'address-utils': AddressUtilsTool,
+  faucet: FaucetTool,
+  'wallet-playground': WalletPlaygroundTool,
+  'deploy-package': DeployPackageTool,
+  'transaction-manifest': TransactionManifestTool,
+  'configure-metadata': ConfigureMetadataTool,
+  'convert-olympia-address': ConvertOlympiaTool,
 };
 
 interface ConsoleToolViewProps {

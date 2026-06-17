@@ -1,10 +1,12 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import type { Dictionary } from '@/i18n';
 import ConsoleSidebar from './components/ConsoleSidebar';
+import ConsoleToolView from './components/ConsoleToolView';
 import { isConsoleToolSlug, type ConsoleToolSlug } from './types/console.types';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface ConsoleShellProps {
   children: ReactNode;
@@ -35,7 +37,29 @@ export default function ConsoleShell({
   initialFlatView,
 }: ConsoleShellProps) {
   const pathname = usePathname();
-  const selectedSlug = slugFromPathname(pathname);
+  const { language } = useLanguage();
+  const [activeSlug, setActiveSlug] = useState<ConsoleToolSlug | null>(null);
+
+  // Sync with Next.js pathname changes (e.g. back/forward buttons or initial load)
+  useEffect(() => {
+    setActiveSlug(slugFromPathname(pathname));
+  }, [pathname]);
+
+  const handleSelectTool = useCallback((slug: ConsoleToolSlug) => {
+    setActiveSlug(slug);
+    const href = `/${language}/console/${slug}`;
+    window.history.pushState(null, '', href);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [language]);
+
+  const handleHomeClick = useCallback(() => {
+    setActiveSlug(null);
+    window.history.pushState(null, '', `/${language}/console`);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [language]);
+
+  // Use the active client state if available, fallback to path-derived slug
+  const currentSlug = activeSlug ?? slugFromPathname(pathname);
 
   return (
     <div
@@ -44,13 +68,15 @@ export default function ConsoleShell({
     >
       <ConsoleSidebar
         dictionary={dictionary}
-        selectedSlug={selectedSlug}
+        selectedSlug={currentSlug}
+        onSelectTool={handleSelectTool}
+        onHomeClick={handleHomeClick}
         initialAutoCollapse={initialAutoCollapse}
         initialExpandedGroups={initialExpandedGroups}
         initialFlatView={initialFlatView}
       />
       <main className="flex-1 relative min-w-0" style={{ overflowX: 'clip' }}>
-        {children}
+        {activeSlug ? <ConsoleToolView slug={activeSlug} dictionary={dictionary} /> : children}
       </main>
     </div>
   );

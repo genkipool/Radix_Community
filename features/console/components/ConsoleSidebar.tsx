@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import SidebarLayout from '@/components/layout/SidebarLayout';
 import { SidebarGraphic } from '@/components/ui/SidebarGraphic';
@@ -26,6 +25,8 @@ export const CONSOLE_COOKIE_FLAT_VIEW = 'console_flat_view';
 interface ConsoleSidebarProps {
   dictionary?: Partial<Dictionary>;
   selectedSlug: ConsoleToolSlug | null;
+  onSelectTool: (slug: ConsoleToolSlug) => void;
+  onHomeClick: () => void;
   initialAutoCollapse: boolean;
   initialExpandedGroups: string;
   initialFlatView: boolean;
@@ -34,17 +35,17 @@ interface ConsoleSidebarProps {
 export default function ConsoleSidebar({
   dictionary,
   selectedSlug,
+  onSelectTool,
+  onHomeClick,
   initialAutoCollapse,
   initialExpandedGroups,
   initialFlatView,
 }: ConsoleSidebarProps) {
   const t = useConsoleDictionary(dictionary);
   const { language } = useLanguage();
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [flatView, setFlatView] = useState(initialFlatView);
   const [infoModalSlug, setInfoModalSlug] = useState<ConsoleToolSlug | null>(null);
-  const [, startTransition] = useTransition();
 
   const {
     expandedIds: expandedGroups,
@@ -67,11 +68,6 @@ export default function ConsoleSidebar({
   const sidebarT = t.sidebar ?? ({} as NonNullable<typeof t.sidebar>);
 
   const toolHref = (slug: ConsoleToolSlug) => `/${language}/console/${slug}`;
-
-  const navigate = (slug: ConsoleToolSlug | null) => {
-    const href = slug ? toolHref(slug) : `/${language}/console`;
-    startTransition(() => router.push(href));
-  };
 
   const toggleFlatView = () => {
     setFlatView((prev) => {
@@ -136,7 +132,7 @@ export default function ConsoleSidebar({
           gridViewTitle={sidebarT.flat_view ?? 'List view'}
         />
       }
-      onHeaderClick={() => navigate(null)}
+      onHeaderClick={onHomeClick}
       headerAriaLabel={sidebarT.home_aria}
       heightOffset={80}
       className="h-full"
@@ -152,7 +148,8 @@ export default function ConsoleSidebar({
                   href={toolHref(slug)}
                   onClick={(e) => {
                     if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
-                      // Let native next/link handle the transition for smooth UI
+                      e.preventDefault();
+                      onSelectTool(slug);
                     }
                   }}
                   className="block flex-1 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -252,7 +249,7 @@ export default function ConsoleSidebar({
                 }
                 onToggle={() => handleToggle(group.id)}
                 items={items}
-                onSelectItem={() => {}}
+                onSelectItem={(id) => onSelectTool(id as ConsoleToolSlug)}
               />
             );
           })}
