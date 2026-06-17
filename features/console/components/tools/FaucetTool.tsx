@@ -6,7 +6,6 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useKnownAddresses } from '../../hooks/useKnownAddresses';
 import type { ConsoleToolProps } from '../ConsoleToolView';
-import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { TxResultBanner } from '../shared/TxResultBanner';
 
@@ -59,9 +58,17 @@ export default function FaucetTool({ t }: ConsoleToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title={labels.accountTitle} hint={labels.hint}>
+      <div className="space-y-4">
+        <header className="space-y-1">
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-main)' }}>
+            {labels.accountTitle}
+          </h3>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {labels.hint}
+          </p>
+        </header>
         <AccountPicker multiple value={accounts} onChange={setAccounts} disabled={isSending} />
-      </ToolSection>
+      </div>
 
       <TxResultBanner t={common} result={result} error={error} onReset={reset} />
 
@@ -70,7 +77,7 @@ export default function FaucetTool({ t }: ConsoleToolProps) {
         disabled={accounts.length === 0 || !faucet || isSending || walletLoading}
         onClick={() => accounts.length > 0 && sendTransaction(freeXrdManifest(faucet, accounts))}
         title={labels.buttonHint}
-        className="inline-flex items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 hover:-translate-y-px active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+        className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
       >
         {isSending ? (
           <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />

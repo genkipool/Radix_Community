@@ -132,6 +132,10 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const isFungible = !!holdings?.fungibles.some((f) => f.resourceAddress === resource);
   const isNonFungible = !!holdings?.nonFungibles.some((nf) => nf.resourceAddress === resource);
 
+  // Selected resource data for pre-filling disabled inputs
+  const selectedFungible = holdings?.fungibles.find((f) => f.resourceAddress === resource);
+  const selectedNonFungible = holdings?.nonFungibles.find((nf) => nf.resourceAddress === resource);
+
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
@@ -465,10 +469,11 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                 {(activeAction === 'mint' || activeAction === 'burn') && (
                   <TextField
                     label={labels.fields.amount}
-                    value={fields.amount ?? ''}
+                    value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
                     onChange={(value) => setField('amount', value)}
                     type="number"
                     disabled={isSending || isActionDenied}
+                    placeholder={selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : ''}
                   />
                 )}
 
@@ -477,27 +482,30 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     <TextField
                       label={labels.fields.nftId}
                       hint={labels.fields.nftIdHint}
-                      value={fields.nftId ?? ''}
+                      value={isActionDenied ? (selectedNonFungible?.ids[0] ?? '') : (fields.nftId ?? '')}
                       onChange={(value) => setField('nftId', value)}
-                      placeholder="#1#"
+                      placeholder={selectedNonFungible ? `${selectedNonFungible.ids.length} NFTs` : '#1#'}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftName}
-                      value={fields.nftName ?? ''}
+                      value={isActionDenied ? (selectedNonFungible?.name ?? '') : (fields.nftName ?? '')}
                       onChange={(value) => setField('nftName', value)}
+                      placeholder={selectedNonFungible?.name ?? ''}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftDescription}
-                      value={fields.nftDescription ?? ''}
+                      value={isActionDenied ? resource : (fields.nftDescription ?? '')}
                       onChange={(value) => setField('nftDescription', value)}
+                      placeholder={resource}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftImageUrl}
-                      value={fields.nftImageUrl ?? ''}
+                      value={isActionDenied ? (selectedNonFungible?.iconUrl ?? '') : (fields.nftImageUrl ?? '')}
                       onChange={(value) => setField('nftImageUrl', value)}
+                      placeholder={selectedNonFungible?.iconUrl ?? ''}
                       disabled={isSending || isActionDenied}
                     />
                   </div>
@@ -507,7 +515,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   <TextField
                     label={labels.fields.metadataKey}
                     hint={labels.fields.metadataKeyHint}
-                    value={fields.metadataKey ?? ''}
+                    value={isActionDenied ? 'name' : (fields.metadataKey ?? '')}
                     onChange={(value) => setField('metadataKey', value)}
                     placeholder="name"
                     disabled={isSending || isActionDenied}
@@ -549,18 +557,19 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   <TextField
                     label={labels.fields.vault}
                     hint={labels.fields.vaultHint}
-                    value={fields.vault ?? ''}
+                    value={isActionDenied ? resource : (fields.vault ?? '')}
                     onChange={(value) => setField('vault', value)}
-                    placeholder="internal_vault_..."
+                    placeholder={resource}
                     disabled={isSending || isActionDenied}
                   />
                 )}
                 {activeAction === 'recall' && (
                   <TextField
                     label={labels.fields.amount}
-                    value={fields.amount ?? ''}
+                    value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
                     onChange={(value) => setField('amount', value)}
                     type="number"
+                    placeholder={selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : ''}
                     disabled={isSending || isActionDenied}
                   />
                 )}
