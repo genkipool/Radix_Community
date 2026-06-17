@@ -52,6 +52,9 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 const computed = getComputedStyle(document.documentElement);
                 const labelBg = computed.getPropertyValue('--color-surface').trim() || '#ffffff';
                 const labelText = computed.getPropertyValue('--color-text-main').trim() || '#171717';
+                const borderColor = computed.getPropertyValue('--color-border').trim() || '#94a3b8';
+                const primaryColor = computed.getPropertyValue('--color-primary').trim() || '#3b82f6';
+                const bgAltColor = computed.getPropertyValue('--color-bg-alt').trim() || 'transparent';
 
                 const isDark = labelBg !== '#ffffff' && labelBg !== 'white';
 
@@ -62,12 +65,18 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                     themeVariables: {
                         darkMode: isDark,
                         background: 'transparent',
-                        primaryColor: 'transparent',
-                        primaryBorderColor: '#94a3b8',
-                        lineColor: '#94a3b8',
+                        primaryColor: bgAltColor,
+                        primaryBorderColor: borderColor,
+                        primaryTextColor: labelText,
+                        lineColor: borderColor,
                         textColor: labelText,
                         fontFamily: 'inherit',
                         edgeLabelBackground: labelBg,
+                        nodeBorder: borderColor,
+                        mainBkg: bgAltColor,
+                        clusterBkg: 'transparent',
+                        clusterBorder: borderColor,
+                        titleColor: primaryColor,
                     },
                     flowchart: { curve: 'basis', nodeSpacing: 80, rankSpacing: 140, padding: 40 },
                 });
