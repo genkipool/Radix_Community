@@ -30,55 +30,754 @@
     "tools": {
       "send-transaction": {
         "title": "Enviar Transacción",
-        "description": "Construye una transferencia de tokens y NFTs a una o varias cuentas con el constructor de transacciones de la billetera, e inspecciona el manifiesto generado."
+        "description": "Construye una transferencia de tokens y NFTs a una o varias cuentas con el constructor de transacciones de la billetera, e inspecciona el manifiesto generado.",
+        "guide": {
+          "guideTitle": "Guía: Enviar Transacción",
+          "guideDescription": "La herramienta definitiva para la transferencia de activos en la red Radix. A diferencia de las transacciones tradicionales en Ethereum o Bitcoin, en Radix puedes transferir múltiples tokens y NFTs a múltiples destinatarios dentro de una única transacción, asegurando que o todas las transferencias se realizan con éxito, o ninguna lo hace (atomicidad). Ideal para pagos masivos, airdrops, o simplemente reorganizar tus propios fondos entre cuentas.",
+          "guideSteps": [
+            "1. Origen de los fondos: En el panel principal, selecciona la cuenta desde la cual se extraerán los recursos. Asegúrate de que esta cuenta tenga saldo suficiente.",
+            "2. Añadir Destinatarios: Pulsa 'Añadir transferencia' para crear un bloque de envío. Puedes añadir tantos bloques como necesites para diferentes destinatarios.",
+            "3. Configurar cada transferencia: En cada bloque, pega la dirección exacta del destinatario (asegúrate de que empieza por 'account_...').",
+            "4. Selección de recursos: Elige qué token o NFT quieres enviar. Si envías NFTs, deberás seleccionar exactamente qué identificadores (IDs) únicos se transferirán.",
+            "5. Cantidades: Introduce la cantidad exacta del token a enviar. El sistema validará automáticamente que no superes tu balance disponible.",
+            "6. Añadir Pruebas (Opcional): Si el destinatario es un componente inteligente que exige una identificación especial (Badge), pulsa en 'Añadir prueba' y selecciona el NFT que te acredita.",
+            "7. Simulación (Paso crítico): Siempre haz clic en 'Simular transacción'. Esto ejecutará la transacción en la red de forma virtual sin gastar fondos, mostrándote exactamente qué ocurrirá.",
+            "8. Envío final: Si la simulación es verde, pulsa 'Enviar transacción'. Tu Radix Wallet se abrirá y te pedirá revisar y firmar criptográficamente la orden."
+          ],
+          "glossary": [
+            {
+              "term": "Atomicidad",
+              "definition": "Propiedad que garantiza que una transacción que incluye múltiples transferencias se ejecute completa o falle por completo; nunca se quedará a medias."
+            },
+            {
+              "term": "Badge (Prueba)",
+              "definition": "Un tipo de token (generalmente un NFT) que sirve como llave de acceso digital. Demuestra que tienes permiso para realizar una acción específica."
+            },
+            {
+              "term": "Airdrop",
+              "definition": "Distribución masiva de tokens o NFTs a múltiples direcciones de cartera, generalmente de forma gratuita o como recompensa."
+            }
+          ],
+          "example": [
+            {
+              "field": "Retirar desde",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            },
+            {
+              "field": "Dirección de destino (account_...)",
+              "type": "input",
+              "value": "account_tdx_2_1t45xyz...",
+              "isAddress": true
+            },
+            {
+              "field": "Buscar activo...",
+              "type": "dropdown",
+              "selected": "resource_tdx_2_1t45..."
+            },
+            {
+              "field": "0.00",
+              "type": "input",
+              "value": "1500.50",
+              "isNumeric": true
+            },
+            {
+              "field": "Mensaje de la transacción (opcional)...",
+              "type": "textarea",
+              "value": "Pago de servicios"
+            }
+          ]
+        }
       },
       "create-token": {
         "title": "Crear Token",
-        "description": "Crea un recurso fungible o no fungible con metadatos, suministro y comportamiento personalizados, y despliégalo en la Red Radix."
+        "description": "Crea un recurso fungible o no fungible con metadatos, suministro y comportamiento personalizados, y despliégalo en la Red Radix.",
+        "guide": {
+          "guideTitle": "Guía: Crear Token",
+          "guideDescription": "Conviértete en el creador de tu propia economía. Radix trata a los tokens como ciudadanos de primera clase en la red, lo que significa que no necesitas escribir contratos inteligentes complejos para crear un token seguro y estándar. Esta interfaz gráfica construye el manifiesto exacto para instanciar (acuñar) recursos tanto Fungibles como No Fungibles con reglas de negocio avanzadas y metadatos persistentes en el ledger.",
+          "guideSteps": [
+            "1. Selección de Cuenta: Elige la cuenta que pagará las comisiones de la red y, por defecto, recibirá el suministro inicial de los recursos creados.",
+            "2. Tipo de Activo: Selecciona 'Fungible' si estás creando una criptomoneda, puntos de fidelidad o acciones (todas las unidades son iguales). Selecciona 'No Fungible' para arte digital, entradas de eventos o certificados únicos.",
+            "3. Identidad del Proyecto (Metadatos): Rellena los campos que verán los usuarios en sus billeteras. El 'Nombre' y 'Símbolo' (ej. BTC) son cruciales. La 'URL del icono' debe ser un enlace directo a una imagen alojada en internet (preferiblemente cuadrada).",
+            "4. Suministro Inicial: Decide cuántas unidades se generarán en el momento de la creación. Si pones 0, el token nacerá sin circulación.",
+            "5. Divisibilidad (Solo Fungibles): Indica en cuántas fracciones se puede dividir una unidad. El estándar es 18 decimales. Si es un token que representa objetos enteros (ej. 'Coches'), establece la divisibilidad en 0.",
+            "6. Rol de Propietario: Decide quién tendrá autoridad administrativa sobre el token en el futuro. Puedes asignarlo a 'Ninguno' (el token será inmutable para siempre), a 'Cualquiera' o exigir la presentación de un 'Badge' específico.",
+            "7. Simulación y Despliegue: Simula la transacción para verificar que la red acepta la configuración, y envíala a tu billetera para firmarla."
+          ],
+          "glossary": [
+            {
+              "term": "Token Fungible",
+              "definition": "Activos idénticos e intercambiables entre sí, como el dinero convencional o el Bitcoin. Un billete de 10 dólares vale lo mismo que otro billete de 10 dólares."
+            },
+            {
+              "term": "Token No Fungible (NFT)",
+              "definition": "Un activo digital único e irrepetible. Cada NFT tiene un identificador propio, como un cuadro original o un asiento específico en un teatro."
+            },
+            {
+              "term": "Ledger",
+              "definition": "El libro de contabilidad público y descentralizado de la red Radix donde queda registrado para siempre que tú creaste este token."
+            },
+            {
+              "term": "Divisibilidad",
+              "definition": "La cantidad de lugares decimales que puede tener un token. Con 18 decimales (máximo), podrías enviar 0.000000000000000001 de un token."
+            }
+          ],
+          "example": [
+            {
+              "field": "Depositar el suministro inicial en la cuenta",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            },
+            {
+              "field": "Tipo de token",
+              "type": "button-group",
+              "options": [
+                "Token fungible",
+                "Token no fungible"
+              ],
+              "selected": "Token fungible"
+            },
+            {
+              "field": "Rastrear suministro",
+              "type": "button-group",
+              "options": [
+                "Sí",
+                "No"
+              ],
+              "selected": "Sí"
+            },
+            {
+              "field": "Suministro inicial",
+              "type": "input",
+              "value": "1000000",
+              "isNumeric": true
+            },
+            {
+              "field": "Divisibilidad (0-18)",
+              "type": "input",
+              "value": "18",
+              "isNumeric": true
+            },
+            {
+              "field": "Nombre",
+              "type": "input",
+              "value": "Radix Community Token"
+            },
+            {
+              "field": "Rol de propietario",
+              "type": "dropdown",
+              "selected": "Ninguno"
+            }
+          ]
+        }
       },
       "my-resources": {
         "title": "Mis Recursos",
-        "description": "Gestiona los tokens que controlas: acuña más unidades o NFTs, quema, bloquea metadatos, cambia el rol de propietario, recupera y congela bóvedas."
+        "description": "Gestiona los tokens que controlas: acuña más unidades o NFTs, quema, bloquea metadatos, cambia el rol de propietario, recupera y congela bóvedas.",
+        "guide": {
+          "guideTitle": "Guía: Mis Recursos",
+          "guideDescription": "El panel de administración maestro para los creadores de tokens. Esta herramienta está diseñada exclusivamente para que gestiones aquellos recursos sobre los cuales retienes privilegios administrativos (Owner Role). Te permite ejecutar acciones del ciclo de vida del token que configuraste como 'Actualizables' durante su creación.",
+          "guideSteps": [
+            "1. Explorar inventario: Selecciona la cuenta donde guardas los 'Badges' (llaves maestras) de tus tokens. La herramienta escaneará automáticamente la red para encontrar sobre qué recursos tienes control.",
+            "2. Seleccionar Recurso: Haz clic en el token o NFT que deseas administrar de la lista de recursos gobernables.",
+            "3. Elegir Acción: Dependiendo de cómo creaste el token, podrás ver diferentes opciones: 'Acuñar' (crear nueva oferta), 'Quemar' (destruir tokens existentes), 'Modificar Metadatos' o 'Congelar' bóvedas.",
+            "4. Autorización (Proveer Badge): Para realizar una acción administrativa, la red exige que demuestres tu autoridad. La interfaz intentará adjuntar automáticamente el Badge necesario desde tu cuenta. Si el Badge está en otra cuenta, deberás transferirlo primero.",
+            "5. Rellenar Parámetros: Si elegiste 'Acuñar Fungibles', introduce la cantidad a imprimir. Si elegiste modificar metadatos, introduce los nuevos valores.",
+            "6. Confirmar cambios: Como siempre, utiliza la función de 'Simular' para asegurarte de que la acción administrativa no viola las reglas de negocio, y envía la orden a tu Radix Wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Acuñar (Minting)",
+              "definition": "El proceso de crear nuevas unidades de un token existente, aumentando su suministro total en circulación."
+            },
+            {
+              "term": "Quemar (Burning)",
+              "definition": "La destrucción permanente e irreversible de tokens, retirándolos de la circulación para siempre."
+            },
+            {
+              "term": "Congelar Bóveda",
+              "definition": "Una acción drástica de cumplimiento legal que bloquea una cuenta específica, impidiendo temporalmente que envíe o reciba ese token en particular."
+            }
+          ],
+          "example": [
+            {
+              "field": "Cuenta y recurso",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            },
+            {
+              "field": "Recurso a gestionar",
+              "type": "dropdown",
+              "selected": "resource_tdx_2_1t50abc..."
+            },
+            {
+              "field": "Acción",
+              "type": "button-group",
+              "options": [
+                "Acuñar",
+                "Acuñar NFT",
+                "Quemar"
+              ],
+              "selected": "Acuñar"
+            },
+            {
+              "field": "Cantidad",
+              "type": "input",
+              "value": "50000",
+              "isNumeric": true
+            }
+          ]
+        }
       },
       "build-manifest": {
         "title": "Construir Manifiesto",
-        "description": "Crea manifiestos visualmente usando plantillas o bloques interactivos con vista previa en tiempo real."
+        "description": "Crea manifiestos visualmente usando plantillas o bloques interactivos con vista previa en tiempo real.",
+        "guide": {
+          "guideTitle": "Guía: Construir Manifiesto",
+          "guideDescription": "Una herramienta revolucionaria para democratizar el lenguaje de transacciones de Radix (RTML). Radix utiliza 'Manifiestos', que son scripts de texto que describen exactamente qué va a ocurrir en una transacción. Esta interfaz visual te permite apilar bloques lógicos (como piezas de Lego) para construir lógicas de transacción hiper-avanzadas sin tener que programar una sola línea de código.",
+          "guideSteps": [
+            "1. Elegir un Punto de Partida: Puedes iniciar con un lienzo en blanco o usar el menú desplegable de 'Plantillas' para cargar estructuras comunes (como 'Envío simple' o 'Intercambio').",
+            "2. Añadir Bloques: En el panel izquierdo, busca el tipo de instrucción que necesitas. Por ejemplo, arrastra 'Withdraw' para retirar fondos de una cuenta, o 'Deposit' para ingresarlos.",
+            "3. Conectar la Lógica: En Radix, los recursos extraídos se guardan temporalmente en 'Worktop' (una mesa de trabajo). Asegúrate de que las acciones sigan un orden lógico: primero retirar al Worktop, y luego depositar desde el Worktop a un destino.",
+            "4. Ajustar Parámetros: Haz clic en cada bloque para configurarlo. Introduce las direcciones (accounts, components), las cantidades numéricas, y los identificadores de recurso correctos.",
+            "5. Monitorizar el Código: A medida que añades y configuras bloques visuales, observa el panel derecho ('Vista previa'). La herramienta escribe el código del Manifiesto en crudo en tiempo real, lo que te ayudará a aprender la sintaxis nativa.",
+            "6. Ejecución: Realiza una simulación y envía la transacción finalizada a la billetera."
+          ],
+          "glossary": [
+            {
+              "term": "Manifiesto de Transacción",
+              "definition": "Un archivo de texto legible por humanos que describe la intención exacta de la transacción paso por paso, diseñado para que el usuario pueda auditarlo antes de firmar."
+            },
+            {
+              "term": "Worktop (Mesa de Trabajo)",
+              "definition": "Una memoria temporal durante la transacción. Si sacas tokens de tu billetera, caen al Worktop. Si la transacción termina y hay tokens en el Worktop que no se han guardado en ningún sitio, la transacción abortará por seguridad."
+            },
+            {
+              "term": "Bloque (Instruction)",
+              "definition": "Un comando individual dentro del manifiesto, como llamar a una función, mover un activo o crear una prueba."
+            }
+          ],
+          "example": [
+            {
+              "field": "Modo de construcción",
+              "type": "button-group",
+              "options": [
+                "Plantillas",
+                "Bloques"
+              ],
+              "selected": "Plantillas"
+            },
+            {
+              "field": "Elige una plantilla",
+              "type": "dropdown",
+              "selected": "Enviar tokens"
+            },
+            {
+              "field": "Cuenta de origen",
+              "type": "dropdown",
+              "selected": "account_tdx... | 150 XRD"
+            },
+            {
+              "field": "Cuenta de destino",
+              "type": "input",
+              "value": "account_tdx_2_xyz...",
+              "isAddress": true
+            }
+          ]
+        }
       },
       "deploy-package": {
         "title": "Desplegar Paquete",
-        "description": "Despliega un nuevo paquete de blueprints en la red adjuntando tus archivos WASM y RPD y enviando una transacción con tu Radix Wallet."
+        "description": "Despliega un nuevo paquete de blueprints en la red adjuntando tus archivos WASM y RPD y enviando una transacción con tu Radix Wallet.",
+        "guide": {
+          "guideTitle": "Guía: Desplegar Paquete",
+          "guideDescription": "El puente entre tu entorno de desarrollo local y la red Radix. Un 'Package' (Paquete) en Radix es el equivalente a un contrato inteligente (Smart Contract) en Ethereum, pero escrito en el lenguaje Scrypto y compilado en WebAssembly. Esta herramienta se encarga de empaquetar, firmar y publicar tu código de manera inmutable en el ledger global.",
+          "guideSteps": [
+            "1. Compilación Local: Asegúrate de haber ejecutado `scrypto build` en la terminal de tu ordenador sobre el código fuente de tu proyecto. Esto generará dos archivos esenciales en la carpeta `/target/...`.",
+            "2. Cuenta Financiadora: Selecciona la cuenta de tu billetera que asumirá el coste en XRD por subir los archivos a la red. (Subir código tiene un coste computacional).",
+            "3. Archivo WASM: Sube el archivo `.wasm`. Este es el cerebro de tu contrato, el código lógico compilado y ofuscado.",
+            "4. Archivo RPD: Sube el archivo `.rpd` (Radix Package Definition). Es un mapa que explica a la red cómo leer el WASM, qué métodos tiene y qué recursos utiliza.",
+            "5. Permisos Globales: Opcionalmente, configura si este paquete podrá ser actualizado en el futuro. Por defecto, los paquetes son inmutables para garantizar la confianza de los usuarios.",
+            "6. Transacción de Despliegue: Simula y envía. Una vez confirmado, recibirás la dirección final de tu paquete (`package_...`), que usarás para instanciar componentes."
+          ],
+          "glossary": [
+            {
+              "term": "Scrypto",
+              "definition": "El lenguaje de programación nativo de Radix, basado en Rust, especializado exclusivamente en finanzas descentralizadas y manejo seguro de activos."
+            },
+            {
+              "term": "WebAssembly (WASM)",
+              "definition": "Un formato de código binario altamente optimizado y ultrarrápido que la red Radix es capaz de ejecutar directamente en su máquina virtual."
+            },
+            {
+              "term": "Blueprints",
+              "definition": "Son como los 'planos de un edificio' contenidos dentro del paquete. Define la estructura genérica que luego los usuarios instanciarán."
+            },
+            {
+              "term": "Package (Paquete)",
+              "definition": "El contenedor final que engloba uno o varios Blueprints y el código ejecutable. Tiene una dirección fija en la red."
+            }
+          ],
+          "example": [
+            {
+              "field": "Retirar desde",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            },
+            {
+              "field": "Archivo WASM del paquete",
+              "type": "input",
+              "value": "my_project.wasm"
+            },
+            {
+              "field": "Archivo RPD del paquete",
+              "type": "input",
+              "value": "my_project.rpd"
+            },
+            {
+              "field": "Rol de propietario",
+              "type": "dropdown",
+              "selected": "Ninguno"
+            }
+          ]
+        }
       },
       "transaction-manifest": {
         "title": "Manifiesto de Transacción",
-        "description": "Escribe un manifiesto de transacción en crudo y envíalo como solicitud de transacción a tu Radix Wallet."
+        "description": "Escribe un manifiesto de transacción en crudo y envíalo como solicitud de transacción a tu Radix Wallet.",
+        "guide": {
+          "guideTitle": "Guía: Manifiesto de Transacción",
+          "guideDescription": "La herramienta más potente (y peligrosa) para usuarios avanzados y desarrolladores veteranos. Una consola de texto en crudo que acepta código RTML directamente. Salta todas las interfaces gráficas y permite una manipulación quirúrgica de la red, usando aserciones y lógica condicional compleja.",
+          "guideSteps": [
+            "1. Editor de Código: Escribe tu manifiesto directamente en la terminal interactiva. La consola incorpora resaltado de sintaxis básico para facilitar la lectura.",
+            "2. Contexto de Red: Verifica en la esquina superior derecha que estás enviando el código a la red correcta (Mainnet para la red real, Stokenet para pruebas).",
+            "3. Manejo de Blobs: Si tu transacción requiere subir datos extraños o binarios grandes (como inicializar un gran estado o migrar datos), puedes añadir 'Blobs' en la interfaz adicional.",
+            "4. Validación Estricta: Haz clic en 'Simular transacción'. La red analizará el texto en busca de errores tipográficos, direcciones inexistentes o falta de fondos.",
+            "5. Ejecución: Envía la transacción a la billetera. Dado que es un manifiesto crudo, la Radix Wallet interpretará el texto para mostrar un resumen visual de lo que tu código intentará hacer."
+          ],
+          "glossary": [
+            {
+              "term": "RTML",
+              "definition": "Radix Transaction Manifest Language. El lenguaje scripting seguro diseñado para orquestar la llamada a contratos inteligentes en Radix."
+            },
+            {
+              "term": "Blob",
+              "definition": "Acrónimo de 'Binary Large Object'. Paquetes de datos codificados en formato hexadecimal que se adjuntan a la transacción sin ensuciar el texto principal del manifiesto."
+            },
+            {
+              "term": "Aserciones (Asserts)",
+              "definition": "Instrucciones de seguridad en el manifiesto que abortan toda la transacción instantáneamente si una condición no se cumple (ej. 'Cancela todo si el precio baja de X')."
+            }
+          ],
+          "example": [
+            {
+              "field": "Enviar como",
+              "type": "button-group",
+              "options": [
+                "Transacción",
+                "Pre-autorización"
+              ],
+              "selected": "Transacción"
+            },
+            {
+              "field": "Manifiesto de transacción",
+              "type": "textarea",
+              "value": "CALL_METHOD Address(\"account_...\") \"withdraw\" ...;"
+            }
+          ]
+        }
       },
       "component-panel": {
         "title": "Panel de Componente",
-        "description": "Lee el plano técnico de cualquier componente en vivo desde la red y obtén al instante un panel de control para ejecutar sus métodos públicos."
+        "description": "Lee el plano técnico de cualquier componente en vivo desde la red y obtén al instante un panel de control para ejecutar sus métodos públicos.",
+        "guide": {
+          "guideTitle": "Guía: Panel de Componente",
+          "guideDescription": "Una ventana directa al estado en vivo de la red. A diferencia de otras redes donde necesitas construir una web entera (DApp) para interactuar con un contrato inteligente, Radix expone los contratos (Componentes) de manera nativa. Esta herramienta lee la definición técnica de cualquier componente e instantáneamente auto-genera botones y formularios para interactuar con él.",
+          "guideSteps": [
+            "1. Localizar Componente: Pega la dirección completa de un componente en vivo (suelen empezar con la cadena `component_...`).",
+            "2. Análisis del Blueprint: La herramienta escaneará el paquete original y mostrará una tabla con toda la información técnica (su paquete origen, y el nombre de su plano base).",
+            "3. Explorar Métodos: Verás una lista de todos los 'Métodos Públicos' (funciones que el desarrollador del componente ha dejado abiertas al público). Selecciona el que quieras ejecutar.",
+            "4. Rellenar Argumentos: Si la función requiere datos (como 'cantidad a intercambiar' o 'identificador de usuario'), la interfaz generará campos específicos para que los introduzcas.",
+            "5. Capturar Retornos: Si la función escupe recursos de vuelta (por ejemplo, al comprar algo, devuelve un NFT), debes seleccionar en 'Destino' a qué cuenta de tu billetera enviarlos. ¡De lo contrario, la transacción fallará para proteger tus fondos!",
+            "6. Confirmar: Simula la interacción y fírmala."
+          ],
+          "glossary": [
+            {
+              "term": "Componente (Component)",
+              "definition": "La versión 'viva' de un Blueprint. Si el Blueprint es el plano técnico, el Componente es el edificio ya construido y funcionando en la red."
+            },
+            {
+              "term": "Método (Method)",
+              "definition": "Una acción específica programada dentro del componente. Por ejemplo, una máquina expendedora tendría métodos como 'insertar_moneda' o 'seleccionar_refresco'."
+            },
+            {
+              "term": "Instanciar",
+              "definition": "El acto de usar un Blueprint estático para crear un nuevo Componente operativo en la red con su propia memoria y estado independiente."
+            }
+          ],
+          "example": [
+            {
+              "field": "Dirección del componente",
+              "type": "input",
+              "value": "component_tdx_2_1cq8...",
+              "isAddress": true
+            },
+            {
+              "field": "Métodos públicos",
+              "type": "dropdown",
+              "selected": "buy_ticket"
+            },
+            {
+              "field": "Argumentos (sintaxis de manifiesto)",
+              "type": "textarea",
+              "value": "Decimal(\"15.0\")"
+            },
+            {
+              "field": "Depositar los recursos devueltos",
+              "type": "button-group",
+              "options": [
+                "Sí",
+                "No"
+              ],
+              "selected": "Sí"
+            },
+            {
+              "field": "Depositar en la cuenta",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            }
+          ]
+        }
       },
       "configure-metadata": {
         "title": "Configurar Metadatos",
-        "description": "Inspecciona y actualiza los metadatos on-ledger de cuentas, recursos, componentes y validadores."
+        "description": "Inspecciona y actualiza los metadatos on-ledger de cuentas, recursos, componentes y validadores.",
+        "guide": {
+          "guideTitle": "Guía: Configurar Metadatos",
+          "guideDescription": "El panel de control definitivo para mantener al día la identidad pública de tus creaciones. Todo en Radix (cuentas, tokens, contratos, validadores) tiene un espacio reservado en la red para 'Metadatos'. Esta herramienta te permite inspeccionar y alterar estos datos, como actualizar la imagen de tu token o cambiar la descripción de tu DApp.",
+          "guideSteps": [
+            "1. Propietario (Owner): Selecciona la cuenta que utilizarás para presentar las credenciales de administración. Modificar datos públicos requiere autoridad.",
+            "2. Entidad Objetivo: Introduce la dirección exacta de lo que quieres modificar (puede ser una cuenta, un recurso `resource_...` o un paquete).",
+            "3. Inspección: La herramienta cargará los metadatos actuales desde la red.",
+            "4. Modificación: Usa los botones de '+' para añadir nuevos campos o edita los existentes. Puedes modificar nombres, descripciones, URLs a imágenes, y etiquetas de búsqueda.",
+            "5. Confirmar: Ejecuta la simulación. La red comprobará de inmediato si la cuenta propietaria tiene los permisos adecuados para modificar esos metadatos, y luego envía a la billetera."
+          ],
+          "glossary": [
+            {
+              "term": "Metadatos (Metadata)",
+              "definition": "Información adherida a un elemento que describe sus propiedades (el 'carnet de identidad' digital del activo). No afecta a la lógica matemática, solo a su presentación visual."
+            },
+            {
+              "term": "Entidad",
+              "definition": "Un término genérico que abarca cualquier 'cosa' global en la red Radix que tenga una dirección, como componentes, paquetes o recursos."
+            },
+            {
+              "term": "Tags (Etiquetas)",
+              "definition": "Palabras clave asociadas a un activo para que los exploradores web de la comunidad puedan indexarlo y clasificarlo."
+            }
+          ],
+          "example": [
+            {
+              "field": "Rol de propietario",
+              "type": "dropdown",
+              "selected": "Ninguno"
+            },
+            {
+              "field": "Entidad",
+              "type": "input",
+              "value": "resource_tdx_2_1t45...",
+              "isAddress": true
+            },
+            {
+              "field": "Clave",
+              "type": "dropdown",
+              "selected": "name"
+            },
+            {
+              "field": "Tipo de valor",
+              "type": "button-group",
+              "options": [
+                "String",
+                "Address",
+                "Decimal",
+                "Url",
+                "StringArray"
+              ],
+              "selected": "String"
+            },
+            {
+              "field": "Valor",
+              "type": "input",
+              "value": "Mi Token Actualizado"
+            }
+          ]
+        }
       },
       "convert-olympia-address": {
         "title": "Convertir Dirección Olympia",
-        "description": "Convierte una dirección de cuenta o de recurso de Olympia en su equivalente de Babylon."
+        "description": "Convierte una dirección de cuenta o de recurso de Olympia en su equivalente de Babylon.",
+        "guide": {
+          "guideTitle": "Guía: Convertir Dirección Olympia",
+          "guideDescription": "Una herramienta histórica y vital. Radix sufrió una enorme actualización tecnológica mundial (pasando de la red 'Olympia' a la red actual 'Babylon'). Las direcciones cambiaron de formato. Esta utilidad matemática traduce instantáneamente formatos antiguos a los nuevos, sin consultar a internet.",
+          "guideSteps": [
+            "1. Identificar Dirección Antigua: Obtén la dirección antigua que quieres modernizar (las cuentas antiguas empezaban por `rdx1...`, los recursos antiguos por tokens comunes de Olympia).",
+            "2. Introducir Dato: Pégala en el campo de texto.",
+            "3. Conversión Instantánea: La herramienta ejecuta algoritmos de criptografía de curva elíptica de manera local en tu navegador para derivar la dirección Babylon correspondiente.",
+            "4. Copiar Resultado: Utiliza el botón de copiar para usar la nueva dirección `account_...` en la red actual."
+          ],
+          "glossary": [
+            {
+              "term": "Olympia",
+              "definition": "La versión 1.0 de la red principal de Radix. Operó con éxito rotundo hasta su actualización planificada, pero tenía una tecnología de contratos menos escalable."
+            },
+            {
+              "term": "Babylon",
+              "definition": "La versión actual e hiper-avanzada de la red Radix, con la integración completa del entorno Scrypto y las cuentas inteligentes universales."
+            },
+            {
+              "term": "Derivación",
+              "definition": "Proceso matemático que toma una dirección base y, usando reglas predecibles, genera otra dirección totalmente distinta pero matemáticamente atada a la original."
+            }
+          ],
+          "example": [
+            {
+              "field": "Dirección Olympia",
+              "type": "input",
+              "value": "rdx1qsp..."
+            },
+            {
+              "field": "Dirección Babylon",
+              "type": "input",
+              "value": "account_rdx1cw...",
+              "isAddress": true
+            }
+          ]
+        }
       },
       "sbor-decoder": {
         "title": "Codificador / Decodificador SBOR",
-        "description": "Pega cualquier payload SBOR en hexadecimal (estado, eventos, esquemas) y léelo decodificado, en formato legible."
+        "description": "Pega cualquier payload SBOR en hexadecimal (estado, eventos, esquemas) y léelo decodificado, en formato legible.",
+        "guide": {
+          "guideTitle": "Guía: Decodificador SBOR",
+          "guideDescription": "Herramienta forense de bajo nivel. La red Radix comprime todos sus datos (como los estados de los contratos o los eventos emitidos) en un formato binario incomprensible llamado SBOR para ahorrar muchísimo espacio de almacenamiento. Esta consola permite traducir ese lenguaje de máquina a texto legible, y viceversa.",
+          "guideSteps": [
+            "1. Localizar Código Fuente: Obtén la cadena larga y hexadecimal que deseas entender (generalmente extraída de exploradores de red al buscar transacciones profundas).",
+            "2. Pegar Payload: Inserta el hexadecimal en el campo principal.",
+            "3. Análisis Automático: La herramienta intentará descomprimir e interpretar (parsear) la cadena instantáneamente.",
+            "4. Vista en Árbol: Explora el resultado en un panel jerárquico que desglosa cómo Radix entendió esos datos internamente (arreglos, mapas, estructuras, tipos numéricos).",
+            "5. Codificación (Avanzado): También puedes escribir texto estructurado en formato JSON y usar la herramienta a la inversa para generar el binario SBOR comprimido."
+          ],
+          "glossary": [
+            {
+              "term": "SBOR",
+              "definition": "Scrypto Binary Object Representation. Es la manera extremadamente eficiente en la que Radix empaqueta los datos para que viajen y se guarden en la red a la velocidad de la luz."
+            },
+            {
+              "term": "Hexadecimal",
+              "definition": "Sistema numérico que incluye números y las letras de la A a la F. Se utiliza en informática para representar de forma corta cadenas larguísimas de ceros y unos."
+            },
+            {
+              "term": "Payload",
+              "definition": "La 'carga útil' de un mensaje. Por ejemplo, en una instrucción de pago, el payload sería la cantidad de dinero, desprovista de toda la burocracia criptográfica."
+            }
+          ],
+          "example": [
+            {
+              "field": "Payload hexadecimal",
+              "type": "textarea",
+              "value": "5c020000000000000000..."
+            },
+            {
+              "field": "Decodificado (sintaxis de manifiesto)",
+              "type": "textarea",
+              "value": "Tuple(Decimal(\"10.5\"))"
+            }
+          ]
+        }
       },
       "address-utils": {
         "title": "Utilidades de Direcciones",
-        "description": "Inspecciona y valida cualquier dirección de Radix, deriva cuentas desde claves públicas y consulta las direcciones conocidas de la red."
+        "description": "Inspecciona y valida cualquier dirección de Radix, deriva cuentas desde claves públicas y consulta las direcciones conocidas de la red.",
+        "guide": {
+          "guideTitle": "Guía: Utilidades de Direcciones",
+          "guideDescription": "El 'analizador de ADN' de las direcciones de red. En Radix, la dirección de un elemento (ese texto larguísimo que empieza por account_ o resource_) contiene información técnica oculta. Esta herramienta desencripta la dirección para decirte exactamente qué es, de qué red proviene, y a qué entidad pertenece.",
+          "guideSteps": [
+            "1. Modo Inspección: Pega cualquier dirección de Radix. La herramienta la desmontará y te informará si pertenece a Mainnet/Stokenet, si es un recurso, un componente o un paquete, y cuál es su codificación (Bech32m).",
+            "2. Direcciones Conocidas: Haz clic en el panel lateral para listar los pilares fundamentales del sistema preinstalados en el momento cero de la red (El token XRD, el token Secp256k1, el componente Consenso, etc.).",
+            "3. Derivación Criptográfica: (Modo avanzado) Selecciona la pestaña superior de derivación. Introduce una 'Clave Pública' criptográfica (en crudo) e indica qué curva usa (Ed25519 para usuarios de Radix, o Secp256k1 para exportados de Ethereum/Bitcoin). La herramienta creará la cuenta Radix virtual correspondiente a esa clave."
+          ],
+          "glossary": [
+            {
+              "term": "Clave Pública",
+              "definition": "Tu número de identificación criptográfico que puedes compartir sin peligro con todo el mundo. De esta clave, se generan tus direcciones."
+            },
+            {
+              "term": "Ed25519 / Secp256k1",
+              "definition": "Algoritmos criptográficos ultra seguros. Radix usa el primero por ser más moderno y rápido, mientras que Bitcoin/Ethereum popularizaron el segundo."
+            },
+            {
+              "term": "Bech32m",
+              "definition": "El formato estándar mundial de diseño de texto que Radix (y Bitcoin) usa para sus direcciones. Está diseñado matemáticamente para evitar que los humanos se confundan leyendo letras como 'O' minúscula o '0' cero."
+            }
+          ],
+          "example": [
+            {
+              "field": "account_… / resource_…",
+              "type": "input",
+              "value": "account_tdx_2_129...",
+              "isAddress": true
+            },
+            {
+              "field": "Red",
+              "type": "input",
+              "value": "Stokenet (ID: 2)"
+            },
+            {
+              "field": "Clave pública (hex)",
+              "type": "input",
+              "value": "A1B2C3D4E5..."
+            },
+            {
+              "field": "",
+              "type": "button-group",
+              "options": [
+                "Ed25519",
+                "Secp256k1"
+              ],
+              "selected": "Ed25519"
+            }
+          ]
+        }
       },
       "faucet": {
         "title": "Faucet de Pruebas",
-        "description": "Fondea una cuenta de Stokenet con 10.000 XRD de prueba en un clic, directamente desde el faucet de la red."
+        "description": "Fondea una cuenta de Stokenet con 10.000 XRD de prueba en un clic, directamente desde el faucet de la red.",
+        "guide": {
+          "guideTitle": "Guía: Faucet de Pruebas",
+          "guideDescription": "El banco de desarrollo infinito. Un Faucet ('Grifo') te dispensa tokens gratuitos que no tienen ningún valor real, para que puedas probar tus proyectos, cometer errores, y construir aplicaciones en la red de pruebas (Stokenet) sin riesgo de arruinarte pagando comisiones reales.",
+          "guideSteps": [
+            "1. Verificación de Red: Asegúrate de tener activa la red 'Stokenet' (esquina superior derecha). El Faucet no funciona, ni funcionará jamás, en la red real (Mainnet).",
+            "2. Selección de Cuenta Receptora: Usa el desplegable para seleccionar a cuál de tus cuentas de prueba enviaremos los fondos gratuitos.",
+            "3. Ejecución Directa: Pulsa el botón principal. A diferencia de otras herramientas, esto interactuará silenciosamente con el servidor oficial del Faucet de RadixDlt y recibirás instantáneamente 10,000 XRD de prueba y lotes de otros tokens simulados.",
+            "4. Límites de Abuso: El Faucet detecta tu cuenta y te bloqueará si lo usas más de una vez por 'Época' (una medida de tiempo de la red que dura aproximadamente de 30 a 60 minutos)."
+          ],
+          "glossary": [
+            {
+              "term": "Faucet",
+              "definition": "Un sistema automático y caritativo que regala criptomonedas sin valor económico a desarrolladores para fomentar la experimentación técnica de sus DApps."
+            },
+            {
+              "term": "Stokenet",
+              "definition": "El hermano gemelo inofensivo de Radix. Es una red completa funcionando, pero donde todo el dinero es falso y la historia se reinicia de vez en cuando."
+            },
+            {
+              "term": "Época (Epoch)",
+              "definition": "Una fase de tiempo geológico dentro de la red Radix. Al inicio de cada Época, los servidores de consenso rotan y la red realiza tareas contables de fondo."
+            }
+          ],
+          "example": [
+            {
+              "field": "Depositar en la cuenta",
+              "type": "button-group",
+              "options": [
+                "Mi cuenta principal",
+                "Ahorros"
+              ],
+              "selected": "Mi cuenta principal"
+            }
+          ]
+        }
       },
       "wallet-playground": {
         "title": "Playground de Wallet",
-        "description": "Experimenta con las solicitudes de datos de la Radix Wallet: pide cuentas con pruebas de propiedad y verifícalas con ROLA, como una dApp real."
+        "description": "Experimenta con las solicitudes de datos de la Radix Wallet: pide cuentas con pruebas de propiedad y verifícalas con ROLA, como una dApp real.",
+        "guide": {
+          "guideTitle": "Guía: Playground de Wallet",
+          "guideDescription": "La herramienta de simulación para desarrolladores Front-End y Web3. Esta utilidad te permite hacer de 'agente de aduanas' e intentar solicitar a la billetera conectada datos privados del usuario, de la misma forma que lo haría una DApp real como un exchange o un videojuego web3.",
+          "guideSteps": [
+            "1. Modo de Petición: Selecciona qué nivel de intrusión quieres pedir. Puedes pedir simplemente 'Cuentas' (para saber a dónde cobrar/pagar), o subir el nivel pidiendo 'Persona' (identidad abstracta), e incluso datos privados como Correos Electrónicos o Teléfonos asociados.",
+            "2. Parámetros de Autenticación: Decide si las cuentas o datos solicitados deben venir acompañados de una prueba criptográfica estricta (ROLA), exigiendo al usuario que el teléfono firme una declaración digital inconfundible.",
+            "3. Envío de Petición (Dapp-to-Wallet): Pulsa 'Enviar Petición'. Observa tu teléfono móvil; verás cómo salta la interfaz nativa del sistema Radix Connect pidiéndote permiso como usuario final.",
+            "4. Análisis de Respuesta: Aprueba la solicitud en tu teléfono. La consola en la pantalla de tu ordenador imprimirá el paquete JSON de seguridad devuelto por la billetera, para que puedas programar tu DApp basándote en esta estructura real."
+          ],
+          "glossary": [
+            {
+              "term": "ROLA (Radix Off-Ledger Authentication)",
+              "definition": "Un estándar de seguridad donde la billetera demuestra ser dueña de una cuenta sin tener que hacer una transacción financiera en la red; es como enseñar el DNI en lugar de pagar con la tarjeta."
+            },
+            {
+              "term": "DApp (Decentralized Application)",
+              "definition": "Una aplicación web convencional que tiene capacidad directa de comunicarse de ida y vuelta con las redes de criptomonedas y contratos inteligentes sin servidores intermedios."
+            },
+            {
+              "term": "Persona",
+              "definition": "Un concepto exclusivo de Radix Wallet. Es una identidad abstracta que creas en tu móvil (ej: 'Perfil de Negocios' o 'Perfil Gamer') a la que asocias cuentas concretas sin exponer el resto de tu dinero."
+            }
+          ],
+          "example": [
+            {
+              "field": "Número de direcciones",
+              "type": "button-group",
+              "options": [
+                "1",
+                "2",
+                "3"
+              ],
+              "selected": "1"
+            },
+            {
+              "field": "",
+              "type": "button-group",
+              "options": [
+                "Al menos",
+                "Exactamente"
+              ],
+              "selected": "Exactamente"
+            },
+            {
+              "field": "Prueba de propiedad (ROLA)",
+              "type": "button-group",
+              "options": [
+                "Sin prueba",
+                "Con prueba"
+              ],
+              "selected": "Sin prueba"
+            },
+            {
+              "field": "Datos personales",
+              "type": "button-group",
+              "options": [
+                "Nombre completo",
+                "Email",
+                "Teléfono"
+              ],
+              "selected": [
+                "Nombre completo",
+                "Email"
+              ]
+            }
+          ]
+        }
       }
     },
     "common": {

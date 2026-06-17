@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { X, User, LogOut, RefreshCcw, Wallet, MoreVertical, LayoutPanelLeft, PictureInPicture2, AppWindow } from 'lucide-react';
-import { Portal } from '@/components/ui/Portal';
+import { X, User, LogOut, RefreshCcw, Wallet } from 'lucide-react';
+import { SidePanelModal } from '@/components/shared/SidePanelModal';
+import { SidePanelControls } from '@/components/shared/SidePanelControls';
+import { useSidePanelControls } from '@/components/shared/hooks/useSidePanelControls';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { AccountSummaryTab } from '@/features/dashboard/explorador/components/AccountSummaryTab';
@@ -86,108 +88,25 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
     const [isAddressBookVisible, setIsAddressBookVisible] = useState(false);
-    const [externalWindow, setExternalWindow] = useState<Window | null>(null);
     const { copiedText, copy } = useCopyToClipboard();
 
     const navT = (t.nav || {}) as Record<string, string>;
 
-    const [isPinned, setIsPinned] = useState(() => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            return localStorage.getItem('walletPinned') === 'true';
-        }
-        return false;
-    });
-
-    React.useEffect(() => {
-        if (isOpen && isPinned && !externalWindow && window.innerWidth >= 1024) {
-            document.body.style.marginRight = '420px';
-            document.body.style.transition = 'margin-right 0.3s ease';
-            document.documentElement.style.setProperty('--sidebar-width', '420px');
-        } else {
-            document.body.style.marginRight = '0';
-            document.documentElement.style.setProperty('--sidebar-width', '0px');
-        }
-        return () => {
-            document.body.style.marginRight = '0';
-            document.documentElement.style.setProperty('--sidebar-width', '0px');
-        };
-    }, [isOpen, isPinned, externalWindow]);
-
-    const togglePin = () => {
-        const newPinned = !isPinned;
-        setIsPinned(newPinned);
-        localStorage.setItem('walletPinned', newPinned.toString());
-    };
-
-    const handlePiP = async () => {
-        if ('documentPictureInPicture' in window) {
-            try {
-                const pipWindow = await (window as Window & { documentPictureInPicture?: { requestWindow: (opts: { width: number; height: number }) => Promise<Window> } }).documentPictureInPicture!.requestWindow({
-                    width: 420,
-                    height: 800,
-                });
-                
-                const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
-                styles.forEach((style) => {
-                    pipWindow.document.head.appendChild(style.cloneNode(true));
-                });
-                
-                pipWindow.document.documentElement.className = document.documentElement.className;
-                pipWindow.document.documentElement.style.cssText = document.documentElement.style.cssText;
-                pipWindow.document.body.className = 'bg-[var(--color-bg)]';
-                
-                pipWindow.addEventListener('pagehide', () => {
-                    setExternalWindow(null);
-                });
-                
-                setExternalWindow(pipWindow);
-            } catch (e) {
-                console.error(e);
-                alert('No se pudo abrir la ventana Picture-in-Picture.');
-            }
-        } else {
-            alert('La API Document Picture-in-Picture no está soportada en tu navegador (requiere Chrome/Edge 111+).');
-        }
-    };
-
-    const handlePopupWindow = () => {
-        const popup = window.open(
-            '',
-            'RadixWalletPopup',
-            'width=420,height=800,scrollbars=yes,resizable=yes'
-        );
-        if (!popup) {
-            alert('El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes para este sitio.');
-            return;
-        }
-
-        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
-        styles.forEach((style) => {
-            popup.document.head.appendChild(style.cloneNode(true));
-        });
-
-        popup.document.documentElement.className = document.documentElement.className;
-        popup.document.documentElement.style.cssText = document.documentElement.style.cssText;
-        popup.document.body.className = 'bg-[var(--color-bg)]';
-        
-        popup.addEventListener('beforeunload', () => {
-            setExternalWindow(null);
-        });
-
-        setExternalWindow(popup);
-    };
+    const {
+        isPinned,
+        togglePin,
+        handlePiP,
+        handlePopupWindow,
+        externalWindow,
+        closeExternalWindow,
+        resetPin,
+    } = useSidePanelControls('walletPinned');
 
 
 
     const handleClose = () => {
-        if (isPinned) {
-            setIsPinned(false);
-            localStorage.setItem('walletPinned', 'false');
-        }
-        if (externalWindow) {
-            externalWindow.close();
-            setExternalWindow(null);
-        }
+        resetPin();
+        closeExternalWindow();
         onClose();
     };
 
@@ -205,37 +124,15 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
     const isStandaloneMode = isStandalone || !!externalWindow;
 
     return (
-        <Portal target={externalWindow ? externalWindow.document.body : undefined}>
-            <AnimatePresence>
-                {isOpen && (
-                    <>
-                        {/* Backdrop – closes modal on mousedown (not mouseup/click) */}
-                        {!isPinned && !isStandaloneMode && (
-                            <m.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-                                className="fixed inset-0 z-[9000]"
-                                onMouseDown={handleClose}
-                            />
-                        )}
-                        <m.div
-                            initial={isStandaloneMode ? undefined : { x: '100%', opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={isStandaloneMode ? undefined : { x: '100%', opacity: 0 }}
-                            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
-                            className={
-                                isStandaloneMode
-                                    ? 'w-full h-full flex flex-col text-[var(--color-text-main)] overflow-x-hidden bg-[var(--color-bg)]'
-                                    : `fixed top-0 right-0 h-full w-full sm:w-[420px] sm:max-w-[420px] z-[9001] pointer-events-auto flex flex-col text-[var(--color-text-main)] overflow-x-hidden transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
-                                        isPinned
-                                            ? 'bg-[var(--color-bg)] border-l border-[var(--color-card-border)] shadow-none'
-                                            : 'bg-[var(--color-bg)]/85 backdrop-blur-sm shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]'
-                                    }`
-                            }
-                        >
-                            <div className="flex flex-col h-full">
+        <>
+            <SidePanelModal
+                isOpen={isOpen}
+                onClose={handleClose}
+                isStandalone={isStandaloneMode}
+                isPinned={isPinned}
+                portalTarget={externalWindow ? externalWindow.document.body : undefined}
+            >
+            <div className="flex flex-col h-full">
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-6 pt-6 pb-4 bg-[var(--color-surface)]/85 mb-2">
                                     <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pr-4">
@@ -268,31 +165,16 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                         </button>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <div className="relative group/menu">
-                                            <button
-                                                type="button"
-                                                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg)] transition-colors opacity-80 hover:opacity-100 duration-300"
-                                                aria-label="Más opciones"
-                                            >
-                                                <MoreVertical strokeWidth={2} className="size-5" />
-                                            </button>
-                                            <div className="absolute top-full right-0 mt-1 w-64 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl z-[9999] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 overflow-hidden transform origin-top-right scale-95 group-hover/menu:scale-100">
-                                                <div className="flex flex-col p-1.5 space-y-0.5">
-                                                    <button type="button" onClick={togglePin} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
-                                                        <LayoutPanelLeft className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
-                                                        <span>{isPinned ? t.nav.wallet_pin_sidebar_remove || 'Desanclar barra lateral' : t.nav.wallet_pin_sidebar || 'Anclar como barra lateral'}</span>
-                                                    </button>
-                                                    <button type="button" onClick={handlePiP} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
-                                                        <PictureInPicture2 className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
-                                                        <span>{t.nav.wallet_picture_in_picture || 'Convertir a ventana picture in picture'}</span>
-                                                    </button>
-                                                    <button type="button" onClick={handlePopupWindow} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-bg)] hover:text-[var(--color-primary)] rounded-lg transition-colors text-left group/item">
-                                                        <AppWindow className="size-4 text-[var(--color-text-muted)] group-hover/item:text-[var(--color-primary)] transition-colors" />
-                                                        <span>{t.nav.wallet_popup_window || 'Convertir en ventana emergente'}</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <SidePanelControls
+                                            isPinned={isPinned}
+                                            togglePin={togglePin}
+                                            handlePiP={handlePiP}
+                                            handlePopupWindow={handlePopupWindow}
+                                            pinText={t.nav?.wallet_pin_sidebar || 'Anclar como barra lateral'}
+                                            unpinText={t.nav?.wallet_pin_sidebar_remove || 'Desanclar barra lateral'}
+                                            pipText={t.nav?.wallet_picture_in_picture || 'Convertir a ventana picture in picture'}
+                                            popupText={t.nav?.wallet_popup_window || 'Convertir en ventana emergente'}
+                                        />
                                         <button
                                             type="button"
                                             onClick={handleClose}
@@ -446,11 +328,8 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                     )}
                                 </div>
 
-                            </div>
-                        </m.div>
-                    </>
-                )}
-            </AnimatePresence>
+            </div>
+        </SidePanelModal>
 
             <UnderConstructionModal
                 isOpen={isConstructionOpen}
@@ -459,6 +338,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                 overlayClassName={isOpen ? "sm:right-[420px]" : ""}
                 contentClassName={isOpen ? "sm:pr-[420px]" : ""}
             />
-        </Portal>
+        </>
     );
 }

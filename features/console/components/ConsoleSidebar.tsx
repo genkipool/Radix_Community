@@ -15,7 +15,9 @@ import type { Dictionary } from '@/i18n';
 import { CONSOLE_GROUPS } from '../data/consoleTools';
 import { useConsoleDictionary } from '../hooks/useConsoleDictionary';
 import { NetworkSwitch } from './NetworkSwitch';
+import { Info } from 'lucide-react';
 import { CONSOLE_TOOL_SLUGS, type ConsoleToolSlug } from '../types/console.types';
+import { ToolInfoModal } from './shared/ToolInfoModal';
 
 export const CONSOLE_COOKIE_OPEN_GROUPS = 'console_open_groups';
 export const CONSOLE_COOKIE_AUTO_COLLAPSE = 'console_auto_collapse';
@@ -41,6 +43,7 @@ export default function ConsoleSidebar({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [flatView, setFlatView] = useState(initialFlatView);
+  const [infoModalSlug, setInfoModalSlug] = useState<ConsoleToolSlug | null>(null);
   const [, startTransition] = useTransition();
 
   const {
@@ -144,36 +147,65 @@ export default function ConsoleSidebar({
           {flatTools.map((slug) => {
             const isSelected = slug === selectedSlug;
             return (
-              <Link
-                key={slug}
-                href={toolHref(slug)}
-                onClick={(e) => {
-                  if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
+              <div key={slug} className="relative group flex items-center">
+                <Link
+                  href={toolHref(slug)}
+                  onClick={(e) => {
+                    if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
+                      e.preventDefault();
+                      navigate(slug);
+                    }
+                  }}
+                  className="block flex-1 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={
+                    isSelected
+                      ? { background: 'var(--color-primary)', color: 'var(--color-bg)', fontWeight: 600 }
+                      : { color: 'var(--color-text-muted)' }
+                  }
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'var(--color-surface)';
+                      e.currentTarget.style.color = 'var(--color-text-main)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = '';
+                      e.currentTarget.style.color = 'var(--color-text-muted)';
+                    }
+                  }}
+                >
+                  {toolLabels[slug]?.title ?? slug}
+                </Link>
+                <button
+                  type="button"
+                  onClick={(e) => {
                     e.preventDefault();
-                    navigate(slug);
-                  }
-                }}
-                className="block w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                style={
-                  isSelected
-                    ? { background: 'var(--color-primary)', color: 'var(--color-bg)', fontWeight: 600 }
-                    : { color: 'var(--color-text-muted)' }
-                }
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = 'var(--color-surface)';
-                    e.currentTarget.style.color = 'var(--color-text-main)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = '';
-                    e.currentTarget.style.color = 'var(--color-text-muted)';
-                  }
-                }}
-              >
-                {toolLabels[slug]?.title ?? slug}
-              </Link>
+                    setInfoModalSlug(slug);
+                  }}
+                  title="Info"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-all z-10"
+                  style={{
+                    background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--color-surface)',
+                    color: isSelected ? 'var(--color-bg)' : 'var(--color-text-muted)',
+                    border: `1px solid ${isSelected ? 'transparent' : 'var(--color-card-border)'}`,
+                  }}
+                  onMouseEnter={e => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-card-border)';
+                      (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface)';
+                      (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)';
+                    }
+                  }}
+                >
+                  <Info className="size-3.5" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -188,6 +220,13 @@ export default function ConsoleSidebar({
               label: toolLabels[slug]?.title ?? slug,
               isSelected: slug === selectedSlug,
               href: toolHref(slug),
+              actions: [
+                {
+                  icon: <Info className="size-3.5" />,
+                  title: 'Info',
+                  onClick: () => setInfoModalSlug(slug),
+                }
+              ]
             }));
 
             return (
@@ -226,6 +265,13 @@ export default function ConsoleSidebar({
           {t.noResults} &ldquo;{searchQuery}&rdquo;
         </p>
       )}
+
+      <ToolInfoModal
+        isOpen={!!infoModalSlug}
+        onClose={() => setInfoModalSlug(null)}
+        slug={infoModalSlug}
+        t={dictionary as Dictionary}
+      />
     </SidebarLayout>
   );
 }

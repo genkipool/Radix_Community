@@ -30,55 +30,754 @@
     "tools": {
       "send-transaction": {
         "title": "Send Transaction",
-        "description": "Build a transfer of tokens and NFTs to one or several accounts with the wallet transaction builder, and inspect the generated manifest."
+        "description": "Build a transfer of tokens and NFTs to one or several accounts with the wallet transaction builder, and inspect the generated manifest.",
+        "guide": {
+          "guideTitle": "Guide: Send Transaction",
+          "guideDescription": "The definitive tool for asset transfer on the Radix network. Unlike traditional transactions on Ethereum or Bitcoin, on Radix you can transfer multiple tokens and NFTs to multiple recipients within a single transaction, ensuring that either all transfers succeed, or none do (atomicity). Ideal for mass payments, airdrops, or simply reorganizing your own funds across accounts.",
+          "guideSteps": [
+            "1. Source of funds: On the main panel, select the account from which resources will be extracted. Ensure this account has sufficient balance.",
+            "2. Add Recipients: Click 'Add transfer' to create a sending block. You can add as many blocks as you need for different recipients.",
+            "3. Configure each transfer: In each block, paste the exact address of the recipient (ensure it starts with 'account_...').",
+            "4. Resource selection: Choose which token or NFT you want to send. If sending NFTs, you must select exactly which unique identifiers (IDs) will be transferred.",
+            "5. Amounts: Enter the exact token amount to send. The system will automatically validate that you don't exceed your available balance.",
+            "6. Add Proofs (Optional): If the recipient is a smart component that demands special identification (Badge), click 'Add proof' and select the credential NFT.",
+            "7. Simulation (Critical step): Always click 'Simulate transaction'. This will virtually execute the transaction on the network without spending funds, showing you exactly what will happen.",
+            "8. Final submission: If the simulation is green, click 'Send transaction'. Your Radix Wallet will pop up asking you to review and cryptographically sign the order."
+          ],
+          "glossary": [
+            {
+              "term": "Atomicity",
+              "definition": "Property guaranteeing that a transaction involving multiple transfers either executes fully or fails completely; it will never remain half-done."
+            },
+            {
+              "term": "Badge (Proof)",
+              "definition": "A type of token (usually an NFT) serving as a digital access key. It proves you have permission to perform a specific action."
+            },
+            {
+              "term": "Airdrop",
+              "definition": "Mass distribution of tokens or NFTs to multiple wallet addresses, usually for free or as a reward."
+            }
+          ],
+          "example": [
+            {
+              "field": "Withdraw from",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            },
+            {
+              "field": "Destination address (account_...)",
+              "type": "input",
+              "value": "account_tdx_2_1t45xyz...",
+              "isAddress": true
+            },
+            {
+              "field": "Search asset...",
+              "type": "dropdown",
+              "selected": "resource_tdx_2_1t45..."
+            },
+            {
+              "field": "0.00",
+              "type": "input",
+              "value": "1500.50",
+              "isNumeric": true
+            },
+            {
+              "field": "Transaction message (optional)...",
+              "type": "textarea",
+              "value": "Payment for services"
+            }
+          ]
+        }
       },
       "create-token": {
         "title": "Create Token",
-        "description": "Create a fungible or non-fungible resource with custom metadata, supply and behaviour, and deploy it to the Radix Network."
+        "description": "Create a fungible or non-fungible resource with custom metadata, supply and behaviour, and deploy it to the Radix Network.",
+        "guide": {
+          "guideTitle": "Guide: Create Token",
+          "guideDescription": "Become the creator of your own economy. Radix treats tokens as first-class citizens on the network, meaning you don't need to write complex smart contracts to create a secure and standard token. This graphical interface builds the exact manifest to instantiate (mint) both Fungible and Non-Fungible resources with advanced business rules and persistent ledger metadata.",
+          "guideSteps": [
+            "1. Account Selection: Choose the account that will pay network fees and, by default, receive the initial supply of the created resources.",
+            "2. Asset Type: Select 'Fungible' if creating a cryptocurrency, loyalty points, or shares (all units are equal). Select 'Non-Fungible' for digital art, event tickets, or unique certificates.",
+            "3. Project Identity (Metadata): Fill in the fields users will see in their wallets. 'Name' and 'Symbol' (e.g., BTC) are crucial. 'Icon URL' should be a direct link to an internet-hosted image (preferably square).",
+            "4. Initial Supply: Decide how many units will be generated upon creation. If you set 0, the token will be born with no circulation.",
+            "5. Divisibility (Fungibles only): Indicate how many fractions a unit can be divided into. The standard is 18 decimals. If it represents whole objects (e.g., 'Cars'), set divisibility to 0.",
+            "6. Owner Role: Decide who will have administrative authority over the token in the future. You can assign it to 'None' (forever immutable), 'Anyone', or demand a specific 'Badge'.",
+            "7. Simulation & Deployment: Simulate the transaction to verify the network accepts the config, then send it to your wallet for signing."
+          ],
+          "glossary": [
+            {
+              "term": "Fungible Token",
+              "definition": "Identical, mutually interchangeable assets, like regular money or Bitcoin. One 10-dollar bill is worth the same as another 10-dollar bill."
+            },
+            {
+              "term": "Non-Fungible Token (NFT)",
+              "definition": "A unique, unrepeatable digital asset. Each NFT has its own identifier, like an original painting or a specific theater seat."
+            },
+            {
+              "term": "Ledger",
+              "definition": "The public, decentralized Radix network accounting book where your token creation is permanently recorded."
+            },
+            {
+              "term": "Divisibility",
+              "definition": "The number of decimal places a token can have. With 18 decimals (maximum), you could send 0.000000000000000001 of a token."
+            }
+          ],
+          "example": [
+            {
+              "field": "Deposit initial supply to account",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            },
+            {
+              "field": "Token type",
+              "type": "button-group",
+              "options": [
+                "Fungible token",
+                "Non-fungible token"
+              ],
+              "selected": "Fungible token"
+            },
+            {
+              "field": "Track supply",
+              "type": "button-group",
+              "options": [
+                "Yes",
+                "No"
+              ],
+              "selected": "Yes"
+            },
+            {
+              "field": "Initial supply",
+              "type": "input",
+              "value": "1000000",
+              "isNumeric": true
+            },
+            {
+              "field": "Divisibility (0-18)",
+              "type": "input",
+              "value": "18",
+              "isNumeric": true
+            },
+            {
+              "field": "Name",
+              "type": "input",
+              "value": "Radix Community Token"
+            },
+            {
+              "field": "Owner role",
+              "type": "dropdown",
+              "selected": "None"
+            }
+          ]
+        }
       },
       "my-resources": {
         "title": "My Resources",
-        "description": "Manage the tokens you control: mint more units or NFTs, burn, lock metadata, change the owner role, recall and freeze vaults."
+        "description": "Manage the tokens you control: mint more units or NFTs, burn, lock metadata, change the owner role, recall and freeze vaults.",
+        "guide": {
+          "guideTitle": "Guide: My Resources",
+          "guideDescription": "The master admin dashboard for token creators. This tool is designed exclusively for you to manage resources over which you retain administrative privileges (Owner Role). It allows you to execute token lifecycle actions configured as 'Updatable' during creation.",
+          "guideSteps": [
+            "1. Browse inventory: Select the account holding your token 'Badges' (master keys). The tool automatically scans the network for resources you control.",
+            "2. Select Resource: Click the token or NFT you wish to administer from the list.",
+            "3. Choose Action: Depending on token creation settings, you'll see options: 'Mint' (create new supply), 'Burn' (destroy existing tokens), 'Modify Metadata', or 'Freeze' vaults.",
+            "4. Authorization (Provide Badge): Network rules demand proof of authority. The interface will try to auto-attach the required Badge from your account. If the Badge is elsewhere, transfer it first.",
+            "5. Fill Parameters: If you chose 'Mint Fungibles', enter the print amount. If modifying metadata, enter new values.",
+            "6. Confirm changes: Always use the 'Simulate' function to ensure the admin action doesn't violate business rules, then send the order to your Radix Wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Minting",
+              "definition": "The process of creating new units of an existing token, increasing its total circulating supply."
+            },
+            {
+              "term": "Burning",
+              "definition": "The permanent and irreversible destruction of tokens, removing them from circulation forever."
+            },
+            {
+              "term": "Freeze Vault",
+              "definition": "A drastic compliance/legal action locking a specific account, temporarily preventing it from sending or receiving that particular token."
+            }
+          ],
+          "example": [
+            {
+              "field": "Account and resource",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            },
+            {
+              "field": "Resource to manage",
+              "type": "dropdown",
+              "selected": "resource_tdx_2_1t50abc..."
+            },
+            {
+              "field": "Action",
+              "type": "button-group",
+              "options": [
+                "Mint",
+                "Mint NFT",
+                "Burn"
+              ],
+              "selected": "Mint"
+            },
+            {
+              "field": "Amount",
+              "type": "input",
+              "value": "50000",
+              "isNumeric": true
+            }
+          ]
+        }
       },
       "build-manifest": {
         "title": "Build Manifest",
-        "description": "Build manifests visually using templates or interactive blocks with real-time code and flow previews."
+        "description": "Build manifests visually using templates or interactive blocks with real-time code and flow previews.",
+        "guide": {
+          "guideTitle": "Guide: Build Manifest",
+          "guideDescription": "A revolutionary tool democratizing the Radix transaction language (RTML). Radix uses 'Manifests', text scripts describing exactly what occurs in a transaction. This visual interface lets you stack logic blocks (like Lego bricks) to build hyper-advanced transaction logic without writing a single line of code.",
+          "guideSteps": [
+            "1. Choose a Starting Point: Start with a blank canvas or use the 'Templates' dropdown for common structures (like 'Simple Send' or 'Swap').",
+            "2. Add Blocks: Search the left panel for the instruction type needed. E.g., drag 'Withdraw' to pull funds from an account, or 'Deposit' to insert them.",
+            "3. Connect Logic: In Radix, extracted resources are temporarily held in the 'Worktop'. Ensure actions follow logical order: first withdraw to Worktop, then deposit from Worktop to destination.",
+            "4. Adjust Parameters: Click each block to configure. Enter correct addresses (accounts, components), numeric amounts, and resource identifiers.",
+            "5. Monitor Code: As you add blocks, watch the right 'Preview' panel. The tool writes raw Manifest code in real-time, helping you learn native syntax.",
+            "6. Execution: Run a simulation and send the finalized transaction to the wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Transaction Manifest",
+              "definition": "A human-readable text file describing exact transaction intent step-by-step, designed for user auditing before signing."
+            },
+            {
+              "term": "Worktop",
+              "definition": "Temporary transaction memory. Withdrawn tokens drop onto the Worktop. If tokens remain on the Worktop when the transaction ends, safety protocols will abort the transaction."
+            },
+            {
+              "term": "Block (Instruction)",
+              "definition": "An individual command within the manifest, like calling a function, moving an asset, or creating a proof."
+            }
+          ],
+          "example": [
+            {
+              "field": "Builder mode",
+              "type": "button-group",
+              "options": [
+                "Templates",
+                "Blocks"
+              ],
+              "selected": "Templates"
+            },
+            {
+              "field": "Choose a template",
+              "type": "dropdown",
+              "selected": "Send tokens"
+            },
+            {
+              "field": "From account",
+              "type": "dropdown",
+              "selected": "account_tdx... | 150 XRD"
+            },
+            {
+              "field": "To account",
+              "type": "input",
+              "value": "account_tdx_2_xyz...",
+              "isAddress": true
+            }
+          ]
+        }
       },
       "deploy-package": {
         "title": "Deploy Package",
-        "description": "Deploy a new blueprint package to the network by attaching your WASM and RPD files and submitting a transaction with your Radix Wallet."
+        "description": "Deploy a new blueprint package to the network by attaching your WASM and RPD files and submitting a transaction with your Radix Wallet.",
+        "guide": {
+          "guideTitle": "Guide: Deploy Package",
+          "guideDescription": "The bridge between your local development environment and the Radix network. A 'Package' in Radix equals a Smart Contract in Ethereum, but written in Scrypto and compiled to WebAssembly. This tool handles packaging, signing, and immutably publishing your code on the global ledger.",
+          "guideSteps": [
+            "1. Local Compilation: Ensure you've run `scrypto build` locally on your project code. This generates two essential files in the `/target/...` folder.",
+            "2. Funding Account: Select the wallet account that will pay the XRD upload fees. (Uploading code costs computational power).",
+            "3. WASM File: Upload the `.wasm` file. This is the brain of your contract, the compiled and obfuscated logic code.",
+            "4. RPD File: Upload the associated `.rpd` (Radix Package Definition) file. It's a map explaining to the network how to read the WASM, its methods, and utilized resources.",
+            "5. Global Permissions: Optionally configure future package upgradeability. By default, packages are immutable to guarantee user trust.",
+            "6. Deployment Transaction: Simulate and send. Once confirmed, you'll receive the final address of your package (`package_...`), used to instantiate components."
+          ],
+          "glossary": [
+            {
+              "term": "Scrypto",
+              "definition": "Radix's native programming language, based on Rust, exclusively specialized in decentralized finance and secure asset handling."
+            },
+            {
+              "term": "WebAssembly (WASM)",
+              "definition": "A highly optimized, ultra-fast binary code format the Radix network executes directly in its virtual machine."
+            },
+            {
+              "term": "Blueprints",
+              "definition": "The 'building plans' within the package. They define the generic structure users will subsequently instantiate."
+            },
+            {
+              "term": "Package",
+              "definition": "The final container holding one or more Blueprints and executable code. It possesses a fixed network address."
+            }
+          ],
+          "example": [
+            {
+              "field": "Withdraw from",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            },
+            {
+              "field": "Package WASM file",
+              "type": "input",
+              "value": "my_project.wasm"
+            },
+            {
+              "field": "Package RPD file",
+              "type": "input",
+              "value": "my_project.rpd"
+            },
+            {
+              "field": "Owner role",
+              "type": "dropdown",
+              "selected": "None"
+            }
+          ]
+        }
       },
       "transaction-manifest": {
         "title": "Transaction Manifest",
-        "description": "Write a raw transaction manifest and send it as a transaction request to your Radix Wallet."
+        "description": "Write a raw transaction manifest and send it as a transaction request to your Radix Wallet.",
+        "guide": {
+          "guideTitle": "Guide: Transaction Manifest",
+          "guideDescription": "The most powerful (and dangerous) tool for advanced users and veteran developers. A raw text console accepting RTML code directly. Bypasses graphical interfaces, allowing surgical network manipulation via assertions and complex conditional logic.",
+          "guideSteps": [
+            "1. Code Editor: Write your manifest directly in the interactive terminal. The console features basic syntax highlighting for readability.",
+            "2. Network Context: Verify in the top right corner you're targeting the correct network (Mainnet for real, Stokenet for testing).",
+            "3. Blob Handling: If your transaction requires uploading large binaries or weird data (like massive state initialization), add 'Blobs' in the auxiliary interface.",
+            "4. Strict Validation: Click 'Simulate transaction'. The network parses the text for typos, non-existent addresses, or insufficient funds.",
+            "5. Execution: Send to the wallet. Being a raw manifest, the Radix Wallet interprets the text to display a visual summary of your code's intent."
+          ],
+          "glossary": [
+            {
+              "term": "RTML",
+              "definition": "Radix Transaction Manifest Language. The secure scripting language orchestrating smart contract calls on Radix."
+            },
+            {
+              "term": "Blob",
+              "definition": "Binary Large Object. Hexadecimal encoded data packages attached to transactions without cluttering main manifest text."
+            },
+            {
+              "term": "Assertions (Asserts)",
+              "definition": "Manifest security instructions instantly aborting the entire transaction if conditions aren't met (e.g., 'Cancel all if price drops below X')."
+            }
+          ],
+          "example": [
+            {
+              "field": "Send mode",
+              "type": "button-group",
+              "options": [
+                "Transaction",
+                "Subintent"
+              ],
+              "selected": "Transaction"
+            },
+            {
+              "field": "Transaction manifest",
+              "type": "textarea",
+              "value": "CALL_METHOD Address(\"account_...\") \"withdraw\" ...;"
+            }
+          ]
+        }
       },
       "component-panel": {
         "title": "Component Panel",
-        "description": "Read the blueprint of any on-ledger component live from the network and get an instant control panel to execute its public methods."
+        "description": "Read the blueprint of any on-ledger component live from the network and get an instant control panel to execute its public methods.",
+        "guide": {
+          "guideTitle": "Guide: Component Panel",
+          "guideDescription": "A direct window into live network state. Unlike other networks demanding full web DApp builds to interact with smart contracts, Radix exposes contracts (Components) natively. This tool reads technical definitions of any component, auto-generating buttons and forms for immediate interaction.",
+          "guideSteps": [
+            "1. Locate Component: Paste the full address of a live component (usually starting with `component_...`).",
+            "2. Blueprint Analysis: The tool scans the origin package, displaying a table with technical data (origin package, base blueprint name).",
+            "3. Explore Methods: You'll see a list of 'Public Methods' (functions left open by the developer). Select one to execute.",
+            "4. Fill Arguments: If the function requires data (like 'amount to swap' or 'user ID'), the interface generates specific input fields.",
+            "5. Capture Returns: If the function spits resources back (e.g., buying returns an NFT), you must select a 'Destination' account in your wallet. Otherwise, the transaction fails to protect your funds!",
+            "6. Confirm: Simulate interaction and sign."
+          ],
+          "glossary": [
+            {
+              "term": "Component",
+              "definition": "The 'live' version of a Blueprint. If the Blueprint is the technical plan, the Component is the actual building operating on the network."
+            },
+            {
+              "term": "Method",
+              "definition": "A programmed specific action within the component. A vending machine might have methods like 'insert_coin' or 'select_soda'."
+            },
+            {
+              "term": "Instantiate",
+              "definition": "Using a static Blueprint to create a new operational Component on the network with independent memory and state."
+            }
+          ],
+          "example": [
+            {
+              "field": "Component address",
+              "type": "input",
+              "value": "component_tdx_2_1cq8...",
+              "isAddress": true
+            },
+            {
+              "field": "Public methods",
+              "type": "dropdown",
+              "selected": "buy_ticket"
+            },
+            {
+              "field": "Arguments (manifest syntax)",
+              "type": "textarea",
+              "value": "Decimal(\"15.0\")"
+            },
+            {
+              "field": "Deposit returned resources",
+              "type": "button-group",
+              "options": [
+                "Yes",
+                "No"
+              ],
+              "selected": "Yes"
+            },
+            {
+              "field": "Deposit to account",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            }
+          ]
+        }
       },
       "configure-metadata": {
         "title": "Configure Metadata",
-        "description": "Inspect and update the on-ledger metadata of accounts, resources, components and validators."
+        "description": "Inspect and update the on-ledger metadata of accounts, resources, components and validators.",
+        "guide": {
+          "guideTitle": "Guide: Configure Metadata",
+          "guideDescription": "The ultimate dashboard to maintain your creations' public identity. Everything on Radix (accounts, tokens, contracts, validators) has a reserved network space for 'Metadata'. This tool allows inspection and alteration of this data, like updating token imagery or changing DApp descriptions.",
+          "guideSteps": [
+            "1. Owner: Select the account presenting administrative credentials. Modifying public data requires authority.",
+            "2. Target Entity: Enter the exact address of the modification target (an account, a `resource_...`, or a package).",
+            "3. Inspection: The tool fetches current metadata directly from the network.",
+            "4. Modification: Use '+' buttons to add fields or edit existing ones. You can change names, descriptions, image URLs, and search tags.",
+            "5. Confirm: Run simulation. The network instantly checks if the owner account has adequate permissions, then forwards to wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Metadata",
+              "definition": "Information attached to an element describing its properties (the digital 'ID card' of the asset). Affects visual presentation, not mathematical logic."
+            },
+            {
+              "term": "Entity",
+              "definition": "Generic term covering anything global on the Radix network with an address, like components, packages, or resources."
+            },
+            {
+              "term": "Tags",
+              "definition": "Keywords associated with an asset allowing community web explorers to index and classify it."
+            }
+          ],
+          "example": [
+            {
+              "field": "Owner role",
+              "type": "dropdown",
+              "selected": "None"
+            },
+            {
+              "field": "Entity",
+              "type": "input",
+              "value": "resource_tdx_2_1t45...",
+              "isAddress": true
+            },
+            {
+              "field": "Key",
+              "type": "dropdown",
+              "selected": "name"
+            },
+            {
+              "field": "Value type",
+              "type": "button-group",
+              "options": [
+                "String",
+                "Address",
+                "Decimal",
+                "Url",
+                "StringArray"
+              ],
+              "selected": "String"
+            },
+            {
+              "field": "Value",
+              "type": "input",
+              "value": "My Updated Token"
+            }
+          ]
+        }
       },
       "convert-olympia-address": {
         "title": "Convert Olympia Address",
-        "description": "Convert an Olympia account or resource address into its Babylon equivalent."
+        "description": "Convert an Olympia account or resource address into its Babylon equivalent.",
+        "guide": {
+          "guideTitle": "Guide: Convert Olympia Address",
+          "guideDescription": "A vital historical tool. Radix underwent a massive global tech upgrade (from the 'Olympia' network to the current 'Babylon' network). Addresses changed formats. This mathematical utility instantly translates old formats to new ones locally, without internet queries.",
+          "guideSteps": [
+            "1. Identify Old Address: Obtain the old address requiring modernization (old accounts started with `rdx1...`, old resources by common Olympia token names).",
+            "2. Input Data: Paste into the text field.",
+            "3. Instant Conversion: The tool runs elliptic curve cryptography algorithms locally in your browser, deriving the corresponding Babylon address.",
+            "4. Copy Result: Use the copy button to utilize the new `account_...` address on the current network."
+          ],
+          "glossary": [
+            {
+              "term": "Olympia",
+              "definition": "Version 1.0 of the Radix mainnet. Operated flawlessly until its planned upgrade, but featured less scalable contract tech."
+            },
+            {
+              "term": "Babylon",
+              "definition": "The current hyper-advanced Radix network version, featuring full Scrypto environment integration and universal smart accounts."
+            },
+            {
+              "term": "Derivation",
+              "definition": "Mathematical process taking a base address and, using predictable rules, generating an entirely different but mathematically linked address."
+            }
+          ],
+          "example": [
+            {
+              "field": "Olympia Address",
+              "type": "input",
+              "value": "rdx1qsp..."
+            },
+            {
+              "field": "Babylon Address",
+              "type": "input",
+              "value": "account_rdx1cw...",
+              "isAddress": true
+            }
+          ]
+        }
       },
       "sbor-decoder": {
         "title": "SBOR Encoder / Decoder",
-        "description": "Paste any hex-encoded SBOR payload (state, events, schemas) and read it decoded, human-readable."
+        "description": "Paste any hex-encoded SBOR payload (state, events, schemas) and read it decoded, human-readable.",
+        "guide": {
+          "guideTitle": "Guide: SBOR Decoder",
+          "guideDescription": "Low-level forensic tool. The Radix network compresses all its data (like contract states or emitted events) into an incomprehensible binary format called SBOR to save massive storage space. This console translates that machine language into readable text, and vice versa.",
+          "guideSteps": [
+            "1. Locate Source Code: Get the long hexadecimal string you wish to understand (usually extracted from network explorers during deep transaction searches).",
+            "2. Paste Payload: Insert the hex string into the main field.",
+            "3. Automatic Analysis: The tool attempts instant decompression and parsing of the string.",
+            "4. Tree View: Explore the result in a hierarchical panel breaking down exactly how Radix understood the internal data (arrays, maps, structs, numeric types).",
+            "5. Encoding (Advanced): You can write structured JSON text and use the tool in reverse to generate the compressed SBOR binary."
+          ],
+          "glossary": [
+            {
+              "term": "SBOR",
+              "definition": "Scrypto Binary Object Representation. Radix's extremely efficient data packaging method ensuring light-speed network travel and storage."
+            },
+            {
+              "term": "Hexadecimal",
+              "definition": "Numeric system including numbers and letters A through F. Used in computing as shorthand for extremely long binary strings."
+            },
+            {
+              "term": "Payload",
+              "definition": "The 'useful cargo' of a message. In a payment instruction, the payload is the money amount, stripped of cryptographic bureaucracy."
+            }
+          ],
+          "example": [
+            {
+              "field": "Hexadecimal payload",
+              "type": "textarea",
+              "value": "5c020000000000000000..."
+            },
+            {
+              "field": "Decoded (manifest syntax)",
+              "type": "textarea",
+              "value": "Tuple(Decimal(\"10.5\"))"
+            }
+          ]
+        }
       },
       "address-utils": {
         "title": "Address Utilities",
-        "description": "Inspect and validate any Radix address, derive accounts from public keys and browse the well-known network addresses."
+        "description": "Inspect and validate any Radix address, derive accounts from public keys and browse the well-known network addresses.",
+        "guide": {
+          "guideTitle": "Guide: Address Utilities",
+          "guideDescription": "The network address 'DNA analyzer'. In Radix, an element's address (the long text starting with account_ or resource_) contains hidden technical information. This tool decrypts the address, detailing exactly what it is, its native network, and the entity it belongs to.",
+          "guideSteps": [
+            "1. Inspection Mode: Paste any Radix address. The tool dismantles it, informing if it belongs to Mainnet/Stokenet, if it's a resource, component, or package, and its encoding (Bech32m).",
+            "2. Known Addresses: Click the side panel to list foundational system pillars pre-installed at network zero (XRD token, Secp256k1 token, Consensus component, etc.).",
+            "3. Cryptographic Derivation: (Advanced) Select the top derivation tab. Enter a raw cryptographic 'Public Key' and select its curve (Ed25519 for Radix users, Secp256k1 for Ethereum/Bitcoin exports). The tool creates the virtual Radix account tied to that key."
+          ],
+          "glossary": [
+            {
+              "term": "Public Key",
+              "definition": "Your cryptographic ID number, safely shareable with everyone. Your addresses are generated from this key."
+            },
+            {
+              "term": "Ed25519 / Secp256k1",
+              "definition": "Ultra-secure cryptographic algorithms. Radix uses the former for modern speed, while Bitcoin/Ethereum popularized the latter."
+            },
+            {
+              "term": "Bech32m",
+              "definition": "The global standard text formatting Radix (and Bitcoin) uses for addresses. Mathematically designed to prevent human confusion reading letters like lowercase 'O' or zero '0'."
+            }
+          ],
+          "example": [
+            {
+              "field": "account_… / resource_…",
+              "type": "input",
+              "value": "account_tdx_2_129...",
+              "isAddress": true
+            },
+            {
+              "field": "Network",
+              "type": "input",
+              "value": "Stokenet (ID: 2)"
+            },
+            {
+              "field": "Public key (hex)",
+              "type": "input",
+              "value": "A1B2C3D4E5..."
+            },
+            {
+              "field": "",
+              "type": "button-group",
+              "options": [
+                "Ed25519",
+                "Secp256k1"
+              ],
+              "selected": "Ed25519"
+            }
+          ]
+        }
       },
       "faucet": {
         "title": "Test Faucet",
-        "description": "Fund a Stokenet account with 10,000 test XRD in one click, straight from the network faucet."
+        "description": "Fund a Stokenet account with 10,000 test XRD in one click, straight from the network faucet.",
+        "guide": {
+          "guideTitle": "Guide: Test Faucet",
+          "guideDescription": "The infinite development bank. A Faucet dispenses free, zero-value tokens enabling you to test projects, make mistakes, and build apps on the test network (Stokenet) without risking real fees.",
+          "guideSteps": [
+            "1. Network Verification: Ensure the 'Stokenet' network is active (top right corner). The Faucet does not, and will never, function on the real network (Mainnet).",
+            "2. Receiving Account: Use the dropdown to select which test account will receive free funds.",
+            "3. Direct Execution: Press the main button. Unlike other tools, this silently interacts with the official RadixDlt Faucet server, instantly delivering 10,000 test XRD and batches of other simulated tokens.",
+            "4. Abuse Limits: The Faucet detects your account and temporarily blocks you if used more than once per 'Epoch' (a network time measure lasting approx. 30-60 minutes)."
+          ],
+          "glossary": [
+            {
+              "term": "Faucet",
+              "definition": "An automatic, charitable system gifting zero-value cryptocurrency to developers to encourage technical DApp experimentation."
+            },
+            {
+              "term": "Stokenet",
+              "definition": "Radix's harmless twin brother. A fully functioning network where all money is fake, and history occasionally resets."
+            },
+            {
+              "term": "Epoch",
+              "definition": "A geological time phase within the Radix network. At each Epoch's start, consensus servers rotate and background accounting tasks execute."
+            }
+          ],
+          "example": [
+            {
+              "field": "Deposit to account",
+              "type": "button-group",
+              "options": [
+                "My Main Account",
+                "Savings"
+              ],
+              "selected": "My Main Account"
+            }
+          ]
+        }
       },
       "wallet-playground": {
         "title": "Wallet Playground",
-        "description": "Experiment with Radix Wallet data requests: ask for accounts with ownership proofs and verify them with ROLA, like a real dApp."
+        "description": "Experiment with Radix Wallet data requests: ask for accounts with ownership proofs and verify them with ROLA, like a real dApp.",
+        "guide": {
+          "guideTitle": "Guide: Wallet Playground",
+          "guideDescription": "The ultimate simulation tool for Front-End and Web3 developers. This utility lets you act as a 'customs agent', attempting to request private user data from the connected wallet exactly as a real DApp (like an exchange or web3 game) would.",
+          "guideSteps": [
+            "1. Request Mode: Select the desired intrusion level. Request simple 'Accounts' (knowing where to charge/pay), escalate to 'Persona' (abstract identity), or even private data like linked Emails/Phones.",
+            "2. Authentication Parameters: Decide if requested accounts/data must be accompanied by strict cryptographic proof (ROLA), demanding the user's phone sign an unmistakable digital declaration.",
+            "3. Send Request (Dapp-to-Wallet): Click 'Send Request'. Watch your mobile phone; the native Radix Connect system interface will pop up asking end-user permission.",
+            "4. Response Analysis: Approve the request on your phone. Your computer's console will print the security JSON packet returned by the wallet, allowing you to program your DApp based on real structures."
+          ],
+          "glossary": [
+            {
+              "term": "ROLA (Radix Off-Ledger Authentication)",
+              "definition": "A security standard where the wallet proves account ownership without making a financial network transaction; akin to showing an ID card instead of paying with a bank card."
+            },
+            {
+              "term": "DApp (Decentralized Application)",
+              "definition": "A conventional web application holding direct, two-way communication capabilities with cryptocurrency networks and smart contracts, bypassing intermediary servers."
+            },
+            {
+              "term": "Persona",
+              "definition": "A Radix Wallet exclusive concept. An abstract mobile identity (e.g., 'Business Profile' or 'Gamer Profile') linking specific accounts without exposing your entire wealth."
+            }
+          ],
+          "example": [
+            {
+              "field": "Number of addresses",
+              "type": "button-group",
+              "options": [
+                "1",
+                "2",
+                "3"
+              ],
+              "selected": "1"
+            },
+            {
+              "field": "",
+              "type": "button-group",
+              "options": [
+                "At least",
+                "Exactly"
+              ],
+              "selected": "Exactly"
+            },
+            {
+              "field": "Proof of ownership (ROLA)",
+              "type": "button-group",
+              "options": [
+                "No proof",
+                "With proof"
+              ],
+              "selected": "No proof"
+            },
+            {
+              "field": "Persona data",
+              "type": "button-group",
+              "options": [
+                "Full name",
+                "Email",
+                "Phone"
+              ],
+              "selected": [
+                "Full name",
+                "Email"
+              ]
+            }
+          ]
+        }
       }
     },
     "common": {
