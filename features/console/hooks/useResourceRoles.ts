@@ -35,6 +35,7 @@ export function useResourceRoles(resourceAddress: string | null) {
       }
 
       return {
+        details,
         roleAssignments,
         badgeAddresses: Array.from(badgeAddresses),
       };
