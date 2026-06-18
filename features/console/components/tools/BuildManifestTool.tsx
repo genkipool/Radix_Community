@@ -84,7 +84,7 @@ export default function BuildManifestTool({ t }: ConsoleToolProps) {
         <ManifestLibrary t={t.library} manifest={manifest} disabled={isSending} />
 
         <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-        <TxResultBanner t={common} result={result} error={error} onReset={reset} />
+        <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
 
         <div className="flex w-full items-center gap-3">
           <SendToWalletButton

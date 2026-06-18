@@ -8,6 +8,8 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import type { ConsoleTxResult } from '../../types/console.types';
+import type { TransactionPreviewResult } from '../../services/transactionPreview';
+import { BalanceChangeRow } from './SimulatePanel';
 
 interface TxResultBannerProps {
   t: ConsoleCommonDictionary;
@@ -17,6 +19,7 @@ interface TxResultBannerProps {
   /** Label for the created entity row (e.g. "Created resource") */
   createdEntityLabel?: string;
   onReset?: () => void;
+  preview?: TransactionPreviewResult | null;
 }
 
 function CopyValue({ value, copyLabel, copiedLabel }: { value: string; copyLabel: string; copiedLabel: string }) {
@@ -31,17 +34,16 @@ function CopyValue({ value, copyLabel, copiedLabel }: { value: string; copyLabel
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="inline-flex items-center gap-1.5 font-mono text-xs px-2 py-1 rounded-lg border transition-colors hover:border-[var(--color-primary)] cursor-pointer"
-      style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+      className="inline-flex items-center gap-1.5 font-mono text-sm text-[var(--color-text-main)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
     >
       {truncateAddress(value, 14, 10)}
-      <Copy className="size-3" style={{ color: copied ? 'var(--color-primary)' : 'var(--color-text-muted)' }} />
+      <Copy className="size-3.5 opacity-60" />
     </button>
   );
 }
 
 /** Success / error result panel rendered after a console transaction. */
-export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }: TxResultBannerProps) {
+export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, preview }: TxResultBannerProps) {
   const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
 
@@ -75,7 +77,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
 
   return (
     <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 space-y-5 overflow-hidden mt-4">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
       {onReset && (
         <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
@@ -83,7 +85,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
       )}
       
       <div className="flex items-start gap-3">
-        <CheckCircle2 className="size-5 shrink-0 text-emerald-500 mt-0.5" />
+        <CheckCircle2 className="size-5 shrink-0 text-[var(--color-primary)] mt-0.5" />
         <div className="min-w-0 space-y-1 pr-6 w-full">
           <p className="text-base font-bold text-[var(--color-text-main)]">{t.txSuccessTitle}</p>
           <p className="text-sm text-[var(--color-text-muted)]">
@@ -104,11 +106,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
           <div className="space-y-1.5">
             <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txStatus}</span>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-500">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
+              <span className="text-sm font-medium text-[var(--color-text-main)]">
                 {result.status}
               </span>
             </div>
@@ -130,6 +128,17 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset }
             </div>
           </div>
         </div>
+
+        {preview && preview.balanceChanges && preview.balanceChanges.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cambios de balance</span>
+            <div className="space-y-1">
+              {preview.balanceChanges.map((change, index) => (
+                <BalanceChangeRow key={index} change={change} language={language} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {createdEntityLabel && result.createdEntities.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">

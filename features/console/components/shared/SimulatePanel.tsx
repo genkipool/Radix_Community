@@ -134,7 +134,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
   );
 }
 
-function BalanceChangeRow({ change, language }: { change: PreviewBalanceChange; language: string }) {
+export function BalanceChangeRow({ change, language }: { change: PreviewBalanceChange; language: string }) {
   const { accounts, activeNetwork } = useRadixWallet();
   const { entries: addressBookEntries } = useAddressBook();
 

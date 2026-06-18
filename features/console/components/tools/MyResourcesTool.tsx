@@ -619,7 +619,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
       )}
 
       <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-      <TxResultBanner t={common} result={result} error={error} onReset={reset} />
+      <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
 
       <div className="flex w-full items-center gap-3">
         <SendToWalletButton
