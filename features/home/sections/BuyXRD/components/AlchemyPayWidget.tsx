@@ -16,7 +16,7 @@ export default function AlchemyPayWidget() {
   const src = `https://ramp.alchemypay.org/?crypto=XRD&network=XRD&fiat=${fiatCurrency}&theme=${isDark ? 'dark' : 'light'}`;
 
   return (
-    <div className="relative w-full h-[550px] rounded-2xl overflow-hidden">
+    <div className="relative w-full h-[660px] rounded-2xl overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg)] z-10">
           <Loader2 className="size-8 animate-spin text-[var(--color-primary)] mb-4" />
