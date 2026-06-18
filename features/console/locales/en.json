@@ -1468,7 +1468,22 @@
           "deposit": "Deposits",
           "burn": "Burns",
           "all": "Everything"
-        }
+        },
+        "searchResource": "Search...",
+        "searchNfts": "Search among {count} NFTs...",
+        "searchBadge": "Search badge...",
+        "nftsSelected": "{count} NFT selected",
+        "nftsSelectedPlural": "{count} NFTs selected",
+        "clearSelection": "Clear selection",
+        "noNftsFound": "No NFTs found",
+        "noBadgesFound": "No badges available",
+        "noResults": "No results found",
+        "requirementFor": "Requirement for",
+        "ruleLocked": "Rule locked",
+        "ruleLockedHint": "The access rule for this action cannot be modified",
+        "accessRule": "Access Rule",
+        "alreadyLockedHint": "Already locked on ledger",
+        "lockFieldHint": "Lock field"
       }
     },
     "faucet": {

@@ -1469,7 +1469,22 @@
           "deposit": "Depósitos",
           "burn": "Quemas",
           "all": "Todo"
-        }
+        },
+        "searchResource": "Buscar...",
+        "searchNfts": "Buscar entre {count} NFTs...",
+        "searchBadge": "Buscar badge...",
+        "nftsSelected": "{count} NFT seleccionado",
+        "nftsSelectedPlural": "{count} NFTs seleccionados",
+        "clearSelection": "Limpiar selección",
+        "noNftsFound": "No se encontraron NFTs",
+        "noBadgesFound": "No hay badges disponibles",
+        "noResults": "No se encontraron resultados",
+        "requirementFor": "Requisito para",
+        "ruleLocked": "Regla bloqueada",
+        "ruleLockedHint": "La regla de acceso para esta acción no se puede modificar",
+        "accessRule": "Regla de Acceso",
+        "alreadyLockedHint": "Ya bloqueado en el ledger",
+        "lockFieldHint": "Bloquear campo"
       }
     },
     "faucet": {

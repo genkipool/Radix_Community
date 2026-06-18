@@ -326,7 +326,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               <SearchField
                 value={searchQuery}
                 onChange={setSearchQuery}
-                placeholder="Buscar..."
+                placeholder={labels.fields.searchResource}
                 disabled={isSending}
               />
             )}
@@ -351,7 +351,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               })}
               {resourceOptions.length > 0 && filteredResourceOptions.length === 0 && (
                 <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  No se encontraron resultados
+                  {labels.fields.noResults}
                 </div>
               )}
             </div>
@@ -494,7 +494,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                 {roleStr && (
                   <div className={`mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-xs font-medium border ${isActionDenied ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-[var(--color-primary)]/5 text-[var(--color-primary)] border-[var(--color-primary)]/20'}`}>
                     <div className="flex items-center gap-2">
-                      <span className="opacity-80">Requisito para {actionLabels[activeAction]?.name || activeAction}:</span>
+                      <span className="opacity-80">{labels.fields.requirementFor} {actionLabels[activeAction]?.name || activeAction}:</span>
                       <span className="font-bold flex items-center gap-1.5">
                         {ruleType === 'allowAll' && <Check className="size-3.5" />}
                         {ruleType === 'denyAll' && <Lock className="size-3.5" />}
@@ -503,9 +503,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </span>
                     </div>
                     {isActionLocked && (
-                      <div className="flex items-center gap-1.5 opacity-80" title="La regla de acceso para esta acción no se puede modificar">
+                      <div className="flex items-center gap-1.5 opacity-80" title={labels.fields.ruleLockedHint}>
                         <Lock className="size-3" />
-                        <span>Regla bloqueada</span>
+                        <span>{labels.fields.ruleLocked}</span>
                       </div>
                     )}
                   </div>
@@ -524,28 +524,24 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
                 {activeAction === 'burn' && isNonFungible && selectedNonFungible && (
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <SearchField
-                        value={burnNftSearch}
-                        onChange={setBurnNftSearch}
-                        placeholder={`Buscar entre ${selectedNonFungible.ids.length} NFTs...`}
-                        disabled={isSending || isActionDenied}
-                      />
+                    <SearchField
+                      value={burnNftSearch}
+                      onChange={setBurnNftSearch}
+                      placeholder={labels.fields.searchNfts.replace('{count}', selectedNonFungible.ids.length.toString())}
+                      disabled={isSending || isActionDenied}
+                    />
+                    <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: burnNftIds.size > 0 ? 'visible' : 'hidden' }}>
+                      <Flame className="size-3.5" />
+                      <span>{burnNftIds.size === 1 ? labels.fields.nftsSelected.replace('{count}', '1') : labels.fields.nftsSelectedPlural.replace('{count}', burnNftIds.size.toString())}</span>
+                      <button
+                        type="button"
+                        onClick={() => setBurnNftIds(new Set())}
+                        className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.clearSelection}
+                      </button>
                     </div>
-                    {burnNftIds.size > 0 && (
-                      <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)' }}>
-                        <Flame className="size-3.5" />
-                        <span>{burnNftIds.size} NFT{burnNftIds.size > 1 ? 's' : ''} seleccionado{burnNftIds.size > 1 ? 's' : ''}</span>
-                        <button
-                          type="button"
-                          onClick={() => setBurnNftIds(new Set())}
-                          className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
-                          style={{ color: 'var(--color-text-muted)' }}
-                        >
-                          Limpiar selección
-                        </button>
-                      </div>
-                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                       {selectedNonFungible.ids
                         .filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase()))
@@ -593,22 +589,15 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                   {nftId}
                                 </span>
                               </div>
-                              <div className="shrink-0 ml-auto size-5 rounded-md border-2 flex items-center justify-center transition-all duration-150"
-                                style={{
-                                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
-                                  backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
-                                }}
-                              >
-                                {isSelected && (
-                                  <Check className="size-3.5 text-white" />
-                                )}
-                              </div>
+                              {isSelected && (
+                                <Check className="size-4 shrink-0 ml-auto" style={{ color: 'var(--color-primary)' }} />
+                              )}
                             </button>
                           );
                         })}
                       {selectedNonFungible.ids.filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
                         <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                          No se encontraron NFTs
+                          {labels.fields.noNftsFound}
                         </div>
                       )}
                     </div>
@@ -670,7 +659,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                               }}
                               disabled={isSending || isActionDenied || alreadyLocked}
                               label={alreadyLocked ? 'Locked' : 'Lock'}
-                              hint={alreadyLocked ? 'Ya bloqueado en el ledger' : 'Bloquear campo'}
+                              hint={alreadyLocked ? labels.fields.alreadyLockedHint : labels.fields.lockFieldHint}
                             />
                           }
                           value={displayVal || item.value?.raw_hex || ''}
@@ -686,7 +675,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                        Regla de Acceso
+                        {labels.fields.accessRule}
                       </span>
                       <OptionButtons
                         options={[
@@ -713,7 +702,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                           <SearchField
                             value={badgeSearch}
                             onChange={setBadgeSearch}
-                            placeholder="Buscar badge..."
+                            placeholder={labels.fields.searchBadge}
                             disabled={isSending || isActionDenied}
                           />
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
@@ -734,12 +723,12 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             })}
                             {resourceOptions.length > 0 && filteredBadges.length === 0 && (
                               <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                                No se encontraron resultados
+                                {labels.fields.noResults}
                               </div>
                             )}
                             {resourceOptions.length === 0 && (
                               <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                                No hay badges disponibles
+                                {labels.fields.noBadgesFound}
                               </div>
                             )}
                           </div>
