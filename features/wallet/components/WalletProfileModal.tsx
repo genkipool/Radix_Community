@@ -29,6 +29,7 @@ interface WalletProfileModalProps {
     t: Dictionary;
     locale: string;
     isStandalone?: boolean;
+    onBuyClick?: () => void;
 }
 
 type TabType = 'profile' | 'accounts' | 'notifications';
@@ -83,7 +84,7 @@ function WalletAccountSummaryWrapper({
     );
 }
 
-export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = false }: WalletProfileModalProps) {
+export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = false, onBuyClick }: WalletProfileModalProps) {
     const { persona, accounts, activeNetworkId: networkId, connect, disconnect, sessions, activeNetwork, switchNetwork, selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
     const [activeTab, setActiveTab] = useState<TabType>('accounts');
     const [isConstructionOpen, setIsConstructionOpen] = useState(false);
@@ -252,6 +253,18 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 ${activeTab === 'notifications' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >
                                         {navT.notifications ?? 'Notificaciones'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (onBuyClick) {
+                                                onClose();
+                                                onBuyClick();
+                                            }
+                                        }}
+                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative flex items-center gap-1.5 border-b-2 text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)] whitespace-nowrap`}
+                                    >
+                                        {navT.wallet_buy_xrd ?? 'Comprar XRD'}
                                     </button>
                                 </div>
 

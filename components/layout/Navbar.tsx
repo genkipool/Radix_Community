@@ -22,6 +22,7 @@ import { RadixLogo } from '@/components/shared/RadixLogo';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { WalletProfileModal } from '@/features/wallet/components/WalletProfileModal';
+import { BuyXRDModal } from '@/features/home/sections/BuyXRD/components/BuyXRDModal';
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import type { Dictionary } from '@/i18n';
 
@@ -488,6 +489,13 @@ function ConnectedWalletPopupContent({
         >
           {navT.profile ?? 'Perfil'}
         </button>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+        >
+          {navT.wallet_buy_xrd ?? 'Comprar XRD'}
+        </button>
       </div>
 
       {/* Row 1: Photo and Name (Clickable) */}
@@ -600,6 +608,7 @@ type UiState = {
   isOpen: boolean;
   isWalletProfileModalOpen: boolean;
   isUnderConstructionModalOpen: boolean;
+  isBuyModalOpen: boolean;
   mobileSheet: 'theme' | 'lang' | null;
   optimisticLang: string | null;
 };
@@ -609,6 +618,7 @@ type UiAction =
   | { type: 'SET_MENU'; value: boolean }
   | { type: 'SET_PROFILE_MODAL'; value: boolean }
   | { type: 'SET_UNDER_CONSTRUCTION_MODAL'; value: boolean }
+  | { type: 'SET_BUY_MODAL'; value: boolean }
   | { type: 'SET_MOBILE_SHEET'; value: 'theme' | 'lang' | null }
   | { type: 'SET_OPTIMISTIC_LANG'; value: string | null };
 
@@ -618,6 +628,7 @@ function uiReducer(state: UiState, action: UiAction): UiState {
     case 'SET_MENU': return { ...state, isOpen: action.value };
     case 'SET_PROFILE_MODAL': return { ...state, isWalletProfileModalOpen: action.value };
     case 'SET_UNDER_CONSTRUCTION_MODAL': return { ...state, isUnderConstructionModalOpen: action.value };
+    case 'SET_BUY_MODAL': return { ...state, isBuyModalOpen: action.value };
     case 'SET_MOBILE_SHEET': return { ...state, mobileSheet: action.value };
     case 'SET_OPTIMISTIC_LANG': return { ...state, optimisticLang: action.value };
     default: return state;
@@ -628,6 +639,7 @@ const INITIAL_UI: UiState = {
   isOpen: false,
   isWalletProfileModalOpen: false,
   isUnderConstructionModalOpen: false,
+  isBuyModalOpen: false,
   mobileSheet: null,
   optimisticLang: null,
 };
@@ -1262,6 +1274,7 @@ export default function Navbar() {
         onClose={() => dispatch({ type: 'SET_PROFILE_MODAL', value: false })}
         t={t}
         locale={language}
+        onBuyClick={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
       />
 
       <UnderConstructionModal
@@ -1332,6 +1345,12 @@ export default function Navbar() {
           </div>
         </button>
       )}
+
+      {/* Modals */}
+      <BuyXRDModal 
+        isOpen={isBuyModalOpen} 
+        onClose={() => dispatch({ type: 'SET_BUY_MODAL', value: false })} 
+      />
     </>
   );
 }
