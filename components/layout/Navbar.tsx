@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, Terminal, CreditCard
+  User, RefreshCcw, LogOut, Terminal, CreditCard
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -438,6 +438,7 @@ interface ConnectedWalletPopupContentProps {
   disconnect: () => void;
   sessions: Record<'mainnet' | 'stokenet', unknown>;
   switchNetwork: (network: 'mainnet' | 'stokenet') => void;
+  isMobile?: boolean;
 }
 
 function ConnectedWalletPopupContent({
@@ -451,7 +452,8 @@ function ConnectedWalletPopupContent({
   connect,
   disconnect,
   sessions,
-  switchNetwork
+  switchNetwork,
+  isMobile = false,
 }: ConnectedWalletPopupContentProps) {
   const { selectedAccountAddresses, setSelectedAccountAddresses } = useRadixWallet();
   const navT = (t.nav || {}) as Record<string, string>;
@@ -464,13 +466,13 @@ function ConnectedWalletPopupContent({
     }
   };
   return (
-    <div className="p-4 w-[95vw] max-w-[420px] sm:w-[420px]">
+    <div className={isMobile ? 'p-3 w-full' : 'p-4 w-[420px]'}>
       {/* Network Tabs Header */}
-      <div className="flex items-center gap-4 sm:justify-around mb-4 border-b border-[var(--color-card-border)]/50 overflow-x-auto no-scrollbar pb-1 px-1">
+      <div className={`flex items-center mb-4 border-b border-[var(--color-card-border)]/50 ${isMobile ? 'gap-3 overflow-x-auto no-scrollbar pb-1' : 'justify-around'}`}>
         <button
           type="button"
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
-          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
           {t.nav?.wallet_mainnet ?? 'Mainnet'}
           {activeNetwork === 'mainnet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
@@ -478,7 +480,7 @@ function ConnectedWalletPopupContent({
         <button
           type="button"
           onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
-          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
           {t.nav?.wallet_stokenet ?? 'Stokenet'}
           {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
@@ -486,14 +488,14 @@ function ConnectedWalletPopupContent({
         <button
           type="button"
           onClick={onOpenProfileModal}
-          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+          className="pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
         >
           {navT.profile ?? 'Perfil'}
         </button>
         <button
           type="button"
           onClick={() => onOpenBuyModal?.()}
-          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+          className="pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
         >
           {navT.wallet_buy_xrd ?? 'Comprar XRD'}
         </button>
@@ -541,22 +543,43 @@ function ConnectedWalletPopupContent({
       )}
 
       {/* Row 2: Actions */}
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-card-border)]/50">
-        <button
-          type="button"
-          onClick={() => networkId && connect(networkId, true)}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors rounded-lg"
-        >
-          <span className="truncate">{((t.nav || {}) as Record<string, string>).update_wallet ?? 'Actualizar'}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => disconnect()}
-          className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-red-500 transition-colors rounded-lg"
-        >
-          <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
-        </button>
-      </div>
+      {isMobile ? (
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-card-border)]/50">
+          <button
+            type="button"
+            onClick={() => networkId && connect(networkId, true)}
+            className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors rounded-lg"
+          >
+            <span className="truncate">{navT.update_wallet ?? 'Actualizar'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => disconnect()}
+            className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-red-500 transition-colors rounded-lg"
+          >
+            <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => networkId && connect(networkId, true)}
+            className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
+          >
+            <RefreshCcw className="size-3.5 text-[var(--color-text-muted)]" />
+            <span className="truncate">{navT.update_wallet ?? 'Actualizar'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => disconnect()}
+            className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
+          >
+            <LogOut className="size-3.5" />
+            <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -999,7 +1022,7 @@ export default function Navbar() {
               {isConnected ? (
                 <NavPopup
                   align="right"
-                  width="w-[280px]"
+                  width="w-[95vw] sm:w-[380px] max-w-[380px]"
                   offsetClass="absolute top-[60px]"
                   trigger={
                     <button
@@ -1050,12 +1073,13 @@ export default function Navbar() {
                     sessions={sessions}
                     activeNetwork={activeNetwork}
                     switchNetwork={switchNetwork}
+                    isMobile={true}
                   />
                 </NavPopup>
               ) : (
                 <NavPopup
                   align="right"
-                  width="w-[280px]"
+                  width="w-[95vw] sm:w-[380px] max-w-[380px]"
                   offsetClass="absolute top-[60px]"
                   trigger={
                     <button
@@ -1219,6 +1243,7 @@ export default function Navbar() {
                       sessions={sessions}
                       activeNetwork={activeNetwork}
                       switchNetwork={switchNetwork}
+                      isMobile={true}
                     />
                   </NavPopup>
                 ) : (
