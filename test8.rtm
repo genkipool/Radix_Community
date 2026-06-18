@@ -1,0 +1,29 @@
+CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<1u8>(
+                        NonFungibleGlobalId("resource_sim1ngxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxv0v24n:[83ddfe328a29defc6cfc987301867b38d7b08786f2e6d53ec3347220a32b]")
+                    )
+                )
+            )
+        )
+    )
+    true
+    18u8
+    Decimal("10")
+    Tuple(
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(),
+        Map<String, Enum>()
+    )
+    None
+;
