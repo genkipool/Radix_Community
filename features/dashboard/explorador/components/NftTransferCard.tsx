@@ -70,10 +70,13 @@ const NftTransferCard = ({
 
     return (
         <div className="mb-2">
-            <button type="button"
-                className={`w-full text-left flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 cursor-pointer select-none ${expanded ? 'rounded-t-xl rounded-b-none border-b-transparent' : ''}`}
+            <div
+                role="button"
+                tabIndex={0}
+                className={`w-full text-left flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)] group transition-all hover:bg-[var(--color-surface-hover)] gap-3 cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${expanded ? 'rounded-t-xl rounded-b-none border-b-transparent' : ''}`}
                 title={titleStr}
                 onClick={e => { e.stopPropagation(); if (window.getSelection()?.toString()) return; setExpanded(v => !v); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(v => !v); } }}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     {iconUrl ? <SafeImage src={iconUrl} alt={symbol || name} fallbackName={symbol || name} className="size-10 rounded-full bg-white/10 shadow-sm border border-[var(--color-card-border)] shrink-0 object-cover" />
@@ -115,7 +118,7 @@ const NftTransferCard = ({
                         </div>
                     )}
                 </div>
-            </button>
+            </div>
             <AnimatePresence>
                 {expanded && (
                     <m.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
