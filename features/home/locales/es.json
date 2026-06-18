@@ -838,6 +838,8 @@
   },
   "comprarXRD": {
     "label": "Token XRD",
+    "widgetTitle": "Compra Rápida con Tarjeta",
+    "fallbackLink": "pulsa aqui sino carga alchemy",
     "h2a": "Cómo adquirir XRD,",
     "h2b": "el token nativo de Radix.",
     "sub": "XRD es el token de utilidad de la red. Se usa para pagar comisiones, participar en el staking de nodos y como colateral en el ecosistema DeFi de Radix.",

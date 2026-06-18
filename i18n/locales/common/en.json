@@ -32,6 +32,7 @@
     "wallet_android": "Download Android",
     "wallet_chrome": "Download Chrome",
     "wallet_buy_xrd": "Buy XRD",
+    "wallet_buy_fallback": "click here if alchemy fails to load",
     "radquest": "RadQuest",
     "gumball_club": "Gumball Club",
     "roadmap": "Roadmap",

@@ -1373,7 +1373,9 @@ export default function Navbar() {
       {/* Modals */}
       <BuyXRDModal 
         isOpen={isBuyModalOpen} 
-        onClose={() => dispatch({ type: 'SET_BUY_MODAL', value: false })} 
+        onClose={() => dispatch({ type: 'SET_BUY_MODAL', value: false })}
+        buyTitle={((t.nav || {}) as Record<string, string>).wallet_buy_xrd || 'Comprar XRD'}
+        fallbackText={((t.nav || {}) as Record<string, string>).wallet_buy_fallback || 'pulsa aqui sino carga alchemy'}
       />
     </>
   );

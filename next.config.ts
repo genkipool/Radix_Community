@@ -68,7 +68,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com https://vercel.live",
               "img-src 'self' data: https: https://vercel.com",
               "connect-src 'self' https: wss: https://cloudflareinsights.com https://vercel.live",
-              "frame-src https://vercel.live",
+              "frame-src https://vercel.live https://ramp.alchemypay.org https://ramptest.alchemypay.org https://static.alchemypay.org",
               "frame-ancestors 'none'",
             ].join('; '),
           },
@@ -87,10 +87,11 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: [
-              'camera=()',
-              'microphone=()',
+              'camera=(self "https://ramp.alchemypay.org")',
+              'microphone=(self "https://ramp.alchemypay.org")',
               'geolocation=()',
               'interest-cohort=()',
+              'payment=(self "https://ramp.alchemypay.org")',
             ].join(', '),
           },
           {

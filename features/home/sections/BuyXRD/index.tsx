@@ -47,12 +47,19 @@ export default function BuyXRD({ t }: BaseSectionProps) {
           </ScrollReveal>
 
           <ScrollReveal from={{ opacity: 0, x: 50 }} className="flex flex-col">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
               <h3 className="text-xl font-bold text-[var(--color-text-main)]">
-                {/* Fallback title if not in translation file */}
                 {(t.comprarXRD as Record<string, unknown>).widgetTitle as string || 'Compra Rápida con Tarjeta'}
               </h3>
               <CreditCard className="size-5 text-[var(--color-primary)]" />
+              <a 
+                href="https://ramp.alchemypay.org/?crypto=XRD&fiat=EUR&amount=100&alpha2=DE&network=XRD&type=officialWebsite#/index"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto text-sm sm:text-xs text-[var(--color-primary)] hover:underline opacity-90"
+              >
+                {(t.comprarXRD as Record<string, unknown>).fallbackLink as string || 'pulsa aqui sino carga alchemy'}
+              </a>
             </div>
             <AlchemyPayWidget />
           </ScrollReveal>

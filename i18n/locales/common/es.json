@@ -32,6 +32,7 @@
     "wallet_android": "Descargar Android",
     "wallet_chrome": "Descargar Chrome",
     "wallet_buy_xrd": "Comprar XRD",
+    "wallet_buy_fallback": "pulsa aqui sino carga alchemy",
     "radquest": "RadQuest",
     "gumball_club": "Gumball Club",
     "roadmap": "Ruta",
