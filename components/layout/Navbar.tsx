@@ -468,7 +468,7 @@ function ConnectedWalletPopupContent({
   return (
     <div className={isMobile ? 'p-3 w-full' : 'p-4 w-[420px]'}>
       {/* Network Tabs Header */}
-      <div className={`flex items-center mb-4 border-b border-[var(--color-card-border)]/50 ${isMobile ? 'gap-3 overflow-x-auto no-scrollbar pb-1' : 'justify-around'}`}>
+      <div className={`flex items-center mb-4 border-b border-[var(--color-card-border)]/50 ${isMobile ? 'justify-between gap-2 overflow-x-auto no-scrollbar pb-1 min-w-full' : 'justify-around'}`}>
         <button
           type="button"
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
@@ -544,7 +544,7 @@ function ConnectedWalletPopupContent({
 
       {/* Row 2: Actions */}
       {isMobile ? (
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-card-border)]/50">
+        <div className="flex items-center justify-evenly gap-4 mt-2 pt-2 border-t border-[var(--color-card-border)]/50">
           <button
             type="button"
             onClick={() => networkId && connect(networkId, true)}
