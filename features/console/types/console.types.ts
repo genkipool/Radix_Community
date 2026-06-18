@@ -41,6 +41,7 @@ export interface FungibleHolding {
   symbol: string;
   iconUrl?: string;
   amount: string;
+  vaultAddress?: string;
 }
 
 export interface NonFungibleHolding {
@@ -48,6 +49,7 @@ export interface NonFungibleHolding {
   name: string;
   iconUrl?: string;
   ids: string[];
+  vaultAddress?: string;
 }
 
 export interface AccountHoldings {

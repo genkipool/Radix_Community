@@ -295,14 +295,14 @@ export default function ComponentPanelTool({ t }: ConsoleToolProps) {
         </div>
 
         {blueprint && (
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            <span>
-              {labels.infoBlueprint}:{' '}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            <span className="inline-flex items-center">
+              {labels.infoBlueprint}:&nbsp;
               <code className="font-bold" style={{ color: 'var(--color-text-main)' }}>{blueprint.blueprintName}</code>
               {blueprint.version && <span className="ml-1.5">v{blueprint.version}</span>}
             </span>
             <span className="inline-flex items-center gap-1" title={blueprint.packageAddress}>
-              {labels.infoPackage}:{' '}
+              {labels.infoPackage}:
               <code style={{ color: 'var(--color-text-main)' }}>{truncateAddress(blueprint.packageAddress, 10, 6)}</code>
               <CopyButton value={blueprint.packageAddress} size="xs" variant="minimal" />
             </span>
