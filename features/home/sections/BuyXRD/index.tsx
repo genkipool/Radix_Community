@@ -47,12 +47,12 @@ export default function BuyXRD({ t }: BaseSectionProps) {
           </ScrollReveal>
 
           <ScrollReveal from={{ opacity: 0, x: 50 }} className="flex flex-col">
-            <div className="flex items-center gap-3 mb-8">
-              <h3 className="text-2xl font-bold text-[var(--color-text-main)]">
+            <div className="flex items-center gap-3 mb-4">
+              <h3 className="text-xl font-bold text-[var(--color-text-main)]">
                 {/* Fallback title if not in translation file */}
                 {(t.comprarXRD as Record<string, unknown>).widgetTitle as string || 'Compra Rápida con Tarjeta'}
               </h3>
-              <CreditCard className="size-6 text-[var(--color-primary)]" />
+              <CreditCard className="size-5 text-[var(--color-primary)]" />
             </div>
             <AlchemyPayWidget />
           </ScrollReveal>

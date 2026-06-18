@@ -16,7 +16,7 @@ export default function AlchemyPayWidget() {
   const src = `https://ramp.alchemypay.org/?crypto=XRD&network=XRD&fiat=${fiatCurrency}&theme=${isDark ? 'dark' : 'light'}`;
 
   return (
-    <div className="relative w-full h-[625px] bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-2xl overflow-hidden shadow-lg group">
+    <div className="relative w-full h-[550px] rounded-2xl overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg)] z-10">
           <Loader2 className="size-8 animate-spin text-[var(--color-primary)] mb-4" />
@@ -25,7 +25,6 @@ export default function AlchemyPayWidget() {
           </p>
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/5 to-[var(--color-secondary)]/5 rounded-2xl blur-xl pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity" />
       <iframe
         src={src}
         title="Alchemy Pay On-Ramp"
