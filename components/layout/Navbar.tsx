@@ -1022,8 +1022,8 @@ export default function Navbar() {
               {isConnected ? (
                 <NavPopup
                   align="right"
-                  width="w-[95vw] sm:w-[380px] max-w-[380px]"
-                  offsetClass="absolute top-[60px]"
+                  width="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px]"
+                  offsetClass="!fixed top-[70px] left-1/2 -translate-x-1/2 !right-auto"
                   trigger={
                     <button
                       type="button"
@@ -1079,8 +1079,8 @@ export default function Navbar() {
               ) : (
                 <NavPopup
                   align="right"
-                  width="w-[95vw] sm:w-[380px] max-w-[380px]"
-                  offsetClass="absolute top-[60px]"
+                  width="w-[calc(100vw-24px)] sm:w-[280px] max-w-[280px]"
+                  offsetClass="!fixed top-[70px] left-1/2 -translate-x-1/2 !right-auto"
                   trigger={
                     <button
                       type="button"
@@ -1190,8 +1190,8 @@ export default function Navbar() {
                 {isConnected ? (
                   <NavPopup
                     align="center"
-                    width="w-[280px]"
-                    offsetClass="absolute bottom-[calc(100%+8px)]"
+                    width="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px]"
+                    offsetClass="!fixed bottom-[24px] left-1/2 -translate-x-1/2 !right-auto"
                     trigger={
                     <button
                       type="button"
@@ -1249,8 +1249,8 @@ export default function Navbar() {
                 ) : (
                   <NavPopup
                     align="center"
-                    width="w-[280px]"
-                    offsetClass="absolute bottom-[calc(100%+8px)]"
+                    width="w-[calc(100vw-24px)] sm:w-[280px] max-w-[280px]"
+                    offsetClass="!fixed bottom-[24px] left-1/2 -translate-x-1/2 !right-auto"
                     trigger={
                       <button
                         type="button"
