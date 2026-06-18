@@ -648,7 +648,7 @@ export default function Navbar() {
   const { theaterMode } = useLayout();
   const { isConnected, isLoading, persona, accounts, connect, disconnect, activeNetworkId: networkId, sessions, activeNetwork, switchNetwork } = useRadixWallet();
   const [ui, dispatch] = useReducer(uiReducer, INITIAL_UI);
-  const { isOpen, isWalletProfileModalOpen, isUnderConstructionModalOpen, mobileSheet, optimisticLang } = ui;
+  const { isOpen, isWalletProfileModalOpen, isUnderConstructionModalOpen, isBuyModalOpen, mobileSheet, optimisticLang } = ui;
   const setIsOpen = (value: boolean | ((prev: boolean) => boolean)) => {
     if (typeof value === 'function') {
       dispatch({ type: 'TOGGLE_MENU' });
