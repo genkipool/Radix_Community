@@ -77,7 +77,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
 
   return (
     <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4 overflow-hidden">
-      <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-md bg-[var(--color-primary)]"></div>
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
       {onReset && (
         <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
