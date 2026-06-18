@@ -1286,7 +1286,7 @@ export default function Navbar() {
 
       {/* Mobile bottom sheet — theme or language selector on long-press */}
       {mobileSheet && (
-        <button type="button" aria-label="Close" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden w-full text-left" onClick={() => dispatch({ type: 'SET_MOBILE_SHEET', value: null })}>
+        <div role="presentation" className="fixed inset-0 z-[100] flex flex-col justify-start md:hidden w-full text-left" onClick={() => dispatch({ type: 'SET_MOBILE_SHEET', value: null })}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
             className="relative bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-3xl shadow-2xl mt-[20vh] mx-4 overflow-hidden"
@@ -1344,7 +1344,7 @@ export default function Navbar() {
               </div>
             )}
           </div>
-        </button>
+        </div>
       )}
 
       {/* Modals */}
