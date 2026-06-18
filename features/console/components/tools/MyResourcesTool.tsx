@@ -135,6 +135,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [lockedMetaKeys, setLockedMetaKeys] = useState<Set<string>>(new Set());
   const [burnNftSearch, setBurnNftSearch] = useState('');
+  const [badgeSearch, setBadgeSearch] = useState('');
 
   // For backwards compatibility in queries
   const account = accounts[0] || null;
@@ -699,35 +700,52 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                         disabled={isSending || isActionDenied}
                       />
                     </div>
-                    {(fields.ruleKind || ruleType) === 'badge' && (
-                      <div className="flex flex-col gap-2 mt-2">
-                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-                          {common.badgeResource}
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                          {resourceOptions.map((opt) => {
-                            const isActive = opt.value === fields.badgeResource;
-                            return (
-                              <ResourceCard
-                                key={opt.value}
-                                isActive={isActive}
-                                disabled={isSending || isActionDenied}
-                                onClick={() => setField('badgeResource', isActive ? '' : opt.value)}
-                                name={opt.name}
-                                address={opt.address}
-                                fullAddress={opt.value}
-                                iconUrl={opt.iconUrl}
-                              />
-                            );
-                          })}
-                          {resourceOptions.length === 0 && (
-                            <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                              No hay badges disponibles
-                            </div>
-                          )}
+                    {(fields.ruleKind || ruleType) === 'badge' && (() => {
+                      const filteredBadges = resourceOptions.filter((opt) =>
+                        opt.name.toLowerCase().includes(badgeSearch.toLowerCase()) ||
+                        opt.value.toLowerCase().includes(badgeSearch.toLowerCase())
+                      );
+                      return (
+                        <div className="flex flex-col gap-2 mt-2">
+                          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                            {common.badgeResource}
+                          </span>
+                          <SearchField
+                            value={badgeSearch}
+                            onChange={setBadgeSearch}
+                            placeholder="Buscar badge..."
+                            disabled={isSending || isActionDenied}
+                          />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                            {filteredBadges.map((opt) => {
+                              const isActive = opt.value === fields.badgeResource;
+                              return (
+                                <ResourceCard
+                                  key={opt.value}
+                                  isActive={isActive}
+                                  disabled={isSending || isActionDenied}
+                                  onClick={() => setField('badgeResource', isActive ? '' : opt.value)}
+                                  name={opt.name}
+                                  address={opt.address}
+                                  fullAddress={opt.value}
+                                  iconUrl={opt.iconUrl}
+                                />
+                              );
+                            })}
+                            {resourceOptions.length > 0 && filteredBadges.length === 0 && (
+                              <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                                No se encontraron resultados
+                              </div>
+                            )}
+                            {resourceOptions.length === 0 && (
+                              <div className="col-span-1 sm:col-span-3 text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                                No hay badges disponibles
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
 
