@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut, Terminal
+  User, RefreshCcw, LogOut, Terminal, CreditCard
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -59,6 +59,7 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
     { key: 'wallet_ios', href: 'https://apps.apple.com/us/app/radix-wallet/id6448950995', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_ios_desc' },
     { key: 'wallet_android', href: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android', icon: <Smartphone className="size-4" />, descKey: 'popup_wallet_android_desc' },
     { key: 'wallet_chrome', href: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm', icon: <Globe className="size-4" />, descKey: 'popup_wallet_chrome_desc' },
+    { key: 'wallet_buy_xrd', href: '/#comprar-xrd', icon: <CreditCard className="size-4" />, descKey: 'popup_wallet_buy_xrd_desc' },
     { key: 'radquest', href: 'https://radquest.io/home/basic', icon: <Sparkles className="size-4" />, descKey: 'popup_wallet_radquest_desc' },
     { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="size-4" />, descKey: 'popup_wallet_gumball_desc' },
   ],

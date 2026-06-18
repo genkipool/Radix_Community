@@ -1,4 +1,4 @@
-import { Coins, CheckCircle2, CreditCard } from 'lucide-react';
+import { Coins, CheckCircle2, CreditCard, ExternalLink } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import React from 'react';
@@ -69,16 +69,17 @@ export default function BuyXRD({ t }: BaseSectionProps) {
             <div className="absolute top-0 right-0 size-32 bg-[var(--color-primary)]/5 blur-3xl rounded-full -mr-16 -mt-16" />
 
             <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-6 relative z-10">{t.comprarXRD.exchangesTitle}</h3>
-            <div className="flex flex-wrap gap-3 mb-6 relative z-10 flex-grow">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 relative z-10 flex-grow">
               {EXCHANGES.map((exchange) => (
                 <a
                   key={exchange.name}
                   href={exchange.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-lg text-sm font-medium text-[var(--color-text-main)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:shadow-md transition-all active:scale-95"
+                  className="flex items-center justify-between px-5 py-3 w-full bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl text-sm font-bold text-[var(--color-text-main)] hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98] group"
                 >
-                  {exchange.name}
+                  <span>{exchange.name}</span>
+                  <ExternalLink className="size-4 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                 </a>
               ))}
             </div>
