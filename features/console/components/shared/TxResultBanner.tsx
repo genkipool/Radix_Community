@@ -94,23 +94,23 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pl-8">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-start gap-x-12 gap-y-4 pl-8 mt-2">
+        <div className="flex flex-col gap-1">
           <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">ID de transacción</span>
           <CopyValue value={result.transactionIntentHash} copyLabel={t.copy} copiedLabel={t.copied} />
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1">
           <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txStatus}</span>
           <span className="text-sm font-medium text-[var(--color-text-main)]">{result.status}</span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1">
           <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Red</span>
           <span className="text-sm font-medium text-[var(--color-text-main)] capitalize">{activeNetwork}</span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1">
           <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fecha</span>
           <span className="text-sm font-medium text-[var(--color-text-main)]">
             {new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}
@@ -118,7 +118,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
         </div>
 
         {preview && preview.feeXrd && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
             <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fee</span>
             <span className="text-sm font-medium text-[var(--color-text-main)]">
               {formatNumber(preview.feeXrd, 4, language)} XRD

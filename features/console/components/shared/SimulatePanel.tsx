@@ -173,10 +173,7 @@ export function BalanceChangeRow({ change, language }: { change: PreviewBalanceC
          <code title={change.entityAddress} style={{ color: 'var(--color-text-main)' }}>
             {truncateAddress(change.entityAddress, 10, 6)}
          </code>
-         <span
-            className="font-mono font-bold"
-            style={{ color: isNegative ? '#f43f5e' : '#10b981' }}
-         >
+         <span className={`font-mono font-bold ${isNegative ? 'text-[var(--color-text-main)]' : 'text-[var(--color-primary)]'}`}>
             {amountStr}{formatNumber(Number(change.amount), 4, language)}
          </span>
          
