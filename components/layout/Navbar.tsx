@@ -464,7 +464,7 @@ function ConnectedWalletPopupContent({
     }
   };
   return (
-    <div className="p-4 w-[90vw] max-w-[380px] sm:w-[380px]">
+    <div className="p-4 w-[95vw] max-w-[420px] sm:w-[420px]">
       {/* Network Tabs Header */}
       <div className="flex items-center gap-4 sm:justify-around mb-4 border-b border-[var(--color-card-border)]/50 overflow-x-auto no-scrollbar pb-1 px-1">
         <button
@@ -541,21 +541,19 @@ function ConnectedWalletPopupContent({
       )}
 
       {/* Row 2: Actions */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-card-border)]/50">
         <button
           type="button"
           onClick={() => networkId && connect(networkId, true)}
-          className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-[var(--color-text-main)] bg-[var(--color-surface)] hover:bg-[var(--color-bg)] border border-[var(--color-card-border)] rounded-xl transition-colors"
+          className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors rounded-lg"
         >
-          <RefreshCcw className="size-3.5 text-[var(--color-text-muted)]" />
           <span className="truncate">{((t.nav || {}) as Record<string, string>).update_wallet ?? 'Actualizar'}</span>
         </button>
         <button
           type="button"
           onClick={() => disconnect()}
-          className="flex items-center justify-center gap-1.5 p-2 text-xs font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
+          className="flex items-center gap-1.5 py-1.5 px-2 text-xs font-bold text-[var(--color-text-muted)] hover:text-red-500 transition-colors rounded-lg"
         >
-          <LogOut className="size-3.5" />
           <span className="truncate">{t.nav?.wallet_disconnect ?? 'Desconectar'}</span>
         </button>
       </div>
