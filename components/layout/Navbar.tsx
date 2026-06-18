@@ -433,7 +433,6 @@ interface ConnectedWalletPopupContentProps {
   accounts: { address: string; label?: string }[];
   onOpenProfileModal: () => void;
   onOpenBuyModal?: () => void;
-  onOpenUnderConstruction?: () => void;
   networkId: RadixNetworkId | null;
   connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
   disconnect: () => void;
@@ -448,7 +447,6 @@ function ConnectedWalletPopupContent({
   accounts,
   onOpenProfileModal,
   onOpenBuyModal,
-  onOpenUnderConstruction,
   networkId,
   connect,
   disconnect,
@@ -919,7 +917,6 @@ export default function Navbar() {
                       t={t}
                       onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
                       onOpenBuyModal={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
-                      onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
                       switchNetwork={switchNetwork}
@@ -1052,7 +1049,6 @@ export default function Navbar() {
                     t={t}
                     onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
                     onOpenBuyModal={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
-                    onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
                     sessions={sessions}
                     activeNetwork={activeNetwork}
                     switchNetwork={switchNetwork}
@@ -1221,10 +1217,6 @@ export default function Navbar() {
                       onOpenBuyModal={() => {
                         setIsOpen(false);
                         dispatch({ type: 'SET_BUY_MODAL', value: true });
-                      }}
-                      onOpenUnderConstruction={() => {
-                        setIsOpen(false);
-                        dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true });
                       }}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
