@@ -193,8 +193,8 @@ export default function DocsClient({
 
     return (
         <div
-            className="flex flex-col md:flex-row w-full"
-            style={{ background: 'var(--color-bg)', minHeight: '100vh', paddingTop: '80px' }}
+            className="flex flex-col md:flex-row w-full flex-1"
+            style={{ background: 'var(--color-bg)', paddingTop: '80px' }}
         >
             <DocsSidebar
                 dictionary={dictionary}

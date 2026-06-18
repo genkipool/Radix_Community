@@ -31,10 +31,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="fixed inset-0 dot-grid opacity-40 pointer-events-none z-0 will-change-transform" />
       <div className="ambient-glow z-0 will-change-transform" />
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col min-h-screen">
         {/* Navbar no longer uses useSearchParams() so no Suspense boundary needed */}
         <Navbar />
-        <main>{children}</main>
+        <main className="flex-1 flex flex-col">{children}</main>
         {showFooter && <Footer />}
 
         <UnderConstructionModal
