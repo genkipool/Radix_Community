@@ -8,6 +8,10 @@ interface MermaidDiagramProps {
     copiedAddress?: string | null;
 }
 
+async function loadMermaid() {
+    return (await import('mermaid')).default;
+}
+
 export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
     const rawId = useId().replace(/:/g, '');
     const [svg, setSvg] = useState('');
@@ -24,7 +28,7 @@ export function MermaidDiagram({ chart, copiedAddress }: MermaidDiagramProps) {
                 // Determine if it's dark based on background brightness or class
                 const isDark = labelBg !== '#ffffff' && labelBg !== 'white';
 
-                const m = (await import('mermaid')).default;
+                const m = await loadMermaid();
                 m.initialize({
                     startOnLoad: false,
                     theme: 'base',

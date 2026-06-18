@@ -1,6 +1,10 @@
 import { X } from 'lucide-react';
 import AlchemyPayWidget from './AlchemyPayWidget';
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+
+const emptySubscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 interface BuyXRDModalProps {
   isOpen: boolean;
@@ -8,12 +12,7 @@ interface BuyXRDModalProps {
 }
 
 export function BuyXRDModal({ isOpen, onClose }: BuyXRDModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, getClientSnapshot, getServerSnapshot);
 
   useEffect(() => {
     if (isOpen) {
