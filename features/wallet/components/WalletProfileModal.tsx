@@ -132,6 +132,7 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                 isStandalone={isStandaloneMode}
                 isPinned={isPinned}
                 portalTarget={externalWindow ? externalWindow.document.body : undefined}
+                widthClass="sm:w-[480px] sm:max-w-[480px]"
             >
             <div className="flex flex-col h-full">
                                 {/* Header */}

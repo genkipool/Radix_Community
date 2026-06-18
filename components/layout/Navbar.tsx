@@ -227,12 +227,14 @@ function NavLinkList({
   onNavigate,
   onPrefetch,
   language,
+  onAction,
 }: {
   items: PopupItem[];
   t: ReturnType<typeof useLanguage>['t'];
   onNavigate?: () => void;
   onPrefetch?: (href: string) => void;
   language: string;
+  onAction?: (key: string) => void;
 }) {
   const localize = (href: string) => {
     if (href.startsWith('http') || href === '#') return href;
@@ -258,6 +260,22 @@ function NavLinkList({
             </div>
           </div>
         );
+
+        if (item.key === 'wallet_buy_xrd') {
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className="w-full text-left"
+              onClick={() => {
+                if (onAction) onAction(item.key);
+                if (onNavigate) onNavigate();
+              }}
+            >
+              {inner}
+            </button>
+          );
+        }
 
         if (item.href === '#' || item.isHashLink) {
           return (
@@ -838,6 +856,11 @@ export default function Navbar() {
                       onPrefetch={(href) => {
                         if (href.includes('dashboard')) prefetchDashboard();
                       }}
+                      onAction={(key) => {
+                        if (key === 'wallet_buy_xrd') {
+                          dispatch({ type: 'SET_BUY_MODAL', value: true });
+                        }
+                      }}
                     />
                   </NavPopup>
                 );
@@ -1137,6 +1160,22 @@ export default function Navbar() {
                               {subLabel}
                             </div>
                           );
+
+                          if (sub.key === 'wallet_buy_xrd') {
+                            return (
+                              <button
+                                key={sub.key}
+                                type="button"
+                                className="w-full text-left"
+                                onClick={() => {
+                                  dispatch({ type: 'SET_BUY_MODAL', value: true });
+                                  setIsOpen(false);
+                                }}
+                              >
+                                {inner}
+                              </button>
+                            );
+                          }
 
                           if (sub.href === '#' || sub.isHashLink) {
                             return (
