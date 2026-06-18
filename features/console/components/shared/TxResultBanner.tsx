@@ -76,8 +76,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
   const dashboardHref = `/${language}/dashboard?view=transactions&tx=${encodeURIComponent(result.transactionIntentHash)}&network=${activeNetwork}`;
 
   return (
-    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4 overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
+    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 border-l-[4px] border-l-[var(--color-primary)] bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4">
       {onReset && (
         <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />

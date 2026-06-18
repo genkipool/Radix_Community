@@ -67,8 +67,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
 
   if (error || (preview && preview.status !== 'Succeeded')) {
     return (
-      <div className="relative rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3 overflow-hidden mt-4">
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+      <div className="relative rounded-2xl border border-red-500/30 border-l-[4px] border-l-red-500 bg-red-500/5 p-5 flex items-start gap-3 mt-4">
         {onClose && (
           <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
             <X className="size-4" />
@@ -96,8 +95,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
   if (!preview) return null;
 
   return (
-    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 overflow-hidden mt-4">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
+    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 border-l-[4px] border-l-[var(--color-primary)] bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4">
       {onClose && (
         <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
