@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState, useRef } from 'react';
 import { Download, FolderOpen, Link2, Save, Trash2, Upload, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -38,11 +38,12 @@ export function ManifestLibrary({ t, manifest, onLoad, disabled }: ManifestLibra
     typeof window === 'undefined' ? [] : loadSavedManifests(activeNetwork),
   );
 
-  // Reload saved manifests when network changes
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [savedNetwork, setSavedNetwork] = useState(activeNetwork);
+
+  if (activeNetwork !== savedNetwork) {
+    setSavedNetwork(activeNetwork);
     setSaved(loadSavedManifests(activeNetwork));
-  }, [activeNetwork]);
+  }
   const [isNaming, setIsNaming] = useState(false);
   const [name, setName] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
@@ -65,9 +66,11 @@ export function ManifestLibrary({ t, manifest, onLoad, disabled }: ManifestLibra
           onLoad(data.manifest_instructions);
         }
       }
-    } finally {
+    } catch (e) {
       setIsFetchingHash(false);
+      throw e;
     }
+    setIsFetchingHash(false);
   };
 
   const handleSave = () => {

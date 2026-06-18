@@ -18,6 +18,6 @@ export const NETWORKS: Record<number, RadixNetworkConfig> = {
   [RadixNetworkId.Stokenet]: {
     networkId: RadixNetworkId.Stokenet,
     networkName: 'Stokenet',
-    dAppDefinitionAddress: process.env.NEXT_PUBLIC_RADIX_DAPP_ADDRESS_STOKENET || 'account_tdx_2_129grv2vv4q3w7aqzzwesc5k0xp4lg5dj4p78q80ca79rj5rct8mujk',
+    dAppDefinitionAddress: process.env.NEXT_PUBLIC_RADIX_DAPP_ADDRESS_TESTNET || 'account_tdx_2_129grv2vv4q3w7aqzzwesc5k0xp4lg5dj4p78q80ca79rj5rct8mujk',
   },
 };

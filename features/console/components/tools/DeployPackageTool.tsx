@@ -55,9 +55,8 @@ export default function DeployPackageTool({ t }: ConsoleToolProps) {
       setRpdDecoded(await sborDecodeSchema(await fileToHex(file), activeNetwork));
     } catch {
       setDecodeError(true);
-    } finally {
-      setIsDecoding(false);
     }
+    setIsDecoding(false);
   };
 
   const accessRule = resolveAccessRule(ownerRole, holdings);

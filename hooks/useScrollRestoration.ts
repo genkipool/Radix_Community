@@ -20,7 +20,10 @@ function getCorePath(pathname: string) {
  */
 export function useScrollRestoration() {
   const pathname = usePathname();
-  const prevCorePathRef = useRef(getCorePath(pathname || ''));
+  const prevCorePathRef = useRef<string | undefined>(undefined);
+  if (prevCorePathRef.current === undefined) {
+    prevCorePathRef.current = getCorePath(pathname || '');
+  }
 
   // useLayoutEffect runs synchronously *before* the browser paints the screen.
   // This guarantees the scroll position is reset before the new page is ever visible, eliminating the flash.

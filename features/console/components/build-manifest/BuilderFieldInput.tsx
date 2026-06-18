@@ -30,6 +30,8 @@ interface BuilderFieldInputProps {
   disabled?: boolean;
 }
 
+const EMPTY_ARRAY: string[] = [];
+
 /** Renders the right input control for a template/block field kind. */
 export function BuilderFieldInput({
   t,
@@ -37,8 +39,8 @@ export function BuilderFieldInput({
   label,
   value,
   onChange,
-  bucketOptions = [],
-  choiceOptions = [],
+  bucketOptions = EMPTY_ARRAY,
+  choiceOptions = EMPTY_ARRAY,
   optional,
   disabled,
 }: BuilderFieldInputProps) {

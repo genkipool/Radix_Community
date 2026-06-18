@@ -63,9 +63,9 @@ The testing suite ensures the reliability of the application's critical flows.
 - **Unit and Integration Testing:** `vitest` + `@testing-library/react`.
 - **Running tests:**
   ```bash
-  npm run test        # Interactive mode (watch)
-  npm run test:run    # CI execution mode
-  npm run test:coverage # Generate coverage report
+  pnpm test           # Interactive mode (watch)
+  pnpm run test:run   # CI execution mode
+  pnpm run test:coverage # Generate coverage report
   ```
 
 ---
@@ -80,7 +80,7 @@ The testing suite ensures the reliability of the application's critical flows.
 
 2. **Install dependencies:**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Environment Variables:**
@@ -92,7 +92,7 @@ The testing suite ensures the reliability of the application's critical flows.
 
 4. **Run the development server:**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -127,7 +127,7 @@ To collaborate on this project and keep the repository stable for future deploym
    - Use Server Components (RSC) by default.
    - Apply strict validation (Zod).
    - Ensure WCAG accessibility in color contrasts.
-   - Pass all linters and visual inspections (`npm run lint`).
+   - Pass all linters and visual inspections (`pnpm run lint`).
    - Write Unit Tests for your component in the `__tests__/` folder.
 
 4. **Commit your changes:**
@@ -140,7 +140,7 @@ To collaborate on this project and keep the repository stable for future deploym
 5. **Test your code before pushing:**
    Verify that tests are still green.
    ```bash
-   npm run test:run
+   pnpm run test:run
    ```
 
 6. **Push your branch and open a Pull Request (PR):**

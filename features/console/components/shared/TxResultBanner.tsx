@@ -22,6 +22,16 @@ interface TxResultBannerProps {
   preview?: TransactionPreviewResult | null;
 }
 
+let cachedLanguage = '';
+let cachedFormatter: Intl.DateTimeFormat | null = null;
+function getFormatter(language: string) {
+  if (language !== cachedLanguage || !cachedFormatter) {
+    cachedLanguage = language;
+    cachedFormatter = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
+  }
+  return cachedFormatter;
+}
+
 function CopyValue({ value, copyLabel, copiedLabel }: { value: string; copyLabel: string; copiedLabel: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -46,6 +56,8 @@ function CopyValue({ value, copyLabel, copiedLabel }: { value: string; copyLabel
 export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, preview }: TxResultBannerProps) {
   const { language } = useLanguage();
   const { activeNetwork } = useRadixWallet();
+
+  const dateFormatter = getFormatter(language);
 
   if (!result && !error) return null;
 
@@ -111,8 +123,8 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
         
         <div className="flex flex-col gap-1">
           <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fecha</span>
-          <span className="text-sm font-medium text-[var(--color-text-main)]">
-            {new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}
+          <span suppressHydrationWarning className="text-sm font-medium text-[var(--color-text-main)]">
+            {dateFormatter.format(new Date())}
           </span>
         </div>
 

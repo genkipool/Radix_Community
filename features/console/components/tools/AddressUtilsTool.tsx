@@ -45,13 +45,16 @@ export default function AddressUtilsTool({ t }: ConsoleToolProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicKeyHex: publicKeyHex.trim(), curve, network: activeNetwork }),
       });
-      if (!res.ok) throw new Error('derive failed');
+      if (!res.ok) {
+        setDeriveError(true);
+        setIsDeriving(false);
+        return;
+      }
       setDerived((await res.json()) as DerivedAddresses);
     } catch {
       setDeriveError(true);
-    } finally {
-      setIsDeriving(false);
     }
+    setIsDeriving(false);
   };
 
   const entityLabels = labels.entityTypes as Record<string, string>;

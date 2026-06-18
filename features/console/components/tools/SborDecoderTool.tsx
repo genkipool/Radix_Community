@@ -34,7 +34,11 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hex: cleanHex, network: activeNetwork }),
       });
-      if (!res.ok) throw new Error('decode failed');
+      if (!res.ok) {
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
       const data = (await res.json()) as DecodeResult;
       // Pretty-print programmatic JSON for readability
       if (data.kind === 'scrypto') {
@@ -48,9 +52,8 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
       setHasError(false);
     } catch {
       setHasError(true);
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   const handleEncode = async () => {
@@ -62,15 +65,18 @@ export default function SborDecoderTool({ t }: ConsoleToolProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payload: hex, network: activeNetwork }),
       });
-      if (!res.ok) throw new Error('encode failed');
+      if (!res.ok) {
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
       const data = (await res.json()) as DecodeResult;
       setResult(data);
       setHasError(false);
     } catch {
       setHasError(true);
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   return (

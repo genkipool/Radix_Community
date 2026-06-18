@@ -25,9 +25,8 @@ export default function ConvertOlympiaTool({ t }: ConsoleToolProps) {
       setHasError(false);
     } catch {
       setHasError(true);
-    } finally {
-      setIsConverting(false);
     }
+    setIsConverting(false);
   };
 
   return (

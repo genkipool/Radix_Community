@@ -136,9 +136,8 @@ export default function WalletPlaygroundTool({ t }: ConsoleToolProps) {
       setRolaStatus(Object.fromEntries((data.results ?? []).map((r) => [r.address, r.verified])));
     } catch {
       setRolaStatus({});
-    } finally {
-      setIsVerifying(false);
     }
+    setIsVerifying(false);
   };
 
   return (

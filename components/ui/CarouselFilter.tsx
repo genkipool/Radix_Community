@@ -21,9 +21,11 @@ interface CarouselFilterProps {
     isRelative?: boolean;
 }
 
+const EMPTY_VALUES: string[] = [];
+
 export function CarouselFilter({
     options,
-    activeValues = [],
+    activeValues = EMPTY_VALUES,
     onChange,
     className = '',
     placeholder = 'Buscar...',
