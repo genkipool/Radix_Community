@@ -133,6 +133,7 @@ export default function GamesClient({
                 className="flex flex-col md:flex-row w-full flex-1"
                 style={{
                     background: 'var(--color-bg)',
+                    minHeight: '100vh',
                     paddingTop: theaterMode ? 0 : '80px',
                     position: 'relative',
                     zIndex: theaterMode ? 41 : undefined,
