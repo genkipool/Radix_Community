@@ -464,7 +464,7 @@ function ConnectedWalletPopupContent({
     }
   };
   return (
-    <div className="p-4 w-[380px]">
+    <div className="p-4 w-[90vw] max-w-[380px] sm:w-[380px]">
       {/* Network Tabs Header */}
       <div className="flex items-center justify-around mb-4 border-b border-[var(--color-card-border)]/50">
         <button
