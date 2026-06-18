@@ -76,8 +76,8 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
   const dashboardHref = `/${language}/dashboard?view=transactions&tx=${encodeURIComponent(result.transactionIntentHash)}&network=${activeNetwork}`;
 
   return (
-    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
+    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4 overflow-hidden">
+      <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-md bg-[var(--color-primary)]"></div>
       {onReset && (
         <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
@@ -117,24 +117,25 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
           </span>
         </div>
 
-        {preview && preview.feeXrd && (
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fee</span>
-            <span className="text-sm font-medium text-[var(--color-text-main)]">
-              {formatNumber(preview.feeXrd, 4, language)} XRD
-            </span>
-          </div>
-        )}
       </div>
 
-      {preview && preview.balanceChanges && preview.balanceChanges.length > 0 && (
+      {preview && (preview.balanceChanges?.length > 0 || preview.feeXrd) && (
         <div className="space-y-2 pt-2 border-t border-[var(--color-primary)]/20 pl-8">
-          <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cambios de balance</span>
-          <div className="space-y-1">
-            {preview.balanceChanges.map((change, index) => (
-              <BalanceChangeRow key={index} change={change} language={language} />
-            ))}
+          <div className="flex items-center justify-between pr-4">
+            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cambios de balance</span>
+            {preview.feeXrd && (
+              <span className="text-[10px] font-medium text-[var(--color-text-muted)]">
+                Fee: <span className="text-[var(--color-text-main)]">{formatNumber(preview.feeXrd, 4, language)} XRD</span>
+              </span>
+            )}
           </div>
+          {preview.balanceChanges && preview.balanceChanges.length > 0 && (
+            <div className="space-y-1">
+              {preview.balanceChanges.map((change, index) => (
+                <BalanceChangeRow key={index} change={change} language={language} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

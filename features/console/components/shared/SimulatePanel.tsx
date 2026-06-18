@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, FlaskConical, Fuel, XCircle, X } from 'lucide-react';
+import { CheckCircle2, FlaskConical, XCircle, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import type { TransactionPreviewResult, PreviewBalanceChange } from '../../services/transactionPreview';
@@ -68,7 +68,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
   if (error || (preview && preview.status !== 'Succeeded')) {
     return (
       <div className="relative rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3 overflow-hidden mt-4">
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+        <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-md bg-red-500"></div>
         {onClose && (
           <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
             <X className="size-4" />
@@ -97,7 +97,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
 
   return (
     <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 overflow-hidden mt-4">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
+      <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-md bg-[var(--color-primary)]"></div>
       {onClose && (
         <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
@@ -108,26 +108,27 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
           <CheckCircle2 className="size-5 text-[var(--color-primary)]" />
           {t.successTitle}
         </p>
-        <p
-          className="inline-flex items-center gap-1.5 text-sm font-medium"
-          style={{ color: 'var(--color-text-muted)' }}
-          title={t.feeHint}
-        >
-          <Fuel className="size-3.5" />
-          {t.fee}: <span style={{ color: 'var(--color-text-main)' }}>{formatNumber(preview.feeXrd, 4, language)} XRD</span>
-        </p>
       </div>
 
-      {preview.balanceChanges.length > 0 && (
+      {(preview.balanceChanges.length > 0 || preview.feeXrd) && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
-            {t.balanceChanges}
-          </p>
-          <div className="space-y-1">
-            {preview.balanceChanges.map((change, index) => (
-              <BalanceChangeRow key={index} change={change} language={language} />
-            ))}
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>
+              {t.balanceChanges}
+            </p>
+            {preview.feeXrd && (
+              <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                Fee: <span className="text-[var(--color-text-main)]">{formatNumber(preview.feeXrd, 4, language)} XRD</span>
+              </span>
+            )}
           </div>
+          {preview.balanceChanges.length > 0 && (
+            <div className="space-y-1">
+              {preview.balanceChanges.map((change, index) => (
+                <BalanceChangeRow key={index} change={change} language={language} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
