@@ -17,9 +17,9 @@ export default function AlchemyPayWidget() {
   const src = `https://ramp.alchemypay.org/?crypto=XRD&network=XRD&fiat=${fiatCurrency}&language=${alchemyLang}&theme=${isDark ? 'dark' : 'light'}`;
 
   return (
-    <>
+    <div className="relative w-full max-w-[500px] mx-auto min-h-[625px]">
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-20">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg)] z-10">
           <Loader2 className="size-8 animate-spin text-[var(--color-primary)] mb-4" />
           <p className="text-sm text-[var(--color-text-muted)] font-medium animate-pulse">
             Cargando Alchemy Pay...
@@ -34,14 +34,12 @@ export default function AlchemyPayWidget() {
         allowtransparency="true"
         onLoad={() => setIsLoading(false)}
         style={{
-          display: isLoading ? 'none' : 'block',
           width: '100%',
-          maxWidth: '500px',
-          maxHeight: '625px',
           border: 'none',
-          margin: '0 auto'
+          opacity: isLoading ? 0 : 1,
+          transition: 'opacity 0.5s ease-in-out'
         }}
       />
-    </>
+    </div>
   );
 }
