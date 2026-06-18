@@ -223,7 +223,6 @@ export default function DocsClient({
                 }))}
                 onEditUserDoc={handleEditUserDoc}
                 onDeleteUserDoc={handleDeleteUserDoc}
-                className="h-full"
             />
 
             <main className="flex-1 relative min-w-0" style={{ overflowX: 'clip' }}>

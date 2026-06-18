@@ -32,9 +32,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="ambient-glow z-0 will-change-transform" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Navbar no longer uses useSearchParams() so no Suspense boundary needed */}
         <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
+        {/* Next.js sometimes wraps page routes in a div that breaks flex stretching. 
+            Using [&>div]:contents bypasses that wrapper, letting ConsoleShell/DocsClient
+            be direct flex children of main. */}
+        <main className="flex-1 flex flex-col [&>div]:contents w-full">
+            {children}
+        </main>
         {showFooter && <Footer />}
 
         <UnderConstructionModal

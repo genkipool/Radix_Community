@@ -135,7 +135,6 @@ export default function ConsoleSidebar({
       onHeaderClick={onHomeClick}
       headerAriaLabel={sidebarT.home_aria}
       heightOffset={80}
-      className="h-full"
     >
       {flatView ? (
         /* Flat view: every tool as a plain text row, single column */
