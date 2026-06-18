@@ -11,9 +11,10 @@ export default function AlchemyPayWidget() {
   const isDark = theme.includes('dark');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Alchemy Pay generic URL for buying XRD. We append the theme and fiat parameters.
+  // Alchemy Pay URL with fiat, theme, and language parameters.
   const fiatCurrency = language === 'es' ? 'EUR' : 'USD';
-  const src = `https://ramp.alchemypay.org/?crypto=XRD&network=XRD&fiat=${fiatCurrency}&theme=${isDark ? 'dark' : 'light'}`;
+  const alchemyLang = language === 'es' ? 'es' : 'en-US';
+  const src = `https://ramp.alchemypay.org/?crypto=XRD&network=XRD&fiat=${fiatCurrency}&language=${alchemyLang}&theme=${isDark ? 'dark' : 'light'}`;
 
   return (
     <>
