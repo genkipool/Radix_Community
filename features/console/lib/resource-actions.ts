@@ -59,6 +59,29 @@ BURN_RESOURCE
 ;
 `;
 
+export const burnNonFungibleManifest = (account: string, resource: string, nftIds: string[]) => {
+  const idsArray = nftIds
+    .map((id) => `        NonFungibleLocalId("${escape(id)}")`)
+    .join(',\n');
+  return `
+CALL_METHOD
+    Address("${account}")
+    "withdraw_non_fungibles"
+    Address("${resource}")
+    Array<NonFungibleLocalId>(
+${idsArray}
+    )
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${resource}")
+    Bucket("bucket1")
+;
+BURN_RESOURCE
+    Bucket("bucket1")
+;
+`;
+};
+
 export const lockMetadataManifest = (entity: string, key: string) => `
 LOCK_METADATA
     Address("${entity}")

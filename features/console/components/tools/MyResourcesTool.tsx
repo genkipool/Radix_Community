@@ -1,20 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2 } from 'lucide-react';
+import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { formatNumber, truncateAddress } from '@/utils/formatters';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useResourceRoles } from '../../hooks/useResourceRoles';
 import type { GatewayRoleEntry } from '@/features/dashboard/types';
+import type { MetadataItem } from '@/features/dashboard/types/shared.types';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
 import {
   burnManifest,
+  burnNonFungibleManifest,
   DEPOSIT_ALL_SUFFIX,
   freezeVaultManifest,
   lockMetadataManifest,
@@ -82,6 +85,39 @@ const AUTH_ROLE_PAIRS = [
   { setter: 'non_fungible_data_updater', updater: 'non_fungible_data_updater_updater', nftOnly: true },
 ];
 
+function LockToggle({
+  locked,
+  onToggle,
+  label,
+  hint,
+  disabled,
+}: {
+  locked: boolean;
+  onToggle: () => void;
+  label: string;
+  hint: string;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      title={hint}
+      aria-pressed={locked}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border transition-colors cursor-pointer disabled:opacity-50"
+      style={{
+        borderColor: locked ? 'var(--color-primary)' : 'var(--color-card-border)',
+        color: locked ? 'var(--color-primary)' : 'var(--color-text-muted)',
+        backgroundColor: 'transparent',
+      }}
+    >
+      {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+      {label}
+    </button>
+  );
+}
+
 export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const common = t.common;
   const labels = t.myResources;
@@ -93,9 +129,12 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [burnNftIds, setBurnNftIds] = useState<Set<string>>(new Set());
   const [proof, setProof] = useState<BadgeProofSelection | null>(null);
   const [showManifest, setShowManifest] = useState(false);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
+  const [lockedMetaKeys, setLockedMetaKeys] = useState<Set<string>>(new Set());
+  const [burnNftSearch, setBurnNftSearch] = useState('');
 
   // For backwards compatibility in queries
   const account = accounts[0] || null;
@@ -162,7 +201,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   ).filter((candidate) => {
     if (candidate === 'mint') return isFungible;
     if (candidate === 'mintNft') return isNonFungible;
-    if (candidate === 'burn') return isFungible;
+    if (candidate === 'burn') return isFungible || isNonFungible;
     return true;
   });
   const activeAction = availableActions.includes(action) ? action : availableActions[0] ?? 'lockMetadata';
@@ -185,25 +224,38 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
             }) + DEPOSIT_ALL_SUFFIX(account)
           : '';
       case 'burn':
+        if (isNonFungible) {
+          return burnNftIds.size > 0 ? burnNonFungibleManifest(account, resource, Array.from(burnNftIds)) : '';
+        }
         return field('amount') ? burnManifest(account, resource, field('amount')) : '';
-      case 'lockMetadata':
-        return field('metadataKey') ? lockMetadataManifest(resource, field('metadataKey')) : '';
+      case 'lockMetadata': {
+        const keysToLock = Array.from(lockedMetaKeys);
+        return keysToLock.map(k => lockMetadataManifest(resource, k)).join('');
+      }
       case 'setOwnerRole': {
-        const kind = field('ruleKind') as SimpleAccessRule['kind'] | '';
+        const currentOwnerRule = normalizedRoles?.['owner'] || 'badge';
+        const kind = (field('ruleKind') || currentOwnerRule) as SimpleAccessRule['kind'] | '';
         if (!kind) return '';
         if (kind === 'badge' && !field('badgeResource')) return '';
         const rule: SimpleAccessRule =
           kind === 'badge' ? { kind, resourceAddress: field('badgeResource') } : { kind };
         return setOwnerRoleManifest(resource, rule);
       }
-      case 'recall':
-        return field('vault') && field('amount')
-          ? recallManifest(field('vault'), field('amount')) + DEPOSIT_ALL_SUFFIX(account)
+      case 'recall': {
+        const recallVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
+        const recallAmount = field('amount');
+        return recallVault && recallAmount
+          ? recallManifest(recallVault, recallAmount) + DEPOSIT_ALL_SUFFIX(account)
           : '';
-      case 'freeze':
-        return field('vault') && field('flag')
-          ? freezeVaultManifest(field('vault'), field('flag') as FreezeFlag, field('mode') !== 'unfreeze')
+      }
+      case 'freeze': {
+        const freezeVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
+        const freezeFlag = field('flag');
+        const freezeMode = field('mode') || 'freeze';
+        return freezeVault && freezeFlag
+          ? freezeVaultManifest(freezeVault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze')
           : '';
+      }
     }
   };
 
@@ -458,17 +510,108 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   </div>
                 )}
 
-                {(activeAction === 'mint' || activeAction === 'burn') && (
+                {(activeAction === 'mint' || (activeAction === 'burn' && isFungible)) && (
                   <TextField
                     label={labels.fields.amount}
                     value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
                     onChange={(value) => setField('amount', value)}
                     type="number"
                     disabled={isSending || isActionDenied}
-                    placeholder={activeAction === 'mint' 
-                      ? (rolesData?.details?.details?.total_supply ? `Suministro: ${formatNumber(Number(rolesData.details.details.total_supply), 4, language)}` : '') 
-                      : (selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : '')}
+                    placeholder={rolesData?.details?.details?.total_supply ? `Suministro: ${formatNumber(Number(rolesData.details.details.total_supply), 4, language)}` : ''}
                   />
+                )}
+
+                {activeAction === 'burn' && isNonFungible && selectedNonFungible && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <SearchField
+                        value={burnNftSearch}
+                        onChange={setBurnNftSearch}
+                        placeholder={`Buscar entre ${selectedNonFungible.ids.length} NFTs...`}
+                        disabled={isSending || isActionDenied}
+                      />
+                    </div>
+                    {burnNftIds.size > 0 && (
+                      <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)' }}>
+                        <Flame className="size-3.5" />
+                        <span>{burnNftIds.size} NFT{burnNftIds.size > 1 ? 's' : ''} seleccionado{burnNftIds.size > 1 ? 's' : ''}</span>
+                        <button
+                          type="button"
+                          onClick={() => setBurnNftIds(new Set())}
+                          className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                          style={{ color: 'var(--color-text-muted)' }}
+                        >
+                          Limpiar selección
+                        </button>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {selectedNonFungible.ids
+                        .filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase()))
+                        .map((nftId) => {
+                          const isSelected = burnNftIds.has(nftId);
+                          return (
+                            <button
+                              key={nftId}
+                              type="button"
+                              disabled={isSending || isActionDenied}
+                              onClick={() => {
+                                setBurnNftIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(nftId)) next.delete(nftId);
+                                  else next.add(nftId);
+                                  return next;
+                                });
+                              }}
+                              className="group flex items-center gap-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95 p-2.5"
+                              style={{
+                                background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                                borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
+                              }}
+                              title={nftId}
+                            >
+                              {selectedNonFungible.iconUrl && (
+                                <SafeImage
+                                  src={selectedNonFungible.iconUrl}
+                                  alt={nftId}
+                                  fallbackName={selectedNonFungible.name || 'NFT'}
+                                  className="size-8 rounded-lg object-cover shadow-sm shrink-0"
+                                />
+                              )}
+                              <div className="flex flex-col min-w-0">
+                                <span
+                                  className="truncate font-bold text-xs leading-tight"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
+                                >
+                                  {selectedNonFungible.name || 'NFT'}
+                                </span>
+                                <span
+                                  className="truncate text-[11px] font-medium opacity-70"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                                >
+                                  {nftId}
+                                </span>
+                              </div>
+                              <div className="shrink-0 ml-auto size-5 rounded-md border-2 flex items-center justify-center transition-all duration-150"
+                                style={{
+                                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
+                                  backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                                }}
+                              >
+                                {isSelected && (
+                                  <Check className="size-3.5 text-white" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      {selectedNonFungible.ids.filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
+                        <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          No se encontraron NFTs
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {activeAction === 'mintNft' && (
@@ -476,44 +619,66 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     <TextField
                       label={labels.fields.nftId}
                       hint={labels.fields.nftIdHint}
-                      value={isActionDenied ? (selectedNonFungible?.ids[0] ?? '') : (fields.nftId ?? '')}
+                      value={isActionDenied ? (selectedNonFungible?.ids[0] ?? '') : (fields.nftId ?? (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#'))}
                       onChange={(value) => setField('nftId', value)}
-                      placeholder={selectedNonFungible ? `${selectedNonFungible.ids.length} NFTs` : '#1#'}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftName}
-                      value={isActionDenied ? (selectedNonFungible?.name ?? '') : (fields.nftName ?? '')}
+                      value={isActionDenied ? (selectedNonFungible?.name ?? '') : (fields.nftName ?? selectedNonFungible?.name ?? '')}
                       onChange={(value) => setField('nftName', value)}
-                      placeholder={selectedNonFungible?.name ?? ''}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftDescription}
-                      value={isActionDenied ? resource : (fields.nftDescription ?? '')}
+                      value={isActionDenied ? resource : (fields.nftDescription ?? resource ?? '')}
                       onChange={(value) => setField('nftDescription', value)}
-                      placeholder={resource}
                       disabled={isSending || isActionDenied}
                     />
                     <TextField
                       label={labels.fields.nftImageUrl}
-                      value={isActionDenied ? (selectedNonFungible?.iconUrl ?? '') : (fields.nftImageUrl ?? '')}
+                      value={isActionDenied ? (selectedNonFungible?.iconUrl ?? '') : (fields.nftImageUrl ?? selectedNonFungible?.iconUrl ?? '')}
                       onChange={(value) => setField('nftImageUrl', value)}
-                      placeholder={selectedNonFungible?.iconUrl ?? ''}
                       disabled={isSending || isActionDenied}
                     />
                   </div>
                 )}
 
                 {activeAction === 'lockMetadata' && (
-                  <TextField
-                    label={labels.fields.metadataKey}
-                    hint={labels.fields.metadataKeyHint}
-                    value={isActionDenied ? 'name' : (fields.metadataKey ?? '')}
-                    onChange={(value) => setField('metadataKey', value)}
-                    placeholder="name"
-                    disabled={isSending || isActionDenied}
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(rolesData?.details?.metadata?.items as MetadataItem[] | undefined)?.map((item) => {
+                      const alreadyLocked = item.is_locked;
+                      const markedToLock = lockedMetaKeys.has(item.key);
+                      // Format value for display
+                      let displayVal = item.value?.typed?.value;
+                      if (typeof displayVal === 'object') displayVal = JSON.stringify(displayVal);
+                      
+                      return (
+                        <TextField
+                          key={item.key}
+                          label={item.key}
+                          labelEnd={
+                            <LockToggle
+                              locked={alreadyLocked || markedToLock}
+                              onToggle={() => {
+                                if (alreadyLocked) return; // already locked on-ledger, can't unlock
+                                const next = new Set(lockedMetaKeys);
+                                if (markedToLock) next.delete(item.key);
+                                else next.add(item.key);
+                                setLockedMetaKeys(next);
+                              }}
+                              disabled={isSending || isActionDenied || alreadyLocked}
+                              label={alreadyLocked ? 'Locked' : 'Lock'}
+                              hint={alreadyLocked ? 'Ya bloqueado en el ledger' : 'Bloquear campo'}
+                            />
+                          }
+                          value={displayVal || item.value?.raw_hex || ''}
+                          disabled={true}
+                          onChange={() => {}}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
 
                 {activeAction === 'setOwnerRole' && (
@@ -570,9 +735,8 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   <TextField
                     label={labels.fields.vault}
                     hint={labels.fields.vaultHint}
-                    value={isActionDenied ? resource : (fields.vault ?? '')}
+                    value={isActionDenied ? resource : (fields.vault ?? selectedFungible?.vaultAddress ?? selectedNonFungible?.vaultAddress ?? '')}
                     onChange={(value) => setField('vault', value)}
-                    placeholder={resource}
                     disabled={isSending || isActionDenied}
                   />
                 )}

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   accessRuleSyntax,
   burnManifest,
+  burnNonFungibleManifest,
   freezeVaultManifest,
   lockMetadataManifest,
   mintFungibleManifest,
@@ -34,6 +35,24 @@ describe('resource action manifests', () => {
     expect(manifest).toContain('"withdraw"');
     expect(manifest).toContain('BURN_RESOURCE');
     expect(manifest).toContain('Bucket("bucket1")');
+  });
+
+  it('burns multiple NFTs in a single manifest', () => {
+    const manifest = burnNonFungibleManifest(ACC, RES, ['#1#', '#2#', '#3#']);
+    expect(manifest).toContain('"withdraw_non_fungibles"');
+    expect(manifest).toContain('NonFungibleLocalId("#1#")');
+    expect(manifest).toContain('NonFungibleLocalId("#2#")');
+    expect(manifest).toContain('NonFungibleLocalId("#3#")');
+    expect(manifest).toContain('BURN_RESOURCE');
+  });
+
+  it('burns a single NFT via array', () => {
+    const manifest = burnNonFungibleManifest(ACC, RES, ['#7#']);
+    expect(manifest).toContain('NonFungibleLocalId("#7#")');
+    expect(manifest).toContain('BURN_RESOURCE');
+    // Should only contain one NonFungibleLocalId(...)  call (not the Array type)
+    const matches = manifest.match(/NonFungibleLocalId\(/g);
+    expect(matches).toHaveLength(1);
   });
 
   it('locks metadata keys', () => {
