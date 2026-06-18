@@ -235,14 +235,6 @@ export function WalletProfileModal({ isOpen, onClose, t, locale, isStandalone = 
                                 <div className="px-6 flex items-center gap-6 mt-1 mb-2 border-b border-[var(--color-surface)] overflow-x-auto custom-scrollbar">
                                     <button
                                         type="button"
-                                        onClick={() => handleTabClick('profile')}
-                                        className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 whitespace-nowrap ${activeTab === 'profile' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
-                                    >
-                                        {navT.profile ?? 'Perfil'}
-                                    </button>
-
-                                    <button
-                                        type="button"
                                         onClick={() => handleTabClick('accounts')}
                                         className={`pb-2 text-[11px] font-semibold tracking-wider uppercase transition-colors relative border-b-2 ${activeTab === 'accounts' ? 'text-[var(--color-primary)] border-[var(--color-primary)]' : 'text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text-main)]'}`}
                                     >

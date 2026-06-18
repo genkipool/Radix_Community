@@ -432,6 +432,7 @@ interface ConnectedWalletPopupContentProps {
   personaName?: string;
   accounts: { address: string; label?: string }[];
   onOpenProfileModal: () => void;
+  onOpenBuyModal?: () => void;
   onOpenUnderConstruction?: () => void;
   networkId: RadixNetworkId | null;
   connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void;
@@ -446,6 +447,7 @@ function ConnectedWalletPopupContent({
   personaName,
   accounts,
   onOpenProfileModal,
+  onOpenBuyModal,
   onOpenUnderConstruction,
   networkId,
   connect,
@@ -464,7 +466,7 @@ function ConnectedWalletPopupContent({
     }
   };
   return (
-    <div className="p-4 w-[280px]">
+    <div className="p-4 w-[380px]">
       {/* Network Tabs Header */}
       <div className="flex items-center justify-around mb-4 border-b border-[var(--color-card-border)]/50">
         <button
@@ -492,7 +494,7 @@ function ConnectedWalletPopupContent({
         </button>
         <button
           type="button"
-          onClick={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
+          onClick={() => onOpenBuyModal?.()}
           className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
         >
           {navT.wallet_buy_xrd ?? 'Comprar XRD'}
@@ -502,7 +504,7 @@ function ConnectedWalletPopupContent({
       {/* Row 1: Photo and Name (Clickable) */}
       <button
         type="button"
-        onClick={() => onOpenUnderConstruction?.()}
+        onClick={() => onOpenProfileModal?.()}
         className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--color-surface)] transition-colors text-left mb-4 group border border-transparent hover:border-[var(--color-card-border)]"
       >
         <div className="size-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] p-0.5 shrink-0">
@@ -916,6 +918,7 @@ export default function Navbar() {
                       accounts={accounts}
                       t={t}
                       onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
+                      onOpenBuyModal={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
                       onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
                       sessions={sessions}
                       activeNetwork={activeNetwork}
@@ -1048,6 +1051,7 @@ export default function Navbar() {
                     accounts={accounts}
                     t={t}
                     onOpenProfileModal={() => dispatch({ type: 'SET_PROFILE_MODAL', value: true })}
+                    onOpenBuyModal={() => dispatch({ type: 'SET_BUY_MODAL', value: true })}
                     onOpenUnderConstruction={() => dispatch({ type: 'SET_UNDER_CONSTRUCTION_MODAL', value: true })}
                     sessions={sessions}
                     activeNetwork={activeNetwork}
@@ -1213,6 +1217,10 @@ export default function Navbar() {
                       onOpenProfileModal={() => {
                         setIsOpen(false);
                         dispatch({ type: 'SET_PROFILE_MODAL', value: true });
+                      }}
+                      onOpenBuyModal={() => {
+                        setIsOpen(false);
+                        dispatch({ type: 'SET_BUY_MODAL', value: true });
                       }}
                       onOpenUnderConstruction={() => {
                         setIsOpen(false);
