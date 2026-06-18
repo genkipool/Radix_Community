@@ -67,7 +67,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
 
   if (error || (preview && preview.status !== 'Succeeded')) {
     return (
-      <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 flex items-start gap-3 overflow-hidden shadow-sm mt-4">
+      <div className="relative rounded-2xl border border-red-500/30 bg-red-500/5 p-5 flex items-start gap-3 overflow-hidden mt-4">
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
         {onClose && (
           <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
@@ -96,8 +96,8 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
   if (!preview) return null;
 
   return (
-    <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 space-y-4 overflow-hidden shadow-sm mt-4">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 overflow-hidden mt-4">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
       {onClose && (
         <button onClick={onClose} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
           <X className="size-4" />
@@ -105,7 +105,7 @@ export function SimulateResultCard({ t, preview, error, onClose }: SimulateResul
       )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-6">
         <p className="inline-flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
-          <CheckCircle2 className="size-5 text-emerald-500" />
+          <CheckCircle2 className="size-5 text-[var(--color-primary)]" />
           {t.successTitle}
         </p>
         <p

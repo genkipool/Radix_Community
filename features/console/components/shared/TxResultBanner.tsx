@@ -5,7 +5,7 @@ import { CheckCircle2, Copy, ExternalLink, RotateCcw, XCircle, X } from 'lucide-
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { truncateAddress } from '@/utils/formatters';
+import { truncateAddress, formatNumber } from '@/utils/formatters';
 import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import type { ConsoleTxResult } from '../../types/console.types';
 import type { TransactionPreviewResult } from '../../services/transactionPreview';
@@ -76,7 +76,7 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
   const dashboardHref = `/${language}/dashboard?view=transactions&tx=${encodeURIComponent(result.transactionIntentHash)}&network=${activeNetwork}`;
 
   return (
-    <div className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 space-y-5 overflow-hidden mt-4">
+    <div className="relative rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
       {onReset && (
         <button onClick={onReset} className="absolute right-3 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors">
@@ -94,63 +94,60 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
         </div>
       </div>
 
-      <div className="space-y-4 pl-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txId}</span>
-            <div className="flex items-center gap-2">
-              <CopyValue value={result.transactionIntentHash} copyLabel={t.copy} copiedLabel={t.copied} />
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txStatus}</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[var(--color-text-main)]">
-                {result.status}
-              </span>
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Red</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[var(--color-text-main)] capitalize">{activeNetwork}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fecha</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[var(--color-text-main)]">
-                {new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}
-              </span>
-            </div>
-          </div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pl-8">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">ID de transacción</span>
+          <CopyValue value={result.transactionIntentHash} copyLabel={t.copy} copiedLabel={t.copied} />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{t.txStatus}</span>
+          <span className="text-sm font-medium text-[var(--color-text-main)]">{result.status}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Red</span>
+          <span className="text-sm font-medium text-[var(--color-text-main)] capitalize">{activeNetwork}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fecha</span>
+          <span className="text-sm font-medium text-[var(--color-text-main)]">
+            {new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}
+          </span>
         </div>
 
-        {preview && preview.balanceChanges && preview.balanceChanges.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cambios de balance</span>
-            <div className="space-y-1">
-              {preview.balanceChanges.map((change, index) => (
-                <BalanceChangeRow key={index} change={change} language={language} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {createdEntityLabel && result.createdEntities.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-[var(--color-border)]">
-            <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{createdEntityLabel}</span>
-            <div className="flex flex-wrap gap-2">
-                {result.createdEntities.map((address) => (
-                  <CopyValue key={address} value={address} copyLabel={t.copy} copiedLabel={t.copied} />
-                ))}
-            </div>
+        {preview && preview.feeXrd && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Fee</span>
+            <span className="text-sm font-medium text-[var(--color-text-main)]">
+              {formatNumber(preview.feeXrd, 4, language)} XRD
+            </span>
           </div>
         )}
       </div>
+
+      {preview && preview.balanceChanges && preview.balanceChanges.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-[var(--color-primary)]/20 pl-8">
+          <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Cambios de balance</span>
+          <div className="space-y-1">
+            {preview.balanceChanges.map((change, index) => (
+              <BalanceChangeRow key={index} change={change} language={language} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {createdEntityLabel && result.createdEntities.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-[var(--color-primary)]/20 pl-8">
+          <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">{createdEntityLabel}</span>
+          <div className="flex flex-wrap gap-2">
+              {result.createdEntities.map((address) => (
+                <CopyValue key={address} value={address} copyLabel={t.copy} copiedLabel={t.copied} />
+              ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-4 pl-8 pt-2">
         <Link
