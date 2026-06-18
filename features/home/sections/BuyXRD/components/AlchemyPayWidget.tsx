@@ -31,7 +31,7 @@ export default function AlchemyPayWidget() {
         title="Alchemy Pay On-Ramp"
         height="625"
         allow="camera; microphone; fullscreen; payment"
-        allowTransparency
+        allowtransparency="true"
         onLoad={() => setIsLoading(false)}
         style={{
           display: isLoading ? 'none' : 'block',
