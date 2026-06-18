@@ -466,11 +466,11 @@ function ConnectedWalletPopupContent({
   return (
     <div className="p-4 w-[90vw] max-w-[380px] sm:w-[380px]">
       {/* Network Tabs Header */}
-      <div className="flex items-center justify-around mb-4 border-b border-[var(--color-card-border)]/50">
+      <div className="flex items-center gap-4 sm:justify-around mb-4 border-b border-[var(--color-card-border)]/50 overflow-x-auto no-scrollbar pb-1 px-1">
         <button
           type="button"
           onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
-          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'mainnet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
           {t.nav?.wallet_mainnet ?? 'Mainnet'}
           {activeNetwork === 'mainnet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
@@ -478,7 +478,7 @@ function ConnectedWalletPopupContent({
         <button
           type="button"
           onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
-          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 ${activeNetwork === 'stokenet' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
         >
           {t.nav?.wallet_stokenet ?? 'Stokenet'}
           {activeNetwork === 'stokenet' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-primary)] rounded-t-full" />}
@@ -486,14 +486,14 @@ function ConnectedWalletPopupContent({
         <button
           type="button"
           onClick={onOpenProfileModal}
-          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
         >
           {navT.profile ?? 'Perfil'}
         </button>
         <button
           type="button"
           onClick={() => onOpenBuyModal?.()}
-          className={`pb-2 text-xs font-bold uppercase tracking-wider transition-colors relative text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
+          className={`pb-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors relative whitespace-nowrap shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]`}
         >
           {navT.wallet_buy_xrd ?? 'Comprar XRD'}
         </button>
