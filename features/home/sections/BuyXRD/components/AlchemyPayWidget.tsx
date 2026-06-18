@@ -28,10 +28,18 @@ export default function AlchemyPayWidget() {
       <iframe
         src={src}
         title="Alchemy Pay On-Ramp"
+        height="625"
         allow="camera; microphone; fullscreen; payment"
+        allowTransparency
         onLoad={() => setIsLoading(false)}
-        className="w-full border-none"
-        style={{ height: '560px', display: isLoading ? 'none' : 'block' }}
+        style={{
+          display: isLoading ? 'none' : 'block',
+          width: '100%',
+          maxWidth: '500px',
+          maxHeight: '625px',
+          border: 'none',
+          margin: '0 auto'
+        }}
       />
     </>
   );
