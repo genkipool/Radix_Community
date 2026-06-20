@@ -10,7 +10,8 @@
       "desc": "Ha ocurrido un error inesperado. Por favor, inténtelo de nuevo o vuelva a la página de inicio.",
       "retry": "Intentar de nuevo",
       "cta": "Ir al inicio"
-    }
+    },
+    "rejectedByUser": "La solicitud fue rechazada en tu billetera."
   },
   "svg": {
     "radix": "RADIX",

@@ -20,8 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Patch V2 Subintent instructions before validation since RET TS v1.0.6 parser rejects them
+    const safeManifest = parsed.data.manifest.replace(/YIELD_TO_PARENT\s*;/g, '');
+
     const result = await RadixEngineToolkit.Instructions.staticallyValidate(
-      { kind: 'String', value: parsed.data.manifest },
+      { kind: 'String', value: safeManifest },
       networkIdFromName(parsed.data.network),
     );
     if (result.kind === 'Valid') {

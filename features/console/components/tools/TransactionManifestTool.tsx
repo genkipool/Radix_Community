@@ -182,7 +182,12 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
         <div className="flex w-full items-center gap-3">
           <SendToWalletButton
             onClick={handleSend}
-            disabled={!manifest.trim() || busy || validation.status === 'invalid'}
+            disabled={
+              !manifest.trim() ||
+              busy ||
+              validation.status === 'invalid' ||
+              (sendMode === 'transaction' && manifest.includes('YIELD_TO_PARENT'))
+            }
             loading={busy}
             label={sendMode === 'subintent' ? labels.sendSubintent : common.sendToWallet}
             loadingLabel={common.sending}

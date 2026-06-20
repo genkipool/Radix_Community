@@ -76,8 +76,13 @@ export async function previewTransaction(
   );
   const epoch = construction.ledger_state?.epoch ?? 0;
 
+  // The Gateway API can only simulate top-level transactions. 
+  // Sub-intents (which contain YIELD_TO_PARENT) will fail validation.
+  // We strip this instruction purely for the dry-run simulation.
+  const simulatedManifest = manifest.replace(/YIELD_TO_PARENT\s*;/g, '');
+
   const preview = await gatewayPost<GatewayPreviewResponse>(network, '/transaction/preview', {
-    manifest,
+    manifest: simulatedManifest,
     blobs_hex: blobsHex ?? [],
     start_epoch_inclusive: epoch,
     end_epoch_exclusive: epoch + 2,

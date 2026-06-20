@@ -10,7 +10,8 @@
       "desc": "An unexpected error occurred. Please try again or go back to the home page.",
       "retry": "Try again",
       "cta": "Go home"
-    }
+    },
+    "rejectedByUser": "The request was rejected in your wallet."
   },
   "svg": {
     "radix": "RADIX",
