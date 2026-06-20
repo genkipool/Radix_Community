@@ -23,11 +23,22 @@ export function ResourceCard({
   title,
 }: ResourceCardProps) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="group flex items-center justify-start rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95"
+    <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      onClick={disabled ? undefined : onClick}
+      onKeyDown={(e) => {
+        if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`group flex items-center justify-start rounded-xl border text-left transition-all duration-150 ${
+        disabled 
+          ? 'opacity-50 cursor-not-allowed' 
+          : 'cursor-pointer hover:opacity-90 hover:shadow-sm active:scale-95'
+      }`}
       style={{
         background: isActive ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
         borderColor: isActive ? 'var(--color-primary)' : 'var(--color-card-border)',
@@ -61,6 +72,6 @@ export function ResourceCard({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
