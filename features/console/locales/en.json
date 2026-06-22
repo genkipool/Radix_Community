@@ -28,6 +28,10 @@
       "utilities": "Utilities"
     },
     "tools": {
+      "claim-package-royalties": {
+        "title": "Claim Package Royalties",
+        "description": "Claim accumulated XRD royalties from a Scrypto package."
+      },
       "send-transaction": {
         "title": "Send Transaction",
         "description": "Build a transfer of tokens and NFTs to one or several accounts with the wallet transaction builder, and inspect the generated manifest.",
@@ -899,6 +903,16 @@
         "nft_data_setter": "Who can modify the data stored inside each NFT after minting.",
         "nft_data_setter_updater": "Who can change the NFT data setter rule later."
       }
+    },
+    "claimPackageRoyalties": {
+      "entityAddress": "Entity Address (Package or Component)",
+      "entityAddressPlaceholder": "package_... or component_...",
+      "entityAddressHint": "Enter the package or component address from which to claim royalties",
+      "ownerBadgeAddress": "Owner Badge Address (Optional)",
+      "ownerBadgeAddressPlaceholder": "resource_...",
+      "ownerBadgeAddressHint": "If claiming requires a specific badge, enter its resource address",
+      "noneBadge": "No badge required",
+      "successClaim": "Royalties claimed successfully!"
     },
     "deployPackage": {
       "files": "Package files",

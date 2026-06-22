@@ -25,6 +25,7 @@ import DeployPackageTool from './tools/DeployPackageTool';
 import TransactionManifestTool from './tools/TransactionManifestTool';
 import ConfigureMetadataTool from './tools/ConfigureMetadataTool';
 import ConvertOlympiaTool from './tools/ConvertOlympiaTool';
+import ClaimPackageRoyaltiesTool from './tools/ClaimPackageRoyaltiesTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
@@ -40,6 +41,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'transaction-manifest': TransactionManifestTool,
   'configure-metadata': ConfigureMetadataTool,
   'convert-olympia-address': ConvertOlympiaTool,
+  'claim-package-royalties': ClaimPackageRoyaltiesTool,
 };
 
 interface ConsoleToolViewProps {

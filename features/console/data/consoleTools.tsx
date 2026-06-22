@@ -125,6 +125,13 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '217,70,239',
     requiresWallet: true,
   },
+  'claim-package-royalties': {
+    slug: 'claim-package-royalties',
+    icon: <Coins className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '234,179,8',
+    requiresWallet: true,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -147,7 +154,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'deploy',
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
+    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel', 'claim-package-royalties'],
   },
   {
     id: 'utilities',

@@ -54,9 +54,11 @@ export function BadgeProofPicker({
     ),
   ];
 
-  const allowedOptions = requiredBadges && requiredBadges.length > 0
-    ? allOptions.filter((opt) => opt.value !== NONE && requiredBadges.includes(opt.value.split(NFT_SEPARATOR)[0]))
-    : allOptions.filter((opt) => opt.value === NONE);
+  const allowedOptions = requiredBadges === undefined
+    ? allOptions
+    : requiredBadges.length > 0
+      ? allOptions.filter((opt) => opt.value !== NONE && requiredBadges.includes(opt.value.split(NFT_SEPARATOR)[0]))
+      : allOptions.filter((opt) => opt.value === NONE);
 
   const filteredOptions = allowedOptions.filter((opt) =>
     opt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

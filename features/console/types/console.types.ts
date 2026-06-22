@@ -16,7 +16,9 @@ export const CONSOLE_TOOL_SLUGS = [
   'address-utils',
   'faucet',
   'wallet-playground',
+  'claim-package-royalties',
 ] as const;
+
 
 export type ConsoleToolSlug = (typeof CONSOLE_TOOL_SLUGS)[number];
 

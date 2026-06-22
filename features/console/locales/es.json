@@ -28,6 +28,10 @@
       "utilities": "Utilidades"
     },
     "tools": {
+      "claim-package-royalties": {
+        "title": "Reclamar Regalías",
+        "description": "Reclama las regalías de XRD acumuladas de un paquete Scrypto."
+      },
       "send-transaction": {
         "title": "Enviar Transacción",
         "description": "Construye una transferencia de tokens y NFTs a una o varias cuentas con el constructor de transacciones de la billetera, e inspecciona el manifiesto generado.",
@@ -900,6 +904,16 @@
         "nft_data_setter": "Quién puede modificar los datos almacenados dentro de cada NFT después de acuñarlo.",
         "nft_data_setter_updater": "Quién puede cambiar más adelante la regla de edición de datos de NFT."
       }
+    },
+    "claimPackageRoyalties": {
+      "entityAddress": "Dirección de la Entidad (Paquete o Componente)",
+      "entityAddressPlaceholder": "package_... o component_...",
+      "entityAddressHint": "Ingresa la dirección del paquete o componente del que deseas reclamar regalías",
+      "ownerBadgeAddress": "Dirección de la Insignia de Propietario (Opcional)",
+      "ownerBadgeAddressPlaceholder": "resource_...",
+      "ownerBadgeAddressHint": "Si reclamar requiere una insignia específica, ingresa su dirección de recurso",
+      "noneBadge": "No se requiere insignia",
+      "successClaim": "¡Regalías reclamadas exitosamente!"
     },
     "deployPackage": {
       "files": "Archivos del paquete",
