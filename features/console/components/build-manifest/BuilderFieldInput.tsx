@@ -13,6 +13,7 @@ export type BuilderFieldKind =
   | 'text'
   | 'nonFungibleId'
   | 'bucket'
+  | 'proofRef'
   | 'multiline'
   | 'choice';
 
@@ -24,6 +25,8 @@ interface BuilderFieldInputProps {
   onChange: (value: string) => void;
   /** Options for the 'bucket' kind */
   bucketOptions?: string[];
+  /** Options for the 'proofRef' kind */
+  proofOptions?: string[];
   /** Options for the 'choice' kind (rendered as selectable buttons) */
   choiceOptions?: string[];
   optional?: boolean;
@@ -40,6 +43,7 @@ export function BuilderFieldInput({
   value,
   onChange,
   bucketOptions = EMPTY_ARRAY,
+  proofOptions = EMPTY_ARRAY,
   choiceOptions = EMPTY_ARRAY,
   optional,
   disabled,
@@ -83,6 +87,19 @@ export function BuilderFieldInput({
         onChange={onChange}
         options={bucketOptions.map((bucket) => ({ value: bucket, label: bucket }))}
         placeholder={placeholders.bucket}
+        disabled={disabled}
+      />
+    );
+  }
+
+  if (kind === 'proofRef') {
+    return (
+      <SelectField
+        label={displayLabel}
+        value={value}
+        onChange={onChange}
+        options={proofOptions.map((proof) => ({ value: proof, label: proof }))}
+        placeholder={placeholders.proofRef}
         disabled={disabled}
       />
     );

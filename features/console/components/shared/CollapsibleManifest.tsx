@@ -36,8 +36,8 @@ export function CollapsibleManifest({
 
       {showManifest && (
         <div 
-          className="rounded-2xl border p-4 bg-black/5 dark:bg-black/20 overflow-x-auto relative mb-4 shadow-inner" 
-          style={{ borderColor: 'var(--color-card-border)' }}
+          className="rounded-2xl border p-4 overflow-x-auto relative mb-4 shadow-inner"
+          style={{ borderColor: 'var(--color-card-border)', background: 'var(--code-bg)' }}
         >
           <div className="absolute top-2 right-2">
             <CopyButton value={manifest} variant="ghost" size="xs" label={copyLabel} />

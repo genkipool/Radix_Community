@@ -38,9 +38,11 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
   const template = MANIFEST_TEMPLATES.find((candidate) => candidate.id === selectedId) ?? null;
   const values = (selectedId && valuesById[selectedId]) || {};
 
+  const networkAddresses = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet];
   const ctx = {
-    xrdAddress: RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet].XRD,
+    xrdAddress: networkAddresses.XRD,
     poolPackage: knownAddresses?.pool_package ?? '',
+    validatorOwnerBadge: networkAddresses.OWNER_BADGE,
   };
   const manifest =
     template ? template.build(values, ctx) : '';

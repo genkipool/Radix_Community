@@ -8,8 +8,15 @@ import {
   BadgeCheck,
   Braces,
   Code2,
+  Coins,
+  Flame,
+  Globe2,
   Image as ImageIcon,
+  KeyRound,
+  MessageSquare,
   PackageOpen,
+  ShieldCheck,
+  Sparkles,
   Tags,
   Trash2,
   Upload,
@@ -17,9 +24,10 @@ import {
 import type { ReactNode } from 'react';
 import {
   availableBuckets,
-  assignBucketNames,
+  availableProofs,
+  assignBlockNames,
+  BLOCK_CATEGORIES,
   BLOCK_DEFS,
-  BLOCK_PALETTE,
   buildManifestFromBlocks,
   createBlock,
   isBlockComplete,
@@ -39,6 +47,13 @@ const BLOCK_ICONS: Record<BlockDef['icon'], ReactNode> = {
   tags: <Tags className="size-4" />,
   braces: <Braces className="size-4" />,
   code: <Code2 className="size-4" />,
+  comment: <MessageSquare className="size-4" />,
+  shield: <ShieldCheck className="size-4" />,
+  flame: <Flame className="size-4" />,
+  coins: <Coins className="size-4" />,
+  key: <KeyRound className="size-4" />,
+  globe: <Globe2 className="size-4" />,
+  sparkles: <Sparkles className="size-4" />,
 };
 
 interface BlockLabels {
@@ -57,6 +72,7 @@ interface BlockBuilderProps {
 export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProps) {
   const labels = t.buildManifest;
   const blockLabels = labels.blocks as Record<string, BlockLabels>;
+  const categoryLabels = labels.blockCategories as Record<string, string>;
 
   const [blocks, setBlocks] = useState<BlockInstance[]>([]);
 
@@ -65,7 +81,7 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
     onManifestChange(manifest);
   }, [manifest, onManifestChange]);
 
-  const bucketNames = assignBucketNames(blocks);
+  const blockNames = assignBlockNames(blocks);
 
   const addBlock = (type: BlockType) => setBlocks((prev) => [...prev, createBlock(type)]);
   const removeBlock = (id: string) => setBlocks((prev) => prev.filter((block) => block.id !== id));
@@ -84,7 +100,7 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
 
   return (
     <div className="space-y-5">
-      {/* Palette */}
+      {/* Palette, grouped by instruction category */}
       <div className="space-y-4">
         <div
           className="flex items-center justify-between gap-3 pb-2 border-b"
@@ -94,29 +110,43 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
             {labels.addBlocks}
           </h3>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {BLOCK_PALETTE.map((type) => {
-            const meta = blockLabels[type] ?? { name: type, description: '', fields: {} };
-            return (
-              <button
-                key={type}
-                type="button"
-                disabled={disabled}
-                onClick={() => addBlock(type)}
-                title={meta.description}
-                className="flex items-center justify-center px-3 py-2 rounded-xl border text-xs font-semibold transition-all duration-150 cursor-pointer hover:opacity-90 hover:shadow-sm active:scale-95 disabled:opacity-50 text-center"
-                style={{
-                  background: 'var(--color-surface)',
-                  borderColor: 'var(--color-card-border)',
-                  color: 'var(--color-text-main)',
-                }}
+        <div className="space-y-3">
+          {BLOCK_CATEGORIES.map((category) => (
+            <div key={category.id} className="space-y-1.5">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest"
+                style={{ color: 'var(--color-text-muted)' }}
               >
-                <span className="truncate max-w-full block">
-                  {meta.name}
-                </span>
-              </button>
-            );
-          })}
+                {categoryLabels[category.id] ?? category.id}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {category.blocks.map((type) => {
+                  const def = BLOCK_DEFS[type];
+                  const meta = blockLabels[type] ?? { name: type, description: '', fields: {} };
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => addBlock(type)}
+                      title={meta.description}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all duration-150 cursor-pointer hover:opacity-90 hover:shadow-sm active:scale-95 disabled:opacity-50"
+                      style={{
+                        background: `linear-gradient(135deg, rgba(${def.accentRgb},0.08) 0%, var(--color-surface) 70%)`,
+                        borderColor: 'var(--color-card-border)',
+                        color: 'var(--color-text-main)',
+                      }}
+                    >
+                      <span style={{ color: `rgb(${def.accentRgb})` }} aria-hidden>
+                        +
+                      </span>
+                      <span className="truncate max-w-[16rem]">{meta.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -134,7 +164,14 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
             const def = BLOCK_DEFS[block.type];
             const meta = blockLabels[block.type] ?? { name: block.type, description: '', fields: {} };
             const complete = isBlockComplete(block);
-            const bucketName = bucketNames.get(block.id);
+            const bucketName = blockNames.buckets.get(block.id);
+            const proofName = blockNames.proofs.get(block.id);
+            const addressNames = blockNames.addresses.get(block.id);
+            const produces = [
+              bucketName,
+              proofName,
+              addressNames && `${addressNames.reservation} · ${addressNames.address}`,
+            ].filter(Boolean);
             return (
               <div
                 key={block.id}
@@ -161,9 +198,9 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
                         </span>
                       )}
                     </p>
-                    {bucketName && (
+                    {produces.length > 0 && (
                       <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                        → {bucketName}
+                        → {produces.join(' · ')}
                       </p>
                     )}
                   </div>
@@ -202,22 +239,28 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
                 </div>
 
                 {/* Fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {def.fields.map((field) => (
-                    <div key={field.key} className={field.kind === 'multiline' || field.kind === 'account' ? 'sm:col-span-2' : ''}>
-                      <BuilderFieldInput
-                        t={t}
-                        kind={field.kind as BuilderFieldKind}
-                        label={meta.fields?.[field.key] ?? field.key}
-                        value={block.values[field.key] ?? ''}
-                        onChange={(value) => setValue(block.id, field.key, value)}
-                        bucketOptions={availableBuckets(blocks, block.id)}
-                        optional={field.optional}
-                        disabled={disabled}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {def.fields.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {def.fields.map((field) => (
+                      <div
+                        key={field.key}
+                        className={field.kind === 'multiline' || field.kind === 'account' ? 'sm:col-span-2' : ''}
+                      >
+                        <BuilderFieldInput
+                          t={t}
+                          kind={field.kind as BuilderFieldKind}
+                          label={meta.fields?.[field.key] ?? field.key}
+                          value={block.values[field.key] ?? ''}
+                          onChange={(value) => setValue(block.id, field.key, value)}
+                          bucketOptions={availableBuckets(blocks, block.id)}
+                          proofOptions={availableProofs(blocks, block.id)}
+                          optional={field.optional}
+                          disabled={disabled}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

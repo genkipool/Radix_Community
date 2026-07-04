@@ -13,6 +13,7 @@ export interface ConsoleToolProps {
 }
 
 import SendTransactionTool from './tools/SendTransactionTool';
+import StakingTool from './tools/StakingTool';
 import CreateTokenTool from './tools/CreateTokenTool';
 import BuildManifestTool from './tools/BuildManifestTool';
 import ComponentPanelTool from './tools/ComponentPanelTool';
@@ -29,6 +30,7 @@ import ClaimPackageRoyaltiesTool from './tools/ClaimPackageRoyaltiesTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
+  staking: StakingTool,
   'create-token': CreateTokenTool,
   'build-manifest': BuildManifestTool,
   'component-panel': ComponentPanelTool,

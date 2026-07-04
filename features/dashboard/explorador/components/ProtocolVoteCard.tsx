@@ -45,22 +45,30 @@ export function ProtocolVoteCard({
     const presenterAccount = sanitizeText(proofMatch?.[1] ?? '');
     const badgeResource = sanitizeText(proofMatch?.[2] ?? '');
 
-    const friendlyVersion = protocolVersion.includes('cuttlefish')
+    /*
+     * Protocol version names are a 32-char string whose readable name is the
+     * trailing alphabetic part (e.g. "220e2a4a4e86e3e6000000000anemone" →
+     * "Anemone"). The raw value stays available through the title attribute.
+     */
+    const readableName = protocolVersion.match(/([a-z]+)$/i)?.[1] ?? '';
+    const friendlyVersion = readableName.toLowerCase() === 'cuttlefish'
         ? (tt?.protocol_cuttlefish || 'Cuttlefish')
-        : (protocolVersion || tt?.unknown || 'Unknown');
+        : readableName
+            ? readableName.charAt(0).toUpperCase() + readableName.slice(1).toLowerCase()
+            : (protocolVersion || tt?.unknown || 'Unknown');
 
     return (
         <div className="bg-[var(--color-card-bg)] rounded-xl border border-[var(--color-accent)]/60 overflow-hidden">
             {/* Header */}
-            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-accent)]/40 bg-[var(--color-accent)]/12 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                    <svg className="size-3.5 text-[var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-accent)]/40 bg-[var(--color-accent)]/12 flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2 min-w-0">
+                    <svg className="size-3.5 shrink-0 text-[var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         <path d="m9 12 2 2 4-4" />
                     </svg>
-                    {tt?.protocol_vote_label || 'Protocol Update Vote'}
+                    <span className="truncate">{tt?.protocol_vote_label || 'Protocol Update Vote'}</span>
                 </span>
-                <Pill color="accent" className="font-black tracking-widest uppercase px-3">
+                <Pill color="accent" title={protocolVersion} className="font-black tracking-widest uppercase px-3 max-w-full truncate">
                     {friendlyVersion}
                 </Pill>
             </h3>
@@ -79,14 +87,22 @@ export function ProtocolVoteCard({
                         : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt?.protocol_vote_no_validator || 'No validator found in affected entities'}</p>
                     }
 
-                    <div className="mt-3 flex items-center justify-between px-2.5 h-8 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30">
-                        <span className="text-[9px] uppercase font-bold text-[var(--color-accent)] opacity-80 tracking-wide">
+                    <div
+                        className="mt-3 flex items-center justify-between gap-2 px-2.5 h-8 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30"
+                        title={protocolVersion}
+                    >
+                        <span className="text-[9px] uppercase font-bold text-[var(--color-accent)] opacity-80 tracking-wide whitespace-nowrap">
                             {tt?.protocol_vote_for || 'Voting for'}
                         </span>
-                        <span className="text-xs font-bold text-[var(--color-accent)] font-mono translate-y-[0.5px]">
+                        <span className="text-xs font-bold text-[var(--color-accent)] font-mono translate-y-[0.5px] truncate min-w-0">
                             {friendlyVersion}
                         </span>
                     </div>
+                    {protocolVersion && protocolVersion.toLowerCase() !== friendlyVersion.toLowerCase() && (
+                        <p className="mt-1.5 px-0.5 text-[9px] font-mono break-all leading-snug text-[var(--color-text-muted)]">
+                            {protocolVersion}
+                        </p>
+                    )}
                 </div>
 
                 {/* RIGHT — Badge presenter */}

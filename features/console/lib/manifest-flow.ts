@@ -14,6 +14,8 @@ export interface ManifestInstruction {
 
 /** Splits a manifest into instructions on `;`, ignoring `;` inside strings. */
 export function parseInstructions(manifest: string): ManifestInstruction[] {
+  // Comment lines (# …) are not instructions; drop them before splitting
+  manifest = manifest.replace(/^[ \t]*#[^\n]*/gm, '');
   const statements: string[] = [];
   let current = '';
   let inString = false;

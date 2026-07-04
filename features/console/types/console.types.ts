@@ -4,6 +4,7 @@
 
 export const CONSOLE_TOOL_SLUGS = [
   'send-transaction',
+  'staking',
   'create-token',
   'my-resources',
   'build-manifest',

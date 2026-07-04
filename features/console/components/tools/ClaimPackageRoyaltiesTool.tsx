@@ -5,7 +5,7 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
 import { getClaimPackageRoyaltiesManifest } from '../../lib/claim-package-royalties-manifest';
 import type { ConsoleToolProps } from '../ConsoleToolView';
-import { ToolSection } from '../shared/ToolSection';
+import type { BadgeProofSelection } from '../../types/console.types';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { TxResultBanner } from '../shared/TxResultBanner';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
@@ -20,7 +20,7 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
   const { accounts, isLoading: walletLoading } = useRadixWallet();
 
   const [entityAddress, setEntityAddress] = useState('');
-  const [ownerBadge, setOwnerBadge] = useState<any>(null); // Type is BadgeProofSelection
+  const [ownerBadge, setOwnerBadge] = useState<BadgeProofSelection | null>(null);
   
   const accountAddress = accounts[0]?.address;
   const { data: holdings } = useAccountResources(accountAddress || null);

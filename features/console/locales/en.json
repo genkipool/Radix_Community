@@ -782,6 +782,36 @@
             }
           ]
         }
+      },
+      "staking": {
+        "title": "Staking",
+        "description": "Manage the staking of your accounts: stake, unstake and claim on your validators with individual, batch or mixed actions — the same panel the wallet profile uses.",
+        "guide": {
+          "guideTitle": "Guide: Staking",
+          "guideDescription": "Full XRD staking panel. Delegate to one or several validators, unstake and claim your unlocked XRD. Supports global batch actions (split an amount across validators), cart mode to combine different operations into a single transaction, and owner mode for validators you control.",
+          "guideSteps": [
+            "1. Account: pick the account whose staking position you want to manage.",
+            "2. Validators: you get one row per validator you already stake with; use the search to add new validators.",
+            "3. Individual action: on each row enter an amount and choose Stake, Unstake or Claim.",
+            "4. Global action: enter an amount at the top and it is split equally across the selected validators.",
+            "5. Cart mode: configure several operations on different rows and they are grouped into a single transaction.",
+            "6. Send: press \"Send to wallet\" and sign the transaction in your Radix Wallet."
+          ],
+          "glossary": [
+            {
+              "term": "LSU",
+              "definition": "Liquid Stake Units: the token you receive when staking, representing your share in the validator."
+            },
+            {
+              "term": "Claim NFT",
+              "definition": "When unstaking you receive an NFT redeemable for XRD once the waiting period ends."
+            },
+            {
+              "term": "Owner mode",
+              "definition": "Special view for validators you control: shows the owner locked stake and its unlocks."
+            }
+          ]
+        }
       }
     },
     "common": {
@@ -1134,7 +1164,8 @@
         "text": "",
         "nonFungibleId": "#1# (separate several with commas)",
         "bucket": "Select a bucket",
-        "multiline": "Address(\"...\")\\nDecimal(\"10\")"
+        "multiline": "Address(\"...\")\\nDecimal(\"10\")",
+        "proofRef": "Select a proof"
       },
       "templates": {
         "transfer-tokens": {
@@ -1265,6 +1296,180 @@
             "component": "Component address",
             "account": "Deposit to account"
           }
+        },
+        "stake-owner": {
+          "name": "Owner stake",
+          "description": "Stake XRD on your validator presenting the owner badge (stake_as_owner).",
+          "fields": {
+            "account": "Account (holds badge and XRD)",
+            "validator": "Validator address",
+            "ownerBadge": "Owner badge (resource)",
+            "ownerBadgeId": "Badge id",
+            "amount": "XRD amount"
+          }
+        },
+        "unstake-owner": {
+          "name": "Owner unstake",
+          "description": "Unstake from the validator presenting the owner badge: converts LSU into a claim NFT.",
+          "fields": {
+            "account": "Account (holds badge and LSU)",
+            "validator": "Validator address",
+            "ownerBadge": "Owner badge (resource)",
+            "ownerBadgeId": "Badge id",
+            "lsuResource": "LSU (liquid stake units, resource)",
+            "amount": "LSU amount"
+          }
+        },
+        "claim-stake": {
+          "name": "Claim XRD",
+          "description": "Redeem the claim NFT for XRD once the unstake period has passed.",
+          "fields": {
+            "account": "Account",
+            "validator": "Validator address",
+            "claimNft": "Claim NFT (resource)",
+            "claimNftId": "Claim NFT id"
+          }
+        },
+        "lock-owner-stake": {
+          "name": "Lock owner stake",
+          "description": "Deposit LSU into the validator owner lock (lock_owner_stake_units).",
+          "fields": {
+            "account": "Account (holds badge and LSU)",
+            "validator": "Validator address",
+            "ownerBadge": "Owner badge (resource)",
+            "ownerBadgeId": "Badge id",
+            "lsuResource": "LSU (liquid stake units, resource)",
+            "amount": "LSU amount"
+          }
+        },
+        "start-unlock-owner-stake": {
+          "name": "Start unlocking owner stake",
+          "description": "Start unlocking owner LSU (start_unlock_owner_stake_units).",
+          "fields": {
+            "account": "Account (holds badge)",
+            "validator": "Validator address",
+            "ownerBadge": "Owner badge (resource)",
+            "ownerBadgeId": "Badge id",
+            "amount": "LSU amount"
+          }
+        },
+        "finish-unlock-owner-stake": {
+          "name": "Finish unlocking owner stake",
+          "description": "Withdraw the unlocked LSU once the waiting period has passed (finish_unlock_owner_stake_units).",
+          "fields": {
+            "account": "Account (holds badge)",
+            "validator": "Validator address",
+            "ownerBadge": "Owner badge (resource)",
+            "ownerBadgeId": "Badge id"
+          }
+        },
+        "mint-nft": {
+          "name": "Mint NFT",
+          "description": "Mint a new NFT presenting the minter badge and deposit it into an account.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Minter badge (resource)",
+            "resource": "NFT collection (resource)",
+            "nftId": "New NFT id (e.g. #1#)",
+            "name": "Name",
+            "description": "Description",
+            "imageUrl": "Image URL",
+            "to": "Destination account"
+          }
+        },
+        "burn-nft": {
+          "name": "Burn NFT",
+          "description": "Withdraw NFTs from your account and burn them permanently.",
+          "fields": {
+            "account": "Account",
+            "resource": "NFT collection (resource)",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "update-nft-data": {
+          "name": "Update NFT data",
+          "description": "Update a data field of an NFT (update_non_fungible_data).",
+          "fields": {
+            "resource": "NFT collection (resource)",
+            "nftId": "NFT id",
+            "field": "Field (e.g. name)",
+            "value": "New value"
+          }
+        },
+        "update-nft-data-badge": {
+          "name": "Update NFT data with badge",
+          "description": "Present a badge and update a data field of an NFT.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Badge (resource)",
+            "badgeNftId": "Badge id (if the badge is an NFT)",
+            "resource": "NFT collection (resource)",
+            "nftId": "NFT id",
+            "field": "Field (e.g. name)",
+            "value": "New value"
+          }
+        },
+        "recall-token": {
+          "name": "Recall tokens",
+          "description": "Pull tokens back from any vault presenting the recaller badge.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Recaller badge (resource)",
+            "vault": "Vault (internal_vault_...)",
+            "amount": "Amount",
+            "to": "Destination account"
+          }
+        },
+        "recall-nft": {
+          "name": "Recall NFT",
+          "description": "Pull NFTs back from any vault presenting the recaller badge.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Recaller badge (resource)",
+            "vault": "Vault (internal_vault_...)",
+            "nftIds": "NFT ids (comma separated)",
+            "to": "Destination account"
+          }
+        },
+        "freeze-vault": {
+          "name": "Freeze vault",
+          "description": "Freeze withdraws, deposits or burns of a vault presenting the freezer badge.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Freezer badge (resource)",
+            "vault": "Vault (internal_vault_...)",
+            "flag": "Operation to freeze"
+          }
+        },
+        "unfreeze-vault": {
+          "name": "Unfreeze vault",
+          "description": "Re-enable the frozen operations of a vault.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Freezer badge (resource)",
+            "vault": "Vault (internal_vault_...)",
+            "flag": "Operation to unfreeze"
+          }
+        },
+        "lock-metadata": {
+          "name": "Lock metadata",
+          "description": "Permanently lock a metadata key so nobody can ever change it again.",
+          "fields": {
+            "badgeAccount": "Account holding the badge",
+            "badgeResource": "Badge (resource)",
+            "entity": "Entity (account, component or resource)",
+            "metadataKey": "Metadata key"
+          }
+        },
+        "signal-protocol-update": {
+          "name": "Protocol update vote",
+          "description": "Signal your validator readiness for a protocol update presenting the owner badge (signal_protocol_update_readiness).",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id",
+            "version": "Protocol version (32-character string)"
+          }
         }
       },
       "blocks": {
@@ -1349,7 +1554,218 @@
           "fields": {
             "instructions": "Instructions"
           }
+        },
+        "comment": {
+          "name": "Comment",
+          "description": "Inserts a comment line (#) into the manifest; it produces no instruction.",
+          "fields": {
+            "text": "Comment text"
+          }
+        },
+        "takeNonFungiblesFromWorktop": {
+          "name": "Take NFTs into a bucket",
+          "description": "Collects specific NFTs from the worktop into a named bucket (TAKE_NON_FUNGIBLES_FROM_WORKTOP).",
+          "fields": {
+            "resource": "NFT collection (resource)",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "returnToWorktop": {
+          "name": "Return bucket to worktop",
+          "description": "Empties a bucket back onto the worktop (RETURN_TO_WORKTOP).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "assertWorktopContains": {
+          "name": "Assert worktop amount",
+          "description": "Fails the transaction unless the worktop holds at least this amount (ASSERT_WORKTOP_CONTAINS).",
+          "fields": {
+            "resource": "Token (resource address)",
+            "amount": "Minimum amount"
+          }
+        },
+        "assertWorktopContainsAny": {
+          "name": "Assert worktop presence",
+          "description": "Fails the transaction unless the worktop holds any of this resource (ASSERT_WORKTOP_CONTAINS_ANY).",
+          "fields": {
+            "resource": "Token (resource address)"
+          }
+        },
+        "assertWorktopContainsNonFungibles": {
+          "name": "Assert worktop NFTs",
+          "description": "Fails the transaction unless the worktop holds these NFTs (ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES).",
+          "fields": {
+            "resource": "NFT collection (resource)",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "assertWorktopIsEmpty": {
+          "name": "Assert worktop is empty",
+          "description": "Fails the transaction if any resource remains on the worktop (ASSERT_WORKTOP_IS_EMPTY).",
+          "fields": {}
+        },
+        "burnResource": {
+          "name": "Burn bucket",
+          "description": "Permanently burns the contents of a bucket (BURN_RESOURCE).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "mintFungible": {
+          "name": "Mint tokens",
+          "description": "Mints new units of a fungible token onto the worktop (MINT_FUNGIBLE); present the minter badge first.",
+          "fields": {
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "mintNonFungible": {
+          "name": "Mint NFT",
+          "description": "Mints a new NFT with the standard fields onto the worktop (MINT_NON_FUNGIBLE); present the minter badge first.",
+          "fields": {
+            "resource": "NFT collection (resource)",
+            "nftId": "New NFT id (e.g. #1#)",
+            "name": "Name",
+            "description": "Description",
+            "imageUrl": "Image URL"
+          }
+        },
+        "popFromAuthZone": {
+          "name": "Pop proof from auth zone",
+          "description": "Pops the last proof off the auth zone and names it (POP_FROM_AUTH_ZONE).",
+          "fields": {}
+        },
+        "pushToAuthZone": {
+          "name": "Push proof to auth zone",
+          "description": "Pushes a named proof onto the auth zone (PUSH_TO_AUTH_ZONE).",
+          "fields": {
+            "proof": "Proof"
+          }
+        },
+        "createProofFromAuthZoneOfAmount": {
+          "name": "Proof from auth zone (amount)",
+          "description": "Creates a named proof from the auth zone by amount (CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT).",
+          "fields": {
+            "resource": "Token (resource address)",
+            "amount": "Amount"
+          }
+        },
+        "createProofFromAuthZoneOfNonFungibles": {
+          "name": "Proof from auth zone (NFTs)",
+          "description": "Creates a named proof from the auth zone with specific NFTs (CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES).",
+          "fields": {
+            "resource": "NFT collection (resource)",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "createProofFromAuthZoneOfAll": {
+          "name": "Proof from auth zone (all)",
+          "description": "Creates a named proof with everything available of a resource in the auth zone (CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL).",
+          "fields": {
+            "resource": "Token (resource address)"
+          }
+        },
+        "createProofFromBucketOfAmount": {
+          "name": "Proof from bucket (amount)",
+          "description": "Creates a named proof from a fungible bucket by amount (CREATE_PROOF_FROM_BUCKET_OF_AMOUNT).",
+          "fields": {
+            "bucket": "Bucket",
+            "amount": "Amount"
+          }
+        },
+        "createProofFromBucketOfNonFungibles": {
+          "name": "Proof from bucket (NFTs)",
+          "description": "Creates a named proof from a bucket with specific NFTs (CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES).",
+          "fields": {
+            "bucket": "Bucket",
+            "nftIds": "NFT ids (comma separated)"
+          }
+        },
+        "createProofFromBucketOfAll": {
+          "name": "Proof from bucket (all)",
+          "description": "Creates a named proof of the full contents of a bucket (CREATE_PROOF_FROM_BUCKET_OF_ALL).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "cloneProof": {
+          "name": "Clone proof",
+          "description": "Duplicates an existing proof under a new name (CLONE_PROOF).",
+          "fields": {
+            "proof": "Proof to clone"
+          }
+        },
+        "dropProof": {
+          "name": "Drop proof",
+          "description": "Drops a named proof (DROP_PROOF).",
+          "fields": {
+            "proof": "Proof"
+          }
+        },
+        "dropAllProofs": {
+          "name": "Drop all proofs",
+          "description": "Drops every proof, including signature proofs (DROP_ALL_PROOFS). Account withdrawals cannot be authorized afterwards.",
+          "fields": {}
+        },
+        "dropAuthZoneProofs": {
+          "name": "Drop auth zone proofs",
+          "description": "Drops all proofs from the auth zone, including signature proofs (DROP_AUTH_ZONE_PROOFS).",
+          "fields": {}
+        },
+        "dropAuthZoneRegularProofs": {
+          "name": "Drop regular auth zone proofs",
+          "description": "Drops the regular proofs from the auth zone, keeping the signature proofs (DROP_AUTH_ZONE_REGULAR_PROOFS).",
+          "fields": {}
+        },
+        "dropAuthZoneSignatureProofs": {
+          "name": "Drop signature proofs",
+          "description": "Drops the signature proofs from the auth zone (DROP_AUTH_ZONE_SIGNATURE_PROOFS); useful to restrict the remaining authority.",
+          "fields": {}
+        },
+        "allocateGlobalAddress": {
+          "name": "Allocate global address",
+          "description": "Reserves the address of a component before instantiating it (ALLOCATE_GLOBAL_ADDRESS); use the named reservation and address in later calls.",
+          "fields": {
+            "packageAddress": "Package address",
+            "blueprint": "Blueprint name"
+          }
+        },
+        "snippetCreateFungible": {
+          "name": "Create fungible resource",
+          "description": "Creates a fixed-supply fungible token with name and symbol, deposited into your account.",
+          "fields": {
+            "account": "Destination account",
+            "name": "Token name",
+            "symbol": "Symbol",
+            "initialSupply": "Initial supply",
+            "divisibility": "Divisibility (0-18, default 18)"
+          }
+        },
+        "snippetCreateNonFungible": {
+          "name": "Create non-fungible resource",
+          "description": "Creates an NFT collection with a first NFT (#0#), deposited into your account.",
+          "fields": {
+            "account": "Destination account",
+            "name": "Collection name",
+            "nftName": "First NFT name",
+            "nftDescription": "First NFT description",
+            "nftImageUrl": "First NFT image URL"
+          }
         }
+      },
+      "blockCategories": {
+        "account": "Account",
+        "annotation": "Annotation",
+        "invoke": "Invoke",
+        "bucket": "Buckets",
+        "asserts": "Asserts",
+        "resource": "Resource",
+        "proofs": "Proofs",
+        "address": "Addresses",
+        "metadata": "Metadata",
+        "escape": "Escape",
+        "snippets": "Snippets"
       }
     },
     "componentPanel": {
@@ -1591,6 +2007,10 @@
       "rolaOkHint": "Ownership proof verified",
       "rolaFailHint": "The proof could not be verified",
       "rawResponse": "Raw response (JSON)"
+    },
+    "staking": {
+      "accountTitle": "Account",
+      "sectionTitle": "Account staking"
     }
   }
 }

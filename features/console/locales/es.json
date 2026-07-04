@@ -782,6 +782,36 @@
             }
           ]
         }
+      },
+      "staking": {
+        "title": "Staking",
+        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas — el mismo panel que usa el perfil de la billetera.",
+        "guide": {
+          "guideTitle": "Guía: Staking",
+          "guideDescription": "Panel completo de staking de XRD. Delega en uno o varios validadores, retira stake y reclama tus XRD desbloqueados. Soporta acciones globales por lotes (repartir una cantidad entre varios validadores), modo carrito para combinar operaciones distintas en una sola transacción y modo propietario para validadores que controlas.",
+          "guideSteps": [
+            "1. Cuenta: selecciona la cuenta cuya posición de staking quieres gestionar.",
+            "2. Validadores: verás una fila por cada validador donde ya tienes stake; usa el buscador para añadir validadores nuevos.",
+            "3. Acción individual: en cada fila puedes introducir una cantidad y elegir Stake, Unstake o Claim.",
+            "4. Acción global: introduce una cantidad arriba y se repartirá a partes iguales entre los validadores seleccionados.",
+            "5. Modo carrito: configura varias operaciones en distintas filas y se agruparán en una única transacción.",
+            "6. Enviar: pulsa \"Enviar a la billetera\" y firma la transacción en tu Radix Wallet."
+          ],
+          "glossary": [
+            {
+              "term": "LSU",
+              "definition": "Liquid Stake Units: el token que recibes al hacer stake y representa tu participación en el validador."
+            },
+            {
+              "term": "NFT de reclamación",
+              "definition": "Al hacer unstake recibes un NFT que podrás canjear por XRD cuando termine el periodo de espera."
+            },
+            {
+              "term": "Modo propietario",
+              "definition": "Vista especial para validadores que controlas: muestra el stake bloqueado del propietario y sus desbloqueos."
+            }
+          ]
+        }
       }
     },
     "common": {
@@ -1135,7 +1165,8 @@
         "text": "",
         "nonFungibleId": "#1# (separa varios con comas)",
         "bucket": "Selecciona un bucket",
-        "multiline": "Address(\"...\")\\nDecimal(\"10\")"
+        "multiline": "Address(\"...\")\\nDecimal(\"10\")",
+        "proofRef": "Selecciona un proof"
       },
       "templates": {
         "transfer-tokens": {
@@ -1266,6 +1297,180 @@
             "component": "Dirección del componente",
             "account": "Depositar en la cuenta"
           }
+        },
+        "stake-owner": {
+          "name": "Stake de propietario",
+          "description": "Haz staking de XRD en tu validador presentando la insignia de propietario (stake_as_owner).",
+          "fields": {
+            "account": "Cuenta (con la insignia y los XRD)",
+            "validator": "Dirección del validador",
+            "ownerBadge": "Insignia de propietario (recurso)",
+            "ownerBadgeId": "Id de la insignia",
+            "amount": "Cantidad de XRD"
+          }
+        },
+        "unstake-owner": {
+          "name": "Unstake de propietario",
+          "description": "Retira stake del validador presentando la insignia de propietario: convierte LSU en un NFT de reclamación.",
+          "fields": {
+            "account": "Cuenta (con la insignia y las LSU)",
+            "validator": "Dirección del validador",
+            "ownerBadge": "Insignia de propietario (recurso)",
+            "ownerBadgeId": "Id de la insignia",
+            "lsuResource": "LSU (unidades de stake, recurso)",
+            "amount": "Cantidad de LSU"
+          }
+        },
+        "claim-stake": {
+          "name": "Reclamar XRD (claim)",
+          "description": "Canjea el NFT de reclamación por XRD cuando termina el periodo de unstake.",
+          "fields": {
+            "account": "Cuenta",
+            "validator": "Dirección del validador",
+            "claimNft": "NFT de reclamación (recurso)",
+            "claimNftId": "Id del NFT de reclamación"
+          }
+        },
+        "lock-owner-stake": {
+          "name": "Bloquear stake del propietario",
+          "description": "Deposita LSU en el bloqueo del validador (lock_owner_stake_units).",
+          "fields": {
+            "account": "Cuenta (con la insignia y las LSU)",
+            "validator": "Dirección del validador",
+            "ownerBadge": "Insignia de propietario (recurso)",
+            "ownerBadgeId": "Id de la insignia",
+            "lsuResource": "LSU (unidades de stake, recurso)",
+            "amount": "Cantidad de LSU"
+          }
+        },
+        "start-unlock-owner-stake": {
+          "name": "Iniciar desbloqueo del stake",
+          "description": "Empieza a desbloquear LSU del propietario (start_unlock_owner_stake_units).",
+          "fields": {
+            "account": "Cuenta (con la insignia)",
+            "validator": "Dirección del validador",
+            "ownerBadge": "Insignia de propietario (recurso)",
+            "ownerBadgeId": "Id de la insignia",
+            "amount": "Cantidad de LSU"
+          }
+        },
+        "finish-unlock-owner-stake": {
+          "name": "Finalizar desbloqueo del stake",
+          "description": "Recupera las LSU desbloqueadas cuando termina el periodo de espera (finish_unlock_owner_stake_units).",
+          "fields": {
+            "account": "Cuenta (con la insignia)",
+            "validator": "Dirección del validador",
+            "ownerBadge": "Insignia de propietario (recurso)",
+            "ownerBadgeId": "Id de la insignia"
+          }
+        },
+        "mint-nft": {
+          "name": "Mintear NFT",
+          "description": "Crea un NFT nuevo presentando la insignia de minteo y deposítalo en una cuenta.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia de minteo (recurso)",
+            "resource": "Colección NFT (recurso)",
+            "nftId": "Id del nuevo NFT (p. ej. #1#)",
+            "name": "Nombre",
+            "description": "Descripción",
+            "imageUrl": "URL de la imagen",
+            "to": "Cuenta de destino"
+          }
+        },
+        "burn-nft": {
+          "name": "Quemar NFT",
+          "description": "Retira NFTs de tu cuenta y quémalos de forma permanente.",
+          "fields": {
+            "account": "Cuenta",
+            "resource": "Colección NFT (recurso)",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "update-nft-data": {
+          "name": "Modificar NFT",
+          "description": "Actualiza un campo de datos de un NFT (update_non_fungible_data).",
+          "fields": {
+            "resource": "Colección NFT (recurso)",
+            "nftId": "Id del NFT",
+            "field": "Campo (p. ej. name)",
+            "value": "Nuevo valor"
+          }
+        },
+        "update-nft-data-badge": {
+          "name": "Modificar NFT con insignia",
+          "description": "Presenta una insignia y actualiza un campo de datos de un NFT.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia (recurso)",
+            "badgeNftId": "Id de la insignia (si es NFT)",
+            "resource": "Colección NFT (recurso)",
+            "nftId": "Id del NFT",
+            "field": "Campo (p. ej. name)",
+            "value": "Nuevo valor"
+          }
+        },
+        "recall-token": {
+          "name": "Revocar tokens (recall)",
+          "description": "Recupera tokens de cualquier vault presentando la insignia de revocación.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia de revocación (recurso)",
+            "vault": "Vault (internal_vault_...)",
+            "amount": "Cantidad",
+            "to": "Cuenta de destino"
+          }
+        },
+        "recall-nft": {
+          "name": "Revocar NFT (recall)",
+          "description": "Recupera NFTs de cualquier vault presentando la insignia de revocación.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia de revocación (recurso)",
+            "vault": "Vault (internal_vault_...)",
+            "nftIds": "Ids de NFT (separados por comas)",
+            "to": "Cuenta de destino"
+          }
+        },
+        "freeze-vault": {
+          "name": "Congelar vault",
+          "description": "Congela retiros, depósitos o quemas de un vault presentando la insignia de congelación.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia de congelación (recurso)",
+            "vault": "Vault (internal_vault_...)",
+            "flag": "Operación a congelar"
+          }
+        },
+        "unfreeze-vault": {
+          "name": "Descongelar vault",
+          "description": "Reactiva las operaciones congeladas de un vault.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia de congelación (recurso)",
+            "vault": "Vault (internal_vault_...)",
+            "flag": "Operación a descongelar"
+          }
+        },
+        "lock-metadata": {
+          "name": "Bloquear metadato",
+          "description": "Bloquea permanentemente una clave de metadatos para que nadie pueda volver a cambiarla.",
+          "fields": {
+            "badgeAccount": "Cuenta con la insignia",
+            "badgeResource": "Insignia (recurso)",
+            "entity": "Entidad (cuenta, componente o recurso)",
+            "metadataKey": "Clave de metadatos"
+          }
+        },
+        "signal-protocol-update": {
+          "name": "Voto de actualización de protocolo",
+          "description": "Señala la disposición de tu validador para una actualización de protocolo presentando la insignia de propietario (signal_protocol_update_readiness).",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario",
+            "version": "Versión del protocolo (cadena de 32 caracteres)"
+          }
         }
       },
       "blocks": {
@@ -1350,7 +1555,218 @@
           "fields": {
             "instructions": "Instrucciones"
           }
+        },
+        "comment": {
+          "name": "Comentario",
+          "description": "Inserta una línea de comentario (#) en el manifiesto; no genera ninguna instrucción.",
+          "fields": {
+            "text": "Texto del comentario"
+          }
+        },
+        "takeNonFungiblesFromWorktop": {
+          "name": "Extraer NFTs a un bucket",
+          "description": "Recoge NFTs concretos del worktop en un bucket con nombre (TAKE_NON_FUNGIBLES_FROM_WORKTOP).",
+          "fields": {
+            "resource": "Colección NFT (recurso)",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "returnToWorktop": {
+          "name": "Devolver bucket al worktop",
+          "description": "Vacía un bucket de vuelta al worktop (RETURN_TO_WORKTOP).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "assertWorktopContains": {
+          "name": "Comprobar cantidad en worktop",
+          "description": "Falla la transacción si el worktop no contiene al menos esta cantidad (ASSERT_WORKTOP_CONTAINS).",
+          "fields": {
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad mínima"
+          }
+        },
+        "assertWorktopContainsAny": {
+          "name": "Comprobar presencia en worktop",
+          "description": "Falla la transacción si el worktop no contiene nada de este recurso (ASSERT_WORKTOP_CONTAINS_ANY).",
+          "fields": {
+            "resource": "Token (dirección del recurso)"
+          }
+        },
+        "assertWorktopContainsNonFungibles": {
+          "name": "Comprobar NFTs en worktop",
+          "description": "Falla la transacción si el worktop no contiene estos NFTs (ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES).",
+          "fields": {
+            "resource": "Colección NFT (recurso)",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "assertWorktopIsEmpty": {
+          "name": "Comprobar worktop vacío",
+          "description": "Falla la transacción si queda algún recurso en el worktop (ASSERT_WORKTOP_IS_EMPTY).",
+          "fields": {}
+        },
+        "burnResource": {
+          "name": "Quemar bucket",
+          "description": "Quema permanentemente el contenido de un bucket (BURN_RESOURCE).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "mintFungible": {
+          "name": "Mintear tokens",
+          "description": "Emite nuevas unidades de un token fungible al worktop (MINT_FUNGIBLE); requiere presentar antes la insignia de minteo.",
+          "fields": {
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "mintNonFungible": {
+          "name": "Mintear NFT",
+          "description": "Emite un NFT nuevo al worktop con los campos estándar (MINT_NON_FUNGIBLE); requiere presentar antes la insignia de minteo.",
+          "fields": {
+            "resource": "Colección NFT (recurso)",
+            "nftId": "Id del nuevo NFT (p. ej. #1#)",
+            "name": "Nombre",
+            "description": "Descripción",
+            "imageUrl": "URL de la imagen"
+          }
+        },
+        "popFromAuthZone": {
+          "name": "Sacar proof del auth zone",
+          "description": "Saca el último proof del auth zone y le da un nombre (POP_FROM_AUTH_ZONE).",
+          "fields": {}
+        },
+        "pushToAuthZone": {
+          "name": "Meter proof en el auth zone",
+          "description": "Empuja un proof con nombre al auth zone (PUSH_TO_AUTH_ZONE).",
+          "fields": {
+            "proof": "Proof"
+          }
+        },
+        "createProofFromAuthZoneOfAmount": {
+          "name": "Proof del auth zone (cantidad)",
+          "description": "Crea un proof con nombre a partir del auth zone por cantidad (CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT).",
+          "fields": {
+            "resource": "Token (dirección del recurso)",
+            "amount": "Cantidad"
+          }
+        },
+        "createProofFromAuthZoneOfNonFungibles": {
+          "name": "Proof del auth zone (NFTs)",
+          "description": "Crea un proof con nombre a partir del auth zone con NFTs concretos (CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES).",
+          "fields": {
+            "resource": "Colección NFT (recurso)",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "createProofFromAuthZoneOfAll": {
+          "name": "Proof del auth zone (todo)",
+          "description": "Crea un proof con nombre con todo lo disponible de un recurso en el auth zone (CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL).",
+          "fields": {
+            "resource": "Token (dirección del recurso)"
+          }
+        },
+        "createProofFromBucketOfAmount": {
+          "name": "Proof de un bucket (cantidad)",
+          "description": "Crea un proof con nombre a partir de un bucket fungible por cantidad (CREATE_PROOF_FROM_BUCKET_OF_AMOUNT).",
+          "fields": {
+            "bucket": "Bucket",
+            "amount": "Cantidad"
+          }
+        },
+        "createProofFromBucketOfNonFungibles": {
+          "name": "Proof de un bucket (NFTs)",
+          "description": "Crea un proof con nombre a partir de un bucket con NFTs concretos (CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES).",
+          "fields": {
+            "bucket": "Bucket",
+            "nftIds": "Ids de NFT (separados por comas)"
+          }
+        },
+        "createProofFromBucketOfAll": {
+          "name": "Proof de un bucket (todo)",
+          "description": "Crea un proof con nombre con todo el contenido de un bucket (CREATE_PROOF_FROM_BUCKET_OF_ALL).",
+          "fields": {
+            "bucket": "Bucket"
+          }
+        },
+        "cloneProof": {
+          "name": "Clonar proof",
+          "description": "Duplica un proof existente con un nombre nuevo (CLONE_PROOF).",
+          "fields": {
+            "proof": "Proof a clonar"
+          }
+        },
+        "dropProof": {
+          "name": "Descartar proof",
+          "description": "Descarta un proof con nombre (DROP_PROOF).",
+          "fields": {
+            "proof": "Proof"
+          }
+        },
+        "dropAllProofs": {
+          "name": "Descartar todos los proofs",
+          "description": "Descarta todos los proofs, incluidos los de firma (DROP_ALL_PROOFS). Después no se podrán autorizar retiradas de cuentas.",
+          "fields": {}
+        },
+        "dropAuthZoneProofs": {
+          "name": "Vaciar auth zone",
+          "description": "Descarta todos los proofs del auth zone, incluidos los de firma (DROP_AUTH_ZONE_PROOFS).",
+          "fields": {}
+        },
+        "dropAuthZoneRegularProofs": {
+          "name": "Vaciar auth zone (sin firmas)",
+          "description": "Descarta los proofs normales del auth zone y conserva los de firma (DROP_AUTH_ZONE_REGULAR_PROOFS).",
+          "fields": {}
+        },
+        "dropAuthZoneSignatureProofs": {
+          "name": "Descartar proofs de firma",
+          "description": "Descarta los proofs de firma del auth zone (DROP_AUTH_ZONE_SIGNATURE_PROOFS); útil para restringir la autoridad restante.",
+          "fields": {}
+        },
+        "allocateGlobalAddress": {
+          "name": "Reservar dirección global",
+          "description": "Reserva la dirección de un componente antes de instanciarlo (ALLOCATE_GLOBAL_ADDRESS); usa la reserva y la dirección con nombre en llamadas posteriores.",
+          "fields": {
+            "packageAddress": "Dirección del paquete",
+            "blueprint": "Nombre del blueprint"
+          }
+        },
+        "snippetCreateFungible": {
+          "name": "Crear token fungible",
+          "description": "Crea un token fungible de oferta fija con nombre y símbolo, y lo deposita en tu cuenta.",
+          "fields": {
+            "account": "Cuenta de destino",
+            "name": "Nombre del token",
+            "symbol": "Símbolo",
+            "initialSupply": "Oferta inicial",
+            "divisibility": "Divisibilidad (0-18, por defecto 18)"
+          }
+        },
+        "snippetCreateNonFungible": {
+          "name": "Crear colección NFT",
+          "description": "Crea una colección NFT con un primer NFT (#0#) y la deposita en tu cuenta.",
+          "fields": {
+            "account": "Cuenta de destino",
+            "name": "Nombre de la colección",
+            "nftName": "Nombre del primer NFT",
+            "nftDescription": "Descripción del primer NFT",
+            "nftImageUrl": "URL de la imagen del primer NFT"
+          }
         }
+      },
+      "blockCategories": {
+        "account": "Cuenta",
+        "annotation": "Anotación",
+        "invoke": "Invocación",
+        "bucket": "Buckets",
+        "asserts": "Comprobaciones",
+        "resource": "Recurso",
+        "proofs": "Proofs",
+        "address": "Direcciones",
+        "metadata": "Metadatos",
+        "escape": "Escape",
+        "snippets": "Snippets"
       }
     },
     "componentPanel": {
@@ -1592,6 +2008,10 @@
       "rolaOkHint": "Prueba de propiedad verificada",
       "rolaFailHint": "No se pudo verificar la prueba",
       "rawResponse": "Respuesta en crudo (JSON)"
+    },
+    "staking": {
+      "accountTitle": "Cuenta",
+      "sectionTitle": "Staking de la cuenta"
     }
   }
 }

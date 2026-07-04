@@ -6,6 +6,9 @@
 
 import { buildBadgeProofManifest } from './badge-proof-manifest';
 import { setStringMetadata } from './metadata-manifests';
+import { freezeVaultManifest, lockMetadataManifest, type FreezeFlag } from './resource-actions';
+
+const escapeStr = (text: string) => text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 export type TemplateFieldKind =
   | 'account'
@@ -29,6 +32,8 @@ export interface TemplateContext {
   xrdAddress: string;
   /** Native pool package address of the active network (for pool templates) */
   poolPackage: string;
+  /** Validator owner badge resource of the active network (owner/vote templates) */
+  validatorOwnerBadge: string;
 }
 
 export interface ManifestTemplate {
@@ -194,6 +199,248 @@ CALL_METHOD
 `.trim(),
   },
   {
+    id: 'stake-owner',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadge', kind: 'resource' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+    build: (values, ctx) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: v(values, 'ownerBadge'),
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${ctx.xrdAddress}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "stake_as_owner"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`,
+  },
+  {
+    id: 'unstake-owner',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadge', kind: 'resource' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'lsuResource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: v(values, 'ownerBadge'),
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "unstake"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`,
+  },
+  {
+    id: 'claim-stake',
+    icon: 'landmark',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'claimNft', kind: 'resource' },
+      { key: 'claimNftId', kind: 'nonFungibleId' },
+    ],
+    build: (values) => `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw_non_fungibles"
+    Address("${v(values, 'claimNft') || '{claimNft}'}")
+    Array<NonFungibleLocalId>(${(v(values, 'claimNftId') || '{claimNftId}')
+      .split(',')
+      .map((id) => `NonFungibleLocalId("${id.trim()}")`)
+      .join(', ')})
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${v(values, 'claimNft') || '{claimNft}'}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "claim_xrd"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`,
+  },
+  {
+    id: 'lock-owner-stake',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadge', kind: 'resource' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'lsuResource', kind: 'resource' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: v(values, 'ownerBadge'),
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "lock_owner_stake_units"
+    Bucket("bucket1")
+;
+`,
+  },
+  {
+    id: 'start-unlock-owner-stake',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadge', kind: 'resource' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: v(values, 'ownerBadge'),
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "start_unlock_owner_stake_units"
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+`,
+  },
+  {
+    id: 'finish-unlock-owner-stake',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadge', kind: 'resource' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: v(values, 'ownerBadge'),
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "finish_unlock_owner_stake_units"
+;
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;
+`,
+  },
+  {
+    id: 'signal-protocol-update',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'version', kind: 'text' },
+    ],
+    build: (values, ctx) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'account'),
+          resourceAddress: ctx.validatorOwnerBadge,
+          nonFungibleId: v(values, 'ownerBadgeId'),
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'validator') || '{validator}'}")
+    "signal_protocol_update_readiness"
+    "${escapeStr(v(values, 'version'))}"
+;
+`,
+  },
+  {
     id: 'mint-fungible',
     icon: 'coins',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
@@ -245,6 +492,236 @@ BURN_RESOURCE
     Bucket("bucket1")
 ;
 `,
+  },
+  {
+    id: 'mint-nft',
+    icon: 'image',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'nftId', kind: 'nonFungibleId' },
+      { key: 'name', kind: 'text' },
+      { key: 'description', kind: 'text', optional: true },
+      { key: 'imageUrl', kind: 'text', optional: true },
+      { key: 'to', kind: 'address' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+      ]) +
+      `
+MINT_NON_FUNGIBLE
+    Address("${v(values, 'resource')}")
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("${v(values, 'nftId')}") => Tuple(
+            Tuple(
+                "${escapeStr(v(values, 'name'))}",
+                "${escapeStr(v(values, 'description'))}",
+                "${escapeStr(v(values, 'imageUrl'))}"
+            )
+        )
+    )
+;
+CALL_METHOD
+    Address("${v(values, 'to')}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+`,
+  },
+  {
+    id: 'burn-nft',
+    icon: 'flame',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'resource', kind: 'resource' },
+      { key: 'nftIds', kind: 'nonFungibleId' },
+    ],
+    build: (values) => {
+      const ids = (v(values, 'nftIds') || '{nftIds}')
+        .split(',')
+        .map((id) => `NonFungibleLocalId("${id.trim()}")`)
+        .join(', ');
+      return `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw_non_fungibles"
+    Address("${v(values, 'resource') || '{resource}'}")
+    Array<NonFungibleLocalId>(${ids})
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${v(values, 'resource') || '{resource}'}")
+    Array<NonFungibleLocalId>(${ids})
+    Bucket("bucket1")
+;
+BURN_RESOURCE
+    Bucket("bucket1")
+;
+`;
+    },
+  },
+  {
+    id: 'update-nft-data',
+    icon: 'tags',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'resource', kind: 'address' },
+      { key: 'nftId', kind: 'nonFungibleId' },
+      { key: 'field', kind: 'text' },
+      { key: 'value', kind: 'text' },
+    ],
+    build: (values) => `
+CALL_METHOD
+    Address("${v(values, 'resource') || '{resource}'}")
+    "update_non_fungible_data"
+    NonFungibleLocalId("${v(values, 'nftId') || '{nftId}'}")
+    "${escapeStr(v(values, 'field'))}"
+    "${escapeStr(v(values, 'value'))}"
+;
+`,
+  },
+  {
+    id: 'update-nft-data-badge',
+    icon: 'tags',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'badgeNftId', kind: 'nonFungibleId', optional: true },
+      { key: 'resource', kind: 'address' },
+      { key: 'nftId', kind: 'nonFungibleId' },
+      { key: 'field', kind: 'text' },
+      { key: 'value', kind: 'text' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        {
+          accountAddress: v(values, 'badgeAccount'),
+          resourceAddress: v(values, 'badgeResource'),
+          nonFungibleId: v(values, 'badgeNftId') || undefined,
+        },
+      ]) +
+      `
+CALL_METHOD
+    Address("${v(values, 'resource') || '{resource}'}")
+    "update_non_fungible_data"
+    NonFungibleLocalId("${v(values, 'nftId') || '{nftId}'}")
+    "${escapeStr(v(values, 'field'))}"
+    "${escapeStr(v(values, 'value'))}"
+;
+`,
+  },
+  {
+    id: 'recall-token',
+    icon: 'undo',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'vault', kind: 'address' },
+      { key: 'amount', kind: 'decimal' },
+      { key: 'to', kind: 'address' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+      ]) +
+      `
+RECALL_FROM_VAULT
+    Address("${v(values, 'vault') || '{vault}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
+;
+CALL_METHOD
+    Address("${v(values, 'to') || '{to}'}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+`,
+  },
+  {
+    id: 'recall-nft',
+    icon: 'undo',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'vault', kind: 'address' },
+      { key: 'nftIds', kind: 'nonFungibleId' },
+      { key: 'to', kind: 'address' },
+    ],
+    build: (values) => {
+      const ids = (v(values, 'nftIds') || '{nftIds}')
+        .split(',')
+        .map((id) => `NonFungibleLocalId("${id.trim()}")`)
+        .join(', ');
+      return (
+        buildBadgeProofManifest([
+          { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+        ]) +
+        `
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("${v(values, 'vault') || '{vault}'}")
+    Array<NonFungibleLocalId>(${ids})
+;
+CALL_METHOD
+    Address("${v(values, 'to') || '{to}'}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+`
+      );
+    },
+  },
+  {
+    id: 'freeze-vault',
+    icon: 'undo',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'vault', kind: 'address' },
+      { key: 'flag', kind: 'choice', options: ['withdraw', 'deposit', 'burn', 'all'] },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+      ]) + freezeVaultManifest(v(values, 'vault'), (v(values, 'flag') || 'all') as FreezeFlag, true),
+  },
+  {
+    id: 'unfreeze-vault',
+    icon: 'undo',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'vault', kind: 'address' },
+      { key: 'flag', kind: 'choice', options: ['withdraw', 'deposit', 'burn', 'all'] },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+      ]) + freezeVaultManifest(v(values, 'vault'), (v(values, 'flag') || 'all') as FreezeFlag, false),
+  },
+  {
+    id: 'lock-metadata',
+    icon: 'tags',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'badgeAccount', kind: 'account' },
+      { key: 'badgeResource', kind: 'resource' },
+      { key: 'entity', kind: 'address' },
+      { key: 'metadataKey', kind: 'text' },
+    ],
+    build: (values) =>
+      buildBadgeProofManifest([
+        { accountAddress: v(values, 'badgeAccount'), resourceAddress: v(values, 'badgeResource') },
+      ]) + lockMetadataManifest(v(values, 'entity'), v(values, 'metadataKey')),
   },
   {
     id: 'set-metadata',
