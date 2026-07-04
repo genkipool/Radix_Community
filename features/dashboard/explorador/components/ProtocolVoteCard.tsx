@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, Copy, Check } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
 import { Pill } from '@/components/ui/Pill';
 import { EntityBadge } from './EntityBadge';
@@ -68,7 +68,7 @@ export function ProtocolVoteCard({
                     </svg>
                     <span className="truncate">{tt?.protocol_vote_label || 'Protocol Update Vote'}</span>
                 </span>
-                <Pill color="accent" title={protocolVersion} className="font-black tracking-widest uppercase px-3 max-w-full truncate">
+                <Pill color="accent" title={protocolVersion} className="font-black tracking-widest uppercase px-3 max-w-full truncate" style={{ color: 'color-mix(in srgb, var(--color-accent), var(--color-text-main) 40%)' }}>
                     {friendlyVersion}
                 </Pill>
             </h3>
@@ -83,26 +83,43 @@ export function ProtocolVoteCard({
                     </h5>
 
                     {validatorAddress
-                        ? <EntityBadge address={validatorAddress} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} />
+                        ? <div><EntityBadge address={validatorAddress} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} onResourceClick={onResourceClick} network={network} /></div>
                         : <p className="text-xs text-[var(--color-text-muted)] italic py-1">{tt?.protocol_vote_no_validator || 'No validator found in affected entities'}</p>
                     }
 
                     <div
-                        className="mt-3 flex items-center justify-between gap-2 px-2.5 h-8 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30"
+                        className="mt-3 flex flex-col gap-1.5 p-2.5 rounded-lg bg-[var(--color-accent)]/12 border border-[var(--color-accent)]/30"
                         title={protocolVersion}
                     >
-                        <span className="text-[9px] uppercase font-bold text-[var(--color-accent)] opacity-80 tracking-wide whitespace-nowrap">
-                            {tt?.protocol_vote_for || 'Voting for'}
-                        </span>
-                        <span className="text-xs font-bold text-[var(--color-accent)] font-mono translate-y-[0.5px] truncate min-w-0">
-                            {friendlyVersion}
-                        </span>
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                            <span className="text-[10px] uppercase font-black tracking-wide" style={{ color: 'color-mix(in srgb, var(--color-accent), var(--color-text-main) 40%)' }}>
+                                {tt?.protocol_vote_for || 'Voting for'}
+                            </span>
+                            <span className="text-xs font-black font-mono break-all text-right uppercase tracking-widest" style={{ color: 'color-mix(in srgb, var(--color-accent), var(--color-text-main) 40%)' }}>
+                                {friendlyVersion}
+                            </span>
+                        </div>
+                        {protocolVersion && protocolVersion.toLowerCase() !== friendlyVersion.toLowerCase() && (
+                            <div className="flex items-start justify-between gap-2 border-t border-[var(--color-accent)]/40 pt-1.5 mt-0.5">
+                                <span className="text-[11px] font-black font-mono break-all" style={{ color: 'color-mix(in srgb, var(--color-accent), var(--color-text-main) 40%)' }}>
+                                    {protocolVersion}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onCopy(protocolVersion); }}
+                                    className={`shrink-0 p-1 -m-1 rounded transition-colors ${copiedAddress === protocolVersion
+                                        ? 'text-green-500'
+                                        : 'text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20'
+                                        }`}
+                                    title="Copy hash"
+                                >
+                                    {copiedAddress === protocolVersion
+                                        ? <Check className="size-3.5" />
+                                        : <Copy className="size-3.5" />}
+                                </button>
+                            </div>
+                        )}
                     </div>
-                    {protocolVersion && protocolVersion.toLowerCase() !== friendlyVersion.toLowerCase() && (
-                        <p className="mt-1.5 px-0.5 text-[9px] font-mono break-all leading-snug text-[var(--color-text-muted)]">
-                            {protocolVersion}
-                        </p>
-                    )}
                 </div>
 
                 {/* RIGHT — Badge presenter */}
