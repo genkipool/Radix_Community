@@ -1,0 +1,437 @@
+{
+  "googleWallet": {
+    "hero": {
+      "badge": "Propuesta de integración: Google Wallet × Radix",
+      "slides": [
+        {
+          "h1a": "Google Wallet,",
+          "h1b": "con propiedad digital ",
+          "h1c": "real.",
+          "p": "Si Google Wallet generase cuentas Radix de forma nativa, cada entrada, abono o pase dejaría de ser una fila en la base de datos de un tercero para convertirse en un activo que el usuario posee de verdad. El mismo tap NFC de siempre, cero fricción y cero cripto visible: la blockchain se vuelve tan invisible como TCP/IP cuando envías un mensaje."
+        },
+        {
+          "h1a": "Un tap. Cero firmas.",
+          "h1b": "Entradas NFT validadas por ",
+          "h1c": "NFC.",
+          "p": "El usuario acerca el móvil al torno, incluso con la pantalla apagada. El lector consulta la red Radix en milisegundos, comprueba que esa cuenta sigue teniendo el NFT de la entrada y abre la puerta. Sin abrir apps, sin QRs, sin esperas y sin exponer ninguna clave privada."
+        },
+        {
+          "h1a": "Todos ganan.",
+          "h1b": "Fraude cero, royalties para el club, ",
+          "h1c": "ingresos para Google.",
+          "p": "Cada reventa reparte automáticamente un porcentaje al club y a Google mediante un swap atómico. El usuario compra y vende con su huella, el club recupera el control de su mercado secundario y Google factura infraestructura y validaciones. Y la blockchain, invisible."
+        }
+      ],
+      "btn_prev": "Slide anterior",
+      "btn_next": "Slide siguiente",
+      "aria_go": "Ir al slide",
+      "btn_flow": "Ver el flujo completo",
+      "btn_business": "El negocio para Google",
+      "panel": {
+        "title": "Validación en el torno: fricción cero",
+        "tooltip": "Lo que ocurre en los milisegundos entre acercar el móvil y que se abra el torno",
+        "comment1": "// 1. el lector despierta el pase NFC (VAS / HCE)",
+        "line1": "READ  pass_id → cuenta account_rdx1…x7f2",
+        "comment2": "// 2. el backend consulta la Gateway API de Radix",
+        "line2": "GET /state/non-fungible/location",
+        "comment3": "// 3. ¿la cuenta sigue teniendo el NFT de la entrada?",
+        "owner": "OWNER",
+        "check": "✓ CONFIRMADO",
+        "gate": "TORNO",
+        "open": "ABIERTO",
+        "footer": "0 firmas en la puerta · 0 claves expuestas · consulta de solo lectura"
+      },
+      "metric1_value": "0",
+      "metric1": "Firmas en la puerta: el usuario no toca la pantalla",
+      "metric2_value": "1 tap",
+      "metric2": "La misma experiencia NFC que Google Wallet ofrece hoy (VAS / HCE)",
+      "metric3_value": "0 XRD",
+      "metric3": "El usuario nunca compra cripto: las comisiones se delegan a nivel de protocolo",
+      "metric4_value": "100%",
+      "metric4": "Propiedad verificable en el ledger público, no en la base de datos de un tercero",
+      "illustration_caption": "Integración conceptual: La arquitectura de la Radix Wallet oficial puede ser implementada como solución de marca blanca, permitiendo que aplicaciones como Google Wallet adopten toda su tecnología nativa de forma invisible."
+    },
+    "problem": {
+      "label": "El problema",
+      "h2a": "El ticketing actual funciona…",
+      "h2b": "hasta que deja de hacerlo",
+      "sub": "QRs que se clonan con una captura de pantalla, reventa que enriquece a especuladores, entradas que viven en el servidor de otro y una Web3 que pide demasiado al gran público. Cuatro fallos estructurales que una billetera con cuentas Radix elimina de raíz.",
+      "cards": [
+        {
+          "title": "El QR es una captura de pantalla",
+          "desc": "Un código QR estático se copia, se reenvía y se revende a varias víctimas a la vez. Las tiqueteras lo mitigan con QRs dinámicos y apps propias, pero el fraude en accesos sigue costando millones y generando colas y conflictos en las puertas."
+        },
+        {
+          "title": "La reventa es un mercado negro",
+          "desc": "Una entrada comprada por 100 € se revende por 300 € y el sobreprecio se lo queda íntegro el especulador. El club no ve un céntimo del mercado secundario y el comprador final no tiene ninguna garantía de que el PDF que le venden sea real."
+        },
+        {
+          "title": "La entrada vive en el servidor de otro",
+          "desc": "En el modelo actual, Google Wallet solo muestra una copia: la entrada real es una fila en la base de datos de la tiquetera. Si ese servidor se cae, duplica entradas o la empresa desaparece, el usuario no posee absolutamente nada."
+        },
+        {
+          "title": "Web3 hoy pide demasiado",
+          "desc": "Frases semilla de 12 palabras, comprar tokens para pagar comisiones, firmar transacciones en la puerta del estadio… La autocustodia clásica es inviable para el público masivo. La adopción llegará cuando la blockchain sea invisible, no antes."
+        }
+      ]
+    },
+    "solution": {
+      "label": "La solución",
+      "h2a": "Propiedad real,",
+      "h2b": "experiencia de siempre",
+      "sub": "Cada fallo del modelo actual tiene una respuesta directa cuando la entrada es un NFT en Radix y Google Wallet pone la interfaz. El gesto del usuario no cambia; las garantías de todos los demás, sí.",
+      "cards": [
+        {
+          "title": "Del QR clonable al pase imposible de copiar",
+          "desc": "La entrada deja de ser una imagen: es un NFT en la cuenta del usuario. El pase NFC solo funciona si el ledger confirma en tiempo real que esa cuenta sigue teniendo el activo. Una captura de pantalla ya no vale nada, y una entrada usada se marca o se quema al instante."
+        },
+        {
+          "title": "De la reventa opaca al reparto automático",
+          "desc": "Las transferencias pasan por un componente del club que reparte cada pago entre vendedor, club y Google dentro de la misma transacción. El mercado secundario deja de ser un agujero negro y se convierte en ingresos legítimos, trazables y con las reglas que fije el emisor."
+        },
+        {
+          "title": "Del servidor de un tercero al ledger público",
+          "desc": "La fuente de verdad ya no es la base de datos de la tiquetera: es una red pública que cualquiera puede consultar en milisegundos. Si el organizador sufre una caída técnica o desaparece, el activo del usuario y todo su historial siguen siendo verificables."
+        },
+        {
+          "title": "De la fricción cripto a la invisibilidad total",
+          "desc": "Cuentas creadas en segundo plano, comisiones pagadas por Google o por el club y recuperación ligada a la cuenta de Google. El usuario nunca ve una frase semilla, un token ni una firma. Solo ve su entrada en Google Wallet, como siempre."
+        }
+      ]
+    },
+    "invisible": {
+      "label": "Tecnología invisible",
+      "h2a": "Del clic en «Comprar»",
+      "h2b": "al torno abierto",
+      "sub": "El usuario vive una compra Web2 normal y un tap NFC normal. Por debajo, un NFT en la red pública de Radix actúa como única fuente de verdad sobre quién posee la entrada. Así encajan las piezas, paso a paso.",
+      "steps": [
+        {
+          "title": "Compra Web2",
+          "desc": "El usuario paga con Google Pay en la web del club, como siempre. El componente Scrypto del club acuña el NFT de la entrada: asiento, fila, partido y reglas de uso definidas a nivel de recurso."
+        },
+        {
+          "title": "Cuenta invisible",
+          "desc": "Google Wallet deriva en segundo plano una Smart Account de Radix protegida por el hardware seguro del teléfono (Titan M2) o por custodia MPC ligada a la cuenta de Google. El usuario nunca ve una frase semilla."
+        },
+        {
+          "title": "Entrega con comisión delegada",
+          "desc": "El NFT viaja a la cuenta del usuario en una transacción donde Google o el club firman el pago de la comisión (lock_fee). El usuario solo ve: «Tu entrada se ha añadido a Google Wallet». Saldo cripto necesario: cero."
+        },
+        {
+          "title": "Prueba de propiedad + pase NFC",
+          "desc": "Antes del partido, la app verifica con ROLA (Radix Off-Ledger Authentication) que esa cuenta posee el NFT: una firma off-ledger, sin transacción ni comisión. Después emite un pase VAS/HCE temporal vinculado a la cuenta."
+        },
+        {
+          "title": "El torno decide leyendo el ledger",
+          "desc": "El lector NFC lee el pase, el backend pregunta a la Gateway API si el NFT sigue en esa cuenta y el torno se abre en milisegundos. Después, el club marca la entrada como usada o la quema con su admin badge, sin necesitar la firma del usuario: el emisor definió ese permiso al acuñar el recurso."
+        }
+      ]
+    },
+    "resale": {
+      "label": "Mercado secundario",
+      "h2a": "Vender la entrada a un contacto,",
+      "h2b": "sin riesgo y sin mercado negro",
+      "sub": "Si el usuario no puede ir, elige un contacto, fija el precio y al contacto le llega una notificación para comprar la entrada. El intercambio de dinero por NFT ocurre en una única transacción atómica: o se ejecuta todo, o no se ejecuta nada. Nadie puede engañar a nadie.",
+      "steps": [
+        {
+          "title": "Juan pulsa «Vender a un contacto»",
+          "desc": "Juan no puede ir al partido. Abre Google Wallet, toca su entrada, elige a María en su agenda y fija el precio: 300 €. No publica nada en ningún portal: la oferta va dirigida única y exclusivamente a la cuenta de María."
+        },
+        {
+          "title": "A María le llega una notificación",
+          "desc": "«Juan te ofrece su entrada para el partido por 300 €. ¿Aceptar?». Mientras decide, el componente Scrypto del club mantiene la entrada bloqueada: solo la cuenta de María puede llevársela, y solo si deposita el precio acordado."
+        },
+        {
+          "title": "María confirma con su huella",
+          "desc": "Paga con Google Pay y la pasarela convierte el importe a stablecoin dentro de la propia operación. Juan no adelanta ni un céntimo: los costes de la transacción van incluidos en el pago del comprador."
+        },
+        {
+          "title": "Intercambio atómico con reparto",
+          "desc": "En una única transacción se valida el pago, se reparte el importe (80% para Juan, 15% para el club y 5% para Google) y el NFT aparece en la Google Wallet de María. Si algo falla, todo revierte y cada uno conserva lo suyo."
+        }
+      ],
+      "strip": [
+        {
+          "value": "0",
+          "label": "Riesgo de contraparte: el intercambio dinero ↔ NFT es indivisible"
+        },
+        {
+          "value": "80%",
+          "label": "Para el vendedor: recupera su dinero por el canal oficial"
+        },
+        {
+          "value": "15%",
+          "label": "Royalties perpetuas para el club en cada reventa"
+        },
+        {
+          "value": "5%",
+          "label": "Ingreso recurrente para Google por infraestructura y pasarela"
+        }
+      ]
+    },
+    "whyRadix": {
+      "label": "Por qué Radix",
+      "h2a": "Seis capacidades nativas",
+      "h2b": "que otras redes no combinan",
+      "sub": "Cada pieza del flujo invisible depende de una capacidad que en Radix es nativa del protocolo, y que en otras redes exige contratos auxiliares, relayers y auditorías extra. Estas son las seis que lo hacen posible.",
+      "pillars": [
+        {
+          "tag": "Cuentas",
+          "title": "Smart Accounts nativas",
+          "desc": "En Radix una cuenta no es un par de claves: es un componente inteligente. Multifactor, rotación de claves y recuperación encajan de forma nativa con la custodia segura de Google (Titan M2, MPC, Passkeys) sin contratos de «account abstraction» añadidos."
+        },
+        {
+          "tag": "Comisiones",
+          "title": "Delegación de tarifas a nivel de protocolo",
+          "desc": "Cualquier firmante de una transacción puede ejecutar el lock_fee desde su propia cuenta. Google o el club pagan la comisión del usuario sin meta-transacciones, relayers ni paymasters: es el motivo por el que el usuario nunca necesita tener XRD."
+        },
+        {
+          "tag": "Identidad",
+          "title": "ROLA: probar propiedad sin gastar",
+          "desc": "Radix Off-Ledger Authentication permite demostrar con una firma que controlas una cuenta y lo que contiene, sin transacción, sin comisión y sin tocar el ledger. Es la pieza que convierte un NFT en un pase NFC emitible por un servidor."
+        },
+        {
+          "tag": "Activos",
+          "title": "NFTs como objetos nativos del motor",
+          "desc": "Los tokens no son saldos dentro de un contrato: son recursos físicos del Radix Engine que no pueden duplicarse ni perderse por un bug de un smart contract. Sus datos no fungibles pueden actualizarse («usada») por quien tenga el badge autorizado."
+        },
+        {
+          "tag": "Reglas",
+          "title": "Comportamientos definidos en el mint",
+          "desc": "Al acuñar el recurso, el emisor declara quién puede retirarlo, depositarlo, quemarlo o recuperarlo (recall). Forzar que toda transferencia pase por un componente que reparte royalties es configuración declarativa en Scrypto, no un estándar opcional que los marketplaces puedan ignorar."
+        },
+        {
+          "tag": "Escala",
+          "title": "De Babylon a Hyperscale",
+          "desc": "La mainnet actual ofrece finalidad en segundos y manifiestos deterministas: suficiente para despliegues reales de ticketing hoy. Y la iniciativa Hyperscale ya demostró en público 500.000+ TPS con atomicidad cross-shard, el margen para una salida mundial de entradas sin subastas de comisiones."
+        }
+      ],
+      "diff_title": "Donde Radix marca la diferencia: permisos y NFTs mutables",
+      "diff_p": "En la mayoría de redes, el comportamiento de un NFT vive en el código inmutable de un contrato: marcar una entrada como usada exige trucos o servidores centralizados, las royalties son una convención opcional y pagar el gas del usuario requiere infraestructura auxiliar. En Radix los activos son objetos nativos del motor y sus reglas las aplica la propia red. Para el ticketing, esa es exactamente la diferencia entre un parche y una solución.",
+      "diff_others_title": "En otras redes",
+      "diff_others": [
+        "Los metadatos del NFT son inmutables o dependen de un servidor centralizado: no hay una forma limpia de marcar una entrada como «usada»",
+        "Las royalties del mercado secundario son una convención opcional que cada marketplace decide si respeta",
+        "Quemar o recuperar un activo ya emitido exige contratos a medida y confiar en que no tengan fallos",
+        "Pagar las comisiones del usuario requiere relayers, paymasters y contratos auxiliares"
+      ],
+      "diff_radix_title": "En Radix",
+      "diff_radix": [
+        "Los datos no fungibles son mutables por diseño: el campo «usada» lo actualiza quien tiene el badge autorizado, sin la firma del usuario",
+        "Los permisos de mint, quema, recall, depósito y retiro se declaran al crear el recurso y los aplica la red, no un contrato",
+        "El emisor conserva exactamente los poderes que declaró en el mint: ni uno más, ni uno menos, y son visibles para cualquiera",
+        "La delegación de comisiones forma parte del protocolo: basta con que otra cuenta firme el lock_fee"
+      ]
+    },
+    "winwin": {
+      "label": "Todos ganan",
+      "h2a": "Usuario, club y Google:",
+      "h2b": "cada uno gana algo concreto",
+      "sub": "Este sistema no se impone porque la tecnología sea elegante, sino porque alinea los incentivos de los tres actores. Cada uno obtiene algo que hoy no tiene, y ninguno asume costes desproporcionados para conseguirlo.",
+      "cards": [
+        {
+          "title": "El usuario",
+          "desc": "Posee su entrada de verdad y puede vendérsela a un contacto con la misma facilidad que un pago móvil, por el canal oficial y sin riesgo de estafa. No aprende nada nuevo: su experiencia es idéntica a la de hoy, con más derechos, más seguridad y menos fraude."
+        },
+        {
+          "title": "El club o emisor",
+          "desc": "Cobra royalties de cada reventa por primera vez en su historia, elimina las entradas falsas, decide las reglas de su mercado secundario y sabe en tiempo real qué entradas son válidas. Y todo sin operar infraestructura blockchain propia: la contrata como servicio a Google Cloud."
+        },
+        {
+          "title": "Google",
+          "desc": "Convierte Google Wallet en el verificador de propiedad del mundo físico, factura nodos e infraestructura vía Google Cloud, cobra un porcentaje de cada validación y de cada reventa, y da una razón más para elegir Android. Un ingreso recurrente que Apple no puede copiar sin abrir su jardín cerrado."
+        }
+      ],
+      "cost_title": "Y la barrera de entrada es mínima",
+      "cost_sub": "La objeción habitual a cualquier proyecto blockchain es el coste. Aquí no aplica: la parte cara ya está construida, desplegada y amortizada.",
+      "cost": [
+        "Los tornos y lectores NFC de los estadios no se tocan: ya hablan VAS y HCE con las billeteras móviles",
+        "El backend del emisor solo cambia una cosa: en vez de consultar su base de datos, consulta la Gateway API de Radix",
+        "El componente Scrypto de ticketing son cientos de líneas auditables, no meses de desarrollo a medida",
+        "Leer el estado del ledger no cuesta gas: las validaciones en puerta son peticiones de solo lectura",
+        "Las comisiones de red que Google o el club delegan son fracciones de céntimo por transacción"
+      ]
+    },
+    "business": {
+      "label": "Mensaje para Google",
+      "h2a": "Google: tu billetera puede ser",
+      "h2b": "la capa de propiedad del mundo físico",
+      "sub": "Tienes la billetera en miles de millones de dispositivos Android, la nube que ya vende nodos blockchain y la pasarela de pagos con biometría. Integrar cuentas Radix convierte ese stack en el estándar mundial de emisión y verificación de activos reales, y abre cuatro líneas de ingresos que hoy no existen.",
+      "cards": [
+        {
+          "title": "Google Cloud como infraestructura de nodos",
+          "desc": "Google Cloud creó en 2022 su equipo de Digital Assets y ofrece Blockchain Node Engine: nodos gestionados que hoy sirven a redes como Ethereum y Solana. Añadir nodos empresariales de Radix de alta velocidad y vendérselos a Ticketmaster, FIFA o Live Nation es extender un producto existente, no inventar uno. Contratos de infraestructura millonarios y recurrentes."
+        },
+        {
+          "title": "Micro-ingresos por validación",
+          "desc": "Cada torno que se abre leyendo un móvil Android es una consulta de estado facturable al organizador del evento. A escala de estadios, cines, festivales y transporte en todo el mundo, fracciones de céntimo por validación se convierten en una línea de ingresos que crece con cada emisor que se suma."
+        },
+        {
+          "title": "Royalties del mercado secundario",
+          "desc": "Un porcentaje perpetuo de cada transferencia P2P de entradas, ejecutado automáticamente por el contrato inteligente, sin facturación ni persecución de impagos. Es el modelo App Store aplicado al ticketing mundial, con la diferencia de que aquí también ganan el club y el usuario."
+        },
+        {
+          "title": "El foso competitivo frente a Apple",
+          "desc": "Apple Wallet es un jardín cerrado. Google puede ofrecer emisión de activos de marca blanca, un SDK de Google Cloud que cualquier club, promotor o tiquetera integra en días, y convertir Google Wallet en la capa de identidad y propiedad del mundo físico: entradas hoy; abonos, llaves de hotel, titulaciones y garantías mañana."
+        }
+      ],
+      "strip": [
+        {
+          "value": "2022",
+          "label": "Google Cloud crea su Digital Assets Team y el Blockchain Node Engine"
+        },
+        {
+          "value": "~65K",
+          "label": "TPS de pico de las redes globales de tarjetas; Hyperscale demostró más de 7×"
+        },
+        {
+          "value": "0 €",
+          "label": "Coste cripto para el usuario final: las comisiones se delegan"
+        },
+        {
+          "value": "B2B2C",
+          "label": "Google cobra al emisor, no al usuario: el modelo que ya domina"
+        }
+      ]
+    },
+    "implementation": {
+      "label": "Implementación",
+      "h2a": "Las piezas ya existen.",
+      "h2b": "Solo falta conectarlas.",
+      "sub": "La mitad Web2 (pases NFC, HCE, VAS, tornos) es infraestructura de Google en producción desde hace años. La mitad Radix es open source y está documentada. Esto es lo que un equipo de ingeniería necesitaría tocar.",
+      "cards": [
+        {
+          "title": "Google Wallet API + HCE / VAS",
+          "desc": "Emitir pases, hablar con lectores físicos y validar en modo exprés es exactamente lo que la plataforma de pases de Google hace hoy. No hay que modificar nada del lado del torno: solo cambiar qué consulta el backend antes de autorizar.",
+          "linkLabel": "developers.google.com/wallet"
+        },
+        {
+          "title": "ROLA: verificación de propiedad",
+          "desc": "La autenticación off-ledger está resuelta: @radixdlt/rola en TypeScript para backends Node y radixdlt-rola en Rust como sustituto nativo. Verificar que «esta cuenta posee este NFT» son unas pocas líneas de servidor.",
+          "linkLabel": "github.com/radixdlt/rola"
+        },
+        {
+          "title": "Gateway API: el estado en tiempo real",
+          "desc": "La consulta del torno («¿sigue el NFT en la cuenta?») es una petición de solo lectura a la Gateway API. Para volumen enterprise, el Babylon Gateway es open source y puede autoalojarse en Google Cloud: la pieza que conecta con Blockchain Node Engine.",
+          "linkLabel": "docs.radixdlt.com",
+          "secondLinkLabel": "github.com/radixdlt/babylon-gateway"
+        },
+        {
+          "title": "Scrypto: el componente de ticketing",
+          "desc": "Mint de entradas, campo «usada» actualizable por badge, quema por el emisor, swap atómico con reparto 80/15/5 y precio máximo de reventa: todo son comportamientos de recursos y lógica de componente en Scrypto, un lenguaje basado en Rust orientado a activos.",
+          "linkLabel": "github.com/radixdlt/official-examples"
+        },
+        {
+          "title": "SDKs nativos para el backend",
+          "desc": "El Radix Engine Toolkit y el dApp Toolkit cubren la integración en TypeScript, y el RadixDLT Rust SDK aporta los bloques nativos en Rust para servicios de alta escala: ROLA, derivación de direcciones, keystore cifrado y firma de transacciones vía Gateway.",
+          "linkLabel": "github.com/genkipool/radixdlt-rust-sdk"
+        },
+        {
+          "title": "Delegación de comisiones",
+          "desc": "El manifiesto de transacción permite que una cuenta corporativa ejecute lock_fee mientras el activo se mueve hacia el usuario. Es una capacidad del protocolo Babylon, documentada y en producción. No requiere infraestructura adicional de relayers.",
+          "linkLabel": "docs.radixdlt.com/docs/transaction-manifest"
+        }
+      ]
+    },
+    "adoption": {
+      "label": "Hoja de ruta",
+      "h2a": "Cómo llevar Radix a Google Wallet,",
+      "h2b": "paso a paso.",
+      "sub": "Una ruta incremental donde cada fase se valida con los resultados de la anterior. No hace falta apostar la billetera entera el primer día: se empieza con una demo y se termina con un producto mundial.",
+      "guideTitle": "Guía paso a paso",
+      "steps": [
+        {
+          "num": "01",
+          "title": "Prueba de concepto",
+          "desc": "App Android con HCE, componente Scrypto en Stokenet (la testnet de Radix) y un torno de demostración. Un vídeo del móvil con la pantalla apagada abriendo la puerta vale más que cualquier presentación."
+        },
+        {
+          "num": "02",
+          "title": "Piloto con un emisor real",
+          "desc": "Un club o promotor emite un lote de entradas NFT para un evento acotado. ROLA y emisión de pases en producción, métricas de validación en puerta y comparativa de fraude frente al QR."
+        },
+        {
+          "num": "03",
+          "title": "Cuentas Radix en Google Wallet",
+          "desc": "Derivación de Smart Accounts en segundo plano con custodia ligada a la cuenta de Google. El usuario recibe y envía activos reales sin saber que existe una blockchain."
+        },
+        {
+          "num": "04",
+          "title": "Reventa entre contactos",
+          "desc": "Se activa el botón «Vender a un contacto» con swap atómico y reparto de royalties. El mercado secundario oficial empieza a generar ingresos para los emisores y para Google."
+        },
+        {
+          "num": "05",
+          "title": "Radix en Blockchain Node Engine",
+          "desc": "Nodos y gateways gestionados en Google Cloud, SDK de ticketing de marca blanca y facturación por validación. El Digital Assets Team convierte la integración en un producto global."
+        }
+      ],
+      "haveTitle": "Lo que Google ya tiene en producción",
+      "have": [
+        "Pases NFC con HCE y VAS funcionando en millones de tornos y lectores",
+        "Google Pay como pasarela de pago con confirmación biométrica",
+        "Hardware seguro (Titan M2) y experiencia en custodia de claves y Passkeys",
+        "Google Cloud con su equipo de Digital Assets y el Blockchain Node Engine",
+        "Distribución total: Google Wallet preinstalada en miles de millones de Android"
+      ],
+      "resourcesTitle": "Recursos open source para empezar hoy",
+      "tip": "Por dónde empezar:",
+      "tipDesc": "el equipo de Google Cloud Digital Assets ya evalúa integraciones Web3. Una prueba de concepto funcional con un torno real es la mejor carta de presentación.",
+      "unlocksTitle": "Lo que desbloquea después del ticketing",
+      "unlocks": [
+        "Llaves de hotel y accesos de oficina con caducidad programada",
+        "Abonos de transporte y de temporada transferibles con las reglas del emisor",
+        "Diplomas y certificaciones verificables por cualquier empresa en segundos",
+        "Garantías de producto que viajan con el objeto al venderlo de segunda mano",
+        "Programas de fidelización con puntos que el usuario posee de verdad"
+      ]
+    },
+    "rigor": {
+      "label": "Rigor técnico",
+      "h2a": "Qué es real hoy",
+      "h2b": "y qué habría que construir",
+      "sub": "Una propuesta seria no infla lo que la tecnología hace. Esta página distingue con claridad lo que ya está en producción, contrastado con la documentación y los repositorios públicos de Radix, de lo que un equipo de ingeniería tendría que construir.",
+      "today_title": "Disponible hoy, en producción",
+      "today": [
+        "ROLA (autenticación off-ledger) con librerías oficiales en TypeScript y nativas en Rust",
+        "Delegación de comisiones en el manifiesto de transacción, nativa del protocolo Babylon",
+        "NFTs como recursos nativos con datos actualizables, quema y recall controlados por badges",
+        "Gateway API pública con consultas de estado en milisegundos y gateway autoalojable",
+        "Pases NFC de Google Wallet con HCE/VAS y validación sin desbloquear el teléfono",
+        "Royalties y restricciones de transferencia aplicadas a nivel de recurso, no como estándar opcional"
+      ],
+      "build_title": "Habría que construirlo",
+      "build": [
+        "La derivación de cuentas Radix dentro de Google Wallet (custodia MPC/Titan ligada a la cuenta de Google)",
+        "El servicio que vincula la verificación ROLA con la emisión de pases VAS",
+        "El componente Scrypto de ticketing con reparto de royalties y reglas de reventa por emisor",
+        "El soporte de Radix en Blockchain Node Engine y el SDK de marca blanca para emisores"
+      ]
+    },
+    "cta": {
+      "h2a": "La blockchain que gane será",
+      "h2b": "invisible para el usuario.",
+      "sub": "Propiedad real para el usuario, fraude cero para el emisor e ingresos recurrentes para la plataforma, con la experiencia de un tap NFC de toda la vida. Las piezas existen y son open source: lo único que falta es conectarlas.",
+      "btn_hyperscale": "Descubre cómo escala Radix",
+      "btn_sdk": "Explora los SDKs en GitHub"
+    }
+  },
+  "seo": {
+    "googleWallet": {
+      "title": "Google Wallet × Radix | Propiedad digital invisible: entradas NFT con tap NFC",
+      "description": "Cómo Google Wallet podría integrar cuentas de Radix DLT para emitir entradas como NFTs con validación NFC sin fricción: ROLA, delegación de comisiones, venta a contactos con swaps atómicos y royalties, y el modelo de negocio para Google Cloud.",
+      "keywords": [
+        "Google Wallet Radix",
+        "entradas NFT NFC",
+        "blockchain invisible",
+        "ROLA autenticación Radix",
+        "delegación de comisiones Radix",
+        "ticketing blockchain",
+        "swap atómico reventa entradas",
+        "Google Cloud Blockchain Node Engine",
+        "NFT mutables Radix",
+        "billetera Web2.5"
+      ]
+    }
+  }
+}

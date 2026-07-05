@@ -4,6 +4,7 @@ export const NAV_LINKS = [
     path: '/#problema',
     sublinks: [
       { key: 'hyperscale', path: '/hyperscale' },
+      { key: 'google_wallet', path: '/google-wallet' },
       { key: 'infrastructure', path: '/infrastructure' },
       { key: 'dapps', path: '/dapps' },
       { key: 'games', path: '/games' },

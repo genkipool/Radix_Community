@@ -1,0 +1,12 @@
+export { default as Hero } from './sections/Hero';
+export { default as Problem } from './sections/Problem';
+export { default as Solution } from './sections/Solution';
+export { default as InvisibleFlow } from './sections/InvisibleFlow';
+export { default as Resale } from './sections/Resale';
+export { default as WhyRadix } from './sections/WhyRadix';
+export { default as WinWin } from './sections/WinWin';
+export { default as Business } from './sections/Business';
+export { default as Implementation } from './sections/Implementation';
+export { default as AdoptionPath } from './sections/AdoptionPath';
+export { default as Rigor } from './sections/Rigor';
+export { default as CTAFinal } from './sections/CTAFinal';

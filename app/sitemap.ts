@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '/blog',
         '/community',
         '/hyperscale',
+        '/google-wallet',
         '/infrastructure',
         '/dashboard'
     ]
