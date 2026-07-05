@@ -56,6 +56,9 @@ export async function fetchEntityDetails(
       gateway.state.innerClient.stateEntityDetails({
         stateEntityDetailsRequest: {
           addresses: [address],
+          // Vault aggregation: amounts and NFT ids arrive inside vaults.items,
+          // which mapHoldings and non_fungible_include_nfids depend on.
+          aggregation_level: 'Vault',
           opt_ins: {
             explicit_metadata: RESOURCE_METADATA_KEYS,
             ancestor_identities: false,

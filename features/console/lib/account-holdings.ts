@@ -9,16 +9,18 @@ import type { AccountHoldings, FungibleHolding, NonFungibleHolding } from '../ty
 export interface GatewayResourceItem {
   resource_address: string;
   explicit_metadata?: { items?: GatewayMetadataItem[] };
+  /** Present with aggregation_level "Global" — the amount comes on the item itself. */
+  amount?: string | number;
+  /** Present with aggregation_level "Vault" — amounts/ids come per vault. */
   vaults?: {
     items?: Array<{ vault_address?: string; amount?: string; total_count?: number; items?: string[] }>;
   };
 }
 
 function sumVaultAmounts(item: GatewayResourceItem): string {
-  const total = (item.vaults?.items ?? []).reduce(
-    (acc, vault) => acc + Number(vault.amount ?? 0),
-    0,
-  );
+  const vaults = item.vaults?.items;
+  if (!vaults) return String(item.amount ?? 0);
+  const total = vaults.reduce((acc, vault) => acc + Number(vault.amount ?? 0), 0);
   return String(total);
 }
 
