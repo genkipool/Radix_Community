@@ -1,19 +1,19 @@
 {
   "hyperscale": {
     "hero": {
-      "badge": "Hyperscale — Iniciativa de escalabilidad lineal",
+      "badge": "Hyperscale - Iniciativa de escalabilidad lineal",
       "slides": [
         {
           "h1a": "500.000 TPS. Sostenidos.",
           "h1b": "Escalabilidad sin ",
           "h1c": "compromisos.",
-          "p": "El 31 de enero de 2026, más de 590 nodos de la comunidad sostuvieron más de medio millón de transacciones DeFi reales por segundo — con picos por encima de 800.000 — preservando la composabilidad atómica en 128 shards. No fue una simulación: fue una prueba pública y reproducible sobre hardware convencional."
+          "p": "El 31 de enero de 2026, más de 590 nodos de la comunidad sostuvieron más de medio millón de transacciones DeFi reales por segundo - con picos por encima de 800.000 - preservando la composabilidad atómica en 128 shards. No fue una simulación: fue una prueba pública y reproducible sobre hardware convencional."
         },
         {
           "h1a": "Caudal de red de tarjetas.",
           "h1b": "Finalidad de liquidación en ",
           "h1c": "segundos.",
-          "p": "Los bancos pueden liquidar depósitos tokenizados, RWAs y CBDCs con Delivery-versus-Payment atómico garantizado a escala de internet. Sin ejecuciones parciales, sin riesgo de contraparte y con un margen de capacidad muy superior al de las redes globales de tarjetas — incluso en horas punta."
+          "p": "Los bancos pueden liquidar depósitos tokenizados, RWAs y CBDCs con Delivery-versus-Payment atómico garantizado a escala de internet. Sin ejecuciones parciales, sin riesgo de contraparte y con un margen de capacidad muy superior al de las redes globales de tarjetas - incluso en horas punta."
         },
         {
           "h1a": "Máquinas pagando a máquinas.",
@@ -32,7 +32,7 @@
         "tooltip": "Flujo real de una transacción cross-shard, tal y como se validó en la prueba pública de enero de 2026",
         "comment1": "// la tx declara sus substates: shards 0x2E y 0x71",
         "comment2": "// cada shard ejecuta de forma independiente y vota",
-        "comment3": "// certificados intercambiados — resultado unánime",
+        "comment3": "// certificados intercambiados - resultado unánime",
         "lock": "LOCK",
         "exec": "EXEC",
         "cert": "TX_CERTIFICATE",
@@ -54,8 +54,8 @@
       "label": "Prueba pública de escala",
       "h2a": "Medio millón de TPS,",
       "h2b": "verificados en público",
-      "sub": "La prueba pública final de Hyperscale — 31 de enero de 2026 — cerró la fase interina con resultados que cualquiera puede reproducir. Transacciones de swap DeFi reales, hardware de la comunidad y atomicidad preservada en todas y cada una de las transacciones.",
-      "date_badge": "Prueba pública final — 31 de enero de 2026 · Resultados publicados el 20 de febrero de 2026",
+      "sub": "La prueba pública final de Hyperscale - 31 de enero de 2026 - cerró la fase interina con resultados que cualquiera puede reproducir. Transacciones de swap DeFi reales, hardware de la comunidad y atomicidad preservada en todas y cada una de las transacciones.",
+      "date_badge": "Prueba pública final - 31 de enero de 2026 · Resultados publicados el 20 de febrero de 2026",
       "stats": [
         { "value": "500.000+", "label": "TPS sostenidos", "detail": "Rendimiento estable en el conjunto de la red" },
         { "value": "800.000+", "label": "TPS de pico", "detail": "Capacidad en ráfaga con swaps atómicos reales" },
@@ -63,7 +63,7 @@
         { "value": "0", "label": "Violaciones de atomicidad", "detail": "Cada transacción se completó íntegra o se revirtió íntegra" }
       ],
       "linear_title": "Escalabilidad lineal, confirmada",
-      "linear_sub": "Duplicar el número de shards duplicó el rendimiento — la predicción que define la arquitectura. El rendimiento por shard se mantuvo constante al crecer la red.",
+      "linear_sub": "Duplicar el número de shards duplicó el rendimiento - la predicción que define la arquitectura. El rendimiento por shard se mantuvo constante al crecer la red.",
       "bar64_label": "64 shards",
       "bar64_value": "~250.000 TPS",
       "bar128_label": "128 shards",
@@ -71,11 +71,11 @@
       "facts": [
         {
           "title": "Transacciones reales, no transferencias",
-          "desc": "La carga de trabajo usó swaps DeFi atómicos cross-shard — la clase de transacción más exigente — en lugar de transferencias simples que inflan los números de los benchmarks."
+          "desc": "La carga de trabajo usó swaps DeFi atómicos cross-shard - la clase de transacción más exigente - en lugar de transferencias simples que inflan los números de los benchmarks."
         },
         {
           "title": "Hardware convencional",
-          "desc": "Los validadores corrieron en máquinas de 4 núcleos y 16 GB. La comunidad participó tanto desde servidores de datacenter como desde portátiles de escritorio — sin hardware especializado."
+          "desc": "Los validadores corrieron en máquinas de 4 núcleos y 16 GB. La comunidad participó tanto desde servidores de datacenter como desde portátiles de escritorio - sin hardware especializado."
         },
         {
           "title": "El consenso no fue el cuello de botella",
@@ -83,7 +83,7 @@
         },
         {
           "title": "Abierto y reproducible",
-          "desc": "El código, el tooling, los logs y la documentación se publicaron en febrero de 2026 para que los resultados puedan verificarse de forma independiente — cerrando la fase interina de la Fundación."
+          "desc": "El código, el tooling, los logs y la documentación se publicaron en febrero de 2026 para que los resultados puedan verificarse de forma independiente - cerrando la fase interina de la Fundación."
         }
       ]
     },
@@ -93,7 +93,7 @@
       "h2b": "a la ingeniería de Xi'an",
       "sub": "Una década de investigación en consenso, validada en público a escala, que ahora la comunidad está reconstruyendo como software de producción. Estas son las piezas y cómo encajan entre sí.",
       "note_title": "Un objetivo, dos generaciones de diseño",
-      "note_p": "Cerberus (revisado por pares en 2020) y la prueba Hyperscale de 2026 validaron el objetivo: escalabilidad lineal con atomicidad cross-shard. Xi'an es una reescritura limpia en Rust — hyperscale-rs — que persigue las mismas garantías con un diseño de consenso nuevo: cadenas de shard HotStuff-2 coordinadas por la beacon chain sin líder POLARIS. Las métricas de los prototipos anteriores no deben atribuirse a Xi'an, ni al revés.",
+      "note_p": "Cerberus (revisado por pares en 2020) y la prueba Hyperscale de 2026 validaron el objetivo: escalabilidad lineal con atomicidad cross-shard. Xi'an es una reescritura limpia en Rust - hyperscale-rs - que persigue las mismas garantías con un diseño de consenso nuevo: cadenas de shard HotStuff-2 coordinadas por la beacon chain sin líder POLARIS. Las métricas de los prototipos anteriores no deben atribuirse a Xi'an, ni al revés.",
       "pillars": [
         {
           "tag": "Base de investigación",
@@ -102,18 +102,18 @@
         },
         {
           "tag": "Beacon chain",
-          "title": "POLARIS — BFT sin líder",
-          "desc": "Un protocolo de consenso por prefijos con resistencia a la censura formalmente demostrada (arXiv:2602.02892). Sin líder no hay un punto único de censura — los comités se sortean con aleatoriedad verificable respaldada por BLS."
+          "title": "POLARIS - BFT sin líder",
+          "desc": "Un protocolo de consenso por prefijos con resistencia a la censura formalmente demostrada (arXiv:2602.02892). Sin líder no hay un punto único de censura - los comités se sortean con aleatoriedad verificable respaldada por BLS."
         },
         {
           "tag": "Resharding en vivo",
           "title": "Sharding adaptativo",
-          "desc": "Los shards se dividen bajo carga y se fusionan cuando baja la demanda — sin detener la red. El trabajo en curso se traspasa a los shards hijos en una frontera certificada. Primera versión completada en junio de 2026."
+          "desc": "Los shards se dividen bajo carga y se fusionan cuando baja la demanda - sin detener la red. El trabajo en curso se traspasa a los shards hijos en una frontera certificada. Primera versión completada en junio de 2026."
         },
         {
           "tag": "Modelo de estado",
           "title": "Trie de Merkle global unificado",
-          "desc": "Todo el estado vive en un único Jellyfish Merkle Tree global; cada shard posee un subárbol de prefijo. Las divisiones y fusiones son operaciones lógicas — sin migración de datos, sin reindexado, sin paradas."
+          "desc": "Todo el estado vive en un único Jellyfish Merkle Tree global; cada shard posee un subárbol de prefijo. Las divisiones y fusiones son operaciones lógicas - sin migración de datos, sin reindexado, sin paradas."
         },
         {
           "tag": "Ejecución",
@@ -131,7 +131,7 @@
       "steps": [
         {
           "title": "Declarar",
-          "desc": "La transacción declara por adelantado qué substates lee y escribe, así los shards que toca se conocen de forma determinista — sin tabla de rutas, sin coordinador."
+          "desc": "La transacción declara por adelantado qué substates lee y escribe, así los shards que toca se conocen de forma determinista - sin tabla de rutas, sin coordinador."
         },
         {
           "title": "Bloquear",
@@ -146,7 +146,7 @@
           "desc": "Cada shard vota localmente el resultado y produce un certificado de ejecución. Los certificados se intercambian entre todos los shards implicados."
         },
         {
-          "title": "Commit — o fallo limpio",
+          "title": "Commit - o fallo limpio",
           "desc": "Si todos los shards llegaron al mismo resultado, un certificado de transacción confirma los cambios de forma atómica. Cualquier desacuerdo significa sin certificado no hay commit: la transacción falla limpiamente, sin estado parcial."
         }
       ]
@@ -155,15 +155,15 @@
       "label": "Para instituciones financieras",
       "h2a": "Escala que resuelve",
       "h2b": "problemas reales de liquidación",
-      "sub": "Los depósitos tokenizados, los RWAs y las CBDCs solo funcionan si el ledger subyacente puede absorber el volumen de los sistemas de pago reales — sin partir jamás una operación en una pata pagada y otra sin entregar.",
+      "sub": "Los depósitos tokenizados, los RWAs y las CBDCs solo funcionan si el ledger subyacente puede absorber el volumen de los sistemas de pago reales - sin partir jamás una operación en una pata pagada y otra sin entregar.",
       "cards": [
         {
           "title": "DvP atómico a escala de mercado",
-          "desc": "El pago y la entrega se liquidan como un único evento indivisible, incluso cuando el efectivo y el activo viven en shards distintos. A 500.000 TPS la garantía es idéntica a la de una sola transacción: liquidación íntegra o reversión íntegra. El riesgo de contraparte no se reduce — se elimina."
+          "desc": "El pago y la entrega se liquidan como un único evento indivisible, incluso cuando el efectivo y el activo viven en shards distintos. A 500.000 TPS la garantía es idéntica a la de una sola transacción: liquidación íntegra o reversión íntegra. El riesgo de contraparte no se reduce - se elimina."
         },
         {
           "title": "Margen por encima de las redes de tarjetas",
-          "desc": "Las redes globales de tarjetas alcanzan picos de unas 65.000 transacciones por segundo. La prueba pública de 2026 sostuvo más de siete veces esa cifra con swaps reales — y la capacidad crece linealmente añadiendo shards, de modo que los volúmenes de depósitos tokenizados y CBDCs nunca compiten por el espacio."
+          "desc": "Las redes globales de tarjetas alcanzan picos de unas 65.000 transacciones por segundo. La prueba pública de 2026 sostuvo más de siete veces esa cifra con swaps reales - y la capacidad crece linealmente añadiendo shards, de modo que los volúmenes de depósitos tokenizados y CBDCs nunca compiten por el espacio."
         },
         {
           "title": "Ejecución determinista para cumplimiento",
@@ -171,14 +171,14 @@
         },
         {
           "title": "Resiliencia medida en décadas",
-          "desc": "Miles de validadores independientes sobre hardware convencional, degradación controlada si un shard pierde liveness y una ruta de criptografía post-cuántica diseñada en la arquitectura — ciclos de vida de infraestructura a la altura de los horizontes bancarios."
+          "desc": "Miles de validadores independientes sobre hardware convencional, degradación controlada si un shard pierde liveness y una ruta de criptografía post-cuántica diseñada en la arquitectura - ciclos de vida de infraestructura a la altura de los horizontes bancarios."
         }
       ],
       "strip": [
         { "value": "T+0", "label": "Finalidad de liquidación en segundos, no en días" },
         { "value": "24/7", "label": "Sin ventanas de proceso por lotes ni horas de corte" },
         { "value": "7×", "label": "Rendimiento demostrado frente a los picos de las redes de tarjetas" },
-        { "value": "0", "label": "Ejecuciones parciales — la atomicidad es a nivel de protocolo" }
+        { "value": "0", "label": "Ejecuciones parciales - la atomicidad es a nivel de protocolo" }
       ]
     },
     "ai": {
@@ -197,16 +197,16 @@
         },
         {
           "title": "Un ledger que los agentes pueden leer",
-          "desc": "A través del Model Context Protocol, los agentes de IA consultan el ledger de Radix directamente — saldos, transacciones, estado on-chain — sin intermediario humano ni una integración a medida por modelo."
+          "desc": "A través del Model Context Protocol, los agentes de IA consultan el ledger de Radix directamente - saldos, transacciones, estado on-chain - sin intermediario humano ni una integración a medida por modelo."
         },
         {
           "title": "Intención en la que las máquinas pueden confiar",
-          "desc": "Los manifiestos de transacción declaran los resultados por adelantado y se ejecutan de forma atómica: sin firma a ciegas, sin ataques sandwich, sin ambigüedad. Los agentes autónomos necesitan resultados deterministas — exactamente lo que ofrecen las transacciones atómicas orientadas a activos."
+          "desc": "Los manifiestos de transacción declaran los resultados por adelantado y se ejecutan de forma atómica: sin firma a ciegas, sin ataques sandwich, sin ambigüedad. Los agentes autónomos necesitan resultados deterministas - exactamente lo que ofrecen las transacciones atómicas orientadas a activos."
         }
       ],
-      "quote_p": "Si quieres construir una blockchain de capa 1 capaz de soportar 100 millones de transacciones por segundo — llámanos.",
-      "quote_author": "Matthew Prince, CEO de Cloudflare — Bankless, mayo de 2026",
-      "quote_note": "Cloudflare gestiona alrededor de 500 millones de peticiones por segundo. Ninguna cadena de capacidad fija puede alcanzar ese listón — solo una arquitectura que añade rendimiento añadiendo shards puede crecer hacia él.",
+      "quote_p": "Si quieres construir una blockchain de capa 1 capaz de soportar 100 millones de transacciones por segundo - llámanos.",
+      "quote_author": "Matthew Prince, CEO de Cloudflare - Bankless, mayo de 2026",
+      "quote_note": "Cloudflare gestiona alrededor de 500 millones de peticiones por segundo. Ninguna cadena de capacidad fija puede alcanzar ese listón - solo una arquitectura que añade rendimiento añadiendo shards puede crecer hacia él.",
       "strip": [
         { "value": "500M", "label": "Peticiones por segundo en la red de Cloudflare hoy" },
         { "value": "100M", "label": "TPS que Cloudflare señala como listón para liquidar a escala web" },
@@ -223,7 +223,7 @@
         {
           "date": "31 de enero de 2026",
           "title": "Prueba pública final",
-          "desc": "Más de 500.000 TPS sostenidos con picos por encima de 800.000, en 590+ nodos de la comunidad y 128 shards — con swaps cross-shard reales."
+          "desc": "Más de 500.000 TPS sostenidos con picos por encima de 800.000, en 590+ nodos de la comunidad y 128 shards - con swaps cross-shard reales."
         },
         {
           "date": "Febrero de 2026",
@@ -260,7 +260,7 @@
         {
           "tag": "M3",
           "title": "Gateway y Wallet",
-          "desc": "Reescritura del gateway en Rust y conectividad con la Radix Wallet — la primera interacción de usuario normal con Xi'an.",
+          "desc": "Reescritura del gateway en Rust y conectividad con la Radix Wallet - la primera interacción de usuario normal con Xi'an.",
           "eta": "Est. abril 2027",
           "status": "planned"
         },
@@ -287,7 +287,7 @@
       "label": "Open source y verificable",
       "h2a": "No te fíes de los números.",
       "h2b": "Verifícalos.",
-      "sub": "Todo — código, investigación, logs de las pruebas — es público. Las afirmaciones de escalabilidad de esta página pueden contrastarse con los repositorios y papers de abajo.",
+      "sub": "Todo - código, investigación, logs de las pruebas - es público. Las afirmaciones de escalabilidad de esta página pueden contrastarse con los repositorios y papers de abajo.",
       "cards": [
         {
           "title": "hyperscale-rs",
@@ -301,7 +301,7 @@
         },
         {
           "title": "El paper de investigación",
-          "desc": "\"Prefix Consensus for Censorship Resistant BFT\" (Xiang, Tonkikh, Spiegelman, 2026) — el fundamento formal del consenso sin líder de POLARIS.",
+          "desc": "\"Prefix Consensus for Censorship Resistant BFT\" (Xiang, Tonkikh, Spiegelman, 2026) - el fundamento formal del consenso sin líder de POLARIS.",
           "linkLabel": "arxiv.org/abs/2602.02892"
         },
         {
@@ -310,12 +310,12 @@
           "linkLabel": "radix.wiki"
         }
       ],
-      "license_note": "La base de código de Xi'an tiene licencia Apache 2.0 — un activo de la comunidad, auditable de forma independiente por cualquier institución o investigador."
+      "license_note": "La base de código de Xi'an tiene licencia Apache 2.0 - un activo de la comunidad, auditable de forma independiente por cualquier institución o investigador."
     },
     "cta": {
       "h2a": "La escala ya no es",
       "h2b": "el cuello de botella.",
-      "sub": "Tanto si liquidas activos tokenizados para un banco como si construyes agentes que pagan por consulta — la arquitectura que absorbe ambas cosas se está construyendo en abierto, hoy.",
+      "sub": "Tanto si liquidas activos tokenizados para un banco como si construyes agentes que pagan por consulta - la arquitectura que absorbe ambas cosas se está construyendo en abierto, hoy.",
       "btn_docs": "Explora la documentación",
       "btn_github": "Sigue el desarrollo en GitHub"
     }

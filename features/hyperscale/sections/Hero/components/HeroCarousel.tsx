@@ -90,17 +90,20 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
         }
       `}</style>
       {/* Slides */}
-      <div className="relative h-[340px] sm:h-[300px] mt-8">
+      <div className="grid mt-8">
         {slides.map((slide, idx) => {
-          const isVisible = activeIdx === idx || exitingIdx === idx;
-          if (!isVisible) return null;
+          const isVisible = activeIdx === idx || exitingIdx === idx || targetIdx === idx;
 
           const isExiting = exitingIdx === idx;
+          const isEntering = targetIdx === idx;
+          
+          const animationClass = isExiting ? 'animate-hero-out' : (isEntering ? 'animate-hero-in' : '');
+          const hiddenClass = !isVisible ? 'opacity-0 invisible pointer-events-none' : '';
 
           return (
             <div
               key={slide.h1a}
-              className={`absolute inset-0 flex flex-col pt-4 ${isExiting ? 'animate-hero-out' : (targetIdx !== null ? 'animate-hero-in' : '')}`}
+              className={`col-start-1 row-start-1 flex flex-col pt-4 ${animationClass} ${hiddenClass}`}
               onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
               onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
             >

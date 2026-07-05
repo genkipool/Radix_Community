@@ -1,19 +1,19 @@
 {
   "hyperscale": {
     "hero": {
-      "badge": "Hyperscale — Linear Scalability Initiative",
+      "badge": "Hyperscale - Linear Scalability Initiative",
       "slides": [
         {
           "h1a": "500,000 TPS. Sustained.",
           "h1b": "Scalability without ",
           "h1c": "compromise.",
-          "p": "On January 31, 2026, over 590 community nodes sustained more than half a million real DeFi transactions per second — with peaks above 800,000 — while preserving atomic composability across 128 shards. Not a simulation: a public, reproducible test on commodity hardware."
+          "p": "On January 31, 2026, over 590 community nodes sustained more than half a million real DeFi transactions per second - with peaks above 800,000 - while preserving atomic composability across 128 shards. Not a simulation: a public, reproducible test on commodity hardware."
         },
         {
           "h1a": "Card-network throughput.",
           "h1b": "Settlement finality in ",
           "h1c": "seconds.",
-          "p": "Banks can settle tokenized deposits, RWAs and CBDCs with guaranteed atomic Delivery-versus-Payment at internet scale. No partial executions, no counterparty risk, and capacity headroom far beyond global card networks — even at peak volume."
+          "p": "Banks can settle tokenized deposits, RWAs and CBDCs with guaranteed atomic Delivery-versus-Payment at internet scale. No partial executions, no counterparty risk, and capacity headroom far beyond global card networks - even at peak volume."
         },
         {
           "h1a": "Machines paying machines.",
@@ -32,7 +32,7 @@
         "tooltip": "Real cross-shard transaction flow, as validated in the January 2026 public test",
         "comment1": "// tx declares its substates: shards 0x2E and 0x71",
         "comment2": "// each shard executes independently and votes",
-        "comment3": "// certificates exchanged — unanimous outcome",
+        "comment3": "// certificates exchanged - unanimous outcome",
         "lock": "LOCK",
         "exec": "EXEC",
         "cert": "TX_CERTIFICATE",
@@ -54,8 +54,8 @@
       "label": "Public proof of scale",
       "h2a": "Half a million TPS,",
       "h2b": "verified in public",
-      "sub": "The final Hyperscale public test — January 31, 2026 — closed the interim phase with results anyone can reproduce. Real DeFi swap transactions, community hardware, and atomicity preserved on every single transaction.",
-      "date_badge": "Final public test — January 31, 2026 · Results published February 20, 2026",
+      "sub": "The final Hyperscale public test - January 31, 2026 - closed the interim phase with results anyone can reproduce. Real DeFi swap transactions, community hardware, and atomicity preserved on every single transaction.",
+      "date_badge": "Final public test - January 31, 2026 · Results published February 20, 2026",
       "stats": [
         { "value": "500,000+", "label": "Sustained TPS", "detail": "Steady-state throughput across the full network" },
         { "value": "800,000+", "label": "Peak TPS", "detail": "Burst capacity with real atomic swaps" },
@@ -63,7 +63,7 @@
         { "value": "0", "label": "Atomicity violations", "detail": "Every transaction fully succeeded or fully reverted" }
       ],
       "linear_title": "Linear scaling, confirmed",
-      "linear_sub": "Doubling the shard count doubled the throughput — the defining prediction of the architecture. Per-shard performance stayed constant as the network grew.",
+      "linear_sub": "Doubling the shard count doubled the throughput - the defining prediction of the architecture. Per-shard performance stayed constant as the network grew.",
       "bar64_label": "64 shards",
       "bar64_value": "~250,000 TPS",
       "bar128_label": "128 shards",
@@ -71,11 +71,11 @@
       "facts": [
         {
           "title": "Real transactions, not transfers",
-          "desc": "The workload used cross-shard atomic DeFi swaps — the hardest transaction class — rather than simplified token transfers that inflate benchmark numbers."
+          "desc": "The workload used cross-shard atomic DeFi swaps - the hardest transaction class - rather than simplified token transfers that inflate benchmark numbers."
         },
         {
           "title": "Commodity hardware",
-          "desc": "Validators ran on 4-core, 16 GB machines. Community participants joined from datacenter servers and ordinary desktop laptops alike — no specialized hardware required."
+          "desc": "Validators ran on 4-core, 16 GB machines. Community participants joined from datacenter servers and ordinary desktop laptops alike - no specialized hardware required."
         },
         {
           "title": "Consensus was not the bottleneck",
@@ -83,7 +83,7 @@
         },
         {
           "title": "Open and reproducible",
-          "desc": "Code, tooling, logs and documentation were published in February 2026 so results can be independently verified — closing the Foundation's interim phase."
+          "desc": "Code, tooling, logs and documentation were published in February 2026 so results can be independently verified - closing the Foundation's interim phase."
         }
       ]
     },
@@ -93,7 +93,7 @@
       "h2b": "to Xi'an engineering",
       "sub": "A decade of consensus research, validated in public at scale, now being rebuilt as production software by the community. These are the pieces and how they fit together.",
       "note_title": "One goal, two generations of design",
-      "note_p": "Cerberus (peer-reviewed in 2020) and the 2026 Hyperscale test validated the goal: linear scalability with cross-shard atomicity. Xi'an is a clean-room Rust rewrite — hyperscale-rs — that pursues the same guarantees with a new consensus design: HotStuff-2 shard chains coordinated by the POLARIS leaderless beacon chain. Metrics from earlier prototypes should not be attributed to Xi'an, and vice versa.",
+      "note_p": "Cerberus (peer-reviewed in 2020) and the 2026 Hyperscale test validated the goal: linear scalability with cross-shard atomicity. Xi'an is a clean-room Rust rewrite - hyperscale-rs - that pursues the same guarantees with a new consensus design: HotStuff-2 shard chains coordinated by the POLARIS leaderless beacon chain. Metrics from earlier prototypes should not be attributed to Xi'an, and vice versa.",
       "pillars": [
         {
           "tag": "Research foundation",
@@ -102,18 +102,18 @@
         },
         {
           "tag": "Beacon chain",
-          "title": "POLARIS — leaderless BFT",
-          "desc": "A prefix-consensus protocol with formally proven censorship resistance (arXiv:2602.02892). No leader means no single point of censorship — committees are drawn by BLS-backed verifiable randomness."
+          "title": "POLARIS - leaderless BFT",
+          "desc": "A prefix-consensus protocol with formally proven censorship resistance (arXiv:2602.02892). No leader means no single point of censorship - committees are drawn by BLS-backed verifiable randomness."
         },
         {
           "tag": "Live resharding",
           "title": "Adaptive sharding",
-          "desc": "Shards split under load and merge when demand drops — without halting the network. In-flight work is handed to child shards at a certified boundary. First cut completed in June 2026."
+          "desc": "Shards split under load and merge when demand drops - without halting the network. In-flight work is handed to child shards at a certified boundary. First cut completed in June 2026."
         },
         {
           "tag": "State model",
           "title": "Unified global Merkle trie",
-          "desc": "All state lives in one global Jellyfish Merkle Tree; each shard owns a prefix subtree. Splits and merges are logical operations — no data migration, no reindexing, no downtime."
+          "desc": "All state lives in one global Jellyfish Merkle Tree; each shard owns a prefix subtree. Splits and merges are logical operations - no data migration, no reindexing, no downtime."
         },
         {
           "tag": "Execution",
@@ -127,11 +127,11 @@
         }
       ],
       "flow_title": "How a cross-shard transaction commits",
-      "flow_sub": "Shards do not trust each other — they independently execute and compare results. A malicious shard cannot corrupt state without a supermajority of every other involved shard.",
+      "flow_sub": "Shards do not trust each other - they independently execute and compare results. A malicious shard cannot corrupt state without a supermajority of every other involved shard.",
       "steps": [
         {
           "title": "Declare",
-          "desc": "The transaction declares upfront which substates it reads and writes, so the shards it touches are known deterministically — no routing table, no coordinator."
+          "desc": "The transaction declares upfront which substates it reads and writes, so the shards it touches are known deterministically - no routing table, no coordinator."
         },
         {
           "title": "Lock",
@@ -146,7 +146,7 @@
           "desc": "Each shard votes locally on the result and produces an execution certificate. Certificates are exchanged between all involved shards."
         },
         {
-          "title": "Commit — or fail cleanly",
+          "title": "Commit - or fail cleanly",
           "desc": "If every shard reached the same outcome, a transaction certificate commits the results atomically. Any disagreement means no certificate, no commit: the transaction fails cleanly, with no partial state."
         }
       ]
@@ -155,15 +155,15 @@
       "label": "For financial institutions",
       "h2a": "Scale that solves",
       "h2b": "real settlement problems",
-      "sub": "Tokenized deposits, RWAs and CBDCs only work if the underlying ledger can absorb the volume of real payment systems — without ever splitting a trade into a paid leg and an undelivered one.",
+      "sub": "Tokenized deposits, RWAs and CBDCs only work if the underlying ledger can absorb the volume of real payment systems - without ever splitting a trade into a paid leg and an undelivered one.",
       "cards": [
         {
           "title": "Atomic DvP at market scale",
-          "desc": "Payment and delivery settle as one indivisible event, even when cash and asset live on different shards. At 500,000 TPS the guarantee is identical to a single transaction: full settlement or full revert. Counterparty risk is not reduced — it is eliminated."
+          "desc": "Payment and delivery settle as one indivisible event, even when cash and asset live on different shards. At 500,000 TPS the guarantee is identical to a single transaction: full settlement or full revert. Counterparty risk is not reduced - it is eliminated."
         },
         {
           "title": "Headroom beyond card networks",
-          "desc": "Global card networks peak at roughly 65,000 transactions per second. The 2026 public test sustained over seven times that with real swaps — and capacity grows linearly by adding shards, so tokenized deposit and CBDC volumes never compete for space."
+          "desc": "Global card networks peak at roughly 65,000 transactions per second. The 2026 public test sustained over seven times that with real swaps - and capacity grows linearly by adding shards, so tokenized deposit and CBDC volumes never compete for space."
         },
         {
           "title": "Deterministic execution for compliance",
@@ -171,14 +171,14 @@
         },
         {
           "title": "Resilience measured in decades",
-          "desc": "Thousands of independent validators on commodity hardware, graceful degradation if a shard loses liveness, and a post-quantum cryptography path designed into the architecture — infrastructure lifecycles that match banking horizons."
+          "desc": "Thousands of independent validators on commodity hardware, graceful degradation if a shard loses liveness, and a post-quantum cryptography path designed into the architecture - infrastructure lifecycles that match banking horizons."
         }
       ],
       "strip": [
         { "value": "T+0", "label": "Settlement finality in seconds, not days" },
         { "value": "24/7", "label": "No batch windows, no cut-off times" },
         { "value": "7×", "label": "Demonstrated throughput vs. card-network peaks" },
-        { "value": "0", "label": "Partial executions — atomicity is protocol-level" }
+        { "value": "0", "label": "Partial executions - atomicity is protocol-level" }
       ]
     },
     "ai": {
@@ -197,16 +197,16 @@
         },
         {
           "title": "A ledger agents can read",
-          "desc": "Through the Model Context Protocol, AI agents query the Radix ledger directly — balances, transactions, on-chain state — without a human intermediary or a custom integration per model."
+          "desc": "Through the Model Context Protocol, AI agents query the Radix ledger directly - balances, transactions, on-chain state - without a human intermediary or a custom integration per model."
         },
         {
           "title": "Intent that machines can trust",
-          "desc": "Transaction manifests declare outcomes upfront and execute atomically: no blind signing, no sandwich attacks, no ambiguity. Autonomous agents need deterministic results — exactly what asset-oriented atomic transactions provide."
+          "desc": "Transaction manifests declare outcomes upfront and execute atomically: no blind signing, no sandwich attacks, no ambiguity. Autonomous agents need deterministic results - exactly what asset-oriented atomic transactions provide."
         }
       ],
-      "quote_p": "If you want to build a layer 1 blockchain that can support 100 million transactions per second — call us.",
-      "quote_author": "Matthew Prince, CEO of Cloudflare — Bankless, May 2026",
-      "quote_note": "Cloudflare handles around 500 million requests per second. No fixed-capacity chain can meet that bar — only an architecture that adds throughput by adding shards can grow toward it.",
+      "quote_p": "If you want to build a layer 1 blockchain that can support 100 million transactions per second - call us.",
+      "quote_author": "Matthew Prince, CEO of Cloudflare - Bankless, May 2026",
+      "quote_note": "Cloudflare handles around 500 million requests per second. No fixed-capacity chain can meet that bar - only an architecture that adds throughput by adding shards can grow toward it.",
       "strip": [
         { "value": "500M", "label": "Requests per second on Cloudflare's network today" },
         { "value": "100M", "label": "TPS named by Cloudflare as the bar for web-scale settlement" },
@@ -223,7 +223,7 @@
         {
           "date": "January 31, 2026",
           "title": "Final public test",
-          "desc": "500,000+ sustained TPS with peaks above 800,000, across 590+ community nodes and 128 shards — with real cross-shard swaps."
+          "desc": "500,000+ sustained TPS with peaks above 800,000, across 590+ community nodes and 128 shards - with real cross-shard swaps."
         },
         {
           "date": "February 2026",
@@ -260,7 +260,7 @@
         {
           "tag": "M3",
           "title": "Gateway & Wallet",
-          "desc": "Rust gateway rewrite and Radix Wallet connectivity — the first normal-user interaction with Xi'an.",
+          "desc": "Rust gateway rewrite and Radix Wallet connectivity - the first normal-user interaction with Xi'an.",
           "eta": "Est. April 2027",
           "status": "planned"
         },
@@ -287,7 +287,7 @@
       "label": "Open source & verifiable",
       "h2a": "Don't trust the numbers.",
       "h2b": "Verify them.",
-      "sub": "Everything — code, research, test logs — is public. The scalability claims on this page can be checked against the repositories and papers below.",
+      "sub": "Everything - code, research, test logs - is public. The scalability claims on this page can be checked against the repositories and papers below.",
       "cards": [
         {
           "title": "hyperscale-rs",
@@ -301,7 +301,7 @@
         },
         {
           "title": "The research paper",
-          "desc": "\"Prefix Consensus for Censorship Resistant BFT\" (Xiang, Tonkikh, Spiegelman, 2026) — the formal foundation behind POLARIS's leaderless consensus.",
+          "desc": "\"Prefix Consensus for Censorship Resistant BFT\" (Xiang, Tonkikh, Spiegelman, 2026) - the formal foundation behind POLARIS's leaderless consensus.",
           "linkLabel": "arxiv.org/abs/2602.02892"
         },
         {
@@ -310,12 +310,12 @@
           "linkLabel": "radix.wiki"
         }
       ],
-      "license_note": "The Xi'an codebase is Apache 2.0 licensed — a community asset, independently auditable by any institution or researcher."
+      "license_note": "The Xi'an codebase is Apache 2.0 licensed - a community asset, independently auditable by any institution or researcher."
     },
     "cta": {
       "h2a": "Scale is no longer",
       "h2b": "the bottleneck.",
-      "sub": "Whether you settle tokenized assets for a bank or build agents that pay per query — the architecture that absorbs both is being built in the open, today.",
+      "sub": "Whether you settle tokenized assets for a bank or build agents that pay per query - the architecture that absorbs both is being built in the open, today.",
       "btn_docs": "Explore the documentation",
       "btn_github": "Follow development on GitHub"
     }
