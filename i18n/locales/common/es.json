@@ -149,31 +149,33 @@
   },
   "footer": {
     "desc": "La única infraestructura DLT Layer-1 diseñada desde cero para el sistema financiero global. ROA, Cerberus y Scrypto resuelven el Trilema Cripto.",
-    "use": {
-      "title": "Para Instituciones",
-      "wallet": "Piloto Institucional",
-      "dashboard": "DvP Atómico (T+0)",
-      "getXrd": "KYC/AML On-Chain",
-      "stakeXrd": "RWA Tokenization"
-    },
-    "build": {
-      "title": "Desarrolladores",
-      "hub": "Documentación Scrypto",
-      "scrypto": "Primeros Pasos",
-      "engine": "Gateway API",
-      "docs": "Documentación Local"
-    },
-    "ecosystem": {
-      "title": "Usuarios",
-      "dapps": "Billetera iOS",
-      "tokens": "Billetera Android",
-      "chrome": "Conector de Chrome",
-      "validators": "Comprar XRD",
-      "grants": "Hacer Staking"
-    },
     "copyright": "© 2026 GenkiPool. Desarrollado por la comunidad para el ecosistema Radix.",
     "privacy": "Política de Privacidad",
-    "terms": "Términos de Servicio"
+    "terms": "Términos de Servicio",
+    "users": {
+      "title": "Usuarios",
+      "wallet_ios": "Billetera iOS",
+      "wallet_android": "Billetera Android",
+      "wallet_chrome": "Conector de Chrome",
+      "buy_xrd": "Comprar XRD",
+      "staking": "Hacer Staking"
+    },
+    "developers": {
+      "title": "Desarrolladores",
+      "docs": "Documentación Oficial",
+      "academy": "Radix Academy",
+      "console": "Consola Web3",
+      "hyperscale": "Arquitectura Hyperscale",
+      "wiki": "Radix Wiki"
+    },
+    "institutions": {
+      "title": "Para Instituciones",
+      "pilot": "Piloto Institucional",
+      "dvp": "DvP Atómico (T+0)",
+      "kyc": "KYC/AML On-Chain",
+      "rwa": "RWA Tokenization",
+      "google_wallet": "Google Wallet × Radix"
+    }
   },
   "events": {
     "withdraw": "Retiro",

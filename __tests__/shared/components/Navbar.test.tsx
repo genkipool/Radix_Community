@@ -51,7 +51,7 @@ vi.mock('@/features/wallet/components/WalletProfileModal', () => ({
     WalletProfileModal: ({ isOpen }: { isOpen?: boolean }) => isOpen ? <div>Wallet</div> : null,
 }));
 vi.mock('lucide-react', () => {
-    const icons = ['Menu', 'X', 'Sun', 'Moon', 'Globe', 'Server', 'Layers', 'BarChart2', 'BookOpen', 'GraduationCap', 'Gamepad2', 'Smartphone', 'FileText', 'MessageSquare', 'Eye', 'Check', 'Route', 'Sparkles', 'User', 'Terminal', 'CreditCard', 'Zap', 'Nfc'];
+    const icons = ['Menu', 'X', 'Sun', 'Moon', 'Globe', 'Server', 'Layers', 'BarChart2', 'BookOpen', 'GraduationCap', 'Gamepad2', 'Smartphone', 'FileText', 'MessageSquare', 'Eye', 'Check', 'Route', 'Sparkles', 'User', 'Terminal', 'CreditCard', 'Zap', 'Nfc', 'Library', 'Milestone', 'Map', 'Info', 'RefreshCcw', 'LogOut'];
     const mockIcon = () => null;
     const exports: Record<string, unknown> = { default: {} };
     for (const name of icons) exports[name] = mockIcon;

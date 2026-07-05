@@ -56,24 +56,26 @@ export const NAV_LINKS = [
 ];
 
 export const FOOTER_LINKS = {
-  use: [
-    { key: 'wallet', path: '#para-ceos' },
-    { key: 'dashboard', path: '#para-ceos' },
-    { key: 'getXrd', path: '#para-ceos' },
-    { key: 'stakeXrd', path: '#para-ceos' },
+  institutions: [
+    { key: 'pilot', path: '#pilot' },
+    { key: 'dvp', path: '#para-ceos' },
+    { key: 'kyc', path: '#para-ceos' },
+    { key: 'rwa', path: '#para-ceos' },
+    { key: 'google_wallet', path: '/google-wallet' },
   ],
-  build: [
-    { key: 'hub', path: '/docs' },
-    { key: 'scrypto', path: '/docs' },
-    { key: 'engine', path: '/docs' },
+  developers: [
     { key: 'docs', path: '/docs' },
+    { key: 'academy', path: '/academy' },
+    { key: 'console', path: '/console' },
+    { key: 'hyperscale', path: '/hyperscale' },
+    { key: 'wiki', path: 'https://radix.wiki' },
   ],
-  ecosystem: [
-    { key: 'dapps', path: 'https://apps.apple.com/us/app/radix-wallet/id6448950995' },
-    { key: 'tokens', path: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android' },
-    { key: 'chrome', path: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm' },
-    { key: 'validators', path: 'https://www.kucoin.com/trade/XRD-USDT' },
-    { key: 'grants', path: '/dashboard' },
+  users: [
+    { key: 'wallet_ios', path: 'https://apps.apple.com/us/app/radix-wallet/id6448950995' },
+    { key: 'wallet_android', path: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android' },
+    { key: 'wallet_chrome', path: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm' },
+    { key: 'buy_xrd', path: 'https://www.kucoin.com/trade/XRD-USDT' },
+    { key: 'staking', path: '/dashboard' },
   ],
 };
 

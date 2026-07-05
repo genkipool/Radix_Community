@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Map, Info
+  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -274,6 +274,7 @@ function NavLinkList({
   t: ReturnType<typeof useLanguage>['t'];
   onNavigate?: () => void;
   onPrefetch?: (href: string) => void;
+  language: string;
 }) {
   const pathname = usePathname();
   const localize = (href: string) => {
