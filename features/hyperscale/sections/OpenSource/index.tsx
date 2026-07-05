@@ -46,9 +46,9 @@ export default function OpenSource({ t }: HyperscaleSectionProps) {
                   {card.title}
                 </h3>
                 <p className="text-sm text-[var(--color-text-muted)] leading-relaxed mb-6 flex-1">{card.desc}</p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-[var(--color-secondary)] break-all">
-                  <ExternalLink className="size-3.5 shrink-0" />
-                  {card.linkLabel}
+                <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-[var(--color-secondary)] w-full min-w-0">
+                  <span className="truncate leading-none pt-[1px]">{card.linkLabel}</span>
+                  <ExternalLink className="size-3.5 shrink-0 -translate-y-[2px]" />
                 </span>
               </Link>
             </FadeIn>

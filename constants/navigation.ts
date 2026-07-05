@@ -3,9 +3,9 @@ export const NAV_LINKS = [
     key: 'ecosystem',
     path: '/#problema',
     sublinks: [
+      { key: 'infrastructure', path: '/infrastructure' },
       { key: 'hyperscale', path: '/hyperscale' },
       { key: 'google_wallet', path: '/google-wallet' },
-      { key: 'infrastructure', path: '/infrastructure' },
       { key: 'dapps', path: '/dapps' },
       { key: 'games', path: '/games' },
       { key: 'dashboard', path: '/dashboard' },

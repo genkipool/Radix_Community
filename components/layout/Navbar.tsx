@@ -45,9 +45,9 @@ function ThemeIcon({ theme, isLightTheme }: { theme: Theme; isLightTheme: boolea
 // ─── Nav popup items per section ────────────────────────────────────────────
 const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ecosystem: [
+    { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
     { key: 'hyperscale', href: '/hyperscale', icon: <Zap className="size-4" />, descKey: 'popup_eco_hyperscale_desc' },
     { key: 'google_wallet', href: '/google-wallet', icon: <Nfc className="size-4" />, descKey: 'popup_eco_google_wallet_desc' },
-    { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
     { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
     { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },
     { key: 'dashboard', href: '/dashboard', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },

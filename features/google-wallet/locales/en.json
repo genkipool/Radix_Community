@@ -53,9 +53,9 @@
     },
     "problem": {
       "label": "The problem",
-      "h2a": "Today's ticketing works…",
-      "h2b": "until it doesn't",
-      "sub": "QR codes cloned with a screenshot, resale that enriches scalpers, tickets that live on someone else's server and a Web3 that asks too much of mainstream users. Four structural failures that a wallet with Radix accounts eliminates at the root.",
+      "h2a": "You buy a ticket,",
+      "h2b": "but you own nothing",
+      "sub": "QR codes cloned with a screenshot, a resale market that only enriches scalpers, tickets that live on a third party's server and a Web3 that asks too much of mainstream users. Four structural failures, one root cause: the user never owns their ticket. A wallet with Radix accounts eliminates them at the root.",
       "cards": [
         {
           "title": "A QR code is a screenshot",
@@ -77,8 +77,8 @@
     },
     "solution": {
       "label": "The solution",
-      "h2a": "Real ownership,",
-      "h2b": "same experience as always",
+      "h2a": "A ticket that cannot be forged,",
+      "h2b": " nor resold behind the company's back",
       "sub": "Every failure of the current model has a direct answer when the ticket is an NFT on Radix and Google Wallet provides the interface. The user's gesture doesn't change; everyone else's guarantees do.",
       "cards": [
         {
@@ -101,9 +101,9 @@
     },
     "invisible": {
       "label": "Invisible technology",
-      "h2a": "From clicking «Buy»",
-      "h2b": "to an open gate",
-      "sub": "The user experiences a normal Web2 purchase and a normal NFC tap. Underneath, an NFT on the public Radix network acts as the single source of truth about who owns the ticket. Here is how the pieces fit, step by step.",
+      "h2a": "From the purchase click ",
+      "h2b": "to the venue gate",
+      "sub": "For the customer, it is just another web purchase and a simple tap with their phone. In the backend, an NFT on the public Radix network acts as the single source of truth about the ticket's authenticity. Here is how the pieces fit, step by step.",
       "steps": [
         {
           "title": "Web2 purchase",
@@ -218,8 +218,8 @@
       "diff_radix_title": "On Radix",
       "diff_radix": [
         "Non-fungible data is mutable by design: the «used» field is updated by whoever holds the authorized badge, with no user signature",
-        "Mint, burn, recall, deposit and withdraw permissions are declared when the resource is created and enforced by the network, not by a contract",
-        "The issuer keeps exactly the powers it declared at mint: not one more, not one less, and they are visible to anyone",
+        "Royalties are guaranteed at the component level: a secondary-market transfer forces the atomic split of the payment, making it impossible to evade",
+        "Burn and recall permissions are declared when the resource is created and enforced natively by the network, with no custom code",
         "Fee delegation is part of the protocol: another account simply signs the lock_fee"
       ]
     },
@@ -268,7 +268,7 @@
         },
         {
           "title": "Secondary-market royalties",
-          "desc": "A perpetual percentage of every P2P ticket transfer, executed automatically by the smart contract, with no invoicing and no chasing payments. It is the App Store model applied to global ticketing, with the difference that here the club and the user win too."
+          "desc": "A perpetual percentage of every P2P ticket transfer, executed automatically by the smart contract, with no invoicing and no chasing payments. It is the App Store model applied to global ticketing, with one difference: here it is not only Google that wins, the club or issuing company and the user win too."
         },
         {
           "title": "The competitive moat against Apple",

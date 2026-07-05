@@ -30,7 +30,10 @@ export function FeatureCard({ icon, title, desc, tag, delay = 0 }: FeatureCardPr
         </span>
       )}
       <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-3 relative z-10">{title}</h3>
-      <p className="text-[var(--color-text-muted)] text-sm leading-relaxed relative z-10">{desc}</p>
+      <p 
+        className="text-[var(--color-text-muted)] text-sm leading-relaxed relative z-10" 
+        dangerouslySetInnerHTML={{ __html: desc }} 
+      />
     </FadeIn>
   );
 }

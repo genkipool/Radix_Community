@@ -58,10 +58,26 @@
       "sub": "The final Hyperscale public test - January 31, 2026 - closed the interim phase with results anyone can reproduce. Real DeFi swap transactions, community hardware, and atomicity preserved on every single transaction.",
       "date_badge": "Final public test - January 31, 2026 · Results published February 20, 2026",
       "stats": [
-        { "value": "500,000+", "label": "Sustained TPS", "detail": "Steady-state throughput across the full network" },
-        { "value": "800,000+", "label": "Peak TPS", "detail": "Burst capacity with real atomic swaps" },
-        { "value": "590+", "label": "Community nodes", "detail": "Plus 384 bootstrap and 40 validator nodes on AWS" },
-        { "value": "0", "label": "Atomicity violations", "detail": "Every transaction fully succeeded or fully reverted" }
+        {
+          "value": "500,000+",
+          "label": "Sustained TPS",
+          "detail": "Steady-state throughput across the full network"
+        },
+        {
+          "value": "800,000+",
+          "label": "Peak TPS",
+          "detail": "Burst capacity with real atomic swaps"
+        },
+        {
+          "value": "590+",
+          "label": "Community nodes",
+          "detail": "Plus 384 bootstrap and 40 validator nodes on AWS"
+        },
+        {
+          "value": "0",
+          "label": "Atomicity violations",
+          "detail": "Every transaction fully succeeded or fully reverted"
+        }
       ],
       "linear_title": "Linear scaling, confirmed",
       "linear_sub": "Doubling the shard count doubled the throughput - the defining prediction of the architecture. Per-shard performance stayed constant as the network grew.",
@@ -104,7 +120,7 @@
         {
           "tag": "Beacon chain",
           "title": "POLARIS - leaderless BFT",
-          "desc": "A prefix-consensus protocol with formally proven censorship resistance (arXiv:2602.02892). No leader means no single point of censorship - committees are drawn by BLS-backed verifiable randomness."
+          "desc": "A prefix-consensus protocol with formally proven censorship resistance (<a href=\"https://arxiv.org/abs/2602.02892\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors underline decoration-[var(--color-secondary)]/30 hover:decoration-[var(--color-primary)]\">arXiv:2602.02892</a>). No leader means no single point of censorship - committees are drawn by BLS-backed verifiable randomness."
         },
         {
           "tag": "Live resharding",
@@ -176,10 +192,22 @@
         }
       ],
       "strip": [
-        { "value": "T+0", "label": "Settlement finality in seconds, not days" },
-        { "value": "24/7", "label": "No batch windows, no cut-off times" },
-        { "value": "7×", "label": "Demonstrated throughput vs. card-network peaks" },
-        { "value": "0", "label": "Partial executions - atomicity is protocol-level" }
+        {
+          "value": "T+0",
+          "label": "Settlement finality in seconds, not days"
+        },
+        {
+          "value": "24/7",
+          "label": "No batch windows, no cut-off times"
+        },
+        {
+          "value": "7×",
+          "label": "Demonstrated throughput vs. card-network peaks"
+        },
+        {
+          "value": "0",
+          "label": "Partial executions - atomicity is protocol-level"
+        }
       ]
     },
     "ai": {
@@ -209,9 +237,18 @@
       "quote_author": "Matthew Prince, CEO of Cloudflare - Bankless, May 2026",
       "quote_note": "Cloudflare handles around 500 million requests per second. No fixed-capacity chain can meet that bar - only an architecture that adds throughput by adding shards can grow toward it.",
       "strip": [
-        { "value": "500M", "label": "Requests per second on Cloudflare's network today" },
-        { "value": "100M", "label": "TPS named by Cloudflare as the bar for web-scale settlement" },
-        { "value": "2027", "label": "Estimated year AI agent traffic overtakes human browsing" }
+        {
+          "value": "500M",
+          "label": "Requests per second on Cloudflare's network today"
+        },
+        {
+          "value": "100M",
+          "label": "TPS named by Cloudflare as the bar for web-scale settlement"
+        },
+        {
+          "value": "2027",
+          "label": "Estimated year AI agent traffic overtakes human browsing"
+        }
       ]
     },
     "roadmap": {

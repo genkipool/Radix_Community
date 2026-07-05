@@ -58,10 +58,26 @@
       "sub": "La prueba pública final de Hyperscale - 31 de enero de 2026 - cerró la fase interina con resultados que cualquiera puede reproducir. Transacciones de swap DeFi reales, hardware de la comunidad y atomicidad preservada en todas y cada una de las transacciones.",
       "date_badge": "Prueba pública final - 31 de enero de 2026 · Resultados publicados el 20 de febrero de 2026",
       "stats": [
-        { "value": "500.000+", "label": "TPS sostenidos", "detail": "Rendimiento estable en el conjunto de la red" },
-        { "value": "800.000+", "label": "TPS de pico", "detail": "Capacidad en ráfaga con swaps atómicos reales" },
-        { "value": "590+", "label": "Nodos de la comunidad", "detail": "Más 384 nodos bootstrap y 40 validadores en AWS" },
-        { "value": "0", "label": "Violaciones de atomicidad", "detail": "Cada transacción se completó íntegra o se revirtió íntegra" }
+        {
+          "value": "500.000+",
+          "label": "TPS sostenidos",
+          "detail": "Rendimiento estable en el conjunto de la red"
+        },
+        {
+          "value": "800.000+",
+          "label": "TPS de pico",
+          "detail": "Capacidad en ráfaga con swaps atómicos reales"
+        },
+        {
+          "value": "590+",
+          "label": "Nodos de la comunidad",
+          "detail": "Más 384 nodos bootstrap y 40 validadores en AWS"
+        },
+        {
+          "value": "0",
+          "label": "Violaciones de atomicidad",
+          "detail": "Cada transacción se completó íntegra o se revirtió íntegra"
+        }
       ],
       "linear_title": "Escalabilidad lineal, confirmada",
       "linear_sub": "Duplicar el número de shards duplicó el rendimiento - la predicción que define la arquitectura. El rendimiento por shard se mantuvo constante al crecer la red.",
@@ -104,7 +120,7 @@
         {
           "tag": "Beacon chain",
           "title": "POLARIS - BFT sin líder",
-          "desc": "Un protocolo de consenso por prefijos con resistencia a la censura formalmente demostrada (arXiv:2602.02892). Sin líder no hay un punto único de censura - los comités se sortean con aleatoriedad verificable respaldada por BLS."
+          "desc": "Un protocolo de consenso por prefijos con resistencia a la censura formalmente demostrada (<a href=\"https://arxiv.org/abs/2602.02892\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors underline decoration-[var(--color-secondary)]/30 hover:decoration-[var(--color-primary)]\">arXiv:2602.02892</a>). Sin líder no hay un punto único de censura - los comités se sortean con aleatoriedad verificable respaldada por BLS."
         },
         {
           "tag": "Resharding en vivo",
@@ -176,10 +192,22 @@
         }
       ],
       "strip": [
-        { "value": "T+0", "label": "Finalidad de liquidación en segundos, no en días" },
-        { "value": "24/7", "label": "Sin ventanas de proceso por lotes ni horas de corte" },
-        { "value": "7×", "label": "Rendimiento demostrado frente a los picos de las redes de tarjetas" },
-        { "value": "0", "label": "Ejecuciones parciales - la atomicidad es a nivel de protocolo" }
+        {
+          "value": "T+0",
+          "label": "Finalidad de liquidación en segundos, no en días"
+        },
+        {
+          "value": "24/7",
+          "label": "Sin ventanas de proceso por lotes ni horas de corte"
+        },
+        {
+          "value": "7×",
+          "label": "Rendimiento demostrado frente a los picos de las redes de tarjetas"
+        },
+        {
+          "value": "0",
+          "label": "Ejecuciones parciales - la atomicidad es a nivel de protocolo"
+        }
       ]
     },
     "ai": {
@@ -209,9 +237,18 @@
       "quote_author": "Matthew Prince, CEO de Cloudflare - Bankless, mayo de 2026",
       "quote_note": "Cloudflare gestiona alrededor de 500 millones de peticiones por segundo. Ninguna cadena de capacidad fija puede alcanzar ese listón - solo una arquitectura que añade rendimiento añadiendo shards puede crecer hacia él.",
       "strip": [
-        { "value": "500M", "label": "Peticiones por segundo en la red de Cloudflare hoy" },
-        { "value": "100M", "label": "TPS que Cloudflare señala como listón para liquidar a escala web" },
-        { "value": "2027", "label": "Año estimado en que el tráfico de agentes de IA supera a la navegación humana" }
+        {
+          "value": "500M",
+          "label": "Peticiones por segundo en la red de Cloudflare hoy"
+        },
+        {
+          "value": "100M",
+          "label": "TPS que Cloudflare señala como listón para liquidar a escala web"
+        },
+        {
+          "value": "2027",
+          "label": "Año estimado en que el tráfico de agentes de IA supera a la navegación humana"
+        }
       ]
     },
     "roadmap": {

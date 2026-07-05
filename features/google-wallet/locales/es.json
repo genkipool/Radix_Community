@@ -53,9 +53,9 @@
     },
     "problem": {
       "label": "El problema",
-      "h2a": "El ticketing actual funciona…",
-      "h2b": "hasta que deja de hacerlo",
-      "sub": "QRs que se clonan con una captura de pantalla, reventa que enriquece a especuladores, entradas que viven en el servidor de otro y una Web3 que pide demasiado al gran público. Cuatro fallos estructurales que una billetera con cuentas Radix elimina de raíz.",
+      "h2a": "Compras una entrada,",
+      "h2b": "pero no posees nada",
+      "sub": "QRs que se clonan con una captura de pantalla, una reventa que solo enriquece a especuladores, entradas que viven en el servidor de un tercero y una Web3 que pide demasiado al gran público. Cuatro fallos estructurales, una misma causa: el usuario nunca posee su entrada. Una billetera con cuentas Radix los elimina de raíz.",
       "cards": [
         {
           "title": "El QR es una captura de pantalla",
@@ -77,8 +77,8 @@
     },
     "solution": {
       "label": "La solución",
-      "h2a": "Propiedad real,",
-      "h2b": "experiencia de siempre",
+      "h2a": "Una entrada que no se puede falsificar,",
+      "h2b": " ni revender a espaldas de la empresa",
       "sub": "Cada fallo del modelo actual tiene una respuesta directa cuando la entrada es un NFT en Radix y Google Wallet pone la interfaz. El gesto del usuario no cambia; las garantías de todos los demás, sí.",
       "cards": [
         {
@@ -101,9 +101,9 @@
     },
     "invisible": {
       "label": "Tecnología invisible",
-      "h2a": "Del clic en «Comprar»",
-      "h2b": "al torno abierto",
-      "sub": "El usuario vive una compra Web2 normal y un tap NFC normal. Por debajo, un NFT en la red pública de Radix actúa como única fuente de verdad sobre quién posee la entrada. Así encajan las piezas, paso a paso.",
+      "h2a": "Del clic de compra ",
+      "h2b": "a la puerta del recinto",
+      "sub": "Para el cliente es una compra web cualquiera y un simple toque con el móvil. En el backend, un NFT en la red pública de Radix actúa como única fuente de verdad sobre la autenticidad de la entrada. Así encajan las piezas, paso a paso.",
       "steps": [
         {
           "title": "Compra Web2",
@@ -218,8 +218,8 @@
       "diff_radix_title": "En Radix",
       "diff_radix": [
         "Los datos no fungibles son mutables por diseño: el campo «usada» lo actualiza quien tiene el badge autorizado, sin la firma del usuario",
-        "Los permisos de mint, quema, recall, depósito y retiro se declaran al crear el recurso y los aplica la red, no un contrato",
-        "El emisor conserva exactamente los poderes que declaró en el mint: ni uno más, ni uno menos, y son visibles para cualquiera",
+        "Las royalties están garantizadas a nivel de componente: una transferencia en el mercado secundario fuerza el reparto atómico del pago, haciendo imposible evadirlas",
+        "Los permisos de quemar o recuperar (recall) activos se declaran al crear el recurso y la red los aplica nativamente, sin código a medida",
         "La delegación de comisiones forma parte del protocolo: basta con que otra cuenta firme el lock_fee"
       ]
     },
@@ -268,7 +268,7 @@
         },
         {
           "title": "Royalties del mercado secundario",
-          "desc": "Un porcentaje perpetuo de cada transferencia P2P de entradas, ejecutado automáticamente por el contrato inteligente, sin facturación ni persecución de impagos. Es el modelo App Store aplicado al ticketing mundial, con la diferencia de que aquí también ganan el club y el usuario."
+          "desc": "Un porcentaje perpetuo de cada transferencia P2P de entradas, ejecutado automáticamente por el contrato inteligente, sin facturación ni persecución de impagos. Es el modelo App Store aplicado al ticketing mundial, con una diferencia: aquí no solo gana Google, también ganan el club o la empresa emisora y el usuario."
         },
         {
           "title": "El foso competitivo frente a Apple",
