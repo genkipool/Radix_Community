@@ -35,11 +35,24 @@ export const NAV_LINKS = [
     sublinks: [
       { key: 'blog', path: '/blog' },
       { key: 'forum', path: '/forum' },
+    ],
+  },
+  {
+    key: 'roadmap',
+    path: '/#roadmap',
+    sublinks: [
+      { key: 'roadmap_radix', path: '/#roadmap' },
+      { key: 'roadmap_hyperscale', path: '/hyperscale#xian-roadmap' },
+    ],
+  },
+  {
+    key: 'about',
+    path: '/#about',
+    sublinks: [
+      { key: 'about_us', path: '/#about' },
       { key: 'community_transparency', path: '/community' },
     ],
   },
-  { key: 'roadmap', path: '/#roadmap' },
-  { key: 'about', path: '/#about' },
 ];
 
 export const FOOTER_LINKS = {
