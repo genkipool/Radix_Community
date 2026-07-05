@@ -69,3 +69,4 @@ export default async function HyperscalePage({ params }: HyperscalePageProps) {
     </div>
   );
 }
+// force reload

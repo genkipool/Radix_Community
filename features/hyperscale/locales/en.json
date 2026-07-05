@@ -41,6 +41,7 @@
         "atomic": "ATOMIC ✓",
         "shards_agree": "2/2 shards agree"
       },
+      "illustration_caption": "Adaptive Sharding and Linear Scalability: The network dynamically activates new shards on demand. The more shards operating in parallel, the higher the total throughput (TPS), always preserving atomic composability in the central consensus.",
       "metric1_value": "500K+",
       "metric1": "Sustained TPS in the January 2026 public test",
       "metric2_value": "800K+",

@@ -41,6 +41,7 @@
         "atomic": "ATÓMICA ✓",
         "shards_agree": "2/2 shards de acuerdo"
       },
+      "illustration_caption": "Sharding Adaptativo y Escalabilidad Lineal: La red activa nuevos shards dinámicamente bajo demanda. Cuantos más shards operan en paralelo, mayor es el rendimiento total (TPS), preservando siempre la composabilidad atómica en el consenso central.",
       "metric1_value": "500K+",
       "metric1": "TPS sostenidos en la prueba pública de enero de 2026",
       "metric2_value": "800K+",

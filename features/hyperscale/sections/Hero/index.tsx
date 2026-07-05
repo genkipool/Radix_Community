@@ -11,31 +11,11 @@
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 import HeroCarousel from './components/HeroCarousel';
+import { HeroIllustration } from './components/HeroIllustration';
 import { HYPERSCALE_LINKS, XIAN_ROADMAP_ID } from '../../data/links';
 import type { HyperscaleSectionProps } from '../../types';
 
-/** One row of the settlement log: shard badge + action + payload + result. */
-function ShardLogRow({
-  shard,
-  action,
-  payload,
-  result,
-}: {
-  shard: string;
-  action: string;
-  payload: string;
-  result: string;
-}) {
-  return (
-    <div className="flex items-baseline gap-2 whitespace-nowrap">
-      <span className="font-bold text-[var(--code-keyword)]">SHARD</span>
-      <span className="text-[var(--code-type)]">{shard}</span>
-      <span className="font-semibold text-[var(--code-string)]">{action}</span>
-      <span className="text-[var(--code-punct)] truncate">{payload}</span>
-      <span className="ml-auto font-bold text-[var(--code-type)]">{result}</span>
-    </div>
-  );
-}
+
 
 export default function Hero({ t }: HyperscaleSectionProps) {
   const hero = t.hyperscale.hero;
@@ -50,7 +30,7 @@ export default function Hero({ t }: HyperscaleSectionProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen pt-32 pb-20 overflow-hidden flex flex-col justify-center"
+      className="relative min-h-screen pt-40 pb-20 overflow-hidden flex flex-col justify-start"
     >
       {/* Ambient background glows */}
       <div className="absolute inset-0 pointer-events-none">
@@ -59,7 +39,7 @@ export default function Hero({ t }: HyperscaleSectionProps) {
       </div>
 
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
           {/* LEFT COLUMN */}
           <div className="lg:col-span-7">
@@ -90,63 +70,12 @@ export default function Hero({ t }: HyperscaleSectionProps) {
             </div>
           </div>
 
-          {/* RIGHT COLUMN — Cross-shard atomic settlement log */}
-          <div className="relative lg:col-span-5 hidden lg:block">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 rounded-2xl blur-2xl" />
-            <div
-              title={hero.panel.tooltip}
-              className="relative bg-[var(--code-bg)] border border-[var(--color-card-border)] rounded-2xl overflow-hidden font-mono text-[11px] shadow-xl cursor-default"
-            >
-
-              {/* Window chrome */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-card-border)] bg-[var(--color-text-main)]/5">
-                <span className="relative flex size-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-                </span>
-                <span className="text-xs font-bold tracking-wider text-[var(--color-text-muted)] opacity-80 uppercase shrink-0 leading-none mt-[2px]">
-                  {hero.panel.title}
-                </span>
-              </div>
-
-              {/* Log container */}
-              <div className="px-5 py-4 space-y-3 leading-relaxed text-[var(--code-punct)]">
-
-                {/* Step 1 — declare & lock */}
-                <div className="space-y-1">
-                  <div className="mb-1 text-[10px] text-[var(--code-comment)]">{hero.panel.comment1}</div>
-                  <ShardLogRow shard="0x2E" action={hero.panel.lock} payload='resource_rdx1_eur_cbdc…' result="✓" />
-                  <ShardLogRow shard="0x71" action={hero.panel.lock} payload='resource_rdx1_rwa_bond…' result="✓" />
-                </div>
-
-                <div className="border-t border-[var(--color-card-border)] opacity-30" />
-
-                {/* Step 2 — independent execution */}
-                <div className="space-y-1">
-                  <div className="mb-1 text-[10px] text-[var(--code-comment)]">{hero.panel.comment2}</div>
-                  <ShardLogRow shard="0x2E" action={hero.panel.exec} payload='swap 10,000,000 eurCBDC' result="cert_a91f…" />
-                  <ShardLogRow shard="0x71" action={hero.panel.exec} payload='swap 200,000 T-BOND' result="cert_c47b…" />
-                </div>
-
-                <div className="border-t border-[var(--color-card-border)] opacity-30" />
-
-                {/* Step 3 — certificate exchange & atomic commit */}
-                <div className="space-y-1">
-                  <div className="mb-1 text-[10px] text-[var(--code-comment)]">{hero.panel.comment3}</div>
-                  <div className="flex items-baseline gap-2 whitespace-nowrap">
-                    <span className="font-bold text-[var(--code-keyword)]">{hero.panel.cert}</span>
-                    <span className="text-[var(--code-punct)]">{hero.panel.shards_agree}</span>
-                    <span className="ml-auto font-black text-[var(--code-string)]">{hero.panel.commit}</span>
-                  </div>
-                  <div className="flex items-baseline gap-2 whitespace-nowrap">
-                    <span className="font-bold text-[var(--code-keyword)]">{hero.panel.finality}</span>
-                    <span className="font-bold text-[var(--code-type)]">1.9s</span>
-                    <span className="ml-auto font-black text-[var(--code-type)]">{hero.panel.atomic}</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+          {/* RIGHT COLUMN — Premium SVG Illustration */}
+          <div className="relative lg:col-span-5 hidden lg:block pt-6">
+            <HeroIllustration />
+            <p className="mt-[-1rem] text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed opacity-80 transition-opacity hover:opacity-100 relative z-20">
+              {hero.illustration_caption}
+            </p>
           </div>
         </div>
 

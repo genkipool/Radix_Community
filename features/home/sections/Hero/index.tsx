@@ -21,7 +21,7 @@ export default function Hero({ t, locale }: HeroProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen pt-32 pb-20 overflow-hidden flex flex-col justify-center"
+      className="relative min-h-screen pt-40 pb-20 overflow-hidden flex flex-col justify-start"
     >
       {/* Ambient background glows */}
       <div className="absolute inset-0 pointer-events-none">
@@ -30,7 +30,7 @@ export default function Hero({ t, locale }: HeroProps) {
       </div>
 
       <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
           {/* LEFT COLUMN */}
           <div className="lg:col-span-7">
