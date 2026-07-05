@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   Binary,
   Blocks,
+  Bot,
   Coins,
   Droplets,
   FileCode2,
@@ -141,6 +142,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '234,179,8',
     requiresWallet: true,
   },
+  mcp: {
+    slug: 'mcp',
+    icon: <Bot className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '168,85,247',
+    requiresWallet: false,
+    wide: true,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -176,6 +185,12 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
       'convert-olympia-address',
       'wallet-playground',
     ],
+  },
+  {
+    id: 'ai',
+    icon: <Bot className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    tools: ['mcp'],
   },
 ];
 

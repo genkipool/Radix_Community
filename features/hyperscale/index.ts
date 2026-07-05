@@ -1,0 +1,8 @@
+export { default as Hero } from './sections/Hero';
+export { default as ProofOfScale } from './sections/ProofOfScale';
+export { default as Architecture } from './sections/Architecture';
+export { default as Banking } from './sections/Banking';
+export { default as MachineEconomy } from './sections/MachineEconomy';
+export { default as XianRoadmap } from './sections/XianRoadmap';
+export { default as OpenSource } from './sections/OpenSource';
+export { default as CTAFinal } from './sections/CTAFinal';

@@ -25,7 +25,8 @@
     "groups": {
       "assets": "Activos",
       "deploy": "Construir y Desplegar",
-      "utilities": "Utilidades"
+      "utilities": "Utilidades",
+      "ai": "IA y Automatización"
     },
     "tools": {
       "claim-package-royalties": {
@@ -810,6 +811,21 @@
               "term": "Modo propietario",
               "definition": "Vista especial para validadores que controlas: muestra el stake bloqueado del propietario y sus desbloqueos."
             }
+          ]
+        }
+      },
+      "mcp": {
+        "title": "Servidor MCP",
+        "description": "Conecta asistentes de IA (Claude Code, Antigravity, Cursor, …) a esta web: busca en la documentación, inspecciona cualquier dirección del ledger y prepara manifiestos de transacción mediante el Model Context Protocol.",
+        "guide": {
+          "guideTitle": "Guía: Servidor MCP",
+          "guideDescription": "El puente entre los asistentes de IA y Radix. MCP (Model Context Protocol) es el estándar abierto que permite a las herramientas de IA usar servicios externos. Esta página le da a tu IA todo lo que ofrece la web: búsqueda en la documentación, datos del ledger de cuentas, componentes, paquetes y validadores, y todas las acciones de la consola como manifiestos de transacción listos para firmar.",
+          "guideSteps": [
+            "1. Elige tu cliente de IA: selecciona Claude Code, Claude Desktop, Cursor, VS Code, Antigravity o Gemini CLI y copia el fragmento de instalación.",
+            "2. Conecta: pega el fragmento en la terminal o en el archivo de configuración del cliente. No se necesita clave de API.",
+            "3. Archivo de skill opcional: descarga el SKILL.md y colócalo en la carpeta de skills de tu agente para que conozca todos los flujos de trabajo de este servidor.",
+            "4. Pregunta lo que quieras: la IA ya puede responder con la documentación, inspeccionar cualquier dirección o transacción, listar validadores y construir manifiestos de tokens, staking o transferencias.",
+            "5. Firma con seguridad: MCP nunca toca tus fondos. Cualquier transacción que prepare la IA debe pegarse en la herramienta Manifiesto de Transacción y firmarse con tu propia wallet."
           ]
         }
       }
@@ -2012,6 +2028,92 @@
     "staking": {
       "accountTitle": "Cuenta",
       "sectionTitle": "Staking de la cuenta"
+    },
+    "mcp": {
+      "endpoint": {
+        "title": "Endpoint",
+        "hint": "Servidor MCP Streamable HTTP, sin estado y sin autenticación. Cualquier cliente de IA compatible con MCP puede conectarse a esta URL."
+      },
+      "clients": {
+        "title": "Instálalo en tu cliente de IA",
+        "hint": "Elige tu cliente y copia su configuración. El servidor se registra con el nombre \"radix\".",
+        "notes": {
+          "claude-code": "Ejecuta este comando en tu terminal y reinicia la sesión.",
+          "claude-desktop": "Ajustes → Conectores → Añadir conector personalizado con la URL del endpoint, o añade este bloque a claude_desktop_config.json.",
+          "cursor": "Añade este bloque a ~/.cursor/mcp.json (global) o a .cursor/mcp.json en tu proyecto.",
+          "vscode": "Añade este bloque a .vscode/mcp.json, o registra el servidor con el comando “MCP: Add Server”.",
+          "antigravity": "Abre el panel MCP Servers (vista Agent) → Manage servers → añade este bloque a mcp_config.json.",
+          "opencode": "Añade este bloque a la configuración MCP de tu entorno OpenCode.",
+          "chatgpt": "Abre los ajustes de ChatGPT (app de escritorio) → Developer → MCP Servers → Añadir nuevo servidor, o copia este bloque."
+        }
+      },
+      "skills": {
+        "title": "Archivo de skill para agentes",
+        "hint": "Un SKILL.md generado a partir del registro real de herramientas: datos de conexión, cada herramienta con sus parámetros y los flujos de trabajo recomendados. Dáselo a tu agente de IA para que domine este servidor.",
+        "download": "Descargar SKILL.md",
+        "view": "Ver original"
+      },
+      "capabilities": {
+        "title": "Capacidades en vivo",
+        "hint": "Respuesta real del método tools/list de este servidor: lo que verá tu IA.",
+        "loading": "Consultando /api/mcp …",
+        "error": "No se pudo contactar con /api/mcp. Recarga la página para reintentar.",
+        "count": "herramientas disponibles",
+        "note": "Los nombres y descripciones de las herramientas se muestran en inglés a propósito: este bloque es la respuesta real que reciben los clientes de IA, y las especificaciones en inglés maximizan la precisión al elegir herramientas en todos los modelos. El asistente te seguirá respondiendo en tu idioma."
+      },
+      "examples": {
+        "title": "Preguntas de ejemplo",
+        "hint": "Una vez conectado, pídele a tu asistente de IA cosas como estas. Haz clic en una pregunta para copiarla.",
+        "groups": [
+          {
+            "title": "Documentación y aprendizaje",
+            "items": [
+              "¿Cómo funcionan los NFTs en Radix?",
+              "¿Dónde está la guía para instalar un nodo validador?",
+              "Explícame el consenso Cerberus en términos sencillos.",
+              "¿Qué es un manifiesto de transacción y para qué sirve?",
+              "Resúmeme el documento de fundamentos de Scrypto en español."
+            ]
+          },
+          {
+            "title": "Datos del ledger y de mercado",
+            "items": [
+              "¿Qué tokens y NFTs tiene la cuenta account_rdx1…?",
+              "Muéstrame los detalles de la transacción txid_rdx1…",
+              "¿Cuáles son los 10 validadores con más stake y qué APY pagan?",
+              "¿Cuál es el precio actual de XRD y su capitalización?",
+              "¿Quiénes son los mayores holders del token resource_rdx1…?",
+              "¿Qué NFTs existen en esta colección y qué atributos tiene el #4#?",
+              "¿Cuál es la época actual y cuánto XRD hay en staking en toda la red?",
+              "Muéstrame las últimas transacciones de este componente."
+            ]
+          },
+          {
+            "title": "Componentes y desarrolladores",
+            "items": [
+              "¿Qué métodos expone el componente component_rdx1…?",
+              "Muéstrame el estado decodificado de este componente.",
+              "Lee el key-value store internal_keyvaluestore_… y muestra sus entradas.",
+              "Decodifica este payload SBOR: 5c…",
+              "¿Cuáles son las direcciones conocidas de stokenet?"
+            ]
+          },
+          {
+            "title": "Transacciones (las firmas tú)",
+            "items": [
+              "Prepara un manifiesto para enviar 25 XRD de mi cuenta a account_rdx1…",
+              "Crea un token llamado Sunshine (SUN) con 1M de supply, minteable.",
+              "Explícame paso a paso qué hace este manifiesto antes de firmarlo.",
+              "Simula esta transacción: ¿cuánto costará en comisiones?",
+              "Convierte mi antigua dirección de Olympia rdx1… a Babylon."
+            ]
+          }
+        ],
+        "network": {
+          "title": "¿Cómo distingue el MCP entre mainnet y stokenet?",
+          "body": "Todas las herramientas de ledger y consola aceptan un parámetro opcional \"network\" (\"mainnet\" o \"stokenet\") que por defecto es mainnet. Basta con mencionar la red en tu pregunta — \"lista los validadores en stokenet\" — y la IA rellena el parámetro por ti. Además, las direcciones llevan la red en su prefijo: mainnet usa …rdx1 (account_rdx1…) y stokenet usa …tdx_2_1 (account_tdx_2_1…), de modo que la IA puede detectar la red correcta con la herramienta inspect_address y nunca mezclará redes en una misma transacción."
+        }
+      }
     }
   }
 }

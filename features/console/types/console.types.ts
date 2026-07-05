@@ -18,6 +18,7 @@ export const CONSOLE_TOOL_SLUGS = [
   'faucet',
   'wallet-playground',
   'claim-package-royalties',
+  'mcp',
 ] as const;
 
 

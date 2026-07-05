@@ -50,6 +50,8 @@
     "connectWallet": "Connect Wallet",
     "dashboard": "Dashboard",
     "astrolescent": "Astrolescent",
+    "hyperscale": "Hyperscale",
+    "popup_eco_hyperscale_desc": "Linear scalability: 500,000+ TPS with cross-shard atomicity",
     "popup_eco_infra_desc": "Full-stack technical architecture of Radix",
     "popup_eco_dapps_desc": "Native DeFi apps in the ecosystem",
     "popup_eco_dashboard_desc": "Explore transactions, validators, and real-time staking status.",

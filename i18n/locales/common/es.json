@@ -50,6 +50,8 @@
     "connectWallet": "Conectar Billetera",
     "dashboard": "Dashboard",
     "astrolescent": "Astrolescent",
+    "hyperscale": "Hyperscale",
+    "popup_eco_hyperscale_desc": "Escalabilidad lineal: más de 500.000 TPS con atomicidad cross-shard",
     "popup_eco_infra_desc": "Arquitectura técnica full-stack de Radix",
     "popup_eco_dapps_desc": "Aplicaciones DeFi nativas del ecosistema",
     "popup_eco_dashboard_desc": "Explora transacciones, validadores y el estado del staking en tiempo real.",

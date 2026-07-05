@@ -37,6 +37,9 @@ import gamesEs from '@/features/games/locales/es.json';
 import homeEn from '@/features/home/locales/en.json';
 import homeEs from '@/features/home/locales/es.json';
 
+import hyperscaleEn from '@/features/hyperscale/locales/en.json';
+import hyperscaleEs from '@/features/hyperscale/locales/es.json';
+
 import infrastructureEn from '@/features/infrastructure/locales/en.json';
 import infrastructureEs from '@/features/infrastructure/locales/es.json';
 
@@ -88,6 +91,7 @@ const en = mergeTranslations(commonEn, [
   forumEn,
   gamesEn,
   homeEn,
+  hyperscaleEn,
   infrastructureEn,
 ]);
 
@@ -104,6 +108,7 @@ const es = mergeTranslations(commonEs, [
   forumEs,
   gamesEs,
   homeEs,
+  hyperscaleEs,
   infrastructureEs,
 ]);
 
@@ -120,6 +125,7 @@ export type Dictionary = typeof commonEn &
   typeof forumEn &
   typeof gamesEn &
   typeof homeEn &
+  typeof hyperscaleEn &
   typeof infrastructureEn;
 
 export const translations = {
@@ -130,7 +136,7 @@ export const translations = {
 export type FeatureKey =
   | 'academy' | 'blog' | 'community' | 'console' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
-  | 'games' | 'home' | 'infrastructure';
+  | 'games' | 'home' | 'hyperscale' | 'infrastructure';
 
 const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ default: Record<string, unknown> }>>> = {
   en: {
@@ -146,6 +152,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     forum: () => import('@/features/forum/locales/en.json'),
     games: () => import('@/features/games/locales/en.json'),
     home: () => import('@/features/home/locales/en.json'),
+    hyperscale: () => import('@/features/hyperscale/locales/en.json'),
     infrastructure: () => import('@/features/infrastructure/locales/en.json'),
   },
   es: {
@@ -161,6 +168,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     forum: () => import('@/features/forum/locales/es.json'),
     games: () => import('@/features/games/locales/es.json'),
     home: () => import('@/features/home/locales/es.json'),
+    hyperscale: () => import('@/features/hyperscale/locales/es.json'),
     infrastructure: () => import('@/features/infrastructure/locales/es.json'),
   }
 };

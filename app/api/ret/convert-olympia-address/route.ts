@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RadixEngineToolkit } from '@radixdlt/radix-engine-toolkit';
 import { z } from 'zod';
-import { networkIdFromName, retRequestSchema } from '../validation';
+import { convertOlympiaAddress } from '@/services/ret';
+import { retRequestSchema } from '../validation';
 
 const bodySchema = retRequestSchema.extend({
   olympiaAddress: z.string().min(10).max(120),
@@ -13,20 +13,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { olympiaAddress, network } = parsed.data;
-  const networkId = networkIdFromName(network);
-
   try {
-    const babylonAddress = olympiaAddress.toLowerCase().includes('_rr1')
-      ? await RadixEngineToolkit.Derive.resourceAddressFromOlympiaResourceAddress(
-          olympiaAddress,
-          networkId,
-        )
-      : await RadixEngineToolkit.Derive.virtualAccountAddressFromOlympiaAccountAddress(
-          olympiaAddress,
-          networkId,
-        );
-
+    const babylonAddress = await convertOlympiaAddress(
+      parsed.data.olympiaAddress,
+      parsed.data.network,
+    );
     return NextResponse.json({ babylonAddress });
   } catch {
     return NextResponse.json({ error: 'Invalid Olympia address' }, { status: 400 });

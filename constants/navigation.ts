@@ -3,6 +3,7 @@ export const NAV_LINKS = [
     key: 'ecosystem',
     path: '/#problema',
     sublinks: [
+      { key: 'hyperscale', path: '/hyperscale' },
       { key: 'infrastructure', path: '/infrastructure' },
       { key: 'dapps', path: '/dapps' },
       { key: 'games', path: '/games' },

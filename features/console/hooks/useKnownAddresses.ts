@@ -2,12 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import type { Network } from '@/services/gateway/client';
-
-const GATEWAY_BASES: Record<Network, string> = {
-  mainnet: 'https://mainnet.radixdlt.com',
-  stokenet: 'https://gateway-stokenet.radix.community',
-};
+import { gatewayPost } from '@/services/gateway/bases';
 
 export type KnownAddresses = Record<string, string>;
 
@@ -21,13 +16,11 @@ export function useKnownAddresses() {
   return useQuery({
     queryKey: ['console-known-addresses', activeNetwork],
     queryFn: async (): Promise<KnownAddresses> => {
-      const res = await fetch(`${GATEWAY_BASES[activeNetwork]}/status/network-configuration`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      });
-      if (!res.ok) throw new Error(`Gateway ${res.status}`);
-      const data = (await res.json()) as { well_known_addresses?: KnownAddresses };
+      const data = await gatewayPost<{ well_known_addresses?: KnownAddresses }>(
+        activeNetwork,
+        '/status/network-configuration',
+        {},
+      );
       return data.well_known_addresses ?? {};
     },
     staleTime: Infinity,

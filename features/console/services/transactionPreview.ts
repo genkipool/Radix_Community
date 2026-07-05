@@ -1,16 +1,13 @@
 /**
- * Browser-side transaction simulation via the Gateway `/transaction/preview`
- * endpoint. No signatures are needed: the preview assumes all proofs and uses
- * a free fee credit, so any manifest can be dry-run before sending it to the
- * wallet.
+ * Transaction simulation via the Gateway `/transaction/preview` endpoint.
+ * No signatures are needed: the preview assumes all proofs and uses a free
+ * fee credit, so any manifest can be dry-run before sending it to the
+ * wallet. Isomorphic — used by the console SimulatePanel (browser) and the
+ * MCP preview_transaction tool (server).
  */
 
 import type { Network } from '@/services/gateway/client';
-
-const GATEWAY_BASES: Record<Network, string> = {
-  mainnet: 'https://mainnet.radixdlt.com',
-  stokenet: 'https://gateway-stokenet.radix.community',
-};
+import { gatewayPost } from '@/services/gateway/bases';
 
 export interface PreviewBalanceChange {
   entityAddress: string;
@@ -50,19 +47,6 @@ const FEE_FIELDS = [
   'xrd_total_storage_cost',
   'xrd_total_tipping_cost',
 ];
-
-async function gatewayPost<T>(network: Network, path: string, body: Record<string, unknown>): Promise<T> {
-  const res = await fetch(`${GATEWAY_BASES[network]}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error((data as { message?: string }).message || `Gateway ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 export async function previewTransaction(
   manifest: string,

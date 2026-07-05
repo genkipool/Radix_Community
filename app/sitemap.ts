@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '/academy',
         '/blog',
         '/community',
+        '/hyperscale',
         '/infrastructure',
         '/dashboard'
     ]

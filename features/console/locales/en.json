@@ -25,7 +25,8 @@
     "groups": {
       "assets": "Assets",
       "deploy": "Build & Deploy",
-      "utilities": "Utilities"
+      "utilities": "Utilities",
+      "ai": "AI & Automation"
     },
     "tools": {
       "claim-package-royalties": {
@@ -810,6 +811,21 @@
               "term": "Owner mode",
               "definition": "Special view for validators you control: shows the owner locked stake and its unlocks."
             }
+          ]
+        }
+      },
+      "mcp": {
+        "title": "MCP Server",
+        "description": "Connect AI assistants (Claude Code, Antigravity, Cursor, …) to this site: search the docs, inspect any ledger address and prepare transaction manifests through the Model Context Protocol.",
+        "guide": {
+          "guideTitle": "Guide: MCP Server",
+          "guideDescription": "The bridge between AI assistants and Radix. MCP (Model Context Protocol) is the open standard that lets AI tools use external services. This page gives your AI everything the site offers: documentation search, ledger data for accounts, components, packages and validators, and every console action as ready-to-sign transaction manifests.",
+          "guideSteps": [
+            "1. Pick your AI client: select Claude Code, Claude Desktop, Cursor, VS Code, Antigravity or Gemini CLI and copy the install snippet.",
+            "2. Connect: paste the snippet in the client's terminal or configuration file. No API key is required.",
+            "3. Optional skill file: download the SKILL.md and drop it into your agent's skills folder so it knows every workflow of this server.",
+            "4. Ask away: the AI can now answer questions from the docs, inspect any address or transaction, list validators, and build token/staking/transfer manifests.",
+            "5. Sign safely: MCP never touches your funds. Any transaction the AI prepares must be pasted in the Transaction Manifest tool and signed with your own wallet."
           ]
         }
       }
@@ -2011,6 +2027,92 @@
     "staking": {
       "accountTitle": "Account",
       "sectionTitle": "Account staking"
+    },
+    "mcp": {
+      "endpoint": {
+        "title": "Endpoint",
+        "hint": "Streamable HTTP MCP server, stateless and without authentication. Any MCP-compatible AI client can connect to this URL."
+      },
+      "clients": {
+        "title": "Install on your AI client",
+        "hint": "Choose your client and copy its configuration. The server is registered under the name \"radix\".",
+        "notes": {
+          "claude-code": "Run this command in your terminal, then restart the session.",
+          "claude-desktop": "Settings → Connectors → Add custom connector with the endpoint URL, or merge this block into claude_desktop_config.json.",
+          "cursor": "Merge this block into ~/.cursor/mcp.json (global) or .cursor/mcp.json in your project.",
+          "vscode": "Merge this block into .vscode/mcp.json, or add the server via the “MCP: Add Server” command.",
+          "antigravity": "Open the MCP Servers panel (Agent view) → Manage servers → add this block to mcp_config.json.",
+          "opencode": "Merge this block into your OpenCode MCP configuration.",
+          "chatgpt": "Open ChatGPT desktop app settings → Developer → MCP Servers → Add new server, or merge this block."
+        }
+      },
+      "skills": {
+        "title": "Agent skill file",
+        "hint": "A SKILL.md generated from the live tool registry: connection info, every tool with its parameters, and recommended workflows. Give it to your AI agent so it masters this server.",
+        "download": "Download SKILL.md",
+        "view": "View raw"
+      },
+      "capabilities": {
+        "title": "Live capabilities",
+        "hint": "Real response of this server's tools/list method — what your AI will see.",
+        "loading": "Querying /api/mcp …",
+        "error": "Could not reach /api/mcp. Reload the page to retry.",
+        "count": "tools available",
+        "note": "Tool names and descriptions are intentionally shown in English: this block is the exact live response that AI clients receive, and English specifications maximise tool-selection accuracy across models. The assistant still answers you in your language."
+      },
+      "examples": {
+        "title": "Example questions",
+        "hint": "Once connected, ask your AI assistant things like these. Click a question to copy it.",
+        "groups": [
+          {
+            "title": "Documentation & learning",
+            "items": [
+              "How do NFTs work on Radix?",
+              "Where can I find the guide to install a validator node?",
+              "Explain the Cerberus consensus in simple terms.",
+              "What is a transaction manifest and what is it used for?",
+              "Summarise the Scrypto basics document in Spanish."
+            ]
+          },
+          {
+            "title": "Ledger & market data",
+            "items": [
+              "What tokens and NFTs does account_rdx1… hold?",
+              "Show me the details of transaction txid_rdx1…",
+              "Which are the top 10 validators by stake and what APY do they pay?",
+              "What is the current XRD price and market cap?",
+              "Who are the biggest holders of the token resource_rdx1…?",
+              "What NFTs exist in this collection and what traits does #4# have?",
+              "What is the current epoch and how much XRD is staked network-wide?",
+              "Show me the latest transactions of this component."
+            ]
+          },
+          {
+            "title": "Components & developers",
+            "items": [
+              "What methods does the component component_rdx1… expose?",
+              "Show me the decoded state of this component.",
+              "Read the key-value store internal_keyvaluestore_… and show its entries.",
+              "Decode this SBOR payload: 5c…",
+              "What are the well-known addresses of stokenet?"
+            ]
+          },
+          {
+            "title": "Transactions (signed by you)",
+            "items": [
+              "Prepare a manifest to send 25 XRD from my account to account_rdx1…",
+              "Create a token called Sunshine (SUN) with 1M supply, mintable.",
+              "Explain step by step what this manifest does before I sign it.",
+              "Simulate this transaction: how much will it cost in fees?",
+              "Convert my old Olympia address rdx1… to Babylon."
+            ]
+          }
+        ],
+        "network": {
+          "title": "How does the MCP choose between mainnet and stokenet?",
+          "body": "Every ledger and console tool accepts an optional \"network\" parameter (\"mainnet\" or \"stokenet\") that defaults to mainnet. Just mention the network in your question — \"list the validators on stokenet\" — and the AI fills the parameter for you. Addresses also carry their network in the prefix: mainnet uses …rdx1 (account_rdx1…) and stokenet uses …tdx_2_1 (account_tdx_2_1…), so the AI can detect the right network with the inspect_address tool and will never mix networks in one transaction."
+        }
+      }
     }
   }
 }
