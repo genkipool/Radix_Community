@@ -63,9 +63,9 @@ La suite de pruebas garantiza la fiabilidad de los flujos críticos de la aplica
 - **Pruebas Unitarias y de Integración:** `vitest` + `@testing-library/react`.
 - **Ejecución de Pruebas:**
   ```bash
-  npm run test        # Modo interactivo (watch)
-  npm run test:run    # Ejecución de CI
-  npm run test:coverage # Generar reporte de cobertura
+  pnpm run test        # Modo interactivo (watch)
+  pnpm run test:run    # Ejecución de CI
+  pnpm run test:coverage # Generar reporte de cobertura
   ```
 
 ---
@@ -80,7 +80,7 @@ La suite de pruebas garantiza la fiabilidad de los flujos críticos de la aplica
 
 2. **Instalar dependencias:**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Variables de Entorno:**
@@ -92,7 +92,7 @@ La suite de pruebas garantiza la fiabilidad de los flujos críticos de la aplica
 
 4. **Ejecutar servidor de desarrollo:**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
    Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
@@ -127,7 +127,7 @@ Para colaborar en este proyecto y mantener el repositorio estable para futuros d
    - Usa componentes de servidor (RSC) por defecto.
    - Aplica validación estricta (Zod).
    - Asegura la accesibilidad WCAG en los contrastes de colores.
-   - Pasa todos los linterns e inspeciones visuales (`npm run lint`).
+   - Pasa todos los linterns e inspeciones visuales (`pnpm run lint`).
    - Escribe Unit Tests de tu componente en la carpeta `__tests__/`.
 
 4. **Haz Commit de tus cambios:**
@@ -140,7 +140,7 @@ Para colaborar en este proyecto y mantener el repositorio estable para futuros d
 5. **Prueba tu código antes de subir:**
    Verifica que los tests sigan en verde.
    ```bash
-   npm run test:run
+   pnpm run test:run
    ```
 
 6. **Sube tu rama y abre un Pull Request (PR):**
