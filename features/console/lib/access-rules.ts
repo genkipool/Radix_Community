@@ -58,6 +58,11 @@ export const accessRuleToManifestSyntax = (
 
 /* ─── Resource auth roles (minter, burner, …) ─────────────────────────────── */
 
+/**
+ * Allowed values for setting resource AuthRoles (minter, burner, etc).
+ * **CRITICAL FOR AI**: Do not pass objects like `{ type: 'none' }`.
+ * You MUST pass exactly one of these literal strings: 'owner', 'allowAll', or 'denyAll'.
+ */
 export type AuthRoleValue = 'owner' | 'allowAll' | 'denyAll';
 
 const authRoleValueToSyntax = (value: AuthRoleValue): string => {
