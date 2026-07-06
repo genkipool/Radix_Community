@@ -355,15 +355,25 @@ export const getAddressTransactionsTool = defineMcpTool({
   name: 'get_address_transactions',
   title: 'Get transactions of an address',
   description:
-    'Transaction history of any entity (account, validator, component, resource), newest first. Use get_transaction for the full breakdown of one of them.',
+    'Transaction history of any entity (account, validator, component, resource), newest first. The first page already shows the most recent activity, which is what users almost always want. Accounts can have thousands of transactions: do NOT keep paging to the end — only fetch more pages (with the returned cursor) if the user explicitly asks for older history. Use get_transaction for the full breakdown of one of them.',
   category: 'ledger',
   inputSchema: z.object({
     address: addressSchema,
     network: networkSchema,
-    limit: z.number().int().min(1).max(50).default(10).describe('Max transactions to return'),
+    limit: z.number().int().min(1).max(50).default(10).describe('Max transactions to return per page'),
+    cursor: z
+      .string()
+      .max(5000)
+      .optional()
+      .describe('Pagination cursor from a previous call, to fetch the next (older) page'),
   }),
-  handler: async ({ address, network, limit }) => {
-    const { transactions } = await searchTransactionsByAddress(address, undefined, limit, network);
+  handler: async ({ address, network, limit, cursor }) => {
+    const { transactions, nextCursor } = await searchTransactionsByAddress(
+      address,
+      cursor,
+      limit,
+      network,
+    );
     return cliRender(
       cliBanner('Address transactions'),
       cliKeyValues([
@@ -374,6 +384,12 @@ export const getAddressTransactionsTool = defineMcpTool({
       transactions.length > 0
         ? transactionsTable(transactions)
         : 'No transactions found. Check that the address belongs to the requested network (mainnet addresses contain "_rdx1", stokenet ones "_tdx_2_1").',
+      nextCursor
+        ? cliNext([
+            'Older history exists. Present this page and STOP — do not page further on your own.',
+            `Only if the user explicitly asks for older transactions, fetch the next page with get_address_transactions { "address": "${address}", "network": "${network}", "cursor": "${nextCursor}" }`,
+          ])
+        : undefined,
     );
   },
 });
