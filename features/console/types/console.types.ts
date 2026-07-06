@@ -3,6 +3,7 @@
  */
 
 export const CONSOLE_TOOL_SLUGS = [
+  'mcp',
   'send-transaction',
   'staking',
   'create-token',
@@ -18,7 +19,6 @@ export const CONSOLE_TOOL_SLUGS = [
   'faucet',
   'wallet-playground',
   'claim-package-royalties',
-  'mcp',
 ] as const;
 
 
