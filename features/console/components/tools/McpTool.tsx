@@ -64,6 +64,24 @@ const MCP_CLIENTS: McpClient[] = [
   }
 ];
 
+/* ─── Local signing connector (a separate binary, installed from GitHub) ──── */
+
+const CONNECTOR_REPO = 'https://github.com/genkipool/radixdlt-rust-sdk';
+const CONNECTOR_RAW = 'https://raw.githubusercontent.com/genkipool/radixdlt-rust-sdk/main/scripts';
+
+/** Install commands (from GitHub — never crates.io / npm). */
+const CONNECTOR_INSTALL = {
+  cargo: `cargo install --git ${CONNECTOR_REPO} radixdlt-connector-mcp`,
+  unix: `curl -fsSL ${CONNECTOR_RAW}/install-connector.sh | sh`,
+  windows: `irm ${CONNECTOR_RAW}/install-connector.ps1 | iex`,
+};
+
+/** MCP registration snippets for the local connector. */
+const CONNECTOR_REGISTER = {
+  claudeCode: 'claude mcp add radix-connector -- radix-connector-mcp',
+  json: jsonSnippet({ mcpServers: { 'radix-connector': { command: 'radix-connector-mcp' } } }),
+};
+
 /* ─── Terminal-styled frame ───────────────────────────────────────────────── */
 
 function TerminalWindow({
@@ -177,6 +195,7 @@ export default function McpTool({ t }: ConsoleToolProps) {
   const [selectedClientId, setSelectedClientId] = useState(MCP_CLIENTS[0].id);
   const selectedClient = MCP_CLIENTS.find((client) => client.id === selectedClientId) ?? MCP_CLIENTS[0];
   const clientNotes = labels.clients.notes as Record<string, string>;
+  const connector = labels.connector;
 
   return (
     <div className="space-y-6">
@@ -237,6 +256,113 @@ export default function McpTool({ t }: ConsoleToolProps) {
             </pre>
           </TerminalWindow>
         </div>
+      </ToolSection>
+
+      {/* ── Sign transactions with the local connector ── */}
+      <ToolSection title={connector.title} hint={connector.hint}>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          {connector.how}
+        </p>
+
+        {/* 1. Install from GitHub */}
+        <div className="space-y-3">
+          <h4 className="text-[11px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+            {connector.installTitle}
+          </h4>
+          <p className="text-xs font-bold" style={{ color: 'var(--color-text-main)' }}>
+            {connector.installCargoLabel}
+          </p>
+          <TerminalWindow title="cargo" copyValue={CONNECTOR_INSTALL.cargo} copyLabel={t.common.copy}>
+            <pre className="whitespace-pre-wrap break-all">
+              <span className="text-[var(--color-accent)]">$ </span>
+              {CONNECTOR_INSTALL.cargo}
+            </pre>
+          </TerminalWindow>
+          <p className="text-xs font-bold" style={{ color: 'var(--color-text-main)' }}>
+            {connector.installPrebuiltLabel}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <TerminalWindow title={connector.unixLabel} copyValue={CONNECTOR_INSTALL.unix} copyLabel={t.common.copy}>
+              <pre className="whitespace-pre-wrap break-all">
+                <span className="text-[var(--color-accent)]">$ </span>
+                {CONNECTOR_INSTALL.unix}
+              </pre>
+            </TerminalWindow>
+            <TerminalWindow title={connector.windowsLabel} copyValue={CONNECTOR_INSTALL.windows} copyLabel={t.common.copy}>
+              <pre className="whitespace-pre-wrap break-all">
+                <span className="text-[var(--color-accent)]">{'> '}</span>
+                {CONNECTOR_INSTALL.windows}
+              </pre>
+            </TerminalWindow>
+          </div>
+        </div>
+
+        {/* 2. Register with the client */}
+        <div className="space-y-3">
+          <h4 className="text-[11px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+            {connector.registerTitle}
+          </h4>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {connector.registerHint}
+          </p>
+          <p className="text-xs font-bold" style={{ color: 'var(--color-text-main)' }}>
+            {connector.registerClaudeLabel}
+          </p>
+          <TerminalWindow title="Claude Code · bash" copyValue={CONNECTOR_REGISTER.claudeCode} copyLabel={t.common.copy}>
+            <pre className="whitespace-pre-wrap break-all">
+              <span className="text-[var(--color-accent)]">$ </span>
+              {CONNECTOR_REGISTER.claudeCode}
+            </pre>
+          </TerminalWindow>
+          <p className="text-xs font-bold" style={{ color: 'var(--color-text-main)' }}>
+            {connector.registerJsonLabel}
+          </p>
+          <TerminalWindow title="json" copyValue={CONNECTOR_REGISTER.json} copyLabel={t.common.copy}>
+            <pre className="whitespace-pre-wrap break-all">{CONNECTOR_REGISTER.json}</pre>
+          </TerminalWindow>
+        </div>
+
+        {/* 3. Pair & sign */}
+        <div className="space-y-3">
+          <h4 className="text-[11px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+            {connector.pairTitle}
+          </h4>
+          <ol className="space-y-2">
+            {connector.pairSteps.map((step, index) => (
+              <li key={step} className="flex gap-3 text-xs leading-relaxed" style={{ color: 'var(--color-text-main)' }}>
+                <span
+                  className="flex items-center justify-center size-5 shrink-0 rounded-full text-[10px] font-black"
+                  style={{ background: 'var(--color-primary)', color: 'var(--color-bg)' }}
+                >
+                  {index + 1}
+                </span>
+                <span className="flex-1 min-w-0 pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Security callout */}
+        <div
+          className="flex gap-3 p-4 rounded-xl border"
+          style={{ background: 'var(--color-surface)', borderColor: 'var(--color-card-border)' }}
+        >
+          <Network className="size-4 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+          <p className="text-xs leading-relaxed min-w-0" style={{ color: 'var(--color-text-muted)' }}>
+            {connector.security}
+          </p>
+        </div>
+
+        {/* Hallucination Alert */}
+        {connector.hallucinationAlert && (
+          <div
+            className="flex gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/10"
+          >
+            <p className="text-xs font-bold leading-relaxed min-w-0 text-red-600 dark:text-red-400">
+              {connector.hallucinationAlert}
+            </p>
+          </div>
+        )}
       </ToolSection>
 
       {/* ── Skill file ── */}

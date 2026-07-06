@@ -8,6 +8,7 @@ import { McpToolRegistry } from '../registry';
 import { searchRadixDocsTool, readRadixDocTool } from './docs';
 import { ledgerTools } from './ledger';
 import { consoleTools } from './console';
+import { connectorTools } from './connector';
 import { siteTools } from './site';
 
 export const knowledgeTools = [searchRadixDocsTool, readRadixDocTool];
@@ -21,6 +22,7 @@ export function getMcpRegistry(): McpToolRegistry {
     ...knowledgeTools,
     ...ledgerTools,
     ...consoleTools,
+    ...connectorTools,
   ]);
   return registry;
 }

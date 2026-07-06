@@ -2046,6 +2046,29 @@
           "chatgpt": "Open ChatGPT desktop app settings → Developer → MCP Servers → Add new server, or merge this block."
         }
       },
+      "connector": {
+        "title": "Sign transactions (local connector)",
+        "hint": "This server prepares and previews transactions but cannot sign them. Install the local connector to pair your Radix Wallet and sign — your private key never leaves your phone.",
+        "how": "Signing needs a live channel to your phone, which a stateless web server can't hold. So a small local MCP server, radix-connector-mcp, does it: it opens the Radix Connect channel and your phone approves. Install it once and both servers work together.",
+        "installTitle": "1. Install from GitHub (no crates.io / npm)",
+        "installCargoLabel": "Option A · with a Rust toolchain (any OS)",
+        "installPrebuiltLabel": "Option B · prebuilt binary (no Rust needed)",
+        "unixLabel": "Linux / macOS",
+        "windowsLabel": "Windows · PowerShell",
+        "registerTitle": "2. Register it with your AI client",
+        "registerHint": "The local connector is registered under the name \"radix-connector\". If the binary is not on your PATH, use its absolute path as the command. Reload the client once so the new tools appear.",
+        "registerClaudeLabel": "Claude Code",
+        "registerJsonLabel": "Other clients · JSON config",
+        "pairTitle": "3. Pair your wallet and sign",
+        "pairSteps": [
+          "Ask your AI to call pair_wallet (it will show the QR as an image, ASCII text, or local png file).",
+          "Scan the QR in your Radix Wallet. The AI will wait for you.",
+          "The AI calls pair_status to finish pairing (once per device).",
+          "From then on, it will use send_transaction and you approve on your phone."
+        ],
+        "hallucinationAlert": "ALERT: AI can hallucinate and generate unsolicited transactions. Carefully examine the transaction on your phone before signing, and always run preliminary tests on stokenet.",
+        "security": "The phone signs every action (you always approve there). The connector only stores the channel password locally; the private key and the QR never leave your machine."
+      },
       "skills": {
         "title": "Agent skill file",
         "hint": "A SKILL.md generated from the live tool registry: connection info, every tool with its parameters, and recommended workflows. Give it to your AI agent so it masters this server.",

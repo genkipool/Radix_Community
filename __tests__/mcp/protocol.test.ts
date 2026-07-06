@@ -104,6 +104,7 @@ describe('MCP tools/list', () => {
         'convert_olympia_address',
         'inspect_address',
         'get_known_addresses',
+        'setup_wallet_connector',
       ]),
     );
     for (const tool of tools) {
@@ -130,6 +131,26 @@ describe('MCP tools/call', () => {
   it('returns isError for unknown tools', async () => {
     const result = await callTool('no_such_tool', {});
     expect(result.isError).toBe(true);
+  });
+
+  it('explains how to install and use the local signing connector', async () => {
+    const result = await callTool('setup_wallet_connector', { client: 'claude-code', os: 'linux' });
+    expect(result.isError).toBeUndefined();
+    const text = result.content[0].text;
+    // Installs from GitHub (never crates.io / npm).
+    expect(text).toContain('cargo install --git https://github.com/genkipool/radixdlt-rust-sdk');
+    expect(text).toContain('install-connector.sh');
+    expect(text).not.toContain('npx');
+    // Client-specific registration and the pairing + signing flow.
+    expect(text).toContain('claude mcp add radix-connector');
+    expect(text).toContain('pair_wallet');
+    expect(text).toContain('send_transaction');
+  });
+
+  it('shows the Windows installer when the OS is windows', async () => {
+    const result = await callTool('setup_wallet_connector', { client: 'generic', os: 'windows' });
+    expect(result.content[0].text).toContain('install-connector.ps1');
+    expect(result.content[0].text).toContain('"radix-connector"');
   });
 
   it('searches the docs in both languages and links the doc page', async () => {

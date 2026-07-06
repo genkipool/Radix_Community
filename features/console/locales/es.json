@@ -2047,6 +2047,29 @@
           "chatgpt": "Abre los ajustes de ChatGPT (app de escritorio) → Developer → MCP Servers → Añadir nuevo servidor, o copia este bloque."
         }
       },
+      "connector": {
+        "title": "Firmar transacciones (conector local)",
+        "hint": "Este servidor prepara y previsualiza transacciones, pero no puede firmarlas. Instala el conector local para emparejar tu Radix Wallet y firmar; tu clave privada nunca sale del móvil.",
+        "how": "Firmar requiere un canal vivo con tu móvil, algo que un servidor web sin estado no puede mantener. Por eso lo hace un pequeño servidor MCP local, radix-connector-mcp: abre el canal de Radix Connect y tu móvil aprueba. Se instala una vez y ambos servidores trabajan juntos.",
+        "installTitle": "1. Instalar desde GitHub (sin crates.io ni npm)",
+        "installCargoLabel": "Opción A · con toolchain de Rust (cualquier SO)",
+        "installPrebuiltLabel": "Opción B · binario precompilado (sin Rust)",
+        "unixLabel": "Linux / macOS",
+        "windowsLabel": "Windows · PowerShell",
+        "registerTitle": "2. Regístralo en tu cliente de IA",
+        "registerHint": "El conector local se registra con el nombre \"radix-connector\". Si el binario no está en tu PATH, usa su ruta absoluta como comando. Recarga el cliente una vez para que aparezcan las nuevas herramientas.",
+        "registerClaudeLabel": "Claude Code",
+        "registerJsonLabel": "Otros clientes · configuración JSON",
+        "pairTitle": "3. Empareja tu billetera y firma",
+        "pairSteps": [
+          "Pide a tu IA que llame a pair_wallet (mostrará el QR en imagen, texto ASCII o archivo local png).",
+          "Escanea el QR en tu Radix Wallet. La IA esperará a que lo hagas.",
+          "La IA llama a pair_status para finalizar el emparejamiento (una vez por dispositivo).",
+          "A partir de ahí usará send_transaction y tú firmas en el móvil."
+        ],
+        "hallucinationAlert": "ALERTA: La IA puede tener alucinaciones y generar transacciones que no solicitaste. Examina atentamente la transacción en tu móvil antes de firmarla y realiza siempre pruebas previas en stokenet.",
+        "security": "El móvil firma cada acción (siempre apruebas ahí). El conector solo guarda la contraseña del canal en local; la clave privada y el QR nunca salen de tu máquina."
+      },
       "skills": {
         "title": "Archivo de skill para agentes",
         "hint": "Un SKILL.md generado a partir del registro real de herramientas: datos de conexión, cada herramienta con sus parámetros y los flujos de trabajo recomendados. Dáselo a tu agente de IA para que domine este servidor.",

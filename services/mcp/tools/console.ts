@@ -79,7 +79,8 @@ const signingSteps = (origin: string, validation: { valid: boolean; error?: stri
     ? 'The manifest was statically validated by the Radix Engine Toolkit — it is syntactically correct.'
     : `Static validation FAILED: ${validation.error}. Fix the inputs before signing.`,
   'Dry-run it with preview_transaction to see the real fee and balance changes before signing.',
-  `Ask the user to open ${origin}/en/console/transaction-manifest, paste the manifest, and sign it with their Radix wallet (MCP cannot sign transactions).`,
+  'To sign it programmatically: if the local "radix-connector" MCP server is installed, pass this manifest to its send_transaction { manifest, network }. If not, call setup_wallet_connector for the one-time install steps.',
+  `Otherwise (manual): ask the user to open ${origin}/en/console/transaction-manifest, paste the manifest, and sign it with their Radix wallet.`,
 ];
 
 export const listConsoleToolsTool = defineMcpTool({
