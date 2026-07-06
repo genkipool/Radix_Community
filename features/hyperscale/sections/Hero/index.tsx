@@ -71,7 +71,7 @@ export default function Hero({ t }: HyperscaleSectionProps) {
           </div>
 
           {/* RIGHT COLUMN — Premium SVG Illustration */}
-          <div className="relative lg:col-span-5 hidden lg:block pt-6">
+          <div className="relative lg:col-span-5 block pt-6">
             <HeroIllustration />
             <p className="-mt-6 text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed opacity-80 transition-opacity hover:opacity-100 relative z-20">
               {hero.illustration_caption}

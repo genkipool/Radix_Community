@@ -68,7 +68,7 @@ export default function Hero({ t }: GoogleWalletSectionProps) {
           </div>
 
           {/* RIGHT COLUMN — Integration Logo */}
-          <div className="relative lg:col-span-5 hidden lg:flex flex-col pt-20 items-center justify-center">
+          <div className="relative lg:col-span-5 flex flex-col pt-20 items-center justify-center">
             <GoogleRadixIntegrationLogo className="w-full max-w-sm mx-auto drop-shadow-2xl" />
             <p className="mt-12 text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed opacity-80 transition-opacity hover:opacity-100 relative z-20">
               {hero.illustration_caption}

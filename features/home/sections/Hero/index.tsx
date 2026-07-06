@@ -61,7 +61,7 @@ export default function Hero({ t, locale }: HeroProps) {
           </div>
 
           {/* RIGHT COLUMN — Radix Transaction Manifest */}
-          <div className="relative lg:col-span-5 hidden lg:block">
+          <div className="relative lg:col-span-5">
             <div className="absolute inset-0 bg-gradient-to-tr from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 rounded-2xl blur-2xl" />
             <div
               title={t.hero.snippet.tooltip}
