@@ -6,6 +6,7 @@ import {
   MachineEconomy,
   XianRoadmap,
   OpenSource,
+  Participate,
   CTAFinal,
 } from '@/features/hyperscale';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
@@ -65,6 +66,7 @@ export default async function HyperscalePage({ params }: HyperscalePageProps) {
       <MachineEconomy t={t} />
       <XianRoadmap t={t} />
       <OpenSource t={t} />
+      <Participate t={t} />
       <CTAFinal t={t} locale={locale} />
     </div>
   );

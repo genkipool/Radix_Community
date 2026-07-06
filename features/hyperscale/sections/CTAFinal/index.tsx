@@ -10,7 +10,7 @@ import { GlowBlob } from '@/components/ui/GlowBlob';
 import { HYPERSCALE_LINKS } from '../../data/links';
 import type { HyperscaleLocaleSectionProps } from '../../types';
 
-export default function CTAFinal({ t, locale }: HyperscaleLocaleSectionProps) {
+export default function CTAFinal({ t }: HyperscaleLocaleSectionProps) {
   const cta = t.hyperscale.cta;
 
   return (
@@ -33,7 +33,9 @@ export default function CTAFinal({ t, locale }: HyperscaleLocaleSectionProps) {
 
         <FadeIn delay={0.2} className="flex flex-col sm:flex-row justify-center gap-6">
           <Link
-            href={`/${locale}/docs`}
+            href={HYPERSCALE_LINKS.docs}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex justify-center items-center px-10 py-5 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold text-lg hover:opacity-90 transition-opacity shadow-xl"
           >
             {cta.btn_docs}

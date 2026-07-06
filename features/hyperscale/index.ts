@@ -5,4 +5,5 @@ export { default as Banking } from './sections/Banking';
 export { default as MachineEconomy } from './sections/MachineEconomy';
 export { default as XianRoadmap } from './sections/XianRoadmap';
 export { default as OpenSource } from './sections/OpenSource';
+export { default as Participate } from './sections/Participate';
 export { default as CTAFinal } from './sections/CTAFinal';

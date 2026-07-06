@@ -4,10 +4,11 @@
  * Recent achievements (2026 public test → community transition) and the
  * community-funded delivery milestones toward the Xi'an production network.
  */
-import { CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, FileText } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
-import { XIAN_ROADMAP_ID } from '../../data/links';
+import { HYPERSCALE_LINKS, XIAN_ROADMAP_ID } from '../../data/links';
 import type { HyperscaleSectionProps } from '../../types';
 
 export default function XianRoadmap({ t }: HyperscaleSectionProps) {
@@ -27,6 +28,18 @@ export default function XianRoadmap({ t }: HyperscaleSectionProps) {
           subtitle={roadmap.sub}
         />
 
+        <FadeIn className="flex justify-center mb-16">
+          <Link
+            href={HYPERSCALE_LINKS.proposal}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[var(--color-card-bg)] border border-[var(--color-secondary)]/40 text-[var(--color-text-main)] font-semibold hover:border-[var(--color-secondary)] hover:shadow-lg transition-all"
+          >
+            <FileText className="size-4 text-[var(--color-secondary)]" />
+            {roadmap.proposal_label}
+          </Link>
+        </FadeIn>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
 
           {/* Achieved timeline */}
@@ -37,7 +50,7 @@ export default function XianRoadmap({ t }: HyperscaleSectionProps) {
             <div className="space-y-8 border-l-2 border-[var(--color-card-border)] pl-8 relative">
               {roadmap.done.map((item, i) => (
                 <FadeIn key={item.title} delay={i * 0.1} className="relative">
-                  <span className="absolute -left-[41px] top-1 flex items-center justify-center size-6 rounded-full bg-[var(--color-bg)] border-2 border-emerald-500">
+                  <span className="absolute -left-[45px] top-1 flex items-center justify-center size-6 rounded-full bg-[var(--color-bg)] border-2 border-emerald-500">
                     <CheckCircle2 className="size-3.5 text-emerald-500" />
                   </span>
                   <div className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1">
