@@ -13,6 +13,7 @@
 import { z } from 'zod';
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
 import { defineMcpTool } from '../registry';
+import { RADIX_COMMUNITY_ORIGIN, dashboardTxUrl } from '../dapp';
 import { cliBanner, cliCode, cliRender, cliSection } from '../cli';
 
 /** Public SDK repo that hosts the connector binary + install scripts. */
@@ -62,7 +63,7 @@ export const setupWalletConnectorTool = defineMcpTool({
   category: 'console',
   readOnly: true,
   inputSchema: z.object({ client: clientSchema, os: osSchema }),
-  handler: ({ client, os }, ctx) => {
+  handler: ({ client, os }) => {
     const oses: Array<'linux' | 'macos' | 'windows'> = os
       ? [os]
       : ['linux', 'macos', 'windows'];
@@ -103,11 +104,13 @@ export const setupWalletConnectorTool = defineMcpTool({
       'Pipeline (this server builds, the local connector signs):\n' +
         '  1) Build + preview here: build_manifest_from_template / build_fungible_token_manifest\n' +
         '     → validate_transaction_manifest → preview_transaction → explain_manifest.\n' +
-        '  2) Sign on the local connector: send_transaction { manifest, network }.\n' +
+        '  2) Sign on the local connector: send_transaction { manifest, network, dapp_definition, origin }.\n' +
         '     The user approves on the phone. It returns the transaction intent hash.\n' +
         '  3) Confirm: transaction_status { intent_hash, network } (here or on the connector).\n' +
-        '  4) ALWAYS show the transaction to the user on the custom dashboard: https://radix-community.genkipool.com/es/dashboard?network=<network>&view=transactions&tag=Success&tx=<intent_hash>',
-      `Pass these when the wallet expects this dApp (origin: ${ctx.origin}):\n` +
+        `  4) ALWAYS show the transaction to the user on the custom dashboard: ${dashboardTxUrl('<network>')}`,
+      'ALWAYS pass dapp_definition + origin so the wallet treats the request as a verified dApp\n' +
+        '(they are optional for send_transaction but REQUIRED for request_account_proof / ROLA login):\n' +
+        `  • origin:                   ${RADIX_COMMUNITY_ORIGIN}\n` +
         `  • mainnet dapp_definition:  ${mainnetDapp || '(set NEXT_PUBLIC_RADIX_DAPP_ADDRESS_MAINNET)'}\n` +
         `  • stokenet dapp_definition: ${stokenetDapp}`,
 

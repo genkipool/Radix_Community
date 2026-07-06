@@ -17,9 +17,11 @@ import {
 } from '@/features/console/lib/manifest-templates';
 import {
   createFungibleTokenManifest,
+  createNonFungibleTokenManifest,
   DEFAULT_AUTH_ROLES,
 } from '@/features/console/lib/create-token-manifests';
 import { initialMetadataEntry, MetadataType } from '@/features/console/lib/metadata-manifests';
+import { accessRuleToManifestSyntax } from '@/features/console/lib/access-rules';
 import { inspectAddress } from '@/features/console/lib/address-inspect';
 import { buildManifestFlowSteps, type FlowLabels } from '@/features/console/lib/manifest-flow';
 import { previewTransaction } from '@/features/console/services/transactionPreview';
@@ -34,6 +36,7 @@ import {
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
+import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor, signingSteps } from '../dapp';
 import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection, cliTable } from '../cli';
 
 const networkSchema = z
@@ -73,15 +76,25 @@ async function templateContext(network: Network): Promise<TemplateContext> {
   };
 }
 
-/** Standard "how to sign this manifest" footer. */
-const signingSteps = (origin: string, validation: { valid: boolean; error?: string }) => [
-  validation.valid
-    ? 'The manifest was statically validated by the Radix Engine Toolkit — it is syntactically correct.'
-    : `Static validation FAILED: ${validation.error}. Fix the inputs before signing.`,
-  'Dry-run it with preview_transaction to see the real fee and balance changes before signing.',
-  'To sign it programmatically: if the local "radix-connector" MCP server is installed, pass this manifest to its send_transaction { manifest, network }. If not, call setup_wallet_connector for the one-time install steps.',
-  `Otherwise (manual): ask the user to open ${origin}/en/console/transaction-manifest, paste the manifest, and sign it with their Radix wallet.`,
-];
+/**
+ * Fails early if an address the manifest will embed is malformed or belongs to
+ * a different network, so the user gets a clear message instead of a cryptic
+ * static-validation error (or a manifest that previews against the wrong net).
+ */
+function assertAddressOnNetwork(label: string, address: string, network: Network): void {
+  const inspection = inspectAddress(address);
+  if (!inspection) {
+    throw new Error(`${label} "${address}" is not a valid Radix bech32m address.`);
+  }
+  if (!inspection.checksumValid) {
+    throw new Error(`${label} "${address}" has an invalid checksum.`);
+  }
+  if (inspection.network !== 'other' && inspection.network !== network) {
+    throw new Error(
+      `${label} "${address}" is a ${inspection.network} address but the network is ${network}.`,
+    );
+  }
+}
 
 export const listConsoleToolsTool = defineMcpTool({
   name: 'list_console_tools',
@@ -158,8 +171,9 @@ export const buildManifestFromTemplateTool = defineMcpTool({
       .record(z.string(), z.string())
       .describe('Field values keyed by field key, e.g. { "from": "account_rdx1…", "amount": "10" }'),
     network: networkSchema,
+    locale: localeSchema,
   }),
-  handler: async ({ templateId, values, network }, ctx) => {
+  handler: async ({ templateId, values, network, locale }, ctx) => {
     const template = MANIFEST_TEMPLATES.find((candidate) => candidate.id === templateId);
     if (!template) {
       throw new Error(
@@ -173,6 +187,15 @@ export const buildManifestFromTemplateTool = defineMcpTool({
       throw new Error(`Missing required fields: ${missing.join(', ')}`);
     }
 
+    // Fail early on malformed / wrong-network addresses before building.
+    for (const field of template.fields) {
+      const value = (values[field.key] ?? '').trim();
+      if (!value) continue;
+      if (field.kind === 'account' || field.kind === 'address' || field.kind === 'resource') {
+        assertAddressOnNetwork(field.key, value, network);
+      }
+    }
+
     const manifest = template.build(values, await templateContext(network)).trim();
     const validation = await staticallyValidateManifest(manifest, network);
 
@@ -183,7 +206,7 @@ export const buildManifestFromTemplateTool = defineMcpTool({
         ['Static validation', validation.valid ? 'VALID' : `INVALID — ${validation.error}`],
       ]),
       cliCode(manifest),
-      cliNext(signingSteps(ctx.origin, validation)),
+      cliNext(signingSteps(ctx.origin, network, locale, validation)),
     );
   },
 });
@@ -192,7 +215,7 @@ export const buildFungibleTokenManifestTool = defineMcpTool({
   name: 'build_fungible_token_manifest',
   title: 'Build fungible token manifest',
   description:
-    'Builds the transaction manifest that creates a new fungible token on Radix with sensible defaults (owner: none, transfers open). The initial supply is deposited into the given account. For NFTs or advanced role setups, send the user to the console create-token tool.',
+    'Builds the transaction manifest that creates a new fungible token on Radix with sensible defaults (owner: none, transfers open). The initial supply is deposited into the given account. For NFTs use build_nft_collection_manifest; for advanced role setups send the user to the console create-token tool.',
   category: 'console',
   inputSchema: z.object({
     accountAddress: z
@@ -209,8 +232,11 @@ export const buildFungibleTokenManifestTool = defineMcpTool({
     mintable: z.boolean().default(false).describe('Allow anyone to mint more supply'),
     burnable: z.boolean().default(false).describe('Allow anyone to burn supply'),
     network: networkSchema,
+    locale: localeSchema,
   }),
   handler: async (input, ctx) => {
+    assertAddressOnNetwork('accountAddress', input.accountAddress, input.network);
+
     const metadata = [
       initialMetadataEntry('name', input.name, false),
       initialMetadataEntry('symbol', input.symbol, false),
@@ -248,8 +274,191 @@ export const buildFungibleTokenManifestTool = defineMcpTool({
       ]),
       cliCode(manifest),
       cliNext([
-        ...signingSteps(ctx.origin, validation),
-        `Advanced options (NFTs, roles, badges): ${ctx.origin}/en/console/create-token`,
+        ...signingSteps(ctx.origin, input.network, input.locale, validation),
+        `Advanced options (NFTs, roles, badges): ${ctx.origin}/${input.locale}/console/create-token`,
+      ]),
+    );
+  },
+});
+
+export const buildNftCollectionManifestTool = defineMcpTool({
+  name: 'build_nft_collection_manifest',
+  title: 'Build NFT collection manifest',
+  description:
+    'Builds the transaction manifest that creates a new non-fungible resource (NFT collection) on Radix with a set of initial NFTs (name, description, image), sensible defaults (owner: none, transfers open). The NFTs are deposited into the given account. For custom data fields or advanced role setups, send the user to the console create-token tool.',
+  category: 'console',
+  inputSchema: z.object({
+    accountAddress: z
+      .string()
+      .min(10)
+      .max(120)
+      .describe('Account that receives the minted NFTs'),
+    name: z.string().min(1).max(64).describe('Collection name, e.g. "My Collection"'),
+    description: z.string().max(300).optional().describe('Collection description'),
+    iconUrl: z.string().max(300).optional().describe('HTTPS URL of the collection icon'),
+    nfts: z
+      .array(
+        z.object({
+          name: z.string().min(1).max(64).describe('NFT name'),
+          description: z.string().max(300).optional().describe('NFT description'),
+          imageUrl: z.string().max(300).optional().describe('HTTPS URL of the NFT image'),
+        }),
+      )
+      .min(1)
+      .max(50)
+      .describe('Initial NFTs to mint into the collection'),
+    mintable: z.boolean().default(false).describe('Allow minting more NFTs later'),
+    burnable: z.boolean().default(false).describe('Allow burning NFTs'),
+    network: networkSchema,
+    locale: localeSchema,
+  }),
+  handler: async (input, ctx) => {
+    assertAddressOnNetwork('accountAddress', input.accountAddress, input.network);
+
+    const metadata = [
+      initialMetadataEntry('name', input.name, false),
+      ...(input.description ? [initialMetadataEntry('description', input.description, false)] : []),
+      ...(input.iconUrl ? [initialMetadataEntry('icon_url', input.iconUrl, false, MetadataType.Url)] : []),
+    ].join(`,
+          `);
+
+    const manifest = createNonFungibleTokenManifest({
+      ownerAccessRule: { type: 'none' },
+      ownerRoleUpdatable: 'None',
+      accountAddress: input.accountAddress,
+      trackSupply: true,
+      metadata,
+      authRoles: {
+        ...DEFAULT_AUTH_ROLES,
+        minter: input.mintable ? 'allowAll' : 'denyAll',
+        burner: input.burnable ? 'allowAll' : 'denyAll',
+      },
+      nfts: input.nfts.map((nft) => ({
+        name: nft.name,
+        description: nft.description ?? '',
+        key_image_url: nft.imageUrl ?? '',
+        customData: {},
+      })),
+      nftBaseFieldsLocked: { name: false, description: false, key_image_url: false },
+      nftCustomFields: [],
+    }).trim();
+
+    const validation = await staticallyValidateManifest(manifest, input.network);
+
+    return cliRender(
+      cliBanner(`NFT collection · ${input.name}`),
+      cliKeyValues([
+        ['Collection', input.name],
+        ['Initial NFTs', String(input.nfts.length)],
+        ['Mintable / burnable', `${input.mintable} / ${input.burnable}`],
+        ['Network', input.network],
+        ['Static validation', validation.valid ? 'VALID' : `INVALID — ${validation.error}`],
+      ]),
+      cliCode(manifest),
+      cliNext([
+        ...signingSteps(ctx.origin, input.network, input.locale, validation),
+        `Advanced options (custom data fields, roles, badges): ${ctx.origin}/${input.locale}/console/create-token`,
+      ]),
+    );
+  },
+});
+
+export const buildFaucetManifestTool = defineMcpTool({
+  name: 'build_faucet_manifest',
+  title: 'Build a Stokenet faucet manifest',
+  description:
+    'Builds the manifest that requests free test XRD from the Stokenet faucet and deposits it into an account. Stokenet only — mainnet has no faucet. Use it to fund a test account before other transactions.',
+  category: 'console',
+  inputSchema: z.object({
+    accountAddress: z
+      .string()
+      .min(10)
+      .max(120)
+      .describe('Stokenet account to fund (account_tdx_2_…)'),
+    locale: localeSchema,
+  }),
+  handler: async ({ accountAddress, locale }, ctx) => {
+    const network: Network = 'stokenet';
+    assertAddressOnNetwork('accountAddress', accountAddress, network);
+
+    const known = await fetchKnownAddresses(network);
+    const faucet = known.faucet;
+    if (!faucet) throw new Error('Faucet address not found for Stokenet.');
+
+    const manifest = `CALL_METHOD
+    Address("${faucet}")
+    "free"
+;
+CALL_METHOD
+    Address("${accountAddress}")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP")
+;`;
+
+    const validation = await staticallyValidateManifest(manifest, network);
+
+    return cliRender(
+      cliBanner('Stokenet faucet · free XRD'),
+      cliKeyValues([
+        ['Account', accountAddress],
+        ['Faucet', faucet],
+        ['Network', network],
+        ['Static validation', validation.valid ? 'VALID' : `INVALID — ${validation.error}`],
+      ]),
+      cliCode(manifest),
+      cliNext(signingSteps(ctx.origin, network, locale, validation)),
+    );
+  },
+});
+
+export const buildDeployPackageManifestTool = defineMcpTool({
+  name: 'build_deploy_package_manifest',
+  title: 'Prepare a Scrypto package deployment',
+  description:
+    'Decodes a compiled .rpd package definition (Manifest SBOR) into the value needed to publish a Scrypto package, and returns the exact deploy_package call to run on the local radix-connector. The WASM is NOT handled here (too large for the agent) — the connector reads it from disk. Use this before deploy_package.',
+  category: 'console',
+  readOnly: true,
+  inputSchema: z.object({
+    rpdHex: z
+      .string()
+      .regex(/^[0-9a-fA-F]+$/, 'Must be a hex string')
+      .max(4_000_000)
+      .describe('Hex-encoded contents of the compiled .rpd package-definition file'),
+    owner: z
+      .enum(['none', 'allowAll'])
+      .default('none')
+      .describe('Package owner: "none" (no owner) or "allowAll" (anyone can update it)'),
+    network: networkSchema,
+  }),
+  handler: async ({ rpdHex, owner, network }) => {
+    const decoded = await decodeSborHex(rpdHex, network).catch((err: unknown) => {
+      throw new Error(err instanceof Error ? err.message : 'Failed to decode the .rpd');
+    });
+    if (decoded.kind !== 'manifest') {
+      throw new Error('The .rpd must be a Manifest-SBOR package definition (prefix 0x4d).');
+    }
+    const packageDefinition = decoded.decoded;
+    const ownerRole = accessRuleToManifestSyntax(
+      owner === 'none' ? { type: 'none' } : { type: 'allowAll' },
+      'None',
+    );
+
+    return cliRender(
+      cliBanner('Deploy package · definition ready'),
+      cliKeyValues([
+        ['Network', network],
+        ['Owner', owner],
+      ]),
+      'Package definition (Manifest SBOR) — pass it as `package_definition`:',
+      cliCode(packageDefinition),
+      owner !== 'none'
+        ? `OwnerRole — pass it as \`owner_role\`:\n${cliCode(ownerRole)}`
+        : undefined,
+      cliNext([
+        'This HTTP server cannot attach the WASM blob. Sign on the local radix-connector, which reads the .wasm from disk (it never travels through the agent):',
+        `  deploy_package { "wasm_path": "<path to your .wasm>", "package_definition": <the value above>, "network": "${network}"${owner !== 'none' ? ', "owner_role": <the value above>' : ''} }`,
+        'If the connector is not installed, call setup_wallet_connector first.',
+        'Note: transaction preview is not available for deploys over MCP — the Gateway needs the WASM blob, which only the connector holds.',
       ]),
     );
   },
@@ -340,8 +549,9 @@ export const previewTransactionTool = defineMcpTool({
   inputSchema: z.object({
     manifest: z.string().min(1).max(100_000).describe('Transaction manifest source text'),
     network: networkSchema,
+    locale: localeSchema,
   }),
-  handler: async ({ manifest, network }, ctx) => {
+  handler: async ({ manifest, network, locale }, ctx) => {
     const preview = await previewTransaction(manifest, network);
 
     return cliRender(
@@ -367,7 +577,7 @@ export const previewTransactionTool = defineMcpTool({
         : undefined,
       cliNext([
         preview.status === 'Succeeded'
-          ? `The simulation succeeded. The user can sign it at ${ctx.origin}/en/console/transaction-manifest.`
+          ? `The simulation succeeded. Sign it with the radix-connector send_transaction (pass dapp_definition + origin — see build_manifest_from_template) or manually at ${ctx.origin}/${locale}/console/transaction-manifest.`
           : 'The simulation did not succeed — fix the manifest before asking the user to sign.',
       ]),
     );
@@ -439,14 +649,20 @@ export const getKnownAddressesTool = defineMcpTool({
   name: 'get_known_addresses',
   title: 'Get well-known network addresses',
   description:
-    'Canonical well-known addresses of a network: XRD resource, faucet, native packages (account, pool, validator, …) and system badges. Use it to fill manifest addresses without guessing.',
+    'Canonical well-known addresses of a network: XRD resource, faucet, native packages (account, pool, validator, …), system badges, plus this site\'s dApp definition + origin to pass to the wallet when signing. Use it to fill manifest addresses without guessing.',
   category: 'console',
   inputSchema: z.object({ network: networkSchema }),
   handler: async ({ network }) => {
     const known = await fetchKnownAddresses(network);
+    const dappDefinition = dappDefinitionFor(network);
     return cliRender(
       cliBanner('Well-known addresses'),
       cliKeyValues([['Network', network]]),
+      cliKeyValues([
+        ['dapp_definition', dappDefinition || '(not configured for this network)'],
+        ['dapp origin', RADIX_COMMUNITY_ORIGIN],
+      ]),
+      'Pass dapp_definition + origin to radix-connector send_transaction / request_account_proof so the wallet treats the request as a verified dApp.',
       cliKeyValues(Object.entries(known).sort(([a], [b]) => a.localeCompare(b))),
     );
   },
@@ -457,6 +673,9 @@ export const consoleTools = [
   listManifestTemplatesTool,
   buildManifestFromTemplateTool,
   buildFungibleTokenManifestTool,
+  buildNftCollectionManifestTool,
+  buildFaucetManifestTool,
+  buildDeployPackageManifestTool,
   validateManifestTool,
   previewTransactionTool,
   explainManifestTool,
