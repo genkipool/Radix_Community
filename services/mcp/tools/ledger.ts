@@ -17,6 +17,7 @@ import { getValidatorsCached } from '@/services/gateway/validators';
 import {
   fetchKeyValueStoreEntries,
   fetchNonFungibleIds,
+  fetchNonFungibleSupply,
   fetchResourceHolders,
 } from '@/services/gateway/state';
 import { fetchBlueprintInterface } from '@/services/gateway/blueprints';
@@ -423,37 +424,68 @@ export const getNftDataTool = defineMcpTool({
   }),
   handler: async ({ resourceAddress, ids, network }) => {
     if (!ids || ids.length === 0) {
-      const { totalCount, ids: listed } = await fetchNonFungibleIds(resourceAddress, network);
-      return cliRender(
+      const [{ totalCount, ids: listed }, liveSupply] = await Promise.all([
+        fetchNonFungibleIds(resourceAddress, network),
+        fetchNonFungibleSupply(resourceAddress, network),
+      ]);
+      // The id list keeps burned ids, so it can exceed the live supply.
+      const burnedNote =
+        liveSupply !== null && totalCount !== null && Number(liveSupply) < totalCount
+          ? `${totalCount - Number(liveSupply)} of the listed id(s) are BURNED — the ids list keeps burned ids. Query specific ids to see each "burned" flag.`
+          : undefined;
+      const text = cliRender(
         cliBanner('NFT collection ids'),
         cliKeyValues([
           ['Resource', resourceAddress],
           ['Network', network],
-          ['Total NFTs', totalCount ?? 'unknown'],
-          ['Listing', listed.length],
+          ['Live supply (excl. burned)', liveSupply ?? 'unknown'],
+          ['Ids returned (may incl. burned)', listed.length],
         ]),
         cliList(listed),
-        'Call get_nft_data again with "ids" to read the data of specific NFTs.',
+        burnedNote,
+        'Call get_nft_data again with "ids" to read the data (and burned flag) of specific NFTs.',
       );
+      return {
+        text,
+        structured: {
+          resourceAddress,
+          network,
+          liveSupply: liveSupply ?? null,
+          idsReturned: listed,
+          mayIncludeBurned: burnedNote !== undefined,
+        },
+      };
     }
 
     const items = (await fetchNonFungibleDataCached(resourceAddress, ids, network)) as Array<
       Record<string, unknown>
     >;
-    return cliRender(
+    const text = cliRender(
       cliBanner('NFT data'),
       cliKeyValues([
         ['Resource', resourceAddress],
         ['Network', network],
       ]),
-      ...items.map(
-        (item) =>
-          `${cliSection(String(item.non_fungible_id ?? '?'))}\n${cliCode(
-            rawJson((item.data as Record<string, unknown>)?.programmatic_json ?? item),
-            'json',
-          )}`,
-      ),
+      ...items.map((item) => {
+        const id = String(item.non_fungible_id ?? '?');
+        const burned = item.is_burned === true;
+        return `${cliSection(`${id}${burned ? '  — BURNED' : ''}`)}\n${cliCode(
+          rawJson((item.data as Record<string, unknown>)?.programmatic_json ?? item),
+          'json',
+        )}`;
+      }),
     );
+    return {
+      text,
+      structured: {
+        resourceAddress,
+        network,
+        nfts: items.map((item) => ({
+          id: String(item.non_fungible_id ?? '?'),
+          isBurned: item.is_burned === true,
+        })),
+      },
+    };
   },
 });
 

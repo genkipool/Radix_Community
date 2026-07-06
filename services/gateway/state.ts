@@ -31,6 +31,29 @@ export async function fetchNonFungibleIds(
   };
 }
 
+/**
+ * Live total supply of a non-fungible resource — the count of NFTs that still
+ * exist, EXCLUDING burned ones. (The `/non-fungible/ids` list and its
+ * total_count keep burned ids, so they over-count a collection that has burns.)
+ */
+export async function fetchNonFungibleSupply(
+  resourceAddress: string,
+  network: Network = 'mainnet',
+): Promise<string | null> {
+  'use cache';
+  cacheLife('minutes');
+  cacheTag('nft', `nft-supply-${resourceAddress}`);
+
+  const res = await withRetry(() =>
+    gatewayPost<{ items?: Array<{ details?: { total_supply?: string } }> }>(
+      network,
+      '/state/entity/details',
+      { addresses: [resourceAddress], aggregation_level: 'Global' },
+    ),
+  );
+  return res.items?.[0]?.details?.total_supply ?? null;
+}
+
 /* ─── Top holders of a resource ───────────────────────────────────────────── */
 
 export interface ResourceHolder {
