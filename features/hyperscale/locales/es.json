@@ -7,7 +7,7 @@
           "h1a": "500.000 TPS. Sostenidos.",
           "h1b": "Escalabilidad sin ",
           "h1c": "compromisos.",
-          "p": "El 31 de enero de 2026, más de 590 nodos de la comunidad sostuvieron más de medio millón de transacciones DeFi reales por segundo - con picos por encima de 800.000 - preservando la composabilidad atómica en 128 shards. No fue una simulación: fue una prueba pública y reproducible sobre hardware convencional."
+          "p": "El 31 de enero de 2026, más de 590 nodos de la comunidad sostuvieron más de medio millón de transacciones DeFi reales por segundo, preservando la composabilidad atómica en 128 shards. No fue una simulación: fue una prueba pública y reproducible sobre hardware convencional."
         },
         {
           "h1a": "Caudal de red de tarjetas.",
@@ -44,8 +44,8 @@
       "illustration_caption": "Sharding Adaptativo y Escalabilidad Lineal: La red activa nuevos shards dinámicamente bajo demanda. Cuantos más shards operan en paralelo, mayor es el rendimiento total (TPS), preservando siempre la composabilidad atómica en el consenso central.",
       "metric1_value": "500K+",
       "metric1": "TPS sostenidos en la prueba pública de enero de 2026",
-      "metric2_value": "800K+",
-      "metric2": "TPS de pico con swaps DeFi cross-shard reales",
+      "metric2_value": "2×",
+      "metric2": "Doblar los shards dobló el rendimiento: escalabilidad lineal confirmada",
       "metric3_value": "590+",
       "metric3": "Nodos de la comunidad, desde datacenters hasta portátiles",
       "metric4_value": "128",
@@ -64,9 +64,9 @@
           "detail": "Rendimiento estable en el conjunto de la red"
         },
         {
-          "value": "800.000+",
-          "label": "TPS de pico",
-          "detail": "Capacidad en ráfaga con swaps atómicos reales"
+          "value": "~3.900",
+          "label": "TPS por shard",
+          "detail": "Se mantuvo constante al escalar de 64 a 128 shards"
         },
         {
           "value": "590+",
@@ -261,7 +261,7 @@
         {
           "date": "31 de enero de 2026",
           "title": "Prueba pública final",
-          "desc": "Más de 500.000 TPS sostenidos con picos por encima de 800.000, en 590+ nodos de la comunidad y 128 shards - con swaps cross-shard reales."
+          "desc": "Más de 500.000 TPS sostenidos en 590+ nodos de la comunidad y 128 shards - con swaps cross-shard reales y escalabilidad lineal confirmada."
         },
         {
           "date": "Febrero de 2026",
@@ -319,13 +319,66 @@
       ],
       "status_progress": "En curso",
       "status_planned": "Planificado",
-      "disclaimer": "Las fechas son estimaciones comunitarias de la propuesta de Xi'an; la financiación se libera por hito entregado, por lo que el calendario puede desplazarse con el alcance."
+      "disclaimer": "Las fechas son estimaciones comunitarias de la propuesta de Xi'an; la financiación se libera por hito entregado, por lo que el calendario puede desplazarse con el alcance.",
+      "proposal_label": "Lee la propuesta completa de Xi'an (PDF)"
+    },
+    "participate": {
+      "label": "Participa",
+      "h2a": "Corre un nodo,",
+      "h2b": "únete a la próxima prueba",
+      "sub": "Las pruebas públicas de Hyperscale las sostiene la comunidad: cualquiera con un ordenador convencional puede levantar un nodo, aportar rendimiento real y verlo en el marcador en vivo. Así fue como más de 590 nodos alcanzaron el medio millón de TPS.",
+      "facts_title": "Estado de las pruebas públicas",
+      "facts": [
+        { "label": "Última prueba pública", "value": "31 de enero de 2026" },
+        { "label": "Rendimiento alcanzado", "value": "500.000+ TPS sostenidos" },
+        { "label": "Nodos de la comunidad", "value": "590+ en hardware convencional" },
+        { "label": "Próxima prueba pública", "value": "Por anunciar en radixlabs.net" }
+      ],
+      "req_title": "Requisitos mínimos del nodo",
+      "reqs": [
+        "CPU de 4 núcleos",
+        "16 GB de RAM",
+        "SSD SATA",
+        "10 Mbps de bajada / 5 Mbps de subida, por cable"
+      ],
+      "steps_title": "Pasos para participar",
+      "steps": [
+        {
+          "title": "Instala OpenJDK 21",
+          "desc": "Java 21 es el único requisito de software. Linux: <b>sudo apt install openjdk-21-jdk</b>. macOS: <b>brew install openjdk@21</b>. Windows: <b>instalador oficial de Oracle JDK 21</b>."
+        },
+        {
+          "title": "Descarga los ficheros del nodo",
+          "desc": "Consigue <b>hyperscale.jar</b> y <b>default.config</b> desde el canal de <a href=\"https://t.me/hyperscale_rs\" target=\"_blank\" rel=\"noopener noreferrer\">Telegram</a> Radix Hyperscale y colócalos en una carpeta llamada Hyperscale."
+        },
+        {
+          "title": "Abre los puertos",
+          "desc": "Reenvía en tu router el puerto 8080 TCP y el 30000 TCP/UDP hacia tu equipo y permítelos en el firewall. Desactiva la VPN durante la prueba."
+        },
+        {
+          "title": "Arranca el nodo",
+          "desc": "Desde la carpeta Hyperscale ejecuta el comando de abajo. En consola tienes ledger, network y network -stats para monitorizar."
+        },
+        {
+          "title": "Únete y observa",
+          "desc": "Sigue tu nodo en http://localhost:8080/dashboard/index.html y regístrate en radixlabs.net para unirte a la prueba en la fecha anunciada."
+        }
+      ],
+      "run_cmd": "java -Xms12G -jar hyperscale.jar -console",
+      "btn_join": "Únete en radixlabs.net",
+      "guides_intro": "Guías paso a paso por sistema:",
+      "guide_windows": "Guía Windows",
+      "guide_mac": "Guía macOS",
+      "guide_linux": "Guía Linux",
+      "note": "La testnet pública permanente, con GUI de validador doméstico, llega con el Milestone 4 de Xi'an (est. 2027). Hasta entonces las pruebas se coordinan por evento a través de <a href=\"https://radixlabs.net\" target=\"_blank\" rel=\"noopener noreferrer\">radixlabs.net</a> y el canal de <a href=\"https://t.me/hyperscale_rs\" target=\"_blank\" rel=\"noopener noreferrer\">Telegram</a> Radix Hyperscale."
     },
     "openSource": {
       "label": "Open source y verificable",
       "h2a": "No te fíes de los números.",
       "h2b": "Verifícalos.",
       "sub": "Todo - código, investigación, logs de las pruebas - es público. Las afirmaciones de escalabilidad de esta página pueden contrastarse con los repositorios y papers de abajo.",
+      "site_label": "hyperscale.rs",
+      "site_prompt": "Para entender a fondo cómo funciona su tecnología y profundizar en el funcionamiento, la arquitectura y los protocolos, visita",
       "cards": [
         {
           "title": "hyperscale-rs",

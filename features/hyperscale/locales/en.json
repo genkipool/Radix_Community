@@ -7,7 +7,7 @@
           "h1a": "500,000 TPS. Sustained.",
           "h1b": "Scalability without ",
           "h1c": "compromise.",
-          "p": "On January 31, 2026, over 590 community nodes sustained more than half a million real DeFi transactions per second - with peaks above 800,000 - while preserving atomic composability across 128 shards. Not a simulation: a public, reproducible test on commodity hardware."
+          "p": "On January 31, 2026, over 590 community nodes sustained more than half a million real DeFi transactions per second, while preserving atomic composability across 128 shards. Not a simulation: a public, reproducible test on commodity hardware."
         },
         {
           "h1a": "Card-network throughput.",
@@ -44,8 +44,8 @@
       "illustration_caption": "Adaptive Sharding and Linear Scalability: The network dynamically activates new shards on demand. The more shards operating in parallel, the higher the total throughput (TPS), always preserving atomic composability in the central consensus.",
       "metric1_value": "500K+",
       "metric1": "Sustained TPS in the January 2026 public test",
-      "metric2_value": "800K+",
-      "metric2": "Peak TPS with real cross-shard DeFi swaps",
+      "metric2_value": "2×",
+      "metric2": "Doubling the shards doubled throughput: linear scaling confirmed",
       "metric3_value": "590+",
       "metric3": "Community nodes, from datacenters to laptops",
       "metric4_value": "128",
@@ -64,9 +64,9 @@
           "detail": "Steady-state throughput across the full network"
         },
         {
-          "value": "800,000+",
-          "label": "Peak TPS",
-          "detail": "Burst capacity with real atomic swaps"
+          "value": "~3,900",
+          "label": "TPS per shard",
+          "detail": "Held constant while scaling from 64 to 128 shards"
         },
         {
           "value": "590+",
@@ -261,7 +261,7 @@
         {
           "date": "January 31, 2026",
           "title": "Final public test",
-          "desc": "500,000+ sustained TPS with peaks above 800,000, across 590+ community nodes and 128 shards - with real cross-shard swaps."
+          "desc": "500,000+ sustained TPS across 590+ community nodes and 128 shards - with real cross-shard swaps and linear scaling confirmed."
         },
         {
           "date": "February 2026",
@@ -319,13 +319,66 @@
       ],
       "status_progress": "In progress",
       "status_planned": "Planned",
-      "disclaimer": "Dates are community estimates from the Xi'an proposal; funding is released per delivered milestone, so the schedule can shift with scope."
+      "disclaimer": "Dates are community estimates from the Xi'an proposal; funding is released per delivered milestone, so the schedule can shift with scope.",
+      "proposal_label": "Read the full Xi'an proposal (PDF)"
+    },
+    "participate": {
+      "label": "Take part",
+      "h2a": "Run a node,",
+      "h2b": "join the next public test",
+      "sub": "Hyperscale's public tests are carried by the community: anyone with a commodity machine can spin up a node, contribute real throughput and watch it on the live scoreboard. That is how 590+ nodes reached half a million TPS.",
+      "facts_title": "Public test status",
+      "facts": [
+        { "label": "Last public test", "value": "January 31, 2026" },
+        { "label": "Throughput reached", "value": "500,000+ sustained TPS" },
+        { "label": "Community nodes", "value": "590+ on commodity hardware" },
+        { "label": "Next public test", "value": "To be announced on radixlabs.net" }
+      ],
+      "req_title": "Minimum node requirements",
+      "reqs": [
+        "4-core CPU",
+        "16 GB RAM",
+        "SATA SSD",
+        "10 Mbps down / 5 Mbps up, wired"
+      ],
+      "steps_title": "How to take part",
+      "steps": [
+        {
+          "title": "Install OpenJDK 21",
+          "desc": "Java 21 is the only software requirement. Linux: <b>sudo apt install openjdk-21-jdk</b>. macOS: <b>brew install openjdk@21</b>. Windows: <b>the official Oracle JDK 21 installer</b>."
+        },
+        {
+          "title": "Download the node files",
+          "desc": "Get <b>hyperscale.jar</b> and <b>default.config</b> from the Radix Hyperscale <a href=\"https://t.me/hyperscale_rs\" target=\"_blank\" rel=\"noopener noreferrer\">Telegram</a> channel and place them in a folder named Hyperscale."
+        },
+        {
+          "title": "Open the ports",
+          "desc": "Forward port 8080 TCP and port 30000 TCP/UDP on your router to your machine and allow them through the firewall. Disable any VPN during the test."
+        },
+        {
+          "title": "Start the node",
+          "desc": "From the Hyperscale folder run the command below. In the console you get ledger, network and network -stats to monitor it."
+        },
+        {
+          "title": "Join and watch",
+          "desc": "Track your node at http://localhost:8080/dashboard/index.html and register at radixlabs.net to join the test on the announced date."
+        }
+      ],
+      "run_cmd": "java -Xms12G -jar hyperscale.jar -console",
+      "btn_join": "Join at radixlabs.net",
+      "guides_intro": "Step-by-step guides per platform:",
+      "guide_windows": "Windows guide",
+      "guide_mac": "macOS guide",
+      "guide_linux": "Linux guide",
+      "note": "The permanent public testnet, with a home-validator GUI, arrives with Xi'an Milestone 4 (est. 2027). Until then, tests are coordinated per event through <a href=\"https://radixlabs.net\" target=\"_blank\" rel=\"noopener noreferrer\">radixlabs.net</a> and the Radix Hyperscale <a href=\"https://t.me/hyperscale_rs\" target=\"_blank\" rel=\"noopener noreferrer\">Telegram</a> channel."
     },
     "openSource": {
       "label": "Open source & verifiable",
       "h2a": "Don't trust the numbers.",
       "h2b": "Verify them.",
       "sub": "Everything - code, research, test logs - is public. The scalability claims on this page can be checked against the repositories and papers below.",
+      "site_label": "hyperscale.rs",
+      "site_prompt": "To understand how the technology works in depth and dig into its operation, architecture and protocols, visit",
       "cards": [
         {
           "title": "hyperscale-rs",
