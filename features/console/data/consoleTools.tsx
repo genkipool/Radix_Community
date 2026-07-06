@@ -163,16 +163,22 @@ export interface ConsoleGroup {
 
 export const CONSOLE_GROUPS: ConsoleGroup[] = [
   {
+    id: 'ai',
+    icon: <Bot className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    tools: ['mcp'],
+  },
+  {
     id: 'assets',
     icon: <Coins className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['send-transaction', 'staking', 'create-token', 'my-resources', 'faucet'],
+    tools: ['send-transaction', 'staking', 'create-token', 'my-resources', 'faucet', 'claim-package-royalties'],
   },
   {
     id: 'deploy',
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel', 'claim-package-royalties'],
+    tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
   },
   {
     id: 'utilities',
@@ -185,12 +191,6 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
       'convert-olympia-address',
       'wallet-playground',
     ],
-  },
-  {
-    id: 'ai',
-    icon: <Bot className="size-5" />,
-    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['mcp'],
   },
 ];
 

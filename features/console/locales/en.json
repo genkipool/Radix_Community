@@ -2052,7 +2052,7 @@
         "how": "Signing needs a live channel to your phone, which a stateless web server can't hold. So a small local MCP server, radix-connector-mcp, does it: it opens the Radix Connect channel and your phone approves. Install it once and both servers work together.",
         "installTitle": "1. Install from GitHub",
         "installCargoLabel": "Option A · with a Rust toolchain (any OS)",
-        "installPrebuiltLabel": "Option B · prebuilt binary (no Rust needed)",
+        "installPrebuiltLabel": "Option B · prebuilt binary (no Rust needed - recommended option)",
         "unixLabel": "Linux / macOS",
         "windowsLabel": "Windows · PowerShell",
         "registerTitle": "2. Register it with your AI client",

@@ -84,7 +84,7 @@ export const setupWalletConnectorTool = defineMcpTool({
       cliSection('1. Install the connector (from GitHub)'),
       'Option A — with a Rust toolchain (any OS):',
       cliCode(`cargo install --git ${REPO_URL} radixdlt-connector-mcp`, 'sh'),
-      'Option B — prebuilt binary (no Rust needed):',
+      'Option B — prebuilt binary (no Rust needed - recommended option):',
       cliCode(prebuilt, 'sh'),
 
       cliSection('2. Register it with the MCP client'),
