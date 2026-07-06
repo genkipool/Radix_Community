@@ -121,6 +121,7 @@ read as-is — quote it or summarise it for the user, do not re-parse it as data
 - *"Which validator should I stake with?"* → \`list_validators\` → compare fee/uptime/APY → staking page ${origin}/en/console/staking.
 - *"What is this manifest going to do?"* → \`explain_manifest\` (plain-language steps) + \`preview_transaction\` (fees, balance changes).
 - *"What's the XRD price / network status?"* → \`get_xrd_price\`, \`get_network_status\`.
+- *"What are my accounts / show my balances"* (this server is stateless — it has no "connected wallet") → the local connector's \`request_accounts\` (no signature) to get the address(es) → \`get_account_balances\` for the chosen one.
 - *"Who holds token X? What NFTs exist in collection Y?"* → \`get_resource_holders\`, \`get_nft_data\`.
 - *"What methods does component_rdx1… expose? What's in its state?"* → \`get_component_blueprint\`, \`get_component_state\`, \`get_key_value_store\`.
 

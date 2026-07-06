@@ -199,15 +199,18 @@ export const buildManifestFromTemplateTool = defineMcpTool({
     const manifest = template.build(values, await templateContext(network)).trim();
     const validation = await staticallyValidateManifest(manifest, network);
 
-    return cliRender(
-      cliBanner(`Manifest · ${templateId}`),
-      cliKeyValues([
-        ['Network', network],
-        ['Static validation', validation.valid ? 'VALID' : `INVALID — ${validation.error}`],
-      ]),
-      cliCode(manifest),
-      cliNext(signingSteps(ctx.origin, network, locale, validation)),
-    );
+    return {
+      text: cliRender(
+        cliBanner(`Manifest · ${templateId}`),
+        cliKeyValues([
+          ['Network', network],
+          ['Static validation', validation.valid ? 'VALID' : `INVALID — ${validation.error}`],
+        ]),
+        cliCode(manifest),
+        cliNext(signingSteps(ctx.origin, network, locale, validation)),
+      ),
+      structured: { manifest, network, valid: validation.valid, templateId },
+    };
   },
 });
 
@@ -262,7 +265,7 @@ export const buildFungibleTokenManifestTool = defineMcpTool({
 
     const validation = await staticallyValidateManifest(manifest, input.network);
 
-    return cliRender(
+    const text = cliRender(
       cliBanner(`Token manifest · ${input.symbol}`),
       cliKeyValues([
         ['Token', `${input.name} (${input.symbol})`],
@@ -278,6 +281,10 @@ export const buildFungibleTokenManifestTool = defineMcpTool({
         `Advanced options (NFTs, roles, badges): ${ctx.origin}/${input.locale}/console/create-token`,
       ]),
     );
+    return {
+      text,
+      structured: { manifest, network: input.network, symbol: input.symbol, valid: validation.valid },
+    };
   },
 });
 
@@ -345,7 +352,7 @@ export const buildNftCollectionManifestTool = defineMcpTool({
 
     const validation = await staticallyValidateManifest(manifest, input.network);
 
-    return cliRender(
+    const text = cliRender(
       cliBanner(`NFT collection · ${input.name}`),
       cliKeyValues([
         ['Collection', input.name],
@@ -360,6 +367,10 @@ export const buildNftCollectionManifestTool = defineMcpTool({
         `Advanced options (custom data fields, roles, badges): ${ctx.origin}/${input.locale}/console/create-token`,
       ]),
     );
+    return {
+      text,
+      structured: { manifest, network: input.network, nftCount: input.nfts.length, valid: validation.valid },
+    };
   },
 });
 
@@ -397,7 +408,7 @@ CALL_METHOD
 
     const validation = await staticallyValidateManifest(manifest, network);
 
-    return cliRender(
+    const text = cliRender(
       cliBanner('Stokenet faucet · free XRD'),
       cliKeyValues([
         ['Account', accountAddress],
@@ -408,6 +419,7 @@ CALL_METHOD
       cliCode(manifest),
       cliNext(signingSteps(ctx.origin, network, locale, validation)),
     );
+    return { text, structured: { manifest, network, faucet, account: accountAddress, valid: validation.valid } };
   },
 });
 
@@ -443,7 +455,7 @@ export const buildDeployPackageManifestTool = defineMcpTool({
       'None',
     );
 
-    return cliRender(
+    const text = cliRender(
       cliBanner('Deploy package · definition ready'),
       cliKeyValues([
         ['Network', network],
@@ -458,9 +470,10 @@ export const buildDeployPackageManifestTool = defineMcpTool({
         'This HTTP server cannot attach the WASM blob. Sign on the local radix-connector, which reads the .wasm from disk (it never travels through the agent):',
         `  deploy_package { "wasm_path": "<path to your .wasm>", "package_definition": <the value above>, "network": "${network}"${owner !== 'none' ? ', "owner_role": <the value above>' : ''} }`,
         'If the connector is not installed, call setup_wallet_connector first.',
-        'Note: transaction preview is not available for deploys over MCP — the Gateway needs the WASM blob, which only the connector holds.',
+        'deploy_package dry-runs the deploy on the Gateway (with the WASM blob) before asking you to approve, and aborts if it would fail — so you never pay for a failing deploy.',
       ]),
     );
+    return { text, structured: { packageDefinition, ownerRole, network, owner } };
   },
 });
 
@@ -550,11 +563,16 @@ export const previewTransactionTool = defineMcpTool({
     manifest: z.string().min(1).max(100_000).describe('Transaction manifest source text'),
     network: networkSchema,
     locale: localeSchema,
+    blobs: z
+      .array(z.string().regex(/^[0-9a-fA-F]+$/, 'Must be hex'))
+      .max(10)
+      .optional()
+      .describe('Hex-encoded blobs referenced by the manifest via Blob("<hash>"), e.g. package WASM. Required to dry-run a package deploy.'),
   }),
-  handler: async ({ manifest, network, locale }, ctx) => {
-    const preview = await previewTransaction(manifest, network);
+  handler: async ({ manifest, network, locale, blobs }, ctx) => {
+    const preview = await previewTransaction(manifest, network, blobs);
 
-    return cliRender(
+    const text = cliRender(
       cliBanner('Transaction preview'),
       cliKeyValues([
         ['Network', network],
@@ -581,6 +599,15 @@ export const previewTransactionTool = defineMcpTool({
           : 'The simulation did not succeed — fix the manifest before asking the user to sign.',
       ]),
     );
+    return {
+      text,
+      structured: {
+        status: preview.status,
+        succeeded: preview.status === 'Succeeded',
+        feeXrd: preview.feeXrd,
+        errorMessage: preview.errorMessage,
+      },
+    };
   },
 });
 

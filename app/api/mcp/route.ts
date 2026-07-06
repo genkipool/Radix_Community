@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleMcpBody } from '@/services/mcp/protocol';
 import { getMcpRegistry } from '@/services/mcp/tools';
+import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
 import { JSON_RPC_ERRORS } from '@/services/mcp/types';
 
 /** CORS headers so browser-based MCP clients can connect too. */
@@ -25,6 +26,18 @@ const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: CORS_HEADERS });
 
 export async function POST(request: NextRequest) {
+  const rate = checkRateLimit(clientIp(request.headers));
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: JSON_RPC_ERRORS.INTERNAL_ERROR, message: 'Rate limit exceeded. Slow down.' },
+      },
+      { status: 429, headers: { ...CORS_HEADERS, 'Retry-After': String(rate.retryAfterSeconds) } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

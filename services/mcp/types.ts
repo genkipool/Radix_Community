@@ -50,7 +50,16 @@ export interface McpToolContext {
 
 export interface McpToolResult {
   content: Array<{ type: 'text'; text: string }>;
+  /** Machine-readable result (MCP `structuredContent`) — key fields agents can
+   * consume without scraping the formatted text (manifests, intent hashes, …). */
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
+}
+
+/** A handler may return just the display text, or text plus structured data. */
+export interface McpToolHandlerResult {
+  text: string;
+  structured?: Record<string, unknown>;
 }
 
 export type McpToolCategory = 'knowledge' | 'ledger' | 'console' | 'site';
@@ -63,7 +72,10 @@ export interface McpToolDefinition<Schema extends z.ZodTypeAny = z.ZodTypeAny> {
   /** True when the tool only transforms its input (no Gateway/network calls). */
   readOnly?: boolean;
   inputSchema: Schema;
-  handler: (input: z.infer<Schema>, ctx: McpToolContext) => Promise<string> | string;
+  handler: (
+    input: z.infer<Schema>,
+    ctx: McpToolContext,
+  ) => Promise<string | McpToolHandlerResult> | string | McpToolHandlerResult;
 }
 
 /** Wire format of a tool as returned by `tools/list`. */

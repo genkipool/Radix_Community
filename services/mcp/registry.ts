@@ -64,8 +64,14 @@ export class McpToolRegistry {
     }
 
     try {
-      const text = await tool.handler(parsed.data, ctx);
-      return { content: [{ type: 'text', text }] };
+      const out = await tool.handler(parsed.data, ctx);
+      if (typeof out === 'string') {
+        return { content: [{ type: 'text', text: out }] };
+      }
+      return {
+        content: [{ type: 'text', text: out.text }],
+        ...(out.structured ? { structuredContent: out.structured } : {}),
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return errorResult(`Tool "${name}" failed: ${message}`);

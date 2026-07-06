@@ -172,12 +172,13 @@ export const getTransactionTool = defineMcpTool({
     const fungibleChanges =
       (balanceChanges?.fungible_balance_changes as Array<Record<string, unknown>> | undefined) ?? [];
 
-    return cliRender(
+    const status = (tx.transaction_status as string) ?? (receipt?.status as string);
+    const text = cliRender(
       cliBanner('Transaction'),
       cliKeyValues([
         ['Intent hash', intentHash],
         ['Network', network],
-        ['Status', (tx.transaction_status as string) ?? (receipt?.status as string)],
+        ['Status', status],
         ['Confirmed at', tx.confirmed_at as string | undefined],
         ['Epoch / round', tx.epoch !== undefined ? `${tx.epoch} / ${tx.round}` : undefined],
         ['Fee paid', tx.fee_paid ? `${tx.fee_paid} XRD` : undefined],
@@ -207,6 +208,17 @@ export const getTransactionTool = defineMcpTool({
         : undefined,
       cliNext([`Explore it visually: ${ctx.origin}/en/dashboard?search=${intentHash}`]),
     );
+    return {
+      text,
+      structured: {
+        intentHash,
+        network,
+        status,
+        committedSuccess: status === 'CommittedSuccess',
+        feePaidXrd: tx.fee_paid ?? null,
+        affectedEntities: (tx.affected_global_entities as string[] | undefined) ?? [],
+      },
+    };
   },
 });
 
