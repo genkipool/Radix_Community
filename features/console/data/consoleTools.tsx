@@ -33,6 +33,14 @@ export interface ConsoleToolMeta {
 }
 
 export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
+  mcp: {
+    slug: 'mcp',
+    icon: <Bot className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '168,85,247',
+    requiresWallet: false,
+    wide: true,
+  },
   'send-transaction': {
     slug: 'send-transaction',
     icon: <RadixIcon className="size-5 text-white" strokeColor="currentColor" />,
@@ -141,14 +149,6 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     accentRgb: '234,179,8',
     requiresWallet: true,
-  },
-  mcp: {
-    slug: 'mcp',
-    icon: <Bot className="size-5" />,
-    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    accentRgb: '168,85,247',
-    requiresWallet: false,
-    wide: true,
   },
 };
 
