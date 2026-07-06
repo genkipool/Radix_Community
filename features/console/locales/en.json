@@ -2050,7 +2050,7 @@
         "title": "Sign transactions (local connector)",
         "hint": "This server prepares and previews transactions but cannot sign them. Install the local connector to pair your Radix Wallet and sign — your private key never leaves your phone.",
         "how": "Signing needs a live channel to your phone, which a stateless web server can't hold. So a small local MCP server, radix-connector-mcp, does it: it opens the Radix Connect channel and your phone approves. Install it once and both servers work together.",
-        "installTitle": "1. Install from GitHub (no crates.io / npm)",
+        "installTitle": "1. Install from GitHub",
         "installCargoLabel": "Option A · with a Rust toolchain (any OS)",
         "installPrebuiltLabel": "Option B · prebuilt binary (no Rust needed)",
         "unixLabel": "Linux / macOS",

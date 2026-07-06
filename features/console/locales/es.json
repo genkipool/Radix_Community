@@ -2051,7 +2051,7 @@
         "title": "Firmar transacciones (conector local)",
         "hint": "Este servidor prepara y previsualiza transacciones, pero no puede firmarlas. Instala el conector local para emparejar tu Radix Wallet y firmar; tu clave privada nunca sale del móvil.",
         "how": "Firmar requiere un canal vivo con tu móvil, algo que un servidor web sin estado no puede mantener. Por eso lo hace un pequeño servidor MCP local, radix-connector-mcp: abre el canal de Radix Connect y tu móvil aprueba. Se instala una vez y ambos servidores trabajan juntos.",
-        "installTitle": "1. Instalar desde GitHub (sin crates.io ni npm)",
+        "installTitle": "1. Instalar desde GitHub",
         "installCargoLabel": "Opción A · con toolchain de Rust (cualquier SO)",
         "installPrebuiltLabel": "Opción B · binario precompilado (sin Rust)",
         "unixLabel": "Linux / macOS",

@@ -81,7 +81,7 @@ export const setupWalletConnectorTool = defineMcpTool({
         'holds the Radix Connect channel to the phone. The private key never leaves the\n' +
         'phone; the user approves there. Install it once, then both servers work together.',
 
-      cliSection('1. Install the connector (from GitHub — no crates.io / npm)'),
+      cliSection('1. Install the connector (from GitHub)'),
       'Option A — with a Rust toolchain (any OS):',
       cliCode(`cargo install --git ${REPO_URL} radixdlt-connector-mcp`, 'sh'),
       'Option B — prebuilt binary (no Rust needed):',
