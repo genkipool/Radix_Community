@@ -4,10 +4,12 @@
  * The technical pillars (Cerberus research → Xi'an engineering) and the
  * cross-shard atomic commitment flow, explained step by step.
  */
-import { Network, Radio, Split, Boxes, Blocks, Server } from 'lucide-react';
+import Link from 'next/link';
+import { Network, Radio, Split, Boxes, Blocks, Server, ArrowUpRight } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { FeatureCard } from '../../components/FeatureCard';
+import { HYPERSCALE_LINKS } from '../../data/links';
 import type { HyperscaleSectionProps } from '../../types';
 
 const PILLAR_ICONS = [
@@ -37,6 +39,15 @@ export default function Architecture({ t }: HyperscaleSectionProps) {
         <FadeIn className="bg-[var(--color-card-bg)] border border-[var(--color-card-border)] border-l-4 border-l-[var(--color-accent)] p-8 rounded-2xl mb-16 max-w-4xl mx-auto">
           <h3 className="text-lg font-bold text-[var(--color-text-main)] mb-3">{architecture.note_title}</h3>
           <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">{architecture.note_p}</p>
+          <Link
+            href={HYPERSCALE_LINKS.site}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors"
+          >
+            {architecture.note_link}
+            <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </Link>
         </FadeIn>
 
         {/* Technical pillars */}

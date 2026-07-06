@@ -111,6 +111,7 @@
       "sub": "A decade of consensus research, validated in public at scale, now being rebuilt as production software by the community. These are the pieces and how they fit together.",
       "note_title": "One goal, two generations of design",
       "note_p": "Cerberus (peer-reviewed in 2020) and the 2026 Hyperscale test validated the goal: linear scalability with cross-shard atomicity. Xi'an is a clean-room Rust rewrite - hyperscale-rs - that pursues the same guarantees with a new consensus design: HotStuff-2 shard chains coordinated by the POLARIS leaderless beacon chain. Metrics from earlier prototypes should not be attributed to Xi'an, and vice versa.",
+      "note_link": "Explore the technology in depth at hyperscale.rs",
       "pillars": [
         {
           "tag": "Research foundation",
