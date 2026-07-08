@@ -28,6 +28,7 @@ import ConfigureMetadataTool from './tools/ConfigureMetadataTool';
 import ConvertOlympiaTool from './tools/ConvertOlympiaTool';
 import ClaimPackageRoyaltiesTool from './tools/ClaimPackageRoyaltiesTool';
 import McpTool from './tools/McpTool';
+import SignDocumentTool from './tools/SignDocumentTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
@@ -46,6 +47,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'convert-olympia-address': ConvertOlympiaTool,
   'claim-package-royalties': ClaimPackageRoyaltiesTool,
   mcp: McpTool,
+  'sign-document': SignDocumentTool,
 };
 
 interface ConsoleToolViewProps {

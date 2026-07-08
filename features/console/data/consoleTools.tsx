@@ -6,6 +6,7 @@ import {
   Coins,
   Droplets,
   FileCode2,
+  FileSignature,
   FlaskConical,
   Landmark,
   LayoutDashboard,
@@ -150,6 +151,15 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '234,179,8',
     requiresWallet: true,
   },
+  'sign-document': {
+    slug: 'sign-document',
+    icon: <FileSignature className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '236,72,153',
+    // Verify works without a wallet; the Sign tab self-gates on connection.
+    requiresWallet: false,
+    wide: true,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -179,6 +189,12 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
+  },
+  {
+    id: 'documents',
+    icon: <FileSignature className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    tools: ['sign-document'],
   },
   {
     id: 'utilities',

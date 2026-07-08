@@ -25,10 +25,15 @@
     "groups": {
       "assets": "Activos",
       "deploy": "Construir y Desplegar",
+      "documents": "Documentos",
       "utilities": "Utilidades",
       "ai": "IA y Automatización"
     },
     "tools": {
+      "sign-document": {
+        "title": "Firmar Documento",
+        "description": "Firma un archivo con tu wallet de Radix, fuera de cadena o anclado en el ledger como NFT soulbound. El archivo se hashea localmente y nunca se sube."
+      },
       "claim-package-royalties": {
         "title": "Reclamar Regalías",
         "description": "Reclama las regalías de XRD acumuladas de un paquete Scrypto."

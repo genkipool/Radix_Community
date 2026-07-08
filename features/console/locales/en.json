@@ -25,10 +25,15 @@
     "groups": {
       "assets": "Assets",
       "deploy": "Build & Deploy",
+      "documents": "Documents",
       "utilities": "Utilities",
       "ai": "AI & Automation"
     },
     "tools": {
+      "sign-document": {
+        "title": "Sign Document",
+        "description": "Sign a file with your Radix wallet, off-chain or anchored on-ledger as a soulbound NFT. The file is hashed locally and never uploaded."
+      },
       "claim-package-royalties": {
         "title": "Claim Package Royalties",
         "description": "Claim accumulated XRD royalties from a Scrypto package."
