@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
@@ -13,6 +13,7 @@ import { useResourceRoles } from '../../hooks/useResourceRoles';
 import type { GatewayRoleEntry } from '@/features/dashboard/types';
 import type { MetadataItem } from '@/features/dashboard/types/shared.types';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
+import { useNftData, useMissingNfts } from '../../hooks/useNftData';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
 import {
@@ -130,11 +131,15 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [burnNftIds, setBurnNftIds] = useState<Set<string>>(new Set());
+  const [recallNftIds, setRecallNftIds] = useState<Set<string>>(new Set());
   const [proof, setProof] = useState<BadgeProofSelection | null>(null);
   const [showManifest, setShowManifest] = useState(false);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [lockedMetaKeys, setLockedMetaKeys] = useState<Set<string>>(new Set());
   const [burnNftSearch, setBurnNftSearch] = useState('');
+  const [recallNftSearch, setRecallNftSearch] = useState('');
+  const [freezeVaultSearch, setFreezeVaultSearch] = useState('');
+  const [freezeVaults, setFreezeVaults] = useState<Set<string>>(new Set());
   const [badgeSearch, setBadgeSearch] = useState('');
 
   // For backwards compatibility in queries
@@ -175,6 +180,50 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   // Selected resource data for pre-filling disabled inputs
   const selectedFungible = holdings?.fungibles.find((f) => f.resourceAddress === resource);
   const selectedNonFungible = holdings?.nonFungibles.find((nf) => nf.resourceAddress === resource);
+
+  const { data: ownedNftData } = useNftData(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+  const { data: missingNftData } = useMissingNfts(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+
+  const allVaultsData = useMemo(() => {
+    if (!isNonFungible) return [];
+    const map = new Map<string, { address: string; nftCount: number; firstImageUrl?: string; firstName?: string }>();
+    
+    // Process owned NFTs
+    const ownedVault = selectedNonFungible?.vaultAddress;
+    if (ownedVault && ownedNftData) {
+      map.set(ownedVault, {
+        address: ownedVault,
+        nftCount: ownedNftData.length,
+        firstImageUrl: ownedNftData[0]?.imageUrl || selectedNonFungible?.iconUrl,
+        firstName: 'Tu Bóveda',
+      });
+    } else if (ownedVault && selectedNonFungible && selectedNonFungible.ids.length > 0) {
+      map.set(ownedVault, {
+        address: ownedVault,
+        nftCount: selectedNonFungible.ids.length,
+        firstImageUrl: selectedNonFungible.iconUrl,
+        firstName: 'Tu Bóveda',
+      });
+    }
+
+    // Process missing NFTs
+    if (missingNftData) {
+      for (const nft of missingNftData) {
+        if (!nft.vaultAddress) continue;
+        if (!map.has(nft.vaultAddress)) {
+          map.set(nft.vaultAddress, {
+            address: nft.vaultAddress,
+            nftCount: 0,
+            firstImageUrl: nft.imageUrl || selectedNonFungible?.iconUrl,
+            firstName: `Bóveda ...${nft.vaultAddress.slice(-4)}`
+          });
+        }
+        map.get(nft.vaultAddress)!.nftCount++;
+      }
+    }
+    
+    return Array.from(map.values());
+  }, [isNonFungible, ownedNftData, missingNftData, selectedNonFungible]);
 
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
@@ -245,15 +294,41 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
       case 'recall': {
         const recallVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
         const recallAmount = field('amount');
+        if (isNonFungible) {
+          if (recallNftIds.size === 0) return '';
+          const vaultMap = new Map<string, string[]>();
+          for (const id of recallNftIds) {
+             const nft = missingNftData?.find(n => n.id === id);
+             if (nft && nft.vaultAddress) {
+                if (!vaultMap.has(nft.vaultAddress)) vaultMap.set(nft.vaultAddress, []);
+                vaultMap.get(nft.vaultAddress)!.push(id);
+             }
+          }
+          let manifest = '';
+          for (const [v, ids] of vaultMap.entries()) {
+             manifest += recallManifest(v, '0', ids);
+          }
+          if (manifest) manifest += DEPOSIT_ALL_SUFFIX(account);
+          return manifest;
+        }
         return recallVault && recallAmount
           ? recallManifest(recallVault, recallAmount) + DEPOSIT_ALL_SUFFIX(account)
           : '';
       }
       case 'freeze': {
-        const freezeVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
         const freezeFlag = field('flag');
         const freezeMode = field('mode') || 'freeze';
-        return freezeVault && freezeFlag
+        if (!freezeFlag) return '';
+
+        if (isNonFungible) {
+          if (freezeVaults.size === 0) return '';
+          return Array.from(freezeVaults)
+            .map(vault => freezeVaultManifest(vault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze'))
+            .join('');
+        }
+
+        const freezeVault = field('vault') || selectedFungible?.vaultAddress || '';
+        return freezeVault
           ? freezeVaultManifest(freezeVault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze')
           : '';
       }
@@ -304,6 +379,10 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   } else if (activeAction === 'setOwnerRole') {
     if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
   }
+
+  let prioritizedIdsForProof: string[] = [];
+  if (activeAction === 'burn') prioritizedIdsForProof = Array.from(burnNftIds);
+  else if (activeAction === 'recall') prioritizedIdsForProof = Array.from(recallNftIds);
 
   return (
     <div className="space-y-5">
@@ -368,6 +447,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           onChange={setProof}
           disabled={isSending}
           requiredBadges={requiredBadgeForAction}
+          prioritizedIds={prioritizedIdsForProof}
           rolesLoading={rolesLoading}
         />
       </ToolSection>
@@ -543,20 +623,20 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {selectedNonFungible.ids
-                        .filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase()))
-                        .map((nftId) => {
-                          const isSelected = burnNftIds.has(nftId);
+                      {(ownedNftData || selectedNonFungible.ids.map(id => ({ id, name: selectedNonFungible.name || 'NFT', imageUrl: selectedNonFungible.iconUrl })))
+                        .filter(nft => !burnNftSearch || nft.id.toLowerCase().includes(burnNftSearch.toLowerCase()) || nft.name?.toLowerCase().includes(burnNftSearch.toLowerCase()))
+                        .map((nft) => {
+                          const isSelected = burnNftIds.has(nft.id);
                           return (
                             <button
-                              key={nftId}
+                              key={nft.id}
                               type="button"
                               disabled={isSending || isActionDenied}
                               onClick={() => {
                                 setBurnNftIds((prev) => {
                                   const next = new Set(prev);
-                                  if (next.has(nftId)) next.delete(nftId);
-                                  else next.add(nftId);
+                                  if (next.has(nft.id)) next.delete(nft.id);
+                                  else next.add(nft.id);
                                   return next;
                                 });
                               }}
@@ -565,13 +645,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
                                 borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
                               }}
-                              title={nftId}
+                              title={nft.id}
                             >
-                              {selectedNonFungible.iconUrl && (
+                              {(nft.imageUrl || selectedNonFungible.iconUrl) && (
                                 <SafeImage
-                                  src={selectedNonFungible.iconUrl}
-                                  alt={nftId}
-                                  fallbackName={selectedNonFungible.name || 'NFT'}
+                                  src={nft.imageUrl || selectedNonFungible.iconUrl || ''}
+                                  alt={nft.id}
+                                  fallbackName={nft.name || selectedNonFungible.name || 'NFT'}
                                   className="size-8 rounded-lg object-cover shadow-sm shrink-0"
                                 />
                               )}
@@ -580,13 +660,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                   className="truncate font-bold text-xs leading-tight"
                                   style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
                                 >
-                                  {selectedNonFungible.name || 'NFT'}
+                                  {nft.name || selectedNonFungible.name || 'NFT'}
                                 </span>
                                 <span
                                   className="truncate text-[11px] font-medium opacity-70"
                                   style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
                                 >
-                                  {nftId}
+                                  {nft.id}
                                 </span>
                               </div>
                               {isSelected && (
@@ -595,7 +675,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             </button>
                           );
                         })}
-                      {selectedNonFungible.ids.filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
+                      {(!ownedNftData ? selectedNonFungible.ids : ownedNftData).filter(nft => !burnNftSearch || (typeof nft === 'string' ? nft : nft.id).toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
                         <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                           {labels.fields.noNftsFound}
                         </div>
@@ -738,16 +818,16 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   </div>
                 )}
 
-                {(activeAction === 'recall' || activeAction === 'freeze') && (
+                {(!isNonFungible && (activeAction === 'freeze' || activeAction === 'recall')) && (
                   <TextField
                     label={labels.fields.vault}
                     hint={labels.fields.vaultHint}
-                    value={isActionDenied ? resource : (fields.vault ?? selectedFungible?.vaultAddress ?? selectedNonFungible?.vaultAddress ?? '')}
+                    value={fields.vault ?? selectedFungible?.vaultAddress ?? selectedNonFungible?.vaultAddress ?? ''}
                     onChange={(value) => setField('vault', value)}
                     disabled={isSending || isActionDenied}
                   />
                 )}
-                {activeAction === 'recall' && (
+                {activeAction === 'recall' && isFungible && (
                   <TextField
                     label={labels.fields.amount}
                     value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
@@ -756,6 +836,168 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     placeholder={selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : ''}
                     disabled={isSending || isActionDenied}
                   />
+                )}
+                {activeAction === 'recall' && isNonFungible && missingNftData && (
+                  <div className="flex flex-col gap-3">
+                    <SearchField
+                      value={recallNftSearch}
+                      onChange={setRecallNftSearch}
+                      placeholder={labels.fields.searchNfts.replace('{count}', missingNftData.length.toString())}
+                      disabled={isSending || isActionDenied}
+                    />
+                    <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: recallNftIds.size > 0 ? 'visible' : 'hidden' }}>
+                      <Undo2 className="size-3.5" />
+                      <span>{recallNftIds.size === 1 ? labels.fields.nftsSelected.replace('{count}', '1') : labels.fields.nftsSelectedPlural.replace('{count}', recallNftIds.size.toString())}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRecallNftIds(new Set())}
+                        className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.clearSelection}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {missingNftData
+                        .filter(nft => !recallNftSearch || nft.id.toLowerCase().includes(recallNftSearch.toLowerCase()) || nft.name?.toLowerCase().includes(recallNftSearch.toLowerCase()))
+                        .map((nft) => {
+                          const isSelected = recallNftIds.has(nft.id);
+                          return (
+                            <button
+                              key={nft.id}
+                              type="button"
+                              disabled={isSending || isActionDenied}
+                              onClick={() => {
+                                setRecallNftIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(nft.id)) next.delete(nft.id);
+                                  else next.add(nft.id);
+                                  return next;
+                                });
+                              }}
+                              className="group flex items-center gap-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95 p-2.5"
+                              style={{
+                                background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                                borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
+                              }}
+                              title={nft.id}
+                            >
+                              {(nft.imageUrl || selectedNonFungible?.iconUrl) && (
+                                <SafeImage
+                                  src={nft.imageUrl || selectedNonFungible?.iconUrl || ''}
+                                  alt={nft.id}
+                                  fallbackName={nft.name || selectedNonFungible?.name || 'NFT'}
+                                  className="size-8 rounded-lg object-cover shadow-sm shrink-0"
+                                />
+                              )}
+                              <div className="flex flex-col min-w-0">
+                                <span
+                                  className="truncate font-bold text-xs leading-tight"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
+                                >
+                                  {nft.name || selectedNonFungible?.name || 'NFT'}
+                                </span>
+                                <span
+                                  className="truncate text-[11px] font-medium opacity-70"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                                >
+                                  {nft.id}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <Check className="size-4 shrink-0 ml-auto" style={{ color: 'var(--color-primary)' }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      {missingNftData.filter(nft => !recallNftSearch || nft.id.toLowerCase().includes(recallNftSearch.toLowerCase())).length === 0 && (
+                        <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.noNftsFound}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {activeAction === 'freeze' && isNonFungible && (
+                  <div className="flex flex-col gap-3">
+                    <SearchField
+                      value={freezeVaultSearch}
+                      onChange={setFreezeVaultSearch}
+                      placeholder={labels.fields.searchNfts.replace('{count}', allVaultsData.length.toString())}
+                      disabled={isSending || isActionDenied}
+                    />
+                    <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: freezeVaults.size > 0 ? 'visible' : 'hidden' }}>
+                      <Snowflake className="size-3.5" />
+                      <span>{freezeVaults.size === 1 ? '1 Bóveda seleccionada' : `${freezeVaults.size} Bóvedas seleccionadas`}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFreezeVaults(new Set())}
+                        className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.clearSelection}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {allVaultsData
+                        .filter(v => !freezeVaultSearch || v.address.toLowerCase().includes(freezeVaultSearch.toLowerCase()) || v.firstName?.toLowerCase().includes(freezeVaultSearch.toLowerCase()))
+                        .map((vault) => {
+                          const isSelected = freezeVaults.has(vault.address);
+                          return (
+                            <button
+                              key={vault.address}
+                              type="button"
+                              disabled={isSending || isActionDenied}
+                              onClick={() => {
+                                setFreezeVaults((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(vault.address)) next.delete(vault.address);
+                                  else next.add(vault.address);
+                                  return next;
+                                });
+                              }}
+                              className="group flex items-center gap-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95 p-2.5"
+                              style={{
+                                background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+                                borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
+                              }}
+                              title={vault.address}
+                            >
+                              {vault.firstImageUrl && (
+                                <SafeImage
+                                  src={vault.firstImageUrl}
+                                  alt={vault.address}
+                                  fallbackName={vault.firstName || 'Vault'}
+                                  className="size-8 rounded-lg object-cover shadow-sm shrink-0"
+                                />
+                              )}
+                              <div className="flex flex-col min-w-0">
+                                <span
+                                  className="truncate font-bold text-xs leading-tight"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
+                                >
+                                  {vault.firstName}
+                                </span>
+                                <span
+                                  className="truncate text-[11px] font-medium opacity-70"
+                                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                                >
+                                  {vault.nftCount} NFT{vault.nftCount !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <Check className="size-4 shrink-0 ml-auto" style={{ color: 'var(--color-primary)' }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      {allVaultsData.filter(v => !freezeVaultSearch || v.address.toLowerCase().includes(freezeVaultSearch.toLowerCase()) || v.firstName?.toLowerCase().includes(freezeVaultSearch.toLowerCase())).length === 0 && (
+                        <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          No se encontraron bóvedas
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {activeAction === 'freeze' && (
                   <>

@@ -124,12 +124,23 @@ SET_OWNER_ROLE
 
 /* ─── Vault-level actions (recall / freeze) ───────────────────────────────── */
 
-export const recallManifest = (vaultAddress: string, amount: string) => `
+export const recallManifest = (vaultAddress: string, amount: string, nonFungibleIds?: string[]) => {
+  if (nonFungibleIds && nonFungibleIds.length > 0) {
+    const idsString = nonFungibleIds.map(id => `NonFungibleLocalId("${id}")`).join(', ');
+    return `
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("${vaultAddress}")
+    Array<NonFungibleLocalId>(${idsString})
+;
+`;
+  }
+  return `
 RECALL_FROM_VAULT
     Address("${vaultAddress}")
     Decimal("${amount}")
 ;
 `;
+};
 
 export type FreezeFlag = 'withdraw' | 'deposit' | 'burn' | 'all';
 

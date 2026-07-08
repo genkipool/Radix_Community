@@ -299,3 +299,48 @@ export async function apiFetchAccountRewardsYears(address: string): Promise<{ ye
     if (!res.ok) throw new Error(`Account rewards years API error: ${res.status}`);
     return res.json();
 }
+
+export async function apiFetchAllNonFungibleIds(resourceAddress: string, network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<string[]> {
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
+    let nextCursor: string | undefined = undefined;
+    const allIds: string[] = [];
+    do {
+        const response: globalThis.Response = await fetch(`${baseUrl}/state/non-fungible/ids`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                resource_address: resourceAddress,
+                cursor: nextCursor
+            }),
+        });
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        const parsedData: any = await response.json();
+        const ids = (parsedData.non_fungible_ids?.items || []) as string[];
+        allIds.push(...ids);
+        nextCursor = parsedData.non_fungible_ids?.next_cursor;
+    } while (nextCursor && allIds.length < 1000); // cap at 1000 to prevent infinite loops in UI
+    return allIds;
+}
+
+export async function apiFetchNonFungibleLocation(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, string>> {
+    if (localIds.length === 0) return {};
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
+    const res = await fetch(`${baseUrl}/state/non-fungible/location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            resource_address: resourceAddress,
+            non_fungible_ids: localIds.slice(0, 100)
+        }),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    
+    const locationMap: Record<string, string> = {};
+    for (const item of (data.non_fungible_ids || [])) {
+        if (item.owning_vault_address) {
+            locationMap[item.non_fungible_id] = item.owning_vault_address;
+        }
+    }
+    return locationMap;
+}

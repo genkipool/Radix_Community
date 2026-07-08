@@ -308,9 +308,18 @@ export function extractRuleAddress(rule: unknown): string | null {
     const req = (pr?.requirement || r?.requirement || {}) as Record<string, unknown>;
     const nf = (req?.non_fungible as Record<string, unknown>) || {};
 
-    return (nf?.resource_address as string)
-      || (req?.resource_address as string)
-      || null;
+    const resourceAddress = (nf?.resource_address as string) || (req?.resource_address as string);
+    if (!resourceAddress) return null;
+
+    if (nf?.local_id) {
+      const localIdObj = nf.local_id as any;
+      const localIdStr = typeof localIdObj === 'string' ? localIdObj : (localIdObj.simple_rep || localIdObj.value || localIdObj.name || '');
+      if (localIdStr) {
+        return `${resourceAddress}|${localIdStr}`;
+      }
+    }
+
+    return resourceAddress;
   } catch { return null; }
 }
 

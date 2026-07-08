@@ -16,6 +16,7 @@ interface BadgeProofPickerProps {
   disabled?: boolean;
   hint?: string;
   requiredBadges?: string[];
+  prioritizedIds?: string[];
   rolesLoading?: boolean;
 }
 
@@ -32,6 +33,7 @@ export function BadgeProofPicker({
   disabled,
   hint,
   requiredBadges,
+  prioritizedIds,
   rolesLoading,
 }: BadgeProofPickerProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +59,11 @@ export function BadgeProofPicker({
   const allowedOptions = requiredBadges === undefined
     ? allOptions
     : requiredBadges.length > 0
-      ? allOptions.filter((opt) => opt.value !== NONE && requiredBadges.includes(opt.value.split(NFT_SEPARATOR)[0]))
+      ? allOptions.filter((opt) => {
+          if (opt.value === NONE) return false;
+          const resourcePart = opt.value.split(NFT_SEPARATOR)[0];
+          return requiredBadges.includes(opt.value) || requiredBadges.includes(resourcePart);
+        })
       : allOptions.filter((opt) => opt.value === NONE);
 
   const filteredOptions = allowedOptions.filter((opt) =>
@@ -83,8 +89,15 @@ export function BadgeProofPicker({
     const currentlyValid = allowedValues.includes(encoded);
     if (currentlyValid) return;
 
-    // Auto-select the first allowed option
-    const first = allowedValues[0];
+    // Otherwise, auto-select
+    let first = allowedValues[0];
+    if (prioritizedIds && prioritizedIds.length > 0 && first !== NONE) {
+      const prioritized = allowedValues.find(v => 
+        prioritizedIds.some(id => v.endsWith(`${NFT_SEPARATOR}${id}`))
+      );
+      if (prioritized) first = prioritized;
+    }
+
     if (first === undefined) {
       onChange(null);
     } else if (first === NONE) {
