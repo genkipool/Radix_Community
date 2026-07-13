@@ -106,7 +106,7 @@ export function BadgeProofPicker({
       const [resourceAddress, nonFungibleId] = first.split(NFT_SEPARATOR);
       onChange({ accountAddress: accountAddress!, resourceAddress, nonFungibleId });
     }
-  }, [rolesLoading, allowedKey, encoded, accountAddress, onChange]);
+  }, [rolesLoading, allowedKey, encoded, accountAddress, onChange, prioritizedIds]);
 
   const handleChange = (next: string) => {
     if (!next || !accountAddress || next === NONE) {

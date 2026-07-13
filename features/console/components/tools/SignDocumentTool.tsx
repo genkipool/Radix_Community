@@ -1,19 +1,22 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Wallet } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { BasicSignForm } from '@/features/sign/components/BasicSignForm';
 import { SignForm } from '@/features/sign/components/SignForm';
 import { VerifyForm } from '@/features/sign/components/VerifyForm';
 import { useDocumentFile } from '@/features/sign/hooks/useDocumentFile';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 
-type Tab = 'sign' | 'verify';
+type Tab = 'basic' | 'sign' | 'verify';
 
 /**
  * Console tool: document signing & verification. The page header (title +
@@ -23,8 +26,29 @@ type Tab = 'sign' | 'verify';
 export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const { t: full } = useLanguage();
   const t = full.sign as SignDictionary;
-  const [tab, setTab] = useState<Tab>('sign');
+  const { isConnected, accounts } = useRadixWallet();
+  // A shared on-chain request link belongs to the advanced tab.
+  const hasRequestParam = !!useSearchParams().get('req');
+  const [tab, setTab] = useState<Tab>(hasRequestParam ? 'sign' : 'basic');
   const doc = useDocumentFile(t);
+  // A dropped PDF carrying an embedded request also needs the advanced flow.
+  const effectiveTab: Tab =
+    tab === 'basic' && doc.embeddedRequest ? 'sign' : tab;
+
+  // One-time on-ledger setup (seal + collection) for the acting account.
+  // While it is missing, the advanced tab shows ONLY the onboarding — no
+  // file upload, no other boxes (co-signers via shared request are exempt).
+  const [onchainAccount, setOnchainAccount] = useState<string | null>(null);
+  const effectiveOnchainAccount =
+    onchainAccount ?? accounts[0]?.address ?? null;
+  const setup = useSealSetup(effectiveOnchainAccount);
+  const needsOnboarding =
+    isConnected &&
+    !hasRequestParam &&
+    !doc.embeddedRequest &&
+    setup.ready &&
+    !(setup.seal && setup.collection);
+  const cleanOnboarding = effectiveTab === 'sign' && needsOnboarding;
 
   if (!t) return null;
 
@@ -34,7 +58,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         className="flex gap-6 border-b"
         style={{ borderColor: 'var(--color-card-border)' }}
       >
-        {(['sign', 'verify'] as const).map((key) => (
+        {(['basic', 'sign', 'verify'] as const).map((key) => (
           <button
             key={key}
             type="button"
@@ -42,13 +66,17 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
             className="relative pb-2.5 text-sm font-bold transition-colors"
             style={{
               color:
-                tab === key
+                effectiveTab === key
                   ? 'var(--color-text-main)'
                   : 'var(--color-text-muted)',
             }}
           >
-            {key === 'sign' ? t.tabs.sign : t.tabs.verify}
-            {tab === key && (
+            {key === 'basic'
+              ? t.tabs.basic
+              : key === 'sign'
+                ? t.tabs.sign
+                : t.tabs.verify}
+            {effectiveTab === key && (
               <span
                 className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
                 style={{
@@ -61,44 +89,61 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         ))}
       </div>
 
-      <p
-        className="text-xs leading-relaxed"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <strong style={{ color: 'var(--color-text-main)' }}>
-          {t.disclaimer.title}.
-        </strong>{' '}
-        {t.disclaimer.body}
-      </p>
+      {/* During onboarding the advanced tab shows ONLY what must be done now. */}
+      {!cleanOnboarding && (
+        <>
+          <p
+            className="text-xs leading-relaxed"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <strong style={{ color: 'var(--color-text-main)' }}>
+              {t.disclaimer.title}.
+            </strong>{' '}
+            {t.disclaimer.body}
+          </p>
 
-      <ToolSection>
-        <FileDropzone
-          extension=""
-          label={t.file.label}
-          prompt={t.file.prompt}
-          file={doc.file}
-          onFile={doc.onFile}
-          busy={doc.hashing}
-          error={doc.fileError}
-        />
-        {doc.docHash && !doc.hashing && (
-          <div className="space-y-1">
-            <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-              {t.file.ready}
-            </p>
-            <p
-              className="font-mono text-[11px] break-all"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              blake2b-256: {doc.docHash}
-            </p>
-          </div>
-        )}
-      </ToolSection>
+          <ToolSection>
+            <FileDropzone
+              extension=""
+              label={t.file.label}
+              prompt={t.file.prompt}
+              file={doc.file}
+              onFile={doc.onFile}
+              busy={doc.hashing}
+              error={doc.fileError}
+            />
+            {doc.docHash && !doc.hashing && (
+              <div className="space-y-1">
+                <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                  {t.file.ready}
+                </p>
+                <p
+                  className="font-mono text-[11px] break-all"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  blake2b-256: {doc.docHash}
+                </p>
+              </div>
+            )}
+          </ToolSection>
+        </>
+      )}
 
-      {tab === 'sign' ? (
+      {effectiveTab === 'basic' ? (
         <SignGate t={t}>
-          <SignForm t={t} consoleT={consoleT} doc={doc} />
+          <BasicSignForm t={t} consoleT={consoleT} doc={doc} />
+        </SignGate>
+      ) : effectiveTab === 'sign' ? (
+        <SignGate t={t}>
+          <SignForm
+            t={t}
+            consoleT={consoleT}
+            doc={doc}
+            onchainAccount={effectiveOnchainAccount}
+            onOnchainAccountChange={setOnchainAccount}
+            setup={setup}
+            needsOnboarding={needsOnboarding}
+          />
         </SignGate>
       ) : (
         <VerifyForm t={t} doc={doc} />

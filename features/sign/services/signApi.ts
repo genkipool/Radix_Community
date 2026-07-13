@@ -20,15 +20,34 @@ export async function verifyEnvelope(
   return (await res.json()) as VerifyResult;
 }
 
+export interface OnChainSignatureStatus {
+  account: string;
+  signed: boolean;
+}
+
+/** Issuer identity read from the locked on-ledger collection metadata. */
+export interface OnChainIssuer {
+  account?: string;
+  collectionName?: string;
+  orgName?: string;
+  orgWebsite?: string;
+  orgLogoUrl?: string;
+}
+
 export interface OnChainStatus {
   found: boolean;
+  mode?: 'seal';
+  /** Normalized request key: `<initiator collection>:#<firstId>#`. */
   requestId?: string;
+  /** The initiator's signing collection. */
+  collection?: string;
   docHash?: string;
+  hashMismatch?: boolean;
   networkId?: number;
-  disclosure?: string;
   requiredSigners?: string[];
-  signatures?: { account: string; signed: boolean }[];
+  signatures?: OnChainSignatureStatus[];
   complete?: boolean;
+  issuer?: OnChainIssuer;
 }
 
 /**

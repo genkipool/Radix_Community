@@ -3,15 +3,20 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  BadgeCheck,
+  Building2,
   CheckCircle2,
   Circle,
   Copy,
+  Download,
+  ExternalLink,
   FileSignature,
   RefreshCw,
   Send,
+  Stamp,
 } from 'lucide-react';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
-import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
+import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
 import {
   SimulateButton,
   SimulateResultCard,
@@ -19,43 +24,64 @@ import {
 import { useTransactionPreview } from '@/features/console/hooks/useTransactionPreview';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
-import { useSigningRequest } from '../hooks/useSigningRequest';
+import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
+import type { DocumentFile } from '../hooks/useDocumentFile';
 import {
-  buildSigningRequestManifest,
-  buildSignatureManifest,
-} from '../lib/manifest';
-import { fetchOnChainStatus } from '../services/signApi';
+  buildSignCollectionCreateManifest,
+  buildSignRequestManifest,
+  buildSignatureMintManifest,
+} from '../lib/sign-request';
+import { embedRequestInPdf } from '../lib/pdf-embed';
+import { downloadBytes } from '../lib/certificate';
+import { stripExtension } from '../lib/file';
+import { radixSealAddress, sealImageUrl } from '../constants/seal';
+import { fetchOnChainStatus, type OnChainStatus } from '../services/signApi';
 import type { SignDictionary } from '../types/dictionary';
-import type { DisclosurePolicy } from '../types/sign.types';
+
+const REFRESH_MS = 30_000;
+
+type InviteMode = 'sign' | 'send';
 
 /**
- * On-ledger "by reference" multi-party signing. The initiator mints a request
- * NFT and shares its link; each signer opens it, uploads the document and mints
- * their own signature NFT. Status is read back from the ledger.
+ * On-ledger signing panel — identical UI whether you sign alone or with
+ * others; "alone" simply means the invitation list is just your account.
+ * Setup (seal + collection) is guaranteed by the parent's onboarding for
+ * the create path; co-signers arriving via a shared request get a compact
+ * inline checklist instead.
  */
 export function OnChainSignPanel({
   t,
   consoleT,
-  docHash,
+  doc,
   requiredSigners,
-  disclosure,
   initialRequestId,
+  account,
+  solo,
 }: {
   t: SignDictionary;
   consoleT: ConsoleDictionary;
-  docHash: string;
+  doc: DocumentFile;
   requiredSigners: string[];
-  disclosure: DisclosurePolicy;
   initialRequestId?: string;
+  /** Acting account (selected during onboarding / first shared account). */
+  account: string | null;
+  /** Single-signer mode: the invitation list is implicitly [account]. */
+  solo: boolean;
 }) {
-  const { activeNetworkId } = useRadixWallet();
-  const { createRequest, sign, phase } = useSigningRequest();
+  const { activeNetworkId, accounts } = useRadixWallet();
+  const { mintSeal, createCollection, createRequest, signRequest, phase, error } =
+    useSealRequest();
   const preview = useTransactionPreview();
-  const [account, setAccount] = useState<string | null>(null);
+
+  const docHash = doc.docHash;
+  const [inviteMode, setInviteMode] = useState<InviteMode>('sign');
   const [requestId, setRequestId] = useState(initialRequestId ?? '');
   const [keyInput, setKeyInput] = useState(initialRequestId ?? '');
   const [copied, setCopied] = useState(false);
 
+  const sealDeployed = !!activeNetworkId && !!radixSealAddress(activeNetworkId);
+  const nftImage =
+    typeof window !== 'undefined' ? sealImageUrl(window.location.origin) : '';
   const verifyUrl =
     docHash && typeof window !== 'undefined'
       ? `${window.location.origin}${window.location.pathname}?verify=${docHash}`
@@ -66,60 +92,180 @@ export function OnChainSignPanel({
     queryFn: () =>
       fetchOnChainStatus({ networkId: activeNetworkId!, requestId }),
     enabled: !!requestId && !!activeNetworkId,
+    refetchInterval: (query) =>
+      query.state.data?.found && !query.state.data.complete
+        ? REFRESH_MS
+        : false,
   });
   const status = statusQuery.data?.found ? statusQuery.data : null;
-  const busy = phase === 'creating' || phase === 'signing';
+  const busy = phase !== 'idle' && phase !== 'done' && phase !== 'error';
 
   const shareUrl =
     requestId && typeof window !== 'undefined'
       ? `${window.location.origin}${window.location.pathname}?req=${encodeURIComponent(requestId)}`
       : '';
 
-  const onCreate = async (initiatorSigns: boolean) => {
-    if (!account || !docHash) return;
-    const id = await createRequest({
-      account,
+  /* ── Eligibility (UX only — the real checks live on the ledger) ── */
+  const walletAddresses = new Set(accounts.map((a) => a.address));
+  const signatures = status?.signatures ?? [];
+  const myEntries = signatures.filter((s) => walletAddresses.has(s.account));
+  const myPending = myEntries.filter((s) => !s.signed);
+  const signerAccount = myPending[0]?.account ?? myEntries[0]?.account ?? null;
+
+  // Setup state for whichever account is acting in the current mode.
+  const actingAccount = requestId ? signerAccount : account;
+  const setup = useSealSetup(actingAccount);
+
+  const hashMismatch =
+    !!status?.docHash && !!docHash && status.docHash !== docHash;
+  const loading = statusQuery.isFetching;
+  const notFound =
+    !!requestId && !statusQuery.isFetching && statusQuery.data?.found === false;
+
+  const errorMsg = error
+    ? ((t.errors as Record<string, string>)[error] ?? t.errors.generic)
+    : '';
+
+  /* ── Create request (solo = invitation list is just yourself) ── */
+
+  const cleanSigners = requiredSigners.map((s) => s.trim()).filter(Boolean);
+  const alsoSign = solo ? true : inviteMode === 'sign';
+  // "Sign and send" makes the initiator a required signer too: they get
+  // their own invitation and appear in the on-ledger signer list.
+  const effectiveSigners = solo
+    ? account
+      ? [account]
+      : []
+    : alsoSign && account && !cleanSigners.includes(account)
+      ? [...cleanSigners, account]
+      : cleanSigners;
+  const expectedPrefix =
+    activeNetworkId === 1 ? 'account_rdx1' : 'account_tdx_2_1';
+  const invalidSigner = solo
+    ? undefined
+    : cleanSigners.find((s) => !s.startsWith(expectedPrefix));
+  const setupReady = !!setup.seal && !!setup.collection;
+  const canCreate =
+    !!account &&
+    !!docHash &&
+    !busy &&
+    setupReady &&
+    effectiveSigners.length > 0 &&
+    !invalidSigner;
+
+  const onCreate = async () => {
+    if (!canCreate || !setup.seal || !setup.collection) return;
+    const key = await createRequest({
+      account: account!,
+      sealGlobalId: setup.seal.globalId,
+      collection: setup.collection.resourceAddress,
+      nextId: setup.collection.totalSupply + 1,
       docHash,
-      disclosure,
-      requiredSigners,
-      initiatorSigns,
-      verifyUrl,
+      requiredSigners: effectiveSigners,
+      alsoSign,
+      imageUrl: nftImage,
     });
-    if (id) setRequestId(id);
+    if (key) {
+      setRequestId(key);
+      setup.refetch();
+    }
   };
 
   const simulateCreate = () => {
-    if (!account || !docHash) return;
+    if (!canCreate || !setup.seal || !setup.collection) return;
     preview.simulate(
-      buildSigningRequestManifest({
-        accountAddress: account,
+      buildSignRequestManifest({
+        account: account!,
+        sealGlobalId: setup.seal.globalId,
+        collection: setup.collection.resourceAddress,
+        nextId: setup.collection.totalSupply + 1,
         docHash,
         networkId: activeNetworkId ?? 2,
-        disclosure,
-        requiredSigners,
-        initiatorSigned: true,
-        verifyUrl,
+        requiredSigners: effectiveSigners,
+        alsoSign,
+        imageUrl: nftImage,
       }),
     );
   };
 
+  /* ── Sign (invited co-signer; the initiator signs the same way) ── */
+
+  const eligible = !!signerAccount;
+  const alreadySigned =
+    eligible && myPending.length === 0 && myEntries.some((s) => s.signed);
+  const canSign =
+    eligible &&
+    !alreadySigned &&
+    !!status?.docHash &&
+    !!docHash &&
+    !hashMismatch &&
+    !!setup.seal &&
+    !busy;
+
   const onSign = async () => {
-    if (!account || !status?.docHash || !requestId) return;
-    const ok = await sign({ account, docHash: status.docHash, requestId });
-    if (ok) statusQuery.refetch();
+    if (!canSign || !status?.docHash || !setup.seal || !signerAccount) return;
+    let ok: boolean;
+    if (setup.collection) {
+      ok = await signRequest({
+        account: signerAccount,
+        sealGlobalId: setup.seal.globalId,
+        collection: setup.collection.resourceAddress,
+        nextId: setup.collection.totalSupply + 1,
+        docHash: status.docHash,
+        request: status.requestId ?? requestId,
+        imageUrl: nftImage,
+      });
+    } else {
+      // First signature ever: the collection is created WITH the signature
+      // bundled — one transaction less for first-time signers.
+      ok = !!(await createCollection({
+        account: signerAccount,
+        sealGlobalId: setup.seal.globalId,
+        collectionName: 'Signing collection',
+        imageUrl: nftImage,
+        firstSignature: {
+          docHash: status.docHash,
+          request: status.requestId ?? requestId,
+        },
+      }));
+    }
+    if (ok) {
+      setup.refetch();
+      statusQuery.refetch();
+    }
   };
 
   const simulateSign = () => {
-    if (!account || !status?.docHash || !requestId) return;
+    if (!canSign || !status?.docHash || !setup.seal || !signerAccount) return;
     preview.simulate(
-      buildSignatureManifest({
-        accountAddress: account,
-        docHash: status.docHash,
-        networkId: activeNetworkId ?? 2,
-        requestId,
-      }),
+      setup.collection
+        ? buildSignatureMintManifest({
+            account: signerAccount,
+            sealGlobalId: setup.seal.globalId,
+            collection: setup.collection.resourceAddress,
+            nextId: setup.collection.totalSupply + 1,
+            docHash: status.docHash,
+            networkId: activeNetworkId ?? 2,
+            request: status.requestId ?? requestId,
+            imageUrl: nftImage,
+          })
+        : buildSignCollectionCreateManifest({
+            account: signerAccount,
+            sealGlobalId: setup.seal.globalId,
+            sealAddress: radixSealAddress(activeNetworkId ?? 2),
+            networkId: activeNetworkId ?? 2,
+            collectionName: 'Signing collection',
+            imageUrl: nftImage,
+            firstSignature: {
+              docHash: status.docHash,
+              request: status.requestId ?? requestId,
+              signedAt: new Date().toISOString(),
+            },
+          }),
     );
   };
+
+  /* ── Share helpers ── */
 
   const copy = () => {
     navigator.clipboard?.writeText(shareUrl);
@@ -127,52 +273,105 @@ export function OnChainSignPanel({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const hashMismatch = !!status?.docHash && !!docHash && status.docHash !== docHash;
-  const loading = statusQuery.isFetching;
-  const notFound =
-    !!requestId && !statusQuery.isFetching && statusQuery.data?.found === false;
+  const canShareAsPdf =
+    !!status &&
+    doc.pdf &&
+    !doc.embeddedRequest &&
+    !!doc.bytes &&
+    !!doc.file &&
+    !hashMismatch;
 
-  // ── Create mode (no request yet) ──
+  const downloadRequestPdf = async () => {
+    if (!canShareAsPdf || !status?.docHash || activeNetworkId == null) return;
+    try {
+      const pdf = await embedRequestInPdf(
+        doc.bytes!,
+        {
+          v: 1,
+          requestKey: status.requestId ?? requestId,
+          networkId: activeNetworkId,
+          docHash: status.docHash,
+        },
+        doc.bytes!,
+        doc.file!.name,
+      );
+      downloadBytes(
+        pdf,
+        `${stripExtension(doc.file!.name)}-request.pdf`,
+        'application/pdf',
+      );
+    } catch {
+      /* the share link keeps working */
+    }
+  };
+
+  /* ── Create mode (no request yet) ── */
   if (!requestId) {
     return (
       <div className="space-y-4">
-        <ToolSection title={t.onchain.account}>
-          <AccountPicker value={account} onChange={setAccount} disabled={busy} />
-          {!docHash && (
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {t.onchain.needFile}
+        <ToolSection
+          title={solo ? t.onchain.soloTitle : t.onchain.requestTitle}
+          hint={solo ? t.onchain.soloHint : t.onchain.requestHint}
+        >
+          {!solo && (
+            <OptionButtons<InviteMode>
+              value={inviteMode}
+              onChange={setInviteMode}
+              disabled={busy}
+              options={[
+                {
+                  value: 'sign',
+                  label: t.onchain.inviteSign,
+                  description: t.onchain.inviteSignDesc,
+                },
+                {
+                  value: 'send',
+                  label: t.onchain.inviteSend,
+                  description: t.onchain.inviteSendDesc,
+                },
+              ]}
+            />
+          )}
+          {!docHash && <Muted text={t.onchain.needFile} />}
+          {!solo && docHash && cleanSigners.length === 0 && (
+            <Muted text={t.onchain.needSigners} />
+          )}
+          {invalidSigner && (
+            <Danger text={`${t.onchain.invalidSigner}: ${invalidSigner}`} />
+          )}
+          {errorMsg && <Danger text={errorMsg} />}
+          {!solo && (
+            <p className="text-xs" style={{ color: 'var(--color-warning, #b45309)' }}>
+              ⚠ {t.onchain.depositWarning}
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
-              disabled={!account || !docHash || busy}
-              onClick={() => onCreate(true)}
-              className="flex w-full items-center justify-center gap-2 px-6 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              disabled={!canCreate}
+              onClick={onCreate}
+              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >
-              {phase === 'creating' ? (
+              {busy ? (
                 <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : (
+              ) : alsoSign ? (
                 <FileSignature className="size-4" />
+              ) : (
+                <Send className="size-4" />
               )}
-              {phase === 'creating' ? t.onchain.creating : t.onchain.createSign}
+              {busy
+                ? t.onchain.creating
+                : alsoSign
+                  ? t.actions.sign
+                  : t.onchain.sendInvites}
             </button>
-            <button
-              type="button"
-              disabled={!account || !docHash || busy}
-              onClick={() => onCreate(false)}
-              className="flex w-full items-center justify-center gap-2 px-6 h-12 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-              style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
-            >
-              {t.onchain.create}
-            </button>
+            <SimulateButton
+              t={consoleT.simulate}
+              onClick={simulateCreate}
+              disabled={!canCreate}
+              loading={preview.isSimulating}
+            />
           </div>
-          <SimulateButton
-            t={consoleT.simulate}
-            onClick={simulateCreate}
-            disabled={!account || !docHash || busy}
-            loading={preview.isSimulating}
-          />
           <SimulateResultCard
             t={consoleT.simulate}
             preview={preview.preview}
@@ -192,10 +391,23 @@ export function OnChainSignPanel({
     );
   }
 
-  // ── Request loaded: share + sign + status ──
+  /* ── Request loaded: summary + share + status + sign ── */
   return (
     <div className="space-y-4">
-      {shareUrl && (
+      <ToolSection title={t.onchain.summaryTitle}>
+        {status && <RequestSummary t={t} status={status} />}
+        {notFound && <Danger text={t.onchain.notFound} />}
+        {hashMismatch && <Danger text={t.onchain.fileMismatch} />}
+        {!docHash && <Muted text={t.onchain.needFile} />}
+        {status && !!docHash && !hashMismatch && (
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+            <CheckCircle2 className="size-3.5 shrink-0" />
+            {t.onchain.hashMatches}
+          </p>
+        )}
+      </ToolSection>
+
+      {shareUrl && status && !status.complete && signatures.length > 1 && (
         <ToolSection title={t.onchain.shareTitle} hint={t.onchain.shareHint}>
           <div className="flex gap-2">
             <input
@@ -218,57 +430,22 @@ export function OnChainSignPanel({
               {copied ? t.onchain.copied : t.onchain.copy}
             </button>
           </div>
+          {canShareAsPdf && (
+            <>
+              <button
+                type="button"
+                onClick={downloadRequestPdf}
+                className="flex items-center gap-2 text-xs font-bold"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                <Download className="size-3.5" />
+                {t.onchain.downloadRequestPdf}
+              </button>
+              <Muted text={t.onchain.downloadRequestPdfHint} />
+            </>
+          )}
         </ToolSection>
       )}
-
-      <ToolSection title={t.onchain.account}>
-        {status?.docHash && (
-          <p className="font-mono text-[11px] break-all" style={{ color: 'var(--color-text-muted)' }}>
-            {t.onchain.requestHash}: {status.docHash}
-          </p>
-        )}
-        {hashMismatch && (
-          <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-            {t.onchain.fileMismatch}
-          </p>
-        )}
-        {notFound && (
-          <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-            {t.onchain.notFound}
-          </p>
-        )}
-        {!docHash && (
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {t.onchain.needFile}
-          </p>
-        )}
-        <AccountPicker value={account} onChange={setAccount} disabled={busy} />
-        <button
-          type="button"
-          disabled={!account || !docHash || hashMismatch || !status || busy}
-          onClick={onSign}
-          className="flex w-full items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-        >
-          {phase === 'signing' ? (
-            <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            <Send className="size-4" />
-          )}
-          {phase === 'signing' ? t.onchain.signing : t.onchain.sign}
-        </button>
-        <SimulateButton
-          t={consoleT.simulate}
-          onClick={simulateSign}
-          disabled={!account || !status || busy}
-          loading={preview.isSimulating}
-        />
-        <SimulateResultCard
-          t={consoleT.simulate}
-          preview={preview.preview}
-          error={preview.error}
-          onClose={preview.reset}
-        />
-      </ToolSection>
 
       <ToolSection
         title={t.onchain.statusTitle}
@@ -291,12 +468,12 @@ export function OnChainSignPanel({
               className="text-sm font-semibold"
               style={{ color: status.complete ? '#10b981' : 'var(--color-text-muted)' }}
             >
-              {status.signatures.filter((s) => s.signed).length} {t.onchain.of}{' '}
-              {status.signatures.length}
+              {signatures.filter((s) => s.signed).length} {t.onchain.of}{' '}
+              {signatures.length}
               {status.complete ? ` · ${t.onchain.complete}` : ''}
             </p>
             <ul className="space-y-1.5 text-sm">
-              {status.signatures.map((s) => (
+              {signatures.map((s) => (
                 <li key={s.account} className="flex items-center gap-2">
                   {s.signed ? (
                     <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
@@ -309,12 +486,161 @@ export function OnChainSignPanel({
                   >
                     {s.account}
                   </span>
+                  {walletAddresses.has(s.account) && (
+                    <span
+                      className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                      style={{
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-primary)',
+                        border: '1px solid var(--color-card-border)',
+                      }}
+                    >
+                      {t.onchain.youBadge}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
+            {!status.complete && <Muted text={t.onchain.autoRefreshNote} />}
           </>
         )}
       </ToolSection>
+
+      {status?.complete ? (
+        <ToolSection>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl flex items-center justify-center bg-emerald-500/15">
+              <BadgeCheck className="size-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
+                {t.onchain.completeTitle}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {t.onchain.completeBody}
+              </p>
+            </div>
+          </div>
+          {verifyUrl && (
+            <a
+              href={verifyUrl}
+              className="flex items-center gap-2 text-xs font-bold"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <ExternalLink className="size-3.5" />
+              {t.onchain.verifyLink}
+            </a>
+          )}
+        </ToolSection>
+      ) : (
+        status && (
+          <ToolSection title={t.onchain.signSectionTitle}>
+            {loading && !statusQuery.data ? (
+              <Muted text={t.onchain.checkingEligibility} />
+            ) : !eligible ? (
+              <>
+                <Danger text={t.onchain.notEligible} />
+                <Muted text={t.onchain.notEligibleHint} />
+              </>
+            ) : alreadySigned ? (
+              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-500">
+                <BadgeCheck className="size-4 shrink-0" />
+                {t.onchain.alreadySigned}
+              </p>
+            ) : (
+              <>
+                <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  <BadgeCheck className="size-3.5 shrink-0 text-emerald-500" />
+                  {t.onchain.inviteInWallet}
+                </p>
+                {!setup.seal && setup.ready && (
+                  <div
+                    className="rounded-xl border p-3.5 space-y-2"
+                    style={{
+                      background: 'var(--color-surface)',
+                      borderColor: 'var(--color-card-border)',
+                    }}
+                  >
+                    <p
+                      className="flex items-center gap-2 text-xs font-bold"
+                      style={{ color: 'var(--color-text-main)' }}
+                    >
+                      <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+                      {t.onchain.sealStep}
+                    </p>
+                    <div className="space-y-2 pl-6">
+                      {!sealDeployed ? (
+                        <Muted text={t.onchain.sealNotDeployed} />
+                      ) : (
+                        <>
+                          <Muted text={t.onchain.sealMissing} />
+                          <button
+                            type="button"
+                            disabled={busy || !actingAccount}
+                            onClick={async () => {
+                              if (!actingAccount) return;
+                              const ok = await mintSeal({
+                                account: actingAccount,
+                                imageUrl: nftImage,
+                              });
+                              if (ok) setup.refetch();
+                            }}
+                            className="flex items-center gap-2 px-4 h-9 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+                          >
+                            {phase === 'minting-seal' ? (
+                              <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                            ) : (
+                              <Stamp className="size-3.5" />
+                            )}
+                            {phase === 'minting-seal'
+                              ? t.onchain.sealMinting
+                              : t.onchain.sealGet}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {setup.seal && !setup.collection && (
+                  <Muted text={t.onchain.firstSignNote} />
+                )}
+                {errorMsg && <Danger text={errorMsg} />}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    disabled={!canSign}
+                    onClick={onSign}
+                    className="flex w-full items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {phase === 'signing' || phase === 'creating-collection' ? (
+                      <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    ) : (
+                      <Send className="size-4" />
+                    )}
+                    {phase === 'signing' || phase === 'creating-collection'
+                      ? t.onchain.signing
+                      : t.onchain.sign}
+                  </button>
+                  <SimulateButton
+                    t={consoleT.simulate}
+                    onClick={simulateSign}
+                    disabled={!canSign}
+                    loading={preview.isSimulating}
+                  />
+                </div>
+                {!docHash && <Muted text={t.onchain.needFile} />}
+                {hashMismatch && <Danger text={t.onchain.fileMismatch} />}
+                <SimulateResultCard
+                  t={consoleT.simulate}
+                  preview={preview.preview}
+                  error={preview.error}
+                  onClose={preview.reset}
+                />
+              </>
+            )}
+          </ToolSection>
+        )
+      )}
 
       <ManualKey
         t={t}
@@ -324,6 +650,69 @@ export function OnChainSignPanel({
         busy={busy}
       />
     </div>
+  );
+}
+
+/* ─── Pieces ──────────────────────────────────────────────────────────────── */
+
+function RequestSummary({
+  t,
+  status,
+}: {
+  t: SignDictionary;
+  status: OnChainStatus;
+}) {
+  const issuer = status.issuer;
+  return (
+    <div className="space-y-2">
+      {(issuer?.orgName || issuer?.orgWebsite) && (
+        <span
+          className="flex items-center gap-1.5 text-xs font-semibold"
+          style={{ color: 'var(--color-text-main)' }}
+        >
+          <Building2 className="size-3.5 shrink-0" />
+          {issuer.orgName ?? ''}
+          {issuer.orgWebsite && (
+            <a
+              href={issuer.orgWebsite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              {issuer.orgWebsite.replace(/^https?:\/\//, '')}
+            </a>
+          )}
+        </span>
+      )}
+      {issuer?.account && (
+        <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+          {t.onchain.issuedBy}:{' '}
+          <span className="font-mono break-all">{issuer.account}</span>
+        </p>
+      )}
+      {status.docHash && (
+        <p className="font-mono text-[11px] break-all" style={{ color: 'var(--color-text-muted)' }}>
+          {t.onchain.requestHash}: {status.docHash}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Muted({ text }: { text: string }) {
+  return (
+    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+      {text}
+    </p>
+  );
+}
+
+function Danger({ text }: { text: string }) {
+  return (
+    <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
+      {text}
+    </p>
   );
 }
 

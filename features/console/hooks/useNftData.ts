@@ -9,6 +9,16 @@ export interface NftData {
   vaultAddress?: string;
 }
 
+interface NfDataField {
+  field_name?: string;
+  value?: unknown;
+}
+
+interface NfDataItem {
+  non_fungible_id: string;
+  data?: { programmatic_json?: { fields?: NfDataField[] } };
+}
+
 export function useNftData(resourceAddress: string | null, ids: string[]) {
   const { activeNetwork } = useRadixWallet();
 
@@ -17,10 +27,10 @@ export function useNftData(resourceAddress: string | null, ids: string[]) {
     queryFn: async () => {
       if (!resourceAddress || ids.length === 0) return [];
       const data = await apiFetchNonFungibleData(resourceAddress, ids, activeNetwork);
-      return data.map((item: any) => {
+      return (data as unknown as NfDataItem[]).map((item) => {
         const fields = item.data?.programmatic_json?.fields || [];
-        const nameField = fields.find((f: any) => f.field_name === 'name')?.value;
-        const urlField = fields.find((f: any) => f.field_name === 'key_image_url')?.value;
+        const nameField = fields.find((f) => f.field_name === 'name')?.value;
+        const urlField = fields.find((f) => f.field_name === 'key_image_url')?.value;
         return {
           id: item.non_fungible_id,
           name: nameField,
@@ -49,10 +59,10 @@ export function useMissingNfts(resourceAddress: string | null, ownedIds: string[
       const data = await apiFetchNonFungibleData(resourceAddress, missingIds, activeNetwork);
       // 4. Fetch locations for missing ones
       const locations = await apiFetchNonFungibleLocation(resourceAddress, missingIds, activeNetwork);
-      return data.map((item: any) => {
+      return (data as unknown as NfDataItem[]).map((item) => {
         const fields = item.data?.programmatic_json?.fields || [];
-        const nameField = fields.find((f: any) => f.field_name === 'name')?.value;
-        const urlField = fields.find((f: any) => f.field_name === 'key_image_url')?.value;
+        const nameField = fields.find((f) => f.field_name === 'name')?.value;
+        const urlField = fields.find((f) => f.field_name === 'key_image_url')?.value;
         return {
           id: item.non_fungible_id,
           name: nameField,

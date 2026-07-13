@@ -51,8 +51,10 @@
     "dashboard": "Dashboard",
     "astrolescent": "Astrolescent",
     "hyperscale": "Hyperscale",
+    "seal": "Radix Seal",
     "google_wallet": "Google Wallet × Radix",
     "popup_eco_hyperscale_desc": "Escalabilidad lineal: más de 500.000 TPS con atomicidad cross-shard",
+    "popup_eco_seal_desc": "Firma, cifrado y chat seguro en autocustodia — ningún servidor guarda tus archivos",
     "popup_eco_google_wallet_desc": "Propiedad digital invisible: entradas NFT con un simple tap NFC",
     "popup_eco_infra_desc": "Arquitectura técnica full-stack de Radix",
     "popup_eco_dapps_desc": "Aplicaciones DeFi nativas del ecosistema",
@@ -166,6 +168,7 @@
       "academy": "Radix Academy",
       "console": "Consola Web3",
       "hyperscale": "Arquitectura Hyperscale",
+      "seal": "Radix Seal",
       "wiki": "Radix Wiki"
     },
     "institutions": {

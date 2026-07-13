@@ -1,0 +1,166 @@
+'use client';
+
+/**
+ * On-ledger discovery for the single signing flow — no server state:
+ *
+ *  - the user's own SEAL NFT (their soulbound insignia, minted from the
+ *    open-mint Radix Seal brand), and
+ *  - the user's SIGNING COLLECTION (the resource owned by that seal, marked
+ *    with `radix_sign_collection = v1`), plus its next free integer id
+ *    (`totalSupply + 1`; ids are contiguous for practical purposes).
+ *
+ * Results are cached in localStorage per (network, account) but always
+ * re-verified against the ledger.
+ */
+import { gatewayPost } from '@/services/gateway/bases';
+import type { Network } from '@/services/gateway/client';
+import { RadixNetworkId } from '@/features/wallet/constants/network';
+import {
+  radixSealAddress,
+  SIGN_COLLECTION_MARKER_KEY,
+  SIGN_COLLECTION_MARKER_VALUE,
+} from '../constants/seal';
+
+export interface UserSeal {
+  /** `<seal resource>:<local id>` — the collection owner rule's requirement. */
+  globalId: string;
+  localId: string;
+}
+
+export interface UserSignCollection {
+  resourceAddress: string;
+  totalSupply: number;
+}
+
+interface MetadataItem {
+  key: string;
+  value?: { typed?: { value?: string; type?: string } };
+}
+interface EntityDetailsItem {
+  address: string;
+  metadata?: { items?: MetadataItem[] };
+  details?: { total_supply?: string };
+  non_fungible_resources?: {
+    items?: Array<{
+      resource_address: string;
+      vaults?: { items?: Array<{ items?: string[] }> };
+    }>;
+  };
+}
+interface EntityDetailsResponse {
+  items?: EntityDetailsItem[];
+}
+
+function network(networkId: number): Network {
+  return networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+}
+
+async function entityDetails(
+  net: Network,
+  addresses: string[],
+  optIns?: Record<string, unknown>,
+): Promise<EntityDetailsItem[]> {
+  if (addresses.length === 0) return [];
+  const data = await gatewayPost<EntityDetailsResponse>(
+    net,
+    '/state/entity/details',
+    {
+      addresses,
+      aggregation_level: optIns ? 'Vault' : 'Global',
+      ...(optIns ? { opt_ins: optIns } : {}),
+    },
+  );
+  return data.items ?? [];
+}
+
+/* ─── Seal ────────────────────────────────────────────────────────────────── */
+
+/** The account's own seal NFT, or null (not minted yet / brand undeployed). */
+export async function findUserSeal(
+  networkId: number,
+  account: string,
+): Promise<UserSeal | null> {
+  const sealResource = radixSealAddress(networkId);
+  if (!sealResource) return null;
+  const [item] = await entityDetails(network(networkId), [account], {
+    non_fungible_include_nfids: true,
+  });
+  const vaults =
+    item?.non_fungible_resources?.items?.find(
+      (r) => r.resource_address === sealResource,
+    )?.vaults?.items ?? [];
+  const localId = vaults.flatMap((v) => v.items ?? [])[0];
+  return localId
+    ? { globalId: `${sealResource}:${localId}`, localId }
+    : null;
+}
+
+/* ─── Signing collection ──────────────────────────────────────────────────── */
+
+function metadataValue(item: EntityDetailsItem, key: string): string | undefined {
+  return item.metadata?.items?.find((m) => m.key === key)?.value?.typed?.value;
+}
+
+function isSignCollection(item: EntityDetailsItem): boolean {
+  return (
+    metadataValue(item, SIGN_COLLECTION_MARKER_KEY) ===
+    SIGN_COLLECTION_MARKER_VALUE
+  );
+}
+
+function toSupply(item: EntityDetailsItem): number {
+  return Math.floor(Number(item.details?.total_supply ?? '0')) || 0;
+}
+
+const cacheKey = (networkId: number, account: string) =>
+  `radix-sign-collection:${networkId}:${account}`;
+
+function readCache(networkId: number, account: string): string | null {
+  try {
+    return localStorage.getItem(cacheKey(networkId, account));
+  } catch {
+    return null;
+  }
+}
+
+export function rememberSignCollection(
+  networkId: number,
+  account: string,
+  resourceAddress: string,
+): void {
+  try {
+    localStorage.setItem(cacheKey(networkId, account), resourceAddress);
+  } catch {
+    /* private mode — discovery still works, just uncached */
+  }
+}
+
+/** The account's signing collection, or null if not created yet. */
+export async function findSignCollection(
+  networkId: number,
+  account: string,
+): Promise<UserSignCollection | null> {
+  const net = network(networkId);
+
+  const cached = readCache(networkId, account);
+  if (cached) {
+    const [item] = await entityDetails(net, [cached]).catch(() => []);
+    if (item && isSignCollection(item)) {
+      return { resourceAddress: cached, totalSupply: toSupply(item) };
+    }
+  }
+
+  const [accountItem] = await entityDetails(net, [account]);
+  const held = (accountItem?.non_fungible_resources?.items ?? []).map(
+    (r) => r.resource_address,
+  );
+  for (let i = 0; i < held.length; i += 20) {
+    const details = await entityDetails(net, held.slice(i, i + 20));
+    const match = details.find(isSignCollection);
+    if (match) {
+      rememberSignCollection(networkId, account, match.address);
+      return { resourceAddress: match.address, totalSupply: toSupply(match) };
+    }
+  }
+  return null;
+}

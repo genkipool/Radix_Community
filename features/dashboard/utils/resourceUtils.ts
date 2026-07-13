@@ -312,8 +312,11 @@ export function extractRuleAddress(rule: unknown): string | null {
     if (!resourceAddress) return null;
 
     if (nf?.local_id) {
-      const localIdObj = nf.local_id as any;
-      const localIdStr = typeof localIdObj === 'string' ? localIdObj : (localIdObj.simple_rep || localIdObj.value || localIdObj.name || '');
+      const localIdObj = nf.local_id as string | Record<string, unknown>;
+      const localIdStr =
+        typeof localIdObj === 'string'
+          ? localIdObj
+          : ((localIdObj.simple_rep || localIdObj.value || localIdObj.name || '') as string);
       if (localIdStr) {
         return `${resourceAddress}|${localIdStr}`;
       }

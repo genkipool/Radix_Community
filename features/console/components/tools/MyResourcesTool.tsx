@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
@@ -184,10 +184,10 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const { data: ownedNftData } = useNftData(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
   const { data: missingNftData } = useMissingNfts(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
 
-  const allVaultsData = useMemo(() => {
+  const allVaultsData = (() => {
     if (!isNonFungible) return [];
     const map = new Map<string, { address: string; nftCount: number; firstImageUrl?: string; firstName?: string }>();
-    
+
     // Process owned NFTs
     const ownedVault = selectedNonFungible?.vaultAddress;
     if (ownedVault && ownedNftData) {
@@ -221,9 +221,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         map.get(nft.vaultAddress)!.nftCount++;
       }
     }
-    
+
     return Array.from(map.values());
-  }, [isNonFungible, ownedNftData, missingNftData, selectedNonFungible]);
+  })();
 
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({

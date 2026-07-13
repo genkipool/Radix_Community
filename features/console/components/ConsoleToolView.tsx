@@ -29,6 +29,8 @@ import ConvertOlympiaTool from './tools/ConvertOlympiaTool';
 import ClaimPackageRoyaltiesTool from './tools/ClaimPackageRoyaltiesTool';
 import McpTool from './tools/McpTool';
 import SignDocumentTool from './tools/SignDocumentTool';
+import EncryptDocumentTool from './tools/EncryptDocumentTool';
+import ChatTool from './tools/ChatTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
@@ -48,6 +50,8 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'claim-package-royalties': ClaimPackageRoyaltiesTool,
   mcp: McpTool,
   'sign-document': SignDocumentTool,
+  'encrypt-document': EncryptDocumentTool,
+  chat: ChatTool,
 };
 
 interface ConsoleToolViewProps {

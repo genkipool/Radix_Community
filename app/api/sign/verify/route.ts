@@ -7,6 +7,7 @@ import { gatewayPost } from '@/services/gateway/bases';
 import type { Network } from '@/services/gateway/client';
 import { deriveChallenge } from '@/features/sign/lib/hash';
 import { MAX_ENVELOPE_BYTES } from '@/features/sign/constants/limits';
+import { radixSealAddress, RADIX_SEAL_STANDARD_KEY } from '@/features/sign/constants/seal';
 import type { VerifiedSignature } from '@/features/sign/types/sign.types';
 
 /**
@@ -60,12 +61,14 @@ const onChainSchema = z
     networkId: z.number().int(),
     transactionIntentHash: z.string().max(256),
     resourceAddress: z.string().max(256),
+    sealAddress: z.string().max(256).optional().default(''),
     nfts: z
       .array(
         z
           .object({
             signerAccount: z.string().max(256),
             nftGlobalId: z.string().max(512),
+            localId: z.string().max(64).optional(),
           })
           .strict(),
       )
@@ -126,6 +129,39 @@ async function verifyOnChainHash(
     if (!Array.isArray(fields)) return false;
     const field = fields.find((f) => f.field_name === 'document_hash');
     return typeof field?.value === 'string' && field.value === docHash;
+  } catch {
+    return false;
+  }
+}
+
+interface EntityMetadataResponse {
+  items?: Array<{
+    metadata?: { items?: Array<{ key: string; value?: { typed?: { value?: string } } }> };
+  }>;
+}
+
+/**
+ * Insignia check: the anchored collection's `radix_seal` metadata must equal
+ * the official brand address for this network. Returns null when the brand is
+ * not deployed on this network (nothing to check against).
+ */
+async function checkSealInsignia(
+  network: Network,
+  networkId: RadixNetworkId,
+  resourceAddress: string,
+): Promise<boolean | null> {
+  const official = radixSealAddress(networkId);
+  if (!official) return null;
+  try {
+    const data = await gatewayPost<EntityMetadataResponse>(
+      network,
+      '/state/entity/details',
+      { addresses: [resourceAddress], aggregation_level: 'Global' },
+    );
+    const referenced = data.items?.[0]?.metadata?.items?.find(
+      (m) => m.key === RADIX_SEAL_STANDARD_KEY,
+    )?.value?.typed?.value;
+    return referenced === official;
   } catch {
     return false;
   }
@@ -202,21 +238,27 @@ export async function POST(req: NextRequest) {
       : payload.signers.every((a) => validAccounts.has(a));
 
     let onChainValid: boolean | null = null;
+    let sealValid: boolean | null = null;
     if (envelope.onChain) {
       const network: Network =
         payload.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
       const checks = await Promise.all(
         envelope.onChain.nfts.map((nft) => {
-          const [resource, localId] = nft.nftGlobalId.split(':');
+          const [resource, splitId] = nft.nftGlobalId.split(':');
           return verifyOnChainHash(
             network,
             resource,
-            localId ?? '#0#',
+            nft.localId ?? splitId ?? '#0#',
             payload.docHash,
           );
         }),
       );
       onChainValid = checks.length > 0 && checks.every(Boolean);
+      sealValid = await checkSealInsignia(
+        network,
+        payload.networkId as RadixNetworkId,
+        envelope.onChain.resourceAddress,
+      );
     }
 
     return NextResponse.json({
@@ -229,6 +271,7 @@ export async function POST(req: NextRequest) {
       networkId: payload.networkId,
       docHash: payload.docHash,
       onChainValid,
+      sealValid,
       onChain: envelope.onChain,
     });
   } catch {

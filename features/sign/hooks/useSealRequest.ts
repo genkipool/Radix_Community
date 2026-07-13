@@ -1,0 +1,214 @@
+'use client';
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
+import { radixSealAddress } from '../constants/seal';
+import { buildSealMintManifest } from '../lib/radix-seal-manifest';
+import {
+  buildSignCollectionCreateManifest,
+  buildSignRequestManifest,
+  buildSignatureMintManifest,
+  requestKey,
+} from '../lib/sign-request';
+import {
+  findSignCollection,
+  findUserSeal,
+  rememberSignCollection,
+  type UserSeal,
+  type UserSignCollection,
+} from '../services/sealDiscovery';
+import type { IssuerMeta } from '../types/sign.types';
+
+/**
+ * On-ledger prerequisites of the signing flow for one account: their seal
+ * NFT (insignia) and their signing collection. Read from the ledger, cached
+ * by react-query; refetch after minting either.
+ */
+export function useSealSetup(account: string | null) {
+  const { activeNetworkId } = useRadixWallet();
+  const query = useQuery({
+    queryKey: ['seal-setup', activeNetworkId, account],
+    enabled: !!account && !!activeNetworkId,
+    queryFn: async (): Promise<{
+      seal: UserSeal | null;
+      collection: UserSignCollection | null;
+    }> => {
+      const [seal, collection] = await Promise.all([
+        findUserSeal(activeNetworkId!, account!),
+        findSignCollection(activeNetworkId!, account!),
+      ]);
+      return { seal, collection };
+    },
+  });
+  return {
+    seal: query.data?.seal ?? null,
+    collection: query.data?.collection ?? null,
+    loading: query.isFetching,
+    ready: query.data !== undefined,
+    refetch: query.refetch,
+  };
+}
+
+export type SealRequestPhase =
+  | 'idle'
+  | 'minting-seal'
+  | 'creating-collection'
+  | 'creating'
+  | 'signing'
+  | 'done'
+  | 'error';
+
+/**
+ * Wallet actions of the single signing flow. Every action is one
+ * transaction paid by its actor; there is no coordinator.
+ */
+export function useSealRequest() {
+  const { activeNetworkId } = useRadixWallet();
+  const { sendTransaction } = useConsoleTransaction();
+  const [phase, setPhase] = useState<SealRequestPhase>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => {
+    setPhase('idle');
+    setError(null);
+  };
+
+  const fail = (code: string) => {
+    setPhase('error');
+    setError(code);
+    return null;
+  };
+
+  /** Self-mints the account's soulbound seal NFT (their insignia). */
+  const mintSeal = async (args: {
+    account: string;
+    imageUrl: string;
+  }): Promise<boolean> => {
+    setError(null);
+    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    const sealResource = radixSealAddress(activeNetworkId);
+    if (!sealResource) return !!fail('seal_not_deployed');
+    setPhase('minting-seal');
+    const tx = await sendTransaction(
+      buildSealMintManifest({
+        account: args.account,
+        sealResource,
+        imageUrl: args.imageUrl,
+      }),
+    );
+    if (!tx) return !!fail('onchain_failed');
+    setPhase('done');
+    return true;
+  };
+
+  /**
+   * Creates the account's signing collection (owned by their seal). A
+   * co-signer can bundle their first signature into it.
+   */
+  const createCollection = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collectionName: string;
+    imageUrl: string;
+    issuer?: IssuerMeta;
+    firstSignature?: { docHash: string; request: string };
+  }): Promise<string | null> => {
+    setError(null);
+    if (!activeNetworkId) return fail('wallet_not_connected');
+    setPhase('creating-collection');
+    const manifest = buildSignCollectionCreateManifest({
+      account: args.account,
+      sealGlobalId: args.sealGlobalId,
+      sealAddress: radixSealAddress(activeNetworkId),
+      networkId: activeNetworkId,
+      collectionName: args.collectionName,
+      imageUrl: args.imageUrl,
+      issuer: args.issuer,
+      firstSignature: args.firstSignature
+        ? { ...args.firstSignature, signedAt: new Date().toISOString() }
+        : undefined,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return fail('onchain_failed');
+    const resource = tx.createdEntities.find((a) => a.startsWith('resource_'));
+    if (!resource) return fail('onchain_no_resource');
+    rememberSignCollection(activeNetworkId, args.account, resource);
+    setPhase('done');
+    return resource;
+  };
+
+  /**
+   * Mints + distributes the invitation batch (and optionally the
+   * initiator's own signature). Returns the shareable request key.
+   */
+  const createRequest = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collection: string;
+    nextId: number;
+    docHash: string;
+    requiredSigners: string[];
+    alsoSign: boolean;
+    imageUrl: string;
+  }): Promise<string | null> => {
+    setError(null);
+    if (!activeNetworkId) return fail('wallet_not_connected');
+    setPhase('creating');
+    const manifest = buildSignRequestManifest({
+      account: args.account,
+      sealGlobalId: args.sealGlobalId,
+      collection: args.collection,
+      nextId: args.nextId,
+      docHash: args.docHash,
+      networkId: activeNetworkId,
+      requiredSigners: args.requiredSigners,
+      alsoSign: args.alsoSign,
+      imageUrl: args.imageUrl,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return fail('onchain_failed');
+    setPhase('done');
+    return requestKey(args.collection, args.nextId);
+  };
+
+  /** Mints the signer's signature into their OWN collection. */
+  const signRequest = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collection: string;
+    nextId: number;
+    docHash: string;
+    request: string;
+    imageUrl: string;
+  }): Promise<boolean> => {
+    setError(null);
+    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    setPhase('signing');
+    const manifest = buildSignatureMintManifest({
+      account: args.account,
+      sealGlobalId: args.sealGlobalId,
+      collection: args.collection,
+      nextId: args.nextId,
+      docHash: args.docHash,
+      networkId: activeNetworkId,
+      request: args.request,
+      imageUrl: args.imageUrl,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return !!fail('onchain_failed');
+    setPhase('done');
+    return true;
+  };
+
+  return {
+    mintSeal,
+    createCollection,
+    createRequest,
+    signRequest,
+    phase,
+    error,
+    reset,
+  };
+}

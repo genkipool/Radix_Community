@@ -314,8 +314,10 @@ export async function apiFetchAllNonFungibleIds(resourceAddress: string, network
             }),
         });
         if (!response.ok) throw new Error(`API error: ${response.status}`);
-        const parsedData: any = await response.json();
-        const ids = (parsedData.non_fungible_ids?.items || []) as string[];
+        const parsedData = (await response.json()) as {
+            non_fungible_ids?: { items?: string[]; next_cursor?: string };
+        };
+        const ids = parsedData.non_fungible_ids?.items || [];
         allIds.push(...ids);
         nextCursor = parsedData.non_fungible_ids?.next_cursor;
     } while (nextCursor && allIds.length < 1000); // cap at 1000 to prevent infinite loops in UI

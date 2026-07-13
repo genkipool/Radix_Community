@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info
+  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -75,6 +75,7 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ecosystem: [
     { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
     { key: 'hyperscale', href: '/hyperscale', icon: <Zap className="size-4" />, descKey: 'popup_eco_hyperscale_desc' },
+    { key: 'seal', href: '/seal', icon: <Stamp className="size-4" />, descKey: 'popup_eco_seal_desc' },
     { key: 'google_wallet', href: '/google-wallet', icon: <Nfc className="size-4" />, descKey: 'popup_eco_google_wallet_desc' },
     { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
     { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },

@@ -5,6 +5,7 @@ export const NAV_LINKS = [
     sublinks: [
       { key: 'infrastructure', path: '/infrastructure' },
       { key: 'hyperscale', path: '/hyperscale' },
+      { key: 'seal', path: '/seal' },
       { key: 'google_wallet', path: '/google-wallet' },
       { key: 'dapps', path: '/dapps' },
       { key: 'games', path: '/games' },
@@ -68,6 +69,7 @@ export const FOOTER_LINKS = {
     { key: 'academy', path: '/academy' },
     { key: 'console', path: '/console' },
     { key: 'hyperscale', path: '/hyperscale' },
+    { key: 'seal', path: '/seal' },
     { key: 'wiki', path: 'https://radix.wiki' },
   ],
   users: [

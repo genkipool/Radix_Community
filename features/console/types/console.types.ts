@@ -20,6 +20,8 @@ export const CONSOLE_TOOL_SLUGS = [
   'wallet-playground',
   'claim-package-royalties',
   'sign-document',
+  'encrypt-document',
+  'chat',
 ] as const;
 
 

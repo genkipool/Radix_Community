@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Circle, RefreshCw, ShieldCheck, ShieldX, XCircle } from 'lucide-react';
+import { BadgeCheck, CheckCircle2, Circle, RefreshCw, ShieldCheck, ShieldX, XCircle } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useDocumentVerify } from '../hooks/useDocumentVerify';
 import { fetchOnChainStatus } from '../services/signApi';
+import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import type { SignDictionary } from '../types/dictionary';
 import type { AttestationEnvelope } from '../types/sign.types';
@@ -32,20 +33,66 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
   const [envelope, setEnvelope] = useState<AttestationEnvelope | null>(null);
   const [certError, setCertError] = useState('');
   const [keyInput, setKeyInput] = useState('');
+  // When a signed PDF is dropped, the certificate + original are read from it.
+  const [embedded, setEmbedded] = useState(false);
+  // Bytes to hash for the file-match check (extracted original, or the file itself).
+  const [verifyBytes, setVerifyBytes] = useState<Uint8Array | null>(null);
 
   const { verify, isVerifying, outcome, reset } = useDocumentVerify();
 
+  // Auto-detect a signed PDF in the shared dropzone: pull out the embedded
+  // certificate + original so the delivered PDF verifies on its own. All state
+  // updates happen inside the async closure (never synchronously in the effect).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (!bytes) {
+        if (!cancelled) {
+          setEmbedded(false);
+          setVerifyBytes(null);
+        }
+        return;
+      }
+      if (!isPdfBytes(bytes)) {
+        if (!cancelled) {
+          setEmbedded(false);
+          setVerifyBytes(bytes);
+        }
+        return;
+      }
+      const att = await extractRadixAttachments(bytes).catch(() => null);
+      if (cancelled) return;
+      if (att?.envelope) {
+        setEnvelope(att.envelope);
+        setCertFile(null);
+        setCertError('');
+        setEmbedded(true);
+        setVerifyBytes(att.originalBytes ?? bytes);
+      } else {
+        setEmbedded(false);
+        setVerifyBytes(bytes);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [bytes]);
+
+  // On-chain lookups must use the certificate's ORIGINAL hash, not the hash of
+  // a mutated (watermarked/embedded) PDF.
+  const effectiveDocHash = envelope?.payload.docHash ?? docHash;
+
   // On-chain: resolve the request from the connected wallet (or a pasted key).
   const onchainQuery = useQuery({
-    queryKey: ['verify-onchain', activeNetworkId, docHash, keyInput, account],
+    queryKey: ['verify-onchain', activeNetworkId, effectiveDocHash, keyInput, account],
     queryFn: () =>
       fetchOnChainStatus({
         networkId: activeNetworkId!,
-        docHash,
+        docHash: effectiveDocHash,
         account,
         requestId: keyInput.trim() || undefined,
       }),
-    enabled: !!docHash && !!activeNetworkId,
+    enabled: !!effectiveDocHash && !!activeNetworkId,
   });
   const onchain = onchainQuery.data?.found ? onchainQuery.data : null;
 
@@ -53,6 +100,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
     reset();
     setCertError('');
     setEnvelope(null);
+    setEmbedded(false);
     setCertFile(picked);
     if (!picked) return;
     try {
@@ -66,6 +114,15 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
       setCertError(t.verify.badCert);
     }
   };
+
+  const verifyTarget = verifyBytes ?? bytes;
+
+  // Required signers with no valid signature yet in the certificate.
+  const pendingSigners = outcome
+    ? outcome.requiredSigners.filter(
+        (account) => !outcome.signatures.some((s) => s.signerAccount === account && s.valid),
+      )
+    : [];
 
   return (
     <div className="space-y-5">
@@ -149,19 +206,34 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
 
       {/* ── Off-chain certificate verification ── */}
       <ToolSection title={t.verify.certLabel}>
-        <FileDropzone
-          extension=".json"
-          label={t.verify.certLabel}
-          prompt={t.verify.certPrompt}
-          file={certFile}
-          onFile={onCert}
-          error={certError}
-          disabled={isVerifying}
-        />
+        {embedded ? (
+          <p
+            className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"
+            style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+          >
+            <BadgeCheck className="size-4 text-emerald-500 shrink-0" />
+            {t.verify.embeddedDetected}
+          </p>
+        ) : (
+          <FileDropzone
+            extension=".json"
+            label={t.verify.certLabel}
+            prompt={t.verify.certPrompt}
+            file={certFile}
+            onFile={onCert}
+            error={certError}
+            disabled={isVerifying}
+          />
+        )}
+        {!embedded && (
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {t.verify.dropSignedPdfHint}
+          </p>
+        )}
         <button
           type="button"
-          disabled={!bytes || !envelope || isVerifying}
-          onClick={() => bytes && envelope && verify(bytes, envelope)}
+          disabled={!verifyTarget || !envelope || isVerifying}
+          onClick={() => verifyTarget && envelope && verify(verifyTarget, envelope)}
           className="flex w-full items-center justify-center gap-2.5 px-7 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
         >
           {isVerifying ? (
@@ -194,6 +266,9 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
             ) : (
               <Check ok={outcome.onChainValid} okText={t.verify.onchainValid} badText={t.verify.onchainInvalid} />
             )}
+            {outcome.sealValid !== null && (
+              <Check ok={outcome.sealValid} okText={t.verify.sealValid} badText={t.verify.sealInvalid} />
+            )}
           </ul>
 
           <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--color-card-border)' }}>
@@ -208,17 +283,9 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                   <XCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
                 )}
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-[12px] break-all" style={{ color: 'var(--color-text-main)' }}>
-                      {s.signerAccount}
-                    </span>
-                    <span
-                      className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase"
-                      style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)' }}
-                    >
-                      {s.required ? t.verify.requiredBadge : t.verify.extraBadge}
-                    </span>
-                  </div>
+                  <span className="font-mono text-[12px] break-all" style={{ color: 'var(--color-text-main)' }}>
+                    {s.signerAccount}
+                  </span>
                   {(s.disclosedName || s.disclosedEmail) && (
                     <p className="text-[12px]" style={{ color: 'var(--color-text-muted)' }}>
                       {[s.disclosedName, s.disclosedEmail].filter(Boolean).join(' · ')}
@@ -228,6 +295,22 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
               </div>
             ))}
           </div>
+
+          {pendingSigners.length > 0 && (
+            <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--color-card-border)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                {t.verify.pendingHeader}
+              </p>
+              {pendingSigners.map((account) => (
+                <div key={account} className="flex items-center gap-2 text-sm">
+                  <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+                  <span className="font-mono text-[12px] break-all" style={{ color: 'var(--color-text-main)' }}>
+                    {account}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {outcome.message && (
             <dl className="grid gap-2 text-sm">

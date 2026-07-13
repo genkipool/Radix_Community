@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { convertOlympiaAddress } from '@/services/ret';
+import { convertOlympiaAddressDetailed } from '@/services/ret';
 import { retRequestSchema } from '../validation';
 
 const bodySchema = retRequestSchema.extend({
@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const babylonAddress = await convertOlympiaAddress(
+    const conversion = await convertOlympiaAddressDetailed(
       parsed.data.olympiaAddress,
       parsed.data.network,
     );
-    return NextResponse.json({ babylonAddress });
+    return NextResponse.json(conversion);
   } catch {
     return NextResponse.json({ error: 'Invalid Olympia address' }, { status: 400 });
   }

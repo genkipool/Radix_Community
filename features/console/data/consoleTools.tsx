@@ -6,10 +6,12 @@ import {
   Coins,
   Droplets,
   FileCode2,
+  FileLock2,
   FileSignature,
   FlaskConical,
   Landmark,
   LayoutDashboard,
+  MessageSquareLock,
   Rocket,
   ScanSearch,
   Settings2,
@@ -160,6 +162,23 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     requiresWallet: false,
     wide: true,
   },
+  'encrypt-document': {
+    slug: 'encrypt-document',
+    icon: <FileLock2 className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '34,197,94',
+    // Receiving/decrypting works without a wallet; the Encrypt tab self-gates.
+    requiresWallet: false,
+    wide: true,
+  },
+  chat: {
+    slug: 'chat',
+    icon: <MessageSquareLock className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '14,165,233',
+    // Both sides sign, but the tool self-gates with its own explanatory copy.
+    requiresWallet: false,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -194,7 +213,13 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'documents',
     icon: <FileSignature className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['sign-document'],
+    tools: ['sign-document', 'encrypt-document'],
+  },
+  {
+    id: 'communication',
+    icon: <MessageSquareLock className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    tools: ['chat'],
   },
   {
     id: 'utilities',

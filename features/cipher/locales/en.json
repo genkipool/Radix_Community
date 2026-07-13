@@ -1,0 +1,127 @@
+{
+  "cipher": {
+    "tabs": {
+      "encrypt": "Encrypt",
+      "decrypt": "Decrypt"
+    },
+    "disclaimer": {
+      "title": "Your file never leaves your browser",
+      "body": "Encryption, decryption and storage happen locally. Files travel only over a direct, end-to-end encrypted peer-to-peer channel between browsers — never through a server. The key is derived from your wallet signature: only the account that encrypted a file can unlock it."
+    },
+    "connect": {
+      "title": "Connect your Radix Wallet",
+      "subtitle": "Encrypting binds the file to your account: only a signature from this account will be able to unlock it later.",
+      "mainnet": "Connect (Mainnet)",
+      "stokenet": "Connect (Stokenet)"
+    },
+    "modes": {
+      "label": "Encryption method",
+      "rola": "Encrypt with ROLA",
+      "rolaDescription": "Sign a challenge with your Radix Wallet; the encryption key is derived from that signature.",
+      "rolaLedger": "Encrypt with ROLA + Ledger",
+      "rolaLedgerDescription": "Hardware-backed signature. Coming soon.",
+      "comingSoon": "Coming soon"
+    },
+    "file": {
+      "label": "File to encrypt",
+      "prompt": "Drop any file here or click to browse. No size limit — it is processed in chunks and never uploaded.",
+      "encLabel": "Encrypted file",
+      "encPrompt": "Drop a .radixenc file here or click to browse.",
+      "metaName": "Original file",
+      "metaSize": "Size",
+      "metaSender": "Encrypted by",
+      "metaDate": "Date",
+      "metaNetwork": "Network",
+      "fingerprint": "Fingerprint",
+      "invalid": "This is not a valid .radixenc file."
+    },
+    "encrypt": {
+      "button": "Encrypt",
+      "readyTitle": "File encrypted",
+      "readyHint": "Download the encrypted copy for safekeeping, or share it directly with a receiver over a secure channel.",
+      "download": "Download encrypted file",
+      "share": "Share with a receiver",
+      "encryptAnother": "Encrypt another file"
+    },
+    "progress": {
+      "signing": "Confirm the request in your Radix Wallet…",
+      "deriving": "Deriving encryption key…",
+      "encrypting": "Encrypting",
+      "decrypting": "Decrypting",
+      "transferring": "Sending encrypted file",
+      "receiving": "Receiving encrypted file",
+      "connecting": "Connecting to peer…",
+      "waitingPeer": "Waiting for the other side to open the link…",
+      "waitingApproval": "Request sent. Waiting for the sender to approve and sign…",
+      "waitingRequest": "Transfer complete. Waiting for the decrypt request…",
+      "transferComplete": "Transfer complete.",
+      "keySent": "Key sent. The receiver can now decrypt the file. You can close this page."
+    },
+    "share": {
+      "title": "Share this link",
+      "hintReceive": "Send this link to the person who should receive the file. When they open it, a direct encrypted channel is created and the file is transferred browser-to-browser.",
+      "hintUnlock": "Send this link to the person who encrypted the file (e.g. via WhatsApp). When they open it and sign with their wallet, your file will be decrypted here.",
+      "copy": "Copy link",
+      "copied": "Copied!",
+      "qrAlt": "QR code with the share link",
+      "cancel": "Cancel connection"
+    },
+    "request": {
+      "title": "Decrypt request",
+      "body": "{name} wants to decrypt {file}",
+      "approve": "Approve & sign",
+      "deny": "Reject",
+      "denied": "Request rejected.",
+      "verifiedBadge": "wallet-verified name",
+      "anonymous": "Someone"
+    },
+    "receiver": {
+      "nameLabel": "Your name",
+      "namePlaceholder": "Shown to the sender when you request decryption",
+      "personaHint": "Using the name from your connected wallet persona.",
+      "decryptButton": "Decrypt",
+      "requestButton": "Request decryption",
+      "downloadEncrypted": "Download encrypted copy (.radixenc)",
+      "saveDecrypted": "Save decrypted file",
+      "deleteLocal": "Delete local copy",
+      "receivedTitle": "File received"
+    },
+    "localDecrypt": {
+      "title": "You encrypted this file",
+      "hint": "The connected account matches the one that encrypted this file. You can decrypt it right here by signing with your wallet.",
+      "button": "I am the sender: decrypt here"
+    },
+    "unlock": {
+      "title": "Decrypt request",
+      "gateSubtitle": "Connect the wallet account that encrypted this file to approve the request.",
+      "wrongAccount": "The connected account does not match the one that encrypted this file. Expected: {account}",
+      "done": "Key sent. {name} can now decrypt the file. You can close this page."
+    },
+    "errors": {
+      "wallet_rejected": "The wallet request was rejected.",
+      "no_proof": "The wallet did not return a signature proof.",
+      "challenge_mismatch": "The wallet signed a different challenge. Please try again.",
+      "secp256k1": "This account uses a secp256k1 key. Encryption requires a Babylon account (curve25519) so the key can be re-derived deterministically.",
+      "origin_mismatch": "This file was encrypted on a different site ({origin}) and cannot be unlocked here.",
+      "network_mismatch": "This file was encrypted on a different network.",
+      "account_mismatch": "The connected account is not the one that encrypted this file.",
+      "header_mismatch": "The request does not match the file shared in this session.",
+      "decrypt_failed": "Decryption failed: wrong key or corrupted file.",
+      "peer_disconnected": "The connection to the other side was lost. Ask them to reopen the link and try again.",
+      "room_busy": "Someone already joined this link. Each link works for a single session.",
+      "signaling_unavailable": "Could not reach the signaling service. Check your connection and try again.",
+      "storage_quota": "Not enough browser storage to hold this file.",
+      "invalid_container": "This is not a valid .radixenc file.",
+      "webrtc_failed": "Could not establish a direct connection between browsers. Try again, ideally with both devices on networks that allow peer-to-peer traffic.",
+      "file_read": "The file could not be read.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "security": {
+      "title": "How it works",
+      "boundToAccount": "The key is derived from a deterministic wallet signature, so it is bound to the encrypting account, this site and this network.",
+      "headerVisible": "The encrypted file keeps the original file name and the sender account visible in its header — share it only with people who may see that.",
+      "neverUploaded": "File contents never touch a server: they stay in your browser and travel only over the direct encrypted channel."
+    },
+    "leaveWarning": "A transfer session is active. If you leave, the other side will be disconnected."
+  }
+}

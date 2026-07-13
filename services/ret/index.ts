@@ -7,6 +7,7 @@
 
 import {
   ManifestSborStringRepresentation,
+  OlympiaNetwork,
   RadixEngineToolkit,
   SerializationMode,
 } from '@radixdlt/radix-engine-toolkit';
@@ -64,6 +65,52 @@ export async function convertOlympiaAddress(
   return olympiaAddress.toLowerCase().includes('_rr1')
     ? RadixEngineToolkit.Derive.resourceAddressFromOlympiaResourceAddress(olympiaAddress, networkId)
     : RadixEngineToolkit.Derive.virtualAccountAddressFromOlympiaAccountAddress(olympiaAddress, networkId);
+}
+
+export interface OlympiaConversion {
+  kind: 'account' | 'resource';
+  babylonAddress: string;
+  /** Compressed secp256k1 public key encoded in the Olympia address (accounts only). */
+  publicKeyHex?: string;
+}
+
+/**
+ * Converts an Olympia address to Babylon and, for account addresses, also
+ * extracts the compressed secp256k1 public key embedded in the address
+ * (needed to build the legacy-wallet import QR payload). Throws on malformed input.
+ */
+export async function convertOlympiaAddressDetailed(
+  olympiaAddress: string,
+  network: Network,
+): Promise<OlympiaConversion> {
+  const networkId = networkIdFromName(network);
+  if (olympiaAddress.toLowerCase().includes('_rr1')) {
+    const babylonAddress = await RadixEngineToolkit.Derive.resourceAddressFromOlympiaResourceAddress(
+      olympiaAddress,
+      networkId,
+    );
+    return { kind: 'resource', babylonAddress };
+  }
+  const [babylonAddress, publicKey] = await Promise.all([
+    RadixEngineToolkit.Derive.virtualAccountAddressFromOlympiaAccountAddress(olympiaAddress, networkId),
+    RadixEngineToolkit.Derive.publicKeyFromOlympiaAccountAddress(olympiaAddress),
+  ]);
+  return {
+    kind: 'account',
+    babylonAddress,
+    publicKeyHex: Buffer.from(publicKey).toString('hex'),
+  };
+}
+
+/** Encodes a compressed secp256k1 public key as an Olympia account address. */
+export async function olympiaAddressFromPublicKeyHex(
+  publicKeyHex: string,
+  network: Network = 'mainnet',
+): Promise<string> {
+  return RadixEngineToolkit.Derive.olympiaAccountAddressFromPublicKey(
+    Buffer.from(publicKeyHex, 'hex'),
+    network === 'stokenet' ? OlympiaNetwork.Stokenet : OlympiaNetwork.Mainnet,
+  );
 }
 
 /* ─── SBOR decoding ───────────────────────────────────────────────────────── */

@@ -143,7 +143,12 @@ export interface NftItemData {
 const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 /** `NonFungibleLocalId("#i#") => Tuple(...)` entries for the initial supply map. */
-export const nftItemsToManifestSyntax = (items: NftItemData[], customFields: Array<{ id: string; key: string; locked: boolean }>) =>
+export const nftItemsToManifestSyntax = (
+  items: NftItemData[],
+  customFields: Array<{ id: string; key: string; locked: boolean }>,
+  /** Integer id assigned to the first item (defaults to 0). */
+  startId = 0,
+) =>
   items
     .map(
       ({ name, description, key_image_url, customData }, index) => {
@@ -151,7 +156,7 @@ export const nftItemsToManifestSyntax = (items: NftItemData[], customFields: Arr
           const val = customData[f.id];
           return `"${val ? escape(val) : ''}"`;
         });
-        return `NonFungibleLocalId("#${index}#") => Tuple(
+        return `NonFungibleLocalId("#${startId + index}#") => Tuple(
         Tuple(
           "${escape(name)}",
           "${escape(description)}",
@@ -172,6 +177,8 @@ export interface CreateNonFungibleTokenInput {
   nfts: NftItemData[];
   nftBaseFieldsLocked: { name: boolean; description: boolean; key_image_url: boolean };
   nftCustomFields: Array<{ id: string; key: string; locked: boolean }>;
+  /** Integer id of the first minted NFT (defaults to 0). */
+  firstNftId?: number;
 }
 
 export const createNonFungibleTokenManifest = ({
@@ -184,6 +191,7 @@ export const createNonFungibleTokenManifest = ({
   nfts,
   nftBaseFieldsLocked,
   nftCustomFields,
+  firstNftId = 0,
 }: CreateNonFungibleTokenInput) => {
   const customFieldsToUse = nftCustomFields.filter(f => f.key.trim() !== '');
 
@@ -239,7 +247,7 @@ export const createNonFungibleTokenManifest = ({
       ].filter(Boolean).join(', ')})
     )
     Map<NonFungibleLocalId, Tuple>(
-      ${nftItemsToManifestSyntax(nfts, customFieldsToUse)}
+      ${nftItemsToManifestSyntax(nfts, customFieldsToUse, firstNftId)}
     )
     Tuple(
       ${buildAuthRolesTuple(authRoles, true)}

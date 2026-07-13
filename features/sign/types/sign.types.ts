@@ -13,6 +13,23 @@
 /** How much of the signer's wallet Persona identity is disclosed (document-level policy). */
 export type DisclosurePolicy = 'full_name' | 'surname' | 'none';
 
+/**
+ * Optional issuer identity published — locked — in the metadata of the
+ * on-ledger request/badge/signature resources, so wallets and explorers show
+ * who is behind a signing request. Everything here is public and permanent.
+ */
+export interface IssuerMeta {
+  /** Company / organisation name. */
+  orgName?: string;
+  /** Organisation website (Url metadata). */
+  orgWebsite?: string;
+  /** Logo URL — used as `icon_url` and as each NFT's image. */
+  orgLogoUrl?: string;
+}
+
+/** How the on-ledger multi-party request enforces who can sign. */
+export type OnChainRequestMode = 'standard' | 'strict';
+
 /** What the user downloads as the "signed file". */
 export type OutputFormat = 'detached' | 'embedded';
 
@@ -74,19 +91,25 @@ export interface SignatureEntry {
 /** A single minted attestation NFT, tied to the signer that holds it. */
 export interface OnChainNft {
   signerAccount: string;
-  /** Non-fungible global id, e.g. `resource_...:#0#`. */
+  /** Non-fungible global id, e.g. `resource_...:#3#`. */
   nftGlobalId: string;
+  /** Local id only, e.g. `#3#` (the collection resource is `resourceAddress`). */
+  localId: string;
 }
 
 /**
- * On-chain anchoring info. A single atomic transaction mints one independent
- * NFT per signer, so `nfts` has one entry per signer.
+ * On-chain anchoring info. The attestation is minted into the anchoring
+ * account's Radix Seal collection (one resource per user, a new id per
+ * document), so `resourceAddress` is that collection and `nfts` lists the
+ * minted ids.
  */
 export interface OnChainAnchor {
   networkId: number;
   transactionIntentHash: string;
-  /** Resource address of the minted attestation NFT collection. */
+  /** The account's Radix Seal attestation collection resource. */
   resourceAddress: string;
+  /** Radix Seal brand address referenced by the collection ('' if undeployed). */
+  sealAddress: string;
   nfts: OnChainNft[];
 }
 
@@ -142,5 +165,12 @@ export interface VerifyResult {
    *  - false → missing or hash mismatch (tampering)
    */
   onChainValid: boolean | null;
+  /**
+   * Radix Seal insignia check:
+   *  - null  → not anchored, or brand not deployed on this network
+   *  - true  → the anchored collection references the official Radix Seal
+   *  - false → collection present but does NOT reference the official brand
+   */
+  sealValid: boolean | null;
   onChain: OnChainAnchor | null;
 }

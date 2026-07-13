@@ -14,7 +14,6 @@ import {
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
-import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import { StringListField } from '@/features/console/components/shared/StringListField';
 import {
   SimulateButton,
@@ -23,16 +22,23 @@ import {
 import { useTransactionPreview } from '@/features/console/hooks/useTransactionPreview';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useDocumentSign } from '../hooks/useDocumentSign';
+import { useSealSetup } from '../hooks/useSealRequest';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { OnChainSignPanel } from './OnChainSignPanel';
+import { SealDeployPanel } from './SealDeployPanel';
+import { SealOnboarding } from './SealOnboarding';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
 import { embedCertificateInPdf } from '../lib/pdf-embed';
+import { buildCollectionCreateManifest } from '../lib/seal-collection';
 import {
-  buildAttestationMintManifest,
-  buildMultiAttestationMintManifest,
-} from '../lib/manifest';
+  DEFAULT_COLLECTION_NAME,
+  radixSealAddress,
+  sealImageUrl,
+} from '../constants/seal';
+import { networkNameForId } from '../lib/network';
 import { explorerTxUrl } from '../lib/explorer';
 import type { SignDictionary } from '../types/dictionary';
 import type {
@@ -47,7 +53,7 @@ type IdentityOpt = DisclosurePolicy | 'email';
 const isPdfResult = (r: { fileType: string; fileName: string }) =>
   r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
 
-function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
+export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   if (!v || typeof v !== 'object') return false;
   const e = v as Record<string, unknown>;
   const payload = e.payload as Record<string, unknown> | undefined;
@@ -62,10 +68,20 @@ export function SignForm({
   t,
   consoleT,
   doc,
+  onchainAccount,
+  onOnchainAccountChange,
+  setup,
+  needsOnboarding,
 }: {
   t: SignDictionary;
   consoleT: ConsoleDictionary;
   doc: DocumentFile;
+  /** Acting on-chain account (lifted to the tool so it can gate the layout). */
+  onchainAccount: string | null;
+  onOnchainAccountChange: (account: string) => void;
+  setup: ReturnType<typeof useSealSetup>;
+  /** True while the seal/collection setup is missing → onboarding-only view. */
+  needsOnboarding: boolean;
 }) {
   const { file, bytes, docHash, hashing, pdf: pdfOk } = doc;
 
@@ -74,24 +90,27 @@ export function SignForm({
   const [certError, setCertError] = useState('');
 
   const [message, setMessage] = useState('');
-  const [disclosure, setDisclosure] = useState<DisclosurePolicy>('full_name');
+  const [disclosure, setDisclosure] = useState<DisclosurePolicy>('none');
   const [includeEmail, setIncludeEmail] = useState(false);
   const [outputs, setOutputs] = useState<OutputFormat[]>(['detached']);
-  // A shared link (?req=…) jumps straight into on-chain multi-sign.
+  // A shared link (?req=…) — or a dropped PDF carrying an embedded request
+  // pointer — jumps straight into on-chain multi-sign.
   const requestParam = useSearchParams().get('req') ?? undefined;
+  const sharedRequestId = requestParam ?? doc.embeddedRequest?.requestKey;
   const [multi, setMulti] = useState(!!requestParam);
   const [onchain, setOnchain] = useState(!!requestParam);
   const [coSigners, setCoSigners] = useState<string[]>(['']);
-  const [anchor, setAnchor] = useState(false);
-  const [account, setAccount] = useState<string | null>(null);
   const [result, setResult] = useState<SignResult | null>(null);
 
   const { sign, coSign, phase, error, reset } = useDocumentSign();
-  const preview = useTransactionPreview();
+
   const busy = phase === 'signing' || phase === 'anchoring';
   const coSignMode = !!loadedCert;
   const requiredSigners = coSigners.map((s) => s.trim()).filter(Boolean);
-  const onchainMode = multi && onchain;
+  const forcedOnchain = !!doc.embeddedRequest;
+  // "On-chain" applies equally to single and multi signing — the only
+  // difference downstream is whether the co-signer address list is shown.
+  const onchainMode = onchain || forcedOnchain;
 
   const identityValue: IdentityOpt[] = includeEmail
     ? [disclosure, 'email']
@@ -127,22 +146,12 @@ export function SignForm({
     }
   };
 
-  const onSimulate = () => {
-    if (!account || !docHash) return;
-    preview.simulate(
-      buildAttestationMintManifest({
-        accountAddress: account,
-        docHash,
-        timestamp: new Date().toISOString(),
-      }),
-    );
-  };
-
   const deliver = async (res: SignResult, chosen: OutputFormat[]) => {
     let delivered = false;
     if (chosen.includes('embedded') && isPdfResult(res)) {
       try {
-        const pdf = await embedCertificateInPdf(res.fileBytes, res.envelope);
+        // The original bytes are embedded intact so the PDF verifies alone.
+        const pdf = await embedCertificateInPdf(res.fileBytes, res.envelope, res.fileBytes);
         downloadBytes(
           pdf,
           `${stripExtension(res.fileName)}-signed.pdf`,
@@ -161,6 +170,7 @@ export function SignForm({
   const handleSign = async () => {
     if (!bytes || !docHash || !file) return;
     const cleanCoSigners = coSigners.map((s) => s.trim()).filter(Boolean);
+    // Off-chain path only: on-chain signing lives in OnChainSignPanel.
     const res = await sign({
       fileBytes: bytes,
       docHash,
@@ -170,11 +180,8 @@ export function SignForm({
       message: message.trim(),
       disclosure,
       includeEmail,
-      // Multi-sign is off-chain (pass the certificate around); anchoring on-
-      // ledger happens later from the result once everyone has signed.
       coSigners: multi ? cleanCoSigners : [],
-      signerAccount: !multi && anchor ? account ?? undefined : undefined,
-      onChain: !multi && anchor,
+      onChain: false,
     });
     if (res) {
       setResult(res);
@@ -198,7 +205,6 @@ export function SignForm({
     setCertFile(null);
     setLoadedCert(null);
     reset();
-    preview.reset();
   };
 
   if (result) {
@@ -219,8 +225,27 @@ export function SignForm({
   const hashMismatch =
     coSignMode && !!docHash && docHash !== loadedCert!.payload.docHash;
 
+  // One-time on-ledger setup, ALONE on screen until completed — nothing
+  // else competes for attention. Co-signers arriving via a shared request
+  // are exempt (they get a compact inline checklist instead).
+  if (needsOnboarding && !sharedRequestId) {
+    return (
+      <div className="space-y-5">
+        <SealDeployPanel t={t} />
+        <SealOnboarding
+          t={t}
+          account={onchainAccount}
+          onAccountChange={onOnchainAccountChange}
+          setup={setup}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
+      <SealDeployPanel t={t} />
+
       <ToolSection title={t.cosign.title} hint={t.cosign.hint}>
         <FileDropzone
           extension=".json"
@@ -274,87 +299,102 @@ export function SignForm({
         </>
       ) : (
         <>
-          <ToolSection title={t.options.messageTitle} hint={t.options.messageHint}>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              maxLength={2000}
-              rows={2}
-              disabled={busy}
-              placeholder={t.options.messagePlaceholder}
-              className="w-full rounded-xl border px-3.5 py-2.5 text-sm resize-none outline-none"
+          {forcedOnchain && (
+            <p
+              className="rounded-xl border px-4 py-3 text-sm"
               style={{
-                background: 'var(--color-input-bg, var(--color-card-bg))',
                 borderColor: 'var(--color-card-border)',
                 color: 'var(--color-text-main)',
+                background: 'var(--color-surface)',
               }}
-            />
-          </ToolSection>
+            >
+              {t.onchain.requestDetected}
+            </p>
+          )}
 
-          <ToolSection
-            title={t.options.identityTitle}
-            hint={t.options.identityHint}
-          >
-            <OptionButtons<IdentityOpt>
-              multiple
-              layout="grid"
-              className="grid-cols-2 sm:grid-cols-4"
-              value={identityValue}
-              onChange={onIdentityChange}
-              disabled={busy}
-              options={[
-                {
-                  value: 'full_name',
-                  label: t.options.identityFull,
-                  description: t.options.identityFullDesc,
-                },
-                {
-                  value: 'surname',
-                  label: t.options.identitySurname,
-                  description: t.options.identitySurnameDesc,
-                },
-                {
-                  value: 'none',
-                  label: t.options.identityNone,
-                  description: t.options.identityNoneDesc,
-                },
-                {
-                  value: 'email',
-                  label: t.options.identityEmail,
-                  description: t.options.identityEmailDesc,
-                },
-              ]}
-            />
-          </ToolSection>
+          {!onchainMode && (
+            <>
+              <ToolSection title={t.options.messageTitle} hint={t.options.messageHint}>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  maxLength={2000}
+                  rows={2}
+                  disabled={busy}
+                  placeholder={t.options.messagePlaceholder}
+                  className="w-full rounded-xl border px-3.5 py-2.5 text-sm resize-none outline-none"
+                  style={{
+                    background: 'var(--color-input-bg, var(--color-card-bg))',
+                    borderColor: 'var(--color-card-border)',
+                    color: 'var(--color-text-main)',
+                  }}
+                />
+              </ToolSection>
 
-          <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
-            <OptionButtons<OutputFormat>
-              multiple
-              value={outputs}
-              onChange={setOutputs}
-              disabled={busy}
-              options={[
-                {
-                  value: 'detached',
-                  label: t.options.outputDetached,
-                  description: t.options.outputDetachedDesc,
-                },
-                {
-                  value: 'embedded',
-                  label: t.options.outputEmbedded,
-                  description: t.options.outputEmbeddedDesc,
-                  disabled: !pdfOk,
-                  title: pdfOk ? undefined : t.options.embeddedPdfOnly,
-                },
-              ]}
-            />
-          </ToolSection>
+              <ToolSection
+                title={t.options.identityTitle}
+                hint={t.options.identityHint}
+              >
+                <OptionButtons<IdentityOpt>
+                  multiple
+                  layout="grid"
+                  className="grid-cols-2 sm:grid-cols-3"
+                  value={identityValue}
+                  onChange={onIdentityChange}
+                  disabled={busy}
+                  options={[
+                    {
+                      value: 'none',
+                      label: t.options.identityNone,
+                      description: t.options.identityNoneDesc,
+                    },
+                    {
+                      value: 'full_name',
+                      label: t.options.identityFull,
+                      description: t.options.identityFullDesc,
+                    },
+                    {
+                      value: 'email',
+                      label: t.options.identityEmail,
+                      description: t.options.identityEmailDesc,
+                    },
+                  ]}
+                />
+              </ToolSection>
+
+              <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
+                <OptionButtons<OutputFormat>
+                  multiple
+                  value={outputs}
+                  onChange={(v) => {
+                    // At least one output format must stay selected.
+                    if (v.length > 0) setOutputs(v);
+                  }}
+                  disabled={busy}
+                  options={[
+                    {
+                      value: 'detached',
+                      label: t.options.outputDetached,
+                      description: t.options.outputDetachedDesc,
+                    },
+                    {
+                      value: 'embedded',
+                      label: t.options.outputEmbedded,
+                      description: t.options.outputEmbeddedDesc,
+                      disabled: !pdfOk,
+                      title: pdfOk ? undefined : t.options.embeddedPdfOnly,
+                    },
+                  ]}
+                />
+              </ToolSection>
+            </>
+          )}
 
           <ToolSection title={t.options.multiTitle} hint={t.options.multiHint}>
             <OptionButtons<'single' | 'multiple'>
-              value={multi ? 'multiple' : 'single'}
+              value={multi || forcedOnchain ? 'multiple' : 'single'}
               onChange={(v) => setMulti(v === 'multiple')}
-              disabled={busy}
+              disabled={busy || forcedOnchain}
               options={[
                 {
                   value: 'single',
@@ -368,8 +408,35 @@ export function SignForm({
                 },
               ]}
             />
-            {multi && (
-              <div className="space-y-3">
+            {/* The signing method is the same alone or with others — only
+                the address list below changes. */}
+            <div className="space-y-1.5">
+              <p
+                className="text-xs font-bold uppercase tracking-wider"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {t.onchain.modeTitle}
+              </p>
+              <OptionButtons<'off' | 'on'>
+                value={onchainMode ? 'on' : 'off'}
+                onChange={(v) => setOnchain(v === 'on')}
+                disabled={busy || forcedOnchain}
+                options={[
+                  {
+                    value: 'off',
+                    label: t.onchain.off,
+                    description: t.onchain.offDesc,
+                  },
+                  {
+                    value: 'on',
+                    label: t.onchain.on,
+                    description: t.onchain.onDesc,
+                  },
+                ]}
+              />
+            </div>
+            {(multi || forcedOnchain) && !sharedRequestId && (
+              <>
                 <StringListField
                   label={t.options.coSignersLabel}
                   values={coSigners}
@@ -379,166 +446,78 @@ export function SignForm({
                   disabled={busy}
                 />
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  {t.options.coSignersHint}
+                  {onchainMode
+                    ? t.options.onchainSignersHint
+                    : t.options.coSignersHint}
                 </p>
-                <div
-                  className="rounded-xl border p-3.5 space-y-1.5"
-                  style={{
-                    background: 'var(--color-surface)',
-                    borderColor: 'var(--color-card-border)',
-                  }}
+              </>
+            )}
+            {multi && !onchainMode && (
+              <div
+                className="rounded-xl border p-3.5 space-y-1.5"
+                style={{
+                  background: 'var(--color-surface)',
+                  borderColor: 'var(--color-card-border)',
+                }}
+              >
+                <p
+                  className="text-xs font-bold"
+                  style={{ color: 'var(--color-text-main)' }}
                 >
-                  <p
-                    className="text-xs font-bold"
-                    style={{ color: 'var(--color-text-main)' }}
-                  >
-                    {t.steps.title}
-                  </p>
-                  <ol
-                    className="text-xs leading-relaxed list-decimal pl-4 space-y-0.5"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    <li>{t.steps.s1}</li>
-                    <li>{t.steps.s2}</li>
-                    <li>{t.steps.s3}</li>
-                    <li>{t.steps.s4}</li>
-                    <li>{t.steps.s5}</li>
-                  </ol>
-                </div>
-                <div className="space-y-1.5">
-                  <p
-                    className="text-xs font-bold uppercase tracking-wider"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    {t.onchain.modeTitle}
-                  </p>
-                  <OptionButtons<'off' | 'on'>
-                    value={onchain ? 'on' : 'off'}
-                    onChange={(v) => setOnchain(v === 'on')}
-                    disabled={busy}
-                    options={[
-                      {
-                        value: 'off',
-                        label: t.onchain.off,
-                        description: t.onchain.offDesc,
-                      },
-                      {
-                        value: 'on',
-                        label: t.onchain.on,
-                        description: t.onchain.onDesc,
-                      },
-                    ]}
-                  />
-                </div>
+                  {t.steps.title}
+                </p>
+                <ol
+                  className="text-xs leading-relaxed list-decimal pl-4 space-y-0.5"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  <li>{t.steps.s1}</li>
+                  <li>{t.steps.s2}</li>
+                  <li>{t.steps.s3}</li>
+                  <li>{t.steps.s4}</li>
+                  <li>{t.steps.s5}</li>
+                </ol>
               </div>
             )}
           </ToolSection>
 
           {onchainMode ? (
             <OnChainSignPanel
+              key={sharedRequestId ?? 'new'}
               t={t}
               consoleT={consoleT}
-              docHash={docHash}
+              doc={doc}
               requiredSigners={requiredSigners}
-              disclosure={disclosure}
-              initialRequestId={requestParam}
+              initialRequestId={sharedRequestId}
+              account={onchainAccount}
+              solo={!multi && !forcedOnchain}
             />
           ) : (
             <>
-          {!multi ? (
-            <ToolSection title={t.options.anchorTitle} hint={t.options.anchorHint}>
-              <OptionButtons<'off' | 'on'>
-                value={anchor ? 'on' : 'off'}
-                onChange={(v) => setAnchor(v === 'on')}
-                disabled={busy}
-                options={[
-                  {
-                    value: 'off',
-                    label: t.options.anchorOff,
-                    description: t.options.anchorOffDesc,
-                  },
-                  {
-                    value: 'on',
-                    label: t.options.anchorOn,
-                    description: t.options.anchorOnDesc,
-                  },
-                ]}
-              />
-              {anchor && (
-                <>
-                  <AccountPicker
-                    value={account}
-                    onChange={setAccount}
-                    disabled={busy}
-                  />
-                  <p
-                    className="text-xs"
-                    style={{ color: 'var(--color-warning, #b45309)' }}
-                  >
-                    ⚠ {t.options.anchorWarning}
-                  </p>
-                </>
+              {errorMsg && (
+                <p
+                  className="rounded-xl border px-4 py-3 text-sm"
+                  style={{
+                    borderColor: 'var(--color-danger, #dc2626)',
+                    color: 'var(--color-danger, #dc2626)',
+                  }}
+                >
+                  {errorMsg}
+                </p>
               )}
-            </ToolSection>
-          ) : (
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {t.options.onchainMultiNote}
-            </p>
-          )}
 
-          {errorMsg && (
-            <p
-              className="rounded-xl border px-4 py-3 text-sm"
-              style={{
-                borderColor: 'var(--color-danger, #dc2626)',
-                color: 'var(--color-danger, #dc2626)',
-              }}
-            >
-              {errorMsg}
-            </p>
-          )}
-
-          <div
-            className={
-              !multi && anchor ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''
-            }
-          >
-            <button
-              type="button"
-              disabled={!docHash || hashing || busy}
-              onClick={handleSign}
-              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {busy ? (
-                <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : (
-                <FileSignature className="size-4" />
-              )}
-              {phase === 'signing'
-                ? t.actions.signing
-                : phase === 'anchoring'
-                  ? t.actions.anchoring
-                  : t.actions.sign}
-            </button>
-
-            {!multi && anchor && (
-              <SimulateButton
-                t={consoleT.simulate}
-                onClick={onSimulate}
-                disabled={!account || !docHash || busy}
-                loading={preview.isSimulating}
-              />
-            )}
-          </div>
-
-          {!multi && anchor && (
-            <SimulateResultCard
-              t={consoleT.simulate}
-              preview={preview.preview}
-              error={preview.error}
-              onClose={preview.reset}
-            />
-          )}
+              <button
+                type="button"
+                disabled={!docHash || hashing || busy}
+                onClick={handleSign}
+                className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                {busy ? (
+                  <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                ) : (
+                  <FileSignature className="size-4" />
+                )}
+                {phase === 'signing' ? t.actions.signing : t.actions.sign}
+              </button>
             </>
           )}
         </>
@@ -603,23 +582,27 @@ function SignerProgress({
 
 // ─── Result panel ─────────────────────────────────────────────────────────────
 
-function ResultPanel({
+export function ResultPanel({
   t,
   consoleT,
   result,
   outputs,
   onReset,
+  allowAnchor = true,
 }: {
   t: SignDictionary;
   consoleT: ConsoleDictionary;
   result: SignResult;
   outputs: OutputFormat[];
   onReset: () => void;
+  /** Basic mode hides the on-ledger anchoring option entirely. */
+  allowAnchor?: boolean;
 }) {
   const [envelope, setEnvelope] = useState<AttestationEnvelope>(result.envelope);
   const { anchor, phase, error } = useDocumentSign();
   const preview = useTransactionPreview();
   const { language } = useLanguage();
+  const { activeNetworkId } = useRadixWallet();
   const anchoring = phase === 'anchoring';
 
   const { payload } = envelope;
@@ -631,21 +614,35 @@ function ResultPanel({
     payload.signers.length === 0
       ? signed.size > 0
       : payload.signers.every((a) => signed.has(a));
-  const canAnchor = complete && !envelope.onChain;
+  const canAnchor = allowAnchor && complete && !envelope.onChain;
 
   const anchorSigners = [...signed];
   const anchorErrorMsg = error
     ? (t.errors as Record<string, string>)[error] ?? t.errors.generic
     : '';
 
-  const onSimulate = () =>
-    preview.simulate(
-      buildMultiAttestationMintManifest({
-        signers: anchorSigners,
+  const onSimulate = async () => {
+    const anchorAccount = anchorSigners[0];
+    if (!anchorAccount || activeNetworkId == null) return;
+    const sealAddress = radixSealAddress(activeNetworkId);
+    const manifest = await buildCollectionCreateManifest({
+      account: anchorAccount,
+      curve: 'curve25519',
+      networkId: activeNetworkId,
+      collectionName: DEFAULT_COLLECTION_NAME,
+      imageUrl: sealImageUrl(window.location.origin),
+      sealAddress,
+      attestation: {
         docHash: payload.docHash,
         timestamp: new Date().toISOString(),
-      }),
-    );
+        docName: payload.fileName,
+        signers: anchorSigners.join(','),
+        network: networkNameForId(activeNetworkId),
+        sealAddress,
+      },
+    });
+    preview.simulate(manifest);
+  };
 
   const onAnchor = async () => {
     const res = await anchor(
@@ -662,7 +659,8 @@ function ResultPanel({
 
   const downloadPdf = async () => {
     try {
-      const pdf = await embedCertificateInPdf(result.fileBytes, envelope);
+      // Embed the original bytes so the signed PDF verifies on its own.
+      const pdf = await embedCertificateInPdf(result.fileBytes, envelope, result.fileBytes);
       downloadBytes(
         pdf,
         `${stripExtension(result.fileName)}-signed.pdf`,

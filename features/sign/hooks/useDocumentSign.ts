@@ -13,13 +13,22 @@ import {
   extractDisclosedEmail,
 } from '../lib/certificate';
 import {
-  buildAttestationMintManifest,
-  buildMultiAttestationMintManifest,
-} from '../lib/manifest';
+  buildCollectionCreateManifest,
+  buildCollectionMintManifest,
+  type AttestationData,
+} from '../lib/seal-collection';
+import { findUserCollection, rememberCollection } from '../services/collectionDiscovery';
+import {
+  DEFAULT_COLLECTION_NAME,
+  radixSealAddress,
+  sealImageUrl,
+} from '../constants/seal';
+import { networkNameForId } from '../lib/network';
 import type {
   AttestationEnvelope,
   AttestationPayload,
   DisclosurePolicy,
+  OnChainAnchor,
   SignatureEntry,
   SignatureProof,
   SignResult,
@@ -42,6 +51,10 @@ export interface SignInput {
   signerAccount?: string;
   /** Single-sign only: anchor the hash on-ledger as a soulbound NFT. */
   onChain: boolean;
+  /** Radix Seal collection display name (first anchor only). */
+  collectionName?: string;
+  /** Image URL for the collection + attestation NFT (defaults to the seal). */
+  imageUrl?: string;
 }
 
 export type SignPhase = 'idle' | 'signing' | 'anchoring' | 'done' | 'error';
@@ -124,6 +137,80 @@ export function useDocumentSign() {
     setError(null);
   };
 
+  /**
+   * Mints one attestation into the account's Radix Seal collection: discovers
+   * the collection (creating it on the first anchor), sends the transaction and
+   * returns the resolved on-chain anchor. Throws Error(<code>) on failure.
+   */
+  async function anchorToCollection(
+    account: string,
+    curve: string,
+    networkId: number,
+    input: {
+      docHash: string;
+      timestamp: string;
+      docName: string;
+      signers: string[];
+      collectionName: string;
+      imageUrl: string;
+    },
+  ): Promise<OnChainAnchor> {
+    const sealAddress = radixSealAddress(networkId);
+    const imageUrl = input.imageUrl || sealImageUrl(window.location.origin);
+    const attestation: AttestationData = {
+      docHash: input.docHash,
+      timestamp: input.timestamp,
+      docName: input.docName,
+      signers: input.signers.join(','),
+      network: networkNameForId(networkId),
+      sealAddress,
+    };
+
+    const existing = await findUserCollection(networkId, account);
+    const localIdNum = existing ? existing.totalSupply + 1 : 1;
+    const manifest = existing
+      ? buildCollectionMintManifest({
+          account,
+          resourceAddress: existing.resourceAddress,
+          nextId: localIdNum,
+          imageUrl,
+          attestation,
+        })
+      : await buildCollectionCreateManifest({
+          account,
+          curve,
+          networkId,
+          collectionName: input.collectionName || DEFAULT_COLLECTION_NAME,
+          imageUrl,
+          sealAddress,
+          attestation,
+        });
+
+    const tx = await sendTransaction(manifest);
+    if (!tx) throw new Error('onchain_failed');
+
+    const resourceAddress =
+      existing?.resourceAddress ??
+      tx.createdEntities.find((a) => a.startsWith('resource_'));
+    if (!resourceAddress) throw new Error('onchain_no_resource');
+    if (!existing) rememberCollection(networkId, account, resourceAddress);
+
+    const localId = `#${localIdNum}#`;
+    return {
+      networkId,
+      transactionIntentHash: tx.transactionIntentHash,
+      resourceAddress,
+      sealAddress,
+      nfts: [
+        {
+          signerAccount: account,
+          nftGlobalId: `${resourceAddress}:${localId}`,
+          localId,
+        },
+      ],
+    };
+  }
+
   /** Sign a NEW document (first signature). */
   const sign = async (input: SignInput): Promise<SignResult | null> => {
     setError(null);
@@ -190,35 +277,21 @@ export function useDocumentSign() {
           return null;
         }
         setPhase('anchoring');
-        const manifest = buildAttestationMintManifest({
-          accountAddress: sig.account,
-          docHash: input.docHash,
-          timestamp: payload.timestamp,
-        });
-        const tx = await sendTransaction(manifest);
-        if (!tx) {
-          setPhase('error');
-          setError('onchain_failed');
-          return null;
-        }
-        const resourceAddress = tx.createdEntities.find((a) =>
-          a.startsWith('resource_'),
-        );
-        if (!resourceAddress) {
-          setPhase('error');
-          setError('onchain_no_resource');
-          return null;
-        }
         envelope = {
           ...envelope,
-          onChain: {
-            networkId: activeNetworkId,
-            transactionIntentHash: tx.transactionIntentHash,
-            resourceAddress,
-            nfts: [
-              { signerAccount: sig.account, nftGlobalId: `${resourceAddress}:#0#` },
-            ],
-          },
+          onChain: await anchorToCollection(
+            sig.account,
+            sig.proof.curve,
+            activeNetworkId,
+            {
+              docHash: input.docHash,
+              timestamp: payload.timestamp,
+              docName: input.fileName,
+              signers: [sig.account],
+              collectionName: input.collectionName ?? '',
+              imageUrl: input.imageUrl ?? '',
+            },
+          ),
         };
       }
 
@@ -302,15 +375,16 @@ export function useDocumentSign() {
   };
 
   /**
-   * Anchor a COMPLETE certificate on-ledger: one atomic transaction mints an
-   * independent soulbound NFT for every signer and deposits it into that
-   * signer's account. Whoever runs this pays the fee.
+   * Anchor a COMPLETE certificate on-ledger. Mints one attestation (listing all
+   * signers) into the anchoring account's own Radix Seal collection. The wallet
+   * proves which account anchors; it must be one of the signers.
    */
   const anchor = async (
     envelope: AttestationEnvelope,
     fileBytes: Uint8Array,
     fileName: string,
     fileType: string,
+    sealOpts?: { collectionName?: string; imageUrl?: string },
   ): Promise<SignResult | null> => {
     setError(null);
     if (!activeNetworkId) {
@@ -323,45 +397,42 @@ export function useDocumentSign() {
       setError('network_mismatch');
       return null;
     }
+    const rdt = getOrCreateToolkit(activeNetworkId);
+    if (!rdt) {
+      setPhase('error');
+      setError('toolkit_not_initialized');
+      return null;
+    }
 
     const signers = [...new Set(envelope.signatures.map((s) => s.signerAccount))];
-    const manifest = buildMultiAttestationMintManifest({
-      signers,
-      docHash: envelope.payload.docHash,
-      timestamp: new Date().toISOString(),
-    });
 
     try {
+      // Identify the anchoring account (and its curve) via a fresh proof.
+      setPhase('signing');
+      const who = await requestWalletSignature(rdt, randomNonceHex(), 'none', false);
+      if (!signers.includes(who.account)) {
+        setPhase('error');
+        setError('not_required_signer');
+        return null;
+      }
+
       setPhase('anchoring');
-      const tx = await sendTransaction(manifest);
-      if (!tx) {
-        setPhase('error');
-        setError('onchain_failed');
-        return null;
-      }
-      // One independent resource per signer; each holds a single NFT (#0#).
-      const resources = tx.createdEntities.filter((a) =>
-        a.startsWith('resource_'),
+      const onChain = await anchorToCollection(
+        who.account,
+        who.proof.curve,
+        activeNetworkId,
+        {
+          docHash: envelope.payload.docHash,
+          timestamp: new Date().toISOString(),
+          docName: envelope.payload.fileName,
+          signers,
+          collectionName: sealOpts?.collectionName ?? '',
+          imageUrl: sealOpts?.imageUrl ?? '',
+        },
       );
-      if (resources.length === 0) {
-        setPhase('error');
-        setError('onchain_no_resource');
-        return null;
-      }
       setPhase('done');
       return {
-        envelope: {
-          ...envelope,
-          onChain: {
-            networkId: envelope.payload.networkId,
-            transactionIntentHash: tx.transactionIntentHash,
-            resourceAddress: resources[0],
-            nfts: signers.map((signerAccount, i) => ({
-              signerAccount,
-              nftGlobalId: `${resources[i] ?? resources[0]}:#0#`,
-            })),
-          },
-        },
+        envelope: { ...envelope, onChain },
         fileBytes,
         fileName,
         fileType,

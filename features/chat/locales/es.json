@@ -1,0 +1,62 @@
+{
+  "chat": {
+    "disclaimer": {
+      "title": "Cifrado de extremo a extremo, verificado con wallet",
+      "body": "Los mensajes viajan directamente entre navegadores por un canal cifrado. Ambas partes demuestran su identidad firmando con su Radix Wallet, cada prueba se verifica en local, y la clave de sesión se deriva de ese intercambio verificado — ningún servidor puede leer, alterar ni suplantar nada."
+    },
+    "connect": {
+      "title": "Conecta tu Radix Wallet",
+      "subtitle": "La firma de tu wallet es lo que demuestra tu identidad al otro extremo — ambos participantes firman para abrir la sala.",
+      "mainnet": "Conectar (Mainnet)",
+      "stokenet": "Conectar (Stokenet)"
+    },
+    "start": {
+      "title": "Iniciar un chat seguro",
+      "hint": "Tu wallet firma el reto de la sala y obtienes un enlace y un código QR para enviar a la otra persona. El chat empieza cuando lo abra y firme también.",
+      "button": "Crear chat seguro"
+    },
+    "join": {
+      "title": "Unirse al chat seguro",
+      "hint": "Te han invitado a un chat cifrado de extremo a extremo. Firma con tu wallet para verificar tu identidad y entrar en la sala.",
+      "button": "Firmar y entrar"
+    },
+    "share": {
+      "title": "Comparte este enlace",
+      "hint": "Envía este enlace a la persona con la que quieres chatear. Cuando lo abra y firme con su wallet, la sala quedará asegurada.",
+      "copy": "Copiar enlace",
+      "qrAlt": "Código QR con el enlace de invitación al chat"
+    },
+    "status": {
+      "signing": "Confirma la solicitud en tu Radix Wallet…",
+      "creating": "Creando la sala…",
+      "waiting": "Esperando a que la otra persona abra el enlace…",
+      "connecting": "Conectando con la sala…",
+      "handshaking": "Verificando identidades…",
+      "closed": "La conversación ha terminado."
+    },
+    "room": {
+      "securedWith": "Chat seguro con",
+      "verified": "verificado por wallet",
+      "placeholder": "Escribe un mensaje… (Enter para enviar)",
+      "send": "Enviar",
+      "leave": "Salir del chat",
+      "empty": "La sala es segura. ¡Saluda!",
+      "closedBanner": "El otro extremo salió de la conversación. Los mensajes permanecen en esta página hasta que la cierres.",
+      "startAnother": "Iniciar otro chat"
+    },
+    "errors": {
+      "wallet_rejected": "La solicitud de la wallet fue rechazada.",
+      "no_proof": "La wallet no devolvió una prueba de firma.",
+      "challenge_mismatch": "La wallet firmó un reto distinto. Inténtalo de nuevo.",
+      "secp256k1": "Esta cuenta usa una clave secp256k1. El chat requiere una cuenta Babylon (curve25519).",
+      "peer_verification_failed": "No se pudo verificar la identidad del otro extremo. La sala se cerró por seguridad.",
+      "peer_disconnected": "Se perdió la conexión con el otro extremo.",
+      "room_busy": "Alguien ya se unió con esta invitación. Cada enlace sirve para una sola conversación.",
+      "signaling_unavailable": "No se pudo contactar con el servicio de señalización. Revisa tu conexión e inténtalo de nuevo.",
+      "webrtc_failed": "No se pudo establecer una conexión directa entre navegadores. Inténtalo de nuevo.",
+      "crypto_unsupported": "Este navegador no tiene la criptografía necesaria para verificar firmas. Actualízalo.",
+      "message_rejected": "Un mensaje no superó la verificación. La sala se cerró por seguridad.",
+      "unknown": "Algo salió mal. Inténtalo de nuevo."
+    }
+  }
+}

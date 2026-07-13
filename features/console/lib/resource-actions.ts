@@ -25,10 +25,24 @@ export interface MintNftData {
   name: string;
   description: string;
   keyImageUrl: string;
+  /**
+   * Extra string field values, in the SAME order the resource's NF-data schema
+   * declared its custom fields at creation. Required when minting into a
+   * resource that has custom fields (e.g. a Radix Seal attestation collection).
+   */
+  customValues?: string[];
 }
 
-/** Mints an NFT with the standard (name, description, key_image_url) tuple. */
-export const mintNonFungibleManifest = (resource: string, nft: MintNftData) => `
+/**
+ * Mints an NFT into an existing resource. Emits the standard
+ * (name, description, key_image_url) tuple plus any `customValues` appended in
+ * schema order, so it works for both plain and custom-schema resources.
+ */
+export const mintNonFungibleManifest = (resource: string, nft: MintNftData) => {
+  const extra = (nft.customValues ?? [])
+    .map((value) => `,\n                "${escape(value)}"`)
+    .join('');
+  return `
 MINT_NON_FUNGIBLE
     Address("${resource}")
     Map<NonFungibleLocalId, Tuple>(
@@ -36,12 +50,13 @@ MINT_NON_FUNGIBLE
             Tuple(
                 "${escape(nft.name)}",
                 "${escape(nft.description)}",
-                "${escape(nft.keyImageUrl)}"
+                "${escape(nft.keyImageUrl)}"${extra}
             )
         )
     )
 ;
 `;
+};
 
 export const burnManifest = (account: string, resource: string, amount: string) => `
 CALL_METHOD
