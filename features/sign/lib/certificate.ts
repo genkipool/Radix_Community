@@ -94,6 +94,57 @@ export function buildEnvelope(
   return { payload, signatures: [firstSignature], onChain: null };
 }
 
+/**
+ * Builds a certificate for an ON-LEDGER (multi-party) signing, so every mode
+ * yields a downloadable artifact. Its signatures carry NO ROLA proof
+ * (`proof: null`): each is proven by the signer's on-chain signature NFT, which
+ * the verifier re-checks via the chain of custody. `onChain` stays null because
+ * the signatures live in each signer's own Seal-owned collection, not one.
+ */
+export function buildOnChainCertificate(input: {
+  docHash: string;
+  fileName: string;
+  fileSize: number;
+  networkId: number;
+  /** The invited/required signers (from the on-ledger request). */
+  requiredSigners: string[];
+  /** Accounts that have signed on-ledger so far. */
+  signedAccounts: string[];
+  nonce: string;
+  /** On-ledger request key, so verification re-resolves the required set. */
+  requestId?: string;
+}): AttestationEnvelope {
+  const now = new Date().toISOString();
+  const payload: AttestationPayload = {
+    v: 1,
+    docHash: input.docHash,
+    hashAlg: 'blake2b-256',
+    fileName: input.fileName,
+    fileSize: input.fileSize,
+    message: '',
+    disclosure: 'none',
+    email: false,
+    signers: input.requiredSigners,
+    timestamp: now,
+    networkId: input.networkId,
+    nonce: input.nonce,
+  };
+  return {
+    payload,
+    signatures: input.signedAccounts.map((account) => ({
+      signerAccount: account,
+      disclosedName: null,
+      disclosedEmail: null,
+      proof: null,
+      signedAt: now,
+    })),
+    onChain: null,
+    request: input.requestId
+      ? { networkId: input.networkId, requestId: input.requestId }
+      : null,
+  };
+}
+
 /** Append a co-signer's signature to an existing certificate. */
 export function appendSignature(
   envelope: AttestationEnvelope,

@@ -1,16 +1,20 @@
 'use client';
 
-import { KeyRound, X } from 'lucide-react';
+import { BadgeCheck, KeyRound, X } from 'lucide-react';
 import type { CipherDictionary } from '../types/dictionary';
 import { fillTemplate, shortFingerprint } from '../lib/format';
 
 /**
  * The sender's explicit consent step: who is asking, for which file (with a
- * human-checkable fingerprint), approve-and-sign or reject.
+ * human-checkable fingerprint), approve-and-sign or reject. ROLA + Ledger
+ * requests also show the requester's PROVEN account and the on-ledger
+ * invitation check result.
  */
 export function DecryptRequestCard({
   t,
   requesterName,
+  requesterAccount,
+  ledgerVerified,
   fileName,
   headerHash,
   busy,
@@ -19,6 +23,8 @@ export function DecryptRequestCard({
 }: {
   t: CipherDictionary;
   requesterName: string;
+  requesterAccount?: string;
+  ledgerVerified?: boolean;
   fileName: string;
   headerHash: string;
   busy?: boolean;
@@ -48,6 +54,20 @@ export function DecryptRequestCard({
         <p className="font-mono text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
           {t.file.fingerprint}: {shortFingerprint(headerHash)}
         </p>
+        {requesterAccount && (
+          <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+            {t.ledger.requesterAccount}:{' '}
+            <span className="font-mono break-all" style={{ color: 'var(--color-text-main)' }}>
+              {requesterAccount}
+            </span>
+          </p>
+        )}
+        {ledgerVerified && (
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+            <BadgeCheck className="size-3.5 shrink-0" />
+            {t.ledger.authorizedBadge}
+          </p>
+        )}
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
         <button

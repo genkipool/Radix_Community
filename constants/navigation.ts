@@ -62,6 +62,7 @@ export const FOOTER_LINKS = {
     { key: 'dvp', path: '#para-ceos' },
     { key: 'kyc', path: '#para-ceos' },
     { key: 'rwa', path: '#para-ceos' },
+    { key: 'seal', path: '/seal' },
     { key: 'google_wallet', path: '/google-wallet' },
   ],
   developers: [
@@ -69,7 +70,6 @@ export const FOOTER_LINKS = {
     { key: 'academy', path: '/academy' },
     { key: 'console', path: '/console' },
     { key: 'hyperscale', path: '/hyperscale' },
-    { key: 'seal', path: '/seal' },
     { key: 'wiki', path: 'https://radix.wiki' },
   ],
   users: [

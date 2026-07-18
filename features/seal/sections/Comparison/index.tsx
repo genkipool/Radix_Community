@@ -4,12 +4,17 @@
  * Radix Seal against today's mainstream alternatives (cloud e-signature /
  * storage SaaS, PKI with qualified certificates, PGP / S-MIME), following the
  * desktop-table + mobile-cards layout of the home Comparison section.
+ *
+ * Honest by design: each row declares its `winner` (which may NOT be Radix
+ * Seal) and an `expKey` into `explanations`, shown as a tooltip on the green
+ * check so the reader sees WHY that option is optimal, like on the home page.
  * Closes with an honesty note on the legal scope of the signature.
  */
 import { Fragment } from 'react';
 import { BarChart3, CheckCircle2, Info } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { COMPARISON_ID } from '../../data/links';
 import type { SealSectionProps } from '../../types';
 
@@ -19,13 +24,42 @@ type ComparisonRow = {
   pki: string;
   pgp: string;
   seal: string;
+  /** Winning column key(s); `a+b` marks a tie. May well not be `seal`. */
+  winner?: string;
+  /** Key into `explanations`: why the winner is the optimal option. */
+  expKey?: string;
 };
 
 const COMPETITOR_KEYS = ['saas', 'pki', 'pgp'] as const;
 
+function WinnerCell({
+  content,
+  colKey,
+  row,
+  explanations,
+}: {
+  content: string;
+  colKey: string;
+  row: ComparisonRow;
+  explanations: Record<string, string>;
+}) {
+  const isWinner = !!row.winner && row.winner.split('+').includes(colKey);
+  return (
+    <div className="flex items-center justify-end md:justify-start gap-2">
+      <span className="leading-tight">{content}</span>
+      {isWinner && row.expKey && explanations[row.expKey] && (
+        <InfoTooltip content={explanations[row.expKey]}>
+          <CheckCircle2 className="size-4 text-green-500 shrink-0 cursor-help" />
+        </InfoTooltip>
+      )}
+    </div>
+  );
+}
+
 export default function Comparison({ t }: SealSectionProps) {
   const comp = t.seal.comparison;
   const categories: { title: string; rows: ComparisonRow[] }[] = comp.categories;
+  const explanations: Record<string, string> = comp.explanations ?? {};
   const competitors = COMPETITOR_KEYS.map((key, i) => ({ key, label: comp.columns[i] }));
 
   return (
@@ -66,14 +100,11 @@ export default function Comparison({ t }: SealSectionProps) {
                       <td className="px-5 py-3.5 font-semibold text-sm">{row.feature}</td>
                       {competitors.map((c) => (
                         <td key={c.key} className="px-5 py-3.5 text-sm text-[var(--color-text-muted)]">
-                          {row[c.key]}
+                          <WinnerCell content={row[c.key]} colKey={c.key} row={row} explanations={explanations} />
                         </td>
                       ))}
                       <td className="px-5 py-3.5 font-bold text-sm bg-[var(--color-secondary)]/5">
-                        <div className="flex items-start gap-2">
-                          <CheckCircle2 className="size-4 mt-0.5 text-green-500 shrink-0" />
-                          <span className="leading-tight">{row.seal}</span>
-                        </div>
+                        <WinnerCell content={row.seal} colKey="seal" row={row} explanations={explanations} />
                       </td>
                     </tr>
                   ))}
@@ -106,15 +137,16 @@ export default function Comparison({ t }: SealSectionProps) {
                     {competitors.map((c) => (
                       <div key={c.key} className="flex items-center justify-between gap-4 px-5 py-3.5">
                         <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider shrink-0">{c.label}</span>
-                        <span className="text-sm text-right text-[var(--color-text-muted)]">{row[c.key]}</span>
+                        <div className="text-sm text-right text-[var(--color-text-muted)]">
+                          <WinnerCell content={row[c.key]} colKey={c.key} row={row} explanations={explanations} />
+                        </div>
                       </div>
                     ))}
 
                     <div className="flex items-center justify-between gap-4 px-5 py-4 bg-[var(--color-secondary)]/5">
                       <span className="text-[10px] font-bold text-[var(--color-secondary)] uppercase tracking-wider shrink-0">Radix Seal</span>
-                      <div className="flex items-center gap-2 text-sm font-bold text-right">
-                        <span>{row.seal}</span>
-                        <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+                      <div className="text-sm font-bold text-right">
+                        <WinnerCell content={row.seal} colKey="seal" row={row} explanations={explanations} />
                       </div>
                     </div>
                   </div>

@@ -46,6 +46,15 @@ export interface CipherHeader {
   dAppDefinitionAddress: string;
   origin: string;
   createdAt: string;
+  /**
+   * ROLA + Ledger protection: only accounts holding a `cipher-invite` NFT for
+   * this container (its `document_hash` = this header's hash) minted in the
+   * sender's signing collection may request the key, proving their account
+   * with a ROLA challenge. Absent on plain ROLA containers.
+   */
+  access?: 'rola-ledger';
+  /** The sender's signing collection where the invite NFTs were minted. */
+  inviteCollection?: string;
 }
 
 /** Parsed head of a container: header + its hash + where ciphertext starts. */
@@ -69,7 +78,16 @@ export type DenyReason =
   | 'account_mismatch'
   | 'header_mismatch'
   | 'origin_mismatch'
-  | 'network_mismatch';
+  | 'network_mismatch'
+  | 'not_authorized';
+
+/** Receiver's ROLA proof accompanying a decrypt request (ROLA + Ledger). */
+export interface UnlockProof {
+  account: string;
+  publicKey: string;
+  signature: string;
+  curve: string;
+}
 
 /**
  * Application protocol over the DataChannel. Control messages are JSON
@@ -83,7 +101,13 @@ export type DataChannelMessage =
   | { t: 'chunk-start'; index: number; byteLength: number }
   | { t: 'transfer-complete'; chunkCount: number }
   | { t: 'receipt'; receivedChunks: number }
-  | { t: 'decrypt-request'; requesterName: string; headB64: string }
+  | {
+      t: 'decrypt-request';
+      requesterName: string;
+      headB64: string;
+      /** ROLA proof over the unlock challenge (ROLA + Ledger containers). */
+      proof?: UnlockProof;
+    }
   | { t: 'decrypt-approved'; fileKeyHex: string }
   | { t: 'decrypt-denied'; reason: DenyReason }
   | { t: 'error'; code: CipherErrorCode }
@@ -100,6 +124,7 @@ export type CipherErrorCode =
   | 'account_mismatch'
   | 'header_mismatch'
   | 'decrypt_failed'
+  | 'not_authorized'
   | 'peer_disconnected'
   | 'room_busy'
   | 'signaling_unavailable'

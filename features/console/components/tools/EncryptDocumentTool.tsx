@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Fingerprint, HardDriveDownload } from 'lucide-react';
+import { Fingerprint, Landmark } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGate';
 import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
+import { SealDeployPanel } from '@/features/sign/components/SealDeployPanel';
+import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
+import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
+import type { SignDictionary } from '@/features/sign/types/dictionary';
 import { DecryptPanel } from '@/features/cipher/components/DecryptPanel';
 import { EncryptPanel } from '@/features/cipher/components/EncryptPanel';
 import { ReceiveView } from '@/features/cipher/components/ReceiveView';
@@ -39,10 +44,26 @@ const subscribeToHash = (onChange: () => void) => {
 export default function EncryptDocumentTool({}: ConsoleToolProps) {
   const { t: full } = useLanguage();
   const t = full.cipher as CipherDictionary;
+  // The ROLA + Ledger mode reuses the sign feature's Seal onboarding (same
+  // namespace, enriched by the console layout).
+  const signT = full.sign as SignDictionary;
   const [tab, setTab] = useState<Tab>('encrypt');
   const [mode, setMode] = useState<EncryptMode>('rola');
   const [session, setSession] = useState<PeerSession | null>(null);
   const [shared, setShared] = useState<EncryptResult | null>(null);
+
+  // ROLA + Ledger prerequisites: the encryptor's Seal + signing collection
+  // (the SAME collection the sign-document tool uses). While missing, the
+  // encrypt tab shows only the one-time setup boxes.
+  const { isConnected, accounts } = useRadixWallet();
+  const [onchainAccount, setOnchainAccount] = useState<string | null>(null);
+  const effectiveAccount = onchainAccount ?? accounts[0]?.address ?? null;
+  const setup = useSealSetup(mode === 'rola-ledger' ? effectiveAccount : null);
+  const needsOnboarding =
+    mode === 'rola-ledger' &&
+    isConnected &&
+    setup.ready &&
+    !(setup.seal && setup.collection);
 
   // The share URL carries the session in the fragment so it never reaches
   // server logs. Read it reactively (SSR sees no hash) and latch it into
@@ -156,23 +177,43 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
                   value: 'rola-ledger',
                   label: t.modes.rolaLedger,
                   description: t.modes.rolaLedgerDescription,
-                  icon: <HardDriveDownload className="size-4" />,
-                  disabled: true,
-                  title: t.modes.comingSoon,
+                  icon: <Landmark className="size-4" />,
                 },
               ]}
             />
           </div>
 
           <CipherGate t={t}>
-            <EncryptPanel t={t} onShare={setShared} onReset={() => setShared(null)} />
-            {shared && (
-              <SendSessionView t={t} result={shared} onCancel={() => setShared(null)} />
+            {needsOnboarding ? (
+              // One-time on-ledger setup, alone on screen (same boxes as the
+              // sign-document tool: deploy panel + Seal/collection steps).
+              <div className="space-y-5">
+                <SealDeployPanel t={signT} />
+                <SealOnboarding
+                  t={signT}
+                  account={effectiveAccount}
+                  onAccountChange={setOnchainAccount}
+                  setup={setup}
+                />
+              </div>
+            ) : (
+              <>
+                <EncryptPanel
+                  key={mode}
+                  t={t}
+                  mode={mode}
+                  onShare={setShared}
+                  onReset={() => setShared(null)}
+                />
+                {shared && (
+                  <SendSessionView t={t} result={shared} onCancel={() => setShared(null)} />
+                )}
+              </>
             )}
           </CipherGate>
         </div>
       ) : (
-        <DecryptPanel t={t} />
+        <DecryptPanel t={t} signT={signT} />
       )}
     </div>
   );

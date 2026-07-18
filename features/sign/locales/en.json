@@ -2,7 +2,11 @@
   "sign": {
     "title": "Document Signing",
     "subtitle": "Sign a document with your Radix wallet. The file never leaves your browser; only its hash is signed.",
-    "tabs": { "basic": "Basic signing", "sign": "Advanced signing", "verify": "Verify" },
+    "tabs": {
+      "basic": "Basic signing",
+      "sign": "Advanced signing",
+      "verify": "Verify"
+    },
     "basic": {
       "hint": "The simplest mode: drop the document and press Sign. Your wallet only receives the signing challenge (no name or email) and you download the signed file. No on-ledger anchoring; for multiple on-chain signers, anchoring or identity disclosure use the Advanced signing tab."
     },
@@ -66,6 +70,13 @@
       "s4": "They send the updated certificate back (or on to the next signer).",
       "s5": "When everyone has signed, anyone can anchor it on-ledger from the result screen."
     },
+    "ledgerSteps": {
+      "title": "How multi-party signing works (on the ledger)",
+      "s1": "You sign with your wallet and an invitation NFT is deposited into each required signer's account (or invitations only, if you choose not to sign yet).",
+      "s2": "Share the link: it carries the right network, the document name and your output formats. If you keep the tab open, the document travels on its own over the direct browser-to-browser channel; you can also send the PDF with the request embedded.",
+      "s3": "Each invitee opens the link, receives or uploads the document, the tool checks it matches the request's hash, and they sign from their wallet by minting their signature NFT.",
+      "s4": "Status updates by reading the ledger. Once everyone has signed, anyone downloads the certificate or the signed PDF, verifiable without depending on this site."
+    },
     "cosign": {
       "title": "Co-sign an existing certificate",
       "hint": "Were you sent a certificate to sign? Load it here to add your signature.",
@@ -76,6 +87,22 @@
       "pending": "Pending",
       "openSet": "Open (any signer)",
       "addSignature": "Add my signature"
+    },
+    "pdfInfo": {
+      "title": "Radix content embedded in the PDF",
+      "certificate": "Signature certificate",
+      "signaturesSuffix": "signature(s) inside",
+      "original": "Embedded original document",
+      "request": "Type",
+      "requestPointer": "On-ledger signing request",
+      "collection": "Issuer collection (resource)",
+      "inviteId": "Invitation id",
+      "network": "Network",
+      "hash": "Document hash",
+      "requiredSigners": "Required signers",
+      "openSet": "Open (any signer)",
+      "anchored": "NFT anchor (resource)",
+      "originalRecovered": "The original document travels inside the PDF: it was recovered and its hash is what gets checked."
     },
     "progress": {
       "signaturesTitle": "Signatures",
@@ -88,16 +115,17 @@
       "title": "Before signing on-ledger",
       "subtitle": "Signing documents on-ledger needs two NFTs, one time only. After this step, this section disappears forever.",
       "sealTitle": "1 · Your Seal (insignia).",
-      "sealBody": "A non-transferable NFT you mint once from the official Radix Seal resource. It identifies you as a signer to anyone and is the ONLY key able to mint into your collection: without your Seal, nobody — not even this site — can create anything in your name. It can never be sold, moved or burned.",
+      "sealBody": "A non-transferable NFT you mint once from the official Radix Seal resource. It identifies you as a signer to anyone and is the ONLY key able to mint into your collection: without your Seal, nobody, not even this site, can create anything in your name. It can never be sold, moved or burned.",
       "collectionTitle": "2 · Your signing collection.",
       "collectionBody": "Your personal on-ledger archive, reusable forever: every document you sign adds a numbered NFT (#1, #2, #3…) and every request you issue keeps its invitations there. Its rules are locked at creation: signatures are non-transferable, their data can never be edited, and only your Seal can mint. It works like your own self-custodied certificate authority: you issue, the ledger attests.",
       "invitesTitle": "Invitations.",
-      "invitesBody": "When you request signatures from others, one invitation NFT per signer is minted — valid for that document only — and appears in each signer's wallet. Receiving an invitation never counts as signing: a signature is always the signer's own act in their own collection. As the issuer you can recall sent invitations; signatures, however, can never be touched by anyone.",
+      "invitesBody": "When you request signatures from others, one invitation NFT per signer is minted, valid for that document only, and appears in each signer's wallet. Receiving an invitation never counts as signing: a signature is always the signer's own act in their own collection. As the issuer you can recall sent invitations; signatures, however, can never be touched by anyone.",
       "caNote": "All of this is public and permanent on the Radix Network, and anyone can verify it without depending on this site.",
       "pointer": "Complete the setup at the top (your Seal and your collection) to be able to sign on-ledger."
     },
     "onchain": {
       "modeTitle": "How to sign on-ledger",
+      "optionsLedgerNote": "The message and identity disclosure don't apply when signing on the ledger: only the document hash is anchored.",
       "off": "Off-chain",
       "offDesc": "Pass the certificate (JSON)",
       "on": "On-chain",
@@ -120,7 +148,7 @@
       "orgWebsite": "Website (optional)",
       "orgLogo": "Logo URL (optional)",
       "requestTitle": "Sign on-ledger (multiple signers)",
-      "requestHint": "Each listed signer receives an invitation NFT in their wallet: a verifiable notice that THEY are asked to sign THIS document (its hash is engraved in it — it is useless for any other file). Invitations exist so signers find out right in their wallet, so there is a public, unalterable record of who was asked to sign, and so the tool only counts signatures from invited accounts. An invitation signs nothing by itself: signing is always each person's own act from their own wallet. Sent the wrong address? You can recall an invitation; and if you pick \"Sign and send\", you are included as a signer too.",
+      "requestHint": "Each listed signer receives an invitation NFT in their wallet: a verifiable notice that THEY are asked to sign THIS document (its hash is engraved in it, so it is useless for any other file). Invitations exist so signers find out right in their wallet, so there is a public, unalterable record of who was asked to sign, and so the tool only counts signatures from invited accounts. An invitation signs nothing by itself: signing is always each person's own act from their own wallet. Sent the wrong address? You can recall an invitation; and if you pick \"Sign and send\", you are included as a signer too.",
       "soloTitle": "Sign on-ledger",
       "soloHint": "Your signature is minted as an NFT into your personal collection, holding the document hash. Public, permanent and verifiable by anyone.",
       "inviteSign": "Sign and send invitations",
@@ -134,11 +162,25 @@
       "depositWarning": "Invitations are deposited into the signers' accounts: if any account blocks deposits from strangers, the whole transaction fails.",
       "creating": "Confirm in your wallet…",
       "requestDetected": "This PDF carries an embedded on-ledger signing request: it was loaded automatically along with the original document.",
+      "requestFilePrompt": "You have received an on-ledger signing request. Upload the original document (or the PDF you were sent) to check it matches the request and sign from your wallet.",
+      "requestDocLabel": "Document to sign",
+      "invalidKey": "The key does not look like a request key (resource_…:#1#).",
+      "dropFileToCompare": "Upload the document above to check it matches the hash recorded on-ledger.",
       "summaryTitle": "Signing request",
       "issuedBy": "Issued by",
       "hashMatches": "Your document matches the request's hash",
       "shareTitle": "Share this link with the signers",
-      "shareHint": "Each signer received their invitation in their wallet; with this link (or the PDF) they open the request here and sign from their own wallet.",
+      "shareHint": "Each signer received their invitation in their wallet; with this link (or the PDF) they open the request here and sign from their own wallet. The link carries the network and your output formats.",
+      "sendToggle": "Send the document live",
+      "sendToggleHint": "While this tab stays open, whoever opens the link receives the document automatically, browser to browser, end-to-end encrypted. It never touches a server.",
+      "sendWaiting": "Waiting for a signer to open the link…",
+      "sendSending": "Sending the document…",
+      "sendDelivered": "Document delivered ({count}). The channel stays open for the next signer.",
+      "sendError": "The direct channel is unavailable. The link still works; send the document another way.",
+      "recvConnecting": "Connecting to the sender to receive the document…",
+      "recvReceiving": "Receiving the document from the sender…",
+      "recvDone": "Document received and loaded automatically.",
+      "recvError": "Could not receive the document live (the sender may have closed their tab). Upload it manually.",
       "copy": "Copy link",
       "copied": "Copied",
       "downloadRequestPdf": "Download PDF with the request embedded",
@@ -163,10 +205,10 @@
       "autoRefreshNote": "Status refreshes automatically every 30 seconds.",
       "fileMismatch": "The uploaded file does not match this request.",
       "notFound": "Request not found on-ledger. Check the key and network.",
+      "wrongNetwork": "This request lives on {network}. Switch your wallet to {network} to sign.",
       "complete": "All required signers have signed",
       "completeTitle": "Document fully signed",
       "completeBody": "Every required signer has signed on-ledger. The record is public, permanent and verifiable by anyone.",
-      "verifyLink": "Open this document's verification",
       "of": "of"
     },
     "seal": {
@@ -174,14 +216,20 @@
         "title": "Deploy Radix Seal (one-time)",
         "subtitle": "The Radix Seal brand is not yet deployed on {network}. Deploy it once with your wallet.",
         "imageUrl": "Brand image URL",
-        "imageUrlHint": "Locked into the resource. Use your public production URL so wallets can render it (on localhost the image won't load, but the deploy still works).",
+        "imageUrlHint": "Public URL of the seal image. With the admin badge you can change it later; use a stable, domain-independent URL (the GitHub SVG by default).",
         "button": "Deploy Radix Seal",
         "deploying": "Confirm in your wallet…",
         "done": "Radix Seal deployed. Copy the resource address below.",
-        "paste": "Paste it into features/sign/constants/seal.ts → RADIX_SEAL for this network, then reload."
+        "paste": "Paste it into features/sign/constants/seal.ts → RADIX_SEAL for this network, then reload.",
+        "adminBadgeLabel": "Admin badge (recommended)",
+        "adminBadgeHint": "With an admin badge, the brand metadata (name, image, description) will be editable only by whoever holds that badge, forever. Paste an existing badge address or mint a new one. Leave empty to make the brand immutable.",
+        "adminBadgePlaceholder": "resource_… (admin badge)",
+        "createBadge": "Mint admin badge",
+        "creatingBadge": "Confirm in your wallet…",
+        "badgeReady": "Admin badge minted and in your account. Keep it safe (ideally in a multisig)."
       },
       "title": "Radix Seal",
-      "hint": "Your attestations mint into ONE reusable collection (a new #id per document) — not a new resource each time. Customise how it appears in your wallet.",
+      "hint": "Your attestations mint into ONE reusable collection (a new #id per document), not a new resource each time. Customise how it appears in your wallet.",
       "collectionName": "Collection name",
       "collectionNamePlaceholder": "e.g. Acme Corp Attestations",
       "imageUrl": "Image URL",
@@ -199,7 +247,9 @@
       "watermarkSealDesc": "Stamp the Radix Seal mark",
       "watermarkText": "Watermark text",
       "watermarkTextPlaceholder": "e.g. CONFIDENTIAL",
-      "watermarkImageUrl": "Watermark image URL (optional)"
+      "watermarkImageUrl": "Watermark image URL (optional)",
+      "watermarkImagePrompt": "Drop a PNG or JPG image here or click to browse",
+      "watermarkImageHint": "You can set text, an image, or both (if an image is set, the image is used). The image is processed in your browser and never uploaded to any server."
     },
     "actions": {
       "sign": "Sign document",
@@ -234,12 +284,14 @@
       "onchain_no_resource": "Could not find the minted NFT resource.",
       "account_mismatch": "Please sign with one of the accounts you listed as a signer.",
       "not_required_signer": "Your account is not among this document's required signers.",
+      "seal_required": "You need your Seal and signing collection before anchoring. Create them in the steps above.",
       "already_signed": "This account has already signed the certificate.",
       "network_mismatch": "Switch your wallet to the certificate's network to anchor it.",
       "generic": "Something went wrong. Please try again."
     },
     "verify": {
-      "intro": "Select the original file and its certificate to verify.",
+      "aboutTitle": "Verify a signed document",
+      "aboutBody": "Upload the original file and its .radixsig.json certificate, or an embedded signed PDF that carries them, and verification runs automatically. The file is hashed locally and never uploaded: only the certificate is checked. It confirms the document hasn't been altered, that the wallet signatures are valid and, if present, its on-chain record. For an on-ledger signing you can also paste the request key (or open its link) and see who has signed, no certificate needed.",
       "fileLabel": "Original file",
       "filePrompt": "Drop the original file here",
       "certLabel": "Certificate",
@@ -258,7 +310,6 @@
       "embeddedDetected": "Certificate and original document read from the signed PDF.",
       "sealValid": "Genuine Radix Seal attestation",
       "sealInvalid": "Collection does not reference the official Radix Seal",
-      "dropSignedPdfHint": "You can also drop a signed PDF here — the certificate and original are read from inside it.",
       "complete": "All required signers have signed",
       "incomplete": "Not all required signers have signed yet",
       "signersHeader": "Signatures",

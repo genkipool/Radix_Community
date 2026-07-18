@@ -25,8 +25,7 @@
     "groups": {
       "assets": "Assets",
       "deploy": "Build & Deploy",
-      "documents": "Documents",
-      "communication": "Communication",
+      "radix-seal": "Radix Seal",
       "utilities": "Utilities",
       "ai": "AI & Automation"
     },
@@ -36,35 +35,41 @@
         "description": "Sign a file with your Radix wallet, off-chain or anchored on-ledger as a soulbound NFT. The file is hashed locally and never uploaded.",
         "guide": {
           "guideTitle": "Guide: Sign Document",
-          "guideDescription": "Sign documents with your Radix wallet without the file ever leaving your browser: only its Blake2b-256 hash is signed. You can sign alone (downloadable certificate, optional anchoring as a soulbound NFT), or with several people: off-chain by passing the certificate around, or on-ledger with the Radix Seal flow — every signer has their Seal (non-transferable insignia) and their personal collection; the issuer sends one invitation NFT per signer and each signs by minting their signature NFT into their own collection, where nobody else can mint.",
+          "guideDescription": "Sign documents with your Radix wallet without the file ever leaving your browser: only its Blake2b-256 hash is signed. You can sign alone, sign with several people by passing a JSON certificate around off-chain, or sign with several people on the ledger with the Radix Seal flow, where every signature is recorded as an NFT and anyone can verify it by reading the network, without depending on this site. The ledger flow involves four NFTs with distinct roles: the Seal (your insignia), your signing collection (your personal archive), invitations (notices of who is asked to sign) and signatures (the record that actually counts). The glossary below explains each one and how verification works.",
           "guideSteps": [
-            "1. Drop the document. It is hashed locally and never uploaded; its Blake2b-256 hash appears under the box.",
-            "2. Sign alone: choose what identity to disclose and the output format (.radixsig.json certificate or PDF with the certificate embedded) and press Sign. Optionally anchor the hash as a soulbound NFT in your Radix Seal collection.",
-            "3. One-time setup for the on-ledger flow: get your Seal (non-transferable insignia, minted once) and create your signing collection, optionally with your company identity (name, website and logo get recorded into its metadata).",
-            "4. Create the request: one invitation NFT per signer — valid for that document only — is minted and deposited into each signer's wallet. With \"Sign and send\" your own signature is minted in the same transaction.",
-            "5. Share the link, or download the PDF with the request embedded and send just that file: dropping it here auto-loads everything. Each signer presses Sign; on their first time, their Seal and collection are set up on the spot.",
-            "6. Status refreshes automatically every 30 seconds. Once everyone has signed, the request shows as complete with its verification link."
+            "1. One-time setup for the ledger flow: mint your Seal (non-transferable insignia, once) and create your signing collection, optionally with your company identity (name, website and logo get recorded into its metadata).",
+            "2. Drop the document. It is hashed locally and never uploaded; its Blake2b-256 hash appears under the box. If the PDF carries embedded Radix data (certificate, original or request), it is broken down right there.",
+            "3. Sign alone: choose what identity to disclose and the output format (.radixsig.json certificate or PDF with the certificate embedded) and press Sign. Optionally anchor the hash as a soulbound NFT in your collection.",
+            "4. Create the request: one invitation NFT per signer, valid for that document only, is minted and deposited into each signer's wallet. With \"Sign and send\", your own signature NFT is minted in the same transaction.",
+            "5. Share the link: it carries the right network, the document name and the output formats you chose. If you keep the tab open, the document travels on its own, browser to browser, over an encrypted direct channel. You can also download the PDF with the request embedded and send just that file.",
+            "6. Each signer opens the link, receives or uploads the document, the tool checks it matches the request's hash, and they sign from their wallet by minting their signature NFT. On their first time, their Seal and collection are set up on the spot.",
+            "7. Status refreshes automatically every 30 seconds by reading the ledger: who has signed and who is pending. Once complete, you download the certificate or the signed PDF.",
+            "8. Verify: in the Verify tab you can drop the file with its certificate, a self-contained signed PDF, or paste the request key (collection + id) to read the signatures straight from the ledger, with no certificate and no wallet."
           ],
           "glossary": [
+            {
+              "term": "Seal (personal insignia)",
+              "definition": "A non-transferable NFT you mint once from the official Radix Seal resource. It has two jobs: it identifies you as a signer and it is the only key able to mint into your signing collection. It can never be sold, moved or burned. Without your Seal nobody, not even this site, can create anything in your name."
+            },
+            {
+              "term": "Signing collection",
+              "definition": "Your personal, reusable NFT resource, created once. Its owner rule is locked forever and requires your Seal. Inside it, with consecutive numbering (#1, #2, #3...), the other two NFT types are minted: the invitations you issue and your signatures. Everything inside is non-transferable and its data can never be edited. It works as your own self-custodied certificate authority: you issue, the ledger attests."
+            },
+            {
+              "term": "Invitation NFT (kind: invite)",
+              "definition": "Minted by the request issuer, one per required signer, into their own collection, and deposited into each invitee's wallet. It carries the document hash, the invited account, the total signer count and the id of the batch's first invitation; thanks to that, the full batch is the public, immutable list of who must sign, readable from the request key alone. It is a notice, not a signature: the issuer can recall it after a wrong address, but can never touch a signature."
+            },
+            {
+              "term": "Signature NFT (kind: signature)",
+              "definition": "Minted by each signer into their own collection at the moment of signing. It carries the document hash, the signer's account, the key of the request it answers and the date. This is the record that counts as the signature: non-transferable, data locked, and impossible to forge because only the signer's Seal can mint into their collection."
+            },
             {
               "term": "How a signature is checked (off-chain)",
               "definition": "The certificate holds one ROLA proof per signer: the wallet signs a challenge derived from the document hash and the canonical metadata. Verification re-hashes the file, rebuilds the challenge and validates each cryptographic signature against its account's public key. If a single byte of the document changes, the hash no longer matches and verification fails."
             },
             {
               "term": "How a signature is checked (on-ledger)",
-              "definition": "A signer only counts as \"signed\" if the chain of custody read from the ledger holds: a signature NFT with the document's hash exists inside a collection whose owner rule — locked forever — requires one specific Seal, and that non-transferable Seal sits in the signer's account. Since nobody can mint into someone else's collection and Seals can never move, forging another person's signature is impossible."
-            },
-            {
-              "term": "Seal (insignia)",
-              "definition": "A non-transferable NFT anyone mints once from the Radix Seal resource. It identifies you as a signer and is the only key able to mint into your personal collection."
-            },
-            {
-              "term": "Invitation NFT",
-              "definition": "When creating a request, the issuer mints one invitation per signer into their own collection and deposits it into each signer's wallet. It is valid for that document only, informational (the signature is a separate act by the signer), and the issuer can recall it to cancel or fix mistakes — while never being able to touch signatures already made."
-            },
-            {
-              "term": "Signing collection",
-              "definition": "Each user's personal, reusable resource: it holds the invitations they issue and their signatures across all documents (#1, #2, #3…). Its data and signatures are immutable and non-transferable; only the owner's Seal can mint."
+              "definition": "A signer only counts as signed if the chain of custody read from the ledger holds: a signature NFT with the document's hash exists inside a collection whose owner rule, locked forever, requires one specific Seal, and that non-transferable Seal sits in the signer's account. Pending signers are the invitees of the batch for which that check finds no signature NFT yet."
             },
             {
               "term": "Honest limit",
@@ -107,14 +112,17 @@
         "description": "Encrypt any file with your Radix wallet signature and share it peer-to-peer over an encrypted channel. The file never leaves your browser.",
         "guide": {
           "guideTitle": "Guide: Encrypt Document",
-          "guideDescription": "Encrypts files with a key derived from a deterministic Radix Wallet signature: only the account that encrypted a file can ever unlock it, from any device, with no key stored anywhere. Files are processed in chunks in your browser (no size limit), kept in local IndexedDB storage and shared directly between browsers over an end-to-end encrypted WebRTC channel — no server ever sees a byte of your file.",
+          "guideDescription": "Encrypts files with a key derived from a deterministic Radix Wallet signature: only the account that encrypted a file can ever unlock it, from any device, with no key stored anywhere. Files are processed in chunks in your browser (no size limit), kept in local browser storage and shared directly between browsers over an end-to-end encrypted WebRTC channel. No server ever sees a byte of your file. There are two encryption methods: ROLA only, where you decide who to release the key to, and ROLA + Ledger, where you authorize specific accounts in advance by minting one invitation NFT per receiver, leaving a public record of who may decrypt.",
           "guideSteps": [
-            "1. Encrypt: connect your wallet, drop any file and press Encrypt. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature.",
-            "2. Download or share: save the .radixenc container, or press Share to get a link and QR code for the receiver.",
-            "3. Transfer: when the receiver opens the link, a direct encrypted channel is created and the file streams browser-to-browser. Keep this tab open.",
-            "4. Approve: when the receiver asks to decrypt, you'll see who is asking and for which file (check the fingerprint), and sign in your wallet to release the key.",
-            "5. Reverse flow: if you received a .radixenc file instead, open the Decrypt tab, load it and send the generated link to the sender (e.g. via WhatsApp). When they open it and sign, your file decrypts here.",
-            "6. Sender shortcut: if the connected wallet is the account that encrypted the file, the Decrypt tab unlocks it directly — no link needed."
+            "1. Pick the method. ROLA only: the key is derived from your signature and you release decryption to whoever you approve. ROLA + Ledger: you also authorize specific accounts on the ledger, so only they can request decryption from you.",
+            "2. Setup (ROLA + Ledger only, one time): you need your Seal NFT and your signing collection, the same ones Sign Document uses. If they are missing, the boxes to deploy and create them appear before you can encrypt.",
+            "3. Encrypt: connect your wallet, drop any file and press Encrypt. For ROLA + Ledger you first add the list of authorized receivers. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature. For ROLA + Ledger, a second confirmation mints and deposits the invitation NFTs into the receivers' accounts.",
+            "4. Download or share: save the .radixenc container, or press Share to get a link and QR code for the receiver. The file travels browser-to-browser when the receiver opens the link; keep this tab open.",
+            "5. Approve (ROLA only): when the receiver asks to decrypt, you'll see who is asking and for which file (check the fingerprint), and sign in your wallet to release the key.",
+            "6. Approve (ROLA + Ledger): the receiver signs a ROLA challenge with their invited account when requesting decryption. Your browser checks on the ledger that this account holds the file's invitation NFT before showing you the request; you'll see their proven account and the verified-invitation badge.",
+            "7. Reverse flow: if you received a .radixenc file, open the Decrypt tab, load it and request decryption. The tool detects the file's method: for ROLA + Ledger you must connect the invited account and sign the challenge.",
+            "8. Sender shortcut: if the connected wallet is the account that encrypted the file, the Decrypt tab unlocks it directly, no link needed.",
+            "9. Receipt (ROLA + Ledger, optional): after decrypting, the receiver can mint a receipt NFT into their collection as public, permanent evidence that they obtained the key, verifiable by the sender on the ledger."
           ],
           "glossary": [
             {
@@ -122,16 +130,32 @@
               "definition": "Radix Off-Ledger Authentication: the wallet signs a challenge to prove account ownership. Ed25519 signatures are deterministic, so the same account over the same challenge always re-creates the same encryption key."
             },
             {
+              "term": "ROLA only vs ROLA + Ledger",
+              "definition": "ROLA only binds the key to your account and you decide who to approve for decryption, leaving no on-chain trace. ROLA + Ledger adds a verifiable permission layer: you authorize specific accounts in advance with an invitation NFT, and both the permission and the decryption become checkable on the ledger."
+            },
+            {
+              "term": "Encryption invitation (NFT)",
+              "definition": "In ROLA + Ledger, the sender mints one invitation per authorized receiver into their signing collection and deposits it into each receiver's wallet. It carries the container hash and the authorized account. Only accounts holding this invitation can send the ROLA challenge to request decryption."
+            },
+            {
+              "term": "Unlock challenge",
+              "definition": "The ROLA challenge the receiver signs to request the key. It is bound to the exact container hash, the session room and the network, so a captured signature cannot be reused in another session or for another file."
+            },
+            {
+              "term": "Decryption receipt (NFT)",
+              "definition": "An optional record the receiver mints into their own collection after obtaining the key. It is non-transferable with locked data: public, permanent evidence that this account decrypted the file, verifiable by anyone on the ledger."
+            },
+            {
               "term": ".radixenc",
-              "definition": "The encrypted container. Its header keeps the original file name, the encrypting account, network and site visible so decryption can be routed; the content is AES-256-GCM encrypted per chunk."
+              "definition": "The encrypted container. Its header keeps the original file name, the encrypting account, network, site and protection method (ROLA or ROLA + Ledger) visible so decryption can be routed; the content is AES-256-GCM encrypted per chunk."
             },
             {
               "term": "Key binding",
-              "definition": "The key is bound to the encrypting account, this site (origin), its dApp definition and the network. Files encrypted elsewhere (e.g. on localhost) cannot be unlocked here — the tool reports this explicitly."
+              "definition": "The key is bound to the encrypting account, this site (origin), its dApp definition and the network. Files encrypted elsewhere (for example on localhost) cannot be unlocked here, and the tool reports this explicitly."
             },
             {
               "term": "WebRTC",
-              "definition": "Direct browser-to-browser channel, encrypted end-to-end (DTLS). A Supabase Realtime room is used only to exchange the connection handshake, never file data or keys."
+              "definition": "Direct browser-to-browser channel, encrypted end-to-end (DTLS). A signaling room is used only to exchange the connection handshake, never file data or keys."
             }
           ]
         }
@@ -2036,8 +2060,8 @@
           "hint": "Withdraw an amount and destroy it permanently"
         },
         "lockMetadata": {
-          "name": "Lock metadata",
-          "hint": "Permanently lock a metadata field so it can never change again"
+          "name": "Edit metadata",
+          "hint": "Edit the value of unlocked fields and, optionally, lock them so they can never change again"
         },
         "setOwnerRole": {
           "name": "Owner role",
@@ -2087,7 +2111,15 @@
         "ruleLockedHint": "The access rule for this action cannot be modified",
         "accessRule": "Access Rule",
         "alreadyLockedHint": "Already locked on ledger",
-        "lockFieldHint": "Lock field"
+        "lockFieldHint": "Lock field",
+        "searchVaults": "Search {count} vault(s) by account or address…",
+        "vaultsSelected": "{count} vault selected",
+        "vaultsSelectedPlural": "{count} vaults selected",
+        "noVaultsFound": "No vaults found",
+        "nftNamePlaceholder": "New NFT name",
+        "nftDescriptionPlaceholder": "New NFT description",
+        "badgeRequiredHint": "This action requires presenting a badge you do not hold in the selected account.",
+        "editMetadataHint": "You can edit this value (unlocked). Change it or lock it."
       }
     },
     "faucet": {

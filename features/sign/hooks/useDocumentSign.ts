@@ -13,17 +13,15 @@ import {
   extractDisclosedEmail,
 } from '../lib/certificate';
 import {
-  buildCollectionCreateManifest,
-  buildCollectionMintManifest,
-  type AttestationData,
-} from '../lib/seal-collection';
-import { findUserCollection, rememberCollection } from '../services/collectionDiscovery';
+  buildSignCollectionCreateManifest,
+  buildSignatureMintManifest,
+} from '../lib/sign-request';
 import {
-  DEFAULT_COLLECTION_NAME,
-  radixSealAddress,
-  sealImageUrl,
-} from '../constants/seal';
-import { networkNameForId } from '../lib/network';
+  findSignCollection,
+  findUserSeal,
+  rememberSignCollection,
+} from '../services/sealDiscovery';
+import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import type {
   AttestationEnvelope,
   AttestationPayload,
@@ -144,56 +142,58 @@ export function useDocumentSign() {
    */
   async function anchorToCollection(
     account: string,
-    curve: string,
     networkId: number,
     input: {
       docHash: string;
       timestamp: string;
-      docName: string;
-      signers: string[];
       collectionName: string;
       imageUrl: string;
     },
   ): Promise<OnChainAnchor> {
     const sealAddress = radixSealAddress(networkId);
     const imageUrl = input.imageUrl || sealImageUrl(window.location.origin);
-    const attestation: AttestationData = {
-      docHash: input.docHash,
-      timestamp: input.timestamp,
-      docName: input.docName,
-      signers: input.signers.join(','),
-      network: networkNameForId(networkId),
-      sealAddress,
-    };
 
-    const existing = await findUserCollection(networkId, account);
-    const localIdNum = existing ? existing.totalSupply + 1 : 1;
-    const manifest = existing
-      ? buildCollectionMintManifest({
+    // Unified model: the signature lives as a `kind='signature'` NFT in the
+    // account's Seal-OWNED collection (the same collection the invitation flow
+    // uses; NFTs are told apart by `kind`). Owner = the official Radix Seal, so
+    // verification binds it to the account via an unforgeable chain of custody.
+    // Requires the account's soulbound Seal (its insignia).
+    const seal = await findUserSeal(networkId, account);
+    if (!seal) throw new Error('seal_required');
+
+    const collection = await findSignCollection(networkId, account);
+    const localIdNum = collection ? collection.totalSupply + 1 : 1;
+    // A stand-alone anchor has no on-ledger invitation, so `request` is empty;
+    // verification (`signerHasSigned`) keys on kind + doc hash + signer only.
+    const manifest = collection
+      ? buildSignatureMintManifest({
           account,
-          resourceAddress: existing.resourceAddress,
+          sealGlobalId: seal.globalId,
+          collection: collection.resourceAddress,
           nextId: localIdNum,
-          imageUrl,
-          attestation,
-        })
-      : await buildCollectionCreateManifest({
-          account,
-          curve,
+          docHash: input.docHash,
           networkId,
-          collectionName: input.collectionName || DEFAULT_COLLECTION_NAME,
+          request: '',
           imageUrl,
+        })
+      : buildSignCollectionCreateManifest({
+          account,
+          sealGlobalId: seal.globalId,
           sealAddress,
-          attestation,
+          networkId,
+          collectionName: input.collectionName || 'Signing collection',
+          imageUrl,
+          firstSignature: { docHash: input.docHash, request: '', signedAt: input.timestamp },
         });
 
     const tx = await sendTransaction(manifest);
     if (!tx) throw new Error('onchain_failed');
 
     const resourceAddress =
-      existing?.resourceAddress ??
+      collection?.resourceAddress ??
       tx.createdEntities.find((a) => a.startsWith('resource_'));
     if (!resourceAddress) throw new Error('onchain_no_resource');
-    if (!existing) rememberCollection(networkId, account, resourceAddress);
+    if (!collection) rememberSignCollection(networkId, account, resourceAddress);
 
     const localId = `#${localIdNum}#`;
     return {
@@ -279,19 +279,12 @@ export function useDocumentSign() {
         setPhase('anchoring');
         envelope = {
           ...envelope,
-          onChain: await anchorToCollection(
-            sig.account,
-            sig.proof.curve,
-            activeNetworkId,
-            {
-              docHash: input.docHash,
-              timestamp: payload.timestamp,
-              docName: input.fileName,
-              signers: [sig.account],
-              collectionName: input.collectionName ?? '',
-              imageUrl: input.imageUrl ?? '',
-            },
-          ),
+          onChain: await anchorToCollection(sig.account, activeNetworkId, {
+            docHash: input.docHash,
+            timestamp: payload.timestamp,
+            collectionName: input.collectionName ?? '',
+            imageUrl: input.imageUrl ?? '',
+          }),
         };
       }
 
@@ -417,19 +410,12 @@ export function useDocumentSign() {
       }
 
       setPhase('anchoring');
-      const onChain = await anchorToCollection(
-        who.account,
-        who.proof.curve,
-        activeNetworkId,
-        {
-          docHash: envelope.payload.docHash,
-          timestamp: new Date().toISOString(),
-          docName: envelope.payload.fileName,
-          signers,
-          collectionName: sealOpts?.collectionName ?? '',
-          imageUrl: sealOpts?.imageUrl ?? '',
-        },
-      );
+      const onChain = await anchorToCollection(who.account, activeNetworkId, {
+        docHash: envelope.payload.docHash,
+        timestamp: new Date().toISOString(),
+        collectionName: sealOpts?.collectionName ?? '',
+        imageUrl: sealOpts?.imageUrl ?? '',
+      });
       setPhase('done');
       return {
         envelope: { ...envelope, onChain },

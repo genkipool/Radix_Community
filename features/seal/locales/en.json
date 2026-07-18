@@ -1,14 +1,14 @@
 {
   "seal": {
     "hero": {
-      "badge": "Radix Seal — Self-Custody Trust Standard",
+      "badge": "Radix Seal, the self-custody trust standard",
       "h1a": "Sign, encrypt and communicate.",
       "h1b": "Without trusting anyone's servers.",
-      "p": "Radix Seal turns the Radix Wallet into your institution's own certificate authority. Documents are signed and encrypted entirely in the browser, files travel peer-to-peer between the parties, and proofs are anchored on a public ledger that anyone — auditor, regulator or counterparty — can verify independently, forever.",
+      "p": "Radix Seal turns the Radix Wallet into your institution's own certificate authority. Documents are signed and encrypted entirely in the browser, files travel peer-to-peer between the parties, and proofs are anchored on a public ledger that anyone (auditor, regulator or counterparty) can verify independently, forever.",
       "btn_console": "Open the console",
       "btn_compare": "Compare with today's alternatives",
-      "illustration_alt": "The Radix Seal insignia — an embossed seal on paper",
-      "illustration_caption": "The Radix Seal: an open on-ledger standard. Each user self-mints a soulbound seal NFT that acts as the insignia of their attestation collection — the on-chain equivalent of an institutional stamp, held in self-custody.",
+      "illustration_alt": "The Radix Seal insignia: an embossed seal on paper",
+      "illustration_caption": "The Radix Seal: an open on-ledger standard. Each user self-mints a soulbound seal NFT that acts as the insignia of their attestation collection: the on-chain equivalent of an institutional stamp, held in self-custody.",
       "metric1_value": "0",
       "metric1": "Servers that ever store your files, messages or keys",
       "metric2_value": "100%",
@@ -16,7 +16,27 @@
       "metric3_value": "3",
       "metric3": "Tools under one trust model: sign, encrypt and chat",
       "metric4_value": "1",
-      "metric4": "Wallet signature is all it takes to prove control of an account"
+      "metric4": "Wallet signature is all it takes to prove control of an account",
+      "slides": [
+        {
+          "h1a": "Sign, encrypt and communicate.",
+          "h1b": "Without trusting anyone's servers.",
+          "p": "Radix Seal turns the Radix Wallet into your institution's own certificate authority. Everything happens in the browser and proofs are anchored on a public ledger that anyone can verify independently, forever."
+        },
+        {
+          "h1a": "Sign documents",
+          "h1b": "that verify without depending on this site.",
+          "p": "Every signature is recorded as an NFT in your personal collection, guarded by your soulbound seal. Anyone can check on the ledger who signed and who is pending, with the original file and no account needed."
+        },
+        {
+          "h1a": "Encrypt files",
+          "h1b": "that never leave your browser.",
+          "p": "Content is encrypted locally and travels peer-to-peer between browsers. With ROLA + Ledger you authorize specific accounts in advance and there is a public record of who may decrypt."
+        }
+      ],
+      "btn_prev": "Previous",
+      "btn_next": "Next",
+      "aria_go": "Go to slide"
     },
     "capabilities": {
       "label": "The toolset",
@@ -26,13 +46,13 @@
       "tools": [
         {
           "title": "Sign documents",
-          "desc": "Sign any file with your Radix Wallet. The document is hashed locally and never uploaded — only the hash is signed, proving integrity, timestamp and control of the account key.",
+          "desc": "Sign any file with your Radix Wallet. The document is hashed locally and never uploaded: only the hash is signed, proving integrity, timestamp and control of the account key.",
           "points": [
             "Attached certificate or embedded directly inside the PDF",
             "Optional on-ledger anchoring as a soulbound NFT",
             "Multi-party signing: several signers on one certificate",
             "Identity disclosure you control: name, email or signature only",
-            "Anyone can verify — no wallet or account needed"
+            "Anyone can verify, no wallet or account needed"
           ],
           "cta": "Open the signing tool"
         },
@@ -40,7 +60,7 @@
           "title": "Encrypt files",
           "desc": "The encryption key is derived from your wallet signature via ROLA: only the account that encrypted a file can ever unlock it. Files are processed in chunks, entirely in the browser.",
           "points": [
-            "No file size limit — chunked, never uploaded",
+            "No file size limit: chunked, never uploaded",
             "Key derived from your wallet: nothing to store or lose",
             "Direct browser-to-browser transfer, end-to-end encrypted",
             "Receiver decrypts only when the owner approves and signs",
@@ -50,7 +70,7 @@
         },
         {
           "title": "Secure chat",
-          "desc": "End-to-end encrypted conversations where both sides prove who they are by signing with their wallet. The session key is derived from that verified exchange — no server can read, alter or impersonate anything.",
+          "desc": "End-to-end encrypted conversations where both sides prove who they are by signing with their wallet. The session key is derived from that verified exchange: no server can read, alter or impersonate anything.",
           "points": [
             "Both participants wallet-verified before the room opens",
             "Messages travel peer-to-peer over an encrypted channel",
@@ -66,22 +86,22 @@
       "label": "The trust model",
       "h2a": "Your wallet is the",
       "h2b": "certificate authority",
-      "sub": "Traditional trust infrastructure asks you to delegate: to a SaaS vendor, to a certificate authority, to a key server. Radix Seal inverts the model — the keys stay in your wallet, the computation stays on your device, and the only shared dependency is a public, decentralized ledger.",
+      "sub": "Traditional trust infrastructure asks you to delegate: to a SaaS vendor, to a certificate authority, to a key server. Radix Seal inverts the model: the keys stay in your wallet, the computation stays on your device, and the only shared dependency is a public, decentralized ledger.",
       "pillars": [
         {
           "tag": "Step 1",
           "title": "Self-custody keys",
-          "desc": "Identity is proven with ROLA — the wallet signs a challenge, never revealing the key. The same key management your institution already uses for assets now backs signatures, encryption and messaging."
+          "desc": "Identity is proven with ROLA: the wallet signs a challenge, never revealing the key. The same key management your institution already uses for assets now backs signatures, encryption and messaging."
         },
         {
           "tag": "Step 2",
           "title": "Local cryptography",
-          "desc": "Hashing, encryption, decryption and verification all run in the browser. Documents, messages and plaintext never leave the device — there is no upload step to secure, audit or breach."
+          "desc": "Hashing, encryption, decryption and verification all run in the browser. Documents, messages and plaintext never leave the device: there is no upload step to secure, audit or breach."
         },
         {
           "tag": "Step 3",
           "title": "Peer-to-peer transport",
-          "desc": "When content must move between parties — an encrypted file, a chat message — it travels over a direct, end-to-end encrypted channel between browsers. No intermediary storage, no server in the data path."
+          "desc": "When content must move between parties (an encrypted file, a chat message) it travels over a direct, end-to-end encrypted channel between browsers. No intermediary storage, no server in the data path."
         },
         {
           "tag": "Step 4",
@@ -90,15 +110,15 @@
         }
       ],
       "standard_title": "An open on-ledger standard, not a product",
-      "standard_sub": "Radix Seal is defined by public metadata conventions on the Radix ledger. Any wallet, explorer or third-party tool can implement it: discover a signer's attestation collection, check its insignia and verify its certificates — with no permission from us and no proprietary format in the way.",
+      "standard_sub": "Radix Seal is defined by public metadata conventions on the Radix ledger. Any wallet, explorer or third-party tool can implement it: discover a signer's attestation collection, check its insignia and verify its certificates, with no permission from us and no proprietary format in the way.",
       "standard_points": [
         {
           "title": "Soulbound insignia",
-          "desc": "Each user self-mints a non-transferable seal NFT — it cannot be bought, sold or stolen, only earned by controlling the account."
+          "desc": "Each user self-mints a non-transferable seal NFT: it cannot be bought, sold or stolen, only earned by controlling the account."
         },
         {
           "title": "Attestation collections",
-          "desc": "Signatures and invitations live in per-user collections whose owner and minter is the user's own seal — a chain of custody readable on-ledger."
+          "desc": "Signatures and invitations live in per-user collections whose owner and minter is the user's own seal: a chain of custody readable on-ledger."
         },
         {
           "title": "Only hashes on-chain",
@@ -114,7 +134,7 @@
       "cards": [
         {
           "title": "Audit trail by consensus",
-          "desc": "An anchored signature is timestamped by the network's consensus, not by a vendor's clock. Years later, an auditor or regulator verifies it against the public ledger directly — no vendor account, no API contract, no certificate chain that may have expired in the meantime."
+          "desc": "An anchored signature is timestamped by the network's consensus, not by a vendor's clock. Years later, an auditor or regulator verifies it against the public ledger directly, with no vendor account, no API contract and no certificate chain that may have expired in the meantime."
         },
         {
           "title": "Data sovereignty by architecture",
@@ -130,36 +150,56 @@
         }
       ],
       "strip": [
-        { "value": "100%", "label": "Of verification possible without any vendor account or API" },
-        { "value": "<$0.01", "label": "Network fee to anchor a proof on-ledger, no subscriptions" },
-        { "value": "24/7", "label": "Public ledger availability — proofs outlive any vendor" },
-        { "value": "0", "label": "Confidential bytes published: only hashes reach the ledger" }
+        {
+          "value": "100%",
+          "label": "Of verification possible without any vendor account or API"
+        },
+        {
+          "value": "<$0.01",
+          "label": "Network fee to anchor a proof on-ledger, no subscriptions"
+        },
+        {
+          "value": "24/7",
+          "label": "Public ledger availability: proofs outlive any vendor"
+        },
+        {
+          "value": "0",
+          "label": "Confidential bytes published: only hashes reach the ledger"
+        }
       ]
     },
     "comparison": {
       "label": "Head to head",
       "h2a": "How Radix Seal compares to",
       "h2b": "today's most trusted techniques",
-      "sub": "Cloud e-signature suites, PKI with qualified certificates and PGP are today's benchmarks for signing and encrypting. Each one delegates something — custody, confidentiality or longevity — that Radix Seal keeps in your hands.",
+      "sub": "Cloud e-signature suites, PKI with qualified certificates and PGP are today's benchmarks for signing and encrypting. Each one delegates something (custody, confidentiality or longevity) that Radix Seal keeps in your hands.",
       "thFeature": "Criterion",
-      "columns": ["Cloud e-signature / storage SaaS", "PKI / qualified certificates", "PGP / S-MIME"],
+      "columns": [
+        "Cloud e-signature / storage SaaS",
+        "PKI / qualified certificates",
+        "PGP / S-MIME"
+      ],
       "categories": [
         {
           "title": "Keys & custody",
           "rows": [
             {
               "feature": "Who holds the keys",
-              "saas": "The vendor — signatures are applied on their servers",
+              "saas": "The vendor: signatures are applied on their servers",
               "pki": "Smartcard or HSM, issued and revocable by a CA",
               "pgp": "Local keyring, entirely user-managed",
-              "seal": "Your wallet — self-custody, no issuer above you"
+              "seal": "Your wallet: self-custody, no issuer above you",
+              "winner": "seal+pgp",
+              "expKey": "custody"
             },
             {
               "feature": "Trust anchor",
               "saas": "The vendor's goodwill, uptime and security",
-              "pki": "Hierarchical CAs — single points of failure",
-              "pgp": "Web of trust — hard to scale beyond experts",
-              "seal": "A public, decentralized ledger"
+              "pki": "Hierarchical CAs, single points of failure",
+              "pgp": "Web of trust, hard to scale beyond experts",
+              "seal": "A public, decentralized ledger",
+              "winner": "seal",
+              "expKey": "anchor"
             }
           ]
         },
@@ -171,14 +211,18 @@
               "saas": "Uploaded to the vendor's cloud to be signed",
               "pki": "Often uploaded to portals in signing workflows",
               "pgp": "Stays local, but usually sent by email",
-              "seal": "Never leaves the browser — only the hash is signed"
+              "seal": "Never leaves the browser: only the hash is signed",
+              "winner": "seal",
+              "expKey": "confidential"
             },
             {
               "feature": "Transfer between parties",
               "saas": "Through the vendor's servers and storage",
               "pki": "Email attachments or shared drives",
               "pgp": "Email attachments, metadata exposed",
-              "seal": "Direct browser-to-browser, end-to-end encrypted"
+              "seal": "Direct browser-to-browser, end-to-end encrypted",
+              "winner": "seal",
+              "expKey": "transfer"
             }
           ]
         },
@@ -190,14 +234,18 @@
               "saas": "Requires the vendor's portal or API to exist",
               "pki": "Requires CA chain plus CRL/OCSP status checks",
               "pgp": "Requires key servers and fingerprint checks",
-              "seal": "Anyone with the file and the public ledger — no account"
+              "seal": "Anyone with the file and the public ledger, no account",
+              "winner": "seal",
+              "expKey": "verify"
             },
             {
               "feature": "Timestamp integrity",
               "saas": "Attested by the vendor's own clock",
               "pki": "Paid timestamping authority (RFC 3161)",
-              "pgp": "None by default — self-declared",
-              "seal": "Fixed by network consensus, immutable"
+              "pgp": "None by default, self-declared",
+              "seal": "Fixed by network consensus, immutable",
+              "winner": "seal",
+              "expKey": "timestamp"
             }
           ]
         },
@@ -209,26 +257,183 @@
               "saas": "As long as the vendor exists and keeps records",
               "pki": "Until certificate expiry or CA revocation",
               "pgp": "As long as keys are safely kept",
-              "seal": "As long as the public ledger exists"
+              "seal": "As long as the public ledger exists",
+              "winner": "seal",
+              "expKey": "longevity"
             },
             {
               "feature": "Cost model",
               "saas": "Per-envelope pricing and per-seat subscriptions",
               "pki": "Certificate issuance, renewals and tokens",
               "pgp": "Free software, high operational complexity",
-              "seal": "Open source — near-zero network fee, no subscription"
+              "seal": "Open source: near-zero network fee, no subscription",
+              "winner": "seal",
+              "expKey": "cost"
+            }
+          ]
+        },
+        {
+          "title": "Identity and adoption",
+          "rows": [
+            {
+              "feature": "Verified legal identity",
+              "saas": "Email, SMS or KYC verification depending on plan",
+              "pki": "Identity validated by an authority (QES)",
+              "pgp": "No verification; peer-to-peer trust",
+              "seal": "Self-declared by the wallet; no legal binding",
+              "winner": "pki",
+              "expKey": "identity"
+            },
+            {
+              "feature": "Ease for first-time signers",
+              "saas": "One click from the email, nothing to install",
+              "pki": "Card or token plus dedicated software",
+              "pgp": "Installation and technical concepts",
+              "seal": "Requires the Radix Wallet and a one-time setup",
+              "winner": "saas",
+              "expKey": "ease"
+            },
+            {
+              "feature": "Corporate workflows (templates, reminders, signing order)",
+              "saas": "Very mature: templates, reminders, integrations",
+              "pki": "Depends on each organization's software",
+              "pgp": "Nonexistent",
+              "seal": "Essential invite and on-ledger status flow",
+              "winner": "saas",
+              "expKey": "workflow"
             }
           ]
         }
       ],
-      "note": "Honest scope: a Radix Seal signature proves the integrity of a document, its consensus timestamp, and control of the signing account — with any disclosed name self-declared by the signer's wallet. Where regulation requires an identity-verified qualified signature (such as eIDAS QES), Radix Seal complements those schemes with stronger custody, confidentiality and longevity — it does not claim their legal status."
+      "note": "Honest scope: a Radix Seal signature proves the integrity of a document, its consensus timestamp, and control of the signing account, with any disclosed name self-declared by the signer's wallet. Where regulation requires an identity-verified qualified signature (such as eIDAS QES), Radix Seal complements those schemes with stronger custody, confidentiality and longevity; it does not claim their legal status.",
+      "explanations": {
+        "custody": "True self-custody: the key never leaves your wallet or your device. PGP also keeps it local; the difference is the wallet adds recovery and guided signing without managing keyrings by hand.",
+        "anchor": "A public, decentralized ledger does not depend on the honesty of a company or a CA: thousands of nodes validate every transaction and anyone can read it. There is no single point to compromise or that can disappear.",
+        "confidential": "The document is hashed in your browser and only that hash gets signed. The content is never transmitted to any server, so nobody (not even this site) can see it.",
+        "transfer": "The direct channel runs browser to browser with end-to-end encryption. No server stores or sees the file along the way.",
+        "verify": "Verification only takes the file and a read of the public ledger: no accounts, no vendor API, and no dependence on this site still existing.",
+        "timestamp": "The timestamp is fixed by network consensus when the transaction confirms: no company controls it and it cannot be adjusted afterwards.",
+        "longevity": "The proof lives on a public ledger replicated by hundreds of nodes: it does not expire with a certificate or vanish if a vendor shuts down.",
+        "cost": "No subscriptions or per-document pricing: just the network fee, a fraction of a cent. PGP is also free, but its operational cost in key management and training is high.",
+        "identity": "Qualified PKI wins here: an authority validates the signer's legal identity and regulation (eIDAS QES) grants it the highest evidentiary status. Radix Seal proves control of the account, not who you legally are.",
+        "ease": "Cloud suites win on zero friction for the occasional signer: a link in the email and done. Radix Seal asks for a wallet install and a one-time setup before the first signature.",
+        "workflow": "Years of product give SaaS suites templates, automatic reminders and dozens of integrations. Radix Seal covers the essential invite, sign and verify flow today."
+      }
     },
     "cta": {
       "h2a": "Trust is no longer",
       "h2b": "something you rent.",
-      "sub": "Sign a document, encrypt a file or open a verified conversation — right now, from your browser, with the wallet your organization already controls.",
+      "sub": "Sign a document, encrypt a file or open a verified conversation, right now, from your browser, with the wallet your organization already controls.",
       "btn_sign": "Sign your first document",
       "btn_console": "Explore all console tools"
+    },
+    "privacy": {
+      "label": "Privacy by design",
+      "h2a": "Your document never leaves",
+      "h2b": "your browser",
+      "sub": "All the cryptographic work happens on your device. The only thing that touches the network is the bare minimum anyone needs to verify: the document hash and the signing accounts.",
+      "cards": [
+        {
+          "title": "Local hashing",
+          "desc": "The document is digested with Blake2b-256 in your browser, and signing means signing that hash. The content is never transmitted to any server."
+        },
+        {
+          "title": "Direct browser-to-browser channel",
+          "desc": "When the file must reach another signer, it travels browser to browser over an end-to-end encrypted channel. No cloud in between."
+        },
+        {
+          "title": "Identity under your control",
+          "desc": "Name or email are only included if you decide so, and they live in the certificate, not on the ledger. The chain holds only hashes and accounts."
+        },
+        {
+          "title": "No accounts, no sign-up",
+          "desc": "No registration, email or password. Your wallet is your identity and the only key able to mint into your collection."
+        }
+      ],
+      "cta": "Sign a document"
+    },
+    "verifyOpen": {
+      "label": "Open verification",
+      "h2a": "Verifiable by anyone,",
+      "h2b": "forever",
+      "sub": "A Radix Seal signature does not depend on this site. The standard is a set of public metadata conventions: any tool can read the ledger and reach the same conclusion.",
+      "cards": [
+        {
+          "title": "Self-contained PDF",
+          "desc": "The signed PDF carries the certificate and the intact original document inside. One file is enough to verify the full signature."
+        },
+        {
+          "title": "Public request key",
+          "desc": "Every signing request has a key (collection and id) that lets anyone query the ledger for who had to sign and who has signed already."
+        },
+        {
+          "title": "Chain of custody on-ledger",
+          "desc": "Each signer's collection is guarded by their non-transferable Seal: a proof of authorship read straight from the chain, trusting nobody."
+        }
+      ],
+      "cta": "Verify a document"
+    },
+    "anatomy": {
+      "label": "Anatomy of the seal",
+      "h2a": "How the seal,",
+      "h2b": "the collection and its NFTs work",
+      "sub": "The whole Radix Seal model rests on two base NFTs you mint once, plus four NFT types kept inside your collection. Here is what each one is, who mints it and what it proves, made clear without jargon.",
+      "foundationsTitle": "The two base NFTs (one time only)",
+      "foundations": [
+        {
+          "name": "Seal NFT",
+          "tag": "Your insignia",
+          "role": "It is your signer identity and the only key able to mint into your collection. You get it once from the official Radix Seal resource.",
+          "props": [
+            "Soulbound: cannot be sold, moved or burned",
+            "Only you control it, bound to your account",
+            "Without it, nobody (not even this site) can create anything in your name"
+          ]
+        },
+        {
+          "name": "Signing collection",
+          "tag": "Your on-ledger archive",
+          "role": "Your personal, reusable resource where every NFT you issue or sign is stored, numbered. Its owner rule is locked and requires your Seal.",
+          "props": [
+            "Reusable: each document adds a numbered NFT (#1, #2, #3...)",
+            "Rules locked at creation: data unalterable forever",
+            "Only your Seal can mint inside"
+          ]
+        }
+      ],
+      "typesTitle": "The four NFT types inside the collection",
+      "typesSub": "They all share the same unforgeable chain of custody: they live in a collection owned by your soulbound Seal, in your account. That is why nobody can forge them in your name.",
+      "types": [
+        {
+          "kind": "invite",
+          "name": "Signature invitation",
+          "mintedBy": "Minted by whoever requests signatures, one per signer",
+          "proves": "Public record of who was asked to sign that document",
+          "desc": "Deposited into each signer's wallet. It carries the document hash and the invited account. It is a notice, not a signature; the issuer can recall it after a mistake, but can never touch a signature."
+        },
+        {
+          "kind": "signature",
+          "name": "Signature",
+          "mintedBy": "Minted by each signer into their own collection",
+          "proves": "That this account signed that specific document",
+          "desc": "This is the record that truly counts as a signature: non-transferable, data locked. Impossible to forge because only the signer's Seal can mint into their collection."
+        },
+        {
+          "kind": "cipher-invite",
+          "name": "Encryption invitation",
+          "mintedBy": "Minted by whoever encrypts, one per authorized receiver",
+          "proves": "That this account is allowed to request decryption",
+          "desc": "Only in ROLA + Ledger mode. Deposited into the receiver's wallet, carrying the encrypted file's hash. Without this invitation, an account cannot even request the key from the sender."
+        },
+        {
+          "kind": "cipher-receipt",
+          "name": "Decryption receipt",
+          "mintedBy": "Minted by the receiver after obtaining the key",
+          "proves": "That this account decrypted the file",
+          "desc": "Optional, in ROLA + Ledger mode. A public, permanent record in the receiver's collection that they obtained the key, verifiable by the sender on the ledger."
+        }
+      ],
+      "note": "All of this is public and permanent on the Radix Network. Anyone can read and verify it without depending on this site, with no account and no proprietary formats."
     }
   },
   "seo": {

@@ -32,6 +32,9 @@ export interface BuildHeaderInput {
   networkId: number;
   dAppDefinitionAddress: string;
   origin: string;
+  /** ROLA + Ledger protection (see CipherHeader.access). */
+  access?: 'rola-ledger';
+  inviteCollection?: string;
 }
 
 /** Chunks needed for a file; an empty file still gets one (empty) chunk so the
@@ -60,6 +63,9 @@ export function buildHeader(input: BuildHeaderInput): CipherHeader {
     dAppDefinitionAddress: input.dAppDefinitionAddress,
     origin: input.origin,
     createdAt: new Date().toISOString(),
+    ...(input.access === 'rola-ledger' && input.inviteCollection
+      ? { access: input.access, inviteCollection: input.inviteCollection }
+      : {}),
   };
 }
 
@@ -103,7 +109,12 @@ function isCipherHeader(value: unknown): value is CipherHeader {
     typeof h.networkId === 'number' &&
     typeof h.dAppDefinitionAddress === 'string' &&
     typeof h.origin === 'string' &&
-    typeof h.createdAt === 'string'
+    typeof h.createdAt === 'string' &&
+    // Optional ROLA + Ledger fields: absent, or both present and well-formed.
+    (h.access === undefined ||
+      (h.access === 'rola-ledger' &&
+        typeof h.inviteCollection === 'string' &&
+        h.inviteCollection.startsWith('resource_')))
   );
 }
 

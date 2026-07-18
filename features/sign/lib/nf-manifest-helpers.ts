@@ -94,6 +94,21 @@ export const lockedMetadataRoles = () =>
             `);
 
 /**
+ * Metadata role map where the OWNER may set (and lock) metadata, but the rules
+ * themselves can never be changed. Combined with an owner role that requires an
+ * admin badge, this makes the resource's brand metadata editable ONLY by the
+ * admin-badge holder, forever.
+ */
+export const ownerEditableMetadataRoles = () =>
+  [
+    metadataAuthRoleSyntax('metadata_setter', 'owner'),
+    metadataAuthRoleSyntax('metadata_setter_updater', 'denyAll'),
+    metadataAuthRoleSyntax('metadata_locker', 'owner'),
+    metadataAuthRoleSyntax('metadata_locker_updater', 'denyAll'),
+  ].join(`,
+            `);
+
+/**
  * Optional issuer-identity metadata entries: the issuer account and org name
  * are locked (anti-spoofing); the website stays updatable by the owner so a
  * company can move domains. The logo is NOT emitted here — callers publish

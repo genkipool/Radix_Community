@@ -6,7 +6,7 @@
     },
     "disclaimer": {
       "title": "Tu archivo nunca sale de tu navegador",
-      "body": "El cifrado, el descifrado y el almacenamiento ocurren en local. Los archivos viajan solo por un canal directo entre navegadores, cifrado de extremo a extremo — nunca a través de un servidor. La clave se deriva de la firma de tu wallet: solo la cuenta que cifró un archivo puede desbloquearlo."
+      "body": "El cifrado, el descifrado y el almacenamiento ocurren en local. Los archivos viajan solo por un canal directo entre navegadores, cifrado de extremo a extremo, nunca a través de un servidor. La clave se deriva de la firma de tu wallet: solo la cuenta que cifró un archivo puede desbloquearlo."
     },
     "connect": {
       "title": "Conecta tu Radix Wallet",
@@ -19,8 +19,7 @@
       "rola": "Cifrar con ROLA",
       "rolaDescription": "Firma un reto con tu Radix Wallet; la clave de cifrado se deriva de esa firma.",
       "rolaLedger": "Cifrar con ROLA + Ledger",
-      "rolaLedgerDescription": "Firma respaldada por hardware. Próximamente.",
-      "comingSoon": "Próximamente"
+      "rolaLedgerDescription": "Igual que ROLA, y además queda constancia en el libro mayor: se acuña una invitación NFT por receptor autorizado en tu colección de firma. Solo esas cuentas podrán enviarte el reto ROLA para descifrar este archivo."
     },
     "file": {
       "label": "Archivo a cifrar",
@@ -32,8 +31,33 @@
       "metaSender": "Cifrado por",
       "metaDate": "Fecha",
       "metaNetwork": "Red",
+      "metaAccess": "Protección",
+      "accessRola": "ROLA",
+      "accessRolaLedger": "ROLA + Ledger",
       "fingerprint": "Huella",
       "invalid": "Esto no es un archivo .radixenc válido."
+    },
+    "ledger": {
+      "receiversLabel": "Receptores autorizados",
+      "receiversHint": "Se acuña una invitación NFT por cuenta en tu colección de firma (la misma de la sección Firmar documento) y se deposita en la wallet de cada receptor. Solo esas cuentas podrán solicitar el descifrado de este archivo.",
+      "receiverPlaceholder": "account_rdx… / account_tdx_2_…",
+      "addReceiver": "Añadir receptor",
+      "invalidReceiver": "Dirección de cuenta no válida para esta red",
+      "minting": "Acuñando las invitaciones NFT en el ledger… Confirma en tu wallet.",
+      "minted": "Invitaciones acuñadas y depositadas. Los receptores ya pueden solicitar el descifrado.",
+      "mintFailed": "No se pudieron acuñar las invitaciones. Sin ellas, ningún receptor podrá pedir el descifrado.",
+      "retryMint": "Reintentar acuñado",
+      "requestGateTitle": "Conecta la wallet invitada",
+      "requestGateSubtitle": "Este archivo se cifró con ROLA + Ledger: para pedir el descifrado tienes que firmar un reto ROLA con la cuenta que recibió la invitación NFT de este archivo.",
+      "requestWithProof": "Firmar reto y solicitar descifrado",
+      "authorizing": "Comprobando en el ledger la invitación del solicitante…",
+      "authorizedBadge": "Invitación verificada en el ledger",
+      "requesterAccount": "Cuenta solicitante",
+      "receiptTitle": "Acuse de descifrado (opcional)",
+      "receiptHint": "Acuña un NFT en tu colección de firma que deja constancia pública y permanente de que esta cuenta descifró el archivo. El emisor podrá verificarlo en el ledger.",
+      "receiptButton": "Acuñar acuse en el ledger",
+      "receiptMinting": "Confirma en tu wallet…",
+      "receiptDone": "Acuse acuñado en el ledger."
     },
     "encrypt": {
       "button": "Cifrar",
@@ -107,6 +131,8 @@
       "account_mismatch": "La cuenta conectada no es la que cifró este archivo.",
       "header_mismatch": "La solicitud no coincide con el archivo compartido en esta sesión.",
       "decrypt_failed": "Fallo al descifrar: clave incorrecta o archivo corrupto.",
+      "not_authorized": "La cuenta no tiene la invitación NFT de cifrado de este archivo, o la prueba no es válida.",
+      "no_collection": "La cuenta que firmó no tiene colección de firma en el ledger. Completa la preparación (Seal y colección) y vuelve a cifrar.",
       "peer_disconnected": "Se perdió la conexión con el otro extremo. Pídele que vuelva a abrir el enlace e inténtalo de nuevo.",
       "room_busy": "Alguien ya se unió con este enlace. Cada enlace sirve para una sola sesión.",
       "signaling_unavailable": "No se pudo contactar con el servicio de señalización. Revisa tu conexión e inténtalo de nuevo.",
@@ -119,7 +145,7 @@
     "security": {
       "title": "Cómo funciona",
       "boundToAccount": "La clave se deriva de una firma determinista de la wallet, por lo que queda vinculada a la cuenta que cifra, a este sitio y a esta red.",
-      "headerVisible": "El archivo cifrado mantiene visibles en su cabecera el nombre original y la cuenta emisora — compártelo solo con quien pueda ver esos datos.",
+      "headerVisible": "El archivo cifrado mantiene visibles en su cabecera el nombre original y la cuenta emisora: compártelo solo con quien pueda ver esos datos.",
       "neverUploaded": "El contenido del archivo nunca toca un servidor: se queda en tu navegador y viaja solo por el canal cifrado directo."
     },
     "leaveWarning": "Hay una sesión de transferencia activa. Si sales, el otro extremo se desconectará."

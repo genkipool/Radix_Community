@@ -83,7 +83,12 @@ export interface SignatureEntry {
   disclosedName: string | null;
   /** Disclosed wallet email, or null. */
   disclosedEmail: string | null;
-  proof: SignatureProof;
+  /**
+   * ROLA proof for OFF-ledger signatures. `null` for ON-ledger signatures,
+   * whose proof is the signer's on-chain signature NFT (verified via the chain
+   * of custody instead of a ROLA challenge).
+   */
+  proof: SignatureProof | null;
   /** ISO-8601 timestamp this signer signed. */
   signedAt: string;
 }
@@ -117,11 +122,24 @@ export interface OnChainAnchor {
  * The full certificate. This is what gets serialised to
  * `<file>.radixsig.json` (or embedded into the PDF) and passed between signers.
  */
+/** Reference to the on-ledger signing request that defines the required set. */
+export interface OnChainRequestRef {
+  networkId: number;
+  /** Request key: `<initiator collection>:#<firstId>#`. */
+  requestId: string;
+}
+
 export interface AttestationEnvelope {
   payload: AttestationPayload;
   /** One entry per signer that has signed so far. */
   signatures: SignatureEntry[];
   onChain: OnChainAnchor | null;
+  /**
+   * On-ledger certificates only: the request whose locked invitation batch is
+   * the AUTHORITATIVE required-signer list. Verification re-resolves it from the
+   * ledger, so the certificate cannot understate who had to sign.
+   */
+  request?: OnChainRequestRef | null;
 }
 
 /** Result of a successful signing, returned to the UI for download. */

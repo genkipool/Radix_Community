@@ -6,8 +6,9 @@
  * static — no client islands needed.
  */
 import Link from 'next/link';
-import Image from 'next/image';
 import { Stamp } from 'lucide-react';
+import HeroCarousel from './components/HeroCarousel';
+import { RadixSealMark } from '../../components/RadixSealMark';
 import { SEAL_LINKS, COMPARISON_ID } from '../../data/links';
 import type { SealLocaleSectionProps } from '../../types';
 
@@ -43,16 +44,9 @@ export default function Hero({ t, locale }: SealLocaleSectionProps) {
               <span className="leading-none">{hero.badge}</span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--color-text-main)] tracking-tight leading-tight mb-6">
-              {hero.h1a}{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)]">
-                {hero.h1b}
-              </span>
-            </h1>
-
-            <p className="text-xl text-[var(--color-text-muted)] leading-relaxed max-w-2xl">
-              {hero.p}
-            </p>
+            {/* Client island: animated banner carousel (falls back to a
+                single static banner when there is only one slide). */}
+            <HeroCarousel t={t} />
 
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Link
@@ -74,13 +68,10 @@ export default function Hero({ t, locale }: SealLocaleSectionProps) {
           <div className="relative lg:col-span-5 block pt-6">
             <div className="relative mx-auto max-w-[420px]">
               <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-secondary)]/20 to-[var(--color-primary)]/20 rounded-full blur-3xl scale-90 pointer-events-none" />
-              <Image
-                src="/seal/radix-seal.svg"
-                alt={hero.illustration_alt}
-                width={420}
-                height={420}
-                priority
-                className="relative z-10 w-full h-auto rounded-3xl shadow-2xl border border-[var(--color-card-border)]"
+              {/* Inline, theme-aware mark: no box, ink follows the theme. */}
+              <RadixSealMark
+                title={hero.illustration_alt}
+                className="relative z-10 w-full h-auto text-[var(--color-text-main)]"
               />
             </div>
             <p className="mt-6 text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed opacity-80 transition-opacity hover:opacity-100 relative z-20">

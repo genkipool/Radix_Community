@@ -25,8 +25,7 @@
     "groups": {
       "assets": "Activos",
       "deploy": "Construir y Desplegar",
-      "documents": "Documentos",
-      "communication": "Comunicación",
+      "radix-seal": "Radix Seal",
       "utilities": "Utilidades",
       "ai": "IA y Automatización"
     },
@@ -36,35 +35,41 @@
         "description": "Firma un archivo con tu wallet de Radix, fuera de cadena o anclado en el ledger como NFT soulbound. El archivo se hashea localmente y nunca se sube.",
         "guide": {
           "guideTitle": "Guía: Firmar Documento",
-          "guideDescription": "Firma documentos con tu wallet de Radix sin que el archivo salga jamás de tu navegador: solo se firma su hash Blake2b-256. Puedes firmar solo (con certificado descargable y anclaje opcional como NFT soulbound), o entre varias personas: fuera de cadena pasando el certificado, o en la cadena con el flujo Radix Seal — cada firmante tiene su Seal (insignia intransferible) y su colección personal; el emisor envía una invitación NFT por firmante y cada uno firma acuñando su NFT de firma en su propia colección, donde nadie más puede acuñar.",
+          "guideDescription": "Firma documentos con tu wallet de Radix sin que el archivo salga jamás de tu navegador: solo se firma su hash Blake2b-256. Puedes firmar tú solo, firmar entre varias personas pasando un certificado JSON fuera de la cadena, o firmar entre varias personas en el ledger con el flujo Radix Seal, donde cada firma queda registrada como NFT y cualquiera puede verificarla leyendo la red, sin depender de esta web. En el flujo del ledger intervienen cuatro NFTs con papeles distintos: el Seal (tu insignia), tu colección de firma (tu archivo personal), las invitaciones (avisos de a quién se pide firmar) y las firmas (el registro que de verdad cuenta). El glosario de abajo explica qué es cada uno y cómo se verifica.",
           "guideSteps": [
-            "1. Suelta el documento. Se hashea localmente y nunca se sube; verás su hash Blake2b-256 bajo el recuadro.",
-            "2. Firmar solo: elige qué identidad divulgar y el formato de salida (certificado .radixsig.json o PDF con el certificado embebido) y pulsa Firmar. Opcionalmente ancla el hash como NFT soulbound en tu colección Radix Seal.",
-            "3. Preparación única del flujo en cadena: obtienes tu Seal (insignia intransferible, se acuña una vez) y creas tu colección de firma, con la identidad de tu empresa si quieres (nombre, web y logo quedan grabados en sus metadatos).",
-            "4. Crea la solicitud: se acuña una invitación NFT por firmante — válida solo para ese documento — y se deposita en la wallet de cada uno. Con «Firmar y enviar» tu firma se acuña en la misma transacción.",
-            "5. Comparte el enlace o descarga el PDF con la solicitud embebida y envía solo ese archivo: al soltarlo aquí se autocarga todo. Cada firmante pulsa Firmar; si es su primera vez, su Seal y su colección se preparan en el momento.",
-            "6. El estado se actualiza automáticamente cada 30 segundos. Cuando todos han firmado, la solicitud se muestra como completada con su enlace de verificación."
+            "1. Preparación única del flujo en el ledger: acuñas tu Seal (insignia intransferible, una sola vez) y creas tu colección de firma, con la identidad de tu empresa si quieres (nombre, web y logo quedan grabados en sus metadatos).",
+            "2. Suelta el documento. Se hashea localmente y nunca se sube; verás su hash Blake2b-256 bajo el recuadro. Si el PDF lleva datos Radix embebidos (certificado, original o solicitud), se desglosan ahí mismo.",
+            "3. Firmar solo: elige qué identidad divulgar y el formato de salida (certificado .radixsig.json o PDF con el certificado embebido) y pulsa Firmar. Opcionalmente ancla el hash como NFT soulbound en tu colección.",
+            "4. Crea la solicitud: se acuña una invitación NFT por firmante, válida solo para ese documento, y se deposita en la wallet de cada uno. Con «Firmar y enviar», tu NFT de firma se acuña en la misma transacción.",
+            "5. Comparte el enlace: lleva la red correcta, el nombre del documento y los formatos de salida que elegiste. Si dejas la pestaña abierta, el documento viaja solo, de navegador a navegador, por un canal directo cifrado. También puedes descargar el PDF con la solicitud embebida y enviar únicamente ese archivo.",
+            "6. Cada firmante abre el enlace, recibe o sube el documento, la herramienta comprueba que coincide con el hash de la solicitud, y firma desde su wallet acuñando su NFT de firma. Si es su primera vez, su Seal y su colección se preparan en el momento.",
+            "7. El estado se actualiza automáticamente cada 30 segundos leyendo el ledger: quién ha firmado y quién falta. Al completarse, descargas el certificado o el PDF firmado.",
+            "8. Verificar: en la pestaña Verificar puedes soltar el archivo con su certificado, un PDF firmado autocontenido, o pegar la clave de la solicitud (colección + id) para leer las firmas directamente de la cadena, sin certificado y sin wallet."
           ],
           "glossary": [
+            {
+              "term": "Seal (insignia personal)",
+              "definition": "NFT intransferible que acuñas una sola vez desde el recurso oficial Radix Seal. Tiene dos funciones: te identifica como firmante y es la única llave capaz de acuñar en tu colección de firma. No puede venderse, moverse ni quemarse. Sin tu Seal nadie, ni siquiera esta web, puede crear nada en tu nombre."
+            },
+            {
+              "term": "Colección de firma",
+              "definition": "Tu recurso NFT personal y reutilizable, creado una sola vez. Su regla de propietario queda bloqueada para siempre y exige tu Seal. Dentro se acuñan, con numeración consecutiva (#1, #2, #3...), los otros dos tipos de NFT: las invitaciones que emites y tus firmas. Todo lo que contiene es intransferible y sus datos no pueden editarse jamás. Funciona como tu propia autoridad certificadora autocustodiada: tú emites y la cadena da fe."
+            },
+            {
+              "term": "NFT de invitación (kind: invite)",
+              "definition": "Lo acuña el emisor de una solicitud, uno por firmante requerido, en su propia colección, y se deposita en la wallet de cada invitado. Lleva grabados el hash del documento, la cuenta invitada, el total de firmantes y el id de la primera invitación del lote; gracias a eso, el lote completo es la lista pública e inmutable de quién debe firmar, legible desde la propia clave de la solicitud. Es un aviso, no una firma: el emisor puede retirarlo (recall) si se equivocó de dirección, pero jamás puede tocar una firma."
+            },
+            {
+              "term": "NFT de firma (kind: signature)",
+              "definition": "Lo acuña cada firmante en su propia colección en el momento de firmar. Lleva el hash del documento, la cuenta del firmante, la clave de la solicitud a la que responde y la fecha. Este es el registro que cuenta como firma: intransferible, con datos bloqueados, e imposible de falsificar porque solo el Seal del firmante puede acuñar en su colección."
+            },
             {
               "term": "Comprobación de una firma (fuera de cadena)",
               "definition": "El certificado contiene, por firmante, una prueba ROLA: la wallet firma un reto derivado del hash del documento y de los metadatos canónicos. La verificación recalcula el hash del archivo, reconstruye el reto y valida cada firma criptográfica contra la clave pública de su cuenta. Si un solo byte del documento cambia, el hash no coincide y la verificación falla."
             },
             {
-              "term": "Comprobación de una firma (en cadena)",
-              "definition": "Un firmante cuenta como «firmado» solo si supera la cadena de custodia leída del ledger: existe un NFT de firma con el hash del documento dentro de una colección cuya regla de propietario — bloqueada para siempre — exige un Seal concreto, y ese Seal intransferible está en la cuenta del firmante. Como nadie puede acuñar en la colección de otro y los Seals no pueden moverse, es imposible falsificar la firma de otra persona."
-            },
-            {
-              "term": "Seal (insignia)",
-              "definition": "NFT intransferible que cualquiera acuña una sola vez desde el recurso Radix Seal. Te identifica como firmante y es la única llave que puede acuñar en tu colección personal."
-            },
-            {
-              "term": "Invitación NFT",
-              "definition": "Al crear una solicitud, el emisor acuña una invitación por firmante en su propia colección y la deposita en la wallet de cada uno. Vale solo para ese documento, es informativa (la firma es un acto separado del firmante) y el emisor puede retirarla (recall) para cancelar o corregir — sin poder tocar jamás las firmas ya hechas."
-            },
-            {
-              "term": "Colección de firma",
-              "definition": "Recurso personal y reutilizable de cada usuario: guarda las invitaciones que emite y sus firmas de todos los documentos (#1, #2, #3…). Sus datos y firmas son inalterables e intransferibles; solo el Seal del dueño puede acuñar."
+              "term": "Comprobación de una firma (en el ledger)",
+              "definition": "Un firmante cuenta como firmado solo si supera la cadena de custodia leída del ledger: existe un NFT de firma con el hash del documento dentro de una colección cuya regla de propietario, bloqueada para siempre, exige un Seal concreto, y ese Seal intransferible está en la cuenta del firmante. Los pendientes son los invitados del lote para los que esa comprobación aún no encuentra NFT de firma."
             },
             {
               "term": "Límite honesto",
@@ -107,14 +112,17 @@
         "description": "Cifra cualquier archivo con la firma de tu wallet de Radix y compártelo entre pares por un canal cifrado. El archivo nunca sale de tu navegador.",
         "guide": {
           "guideTitle": "Guía: Cifrar Documento",
-          "guideDescription": "Cifra archivos con una clave derivada de una firma determinista de la Radix Wallet: solo la cuenta que cifró un archivo puede desbloquearlo, desde cualquier dispositivo y sin almacenar la clave en ningún sitio. Los archivos se procesan por bloques en tu navegador (sin límite de tamaño), se guardan en IndexedDB local y se comparten directamente entre navegadores por un canal WebRTC cifrado de extremo a extremo — ningún servidor ve un solo byte de tu archivo.",
+          "guideDescription": "Cifra archivos con una clave derivada de una firma determinista de la Radix Wallet: solo la cuenta que cifró un archivo puede desbloquearlo, desde cualquier dispositivo y sin almacenar la clave en ningún sitio. Los archivos se procesan por bloques en tu navegador (sin límite de tamaño), se guardan en un almacén local del navegador y se comparten directamente entre navegadores por un canal WebRTC cifrado de extremo a extremo. Ningún servidor ve un solo byte de tu archivo. Hay dos métodos de cifrado: solo ROLA, donde tú decides a quién le liberas la clave, y ROLA + Ledger, donde autorizas por adelantado a cuentas concretas acuñando una invitación NFT por receptor, y queda constancia pública de quién puede descifrar.",
           "guideSteps": [
-            "1. Cifrar: conecta tu wallet, suelta cualquier archivo y pulsa Cifrar. Tu wallet firma un reto único para este archivo y la clave AES-256 se deriva de esa firma.",
-            "2. Descargar o compartir: guarda el contenedor .radixenc, o pulsa Compartir para obtener un enlace y un código QR para el receptor.",
-            "3. Transferir: cuando el receptor abra el enlace se crea un canal cifrado directo y el archivo se transmite de navegador a navegador. Mantén esta pestaña abierta.",
-            "4. Aprobar: cuando el receptor pida descifrar verás quién lo pide y para qué archivo (comprueba la huella), y firmarás en tu wallet para liberar la clave.",
-            "5. Flujo inverso: si recibiste un archivo .radixenc, abre la pestaña Descifrar, cárgalo y envía el enlace generado al emisor (p. ej. por WhatsApp). Cuando lo abra y firme, tu archivo se descifra aquí.",
-            "6. Atajo del emisor: si la wallet conectada es la cuenta que cifró el archivo, la pestaña Descifrar lo desbloquea directamente — sin enlace."
+            "1. Elige el método. Solo ROLA: la clave se deriva de tu firma y liberas el descifrado a quien tú apruebes. ROLA + Ledger: además autorizas cuentas concretas en el ledger, así que solo ellas podrán pedirte el descifrado.",
+            "2. Preparación (solo ROLA + Ledger, una vez): necesitas tu NFT Seal y tu colección de firma, los mismos que usa Firmar documento. Si te faltan, aparecen las cajas para desplegarlos y crearlos antes de cifrar.",
+            "3. Cifrar: conecta tu wallet, suelta cualquier archivo y pulsa Cifrar. En ROLA + Ledger añades antes la lista de receptores autorizados. Tu wallet firma un reto único para este archivo y la clave AES-256 se deriva de esa firma. En ROLA + Ledger, una segunda confirmación acuña y deposita las invitaciones NFT en las cuentas de los receptores.",
+            "4. Descargar o compartir: guarda el contenedor .radixenc, o pulsa Compartir para obtener un enlace y un código QR para el receptor. El archivo viaja de navegador a navegador cuando el receptor abre el enlace; mantén esta pestaña abierta.",
+            "5. Aprobar (solo ROLA): cuando el receptor pida descifrar verás quién lo pide y para qué archivo (comprueba la huella) y firmarás en tu wallet para liberar la clave.",
+            "6. Aprobar (ROLA + Ledger): el receptor firma un reto ROLA con su cuenta invitada al pedir el descifrado. Tu navegador comprueba en el ledger que esa cuenta tiene la invitación NFT de este archivo antes de mostrarte la solicitud; verás su cuenta probada y la insignia de invitación verificada.",
+            "7. Flujo inverso: si recibiste un archivo .radixenc, abre la pestaña Descifrar, cárgalo y solicita el descifrado. La herramienta detecta el método del archivo: en ROLA + Ledger tendrás que conectar la cuenta invitada y firmar el reto.",
+            "8. Atajo del emisor: si la wallet conectada es la cuenta que cifró el archivo, la pestaña Descifrar lo desbloquea directamente, sin enlace.",
+            "9. Acuse (ROLA + Ledger, opcional): tras descifrar, el receptor puede acuñar un NFT de acuse en su colección que deja constancia pública y permanente de que obtuvo la clave, verificable por el emisor en el ledger."
           ],
           "glossary": [
             {
@@ -122,16 +130,32 @@
               "definition": "Radix Off-Ledger Authentication: la wallet firma un reto para demostrar la propiedad de la cuenta. Las firmas Ed25519 son deterministas, así que la misma cuenta sobre el mismo reto siempre recrea la misma clave de cifrado."
             },
             {
+              "term": "Solo ROLA frente a ROLA + Ledger",
+              "definition": "Solo ROLA vincula la clave a tu cuenta y tú decides a quién apruebas el descifrado, sin dejar rastro en la cadena. ROLA + Ledger añade una capa de permiso verificable: autorizas cuentas concretas por adelantado con una invitación NFT, y tanto el permiso como el descifrado quedan comprobables en el ledger."
+            },
+            {
+              "term": "Invitación de cifrado (NFT)",
+              "definition": "En ROLA + Ledger, el emisor acuña una invitación por receptor autorizado en su colección de firma y la deposita en la wallet de cada uno. Lleva grabado el hash del contenedor y la cuenta autorizada. Solo las cuentas con esta invitación pueden enviar el reto ROLA para pedir el descifrado."
+            },
+            {
+              "term": "Reto de desbloqueo",
+              "definition": "El reto ROLA que firma el receptor para pedir la clave. Va ligado al hash exacto del contenedor, a la sala de la sesión y a la red, así que una firma capturada no puede reutilizarse en otra sesión ni para otro archivo."
+            },
+            {
+              "term": "Acuse de descifrado (NFT)",
+              "definition": "Registro opcional que el receptor acuña en su propia colección tras obtener la clave. Es intransferible y con datos bloqueados: prueba pública y permanente de que esa cuenta descifró el archivo, verificable por cualquiera en el ledger."
+            },
+            {
               "term": ".radixenc",
-              "definition": "El contenedor cifrado. Su cabecera mantiene visibles el nombre original, la cuenta que cifró, la red y el sitio para poder encaminar el descifrado; el contenido va cifrado con AES-256-GCM por bloques."
+              "definition": "El contenedor cifrado. Su cabecera mantiene visibles el nombre original, la cuenta que cifró, la red, el sitio y el método de protección (ROLA o ROLA + Ledger) para poder encaminar el descifrado; el contenido va cifrado con AES-256-GCM por bloques."
             },
             {
               "term": "Vinculación de clave",
-              "definition": "La clave queda ligada a la cuenta que cifra, a este sitio (origin), a su definición de dApp y a la red. Archivos cifrados en otro sitio (p. ej. en localhost) no pueden desbloquearse aquí — la herramienta lo indica explícitamente."
+              "definition": "La clave queda ligada a la cuenta que cifra, a este sitio (origin), a su definición de dApp y a la red. Archivos cifrados en otro sitio (por ejemplo en localhost) no pueden desbloquearse aquí, y la herramienta lo indica explícitamente."
             },
             {
               "term": "WebRTC",
-              "definition": "Canal directo entre navegadores, cifrado de extremo a extremo (DTLS). La sala de Supabase Realtime solo se usa para intercambiar el handshake de conexión, nunca datos del archivo ni claves."
+              "definition": "Canal directo entre navegadores, cifrado de extremo a extremo (DTLS). La sala de señalización solo se usa para intercambiar el saludo de conexión, nunca datos del archivo ni claves."
             }
           ]
         }
@@ -2037,8 +2061,8 @@
           "hint": "Retira una cantidad y destrúyela permanentemente"
         },
         "lockMetadata": {
-          "name": "Bloquear metadato",
-          "hint": "Bloquea permanentemente un campo de metadatos para que no pueda cambiar nunca más"
+          "name": "Editar metadatos",
+          "hint": "Edita el valor de los campos no bloqueados y, opcionalmente, bloquéalos para que no cambien nunca más"
         },
         "setOwnerRole": {
           "name": "Rol de propietario",
@@ -2088,7 +2112,15 @@
         "ruleLockedHint": "La regla de acceso para esta acción no se puede modificar",
         "accessRule": "Regla de Acceso",
         "alreadyLockedHint": "Ya bloqueado en el ledger",
-        "lockFieldHint": "Bloquear campo"
+        "lockFieldHint": "Bloquear campo",
+        "searchVaults": "Buscar entre {count} bóveda(s) por cuenta o dirección…",
+        "vaultsSelected": "{count} bóveda seleccionada",
+        "vaultsSelectedPlural": "{count} bóvedas seleccionadas",
+        "noVaultsFound": "No se encontraron bóvedas",
+        "nftNamePlaceholder": "Nombre del nuevo NFT",
+        "nftDescriptionPlaceholder": "Descripción del nuevo NFT",
+        "badgeRequiredHint": "Esta acción requiere presentar un badge que no tienes en la cuenta seleccionada.",
+        "editMetadataHint": "Puedes editar este valor (no bloqueado). Cámbialo o bloquéalo."
       }
     },
     "faucet": {

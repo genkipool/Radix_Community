@@ -7,6 +7,7 @@ import type {
   ContainerHead,
   DataChannelMessage,
   DenyReason,
+  UnlockProof,
 } from '../types/cipher.types';
 import { createBlobSink, decryptContainer } from '../lib/decrypt';
 import { toCipherErrorCode } from '../lib/errors';
@@ -93,11 +94,16 @@ export function useRequestSession() {
     })();
   }
 
-  /** Open the room and send the decrypt request as soon as the sender joins. */
+  /**
+   * Open the room and send the decrypt request as soon as the sender joins.
+   * ROLA + Ledger containers pass `auth`: the pre-signed proof over the
+   * unlock challenge (bound to `auth.roomId`, which becomes the session room).
+   */
   async function open(
     file: File,
     head: ContainerHead,
     requesterName: string,
+    auth?: { roomId: string; proof: UnlockProof },
   ): Promise<void> {
     fileRef.current = file;
     headRef.current = head;
@@ -105,7 +111,7 @@ export function useRequestSession() {
     setDenyReason(null);
     moveTo('creating');
     try {
-      const roomId = randomRoomId();
+      const roomId = auth?.roomId ?? randomRoomId();
       setShareUrl(buildSessionUrl('unlock', roomId));
       const signaling = await createSignaling(roomId);
       signalingRef.current = signaling;
@@ -125,6 +131,7 @@ export function useRequestSession() {
         t: 'decrypt-request',
         requesterName,
         headB64: bytesToBase64(headBytes),
+        ...(auth ? { proof: auth.proof } : {}),
       });
       moveTo('waitingApproval');
     } catch (e) {

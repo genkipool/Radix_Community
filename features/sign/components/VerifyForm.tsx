@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BadgeCheck, CheckCircle2, Circle, RefreshCw, ShieldCheck, ShieldX, XCircle } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
@@ -8,6 +8,7 @@ import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useDocumentVerify } from '../hooks/useDocumentVerify';
 import { fetchOnChainStatus } from '../services/signApi';
+import { networkIdFromResource, parseRequestKey } from '../lib/share';
 import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import type { SignDictionary } from '../types/dictionary';
@@ -26,8 +27,7 @@ function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
 
 export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile }) {
   const { bytes, docHash } = doc;
-  const { accounts, activeNetworkId } = useRadixWallet();
-  const account = accounts[0]?.address;
+  const { activeNetworkId } = useRadixWallet();
 
   const [certFile, setCertFile] = useState<File | null>(null);
   const [envelope, setEnvelope] = useState<AttestationEnvelope | null>(null);
@@ -40,6 +40,18 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
 
   const { verify, isVerifying, outcome, reset } = useDocumentVerify();
 
+  // `verify`/`reset` are recreated on every render (this repo bans useCallback —
+  // the React Compiler does NOT stabilise them here). Putting them in an effect's
+  // dependency array makes that effect re-run every render → setState → re-render
+  // → infinite loop. They only close over stable useState setters, so a
+  // mount-time snapshot stays valid forever; we call them through these refs so
+  // the effects can depend solely on real inputs.
+  const verifyRef = useRef(verify);
+  const resetRef = useRef(reset);
+  // Whether the loaded certificate came out of the dropped PDF (vs a separate
+  // .json file): removing the document must also remove that certificate.
+  const envelopeFromPdfRef = useRef(false);
+
   // Auto-detect a signed PDF in the shared dropzone: pull out the embedded
   // certificate + original so the delivered PDF verifies on its own. All state
   // updates happen inside the async closure (never synchronously in the effect).
@@ -48,8 +60,17 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
     void (async () => {
       if (!bytes) {
         if (!cancelled) {
+          // Removing the document clears everything derived from it in real
+          // time: the verification result AND the certificate that was read
+          // out of the (now removed) PDF. A certificate loaded as a separate
+          // .json file stays: it did not come from the document.
+          if (envelopeFromPdfRef.current) {
+            envelopeFromPdfRef.current = false;
+            setEnvelope(null);
+          }
           setEmbedded(false);
           setVerifyBytes(null);
+          resetRef.current();
         }
         return;
       }
@@ -63,6 +84,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
       const att = await extractRadixAttachments(bytes).catch(() => null);
       if (cancelled) return;
       if (att?.envelope) {
+        envelopeFromPdfRef.current = true;
         setEnvelope(att.envelope);
         setCertFile(null);
         setCertError('');
@@ -82,23 +104,48 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
   // a mutated (watermarked/embedded) PDF.
   const effectiveDocHash = envelope?.payload.docHash ?? docHash;
 
-  // On-chain: resolve the request from the connected wallet (or a pasted key).
+  // On-chain: resolve the request. Prefer a pasted key, then the key carried by
+  // the certificate (multi-party on-ledger), then a request pointer embedded in
+  // the dropped PDF.
+  const typedKey = keyInput.trim();
+  const rawRequestId =
+    typedKey ||
+    envelope?.request?.requestId ||
+    doc.embeddedRequest?.requestKey ||
+    '';
+  const parsedKey = parseRequestKey(rawRequestId);
+  const requestId = parsedKey
+    ? `${parsedKey.collection}:#${parsedKey.id}#`
+    : undefined;
+  const invalidKey = !!typedKey && !parseRequestKey(typedKey);
+  // The network is read from the key itself (the resource address prefix), so
+  // request verification needs NO connected wallet; the certificate, the PDF
+  // pointer and the wallet are fallbacks.
+  const queryNetworkId =
+    (parsedKey ? networkIdFromResource(parsedKey.collection) : null) ??
+    envelope?.payload.networkId ??
+    doc.embeddedRequest?.networkId ??
+    activeNetworkId ??
+    null;
   const onchainQuery = useQuery({
-    queryKey: ['verify-onchain', activeNetworkId, effectiveDocHash, keyInput, account],
+    queryKey: ['verify-onchain', queryNetworkId, effectiveDocHash, requestId],
     queryFn: () =>
       fetchOnChainStatus({
-        networkId: activeNetworkId!,
-        docHash: effectiveDocHash,
-        account,
-        requestId: keyInput.trim() || undefined,
+        networkId: queryNetworkId!,
+        docHash: effectiveDocHash || undefined,
+        requestId,
       }),
-    enabled: !!effectiveDocHash && !!activeNetworkId,
+    enabled: !!requestId && queryNetworkId != null,
   });
   const onchain = onchainQuery.data?.found ? onchainQuery.data : null;
+  // The dropped file (or the loaded certificate) vs the hash locked on-ledger.
+  const onchainHashMismatch =
+    !!onchain?.docHash && !!effectiveDocHash && onchain.docHash !== effectiveDocHash;
 
   const onCert = async (picked: File | null) => {
     reset();
     setCertError('');
+    envelopeFromPdfRef.current = false;
     setEnvelope(null);
     setEmbedded(false);
     setCertFile(picked);
@@ -117,6 +164,27 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
 
   const verifyTarget = verifyBytes ?? bytes;
 
+  // Verification runs automatically as soon as we have both the file to hash
+  // and a certificate/envelope — no explicit button needed. The effect depends
+  // only on the (stable) file and certificate references, and calls verify via
+  // its ref, so it fires exactly when the inputs change. The dedupe ref guards
+  // against StrictMode's double-invoke firing the request twice.
+  const lastVerifiedRef = useRef<{ target: Uint8Array; env: AttestationEnvelope } | null>(null);
+  useEffect(() => {
+    if (!verifyTarget || !envelope) {
+      lastVerifiedRef.current = null;
+      return;
+    }
+    if (
+      lastVerifiedRef.current?.target === verifyTarget &&
+      lastVerifiedRef.current?.env === envelope
+    ) {
+      return;
+    }
+    lastVerifiedRef.current = { target: verifyTarget, env: envelope };
+    void verifyRef.current(verifyTarget, envelope);
+  }, [verifyTarget, envelope]);
+
   // Required signers with no valid signature yet in the certificate.
   const pendingSigners = outcome
     ? outcome.requiredSigners.filter(
@@ -126,15 +194,37 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
 
   return (
     <div className="space-y-5">
-      <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-        {t.verify.intro}
-      </p>
-
-      {!docHash && (
-        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {t.onchain.needFile}
-        </p>
-      )}
+      {/* ── Off-chain certificate verification ── */}
+      <ToolSection title={t.verify.certLabel}>
+        {embedded ? (
+          <p
+            className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"
+            style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+          >
+            <BadgeCheck className="size-4 text-emerald-500 shrink-0" />
+            {t.verify.embeddedDetected}
+          </p>
+        ) : (
+          <FileDropzone
+            extension=".json"
+            label=""
+            prompt={t.verify.certPrompt}
+            file={certFile}
+            onFile={onCert}
+            error={certError}
+            disabled={isVerifying}
+          />
+        )}
+        {isVerifying && (
+          <p
+            className="flex items-center gap-2 text-sm"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <span className="size-4 rounded-full border-2 border-current/40 border-t-transparent animate-spin" />
+            {t.verify.verifying}
+          </p>
+        )}
+      </ToolSection>
 
       {/* ── On-ledger status ── */}
       <ToolSection
@@ -143,7 +233,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
           <button
             type="button"
             onClick={() => onchainQuery.refetch()}
-            disabled={onchainQuery.isFetching || !docHash}
+            disabled={onchainQuery.isFetching || !requestId}
             className="flex items-center gap-1.5 text-xs font-semibold"
             style={{ color: 'var(--color-text-muted)' }}
           >
@@ -168,9 +258,23 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
         <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
           {t.onchain.keyLabel}
         </p>
+        {invalidKey && (
+          <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
+            {t.onchain.invalidKey}
+          </p>
+        )}
 
         {onchain?.signatures ? (
           <>
+            {(onchain.issuer?.orgName || onchain.issuer?.account) && (
+              <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                {t.onchain.issuedBy}:{' '}
+                {onchain.issuer.orgName && (
+                  <span className="font-semibold">{onchain.issuer.orgName} · </span>
+                )}
+                <span className="font-mono break-all">{onchain.issuer.account}</span>
+              </p>
+            )}
             <p
               className="text-sm font-semibold"
               style={{ color: onchain.complete ? '#10b981' : 'var(--color-text-muted)' }}
@@ -193,56 +297,32 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                 </li>
               ))}
             </ul>
+            {/* Does the uploaded file match the hash locked in the on-ledger
+                request? Only claimed while a document is actually loaded. */}
+            {!bytes || !effectiveDocHash ? (
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {t.onchain.dropFileToCompare}
+              </p>
+            ) : onchainHashMismatch ? (
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                {t.onchain.fileMismatch}
+              </p>
+            ) : (
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+                <CheckCircle2 className="size-3.5 shrink-0" />
+                {t.onchain.hashMatches}
+              </p>
+            )}
           </>
         ) : (
-          docHash &&
-          !onchainQuery.isFetching && (
+          requestId &&
+          !onchainQuery.isFetching &&
+          onchainQuery.data?.found === false && (
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               {t.onchain.notFound}
             </p>
           )
         )}
-      </ToolSection>
-
-      {/* ── Off-chain certificate verification ── */}
-      <ToolSection title={t.verify.certLabel}>
-        {embedded ? (
-          <p
-            className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"
-            style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
-          >
-            <BadgeCheck className="size-4 text-emerald-500 shrink-0" />
-            {t.verify.embeddedDetected}
-          </p>
-        ) : (
-          <FileDropzone
-            extension=".json"
-            label={t.verify.certLabel}
-            prompt={t.verify.certPrompt}
-            file={certFile}
-            onFile={onCert}
-            error={certError}
-            disabled={isVerifying}
-          />
-        )}
-        {!embedded && (
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {t.verify.dropSignedPdfHint}
-          </p>
-        )}
-        <button
-          type="button"
-          disabled={!verifyTarget || !envelope || isVerifying}
-          onClick={() => verifyTarget && envelope && verify(verifyTarget, envelope)}
-          className="flex w-full items-center justify-center gap-2.5 px-7 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-        >
-          {isVerifying ? (
-            <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            <ShieldCheck className="size-4" />
-          )}
-          {isVerifying ? t.verify.verifying : t.verify.button}
-        </button>
       </ToolSection>
 
       {outcome && (
@@ -286,9 +366,15 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                   <span className="font-mono text-[12px] break-all" style={{ color: 'var(--color-text-main)' }}>
                     {s.signerAccount}
                   </span>
-                  {(s.disclosedName || s.disclosedEmail) && (
+                  {s.disclosedName && (
+                    <span className="text-[12px]" style={{ color: 'var(--color-text-muted)' }}>
+                      {' · '}
+                      {s.disclosedName}
+                    </span>
+                  )}
+                  {s.disclosedEmail && (
                     <p className="text-[12px]" style={{ color: 'var(--color-text-muted)' }}>
-                      {[s.disclosedName, s.disclosedEmail].filter(Boolean).join(' · ')}
+                      {s.disclosedEmail}
                     </p>
                   )}
                 </div>

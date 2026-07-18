@@ -7,9 +7,7 @@ import {
   Building2,
   CheckCircle2,
   Circle,
-  Copy,
   Download,
-  ExternalLink,
   FileSignature,
   RefreshCw,
   Send,
@@ -31,8 +29,18 @@ import {
   buildSignRequestManifest,
   buildSignatureMintManifest,
 } from '../lib/sign-request';
-import { embedRequestInPdf } from '../lib/pdf-embed';
-import { downloadBytes } from '../lib/certificate';
+import { embedCertificateInPdf, embedRequestInPdf } from '../lib/pdf-embed';
+import { applyWatermark, type WatermarkOptions } from '../lib/pdf-watermark';
+import type { OutputFormat } from '../types/sign.types';
+import {
+  buildOnChainCertificate,
+  downloadBytes,
+  downloadCertificate,
+} from '../lib/certificate';
+import { NETWORKS } from '@/features/wallet/constants/network';
+import { randomNonceHex } from '../lib/hash';
+import { networkIdFromResource } from '../lib/share';
+import { ShareLinkSection } from './ShareLinkSection';
 import { stripExtension } from '../lib/file';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import { fetchOnChainStatus, type OnChainStatus } from '../services/signApi';
@@ -57,6 +65,8 @@ export function OnChainSignPanel({
   initialRequestId,
   account,
   solo,
+  outputs,
+  watermark,
 }: {
   t: SignDictionary;
   consoleT: ConsoleDictionary;
@@ -67,6 +77,10 @@ export function OnChainSignPanel({
   account: string | null;
   /** Single-signer mode: the invitation list is implicitly [account]. */
   solo: boolean;
+  /** Delivery formats chosen for the completed certificate. */
+  outputs: OutputFormat[];
+  /** Watermark applied to the delivered (signed) PDF. */
+  watermark: WatermarkOptions;
 }) {
   const { activeNetworkId, accounts } = useRadixWallet();
   const { mintSeal, createCollection, createRequest, signRequest, phase, error } =
@@ -77,21 +91,24 @@ export function OnChainSignPanel({
   const [inviteMode, setInviteMode] = useState<InviteMode>('sign');
   const [requestId, setRequestId] = useState(initialRequestId ?? '');
   const [keyInput, setKeyInput] = useState(initialRequestId ?? '');
-  const [copied, setCopied] = useState(false);
 
   const sealDeployed = !!activeNetworkId && !!radixSealAddress(activeNetworkId);
   const nftImage =
     typeof window !== 'undefined' ? sealImageUrl(window.location.origin) : '';
-  const verifyUrl =
-    docHash && typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}?verify=${docHash}`
-      : undefined;
 
+  // The request key names its network (resource prefix): the status loads on
+  // that network regardless of what the wallet is connected to.
+  const requestNetworkId = requestId ? networkIdFromResource(requestId) : null;
+  const statusNetworkId = requestNetworkId ?? activeNetworkId;
+  const wrongNetwork =
+    requestNetworkId != null &&
+    activeNetworkId != null &&
+    requestNetworkId !== activeNetworkId;
   const statusQuery = useQuery({
-    queryKey: ['sign-onchain-status', activeNetworkId, requestId],
+    queryKey: ['sign-onchain-status', statusNetworkId, requestId],
     queryFn: () =>
-      fetchOnChainStatus({ networkId: activeNetworkId!, requestId }),
-    enabled: !!requestId && !!activeNetworkId,
+      fetchOnChainStatus({ networkId: statusNetworkId!, requestId }),
+    enabled: !!requestId && statusNetworkId != null,
     refetchInterval: (query) =>
       query.state.data?.found && !query.state.data.complete
         ? REFRESH_MS
@@ -100,10 +117,6 @@ export function OnChainSignPanel({
   const status = statusQuery.data?.found ? statusQuery.data : null;
   const busy = phase !== 'idle' && phase !== 'done' && phase !== 'error';
 
-  const shareUrl =
-    requestId && typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}?req=${encodeURIComponent(requestId)}`
-      : '';
 
   /* ── Eligibility (UX only — the real checks live on the ledger) ── */
   const walletAddresses = new Set(accounts.map((a) => a.address));
@@ -196,6 +209,7 @@ export function OnChainSignPanel({
   const canSign =
     eligible &&
     !alreadySigned &&
+    !wrongNetwork &&
     !!status?.docHash &&
     !!docHash &&
     !hashMismatch &&
@@ -267,12 +281,6 @@ export function OnChainSignPanel({
 
   /* ── Share helpers ── */
 
-  const copy = () => {
-    navigator.clipboard?.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
   const canShareAsPdf =
     !!status &&
     doc.pdf &&
@@ -302,6 +310,39 @@ export function OnChainSignPanel({
       );
     } catch {
       /* the share link keeps working */
+    }
+  };
+
+  /* ── Completed on-ledger signing → downloadable certificate ── */
+  // Every mode yields an artifact: an on-chain-backed certificate (signatures
+  // have no ROLA proof; each is proven by its on-ledger signature NFT).
+  const onChainCertificate = () =>
+    buildOnChainCertificate({
+      docHash: status?.docHash ?? docHash,
+      fileName: doc.file?.name ?? 'document',
+      fileSize: doc.file?.size ?? 0,
+      networkId: activeNetworkId ?? 2,
+      requiredSigners: status?.requiredSigners ?? [],
+      signedAccounts: (status?.signatures ?? [])
+        .filter((s) => s.signed)
+        .map((s) => s.account),
+      nonce: randomNonceHex(),
+      requestId: status?.requestId ?? requestId,
+    });
+
+  const downloadCert = () => downloadCertificate(onChainCertificate());
+
+  const downloadSignedPdf = async () => {
+    const cert = onChainCertificate();
+    if (!doc.pdf || !doc.bytes || !doc.file) return downloadCertificate(cert);
+    try {
+      // Watermark is a visible layer; the original bytes are embedded intact so
+      // the document hash is preserved for verification.
+      const visible = await applyWatermark(doc.bytes, watermark);
+      const pdf = await embedCertificateInPdf(visible, cert, doc.bytes);
+      downloadBytes(pdf, `${stripExtension(doc.file.name)}-signed.pdf`, 'application/pdf');
+    } catch {
+      downloadCertificate(cert);
     }
   };
 
@@ -345,40 +386,43 @@ export function OnChainSignPanel({
               ⚠ {t.onchain.depositWarning}
             </p>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              disabled={!canCreate}
-              onClick={onCreate}
-              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {busy ? (
-                <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : alsoSign ? (
-                <FileSignature className="size-4" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              {busy
-                ? t.onchain.creating
-                : alsoSign
-                  ? t.actions.sign
-                  : t.onchain.sendInvites}
-            </button>
-            <SimulateButton
-              t={consoleT.simulate}
-              onClick={simulateCreate}
-              disabled={!canCreate}
-              loading={preview.isSimulating}
-            />
-          </div>
-          <SimulateResultCard
-            t={consoleT.simulate}
-            preview={preview.preview}
-            error={preview.error}
-            onClose={preview.reset}
-          />
         </ToolSection>
+
+        {/* Action buttons render at the panel's bottom level (outside the box)
+            so they match the off-ledger layout. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            disabled={!canCreate}
+            onClick={onCreate}
+            className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {busy ? (
+              <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : alsoSign ? (
+              <FileSignature className="size-4" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {busy
+              ? t.onchain.creating
+              : alsoSign
+                ? t.actions.sign
+                : t.onchain.sendInvites}
+          </button>
+          <SimulateButton
+            t={consoleT.simulate}
+            onClick={simulateCreate}
+            disabled={!canCreate}
+            loading={preview.isSimulating}
+          />
+        </div>
+        <SimulateResultCard
+          t={consoleT.simulate}
+          preview={preview.preview}
+          error={preview.error}
+          onClose={preview.reset}
+        />
 
         <ManualKey
           t={t}
@@ -407,29 +451,17 @@ export function OnChainSignPanel({
         )}
       </ToolSection>
 
-      {shareUrl && status && !status.complete && signatures.length > 1 && (
-        <ToolSection title={t.onchain.shareTitle} hint={t.onchain.shareHint}>
-          <div className="flex gap-2">
-            <input
-              readOnly
-              value={shareUrl}
-              className="flex-1 rounded-xl border px-3 py-2 text-xs font-mono outline-none"
-              style={{
-                background: 'var(--color-surface)',
-                borderColor: 'var(--color-card-border)',
-                color: 'var(--color-text-main)',
-              }}
-            />
-            <button
-              type="button"
-              onClick={copy}
-              className="flex items-center gap-1.5 px-4 rounded-xl border font-bold text-xs"
-              style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
-            >
-              <Copy className="size-3.5" />
-              {copied ? t.onchain.copied : t.onchain.copy}
-            </button>
-          </div>
+      {requestId && status && !status.complete && signatures.length > 1 && (
+        <ShareLinkSection
+          t={t}
+          requestKey={status.requestId ?? requestId}
+          docName={doc.file?.name}
+          fileName={doc.file?.name ?? null}
+          fileType={doc.file?.type ?? null}
+          bytes={doc.bytes}
+          outputs={outputs}
+          watermark={{ kind: watermark.kind, text: watermark.text }}
+        >
           {canShareAsPdf && (
             <>
               <button
@@ -444,7 +476,7 @@ export function OnChainSignPanel({
               <Muted text={t.onchain.downloadRequestPdfHint} />
             </>
           )}
-        </ToolSection>
+        </ShareLinkSection>
       )}
 
       <ToolSection
@@ -521,22 +553,43 @@ export function OnChainSignPanel({
               </p>
             </div>
           </div>
-          {verifyUrl && (
-            <a
-              href={verifyUrl}
-              className="flex items-center gap-2 text-xs font-bold"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              <ExternalLink className="size-3.5" />
-              {t.onchain.verifyLink}
-            </a>
-          )}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {(outputs.includes('detached') ||
+              !(outputs.includes('embedded') && doc.pdf)) && (
+              <button
+                type="button"
+                onClick={downloadCert}
+                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
+              >
+                <Download className="size-4" />
+                {t.actions.downloadCert}
+              </button>
+            )}
+            {outputs.includes('embedded') && doc.pdf && (
+              <button
+                type="button"
+                onClick={downloadSignedPdf}
+                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
+                style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+              >
+                <Download className="size-4" />
+                {t.actions.downloadPdf}
+              </button>
+            )}
+          </div>
         </ToolSection>
       ) : (
         status && (
           <ToolSection title={t.onchain.signSectionTitle}>
             {loading && !statusQuery.data ? (
               <Muted text={t.onchain.checkingEligibility} />
+            ) : wrongNetwork ? (
+              <Danger
+                text={t.onchain.wrongNetwork.replace(
+                  /\{network\}/g,
+                  NETWORKS[requestNetworkId!]?.networkName ?? '',
+                )}
+              />
             ) : !eligible ? (
               <>
                 <Danger text={t.onchain.notEligible} />

@@ -21,6 +21,10 @@ export function ContainerMetaCard({
     [t.file.metaSender, shortAddress(header.senderAccount)],
     [t.file.metaDate, new Date(header.createdAt).toLocaleString()],
     [t.file.metaNetwork, NETWORKS[header.networkId]?.networkName ?? String(header.networkId)],
+    [
+      t.file.metaAccess,
+      header.access === 'rola-ledger' ? t.file.accessRolaLedger : t.file.accessRola,
+    ],
     [t.file.fingerprint, shortFingerprint(head.headerHash)],
   ];
 

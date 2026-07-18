@@ -54,7 +54,7 @@
     "seal": "Radix Seal",
     "google_wallet": "Google Wallet × Radix",
     "popup_eco_hyperscale_desc": "Linear scalability: 500,000+ TPS with cross-shard atomicity",
-    "popup_eco_seal_desc": "Self-custody signing, encryption and secure chat — no servers hold your files",
+    "popup_eco_seal_desc": "Self-custody signing, encryption and secure chat: no servers hold your files",
     "popup_eco_google_wallet_desc": "Invisible digital ownership: NFT tickets with a simple NFC tap",
     "popup_eco_infra_desc": "Full-stack technical architecture of Radix",
     "popup_eco_dapps_desc": "Native DeFi apps in the ecosystem",
@@ -169,7 +169,6 @@
       "academy": "Radix Academy",
       "console": "Web3 Console",
       "hyperscale": "Hyperscale Architecture",
-      "seal": "Radix Seal",
       "wiki": "Radix Wiki"
     },
     "institutions": {
@@ -178,6 +177,7 @@
       "dvp": "Atomic DvP (T+0)",
       "kyc": "On-Chain KYC/AML",
       "rwa": "RWA Tokenization",
+      "seal": "Radix Seal",
       "google_wallet": "Google Wallet × Radix"
     }
   },
@@ -483,7 +483,7 @@
       "funding_community_donation": "Hispanic Radix Donation",
       "funding_foundation_grant_q1": "Radix Foundation Grant Q1 2025",
       "funding_madrid_event": "Radix Madrid Meetup Event",
-      "funding_individual_radvocate": "Individual Donation — @radvocate_es",
+      "funding_individual_radvocate": "Individual Donation: @radvocate_es",
       "funding_foundation_grant_q2": "Radix Foundation Grant Q2 2025",
       "funding_community_treasury": "Community Fund Treasury"
     },

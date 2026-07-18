@@ -95,6 +95,8 @@ export function SendSessionView({
         <DecryptRequestCard
           t={t}
           requesterName={session.request.requesterName}
+          requesterAccount={session.request.requesterAccount}
+          ledgerVerified={session.request.ledgerVerified}
           fileName={result.header.fileName}
           headerHash={result.headerHash}
           busy={session.phase === 'approving'}

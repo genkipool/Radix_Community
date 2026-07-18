@@ -15,9 +15,11 @@ import { createSignaling, type CipherSignaling } from '@/features/p2p/lib/signal
 import { base64ToBytes } from '../lib/transfer';
 import { connectAsGuest, type CipherPeer } from '../lib/peer';
 import { useCipherKey } from './useCipherKey';
+import { verifyLedgerAuthorization } from '../lib/authorize';
 
 export type UnlockPhase =
   | 'connecting'
+  | 'authorizing'
   | 'requestReceived'
   | 'approving'
   | 'keySent'
@@ -27,6 +29,9 @@ export type UnlockPhase =
 export interface UnlockRequest {
   requesterName: string;
   head: ContainerHead;
+  /** ROLA + Ledger: the requester's proven account, invite verified on-ledger. */
+  requesterAccount?: string;
+  ledgerVerified?: boolean;
 }
 
 /**
@@ -72,6 +77,52 @@ export function useUnlockSession(roomId: string) {
       if (message.t === 'decrypt-request') {
         try {
           const head = parseContainerHeadBytes(base64ToBytes(message.headB64));
+          if (head.header.access === 'rola-ledger') {
+            // Gate BEFORE the request is even shown: the requester must prove
+            // their account (ROLA over the session-bound challenge) and that
+            // account must hold this container's cipher-invite NFT.
+            const proof = message.proof;
+            const collection = head.header.inviteCollection;
+            if (!proof || !collection) {
+              peerRef.current?.sendMessage({
+                t: 'decrypt-denied',
+                reason: 'not_authorized',
+              });
+              setError('not_authorized');
+              advance('rejected');
+              return;
+            }
+            advance('authorizing');
+            void (async () => {
+              const authorized = await verifyLedgerAuthorization({
+                networkId: head.header.networkId,
+                headerHash: head.headerHash,
+                roomId,
+                account: proof.account,
+                senderAccount: head.header.senderAccount,
+                collection,
+                proof,
+              });
+              if (phaseRef.current !== 'authorizing') return;
+              if (!authorized) {
+                peerRef.current?.sendMessage({
+                  t: 'decrypt-denied',
+                  reason: 'not_authorized',
+                });
+                setError('not_authorized');
+                advance('rejected');
+                return;
+              }
+              setRequest({
+                requesterName: message.requesterName,
+                head,
+                requesterAccount: proof.account,
+                ledgerVerified: true,
+              });
+              advance('requestReceived');
+            })();
+            return;
+          }
           setRequest({ requesterName: message.requesterName, head });
           advance('requestReceived');
         } catch (e) {

@@ -7,6 +7,7 @@ import type {
   ContainerHead,
   DataChannelMessage,
   DenyReason,
+  UnlockProof,
 } from '../types/cipher.types';
 import { encryptedDataSize, parseContainerHeadBytes } from '../lib/container';
 import { createBlobSink, decryptContainer } from '../lib/decrypt';
@@ -41,6 +42,7 @@ const DENY_TO_ERROR: Record<DenyReason, CipherErrorCode> = {
   header_mismatch: 'header_mismatch',
   origin_mismatch: 'origin_mismatch',
   network_mismatch: 'network_mismatch',
+  not_authorized: 'not_authorized',
 };
 
 /**
@@ -222,12 +224,21 @@ export function useReceiveSession(roomId: string) {
     };
   }, [roomId]);
 
-  /** Ask the sender to sign; name is shown in their approval card. */
-  function requestDecrypt(requesterName: string): void {
+  /**
+   * Ask the sender to sign; name is shown in their approval card. ROLA +
+   * Ledger containers also carry the receiver's proof over the session-bound
+   * unlock challenge.
+   */
+  function requestDecrypt(requesterName: string, proof?: UnlockProof): void {
     const peer = peerRef.current;
     const headB64 = headB64Ref.current;
     if (!peer || !headB64) return;
-    peer.sendMessage({ t: 'decrypt-request', requesterName, headB64 });
+    peer.sendMessage({
+      t: 'decrypt-request',
+      requesterName,
+      headB64,
+      ...(proof ? { proof } : {}),
+    });
     setDenyReason(null);
     setError(null);
     phaseRef.current = 'waitingApproval';

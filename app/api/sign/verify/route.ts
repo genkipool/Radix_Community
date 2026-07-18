@@ -6,6 +6,12 @@ import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
 import { gatewayPost } from '@/services/gateway/bases';
 import type { Network } from '@/services/gateway/client';
 import { deriveChallenge } from '@/features/sign/lib/hash';
+import {
+  collectionOwnedByAccount,
+  entityDetails,
+  resolveSealRequest,
+  signerHasSigned,
+} from '@/features/sign/lib/onchain-custody';
 import { MAX_ENVELOPE_BYTES } from '@/features/sign/constants/limits';
 import { radixSealAddress, RADIX_SEAL_STANDARD_KEY } from '@/features/sign/constants/seal';
 import type { VerifiedSignature } from '@/features/sign/types/sign.types';
@@ -34,7 +40,9 @@ const signatureSchema = z
     signerAccount: z.string().max(256),
     disclosedName: z.string().max(512).nullable(),
     disclosedEmail: z.string().max(512).nullable(),
-    proof: proofSchema,
+    // Off-ledger signatures carry a ROLA proof; on-ledger ones set it null and
+    // are verified via their on-chain signature NFT (chain of custody).
+    proof: proofSchema.nullable(),
     signedAt: z.string().max(64),
   })
   .strict();
@@ -77,6 +85,15 @@ const onChainSchema = z
   .strict()
   .nullable();
 
+const requestSchema = z
+  .object({
+    networkId: z.number().int(),
+    requestId: z.string().max(600),
+  })
+  .strict()
+  .nullable()
+  .optional();
+
 const bodySchema = z
   .object({
     envelope: z
@@ -84,6 +101,7 @@ const bodySchema = z
         payload: payloadSchema,
         signatures: z.array(signatureSchema).min(1).max(50),
         onChain: onChainSchema,
+        request: requestSchema,
       })
       .strict(),
   })
@@ -205,26 +223,60 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // The challenge binds every signature to the whole (shared) payload.
+    // The challenge binds every off-ledger signature to the whole payload.
     const challenge = deriveChallenge(payload);
     const rola = createRolaForNetwork(payload.networkId as RadixNetworkId);
-    const openSet = payload.signers.length === 0;
+    const network: Network =
+      payload.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+    const officialSeal = radixSealAddress(payload.networkId as RadixNetworkId);
+
+    // Authoritative required-signer set. For on-ledger certificates that
+    // reference their request, re-resolve it from the IMMUTABLE invitation batch
+    // so the certificate cannot understate who had to sign. Otherwise use the
+    // payload list (which the ROLA challenge already binds for off-ledger certs).
+    let requiredSigners: string[] = payload.signers;
+    // A certificate that references an on-ledger request stands or falls with
+    // it: if the request cannot be resolved (bogus key, or an invitation was
+    // burned on a legacy collection to shrink the quorum), completion is
+    // DENIED rather than falling back to the certificate's own signer list.
+    let requestResolved = true;
+    if (envelope.request) {
+      const resolved = await resolveSealRequest(network, envelope.request.requestId);
+      if (resolved && resolved.docHash === payload.docHash) {
+        requiredSigners = resolved.requiredSigners;
+      } else {
+        requestResolved = false;
+      }
+    }
+    const openSet = requiredSigners.length === 0;
 
     const signatures: VerifiedSignature[] = await Promise.all(
       envelope.signatures.map(async (s) => {
-        const result = await rola.verifySignedChallenge({
-          challenge,
-          proof: s.proof,
-          address: s.signerAccount,
-          type: 'account',
-        });
+        // Off-ledger signature → ROLA proof over the payload challenge.
+        // On-ledger signature (proof === null) → the signer's on-chain
+        // signature NFT in their Seal-owned collection (chain of custody), AND
+        // — permission — the signer must be among the invited/required signers
+        // (anyone can mint an NFT for any hash, so an uninvited one must not
+        // count). Open sets (no required list) accept any valid signer.
+        const invited = openSet || requiredSigners.includes(s.signerAccount);
+        const valid = s.proof
+          ? (
+              await rola.verifySignedChallenge({
+                challenge,
+                proof: s.proof,
+                address: s.signerAccount,
+                type: 'account',
+              })
+            ).isOk()
+          : invited &&
+            (await signerHasSigned(network, s.signerAccount, payload.docHash, officialSeal));
         return {
           signerAccount: s.signerAccount,
           disclosedName: s.disclosedName,
           disclosedEmail: s.disclosedEmail,
           signedAt: s.signedAt,
-          valid: result.isOk(),
-          required: openSet || payload.signers.includes(s.signerAccount),
+          valid,
+          required: openSet || requiredSigners.includes(s.signerAccount),
         };
       }),
     );
@@ -233,37 +285,77 @@ export async function POST(req: NextRequest) {
     const validAccounts = new Set(
       signatures.filter((s) => s.valid).map((s) => s.signerAccount),
     );
-    const complete = openSet
-      ? validAccounts.size > 0
-      : payload.signers.every((a) => validAccounts.has(a));
+    const complete =
+      requestResolved &&
+      (openSet
+        ? validAccounts.size > 0
+        : requiredSigners.every((a) => validAccounts.has(a)));
 
     let onChainValid: boolean | null = null;
     let sealValid: boolean | null = null;
     if (envelope.onChain) {
-      const network: Network =
-        payload.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+      const onChain = envelope.onChain;
+      // Chain of custody: the anchored collection must PROVABLY belong to the
+      // account that anchored it, and that account must be a valid signer.
+      // Without this a forger could point the certificate at any collection
+      // whose NFT merely carries the same document hash.
+      const [collectionItem] = await entityDetails(network, [
+        onChain.resourceAddress,
+      ]);
       const checks = await Promise.all(
-        envelope.onChain.nfts.map((nft) => {
-          const [resource, splitId] = nft.nftGlobalId.split(':');
-          return verifyOnChainHash(
+        onChain.nfts.map(async (nft) => {
+          // The anchoring account must be a valid ROLA signer either way.
+          if (!validAccounts.has(nft.signerAccount)) return false;
+          // Unified model: a signature NFT lives in the signer's Seal-owned
+          // collection (owner = the OFFICIAL Radix Seal, in the signer's
+          // account). This is the strongest binding.
+          if (
+            await signerHasSigned(network, nft.signerAccount, payload.docHash, officialSeal)
+          ) {
+            return true;
+          }
+          // Legacy attestation: collection owned by the signer's account
+          // signature badge, with a matching document hash. Kept so previously
+          // anchored certificates still verify during the migration.
+          const localId = nft.localId ?? nft.nftGlobalId.split(':')[1] ?? '#0#';
+          const hashOk = await verifyOnChainHash(
             network,
-            resource,
-            nft.localId ?? splitId ?? '#0#',
+            onChain.resourceAddress,
+            localId,
             payload.docHash,
           );
+          const ownerOk = await collectionOwnedByAccount(
+            collectionItem,
+            nft.signerAccount,
+            payload.networkId,
+          );
+          return hashOk && ownerOk;
         }),
       );
       onChainValid = checks.length > 0 && checks.every(Boolean);
       sealValid = await checkSealInsignia(
         network,
         payload.networkId as RadixNetworkId,
-        envelope.onChain.resourceAddress,
+        onChain.resourceAddress,
       );
+    } else if (envelope.request) {
+      // On-ledger multi-party certificate: each valid signer records their
+      // signature as an NFT in their OWN Seal collection. Confirm each via the
+      // chain of custody (owner = the OFFICIAL Radix Seal, in the signer's
+      // account) — the same infalsifiable check as the anchored case.
+      const anchored = await Promise.all(
+        [...validAccounts].map((acc) =>
+          signerHasSigned(network, acc, payload.docHash, officialSeal),
+        ),
+      );
+      onChainValid = anchored.length > 0 && anchored.every(Boolean);
+      // The custody check above already requires the official Seal.
+      sealValid = officialSeal ? onChainValid : null;
     }
 
     return NextResponse.json({
       signatures,
-      requiredSigners: payload.signers,
+      requiredSigners,
       allValid,
       complete,
       message: payload.message,

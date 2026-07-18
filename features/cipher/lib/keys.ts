@@ -53,6 +53,28 @@ export function deriveCipherChallenge(payload: CipherChallengePayload): string {
   return blake2b256HexOfString(canonicalJSON(payload));
 }
 
+/**
+ * The 32-byte ROLA challenge a RECEIVER signs to request the key of a
+ * ROLA + Ledger container. Commits to the exact container (headerHash) and to
+ * this session (roomId), so a captured proof cannot be replayed elsewhere.
+ * Derivable by receiver, sender and the authorization endpoint alike.
+ */
+export function deriveUnlockChallenge(input: {
+  headerHash: string;
+  roomId: string;
+  networkId: number;
+}): string {
+  return blake2b256HexOfString(
+    canonicalJSON({
+      v: 1,
+      context: 'radix-cipher-unlock-v1',
+      headerHash: input.headerHash,
+      roomId: input.roomId,
+      networkId: input.networkId,
+    }),
+  );
+}
+
 /** HKDF-SHA256(ikm = signature, salt = fileSalt, info = HKDF_INFO) → 32 bytes. */
 export async function deriveFileKeyBits(
   signatureHex: string,

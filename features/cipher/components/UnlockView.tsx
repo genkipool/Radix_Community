@@ -41,6 +41,9 @@ export function UnlockView({
         {session.phase === 'connecting' && (
           <TransferProgress label={t.progress.connecting} />
         )}
+        {session.phase === 'authorizing' && (
+          <TransferProgress label={t.ledger.authorizing} />
+        )}
         {session.phase === 'keySent' && session.request && (
           <p
             className="flex items-center gap-2 text-sm font-semibold"
@@ -77,6 +80,8 @@ export function UnlockView({
           <DecryptRequestCard
             t={t}
             requesterName={session.request.requesterName}
+            requesterAccount={session.request.requesterAccount}
+            ledgerVerified={session.request.ledgerVerified}
             fileName={session.request.head.header.fileName}
             headerHash={session.request.head.headerHash}
             busy={session.phase === 'approving'}

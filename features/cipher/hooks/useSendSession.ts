@@ -6,6 +6,7 @@ import type {
   DataChannelMessage,
 } from '../types/cipher.types';
 import type { EncryptResult } from './useEncryptFlow';
+import { verifyLedgerAuthorization } from '../lib/authorize';
 import { toCipherErrorCode } from '../lib/errors';
 import { getChunk, getFileMeta } from '../lib/idb';
 import { toHex } from '../lib/keys';
@@ -27,6 +28,9 @@ export type SendPhase =
 
 export interface IncomingDecryptRequest {
   requesterName: string;
+  /** ROLA + Ledger: the requester's proven account, invite verified on-ledger. */
+  requesterAccount?: string;
+  ledgerVerified?: boolean;
 }
 
 /**
@@ -46,6 +50,7 @@ export function useSendSession() {
   const signalingRef = useRef<CipherSignaling | null>(null);
   const resultRef = useRef<EncryptResult | null>(null);
   const headB64Ref = useRef<string | null>(null);
+  const roomIdRef = useRef<string | null>(null);
   const phaseRef = useRef<SendPhase>('idle');
 
   const moveTo = (next: SendPhase) => {
@@ -71,6 +76,38 @@ export function useSendSession() {
         peerRef.current?.sendMessage({ t: 'decrypt-denied', reason: 'header_mismatch' });
         return;
       }
+      const header = resultRef.current?.header;
+      if (header?.access === 'rola-ledger') {
+        // ROLA + Ledger: the requester must prove an invited account before
+        // the request is even shown for approval.
+        const proof = message.proof;
+        const roomId = roomIdRef.current;
+        if (!proof || !header.inviteCollection || !roomId) {
+          peerRef.current?.sendMessage({ t: 'decrypt-denied', reason: 'not_authorized' });
+          return;
+        }
+        void (async () => {
+          const authorized = await verifyLedgerAuthorization({
+            networkId: header.networkId,
+            headerHash: resultRef.current!.headerHash,
+            roomId,
+            account: proof.account,
+            senderAccount: header.senderAccount,
+            collection: header.inviteCollection!,
+            proof,
+          });
+          if (!authorized) {
+            peerRef.current?.sendMessage({ t: 'decrypt-denied', reason: 'not_authorized' });
+            return;
+          }
+          setRequest({
+            requesterName: message.requesterName,
+            requesterAccount: proof.account,
+            ledgerVerified: true,
+          });
+        })();
+        return;
+      }
       setRequest({ requesterName: message.requesterName });
     } else if (message.t === 'bye') {
       handleClose();
@@ -91,6 +128,7 @@ export function useSendSession() {
     moveTo('creating');
     try {
       const roomId = randomRoomId();
+      roomIdRef.current = roomId;
       setShareUrl(buildSessionUrl('receive', roomId));
       const signaling = await createSignaling(roomId);
       signalingRef.current = signaling;

@@ -7,6 +7,8 @@ import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransa
 import { radixSealAddress } from '../constants/seal';
 import { buildSealMintManifest } from '../lib/radix-seal-manifest';
 import {
+  buildCipherInviteManifest,
+  buildCipherReceiptManifest,
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
@@ -202,11 +204,74 @@ export function useSealRequest() {
     return true;
   };
 
+  /**
+   * Mints one `cipher-invite` per authorized receiver into the encryptor's
+   * collection (ROLA + Ledger encryption). Returns true on success.
+   */
+  const mintCipherInvites = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collection: string;
+    nextId: number;
+    headerHash: string;
+    receivers: string[];
+    imageUrl: string;
+  }): Promise<boolean> => {
+    setError(null);
+    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    setPhase('creating');
+    const manifest = buildCipherInviteManifest({
+      account: args.account,
+      sealGlobalId: args.sealGlobalId,
+      collection: args.collection,
+      nextId: args.nextId,
+      headerHash: args.headerHash,
+      networkId: activeNetworkId,
+      receivers: args.receivers,
+      imageUrl: args.imageUrl,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return !!fail('onchain_failed');
+    setPhase('done');
+    return true;
+  };
+
+  /** Mints the receiver's decryption receipt into their OWN collection. */
+  const mintCipherReceipt = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collection: string;
+    nextId: number;
+    headerHash: string;
+    inviteCollection: string;
+    imageUrl: string;
+  }): Promise<boolean> => {
+    setError(null);
+    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    setPhase('signing');
+    const manifest = buildCipherReceiptManifest({
+      account: args.account,
+      sealGlobalId: args.sealGlobalId,
+      collection: args.collection,
+      nextId: args.nextId,
+      headerHash: args.headerHash,
+      networkId: activeNetworkId,
+      inviteCollection: args.inviteCollection,
+      imageUrl: args.imageUrl,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return !!fail('onchain_failed');
+    setPhase('done');
+    return true;
+  };
+
   return {
     mintSeal,
     createCollection,
     createRequest,
     signRequest,
+    mintCipherInvites,
+    mintCipherReceipt,
     phase,
     error,
     reset,

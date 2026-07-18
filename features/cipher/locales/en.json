@@ -6,7 +6,7 @@
     },
     "disclaimer": {
       "title": "Your file never leaves your browser",
-      "body": "Encryption, decryption and storage happen locally. Files travel only over a direct, end-to-end encrypted peer-to-peer channel between browsers — never through a server. The key is derived from your wallet signature: only the account that encrypted a file can unlock it."
+      "body": "Encryption, decryption and storage happen locally. Files travel only over a direct, end-to-end encrypted peer-to-peer channel between browsers, never through a server. The key is derived from your wallet signature: only the account that encrypted a file can unlock it."
     },
     "connect": {
       "title": "Connect your Radix Wallet",
@@ -19,12 +19,11 @@
       "rola": "Encrypt with ROLA",
       "rolaDescription": "Sign a challenge with your Radix Wallet; the encryption key is derived from that signature.",
       "rolaLedger": "Encrypt with ROLA + Ledger",
-      "rolaLedgerDescription": "Hardware-backed signature. Coming soon.",
-      "comingSoon": "Coming soon"
+      "rolaLedgerDescription": "Same as ROLA, plus an on-ledger record: one invitation NFT per authorized receiver is minted into your signing collection. Only those accounts can send you the ROLA challenge to decrypt this file."
     },
     "file": {
       "label": "File to encrypt",
-      "prompt": "Drop any file here or click to browse. No size limit — it is processed in chunks and never uploaded.",
+      "prompt": "Drop any file here or click to browse. No size limit: it is processed in chunks and never uploaded.",
       "encLabel": "Encrypted file",
       "encPrompt": "Drop a .radixenc file here or click to browse.",
       "metaName": "Original file",
@@ -33,7 +32,10 @@
       "metaDate": "Date",
       "metaNetwork": "Network",
       "fingerprint": "Fingerprint",
-      "invalid": "This is not a valid .radixenc file."
+      "invalid": "This is not a valid .radixenc file.",
+      "metaAccess": "Protection",
+      "accessRola": "ROLA",
+      "accessRolaLedger": "ROLA + Ledger"
     },
     "encrypt": {
       "button": "Encrypt",
@@ -114,14 +116,38 @@
       "invalid_container": "This is not a valid .radixenc file.",
       "webrtc_failed": "Could not establish a direct connection between browsers. Try again, ideally with both devices on networks that allow peer-to-peer traffic.",
       "file_read": "The file could not be read.",
-      "unknown": "Something went wrong. Please try again."
+      "unknown": "Something went wrong. Please try again.",
+      "not_authorized": "The account does not hold this file's encryption invitation NFT, or the proof is invalid.",
+      "no_collection": "The signing account has no signing collection on the ledger. Complete the setup (Seal and collection) and encrypt again."
     },
     "security": {
       "title": "How it works",
       "boundToAccount": "The key is derived from a deterministic wallet signature, so it is bound to the encrypting account, this site and this network.",
-      "headerVisible": "The encrypted file keeps the original file name and the sender account visible in its header — share it only with people who may see that.",
+      "headerVisible": "The encrypted file keeps the original file name and the sender account visible in its header: share it only with people who may see that.",
       "neverUploaded": "File contents never touch a server: they stay in your browser and travel only over the direct encrypted channel."
     },
-    "leaveWarning": "A transfer session is active. If you leave, the other side will be disconnected."
+    "leaveWarning": "A transfer session is active. If you leave, the other side will be disconnected.",
+    "ledger": {
+      "receiversLabel": "Authorized receivers",
+      "receiversHint": "One invitation NFT per account is minted into your signing collection (the same one the Sign Document section uses) and deposited into each receiver's wallet. Only those accounts can request this file's decryption.",
+      "receiverPlaceholder": "account_rdx… / account_tdx_2_…",
+      "addReceiver": "Add receiver",
+      "invalidReceiver": "Account address not valid for this network",
+      "minting": "Minting the invitation NFTs on-ledger… Confirm in your wallet.",
+      "minted": "Invitations minted and deposited. Receivers can now request decryption.",
+      "mintFailed": "The invitations could not be minted. Without them, no receiver can request decryption.",
+      "retryMint": "Retry minting",
+      "requestGateTitle": "Connect the invited wallet",
+      "requestGateSubtitle": "This file was encrypted with ROLA + Ledger: to request decryption you must sign a ROLA challenge with the account that received this file's invitation NFT.",
+      "requestWithProof": "Sign challenge and request decryption",
+      "authorizing": "Checking the requester's invitation on the ledger…",
+      "authorizedBadge": "Invitation verified on the ledger",
+      "requesterAccount": "Requesting account",
+      "receiptTitle": "Decryption receipt (optional)",
+      "receiptHint": "Mint an NFT into your signing collection as public, permanent evidence that this account decrypted the file. The sender can verify it on the ledger.",
+      "receiptButton": "Mint receipt on the ledger",
+      "receiptMinting": "Confirm in your wallet…",
+      "receiptDone": "Receipt minted on the ledger."
+    }
   }
 }

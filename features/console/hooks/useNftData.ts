@@ -7,6 +7,8 @@ export interface NftData {
   name?: string;
   imageUrl?: string;
   vaultAddress?: string;
+  /** Account that owns the holding vault (for recall/freeze targeting). */
+  ownerAccount?: string;
 }
 
 interface NfDataField {
@@ -63,11 +65,13 @@ export function useMissingNfts(resourceAddress: string | null, ownedIds: string[
         const fields = item.data?.programmatic_json?.fields || [];
         const nameField = fields.find((f) => f.field_name === 'name')?.value;
         const urlField = fields.find((f) => f.field_name === 'key_image_url')?.value;
+        const loc = locations[item.non_fungible_id];
         return {
           id: item.non_fungible_id,
           name: nameField,
           imageUrl: urlField,
-          vaultAddress: locations[item.non_fungible_id]
+          vaultAddress: loc?.vault,
+          ownerAccount: loc?.account,
         } as NftData;
       });
     },

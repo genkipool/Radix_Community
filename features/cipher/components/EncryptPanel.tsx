@@ -1,17 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Lock, RotateCcw, Share2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Download, Lock, RotateCcw, Share2, Stamp } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
+import { StringListField } from '@/features/console/components/shared/StringListField';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useSealRequest, useSealSetup } from '@/features/sign/hooks/useSealRequest';
+import { sealImageUrl } from '@/features/sign/constants/seal';
 import type { CipherDictionary } from '../types/dictionary';
 import type { EncryptResult } from '../hooks/useEncryptFlow';
 import { useEncryptFlow } from '../hooks/useEncryptFlow';
 import { formatBytes } from '../lib/format';
 import { TransferProgress } from './TransferProgress';
 
+type MintState = 'idle' | 'minting' | 'done' | 'error';
+
 interface EncryptPanelProps {
   t: CipherDictionary;
+  /** 'rola-ledger' adds authorized receivers + on-ledger invite minting. */
+  mode?: 'rola' | 'rola-ledger';
   /** When provided, the result card offers sharing the file with a receiver. */
   onShare?: (result: EncryptResult) => void;
   /** Fired whenever the current result is discarded (new file / start over). */
@@ -19,10 +27,60 @@ interface EncryptPanelProps {
 }
 
 /** Encrypt tab body: pick a file, sign, stream-encrypt, download/share. */
-export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
+export function EncryptPanel({ t, mode = 'rola', onShare, onReset }: EncryptPanelProps) {
   const flow = useEncryptFlow();
   const [file, setFile] = useState<File | null>(null);
   const busy = flow.phase === 'signing' || flow.phase === 'encrypting';
+
+  /* ── ROLA + Ledger: authorized receivers + invite minting ── */
+  const ledger = mode === 'rola-ledger';
+  const { activeNetworkId } = useRadixWallet();
+  const [receivers, setReceivers] = useState<string[]>(['']);
+  const [mintState, setMintState] = useState<MintState>('idle');
+  const seal = useSealRequest();
+  // The invites mint from the account that actually signed the encryption.
+  const encryptorAccount = flow.result?.header.senderAccount ?? null;
+  const setup = useSealSetup(ledger ? encryptorAccount : null);
+
+  const cleanReceivers = receivers.map((r) => r.trim()).filter(Boolean);
+  const expectedPrefix =
+    activeNetworkId === 1 ? 'account_rdx1' : 'account_tdx_2_1';
+  const invalidReceiver = ledger
+    ? cleanReceivers.find((r) => !r.startsWith(expectedPrefix))
+    : undefined;
+  const receiversOk = !ledger || (cleanReceivers.length > 0 && !invalidReceiver);
+
+  const mintInvites = async () => {
+    if (!flow.result || !setup.seal || !setup.collection || !encryptorAccount) return;
+    setMintState('minting');
+    const ok = await seal.mintCipherInvites({
+      account: encryptorAccount,
+      sealGlobalId: setup.seal.globalId,
+      collection: setup.collection.resourceAddress,
+      nextId: setup.collection.totalSupply + 1,
+      headerHash: flow.result.headerHash,
+      receivers: cleanReceivers,
+      imageUrl: sealImageUrl(window.location.origin),
+    });
+    setMintState(ok ? 'done' : 'error');
+    if (ok) setup.refetch();
+  };
+
+  // Chain the invite mint right after encryption completes (one wallet
+  // confirmation follows another); failures surface a retry button. Deferred:
+  // state updates must never run synchronously in an effect.
+  const mintStartedRef = useRef(false);
+  const mintInvitesRef = useRef(mintInvites);
+  useEffect(() => {
+    // Kept fresh post-commit; refs must not be written during render.
+    mintInvitesRef.current = mintInvites;
+  });
+  useEffect(() => {
+    if (!ledger || flow.phase !== 'ready' || mintStartedRef.current) return;
+    if (!setup.seal || !setup.collection) return;
+    mintStartedRef.current = true;
+    queueMicrotask(() => void mintInvitesRef.current());
+  }, [ledger, flow.phase, setup.seal, setup.collection]);
 
   const onFile = (candidate: File | null) => {
     if (busy) return;
@@ -30,6 +88,8 @@ export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
     if (flow.phase !== 'idle') {
       onReset?.();
       void flow.reset();
+      setMintState('idle');
+      mintStartedRef.current = false;
     }
   };
 
@@ -37,6 +97,8 @@ export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
     setFile(null);
     onReset?.();
     void flow.reset();
+    setMintState('idle');
+    mintStartedRef.current = false;
   };
 
   return (
@@ -51,6 +113,27 @@ export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
           busy={busy}
           disabled={busy || flow.phase === 'ready'}
         />
+
+        {ledger && flow.phase !== 'ready' && (
+          <>
+            <StringListField
+              label={t.ledger.receiversLabel}
+              values={receivers}
+              onChange={setReceivers}
+              addLabel={t.ledger.addReceiver}
+              placeholder={t.ledger.receiverPlaceholder}
+              disabled={busy}
+            />
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              {t.ledger.receiversHint}
+            </p>
+            {invalidReceiver && (
+              <p className="text-xs font-medium text-red-500">
+                {t.ledger.invalidReceiver}: {invalidReceiver}
+              </p>
+            )}
+          </>
+        )}
 
         {flow.phase === 'signing' && (
           <TransferProgress label={t.progress.signing} />
@@ -68,8 +151,14 @@ export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
         {(flow.phase === 'idle' || flow.phase === 'error') && (
           <button
             type="button"
-            disabled={!file}
-            onClick={() => file && void flow.encrypt(file)}
+            disabled={!file || !receiversOk}
+            onClick={() =>
+              file &&
+              void flow.encrypt(
+                file,
+                ledger ? { access: 'rola-ledger' } : undefined,
+              )
+            }
             className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
           >
             <Lock className="size-4" />
@@ -77,6 +166,37 @@ export function EncryptPanel({ t, onShare, onReset }: EncryptPanelProps) {
           </button>
         )}
       </ToolSection>
+
+      {/* Invite minting status (ROLA + Ledger) */}
+      {ledger && flow.phase === 'ready' && (
+        <ToolSection>
+          {(mintState === 'minting' || mintState === 'idle') && (
+            <TransferProgress label={t.ledger.minting} />
+          )}
+          {mintState === 'done' && (
+            <p
+              className="flex items-center gap-2 text-sm font-semibold"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <BadgeCheck className="size-4" />
+              {t.ledger.minted}
+            </p>
+          )}
+          {mintState === 'error' && (
+            <>
+              <p className="text-xs font-medium text-red-500">{t.ledger.mintFailed}</p>
+              <button
+                type="button"
+                onClick={() => void mintInvites()}
+                className="flex items-center justify-center gap-2 px-5 h-10 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
+              >
+                <Stamp className="size-3.5" />
+                {t.ledger.retryMint}
+              </button>
+            </>
+          )}
+        </ToolSection>
+      )}
 
       {flow.phase === 'ready' && flow.result && (
         <ToolSection title={t.encrypt.readyTitle} hint={t.encrypt.readyHint}>

@@ -60,7 +60,7 @@ export const requestKey = (collection: string, firstId: number) =>
   `${collection}:#${firstId}#`;
 
 interface SignNftInput {
-  kind: 'invite' | 'signature';
+  kind: 'invite' | 'signature' | 'cipher-invite' | 'cipher-receipt';
   name: string;
   description: string;
   imageUrl: string;
@@ -218,14 +218,21 @@ export function buildSignCollectionCreateManifest(
       ...DEFAULT_AUTH_ROLES,
       minter: 'owner',
       minter_updater: 'denyAll',
-      // Recall/burn let the issuer cancel or fix sent invitations; they can
-      // never "un-sign" anyone (signatures live in each signer's collection).
+      // Recall lets the issuer pull back a mis-sent invitation (its locked
+      // data persists, so the required-signer set never shrinks). Burning is
+      // DENIED for everyone: a burnable collection would let a signer destroy
+      // their own signature NFT (repudiation) or an issuer burn an unsigned
+      // invitation to shrink the quorum. Evidence must be permanent.
       recaller: 'owner',
       recaller_updater: 'denyAll',
-      burner: 'owner',
+      burner: 'denyAll',
       burner_updater: 'denyAll',
       withdrawer: 'denyAll',
-      nft_data_setter: 'denyAll',
+      // The seal holder may re-point each NFT's key_image_url (cosmetic only,
+      // just like the collection's icon_url). The evidence fields
+      // (document_hash, signer, kind, request) stay locked in the schema, so
+      // this can never rewrite what a signature proves. Rule locked forever.
+      nft_data_setter: 'owner',
       nft_data_setter_updater: 'denyAll',
       // Unlocked display metadata (name, icon_url, org_url) is editable by
       // the seal holder ONLY — and that rule itself can never be changed.
@@ -246,7 +253,9 @@ export function buildSignCollectionCreateManifest(
           }),
         ]
       : [],
-    nftBaseFieldsLocked: { name: true, description: true, key_image_url: true },
+    // key_image_url stays MUTABLE (owner-editable via nft_data_setter); name and
+    // description remain locked. Evidence lives in the locked custom fields.
+    nftBaseFieldsLocked: { name: true, description: true, key_image_url: false },
     nftCustomFields: [...SIGN_NFT_FIELDS],
     firstNftId: 1,
   });
@@ -387,6 +396,163 @@ CALL_METHOD
 ${batchMint(input.collection, ownSignature ? [...invites, ownSignature] : invites)}
 
 ${deliveries}
+
+CALL_METHOD
+    Address("${input.account}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+`;
+}
+
+/* ─── Cipher invitations & receipts (ROLA + Ledger encryption) ────────────── */
+
+const cipherInviteNft = (args: {
+  headerHash: string;
+  networkId: number;
+  receiver: string;
+  index: number;
+  count: number;
+  firstId: number;
+  collection: string;
+  imageUrl: string;
+  issuedAt: string;
+}): NftItemData =>
+  signNft({
+    kind: 'cipher-invite',
+    name: `Encryption invitation ${args.index + 1}/${args.count}`,
+    description:
+      'Authorization to request the decryption key of ONE specific encrypted ' +
+      'container (document_hash = its header hash). Only accounts holding ' +
+      'this NFT can send the ROLA unlock challenge to the encryptor.',
+    imageUrl: args.imageUrl,
+    docHash: args.headerHash,
+    networkId: args.networkId,
+    signer: args.receiver,
+    signerIndex: args.index,
+    signerCount: args.count,
+    firstId: args.firstId,
+    request: requestKey(args.collection, args.firstId),
+    issuedAt: args.issuedAt,
+  });
+
+export interface CipherInviteInput {
+  /** Encryptor account (holds the seal, owns the collection). */
+  account: string;
+  sealGlobalId: string;
+  /** The encryptor's signing collection (same one the sign flow uses). */
+  collection: string;
+  /** Next free integer id (`totalSupply + 1`). */
+  nextId: number;
+  /** blake2b-256 of the container's canonical header JSON. */
+  headerHash: string;
+  networkId: number;
+  /** Accounts authorized to request the key — one invitation each. */
+  receivers: string[];
+  imageUrl: string;
+}
+
+/**
+ * Mints one `cipher-invite` NFT per authorized receiver into the encryptor's
+ * signing collection and deposits each into its receiver's account. Aborts
+ * atomically if any receiver blocks third-party deposits.
+ */
+export function buildCipherInviteManifest(input: CipherInviteInput): string {
+  const issuedAt = new Date().toISOString();
+  const firstId = input.nextId;
+  const count = input.receivers.length;
+  if (count === 0) throw new Error('no receivers');
+
+  const invites = input.receivers.map((receiver, i) => ({
+    id: firstId + i,
+    nft: cipherInviteNft({
+      headerHash: input.headerHash,
+      networkId: input.networkId,
+      receiver,
+      index: i,
+      count,
+      firstId,
+      collection: input.collection,
+      imageUrl: input.imageUrl,
+      issuedAt,
+    }),
+  }));
+
+  const deliveries = input.receivers
+    .map(
+      (receiver, i) => `TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${input.collection}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("#${firstId + i}#"))
+    Bucket("invite_${i}")
+;
+
+CALL_METHOD
+    Address("${receiver}")
+    "try_deposit_or_abort"
+    Bucket("invite_${i}")
+    Enum<0u8>()
+;`,
+    )
+    .join('\n\n');
+
+  return `${sealProof(input.account, input.sealGlobalId)}
+
+${batchMint(input.collection, invites)}
+
+${deliveries}
+
+CALL_METHOD
+    Address("${input.account}")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
+`;
+}
+
+export interface CipherReceiptInput {
+  /** Receiver account (holds their seal + their collection). */
+  account: string;
+  sealGlobalId: string;
+  /** The receiver's OWN signing collection. */
+  collection: string;
+  nextId: number;
+  /** Header hash of the container that was decrypted. */
+  headerHash: string;
+  networkId: number;
+  /** The encryptor's collection (where the invite batch lives). */
+  inviteCollection: string;
+  imageUrl: string;
+}
+
+/**
+ * Mints the receiver's soulbound decryption receipt into their own
+ * collection: public, permanent evidence that this account obtained the key
+ * for this container. Same chain of custody as a signature NFT.
+ */
+export function buildCipherReceiptManifest(input: CipherReceiptInput): string {
+  return `${sealProof(input.account, input.sealGlobalId)}
+
+${batchMint(input.collection, [
+  {
+    id: input.nextId,
+    nft: signNft({
+      kind: 'cipher-receipt',
+      name: 'Decryption receipt',
+      description:
+        'On-ledger acknowledgment that this account obtained the decryption ' +
+        'key of the container identified by document_hash. Soulbound; minted ' +
+        'by the receiver into their own seal-owned collection.',
+      imageUrl: input.imageUrl,
+      docHash: input.headerHash,
+      networkId: input.networkId,
+      signer: input.account,
+      request: input.inviteCollection,
+      issuedAt: new Date().toISOString(),
+    }),
+  },
+])}
 
 CALL_METHOD
     Address("${input.account}")

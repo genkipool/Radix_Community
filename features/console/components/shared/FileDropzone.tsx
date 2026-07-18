@@ -4,8 +4,10 @@ import { useRef, useState, DragEvent } from 'react';
 import { FileUp, X } from 'lucide-react';
 
 interface FileDropzoneProps {
-  /** Accepted file extension, including the dot (e.g. ".wasm") */
+  /** Accepted file extension, including the dot (e.g. ".wasm"); "" = any. */
   extension: string;
+  /** Picker filter (e.g. "image/png,image/jpeg"); defaults to `extension`. */
+  accept?: string;
   label: string;
   prompt: string;
   file: File | null;
@@ -21,6 +23,7 @@ const formatSize = (bytes: number) =>
 /** Drag & drop single-file input used by the deploy-package tool. */
 export function FileDropzone({
   extension,
+  accept,
   label,
   prompt,
   file,
@@ -46,9 +49,11 @@ export function FileDropzone({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
-        {label}
-      </span>
+      {label && (
+        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+          {label}
+        </span>
+      )}
       <button
         type="button"
         disabled={disabled}
@@ -101,7 +106,7 @@ export function FileDropzone({
       <input
         ref={inputRef}
         type="file"
-        accept={extension}
+        accept={accept ?? extension}
         className="hidden"
         onChange={(e) => {
           acceptFile(e.target.files?.[0]);

@@ -324,7 +324,14 @@ export async function apiFetchAllNonFungibleIds(resourceAddress: string, network
     return allIds;
 }
 
-export async function apiFetchNonFungibleLocation(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, string>> {
+export interface NonFungibleLocation {
+    /** Vault holding the NFT. */
+    vault: string;
+    /** Global ancestor of the vault, i.e. the account that owns it (when any). */
+    account?: string;
+}
+
+export async function apiFetchNonFungibleLocation(resourceAddress: string, localIds: string[], network: 'mainnet' | 'stokenet' = 'mainnet'): Promise<Record<string, NonFungibleLocation>> {
     if (localIds.length === 0) return {};
     const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
     const res = await fetch(`${baseUrl}/state/non-fungible/location`, {
@@ -337,11 +344,15 @@ export async function apiFetchNonFungibleLocation(resourceAddress: string, local
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    
-    const locationMap: Record<string, string> = {};
+
+    const locationMap: Record<string, NonFungibleLocation> = {};
     for (const item of (data.non_fungible_ids || [])) {
         if (item.owning_vault_address) {
-            locationMap[item.non_fungible_id] = item.owning_vault_address;
+            const ancestor = item.owning_vault_global_ancestor_address as string | undefined;
+            locationMap[item.non_fungible_id] = {
+                vault: item.owning_vault_address,
+                account: ancestor && ancestor.startsWith('account_') ? ancestor : undefined,
+            };
         }
     }
     return locationMap;

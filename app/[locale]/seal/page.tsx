@@ -2,8 +2,11 @@ import {
   Hero,
   Capabilities,
   TrustModel,
+  Anatomy,
+  Privacy,
   Institutions,
   Comparison,
+  OpenVerification,
   CTAFinal,
 } from '@/features/seal';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
@@ -58,8 +61,11 @@ export default async function SealPage({ params }: SealPageProps) {
       <Hero t={t} locale={locale} />
       <Capabilities t={t} locale={locale} />
       <TrustModel t={t} />
+      <Anatomy t={t} />
+      <Privacy t={t} locale={locale} />
       <Institutions t={t} />
       <Comparison t={t} />
+      <OpenVerification t={t} locale={locale} />
       <CTAFinal t={t} locale={locale} />
     </div>
   );

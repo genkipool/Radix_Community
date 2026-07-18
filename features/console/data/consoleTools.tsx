@@ -16,6 +16,7 @@ import {
   ScanSearch,
   Settings2,
   Sparkles,
+  Stamp,
   Wrench,
 } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
@@ -210,16 +211,12 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
   },
   {
-    id: 'documents',
-    icon: <FileSignature className="size-5" />,
+    // Radix Seal: the self-custody suite (sign, encrypt, chat) that all share
+    // the same wallet-derived trust model.
+    id: 'radix-seal',
+    icon: <Stamp className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['sign-document', 'encrypt-document'],
-  },
-  {
-    id: 'communication',
-    icon: <MessageSquareLock className="size-5" />,
-    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['chat'],
+    tools: ['sign-document', 'encrypt-document', 'chat'],
   },
   {
     id: 'utilities',

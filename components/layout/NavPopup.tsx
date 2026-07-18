@@ -133,8 +133,15 @@ export default function NavPopup({
       }}
     >
       {trigger}
-      {/* Invisible bridge prevents losing hover while cursor moves from nav to popup */}
-      <div className="absolute top-full left-0 right-0 h-8 pointer-events-auto z-[45]" />
+      {/* Invisible bridge prevents losing hover while cursor moves from nav to
+          popup. Only exists WHILE the popup is already open (group hovered or
+          force-open): otherwise it would catch hovers below the navbar and
+          open popups without touching the trigger. */}
+      <div
+        className={`absolute top-full left-0 right-0 h-8 z-[45] ${
+          forceOpen ? 'block' : 'hidden group-hover/navpopup:block'
+        }`}
+      />
       <div
         ref={contentRef}
         className={[

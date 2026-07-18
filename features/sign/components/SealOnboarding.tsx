@@ -23,11 +23,15 @@ export function SealOnboarding({
   account,
   onAccountChange,
   setup,
+  lockedAccount = false,
 }: {
   t: SignDictionary;
   account: string | null;
   onAccountChange: (account: string) => void;
   setup: SealSetup;
+  /** Hide the account picker: the acting account is fixed (e.g. an anchoring
+      signer that must be one of the certificate's signers). */
+  lockedAccount?: boolean;
 }) {
   const { activeNetworkId } = useRadixWallet();
   const { mintSeal, createCollection, phase, error } = useSealRequest();
@@ -122,9 +126,11 @@ export function SealOnboarding({
         <p>{t.onboarding.caNote}</p>
       </div>
 
-      <ToolSection title={t.onchain.account}>
-        <AccountPicker value={account} onChange={onAccountChange} disabled={busy} />
-      </ToolSection>
+      {!lockedAccount && (
+        <ToolSection title={t.onchain.account}>
+          <AccountPicker value={account} onChange={onAccountChange} disabled={busy} />
+        </ToolSection>
+      )}
 
       {/* Step 1: the seal */}
       <StepRow

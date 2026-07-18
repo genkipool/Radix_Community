@@ -19,7 +19,9 @@ import { RadixNetworkId } from '@/features/wallet/constants/network';
  */
 export const RADIX_SEAL: Record<number, string> = {
   [RadixNetworkId.Mainnet]: '',
-  [RadixNetworkId.Stokenet]: 'resource_tdx_2_1n2dnu585z0c6hsl9tvlqaufnrxstepwpdjv5tumvrslqq77t7dgrwm',
+  // Cleared for a fresh Stokenet redeploy with the admin-badge + editable
+  // metadata manifest; paste the new resource address here after deploying.
+  [RadixNetworkId.Stokenet]: '',
 };
 
 export function radixSealAddress(networkId: number): string {
@@ -48,10 +50,33 @@ export const SIGN_COLLECTION_MARKER_VALUE = 'v1';
 export const RADIX_SEAL_NAME = 'Radix Seal';
 export const DEFAULT_COLLECTION_NAME = 'Radix Seal Attestations';
 
-/** Stable app-hosted path to the brand image (served from /public). */
-export const SEAL_IMAGE_PATH = '/seal/radix-seal.svg';
+/** App-hosted path to the brand image (served from /public), used by the
+ *  client-side PDF watermark, which fetches and rasterises it same-origin. */
+export const SEAL_IMAGE_PATH = '/SVGs/radix-seal.svg';
 
-/** Absolute URL for the seal image — required for on-ledger `icon_url`. */
-export function sealImageUrl(origin: string): string {
-  return `${origin.replace(/\/$/, '')}${SEAL_IMAGE_PATH}`;
+/**
+ * Stable, domain-INDEPENDENT URL of the seal SVG (GitHub raw, `public/SVGs`).
+ * This is what every seal / collection NFT bakes into its `key_image_url`, so
+ * a change of the app's own domain never breaks the on-ledger image, and
+ * editing the SVG in the repo updates the image for every minted NFT at once
+ * (the ledger stores the URL, not the bytes).
+ */
+export const SEAL_IMAGE_URL =
+  'https://raw.githubusercontent.com/genkipool/Radix_Community/main/public/SVGs/radix-seal.svg';
+
+/**
+ * `info_url` metadata of the brand resource: the full Radix Seal documentation
+ * directory on GitHub (renders its README.md). Domain independent, so wallets
+ * always resolve it regardless of the app's own domain.
+ */
+export const SEAL_INFO_URL =
+  'https://github.com/genkipool/Radix_Community/tree/main/doc';
+
+/**
+ * URL baked into on-ledger `key_image_url` / `icon_url`. Returns the stable
+ * GitHub-hosted URL. The `origin` argument is kept for call-site compatibility
+ * but no longer used: the seal image must not depend on the app's own domain.
+ */
+export function sealImageUrl(_origin?: string): string {
+  return SEAL_IMAGE_URL;
 }
