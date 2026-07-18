@@ -17,6 +17,7 @@ import type { Network } from '@/services/gateway/client';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import {
   radixSealAddress,
+  RADIX_SEAL_STANDARD_KEY,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
 } from '../constants/seal';
@@ -108,6 +109,28 @@ function isSignCollection(item: EntityDetailsItem): boolean {
   );
 }
 
+/**
+ * True when the collection references the CURRENT official Radix Seal resource
+ * (its locked `radix_seal` metadata). After a brand redeploy the seal resource
+ * address changes, so a collection created for an OLD seal must NOT be treated
+ * as ready: it can no longer be minted into with the user's new seal, and a new
+ * collection has to be created. When the brand is not deployed the check is
+ * skipped (nothing to compare against).
+ */
+function belongsToCurrentSeal(item: EntityDetailsItem, networkId: number): boolean {
+  const official = radixSealAddress(networkId);
+  if (!official) return true;
+  return metadataValue(item, RADIX_SEAL_STANDARD_KEY) === official;
+}
+
+function forgetSignCollection(networkId: number, account: string): void {
+  try {
+    localStorage.removeItem(cacheKey(networkId, account));
+  } catch {
+    /* ignore */
+  }
+}
+
 function toSupply(item: EntityDetailsItem): number {
   return Math.floor(Number(item.details?.total_supply ?? '0')) || 0;
 }
@@ -145,9 +168,11 @@ export async function findSignCollection(
   const cached = readCache(networkId, account);
   if (cached) {
     const [item] = await entityDetails(net, [cached]).catch(() => []);
-    if (item && isSignCollection(item)) {
+    if (item && isSignCollection(item) && belongsToCurrentSeal(item, networkId)) {
       return { resourceAddress: cached, totalSupply: toSupply(item) };
     }
+    // Stale (e.g. a collection from a previous seal deploy): drop it.
+    forgetSignCollection(networkId, account);
   }
 
   const [accountItem] = await entityDetails(net, [account]);
@@ -156,7 +181,9 @@ export async function findSignCollection(
   );
   for (let i = 0; i < held.length; i += 20) {
     const details = await entityDetails(net, held.slice(i, i + 20));
-    const match = details.find(isSignCollection);
+    const match = details.find(
+      (item) => isSignCollection(item) && belongsToCurrentSeal(item, networkId),
+    );
     if (match) {
       rememberSignCollection(networkId, account, match.address);
       return { resourceAddress: match.address, totalSupply: toSupply(match) };

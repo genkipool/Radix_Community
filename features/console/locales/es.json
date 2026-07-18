@@ -1305,6 +1305,7 @@
       "reverseNote": "Una dirección Babylon es un hash unidireccional de la clave pública de la cuenta, por lo que la dirección Olympia se recupera a partir de una firma real encontrada en el ledger.",
       "qrTitle": "QR de importación para la wallet",
       "qrDescription": "Escanea este QR con la app Radix Wallet (Android o iOS) para importar la cuenta legacy. Solo contiene datos públicos: nunca tu frase semilla ni claves privadas.",
+      "qrDownload": "Guardar QR (PNG)",
       "accountType": "Tipo de cuenta",
       "accountTypeSoftware": "Software (frase semilla)",
       "accountTypeSoftwareDesc": "Cuenta creada en el Olympia Desktop Wallet a partir de una frase semilla",

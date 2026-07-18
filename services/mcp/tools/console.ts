@@ -28,11 +28,15 @@ import { previewTransaction } from '@/features/console/services/transactionPrevi
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { fetchKnownAddresses } from '@/services/gateway/knownAddresses';
 import {
-  convertOlympiaAddress,
+  convertOlympiaAddressDetailed,
   decodeSborHex,
   networkIdFromName,
   staticallyValidateManifest,
 } from '@/services/ret';
+import {
+  buildOlympiaExportPayloads,
+  type MnemonicWordCount,
+} from '@/features/console/lib/olympia-export';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
@@ -505,25 +509,95 @@ export const convertOlympiaAddressTool = defineMcpTool({
   name: 'convert_olympia_address',
   title: 'Convert Olympia address',
   description:
-    'Converts a legacy Olympia address (rdx1… account or _rr1… resource) into its Babylon equivalent.',
+    'Converts a legacy Olympia address (rdx1… account or _rr1… resource) into its Babylon equivalent. For accounts it also returns the compressed secp256k1 public key embedded in the address, and the wallet-import QR payload string the Radix Wallet scans to import the legacy account (Settings → "Import from a Legacy Wallet"). Render that string as a QR (or save it) to complete the import. The payload holds only public data, never a seed phrase or private key.',
   category: 'console',
   readOnly: true,
   inputSchema: z.object({
     olympiaAddress: z.string().min(10).max(120).describe('Olympia address (rdx1… or …_rr1…)'),
     network: networkSchema,
+    // Wallet-import QR options — must mirror the original Olympia wallet setup.
+    accountType: z
+      .enum(['S', 'H'])
+      .default('S')
+      .describe('Original Olympia account type: "S" software (seed phrase) or "H" hardware (Ledger).'),
+    addressIndex: z
+      .number()
+      .int()
+      .min(0)
+      .max(999_999_999)
+      .default(0)
+      .describe('BIP44 address index the account was derived with (0 for the first account).'),
+    accountName: z
+      .string()
+      .max(30)
+      .default('')
+      .describe('Display name shown in the mobile wallet during import (max 30 chars).'),
+    wordCount: z
+      .union([z.literal(12), z.literal(15), z.literal(18), z.literal(21), z.literal(24)])
+      .default(12)
+      .describe('Seed-phrase word count of the original Olympia wallet (12, 15, 18, 21 or 24).'),
   }),
-  handler: async ({ olympiaAddress, network }) => {
-    const babylonAddress = await convertOlympiaAddress(olympiaAddress, network).catch(() => {
+  handler: async ({ olympiaAddress, network, accountType, addressIndex, accountName, wordCount }) => {
+    const conversion = await convertOlympiaAddressDetailed(olympiaAddress, network).catch(() => {
       throw new Error('Invalid Olympia address');
     });
-    return cliRender(
+
+    // For accounts, also build the legacy-wallet import QR payload so an agent
+    // can render/save it. Resources have no public key and no import payload.
+    let importPayload: string | null = null;
+    if (conversion.publicKeyHex) {
+      importPayload =
+        buildOlympiaExportPayloads(
+          [
+            {
+              accountType,
+              publicKeyHex: conversion.publicKeyHex,
+              addressIndex,
+              name: accountName,
+            },
+          ],
+          wordCount as MnemonicWordCount,
+        )[0] ?? null;
+    }
+
+    const blocks: Array<string | false | undefined> = [
       cliBanner('Olympia → Babylon'),
       cliKeyValues([
         ['Olympia address', olympiaAddress],
-        ['Babylon address', babylonAddress],
+        ['Kind', conversion.kind],
+        ['Babylon address', conversion.babylonAddress],
+        ...(conversion.publicKeyHex
+          ? ([['Public key (secp256k1)', conversion.publicKeyHex]] as [string, string][])
+          : []),
         ['Network', network],
       ]),
-    );
+    ];
+    if (importPayload) {
+      blocks.push(
+        cliSection('Wallet import QR payload'),
+        cliKeyValues([
+          ['Account type', accountType === 'S' ? 'software (seed phrase)' : 'hardware (Ledger)'],
+          ['Address index', addressIndex],
+          ['Word count', `${wordCount} (must match the original wallet)`],
+        ]),
+        cliCode(importPayload),
+        cliNext([
+          'Render this payload string as a QR code (or save it as a PNG).',
+          'In the Radix Wallet: Settings → "Import from a Legacy Wallet" and scan it.',
+        ]),
+      );
+    }
+    const text = cliRender(...blocks);
+
+    return {
+      text,
+      structured: {
+        kind: conversion.kind,
+        babylonAddress: conversion.babylonAddress,
+        publicKeyHex: conversion.publicKeyHex ?? null,
+        importPayload,
+      },
+    };
   },
 });
 

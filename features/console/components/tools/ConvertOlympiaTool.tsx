@@ -209,7 +209,13 @@ export default function ConvertOlympiaTool({ t }: ConsoleToolProps) {
 
           {qrPayload && (
             <div className="flex justify-center py-2">
-              <QrCode value={qrPayload} alt={labels.qrTitle} size={240} />
+              <QrCode
+                value={qrPayload}
+                alt={labels.qrTitle}
+                size={240}
+                downloadName={`radix-olympia-import${parsedIndex !== null ? `-${parsedIndex}` : ''}.png`}
+                downloadLabel={labels.qrDownload}
+              />
             </div>
           )}
 

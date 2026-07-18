@@ -1304,6 +1304,7 @@
       "reverseNote": "A Babylon address is a one-way hash of the account's public key, so the Olympia address is recovered from a real signature found on the ledger.",
       "qrTitle": "Wallet import QR",
       "qrDescription": "Scan this QR with the Radix Wallet app (Android or iOS) to import the legacy account. It contains only public data — never your seed phrase or private keys.",
+      "qrDownload": "Save QR (PNG)",
       "accountType": "Account type",
       "accountTypeSoftware": "Software (seed phrase)",
       "accountTypeSoftwareDesc": "Account created in the Olympia Desktop Wallet from a seed phrase",

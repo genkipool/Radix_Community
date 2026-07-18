@@ -7,21 +7,22 @@
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 
 /**
- * Fixed Radix Seal brand-resource address per network. Filled in after the
- * one-time deploy (buildRadixSealDeployManifest). Empty string = not yet
+ * Fixed Radix Seal brand-resource address per network, read from the
+ * environment (`NEXT_PUBLIC_RADIX_SEAL_MAINNET` / `_STOKENET`). Set after the
+ * one-time deploy (buildRadixSealDeployManifest). Empty / unset = not yet
  * deployed on that network; the feature still works, the insignia check is
  * simply skipped.
  *
  * v2 (2026-07): the brand is now OPEN-MINT (anyone self-mints their own
  * soulbound seal NFT, RUID ids) so it doubles as each user's owner insignia
  * for their signing collection. The old locked v1 brand cannot serve that
- * role — redeploy and paste the new address here.
+ * role: redeploy and set the new address in the env var. Using env vars keeps
+ * the address out of the source tree and lets each deployment point at its own
+ * brand without a code change.
  */
 export const RADIX_SEAL: Record<number, string> = {
-  [RadixNetworkId.Mainnet]: '',
-  // Cleared for a fresh Stokenet redeploy with the admin-badge + editable
-  // metadata manifest; paste the new resource address here after deploying.
-  [RadixNetworkId.Stokenet]: '',
+  [RadixNetworkId.Mainnet]: process.env.NEXT_PUBLIC_RADIX_SEAL_MAINNET ?? '',
+  [RadixNetworkId.Stokenet]: process.env.NEXT_PUBLIC_RADIX_SEAL_STOKENET ?? '',
 };
 
 export function radixSealAddress(networkId: number): string {
@@ -70,7 +71,7 @@ export const SEAL_IMAGE_URL =
  * always resolve it regardless of the app's own domain.
  */
 export const SEAL_INFO_URL =
-  'https://github.com/genkipool/Radix_Community/tree/main/doc';
+  'https://github.com/genkipool/Radix_Community/tree/main/doc/radix-seal';
 
 /**
  * URL baked into on-ledger `key_image_url` / `icon_url`. Returns the stable

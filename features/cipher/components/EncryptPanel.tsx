@@ -147,25 +147,27 @@ export function EncryptPanel({ t, mode = 'rola', onShare, onReset }: EncryptPane
             {t.errors[flow.error]}
           </p>
         )}
-
-        {(flow.phase === 'idle' || flow.phase === 'error') && (
-          <button
-            type="button"
-            disabled={!file || !receiversOk}
-            onClick={() =>
-              file &&
-              void flow.encrypt(
-                file,
-                ledger ? { access: 'rola-ledger' } : undefined,
-              )
-            }
-            className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-          >
-            <Lock className="size-4" />
-            {t.encrypt.button}
-          </button>
-        )}
       </ToolSection>
+
+      {/* Primary action lives outside the box and spans the full width, to
+          match the rest of the console tools. */}
+      {(flow.phase === 'idle' || flow.phase === 'error') && (
+        <button
+          type="button"
+          disabled={!file || !receiversOk}
+          onClick={() =>
+            file &&
+            void flow.encrypt(
+              file,
+              ledger ? { access: 'rola-ledger' } : undefined,
+            )
+          }
+          className="flex w-full items-center justify-center gap-2 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+        >
+          <Lock className="size-4" />
+          {t.encrypt.button}
+        </button>
+      )}
 
       {/* Invite minting status (ROLA + Ledger) */}
       {ledger && flow.phase === 'ready' && (

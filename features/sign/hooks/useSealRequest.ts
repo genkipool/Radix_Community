@@ -46,7 +46,11 @@ export function useSealSetup(account: string | null) {
   });
   return {
     seal: query.data?.seal ?? null,
-    collection: query.data?.collection ?? null,
+    // A collection only counts as ready when the user ALSO holds the current
+    // seal that owns it. Without the seal (brand undeployed, or a fresh brand
+    // redeploy where the discovered collection belongs to a previous seal) it
+    // must not show as ready: it cannot be minted into with the new seal.
+    collection: query.data?.seal ? (query.data?.collection ?? null) : null,
     loading: query.isFetching,
     ready: query.data !== undefined,
     refetch: query.refetch,

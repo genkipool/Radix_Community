@@ -53,22 +53,36 @@ export function ChatSessionView({
     );
   }
 
+  // Idle: title/hint as a plain header + a full-width primary button OUTSIDE
+  // any box, to match the rest of the console tools.
+  if (session.phase === 'idle') {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
+            {isGuest ? t.join.title : t.start.title}
+          </h3>
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {isGuest ? t.join.hint : t.start.hint}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void (isGuest ? session.join(roomId) : session.start())}
+          className="flex w-full items-center justify-center gap-2 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
+        >
+          <MessageSquareLock className="size-4" />
+          {isGuest ? t.join.button : t.start.button}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <ToolSection
       title={isGuest ? t.join.title : t.start.title}
       hint={isGuest ? t.join.hint : t.start.hint}
     >
-      {session.phase === 'idle' && (
-        <button
-          type="button"
-          onClick={() => void (isGuest ? session.join(roomId) : session.start())}
-          className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
-        >
-          <MessageSquareLock className="size-4" />
-          {isGuest ? t.join.button : t.start.button}
-        </button>
-      )}
-
       {session.phase === 'signing' && <ProgressRow label={t.status.signing} />}
       {session.phase === 'creating' && <ProgressRow label={t.status.creating} />}
       {session.phase === 'connecting' && <ProgressRow label={t.status.connecting} />}
