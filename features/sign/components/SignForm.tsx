@@ -451,6 +451,7 @@ export function SignForm({
           account={onchainAccount}
           onAccountChange={onOnchainAccountChange}
           setup={setup}
+          consoleT={consoleT}
         />
       </div>
     );
@@ -1079,6 +1080,7 @@ export function ResultPanel({
           onAccountChange={() => {}}
           setup={setup}
           lockedAccount
+          consoleT={consoleT}
         />
       )}
 

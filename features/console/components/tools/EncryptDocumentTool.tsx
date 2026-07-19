@@ -10,6 +10,7 @@ import { SealDeployPanel } from '@/features/sign/components/SealDeployPanel';
 import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
+import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { DecryptPanel } from '@/features/cipher/components/DecryptPanel';
 import { EncryptPanel } from '@/features/cipher/components/EncryptPanel';
 import { ReceiveView } from '@/features/cipher/components/ReceiveView';
@@ -47,6 +48,7 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
   // The ROLA + Ledger mode reuses the sign feature's Seal onboarding (same
   // namespace, enriched by the console layout).
   const signT = full.sign as SignDictionary;
+  const consoleT = full.console as ConsoleDictionary;
   const [tab, setTab] = useState<Tab>('encrypt');
   const [mode, setMode] = useState<EncryptMode>('rola');
   const [session, setSession] = useState<PeerSession | null>(null);
@@ -194,6 +196,7 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
                   account={effectiveAccount}
                   onAccountChange={setOnchainAccount}
                   setup={setup}
+                  consoleT={consoleT}
                 />
               </div>
             ) : (

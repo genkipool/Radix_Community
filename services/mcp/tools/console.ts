@@ -37,6 +37,8 @@ import {
   buildOlympiaExportPayloads,
   type MnemonicWordCount,
 } from '@/features/console/lib/olympia-export';
+import { fetchEntityDetails } from '@/services/gateway/entities';
+import { mapHoldings } from '@/features/console/lib/account-holdings';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
@@ -601,6 +603,56 @@ export const convertOlympiaAddressTool = defineMcpTool({
   },
 });
 
+export const resolveVaultAddressTool = defineMcpTool({
+  name: 'resolve_vault_address',
+  title: 'Resolve a vault address',
+  description:
+    'Resolves the internal vault address holding a resource in an account (the target a recall/freeze needs). An account holds a resource in exactly one vault. For non-fungibles it also returns the NFT ids in that vault. Feed the vault into the recall-token / recall-nft / freeze-vault / unfreeze-vault manifest templates.',
+  category: 'console',
+  inputSchema: z.object({
+    account: z
+      .string()
+      .min(10)
+      .max(120)
+      .describe('Account address (account_…) that holds the resource.'),
+    resource: z
+      .string()
+      .min(10)
+      .max(120)
+      .describe('Resource address (resource_…) to locate in the account.'),
+    network: networkSchema,
+  }),
+  handler: async ({ account, resource, network }) => {
+    if (!account.startsWith('account_')) throw new Error('Provide an account_… address.');
+    const details = await fetchEntityDetails(account, network).catch(() => null);
+    if (!details) throw new Error('Could not read that account from the ledger.');
+    const holdings = mapHoldings(details as Record<string, unknown>);
+    const fungible = holdings.fungibles.find((x) => x.resourceAddress === resource);
+    const nonFungible = holdings.nonFungibles.find((x) => x.resourceAddress === resource);
+    const vault = fungible?.vaultAddress ?? nonFungible?.vaultAddress;
+    if (!vault) throw new Error('That account does not hold the resource.');
+    const ids = nonFungible?.ids ?? [];
+    return {
+      text: cliRender(
+        cliBanner('Vault resolution'),
+        cliKeyValues([
+          ['Account', account],
+          ['Resource', resource],
+          ['Kind', fungible ? 'fungible' : 'non-fungible'],
+          ['Vault', vault],
+          ...(ids.length ? ([['NFT ids', ids.join(', ')]] as [string, string][]) : []),
+          ['Network', network],
+        ]),
+      ),
+      structured: {
+        vault,
+        kind: fungible ? 'fungible' : 'non_fungible',
+        ids,
+      },
+    };
+  },
+});
+
 export const inspectAddressTool = defineMcpTool({
   name: 'inspect_address',
   title: 'Inspect a Radix address',
@@ -782,6 +834,7 @@ export const consoleTools = [
   explainManifestTool,
   decodeSborTool,
   convertOlympiaAddressTool,
+  resolveVaultAddressTool,
   inspectAddressTool,
   getKnownAddressesTool,
 ];

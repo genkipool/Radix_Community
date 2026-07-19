@@ -221,12 +221,12 @@
         "deploying": "Confirm in your wallet…",
         "done": "Radix Seal deployed. Copy the resource address below.",
         "paste": "Paste it into features/sign/constants/seal.ts → RADIX_SEAL for this network, then reload.",
-        "adminBadgeLabel": "Admin badge (recommended)",
-        "adminBadgeHint": "With an admin badge, the brand metadata (name, image, description) will be editable only by whoever holds that badge, forever. Paste an existing badge address or mint a new one. Leave empty to make the brand immutable.",
-        "adminBadgePlaceholder": "resource_… (admin badge)",
-        "createBadge": "Mint admin badge",
+        "adminBadgeLabel": "Admin badge NFT (recommended)",
+        "adminBadgeHint": "The admin badge is a single NFT. With it, the brand metadata (name, image, description) will be editable only by whoever holds that badge, forever. Paste an existing badge resource address or mint a new one. Leave empty to make the brand immutable.",
+        "adminBadgePlaceholder": "resource_… (admin badge NFT)",
+        "createBadge": "Mint admin badge NFT",
         "creatingBadge": "Confirm in your wallet…",
-        "badgeReady": "Admin badge minted and in your account. Keep it safe (ideally in a multisig)."
+        "badgeReady": "Admin badge NFT minted and in your account. Keep it safe (ideally in a multisig)."
       },
       "title": "Radix Seal",
       "hint": "Your attestations mint into ONE reusable collection (a new #id per document), not a new resource each time. Customise how it appears in your wallet.",

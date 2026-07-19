@@ -302,12 +302,14 @@ The Radix Seal brand is deployed once per network as an open mint, soulbound
 resource. Anyone self mints their own Seal from it.
 
 The brand's cosmetic metadata (name, image, description, info url, tags) can be
-made editable by a single fungible admin badge held by the brand steward, so the
-artwork or wording can be maintained over time. The admin badge is a fixed supply
-of one whose minting is denied forever, so the authority can never be duplicated;
-it is transferable so it can be moved into an access controller. Everything
-security critical stays immutable, and the seal image is a domain independent URL
-so a change of the app's own domain never breaks the on ledger image.
+made editable by a single admin badge NFT held by the brand steward, so the
+artwork or wording can be maintained over time. The admin badge is one NFT
+(integer id #1#) whose minting is denied forever, so the authority can never be
+duplicated; it is transferable so it can be moved into an access controller. The
+brand's owner role requires that NFT (its global id), so only the badge holder
+can edit the metadata. Everything security critical stays immutable, and the seal
+image is a domain independent URL so a change of the app's own domain never
+breaks the on ledger image.
 
 None of the brand metadata is read during verification: it is purely
 presentational, so even a compromised admin badge could never forge a signature.

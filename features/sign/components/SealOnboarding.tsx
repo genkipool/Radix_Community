@@ -4,10 +4,17 @@ import { useState } from 'react';
 import { CheckCircle2, Circle, FileSignature, RefreshCw, Stamp } from 'lucide-react';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
+import {
+  SimulateButton,
+  SimulateResultCard,
+} from '@/features/console/components/shared/SimulatePanel';
+import { useTransactionPreview } from '@/features/console/hooks/useTransactionPreview';
 import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
+import { buildSignCollectionCreateManifest } from '../lib/sign-request';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { SignDictionary } from '../types/dictionary';
+import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import type { IssuerMeta } from '../types/sign.types';
 
 type SealSetup = ReturnType<typeof useSealSetup>;
@@ -24,6 +31,7 @@ export function SealOnboarding({
   onAccountChange,
   setup,
   lockedAccount = false,
+  consoleT,
 }: {
   t: SignDictionary;
   account: string | null;
@@ -32,9 +40,13 @@ export function SealOnboarding({
   /** Hide the account picker: the acting account is fixed (e.g. an anchoring
       signer that must be one of the certificate's signers). */
   lockedAccount?: boolean;
+  /** Console dictionary; when given, the collection step gains a simulate
+      button that dry-runs the create-collection manifest before sending it. */
+  consoleT?: ConsoleDictionary;
 }) {
   const { activeNetworkId } = useRadixWallet();
   const { mintSeal, createCollection, phase, error } = useSealRequest();
+  const collectionPreview = useTransactionPreview();
   const [orgName, setOrgName] = useState('');
   const [orgWebsite, setOrgWebsite] = useState('');
   const [orgLogoUrl, setOrgLogoUrl] = useState('');
@@ -75,6 +87,22 @@ export function SealOnboarding({
       issuer,
     });
     if (created) setup.refetch();
+  };
+
+  // Dry-run the SAME manifest onCreateCollection submits, before sending it.
+  const onSimulateCollection = () => {
+    if (!account || !setup.seal || activeNetworkId == null) return;
+    collectionPreview.simulate(
+      buildSignCollectionCreateManifest({
+        account,
+        sealGlobalId: setup.seal.globalId,
+        sealAddress: radixSealAddress(activeNetworkId),
+        networkId: activeNetworkId,
+        collectionName: issuer?.orgName ?? 'Signing collection',
+        imageUrl: issuer?.orgLogoUrl ?? nftImage,
+        issuer,
+      }),
+    );
   };
 
   return (
@@ -196,21 +224,39 @@ export function SealOnboarding({
           disabled={busy}
         />
         <Muted text={t.onchain.issuerHint} />
-        <button
-          type="button"
-          disabled={busy || !setup.seal}
-          onClick={onCreateCollection}
-          className="flex items-center gap-2 px-5 h-10 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-        >
-          {phase === 'creating-collection' ? (
-            <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-          ) : (
-            <FileSignature className="size-3.5" />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            disabled={busy || !setup.seal}
+            onClick={onCreateCollection}
+            className="flex flex-1 items-center justify-center gap-2 px-5 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+          >
+            {phase === 'creating-collection' ? (
+              <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            ) : (
+              <FileSignature className="size-3.5" />
+            )}
+            {phase === 'creating-collection'
+              ? t.onchain.collectionCreating
+              : t.onchain.collectionCreate}
+          </button>
+          {consoleT && (
+            <SimulateButton
+              t={consoleT.simulate}
+              onClick={onSimulateCollection}
+              disabled={busy || !setup.seal}
+              loading={collectionPreview.isSimulating}
+            />
           )}
-          {phase === 'creating-collection'
-            ? t.onchain.collectionCreating
-            : t.onchain.collectionCreate}
-        </button>
+        </div>
+        {consoleT && (
+          <SimulateResultCard
+            t={consoleT.simulate}
+            preview={collectionPreview.preview}
+            error={collectionPreview.error}
+            onClose={collectionPreview.reset}
+          />
+        )}
       </StepRow>
 
       {errorMsg && (

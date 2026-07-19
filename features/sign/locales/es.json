@@ -221,12 +221,12 @@
         "deploying": "Confirma en tu wallet…",
         "done": "Radix Seal desplegado. Copia la dirección del recurso de abajo.",
         "paste": "Pégala en features/sign/constants/seal.ts → RADIX_SEAL para esta red y recarga.",
-        "adminBadgeLabel": "Badge de administración (recomendado)",
-        "adminBadgeHint": "Con un badge de admin, los metadatos de la marca (nombre, imagen, descripción) serán editables solo por quien tenga ese badge, para siempre. Pega la dirección de un badge existente o acuña uno nuevo. Si lo dejas vacío, la marca quedará inmutable.",
-        "adminBadgePlaceholder": "resource_… (badge de admin)",
-        "createBadge": "Acuñar badge de admin",
+        "adminBadgeLabel": "Badge de administración NFT (recomendado)",
+        "adminBadgeHint": "El badge de admin es un único NFT. Con él, los metadatos de la marca (nombre, imagen, descripción) serán editables solo por quien tenga ese badge, para siempre. Pega la dirección del recurso de un badge existente o acuña uno nuevo. Si lo dejas vacío, la marca quedará inmutable.",
+        "adminBadgePlaceholder": "resource_… (badge de admin NFT)",
+        "createBadge": "Acuñar badge de admin NFT",
         "creatingBadge": "Confirma en tu wallet…",
-        "badgeReady": "Badge de admin acuñado y en tu cuenta. Guárdalo bien (idealmente en un multisig)."
+        "badgeReady": "Badge de admin NFT acuñado y en tu cuenta. Guárdalo bien (idealmente en un multisig)."
       },
       "title": "Radix Seal",
       "hint": "Tus atestaciones se acuñan en UNA colección reutilizable (un #id nuevo por documento), no un recurso nuevo cada vez. Personaliza cómo aparece en tu wallet.",

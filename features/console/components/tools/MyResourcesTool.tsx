@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Pencil, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
@@ -47,6 +48,7 @@ import { OptionButtons } from '../shared/OptionButtons';
 import { AuthRoleRow } from '../shared/AuthRoleRow';
 import { TextField, SearchField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
+import { resolveTargetVault, targetKind } from '../../lib/vault-resolve';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
 
@@ -195,7 +197,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const common = t.common;
   const labels = t.myResources;
   const { language } = useLanguage();
-  const { isLoading: walletLoading } = useRadixWallet();
+  const { isLoading: walletLoading, activeNetwork } = useRadixWallet();
 
   const [accounts, setAccounts] = useState<string[]>([]);
   const [resource, setResource] = useState<string | null>(null);
@@ -390,6 +392,42 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   });
   const activeAction = availableActions.includes(action) ? action : availableActions[0] ?? 'lockMetadata';
 
+  // Recall/freeze target: a single field accepting an account_ (resolved to its
+  // vault for this resource, with NFT ids) or a raw internal_vault_ address.
+  const targetInput = (fields.vault ?? '').trim();
+  const targetIsResolvable =
+    (activeAction === 'recall' || activeAction === 'freeze') &&
+    !!resource &&
+    targetKind(targetInput) !== 'unknown';
+  const {
+    data: resolvedTarget,
+    isFetching: resolvingTarget,
+    error: resolveError,
+  } = useQuery({
+    queryKey: ['resolve-vault', activeNetwork, resource, targetInput],
+    enabled: targetIsResolvable,
+    queryFn: () => resolveTargetVault(targetInput, resource ?? '', activeNetwork),
+    staleTime: 30_000,
+  });
+  // NFT ids for a manually targeted vault: from the resolver (account input) or,
+  // for a raw vault, from the already-discovered vault list.
+  const resolvedNftIds = (): string[] => {
+    if (!resolvedTarget) return [];
+    if (resolvedTarget.ids.length > 0) return resolvedTarget.ids;
+    return allVaultsData.find((v) => v.address === resolvedTarget.vault)?.ids ?? [];
+  };
+
+  // Only the first 50 discovered vaults are shown as selectable cards; the rest
+  // are reached through the account/vault field above.
+  const VAULT_CARD_LIMIT = 50;
+  const filterVaultsBySearch = (search: string) =>
+    allVaultsData.filter(
+      (v) =>
+        !search ||
+        v.address.toLowerCase().includes(search.toLowerCase()) ||
+        (v.account?.toLowerCase().includes(search.toLowerCase()) ?? false),
+    );
+
   /* ── Build the manifest for the configured action ── */
   const buildActionManifest = (): string => {
     if (!account || !resource) return '';
@@ -446,8 +484,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
       }
       case 'recall': {
         if (isNonFungible) {
-          // Recall every NFT in each selected vault (recall is vault-scoped).
-          if (recallVaults.size === 0) return '';
+          // Recall every NFT in each selected vault (recall is vault-scoped):
+          // the cards the user picked, plus a manually targeted vault beyond the
+          // listed ones (an account_ input resolves its vault AND its ids).
           let manifest = '';
           for (const vaultAddr of recallVaults) {
             const vault = allVaultsData.find((v) => v.address === vaultAddr);
@@ -455,10 +494,19 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               manifest += recallManifest(vault.address, '0', vault.ids);
             }
           }
+          if (resolvedTarget && !recallVaults.has(resolvedTarget.vault)) {
+            const ids = resolvedNftIds();
+            if (ids.length > 0) manifest += recallManifest(resolvedTarget.vault, '0', ids);
+          }
           if (manifest) manifest += DEPOSIT_ALL_SUFFIX(account);
           return manifest;
         }
-        const recallVault = field('vault') || selectedFungible?.vaultAddress || '';
+        // Fungible: recall an amount from the resolved target vault (recall
+        // targets OTHER accounts' vaults, entered as an account or vault). Only
+        // fall back to the own vault when the field is empty: a typed-but-
+        // unresolved target must NOT silently hit the connected account.
+        const recallVault =
+          resolvedTarget?.vault || (targetInput === '' ? selectedFungible?.vaultAddress ?? '' : '');
         const recallAmount = field('amount');
         return recallVault && recallAmount
           ? recallManifest(recallVault, recallAmount) + DEPOSIT_ALL_SUFFIX(account)
@@ -470,13 +518,20 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         if (!freezeFlag) return '';
 
         if (isNonFungible) {
-          if (freezeVaults.size === 0) return '';
-          return Array.from(freezeVaults)
-            .map(vault => freezeVaultManifest(vault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze'))
+          // Selected cards plus a manually targeted vault (freeze needs no ids).
+          const targets = new Set<string>(freezeVaults);
+          if (resolvedTarget) targets.add(resolvedTarget.vault);
+          if (targets.size === 0) return '';
+          return Array.from(targets)
+            .map((vault) => freezeVaultManifest(vault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze'))
             .join('');
         }
 
-        const freezeVault = field('vault') || selectedFungible?.vaultAddress || '';
+        // Fungible: freeze/unfreeze the resolved target vault. Only fall back to
+        // the own vault when the field is empty (a typed-but-unresolved target
+        // must not silently hit the connected account).
+        const freezeVault =
+          resolvedTarget?.vault || (targetInput === '' ? selectedFungible?.vaultAddress ?? '' : '');
         return freezeVault
           ? freezeVaultManifest(freezeVault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze')
           : '';
@@ -1023,14 +1078,46 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   </div>
                 )}
 
-                {(!isNonFungible && (activeAction === 'freeze' || activeAction === 'recall')) && (
-                  <TextField
-                    label={labels.fields.vault}
-                    hint={labels.fields.vaultHint}
-                    value={fields.vault ?? selectedFungible?.vaultAddress ?? selectedNonFungible?.vaultAddress ?? ''}
-                    onChange={(value) => setField('vault', value)}
-                    disabled={isSending || inputsDisabled}
-                  />
+                {(activeAction === 'freeze' || activeAction === 'recall') && (
+                  <div className="flex flex-col gap-1.5">
+                    <TextField
+                      label={labels.fields.vault}
+                      hint={labels.fields.vaultHint}
+                      value={fields.vault ?? ''}
+                      onChange={(value) => setField('vault', value)}
+                      placeholder={labels.fields.vaultPlaceholder}
+                      disabled={isSending || inputsDisabled}
+                    />
+                    {targetInput && targetKind(targetInput) === 'unknown' && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                        {labels.fields.vaultInvalid}
+                      </span>
+                    )}
+                    {resolvingTarget && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-text-muted)' }}>
+                        {labels.fields.vaultResolving}
+                      </span>
+                    )}
+                    {!resolvingTarget && targetKind(targetInput) === 'account' && resolveError && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                        {labels.fields.vaultResolveError}
+                      </span>
+                    )}
+                    {!resolvingTarget &&
+                      targetKind(targetInput) === 'account' &&
+                      !resolveError &&
+                      resolvedTarget === null && (
+                        <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                          {labels.fields.vaultNotHeld}
+                        </span>
+                      )}
+                    {!resolvingTarget && resolvedTarget && targetKind(targetInput) === 'account' && (
+                      <span className="text-[11px] px-1 font-mono truncate" style={{ color: 'var(--color-primary)' }}>
+                        {labels.fields.vaultResolved.replace('{vault}', truncateAddress(resolvedTarget.vault, 8, 6))}
+                        {isNonFungible ? ` · ${resolvedNftIds().length} NFT` : ''}
+                      </span>
+                    )}
+                  </div>
                 )}
                 {activeAction === 'recall' && isFungible && (
                   <TextField
@@ -1063,8 +1150,8 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {allVaultsData
-                        .filter(v => !recallNftSearch || v.address.toLowerCase().includes(recallNftSearch.toLowerCase()) || (v.account?.toLowerCase().includes(recallNftSearch.toLowerCase())))
+                      {filterVaultsBySearch(recallNftSearch)
+                        .slice(0, VAULT_CARD_LIMIT)
                         .map((vault) =>
                           renderVaultCard(
                             vault,
@@ -1080,9 +1167,16 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             isSending || inputsDisabled,
                           ),
                         )}
-                      {allVaultsData.filter(v => !recallNftSearch || v.address.toLowerCase().includes(recallNftSearch.toLowerCase()) || (v.account?.toLowerCase().includes(recallNftSearch.toLowerCase()))).length === 0 && (
+                      {filterVaultsBySearch(recallNftSearch).length === 0 && (
                         <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                           {labels.fields.noVaultsFound}
+                        </div>
+                      )}
+                      {filterVaultsBySearch(recallNftSearch).length > VAULT_CARD_LIMIT && (
+                        <div className="col-span-full text-center py-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.vaultsLimited
+                            .replace('{shown}', String(VAULT_CARD_LIMIT))
+                            .replace('{total}', String(filterVaultsBySearch(recallNftSearch).length))}
                         </div>
                       )}
                     </div>
@@ -1109,8 +1203,8 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {allVaultsData
-                        .filter(v => !freezeVaultSearch || v.address.toLowerCase().includes(freezeVaultSearch.toLowerCase()) || (v.account?.toLowerCase().includes(freezeVaultSearch.toLowerCase())))
+                      {filterVaultsBySearch(freezeVaultSearch)
+                        .slice(0, VAULT_CARD_LIMIT)
                         .map((vault) =>
                           renderVaultCard(
                             vault,
@@ -1126,9 +1220,16 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             isSending || inputsDisabled,
                           ),
                         )}
-                      {allVaultsData.filter(v => !freezeVaultSearch || v.address.toLowerCase().includes(freezeVaultSearch.toLowerCase()) || (v.account?.toLowerCase().includes(freezeVaultSearch.toLowerCase()))).length === 0 && (
+                      {filterVaultsBySearch(freezeVaultSearch).length === 0 && (
                         <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                           {labels.fields.noVaultsFound}
+                        </div>
+                      )}
+                      {filterVaultsBySearch(freezeVaultSearch).length > VAULT_CARD_LIMIT && (
+                        <div className="col-span-full text-center py-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.vaultsLimited
+                            .replace('{shown}', String(VAULT_CARD_LIMIT))
+                            .replace('{total}', String(filterVaultsBySearch(freezeVaultSearch).length))}
                         </div>
                       )}
                     </div>
