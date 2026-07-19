@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BadgeCheck, Download, Lock, RotateCcw, Share2, Stamp, XCircle } from 'lucide-react';
+import { BadgeCheck, Download, ExternalLink, Lock, RotateCcw, Share2, Stamp, XCircle } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { explorerTxUrl } from '@/features/sign/lib/explorer';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { StringListField } from '@/features/console/components/shared/StringListField';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
@@ -46,6 +48,8 @@ interface EncryptPanelProps {
 export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, actingAccount, onShare, onReset }: EncryptPanelProps) {
   const flow = useEncryptFlow();
   const preview = useTransactionPreview();
+  const { language } = useLanguage();
+  const [txHash, setTxHash] = useState<string | null>(null);
   const busy = flow.phase === 'signing' || flow.phase === 'encrypting';
 
   /* ── ROLA + Ledger: authorized receivers + invite minting ── */
@@ -75,7 +79,7 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
   const mintInvites = async () => {
     if (!flow.result || !setup.seal || !setup.collection || !encryptorAccount) return;
     setMintState('minting');
-    const ok = await seal.mintCipherInvites({
+    const hash = await seal.mintCipherInvites({
       account: encryptorAccount,
       sealGlobalId: setup.seal.globalId,
       collection: setup.collection.resourceAddress,
@@ -84,8 +88,11 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
       receivers: cleanReceivers,
       imageUrl: sealImageUrl(window.location.origin),
     });
-    setMintState(ok ? 'done' : 'error');
-    if (ok) setup.refetch();
+    setMintState(hash ? 'done' : 'error');
+    if (hash) {
+      setTxHash(hash);
+      setup.refetch();
+    }
   };
 
   // Auto-mint the on-ledger record right after encryption completes (one wallet
@@ -101,6 +108,16 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
     mintStartedRef.current = true;
     queueMicrotask(() => void mintInvitesRef.current());
   }, [ledger, flow.phase, setup.seal, setup.collection]);
+
+  // Auto-download the encrypted file once it is ready: for ROLA when encryption
+  // completes, for ROLA + Ledger once the on-ledger record is minted.
+  const downloadedRef = useRef(false);
+  const downloadable = flow.phase === 'ready' && !!flow.result && (!ledger || mintState === 'done');
+  useEffect(() => {
+    if (!downloadable || downloadedRef.current) return;
+    downloadedRef.current = true;
+    queueMicrotask(() => void flow.download());
+  }, [downloadable, flow]);
 
   // Dry-run the mint BEFORE encrypting, using the selected account and a
   // placeholder header hash (locked string data — a placeholder is enough to
@@ -138,6 +155,8 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
       void flow.reset();
       setMintState('idle');
       mintStartedRef.current = false;
+      downloadedRef.current = false;
+      setTxHash(null);
     }
   };
 
@@ -147,6 +166,8 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
     void flow.reset();
     setMintState('idle');
     mintStartedRef.current = false;
+    downloadedRef.current = false;
+    setTxHash(null);
   };
 
   return (
@@ -315,6 +336,21 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
                 <Share2 className="size-4" />
                 {t.encrypt.share}
               </button>
+            )}
+            {txHash && (
+              <a
+                href={explorerTxUrl(language, txHash)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
+                style={{
+                  borderColor: 'var(--color-card-border)',
+                  color: 'var(--color-text-main)',
+                }}
+              >
+                <ExternalLink className="size-4" />
+                {t.encrypt.viewTransaction}
+              </a>
             )}
             <button
               type="button"

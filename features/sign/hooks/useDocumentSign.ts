@@ -181,7 +181,7 @@ export function useDocumentSign() {
           sealGlobalId: seal.globalId,
           sealAddress,
           networkId,
-          collectionName: input.collectionName || 'Signing collection',
+          collectionName: input.collectionName || '',
           imageUrl,
           firstSignature: { docHash: input.docHash, request: '', signedAt: input.timestamp },
         });

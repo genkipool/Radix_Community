@@ -6,7 +6,7 @@
     },
     "disclaimer": {
       "title": "Tu archivo nunca sale de tu navegador",
-      "body": "El cifrado, el descifrado y el almacenamiento ocurren en local. Los archivos viajan solo por un canal directo entre navegadores, cifrado de extremo a extremo, nunca a través de un servidor. La clave se deriva de la firma de tu wallet: solo la cuenta que cifró un archivo puede desbloquearlo."
+      "body": "El cifrado, el descifrado y el almacenamiento ocurren en local. El archivo solo viaja cuando tú decides compartirlo con un enlace: en ese caso va por un canal directo entre navegadores, cifrado de extremo a extremo, nunca a través de un servidor. Si no compartes el enlace, no sale de tu navegador. La clave se deriva de la firma de tu wallet: solo la cuenta que cifró un archivo puede desbloquearlo."
     },
     "connect": {
       "title": "Conecta tu Radix Wallet",
@@ -67,7 +67,8 @@
       "readyHint": "Descarga la copia cifrada para guardarla, o compártela directamente con un receptor por un canal seguro.",
       "download": "Descargar archivo cifrado",
       "share": "Compartir con un receptor",
-      "encryptAnother": "Cifrar otro archivo"
+      "encryptAnother": "Cifrar otro archivo",
+      "viewTransaction": "Ver transacción"
     },
     "progress": {
       "signing": "Confirma la solicitud en tu Radix Wallet…",
@@ -86,7 +87,7 @@
     },
     "share": {
       "title": "Comparte este enlace",
-      "hintReceive": "Envía este enlace a la persona que debe recibir el archivo. Al abrirlo se crea un canal cifrado directo y el archivo se transfiere de navegador a navegador.",
+      "hintReceive": "Envía este enlace a la persona que debe recibir el archivo. Al abrirlo se crea un canal cifrado directo y el archivo se transfiere de navegador a navegador. Además de recibir el archivo, esa persona te devuelve un reto ROLA, para que tú, con una firma de tu wallet, liberes la clave y su copia se descifre.",
       "hintUnlock": "Envía este enlace a la persona que cifró el archivo (p. ej. por WhatsApp). Cuando lo abra y firme con su wallet, tu archivo se descifrará aquí.",
       "copy": "Copiar enlace",
       "copied": "¡Copiado!",

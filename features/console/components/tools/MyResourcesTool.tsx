@@ -603,10 +603,18 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
     activeAction === 'setOwnerRole'
       ? normalizedRoles?.['owner']
       : resolveEffectiveRule(roleInfo?.setter);
+  // A Radix Seal signing collection is created with a LOCKED (Fixed) owner role,
+  // so SET_OWNER_ROLE can never succeed on it. Detected by its metadata marker;
+  // the gateway does not expose the owner-role lock reliably for other resources.
+  const ownerRoleLocked = (
+    (rolesData?.details?.metadata?.items as MetadataItem[] | undefined) ?? []
+  ).some((m) => m.key === 'radix_sign_collection' && m.value?.typed?.value === 'v1');
+  const ownerRoleActionLocked = activeAction === 'setOwnerRole' && ownerRoleLocked;
+
   // A 'badge' rule needs a matching badge PROOF presented. DenyAll can never
-  // succeed. AllowAll needs nothing.
+  // succeed. AllowAll needs nothing. A locked owner role can never be changed.
   const actionNeedsBadge = activeRule === 'badge';
-  const actionForbidden = activeRule === 'denyAll';
+  const actionForbidden = activeRule === 'denyAll' || ownerRoleActionLocked;
   // The picker only offers required badges the account actually holds, so when
   // the user lacks it, `proof` stays null → the action must stay disabled.
   const presentedBadgeOk =
@@ -781,10 +789,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               const ownerVal = normalizedRoles['owner'] || 'badge';
               roleStr = authRoleLabels[ownerVal] || ownerVal;
               ruleType = ownerVal;
-              isActionLocked = false;
+              // The owner role of a signing collection is Fixed: mark it locked.
+              isActionLocked = ownerRoleLocked;
             }
 
-            const isActionDenied = ruleType === 'denyAll';
+            // A locked owner role (Fixed) can never be changed, so its options
+            // and the send button are disabled, like a denied action.
+            const isActionDenied = ruleType === 'denyAll' || ownerRoleActionLocked;
             // When the action needs a badge the account does not hold (so no
             // proof is presented), every input is locked too, making it clear
             // nothing can be edited until the badge is presented.

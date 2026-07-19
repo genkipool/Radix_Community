@@ -144,7 +144,7 @@ An integrator can implement Radix Seal entirely from these conventions.
 | `radix_sign_collection = v1` | Marks a genuine signing collection |
 | `radix_seal` | The official brand resource this collection references |
 | `issuer` | The account that created the collection (locked, anti spoofing) |
-| `org_name` | Formal issuer name (locked) |
+| `org_name` | Formal issuer name (editable by the owner) |
 | `org_url` | Issuer website (editable by the owner) |
 | `name`, `icon_url` | Display name and image (editable by the owner) |
 

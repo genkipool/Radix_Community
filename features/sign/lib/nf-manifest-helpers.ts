@@ -121,9 +121,11 @@ export const ownerEditableMetadataRoles = () =>
             `);
 
 /**
- * Optional issuer-identity metadata entries: the issuer account and org name
- * are locked (anti-spoofing); the website stays updatable by the owner so a
- * company can move domains. The logo is NOT emitted here — callers publish
+ * Optional issuer-identity metadata entries: the issuer ACCOUNT is locked (the
+ * real anti-spoofing anchor, cryptographically bound). The org name and website
+ * stay updatable by the owner (the seal holder) so a company can fix a typo,
+ * rebrand or move domains; they are self-declared display labels, so locking
+ * them adds no real security. The logo is NOT emitted here — callers publish
  * it as the collection's own (updatable) `icon_url`.
  */
 export const issuerMetadataEntries = (
@@ -137,7 +139,7 @@ export const issuerMetadataEntries = (
   )`,
   ];
   if (issuer?.orgName) {
-    entries.push(initialMetadataEntry('org_name', issuer.orgName, true));
+    entries.push(initialMetadataEntry('org_name', issuer.orgName, false));
   }
   if (issuer?.orgWebsite) {
     entries.push(

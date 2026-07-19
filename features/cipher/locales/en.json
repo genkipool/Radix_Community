@@ -6,7 +6,7 @@
     },
     "disclaimer": {
       "title": "Your file never leaves your browser",
-      "body": "Encryption, decryption and storage happen locally. Files travel only over a direct, end-to-end encrypted peer-to-peer channel between browsers, never through a server. The key is derived from your wallet signature: only the account that encrypted a file can unlock it."
+      "body": "Encryption, decryption and storage happen locally. The file only travels when you choose to share it with a link: in that case it goes over a direct, end-to-end encrypted peer-to-peer channel between browsers, never through a server. If you do not share the link, it never leaves your browser. The key is derived from your wallet signature: only the account that encrypted a file can unlock it."
     },
     "connect": {
       "title": "Connect your Radix Wallet",
@@ -43,7 +43,8 @@
       "readyHint": "Download the encrypted copy for safekeeping, or share it directly with a receiver over a secure channel.",
       "download": "Download encrypted file",
       "share": "Share with a receiver",
-      "encryptAnother": "Encrypt another file"
+      "encryptAnother": "Encrypt another file",
+      "viewTransaction": "View transaction"
     },
     "progress": {
       "signing": "Confirm the request in your Radix Wallet…",
@@ -62,7 +63,7 @@
     },
     "share": {
       "title": "Share this link",
-      "hintReceive": "Send this link to the person who should receive the file. When they open it, a direct encrypted channel is created and the file is transferred browser-to-browser.",
+      "hintReceive": "Send this link to the person who should receive the file. When they open it, a direct encrypted channel is created and the file is transferred browser-to-browser. On top of receiving the file, they send you a ROLA challenge back, so you, with a signature from your wallet, release the key and their copy is decrypted.",
       "hintUnlock": "Send this link to the person who encrypted the file (e.g. via WhatsApp). When they open it and sign with their wallet, your file will be decrypted here.",
       "copy": "Copy link",
       "copied": "Copied!",

@@ -1023,7 +1023,7 @@ export function ResultPanel({
           sealGlobalId: setup.seal.globalId,
           sealAddress: radixSealAddress(activeNetworkId),
           networkId: activeNetworkId,
-          collectionName: 'Signing collection',
+          collectionName: '',
           imageUrl,
           firstSignature: {
             docHash: payload.docHash,

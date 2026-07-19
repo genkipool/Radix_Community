@@ -264,7 +264,7 @@
       "downloadCert": "Download certificate",
       "downloadPdf": "Download signed PDF",
       "newSignature": "Sign another",
-      "viewOnLedger": "View on-ledger",
+      "viewOnLedger": "View transaction",
       "anchorNow": "Anchor on-ledger",
       "anchoringNow": "Minting NFTs…"
     },

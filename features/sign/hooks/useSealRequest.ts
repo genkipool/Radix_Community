@@ -285,9 +285,9 @@ export function useSealRequest() {
     headerHash: string;
     receivers: string[];
     imageUrl: string;
-  }): Promise<boolean> => {
+  }): Promise<string | null> => {
     setError(null);
-    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('creating');
     const manifest = buildCipherInviteManifest({
       account: args.account,
@@ -300,9 +300,9 @@ export function useSealRequest() {
       imageUrl: args.imageUrl,
     });
     const tx = await sendTransaction(manifest);
-    if (!tx) return !!fail('onchain_failed');
+    if (!tx) return fail('onchain_failed');
     setPhase('done');
-    return true;
+    return tx.transactionIntentHash;
   };
 
   /** Mints the receiver's decryption receipt into their OWN collection. */

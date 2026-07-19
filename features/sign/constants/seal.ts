@@ -49,7 +49,9 @@ export const SIGN_COLLECTION_MARKER_VALUE = 'v1';
 /* ─── Display defaults ────────────────────────────────────────────────────── */
 
 export const RADIX_SEAL_NAME = 'Radix Seal';
-export const DEFAULT_COLLECTION_NAME = 'Radix Seal Attestations';
+/** Default name/symbol of a signing collection when the user leaves them empty. */
+export const DEFAULT_COLLECTION_NAME = 'Collection Radix Seal';
+export const DEFAULT_COLLECTION_SYMBOL = 'CSEAL';
 
 /** App-hosted path to the brand image (served from /public), used by the
  *  client-side PDF watermark, which fetches and rasterises it same-origin. */

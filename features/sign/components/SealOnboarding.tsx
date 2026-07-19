@@ -80,7 +80,7 @@ export function SealOnboarding({
       existingSeal: setup.seal,
       // The collection is named after the user/company alone — no branding
       // suffix. It stays editable later by the seal holder anyway.
-      collectionName: issuer?.orgName ?? 'Signing collection',
+      collectionName: issuer?.orgName ?? '',
       symbol: symbol.trim() || undefined,
       imageUrl: issuer?.orgLogoUrl ?? nftImage,
       issuer,
@@ -104,7 +104,7 @@ export function SealOnboarding({
           sealGlobalId: setup.seal.globalId,
           sealAddress: sealResource,
           networkId: activeNetworkId,
-          collectionName: issuer?.orgName ?? 'Signing collection',
+          collectionName: issuer?.orgName ?? '',
           symbol: symbol.trim() || undefined,
           imageUrl: issuer?.orgLogoUrl ?? nftImage,
           issuer,

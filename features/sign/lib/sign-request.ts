@@ -33,6 +33,8 @@ import {
   sanitizeSymbol,
 } from './nf-manifest-helpers';
 import {
+  DEFAULT_COLLECTION_NAME,
+  DEFAULT_COLLECTION_SYMBOL,
   RADIX_SEAL_STANDARD_KEY,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
@@ -181,10 +183,12 @@ export function buildSignCollectionCreateManifest(
   // Everything is locked EXCEPT display metadata — name, icon_url (image)
   // and org_url — which the owner (the seal holder) may update later.
   const iconUrl = input.issuer?.orgLogoUrl || input.imageUrl;
-  const symbol = sanitizeSymbol(input.symbol);
+  // Defaults when the user leaves the fields empty.
+  const collectionName = input.collectionName?.trim() || DEFAULT_COLLECTION_NAME;
+  const symbol = sanitizeSymbol(input.symbol) || DEFAULT_COLLECTION_SYMBOL;
   const metadata = [
-    initialMetadataEntry('name', input.collectionName, false),
-    ...(symbol ? [initialMetadataEntry('symbol', symbol, false)] : []),
+    initialMetadataEntry('name', collectionName, false),
+    initialMetadataEntry('symbol', symbol, false),
     initialMetadataEntry(
       'description',
       'Personal Radix Seal signing collection: signing invitations issued by ' +

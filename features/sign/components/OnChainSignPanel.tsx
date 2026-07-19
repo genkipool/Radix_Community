@@ -235,7 +235,7 @@ export function OnChainSignPanel({
       ok = !!(await createCollection({
         account: signerAccount,
         sealGlobalId: setup.seal.globalId,
-        collectionName: 'Signing collection',
+        collectionName: '',
         imageUrl: nftImage,
         firstSignature: {
           docHash: status.docHash,
@@ -268,7 +268,7 @@ export function OnChainSignPanel({
             sealGlobalId: setup.seal.globalId,
             sealAddress: radixSealAddress(activeNetworkId ?? 2),
             networkId: activeNetworkId ?? 2,
-            collectionName: 'Signing collection',
+            collectionName: '',
             imageUrl: nftImage,
             firstSignature: {
               docHash: status.docHash,
