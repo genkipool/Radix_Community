@@ -25,7 +25,7 @@
       "label": "Archivo a cifrar",
       "prompt": "Suelta aquí cualquier archivo o haz clic para buscarlo. Sin límite de tamaño: se procesa por bloques y nunca se sube.",
       "encLabel": "Archivo cifrado",
-      "encPrompt": "Suelta aquí un archivo .radixenc o haz clic para buscarlo.",
+      "encPrompt": "Suelta aquí un archivo .radixseal.enc o haz clic para buscarlo.",
       "metaName": "Archivo original",
       "metaSize": "Tamaño",
       "metaSender": "Cifrado por",
@@ -35,14 +35,16 @@
       "accessRola": "ROLA",
       "accessRolaLedger": "ROLA + Ledger",
       "fingerprint": "Huella",
-      "invalid": "Esto no es un archivo .radixenc válido."
+      "invalid": "Esto no es un archivo .radixseal.enc válido."
     },
     "ledger": {
-      "receiversLabel": "Receptores autorizados",
-      "receiversHint": "Se acuña una invitación NFT por cuenta en tu colección de firma (la misma de la sección Firmar documento) y se deposita en la wallet de cada receptor. Solo esas cuentas podrán solicitar el descifrado de este archivo.",
+      "receiversLabel": "Receptores autorizados (opcional)",
+      "receiversHint": "Opcional: déjalo vacío para cifrar el archivo solo para ti. Por cada cuenta que añadas se acuña una invitación NFT en tu colección de firma (la misma de la sección Firmar documento) y se deposita en la wallet de ese receptor, así solo esas cuentas podrán solicitar el descifrado.",
       "receiverPlaceholder": "account_rdx… / account_tdx_2_…",
       "addReceiver": "Añadir receptor",
       "invalidReceiver": "Dirección de cuenta no válida para esta red",
+      "register": "Registrar en la cadena",
+      "registerHint": "El archivo está cifrado. Regístralo en la cadena para acuñar las invitaciones NFT (una por receptor, o un registro para ti si no hay ninguno). Simula antes para comprobar que no fallará.",
       "minting": "Acuñando las invitaciones NFT en el ledger… Confirma en tu wallet.",
       "minted": "Invitaciones acuñadas y depositadas. Los receptores ya pueden solicitar el descifrado.",
       "mintFailed": "No se pudieron acuñar las invitaciones. Sin ellas, ningún receptor podrá pedir el descifrado.",
@@ -69,6 +71,7 @@
     },
     "progress": {
       "signing": "Confirma la solicitud en tu Radix Wallet…",
+      "cancel": "Cancelar",
       "deriving": "Derivando la clave de cifrado…",
       "encrypting": "Cifrando",
       "decrypting": "Descifrando",
@@ -105,7 +108,7 @@
       "personaHint": "Usando el nombre de la persona de tu wallet conectada.",
       "decryptButton": "Descifrar",
       "requestButton": "Solicitar descifrado",
-      "downloadEncrypted": "Descargar copia cifrada (.radixenc)",
+      "downloadEncrypted": "Descargar copia cifrada (.radixseal.enc)",
       "saveDecrypted": "Guardar archivo descifrado",
       "deleteLocal": "Eliminar copia local",
       "receivedTitle": "Archivo recibido"
@@ -137,7 +140,7 @@
       "room_busy": "Alguien ya se unió con este enlace. Cada enlace sirve para una sola sesión.",
       "signaling_unavailable": "No se pudo contactar con el servicio de señalización. Revisa tu conexión e inténtalo de nuevo.",
       "storage_quota": "No hay suficiente almacenamiento en el navegador para este archivo.",
-      "invalid_container": "Esto no es un archivo .radixenc válido.",
+      "invalid_container": "Esto no es un archivo .radixseal.enc válido.",
       "webrtc_failed": "No se pudo establecer una conexión directa entre navegadores. Inténtalo de nuevo, idealmente con ambos dispositivos en redes que permitan tráfico entre pares.",
       "file_read": "No se pudo leer el archivo.",
       "unknown": "Algo salió mal. Inténtalo de nuevo."

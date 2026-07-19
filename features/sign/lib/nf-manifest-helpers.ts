@@ -17,6 +17,18 @@ export const escapeManifestString = (value: string) =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 /**
+ * Resource symbol normaliser: uppercase alphanumerics, hard-capped at 5 chars.
+ * Enforced HERE, in the shared manifest builder (the single source of truth for
+ * what gets signed), so the 5-char limit holds even if a browser input's
+ * maxLength is tampered with. These are self-custody transactions signed with
+ * the user's own wallet, so this builder is the app's real enforcement point;
+ * there is no server in the signing path to gate the manifest.
+ */
+export const MAX_SYMBOL_LENGTH = 5;
+export const sanitizeSymbol = (symbol: string | undefined): string =>
+  (symbol ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, MAX_SYMBOL_LENGTH);
+
+/**
  * Non-fungible data schema: (name, description, key_image_url, ...custom),
  * all fields String and ALL locked (empty mutable-field list).
  */

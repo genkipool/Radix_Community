@@ -110,13 +110,13 @@ export function ReceiveView({
           </p>
         )}
         {session.phase === 'denied' && (
-          <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+          <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
             <XCircle className="size-4" />
             {session.error ? t.errors[session.error] : t.request.denied}
           </p>
         )}
         {session.phase === 'error' && session.error && (
-          <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+          <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
             <XCircle className="size-4" />
             {t.errors[session.error]}
           </p>
@@ -134,7 +134,7 @@ export function ReceiveView({
             <ToolSection hint={t.ledger.requestGateSubtitle}>
               <ReceiverNameField t={t} value={name} onChange={setName} />
               {proofError && (
-                <p className="text-xs font-medium text-red-500">
+                <p className="text-xs font-medium text-[var(--color-danger)]">
                   {t.errors[proofError]}
                 </p>
               )}

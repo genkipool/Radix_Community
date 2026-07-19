@@ -62,7 +62,7 @@ export function useReceiveSession(roomId: string) {
   const fileIdRef = useRef<string | null>(null);
   const headRef = useRef<ContainerHead | null>(null);
   const headB64Ref = useRef<string | null>(null);
-  const encryptedNameRef = useRef<string>('file.radixenc');
+  const encryptedNameRef = useRef<string>('file.radixseal.enc');
   const phaseRef = useRef<ReceivePhase>('connecting');
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export function useReceiveSession(roomId: string) {
             fileIdRef.current = fileId;
             headRef.current = parsed;
             headB64Ref.current = message.headB64;
-            encryptedNameRef.current = `${parsed.header.fileName}.radixenc`;
+            encryptedNameRef.current = `${parsed.header.fileName}.radixseal.enc`;
             await putFileMeta({
               id: fileId,
               kind: 'received',

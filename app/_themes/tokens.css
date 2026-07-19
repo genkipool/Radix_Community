@@ -14,6 +14,13 @@
   --color-surface: #f8fafc;
   --color-card-bg: #ffffff;
   --color-card-border: #e2e8f0;
+
+  /* Semantic status colors. Success follows the selected theme's primary color
+     (so checks/success text match the theme); danger/warning stay red/amber.
+     Use var(--color-success|danger|warning) instead of hardcoded values. */
+  --color-success: var(--color-primary);
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
   --color-text-secondary: #64748b;
   --color-text-dim: #94a3b8;
   --color-bg-alt: #f1f5f9;

@@ -4,7 +4,7 @@
  * changing any of them makes previously encrypted files unreadable.
  */
 
-/** 8-byte ASCII magic at offset 0 of every .radixenc container. */
+/** 8-byte ASCII magic at offset 0 of every .radixseal.enc container. */
 export const CIPHER_MAGIC = 'RDXENC01';
 
 export const CIPHER_VERSION = 1 as const;
@@ -24,7 +24,7 @@ export const GCM_TAG_BYTES = 16;
 /** Upper bound for the JSON header so a hostile file can't allocate at will. */
 export const MAX_HEADER_BYTES = 16 * 1024;
 
-export const FILE_EXTENSION = '.radixenc';
+export const FILE_EXTENSION = '.radixseal.enc';
 
 /** DataChannel binary frame size (safe cross-browser SCTP message size). */
 export const WIRE_FRAME_SIZE = 64 * 1024;

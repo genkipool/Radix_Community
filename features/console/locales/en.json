@@ -117,10 +117,10 @@
             "1. Pick the method. ROLA only: the key is derived from your signature and you release decryption to whoever you approve. ROLA + Ledger: you also authorize specific accounts on the ledger, so only they can request decryption from you.",
             "2. Setup (ROLA + Ledger only, one time): you need your Seal NFT and your signing collection, the same ones Sign Document uses. If they are missing, the boxes to deploy and create them appear before you can encrypt.",
             "3. Encrypt: connect your wallet, drop any file and press Encrypt. For ROLA + Ledger you first add the list of authorized receivers. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature. For ROLA + Ledger, a second confirmation mints and deposits the invitation NFTs into the receivers' accounts.",
-            "4. Download or share: save the .radixenc container, or press Share to get a link and QR code for the receiver. The file travels browser-to-browser when the receiver opens the link; keep this tab open.",
+            "4. Download or share: save the .radixseal.enc container, or press Share to get a link and QR code for the receiver. The file travels browser-to-browser when the receiver opens the link; keep this tab open.",
             "5. Approve (ROLA only): when the receiver asks to decrypt, you'll see who is asking and for which file (check the fingerprint), and sign in your wallet to release the key.",
             "6. Approve (ROLA + Ledger): the receiver signs a ROLA challenge with their invited account when requesting decryption. Your browser checks on the ledger that this account holds the file's invitation NFT before showing you the request; you'll see their proven account and the verified-invitation badge.",
-            "7. Reverse flow: if you received a .radixenc file, open the Decrypt tab, load it and request decryption. The tool detects the file's method: for ROLA + Ledger you must connect the invited account and sign the challenge.",
+            "7. Reverse flow: if you received a .radixseal.enc file, open the Decrypt tab, load it and request decryption. The tool detects the file's method: for ROLA + Ledger you must connect the invited account and sign the challenge.",
             "8. Sender shortcut: if the connected wallet is the account that encrypted the file, the Decrypt tab unlocks it directly, no link needed.",
             "9. Receipt (ROLA + Ledger, optional): after decrypting, the receiver can mint a receipt NFT into their collection as public, permanent evidence that they obtained the key, verifiable by the sender on the ledger."
           ],
@@ -146,7 +146,7 @@
               "definition": "An optional record the receiver mints into their own collection after obtaining the key. It is non-transferable with locked data: public, permanent evidence that this account decrypted the file, verifiable by anyone on the ledger."
             },
             {
-              "term": ".radixenc",
+              "term": ".radixseal.enc",
               "definition": "The encrypted container. Its header keeps the original file name, the encrypting account, network, site and protection method (ROLA or ROLA + Ledger) visible so decryption can be routed; the content is AES-256-GCM encrypted per chunk."
             },
             {

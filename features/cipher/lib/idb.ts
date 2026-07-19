@@ -10,7 +10,7 @@ export interface CipherFileMeta {
   kind: 'encrypted-local' | 'received';
   /** Original (plaintext) file name, from the header. */
   fileName: string;
-  /** Container download name (fileName + .radixenc). */
+  /** Container download name (fileName + .radixseal.enc). */
   encryptedName: string;
   headBytes: Blob;
   headerHash: string;

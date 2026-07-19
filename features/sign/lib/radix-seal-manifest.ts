@@ -25,6 +25,7 @@ import {
   ownerEditableMetadataRoles,
   MetadataType,
   nfSchema,
+  sanitizeSymbol,
   sealBrandRoles,
 } from './nf-manifest-helpers';
 import { RADIX_SEAL_NAME, SEAL_INFO_URL } from '../constants/seal';
@@ -46,6 +47,8 @@ export interface RadixSealDeployInput {
    * immutable behaviour).
    */
   adminBadge?: string;
+  /** Optional resource symbol (uppercase, capped at 5 chars by the builder). */
+  symbol?: string;
 }
 
 /**
@@ -58,17 +61,21 @@ export function buildRadixSealDeployManifest({
   imageUrl,
   dAppDefinition,
   adminBadge,
+  symbol: rawSymbol,
 }: RadixSealDeployInput): string {
   // Admin-editable deploy: unlock the brand metadata so the owner (admin badge)
   // can update it later. Immutable deploy: lock every entry.
   const brandLocked = !adminBadge;
+  const symbol = sanitizeSymbol(rawSymbol);
   const metadata = [
     initialMetadataEntry('name', RADIX_SEAL_NAME, brandLocked),
+    ...(symbol ? [initialMetadataEntry('symbol', symbol, brandLocked)] : []),
     initialMetadataEntry(
       'description',
-      'Radix Seal is the standard for self-custody document signatures on the ' +
-        'Radix Network. Anyone mints their own soulbound seal; it marks them ' +
-        'as a signer and owns their personal signing collection.',
+      'Radix Seal is a self-custody document-signature toolkit on the Radix ' +
+        'Network, built by the community. Anyone mints their own soulbound ' +
+        'seal; it marks them as a signer and owns their personal signing ' +
+        'collection.',
       brandLocked,
     ),
     initialMetadataEntry('icon_url', imageUrl, brandLocked, MetadataType.Url),

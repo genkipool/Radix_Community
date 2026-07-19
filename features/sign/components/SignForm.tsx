@@ -81,6 +81,8 @@ export function SignForm({
   sharedWatermark,
   onchainAccount,
   onOnchainAccountChange,
+  onchain,
+  onOnchainChange,
   setup,
   needsOnboarding,
 }: {
@@ -96,6 +98,10 @@ export function SignForm({
   /** Acting on-chain account (lifted to the tool so it can gate the layout). */
   onchainAccount: string | null;
   onOnchainAccountChange: (account: string) => void;
+  /** On-chain ("en cadena") toggle, lifted to the tool so the seal/collection
+   *  check (and onboarding box) only runs once on-chain is actually selected. */
+  onchain: boolean;
+  onOnchainChange: (value: boolean) => void;
   setup: ReturnType<typeof useSealSetup>;
   /** True while the seal/collection setup is missing → onboarding-only view. */
   needsOnboarding: boolean;
@@ -130,7 +136,6 @@ export function SignForm({
   // jumps straight into on-chain co-signing.
   const sharedRequestId = sharedRequestKey ?? doc.embeddedRequest?.requestKey;
   const [multi, setMulti] = useState(!!sharedRequestKey);
-  const [onchain, setOnchain] = useState(!!sharedRequestKey);
   const [coSigners, setCoSigners] = useState<string[]>(['']);
   // Multi on-ledger: whether the initiator signs too (ROLA) + issues invitations
   // ('sign'), or only issues invitations without signing ('send').
@@ -378,6 +383,26 @@ export function SignForm({
     );
   };
 
+  // Preview the single on-ledger signature: the record NFT minted into the
+  // signer's own Seal collection (the SAME manifest handleSign mints inline
+  // when on-chain is selected without co-signers).
+  const onSimulateSign = () => {
+    if (!docHash || activeNetworkId == null || !onchainAccount || !setup.seal || !setup.collection)
+      return;
+    invitePreview.simulate(
+      buildSignatureMintManifest({
+        account: onchainAccount,
+        sealGlobalId: setup.seal.globalId,
+        collection: setup.collection.resourceAddress,
+        nextId: setup.collection.totalSupply + 1,
+        docHash,
+        networkId: activeNetworkId,
+        request: '',
+        imageUrl: sealImageUrl(window.location.origin),
+      }),
+    );
+  };
+
   const handleCoSign = async () => {
     if (!coSignBytes || !file || !loadedCert) return;
     const res = await coSign(loadedCert, coSignBytes, file.name, file.type);
@@ -452,6 +477,7 @@ export function SignForm({
           onAccountChange={onOnchainAccountChange}
           setup={setup}
           consoleT={consoleT}
+          lockedAccount
         />
       </div>
     );
@@ -722,7 +748,7 @@ export function SignForm({
               </p>
               <OptionButtons<'off' | 'on'>
                 value={onchainMode ? 'on' : 'off'}
-                onChange={(v) => setOnchain(v === 'on')}
+                onChange={(v) => onOnchainChange(v === 'on')}
                 disabled={busy}
                 options={[
                   {
@@ -825,7 +851,7 @@ export function SignForm({
             </p>
           )}
 
-          <div className={multiLedger ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
+          <div className={onchainMode ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
             <button
               type="button"
               disabled={!docHash || hashing || busy}
@@ -843,16 +869,18 @@ export function SignForm({
                   ? t.onchain.sendInvites
                   : t.actions.sign}
             </button>
-            {multiLedger && (
+            {/* Any on-chain sign mints a tx (invitations for multi, the record
+                NFT for a single signer), so it always offers a dry-run. */}
+            {onchainMode && (
               <SimulateButton
                 t={consoleT.simulate}
-                onClick={onSimulateInvite}
+                onClick={multiLedger ? onSimulateInvite : onSimulateSign}
                 disabled={busy}
                 loading={invitePreview.isSimulating}
               />
             )}
           </div>
-          {multiLedger && (
+          {onchainMode && (
             <SimulateResultCard
               t={consoleT.simulate}
               preview={invitePreview.preview}
@@ -890,7 +918,7 @@ function SignerProgress({
       <p
         className="text-sm font-semibold"
         style={{
-          color: complete ? '#10b981' : 'var(--color-text-muted)',
+          color: complete ? 'var(--color-success)' : 'var(--color-text-muted)',
         }}
       >
         {open
@@ -902,7 +930,7 @@ function SignerProgress({
         {rows.map((acc) => (
           <li key={acc} className="flex items-center gap-2">
             {signed.has(acc) ? (
-              <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
             ) : (
               <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
             )}

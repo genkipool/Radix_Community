@@ -30,6 +30,7 @@ import {
   initialMetadataEntry,
   issuerMetadataEntries,
   MetadataType,
+  sanitizeSymbol,
 } from './nf-manifest-helpers';
 import {
   RADIX_SEAL_STANDARD_KEY,
@@ -60,7 +61,7 @@ export const requestKey = (collection: string, firstId: number) =>
   `${collection}:#${firstId}#`;
 
 interface SignNftInput {
-  kind: 'invite' | 'signature' | 'cipher-invite' | 'cipher-receipt';
+  kind: 'invite' | 'signature' | 'cipher-invite' | 'cipher-receipt' | 'cipher-signature';
   name: string;
   description: string;
   imageUrl: string;
@@ -159,6 +160,8 @@ export interface SignCollectionCreateInput {
   networkId: number;
   collectionName: string;
   imageUrl: string;
+  /** Optional resource symbol (uppercase, capped at 5 chars by the builder). */
+  symbol?: string;
   issuer?: IssuerMeta;
   /**
    * Co-signers can bundle their first signature into the creation (initial
@@ -178,8 +181,10 @@ export function buildSignCollectionCreateManifest(
   // Everything is locked EXCEPT display metadata — name, icon_url (image)
   // and org_url — which the owner (the seal holder) may update later.
   const iconUrl = input.issuer?.orgLogoUrl || input.imageUrl;
+  const symbol = sanitizeSymbol(input.symbol);
   const metadata = [
     initialMetadataEntry('name', input.collectionName, false),
+    ...(symbol ? [initialMetadataEntry('symbol', symbol, false)] : []),
     initialMetadataEntry(
       'description',
       'Personal Radix Seal signing collection: signing invitations issued by ' +
@@ -408,6 +413,27 @@ CALL_METHOD
 
 /* ─── Cipher invitations & receipts (ROLA + Ledger encryption) ────────────── */
 
+const cipherSignatureNft = (args: {
+  headerHash: string;
+  networkId: number;
+  signer: string;
+  imageUrl: string;
+  issuedAt: string;
+}): NftItemData =>
+  signNft({
+    kind: 'cipher-signature',
+    name: 'Encryption signature',
+    description:
+      'On-ledger record that this account encrypted the container identified ' +
+      'by document_hash (its header hash). Soulbound; minted by the encryptor ' +
+      'into their own seal-owned collection.',
+    imageUrl: args.imageUrl,
+    docHash: args.headerHash,
+    networkId: args.networkId,
+    signer: args.signer,
+    issuedAt: args.issuedAt,
+  });
+
 const cipherInviteNft = (args: {
   headerHash: string;
   networkId: number;
@@ -462,7 +488,6 @@ export function buildCipherInviteManifest(input: CipherInviteInput): string {
   const issuedAt = new Date().toISOString();
   const firstId = input.nextId;
   const count = input.receivers.length;
-  if (count === 0) throw new Error('no receivers');
 
   const invites = input.receivers.map((receiver, i) => ({
     id: firstId + i,
@@ -478,6 +503,21 @@ export function buildCipherInviteManifest(input: CipherInviteInput): string {
       issuedAt,
     }),
   }));
+
+  // The encryptor's OWN record: a cipher-signature (like a document signature,
+  // not an invite) marking THIS account as the one that encrypted the file.
+  // Minted after the invites and kept in the encryptor's own collection; always
+  // minted, even with no receivers.
+  const signatureItem = {
+    id: firstId + count,
+    nft: cipherSignatureNft({
+      headerHash: input.headerHash,
+      networkId: input.networkId,
+      signer: input.account,
+      imageUrl: input.imageUrl,
+      issuedAt,
+    }),
+  };
 
   const deliveries = input.receivers
     .map(
@@ -496,9 +536,11 @@ CALL_METHOD
     )
     .join('\n\n');
 
+  // The invites are delivered to receivers; the encryptor's signature stays on
+  // the worktop and is deposited back into the encryptor's account below.
   return `${sealProof(input.account, input.sealGlobalId)}
 
-${batchMint(input.collection, invites)}
+${batchMint(input.collection, [...invites, signatureItem])}
 
 ${deliveries}
 

@@ -17,7 +17,7 @@ export interface CipherChallengePayload {
 }
 
 /**
- * Plaintext JSON header embedded in every .radixenc container. Everything a
+ * Plaintext JSON header embedded in every .radixseal.enc container. Everything a
  * holder of the file needs to route a decrypt request back to the sender and
  * for the sender to re-derive the key statelessly.
  *

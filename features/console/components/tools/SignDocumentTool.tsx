@@ -16,6 +16,7 @@ import {
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import { BasicSignForm } from '@/features/sign/components/BasicSignForm';
 import { EmbeddedPdfDetails } from '@/features/sign/components/EmbeddedPdfDetails';
 import { SignForm } from '@/features/sign/components/SignForm';
@@ -107,10 +108,14 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const effectiveOnchainAccount =
     onchainAccount ?? accounts[0]?.address ?? null;
   const setup = useSealSetup(effectiveOnchainAccount);
+  // On-chain ("en cadena") toggle, lifted here so the seal/collection check only
+  // runs once on-chain is selected: off-chain signing never needs them.
+  const [onchain, setOnchain] = useState(hasRequestParam);
   const needsOnboarding =
     isConnected &&
     !hasRequestParam &&
     !doc.embeddedRequest &&
+    onchain &&
     setup.ready &&
     !(setup.seal && setup.collection);
   const cleanOnboarding = effectiveTab === 'sign' && needsOnboarding;
@@ -153,6 +158,15 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           </button>
         ))}
       </div>
+
+      {/* On-chain acting account at the very top (advanced tab): the selectable
+          address buttons live here, not inside the Seal onboarding box, so you
+          can pick/check the address whether or not it already has its seal. */}
+      {effectiveTab === 'sign' && isConnected && (
+        <ToolSection title={t.onchain.account}>
+          <AccountPicker value={onchainAccount} onChange={setOnchainAccount} />
+        </ToolSection>
+      )}
 
       {/* During onboarding the advanced tab shows ONLY what must be done now. */}
       {!cleanOnboarding && (
@@ -197,7 +211,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                         receive.phase === 'error'
                           ? 'var(--color-danger, #dc2626)'
                           : receive.phase === 'done'
-                            ? '#10b981'
+                            ? 'var(--color-success)'
                             : 'var(--color-text-muted)',
                     }}
                   >
@@ -211,6 +225,14 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                   </p>
                 )}
               </div>
+            )}
+            {effectiveTab === 'basic' && (
+              <p
+                className="text-xs leading-relaxed"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {t.basic.hint}
+              </p>
             )}
             <FileDropzone
               extension=""
@@ -256,6 +278,8 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
             sharedWatermark={sharedWatermark ?? undefined}
             onchainAccount={effectiveOnchainAccount}
             onOnchainAccountChange={setOnchainAccount}
+            onchain={onchain}
+            onOnchainChange={setOnchain}
             setup={setup}
             needsOnboarding={needsOnboarding}
           />

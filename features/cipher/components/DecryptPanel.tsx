@@ -27,7 +27,7 @@ import { SharePanel } from './SharePanel';
 import { TransferProgress } from './TransferProgress';
 
 /**
- * Decrypt tab body. Two paths once a .radixenc is loaded:
+ * Decrypt tab body. Two paths once a .radixseal.enc is loaded:
  *  - the connected wallet IS the sender → sign and decrypt right here;
  *  - anyone else → share an unlock URL with the sender (flow B) and decrypt
  *    locally when the key arrives. The ciphertext never leaves this browser.
@@ -146,7 +146,7 @@ export function DecryptPanel({
           </p>
         )}
         {flow.phase === 'loaded' && flow.error && (
-          <p className="text-xs font-medium text-red-500">{t.errors[flow.error]}</p>
+          <p className="text-xs font-medium text-[var(--color-danger)]">{t.errors[flow.error]}</p>
         )}
       </ToolSection>
 
@@ -176,7 +176,7 @@ export function DecryptPanel({
             <ToolSection hint={t.ledger.requestGateSubtitle}>
               <ReceiverNameField t={t} value={name} onChange={setName} />
               {proofError && (
-                <p className="text-xs font-medium text-red-500">
+                <p className="text-xs font-medium text-[var(--color-danger)]">
                   {t.errors[proofError]}
                 </p>
               )}
@@ -247,7 +247,7 @@ export function DecryptPanel({
               </p>
             )}
             {remote.phase === 'denied' && (
-              <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+              <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
                 <XCircle className="size-4" />
                 {remote.denyReason === 'rejected'
                   ? t.request.denied
@@ -259,7 +259,7 @@ export function DecryptPanel({
               </p>
             )}
             {remote.phase === 'error' && remote.error && (
-              <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+              <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
                 <XCircle className="size-4" />
                 {t.errors[remote.error]}
               </p>
@@ -357,7 +357,7 @@ function DecryptReceiptSection({
       ) : (
         <>
           {seal.error && (
-            <p className="text-xs font-medium text-red-500">
+            <p className="text-xs font-medium text-[var(--color-danger)]">
               {t.errors.unknown}
             </p>
           )}

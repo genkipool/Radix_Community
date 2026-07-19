@@ -6,7 +6,7 @@ import type { CipherDictionary } from '../types/dictionary';
 import type { ContainerHead } from '../types/cipher.types';
 import { formatBytes, shortAddress, shortFingerprint } from '../lib/format';
 
-/** Metadata card for a parsed .radixenc head (decrypt tab, receive, unlock). */
+/** Metadata card for a parsed .radixseal.enc head (decrypt tab, receive, unlock). */
 export function ContainerMetaCard({
   t,
   head,

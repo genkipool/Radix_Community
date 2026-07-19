@@ -1,5 +1,5 @@
 /**
- * The .radixenc container format:
+ * The .radixseal.enc container format:
  *
  *   offset 0        magic "RDXENC01"            (8 bytes ASCII)
  *   offset 8        header length               (uint32 BE, ≤ MAX_HEADER_BYTES)

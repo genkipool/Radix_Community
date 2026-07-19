@@ -149,10 +149,6 @@ export function BasicSignForm({
 
   return (
     <div className="space-y-5">
-      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-        {t.basic.hint}
-      </p>
-
       <ToolSection title={t.cosign.title} hint={t.cosign.hint}>
         <FileDropzone
           extension=".json"

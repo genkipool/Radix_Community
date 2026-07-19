@@ -117,10 +117,10 @@
             "1. Elige el método. Solo ROLA: la clave se deriva de tu firma y liberas el descifrado a quien tú apruebes. ROLA + Ledger: además autorizas cuentas concretas en el ledger, así que solo ellas podrán pedirte el descifrado.",
             "2. Preparación (solo ROLA + Ledger, una vez): necesitas tu NFT Seal y tu colección de firma, los mismos que usa Firmar documento. Si te faltan, aparecen las cajas para desplegarlos y crearlos antes de cifrar.",
             "3. Cifrar: conecta tu wallet, suelta cualquier archivo y pulsa Cifrar. En ROLA + Ledger añades antes la lista de receptores autorizados. Tu wallet firma un reto único para este archivo y la clave AES-256 se deriva de esa firma. En ROLA + Ledger, una segunda confirmación acuña y deposita las invitaciones NFT en las cuentas de los receptores.",
-            "4. Descargar o compartir: guarda el contenedor .radixenc, o pulsa Compartir para obtener un enlace y un código QR para el receptor. El archivo viaja de navegador a navegador cuando el receptor abre el enlace; mantén esta pestaña abierta.",
+            "4. Descargar o compartir: guarda el contenedor .radixseal.enc, o pulsa Compartir para obtener un enlace y un código QR para el receptor. El archivo viaja de navegador a navegador cuando el receptor abre el enlace; mantén esta pestaña abierta.",
             "5. Aprobar (solo ROLA): cuando el receptor pida descifrar verás quién lo pide y para qué archivo (comprueba la huella) y firmarás en tu wallet para liberar la clave.",
             "6. Aprobar (ROLA + Ledger): el receptor firma un reto ROLA con su cuenta invitada al pedir el descifrado. Tu navegador comprueba en el ledger que esa cuenta tiene la invitación NFT de este archivo antes de mostrarte la solicitud; verás su cuenta probada y la insignia de invitación verificada.",
-            "7. Flujo inverso: si recibiste un archivo .radixenc, abre la pestaña Descifrar, cárgalo y solicita el descifrado. La herramienta detecta el método del archivo: en ROLA + Ledger tendrás que conectar la cuenta invitada y firmar el reto.",
+            "7. Flujo inverso: si recibiste un archivo .radixseal.enc, abre la pestaña Descifrar, cárgalo y solicita el descifrado. La herramienta detecta el método del archivo: en ROLA + Ledger tendrás que conectar la cuenta invitada y firmar el reto.",
             "8. Atajo del emisor: si la wallet conectada es la cuenta que cifró el archivo, la pestaña Descifrar lo desbloquea directamente, sin enlace.",
             "9. Acuse (ROLA + Ledger, opcional): tras descifrar, el receptor puede acuñar un NFT de acuse en su colección que deja constancia pública y permanente de que obtuvo la clave, verificable por el emisor en el ledger."
           ],
@@ -146,7 +146,7 @@
               "definition": "Registro opcional que el receptor acuña en su propia colección tras obtener la clave. Es intransferible y con datos bloqueados: prueba pública y permanente de que esa cuenta descifró el archivo, verificable por cualquiera en el ledger."
             },
             {
-              "term": ".radixenc",
+              "term": ".radixseal.enc",
               "definition": "El contenedor cifrado. Su cabecera mantiene visibles el nombre original, la cuenta que cifró, la red, el sitio y el método de protección (ROLA o ROLA + Ledger) para poder encaminar el descifrado; el contenido va cifrado con AES-256-GCM por bloques."
             },
             {

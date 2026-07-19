@@ -61,13 +61,13 @@ export function UnlockView({
           </p>
         )}
         {session.error && session.phase !== 'keySent' && (
-          <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+          <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
             <XCircle className="size-4" />
             {t.errors[session.error]}
           </p>
         )}
         {isConnected && senderAccount && !holdsSenderAccount && (
-          <p className="text-xs font-medium text-red-500">
+          <p className="text-xs font-medium text-[var(--color-danger)]">
             {fillTemplate(t.unlock.wrongAccount, {
               account: shortAddress(senderAccount),
             })}

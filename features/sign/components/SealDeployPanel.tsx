@@ -28,6 +28,7 @@ export function SealDeployPanel({ t }: { t: SignDictionary }) {
   const { sendTransaction, isSending } = useConsoleTransaction();
   const account = accounts[0]?.address ?? null;
   const [imageUrl, setImageUrl] = useState(() => sealImageUrl());
+  const [symbol, setSymbol] = useState('');
   const [adminBadge, setAdminBadge] = useState('');
   const [badgeMinted, setBadgeMinted] = useState(false);
   const [deployedSeal, setDeployedSeal] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function SealDeployPanel({ t }: { t: SignDictionary }) {
         origin: window.location.origin,
         dAppDefinition: NETWORKS[activeNetworkId].dAppDefinitionAddress || undefined,
         adminBadge: adminBadge.trim() || undefined,
+        symbol: symbol.trim() || undefined,
       }),
     );
     const seal = resourceFrom(tx?.createdEntities);
@@ -111,6 +113,15 @@ export function SealDeployPanel({ t }: { t: SignDictionary }) {
             onChange={setImageUrl}
             placeholder="https://…/SVGs/radix-seal.svg"
             hint={s.imageUrlHint}
+          />
+
+          <TextField
+            label={s.symbol}
+            value={symbol}
+            onChange={(value) => setSymbol(value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5))}
+            placeholder="SEAL"
+            hint={s.symbolHint}
+            maxLength={5}
           />
 
           {/* Admin badge: paste one or mint a fresh one, so brand metadata stays

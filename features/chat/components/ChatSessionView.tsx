@@ -91,6 +91,7 @@ export function ChatSessionView({
       {session.phase === 'waiting' && session.shareUrl && (
         <div className="space-y-4">
           <ShareLinkCard
+            bare
             title={t.share.title}
             hint={t.share.hint}
             url={session.shareUrl}
@@ -98,6 +99,15 @@ export function ChatSessionView({
             qrAlt={t.share.qrAlt}
           />
           <ProgressRow label={t.status.waiting} />
+          <button
+            type="button"
+            onClick={onRestart}
+            className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <XCircle className="size-3.5" />
+            {t.status.cancel}
+          </button>
         </div>
       )}
 
@@ -109,7 +119,7 @@ export function ChatSessionView({
 
       {session.phase === 'error' && session.error && (
         <div className="space-y-3">
-          <p className="flex items-center gap-2 text-xs font-medium text-red-500">
+          <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
             <XCircle className="size-4" />
             {t.errors[session.error]}
           </p>

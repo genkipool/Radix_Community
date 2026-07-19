@@ -444,7 +444,7 @@ export function OnChainSignPanel({
         {hashMismatch && <Danger text={t.onchain.fileMismatch} />}
         {!docHash && <Muted text={t.onchain.needFile} />}
         {status && !!docHash && !hashMismatch && (
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-success)]">
             <CheckCircle2 className="size-3.5 shrink-0" />
             {t.onchain.hashMatches}
           </p>
@@ -498,7 +498,7 @@ export function OnChainSignPanel({
           <>
             <p
               className="text-sm font-semibold"
-              style={{ color: status.complete ? '#10b981' : 'var(--color-text-muted)' }}
+              style={{ color: status.complete ? 'var(--color-success)' : 'var(--color-text-muted)' }}
             >
               {signatures.filter((s) => s.signed).length} {t.onchain.of}{' '}
               {signatures.length}
@@ -508,7 +508,7 @@ export function OnChainSignPanel({
               {signatures.map((s) => (
                 <li key={s.account} className="flex items-center gap-2">
                   {s.signed ? (
-                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
                   ) : (
                     <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
                   )}
@@ -541,8 +541,8 @@ export function OnChainSignPanel({
       {status?.complete ? (
         <ToolSection>
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl flex items-center justify-center bg-emerald-500/15">
-              <BadgeCheck className="size-5 text-emerald-500" />
+            <div className="size-10 rounded-xl flex items-center justify-center bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)]">
+              <BadgeCheck className="size-5 text-[var(--color-success)]" />
             </div>
             <div>
               <p className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
@@ -596,14 +596,14 @@ export function OnChainSignPanel({
                 <Muted text={t.onchain.notEligibleHint} />
               </>
             ) : alreadySigned ? (
-              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-500">
+              <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-success)]">
                 <BadgeCheck className="size-4 shrink-0" />
                 {t.onchain.alreadySigned}
               </p>
             ) : (
               <>
                 <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  <BadgeCheck className="size-3.5 shrink-0 text-emerald-500" />
+                  <BadgeCheck className="size-3.5 shrink-0 text-[var(--color-success)]" />
                   {t.onchain.inviteInWallet}
                 </p>
                 {!setup.seal && setup.ready && (

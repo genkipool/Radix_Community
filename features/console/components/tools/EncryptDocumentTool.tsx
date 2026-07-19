@@ -6,6 +6,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGate';
 import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
+import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import { SealDeployPanel } from '@/features/sign/components/SealDeployPanel';
 import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
@@ -53,6 +55,9 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
   const [mode, setMode] = useState<EncryptMode>('rola');
   const [session, setSession] = useState<PeerSession | null>(null);
   const [shared, setShared] = useState<EncryptResult | null>(null);
+  // Selected file lives here so it survives switching the encryption mode (the
+  // EncryptPanel remounts per mode to reset the flow, but keeps the document).
+  const [file, setFile] = useState<File | null>(null);
 
   // ROLA + Ledger prerequisites: the encryptor's Seal + signing collection
   // (the SAME collection the sign-document tool uses). While missing, the
@@ -158,6 +163,13 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
 
       {tab === 'encrypt' ? (
         <div className="space-y-6">
+          {/* Acting account at the top: selectable address buttons, always
+              shown (not only in ROLA + Ledger) so the account is picked up top. */}
+          {isConnected && (
+            <ToolSection title={signT.onchain.account}>
+              <AccountPicker value={onchainAccount} onChange={setOnchainAccount} />
+            </ToolSection>
+          )}
           <div className="space-y-2">
             <p
               className="text-xs font-bold uppercase tracking-wide"
@@ -186,9 +198,10 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
           </div>
 
           <CipherGate t={t}>
-            {needsOnboarding ? (
-              // One-time on-ledger setup, alone on screen (same boxes as the
-              // sign-document tool: deploy panel + Seal/collection steps).
+            {/* The Seal/collection box only shows when the acting address is
+                missing them (its create UI). The address picker itself lives at
+                the top, above the mode selector, not inside this box. */}
+            {needsOnboarding && (
               <div className="space-y-5">
                 <SealDeployPanel t={signT} />
                 <SealOnboarding
@@ -197,14 +210,20 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
                   onAccountChange={setOnchainAccount}
                   setup={setup}
                   consoleT={consoleT}
+                  lockedAccount
                 />
               </div>
-            ) : (
+            )}
+            {!needsOnboarding && (
               <>
                 <EncryptPanel
                   key={mode}
                   t={t}
+                  consoleT={consoleT}
                   mode={mode}
+                  file={file}
+                  onFileChange={setFile}
+                  actingAccount={effectiveAccount}
                   onShare={setShared}
                   onReset={() => setShared(null)}
                 />

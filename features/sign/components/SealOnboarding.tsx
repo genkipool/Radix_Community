@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, Circle, FileSignature, RefreshCw, Stamp } from 'lucide-react';
+import { CheckCircle2, Circle, FileSignature, Info, RefreshCw, Stamp } from 'lucide-react';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import {
@@ -11,6 +11,7 @@ import {
 import { useTransactionPreview } from '@/features/console/hooks/useTransactionPreview';
 import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
 import { buildSignCollectionCreateManifest } from '../lib/sign-request';
+import { buildSealMintManifest } from '../lib/radix-seal-manifest';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { SignDictionary } from '../types/dictionary';
@@ -45,11 +46,12 @@ export function SealOnboarding({
   consoleT?: ConsoleDictionary;
 }) {
   const { activeNetworkId } = useRadixWallet();
-  const { mintSeal, createCollection, phase, error } = useSealRequest();
+  const { provisionCollection, phase, error } = useSealRequest();
   const collectionPreview = useTransactionPreview();
   const [orgName, setOrgName] = useState('');
   const [orgWebsite, setOrgWebsite] = useState('');
   const [orgLogoUrl, setOrgLogoUrl] = useState('');
+  const [symbol, setSymbol] = useState('');
 
   const busy = phase === 'minting-seal' || phase === 'creating-collection';
   const sealDeployed = !!activeNetworkId && !!radixSealAddress(activeNetworkId);
@@ -69,40 +71,50 @@ export function SealOnboarding({
     ? ((t.errors as Record<string, string>)[error] ?? t.errors.generic)
     : '';
 
-  const onMintSeal = async () => {
+  // One click: mint the seal (if missing) and then create the collection. When
+  // the seal is missing this sends TWO wallet transactions back to back.
+  const onProvision = async () => {
     if (!account) return;
-    const ok = await mintSeal({ account, imageUrl: nftImage });
-    if (ok) setup.refetch();
-  };
-
-  const onCreateCollection = async () => {
-    if (!account || !setup.seal) return;
-    const created = await createCollection({
+    await provisionCollection({
       account,
+      existingSeal: setup.seal,
       // The collection is named after the user/company alone — no branding
       // suffix. It stays editable later by the seal holder anyway.
-      sealGlobalId: setup.seal.globalId,
       collectionName: issuer?.orgName ?? 'Signing collection',
+      symbol: symbol.trim() || undefined,
       imageUrl: issuer?.orgLogoUrl ?? nftImage,
       issuer,
     });
-    if (created) setup.refetch();
+    // Refetch either way: even on a failed collection step the seal may now
+    // exist, so the UI (and a retry) sees it instead of minting a second one.
+    setup.refetch();
   };
 
-  // Dry-run the SAME manifest onCreateCollection submits, before sending it.
+  // Dry-run the NEXT transaction the button will send: the seal mint when the
+  // account has no seal yet, otherwise the collection creation. This keeps the
+  // simulate button in lock-step with the create button (both enabled/disabled
+  // under the same conditions) and lets the user check either step won't error.
   const onSimulateCollection = () => {
-    if (!account || !setup.seal || activeNetworkId == null) return;
-    collectionPreview.simulate(
-      buildSignCollectionCreateManifest({
-        account,
-        sealGlobalId: setup.seal.globalId,
-        sealAddress: radixSealAddress(activeNetworkId),
-        networkId: activeNetworkId,
-        collectionName: issuer?.orgName ?? 'Signing collection',
-        imageUrl: issuer?.orgLogoUrl ?? nftImage,
-        issuer,
-      }),
-    );
+    if (!account || activeNetworkId == null) return;
+    const sealResource = radixSealAddress(activeNetworkId);
+    if (setup.seal) {
+      collectionPreview.simulate(
+        buildSignCollectionCreateManifest({
+          account,
+          sealGlobalId: setup.seal.globalId,
+          sealAddress: sealResource,
+          networkId: activeNetworkId,
+          collectionName: issuer?.orgName ?? 'Signing collection',
+          symbol: symbol.trim() || undefined,
+          imageUrl: issuer?.orgLogoUrl ?? nftImage,
+          issuer,
+        }),
+      );
+    } else if (sealResource) {
+      collectionPreview.simulate(
+        buildSealMintManifest({ account, sealResource, imageUrl: nftImage }),
+      );
+    }
   };
 
   return (
@@ -160,7 +172,7 @@ export function SealOnboarding({
         </ToolSection>
       )}
 
-      {/* Step 1: the seal */}
+      {/* Step 1: the seal — minted automatically with the collection below */}
       <StepRow
         index={1}
         done={!!setup.seal}
@@ -168,34 +180,14 @@ export function SealOnboarding({
         label={t.onchain.sealStep}
         doneLabel={t.onchain.sealOk}
       >
-        {!sealDeployed ? (
-          <Muted text={t.onchain.sealNotDeployed} />
-        ) : (
-          <>
-            <Muted text={t.onchain.sealMissing} />
-            <button
-              type="button"
-              disabled={busy || !account}
-              onClick={onMintSeal}
-              className="flex items-center gap-2 px-5 h-10 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-            >
-              {phase === 'minting-seal' ? (
-                <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : (
-                <Stamp className="size-3.5" />
-              )}
-              {phase === 'minting-seal' ? t.onchain.sealMinting : t.onchain.sealGet}
-            </button>
-          </>
-        )}
+        <Muted text={sealDeployed ? t.onchain.sealWithCollection : t.onchain.sealNotDeployed} />
       </StepRow>
 
-      {/* Step 2: the collection */}
+      {/* Step 2: the collection (mints the seal too when it is missing) */}
       <StepRow
         index={2}
         done={!!setup.collection}
         loading={setup.loading && !setup.ready}
-        blocked={!setup.seal}
         label={t.onchain.collectionStep}
         doneLabel={t.onchain.collectionOk}
       >
@@ -223,28 +215,52 @@ export function SealOnboarding({
           placeholder="https://…/logo.png"
           disabled={busy}
         />
+        <LabeledInput
+          label={t.onchain.collectionSymbol}
+          value={symbol}
+          onChange={(v) => setSymbol(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5))}
+          placeholder="SEAL"
+          disabled={busy}
+        />
         <Muted text={t.onchain.issuerHint} />
+        {/* When the account has no seal yet, creating the collection sends two
+            transactions: the seal first, then the collection. */}
+        {!setup.seal && sealDeployed && (
+          <p
+            className="flex items-start gap-2 rounded-xl border p-3 text-[11px] leading-relaxed"
+            style={{
+              background: 'var(--color-surface)',
+              borderColor: 'var(--color-card-border)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            <Info className="size-3.5 shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+            {t.onchain.twoTxNote}
+          </p>
+        )}
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
-            disabled={busy || !setup.seal}
-            onClick={onCreateCollection}
+            disabled={busy || !account || !sealDeployed}
+            onClick={onProvision}
             className="flex flex-1 items-center justify-center gap-2 px-5 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
           >
-            {phase === 'creating-collection' ? (
+            {busy ? (
               <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
             ) : (
               <FileSignature className="size-3.5" />
             )}
-            {phase === 'creating-collection'
-              ? t.onchain.collectionCreating
-              : t.onchain.collectionCreate}
+            {phase === 'minting-seal'
+              ? t.onchain.sealMinting
+              : phase === 'creating-collection'
+                ? t.onchain.collectionCreating
+                : t.onchain.collectionCreateSelfCustody}
           </button>
           {consoleT && (
             <SimulateButton
               t={consoleT.simulate}
               onClick={onSimulateCollection}
-              disabled={busy || !setup.seal}
+              disabled={busy || !account || !sealDeployed}
               loading={collectionPreview.isSimulating}
             />
           )}
@@ -299,7 +315,7 @@ function StepRow({
         style={{ color: 'var(--color-text-main)' }}
       >
         {done ? (
-          <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+          <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
         ) : loading ? (
           <RefreshCw className="size-4 shrink-0 animate-spin" style={{ color: 'var(--color-text-muted)' }} />
         ) : (

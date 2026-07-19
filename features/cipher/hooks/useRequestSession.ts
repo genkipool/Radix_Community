@@ -28,7 +28,7 @@ export type RequestPhase =
   | 'error';
 
 /**
- * Flow B, receiver side (host): the user already holds a .radixenc file and
+ * Flow B, receiver side (host): the user already holds a .radixseal.enc file and
  * shares an unlock URL with the original sender. When the sender opens it and
  * signs, the key arrives here and the local file is decrypted in place —
  * the ciphertext itself never travels.

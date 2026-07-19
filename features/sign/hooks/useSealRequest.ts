@@ -110,6 +110,69 @@ export function useSealRequest() {
   };
 
   /**
+   * One click, two transactions: self-mint the seal (if the account does not
+   * have one yet) and then create the signing collection owned by it. A single
+   * transaction is impossible because the collection's owner rule must embed the
+   * seal's global id, and the seal's RUID is only known after it is minted (see
+   * onchain-custody). So the seal tx is sent first; once it commits, its global
+   * id is read from the ledger and the collection tx is sent automatically.
+   */
+  const provisionCollection = async (args: {
+    account: string;
+    existingSeal: UserSeal | null;
+    collectionName: string;
+    symbol?: string;
+    imageUrl: string;
+    issuer?: IssuerMeta;
+  }): Promise<string | null> => {
+    setError(null);
+    if (!activeNetworkId) return fail('wallet_not_connected');
+    const sealResource = radixSealAddress(activeNetworkId);
+    if (!sealResource) return fail('seal_not_deployed');
+
+    // 1. Ensure the account holds its seal (mint + wait for it to be indexed).
+    // Re-read the ledger before minting so a retry after a failed collection
+    // step (seal already minted) does NOT mint a second seal.
+    let seal = args.existingSeal ?? (await findUserSeal(activeNetworkId, args.account));
+    if (!seal) {
+      setPhase('minting-seal');
+      const sealTx = await sendTransaction(
+        buildSealMintManifest({
+          account: args.account,
+          sealResource,
+          imageUrl: args.imageUrl,
+        }),
+      );
+      if (!sealTx) return fail('onchain_failed');
+      for (let attempt = 0; attempt < 8 && !seal; attempt++) {
+        seal = await findUserSeal(activeNetworkId, args.account);
+        if (!seal) await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      if (!seal) return fail('seal_read_failed');
+    }
+
+    // 2. Create the collection owned by that seal.
+    setPhase('creating-collection');
+    const manifest = buildSignCollectionCreateManifest({
+      account: args.account,
+      sealGlobalId: seal.globalId,
+      sealAddress: sealResource,
+      networkId: activeNetworkId,
+      collectionName: args.collectionName,
+      symbol: args.symbol,
+      imageUrl: args.imageUrl,
+      issuer: args.issuer,
+    });
+    const tx = await sendTransaction(manifest);
+    if (!tx) return fail('onchain_failed');
+    const resource = tx.createdEntities.find((a) => a.startsWith('resource_'));
+    if (!resource) return fail('onchain_no_resource');
+    rememberSignCollection(activeNetworkId, args.account, resource);
+    setPhase('done');
+    return resource;
+  };
+
+  /**
    * Creates the account's signing collection (owned by their seal). A
    * co-signer can bundle their first signature into it.
    */
@@ -117,6 +180,7 @@ export function useSealRequest() {
     account: string;
     sealGlobalId: string;
     collectionName: string;
+    symbol?: string;
     imageUrl: string;
     issuer?: IssuerMeta;
     firstSignature?: { docHash: string; request: string };
@@ -130,6 +194,7 @@ export function useSealRequest() {
       sealAddress: radixSealAddress(activeNetworkId),
       networkId: activeNetworkId,
       collectionName: args.collectionName,
+      symbol: args.symbol,
       imageUrl: args.imageUrl,
       issuer: args.issuer,
       firstSignature: args.firstSignature
@@ -271,6 +336,7 @@ export function useSealRequest() {
 
   return {
     mintSeal,
+    provisionCollection,
     createCollection,
     createRequest,
     signRequest,

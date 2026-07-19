@@ -201,7 +201,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
             className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"
             style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
           >
-            <BadgeCheck className="size-4 text-emerald-500 shrink-0" />
+            <BadgeCheck className="size-4 text-[var(--color-success)] shrink-0" />
             {t.verify.embeddedDetected}
           </p>
         ) : (
@@ -277,7 +277,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
             )}
             <p
               className="text-sm font-semibold"
-              style={{ color: onchain.complete ? '#10b981' : 'var(--color-text-muted)' }}
+              style={{ color: onchain.complete ? 'var(--color-success)' : 'var(--color-text-muted)' }}
             >
               {onchain.signatures.filter((s) => s.signed).length} {t.onchain.of}{' '}
               {onchain.signatures.length}
@@ -287,7 +287,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
               {onchain.signatures.map((s) => (
                 <li key={s.account} className="flex items-center gap-2">
                   {s.signed ? (
-                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
                   ) : (
                     <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
                   )}
@@ -308,7 +308,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                 {t.onchain.fileMismatch}
               </p>
             ) : (
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-success)]">
                 <CheckCircle2 className="size-3.5 shrink-0" />
                 {t.onchain.hashMatches}
               </p>
@@ -329,9 +329,9 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
         <ToolSection>
           <div className="flex items-center gap-3">
             {outcome.ok ? (
-              <ShieldCheck className="size-7 text-emerald-500" />
+              <ShieldCheck className="size-7 text-[var(--color-success)]" />
             ) : (
-              <ShieldX className="size-7 text-red-500" />
+              <ShieldX className="size-7 text-[var(--color-danger)]" />
             )}
             <h3 className="text-base font-bold" style={{ color: 'var(--color-text-main)' }}>
               {outcome.ok ? t.verify.validTitle : t.verify.invalidTitle}
@@ -358,9 +358,9 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
             {outcome.signatures.map((s) => (
               <div key={s.signerAccount} className="flex items-start gap-2 text-sm">
                 {s.valid ? (
-                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0 mt-0.5" />
                 ) : (
-                  <XCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
+                  <XCircle className="size-4 text-[var(--color-danger)] shrink-0 mt-0.5" />
                 )}
                 <div className="min-w-0">
                   <span className="font-mono text-[12px] break-all" style={{ color: 'var(--color-text-main)' }}>
@@ -414,9 +414,9 @@ function Check({ ok, okText, badText }: { ok: boolean; okText: string; badText: 
   return (
     <li className="flex items-center gap-2">
       {ok ? (
-        <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+        <CheckCircle2 className="size-4 text-[var(--color-success)] shrink-0" />
       ) : (
-        <XCircle className="size-4 text-red-500 shrink-0" />
+        <XCircle className="size-4 text-[var(--color-danger)] shrink-0" />
       )}
       <span style={{ color: 'var(--color-text-main)' }}>{ok ? okText : badText}</span>
     </li>

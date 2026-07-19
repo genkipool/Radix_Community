@@ -84,7 +84,7 @@ export async function decryptChunkBytes(
 }
 
 /**
- * Decrypt a full .radixenc Blob into `sink`. Returns the parsed head so the
+ * Decrypt a full .radixseal.enc Blob into `sink`. Returns the parsed head so the
  * caller can name/type the output. Throws Error('invalid_container') on a
  * malformed or truncated file and Error('decrypt_failed') on a bad key/tag.
  */

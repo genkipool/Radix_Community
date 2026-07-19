@@ -2,11 +2,11 @@
   "chat": {
     "disclaimer": {
       "title": "Cifrado de extremo a extremo, verificado con wallet",
-      "body": "Los mensajes viajan directamente entre navegadores por un canal cifrado. Ambas partes demuestran su identidad firmando con su Radix Wallet, cada prueba se verifica en local, y la clave de sesión se deriva de ese intercambio verificado — ningún servidor puede leer, alterar ni suplantar nada."
+      "body": "Los mensajes viajan directamente entre navegadores por un canal cifrado. Ambas partes demuestran su identidad firmando con su Radix Wallet, cada prueba se verifica en local, y la clave de sesión se deriva de ese intercambio verificado: ningún servidor puede leer, alterar ni suplantar nada."
     },
     "connect": {
       "title": "Conecta tu Radix Wallet",
-      "subtitle": "La firma de tu wallet es lo que demuestra tu identidad al otro extremo — ambos participantes firman para abrir la sala.",
+      "subtitle": "La firma de tu wallet es lo que demuestra tu identidad al otro extremo: ambos participantes firman para abrir la sala.",
       "mainnet": "Conectar (Mainnet)",
       "stokenet": "Conectar (Stokenet)"
     },
@@ -32,7 +32,8 @@
       "waiting": "Esperando a que la otra persona abra el enlace…",
       "connecting": "Conectando con la sala…",
       "handshaking": "Verificando identidades…",
-      "closed": "La conversación ha terminado."
+      "closed": "La conversación ha terminado.",
+      "cancel": "Cancelar"
     },
     "room": {
       "securedWith": "Chat seguro con",

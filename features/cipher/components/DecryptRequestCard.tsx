@@ -63,7 +63,7 @@ export function DecryptRequestCard({
           </p>
         )}
         {ledgerVerified && (
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-success)]">
             <BadgeCheck className="size-3.5 shrink-0" />
             {t.ledger.authorizedBadge}
           </p>
