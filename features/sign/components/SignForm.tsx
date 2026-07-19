@@ -27,7 +27,6 @@ import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
 import { findSignCollection, findUserSeal } from '../services/sealDiscovery';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { OnChainSignPanel } from './OnChainSignPanel';
-import { SealDeployPanel } from './SealDeployPanel';
 import { ShareLinkSection } from './ShareLinkSection';
 import { SealOnboarding } from './SealOnboarding';
 import { stripExtension } from '../lib/file';
@@ -470,7 +469,6 @@ export function SignForm({
   if (needsOnboarding && !sharedRequestId) {
     return (
       <div className="space-y-5">
-        <SealDeployPanel t={t} />
         <SealOnboarding
           t={t}
           account={onchainAccount}
@@ -587,8 +585,6 @@ export function SignForm({
 
   return (
     <div className="space-y-5">
-      <SealDeployPanel t={t} />
-
       {coSignMode ? (
         <>
           {cosignBox}

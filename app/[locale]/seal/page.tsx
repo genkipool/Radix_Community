@@ -3,6 +3,7 @@ import {
   Capabilities,
   TrustModel,
   Anatomy,
+  Encryption,
   Privacy,
   Institutions,
   Comparison,
@@ -62,6 +63,7 @@ export default async function SealPage({ params }: SealPageProps) {
       <Capabilities t={t} locale={locale} />
       <TrustModel t={t} />
       <Anatomy t={t} />
+      <Encryption t={t} />
       <Privacy t={t} locale={locale} />
       <Institutions t={t} />
       <Comparison t={t} />

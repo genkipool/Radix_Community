@@ -305,6 +305,15 @@ soon as the channel opens.
 The Radix Seal brand is deployed once per network as an open mint, soulbound
 resource. Anyone self mints their own Seal from it.
 
+**Official brand-resource addresses.** A signing collection is only genuine if
+its `radix_seal` metadata references one of these. Confirm the address before
+trusting a collection or a seal:
+
+| Network | Resource address |
+| --- | --- |
+| Mainnet | `resource_rdx1nf89ryugl2ytuh7lfcrpt7ghudnfah7gdcwwjw6y3e6v5cwrr5tfxs` |
+| Stokenet | `resource_tdx_2_1n20d5q2y9p46zrjaw543vcpdmk3dygtlq4uzyw2zvssg48cxsteu3e` |
+
 The brand's cosmetic metadata (name, image, description, info url, tags) can be
 made editable by a single admin badge NFT held by the brand steward, so the
 artwork or wording can be maintained over time. The admin badge is one NFT

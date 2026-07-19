@@ -8,7 +8,6 @@ import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGat
 import { OptionButtons } from '@/features/console/components/shared/OptionButtons';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
-import { SealDeployPanel } from '@/features/sign/components/SealDeployPanel';
 import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
@@ -203,7 +202,6 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
                 the top, above the mode selector, not inside this box. */}
             {needsOnboarding && (
               <div className="space-y-5">
-                <SealDeployPanel t={signT} />
                 <SealOnboarding
                   t={signT}
                   account={effectiveAccount}

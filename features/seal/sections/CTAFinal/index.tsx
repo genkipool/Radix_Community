@@ -34,12 +34,16 @@ export default function CTAFinal({ t, locale }: SealLocaleSectionProps) {
         <FadeIn delay={0.2} className="flex flex-col sm:flex-row justify-center gap-6">
           <Link
             href={`/${locale}${SEAL_LINKS.sign}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex justify-center items-center px-10 py-5 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold text-lg hover:opacity-90 transition-opacity shadow-xl"
           >
             {cta.btn_sign}
           </Link>
           <Link
-            href={`/${locale}${SEAL_LINKS.console}`}
+            href={`/${locale}${SEAL_LINKS.encrypt}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex justify-center items-center px-10 py-5 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold text-lg hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)] backdrop-blur-sm"
           >
             {cta.btn_console}

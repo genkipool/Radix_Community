@@ -10,6 +10,7 @@ import { FileCheck2, KeySquare, Link2, ShieldCheck } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { FeatureCard } from '../../components/FeatureCard';
+import { SealResourceAddresses } from '../../components/SealResourceAddresses';
 import { SEAL_LINKS } from '../../data/links';
 import type { SealLocaleSectionProps } from '../../types';
 
@@ -47,12 +48,16 @@ export default function OpenVerification({ t, locale }: SealLocaleSectionProps) 
 
         <FadeIn delay={0.2} className="flex justify-center">
           <Link
-            href={`/${locale}${SEAL_LINKS.sign}`}
+            href={`/${locale}${SEAL_LINKS.sign}?tab=verify`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-[var(--color-card-border)] text-[var(--color-text-main)] font-bold hover:bg-[var(--color-surface)] transition-colors border border-[var(--color-card-border)]"
           >
             {verify.cta}
           </Link>
         </FadeIn>
+
+        <SealResourceAddresses title={verify.officialTitle} hint={verify.officialHint} />
       </div>
     </section>
   );

@@ -114,7 +114,9 @@ export default function Anatomy({ t }: SealSectionProps) {
               <FadeIn
                 key={type.kind}
                 delay={i * 0.08}
-                className="bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-2xl p-6 hover:border-[var(--color-secondary)]/40 transition-colors"
+                className={`bg-[var(--color-surface)] border border-[var(--color-card-border)] rounded-2xl p-6 hover:border-[var(--color-secondary)]/40 transition-colors ${
+                  type.kind === 'cipher-receipt' ? 'md:col-span-2' : ''
+                }`}
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="size-11 shrink-0 rounded-xl flex items-center justify-center bg-[var(--color-card-bg)] border border-[var(--color-card-border)]">

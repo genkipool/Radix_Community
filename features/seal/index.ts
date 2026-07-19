@@ -2,6 +2,7 @@ export { default as Hero } from './sections/Hero';
 export { default as Capabilities } from './sections/Capabilities';
 export { default as TrustModel } from './sections/TrustModel';
 export { default as Anatomy } from './sections/Anatomy';
+export { default as Encryption } from './sections/Encryption';
 export { default as Privacy } from './sections/Privacy';
 export { default as Institutions } from './sections/Institutions';
 export { default as Comparison } from './sections/Comparison';

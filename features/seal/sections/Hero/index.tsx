@@ -50,7 +50,9 @@ export default function Hero({ t, locale }: SealLocaleSectionProps) {
 
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <Link
-                href={`/${locale}${SEAL_LINKS.console}`}
+                href={`/${locale}${SEAL_LINKS.sign}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 transition-opacity"
               >
                 {hero.btn_console}
@@ -65,7 +67,7 @@ export default function Hero({ t, locale }: SealLocaleSectionProps) {
           </div>
 
           {/* RIGHT COLUMN — the Radix Seal insignia */}
-          <div className="relative lg:col-span-5 block pt-6">
+          <div className="relative lg:col-span-5 block pt-6 lg:pt-0">
             <div className="relative mx-auto max-w-[420px]">
               <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-secondary)]/20 to-[var(--color-primary)]/20 rounded-full blur-3xl scale-90 pointer-events-none" />
               {/* Inline, theme-aware mark: no box, ink follows the theme. */}
@@ -76,6 +78,9 @@ export default function Hero({ t, locale }: SealLocaleSectionProps) {
             </div>
             <p className="mt-6 text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed opacity-80 transition-opacity hover:opacity-100 relative z-20">
               {hero.illustration_caption}
+            </p>
+            <p className="mt-4 text-sm text-[var(--color-text-muted)] text-center px-2 leading-relaxed relative z-20">
+              {hero.security_key}
             </p>
           </div>
         </div>

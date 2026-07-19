@@ -89,7 +89,15 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
     const timer = setTimeout(() => setSendRoom(room), 0);
     return () => clearTimeout(timer);
   }, []);
-  const [tab, setTab] = useState<Tab>(hasRequestParam ? 'sign' : 'basic');
+  // A shared request forces the advanced tab; otherwise an optional `?tab=`
+  // param can deep-link into a specific tab (e.g. verify from the seal page).
+  const tabParam = searchParams.get('tab');
+  const initialTab: Tab = hasRequestParam
+    ? 'sign'
+    : tabParam === 'verify' || tabParam === 'sign' || tabParam === 'basic'
+      ? tabParam
+      : 'basic';
+  const [tab, setTab] = useState<Tab>(initialTab);
   const doc = useDocumentFile(t);
   const receive = useReceiveFileChannel({
     roomId: hasRequestParam ? sendRoom : null,

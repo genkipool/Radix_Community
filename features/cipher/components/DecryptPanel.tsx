@@ -9,7 +9,6 @@ import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { getOrCreateToolkit } from '@/features/wallet/lib/radix-toolkit';
 import { requestAccountProof } from '@/features/wallet/lib/rola-proof';
 import { randomRoomId } from '@/features/p2p/lib/session-url';
-import { SealDeployPanel } from '@/features/sign/components/SealDeployPanel';
 import { SealOnboarding } from '@/features/sign/components/SealOnboarding';
 import { useSealRequest, useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { sealImageUrl } from '@/features/sign/constants/seal';
@@ -337,7 +336,6 @@ function DecryptReceiptSection({
     <ToolSection title={t.ledger.receiptTitle} hint={t.ledger.receiptHint}>
       {needsSetup ? (
         <div className="space-y-5">
-          <SealDeployPanel t={signT} />
           <SealOnboarding
             t={signT}
             account={account}

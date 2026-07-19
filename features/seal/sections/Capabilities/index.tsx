@@ -72,6 +72,8 @@ export default function Capabilities({ t, locale }: SealLocaleSectionProps) {
 
                 <Link
                   href={`/${locale}${tool.href}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-auto inline-flex items-center gap-2 font-bold text-[var(--color-primary)] hover:gap-3 transition-all relative z-10"
                 >
                   {card.cta}

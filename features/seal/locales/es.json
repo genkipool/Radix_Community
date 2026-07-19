@@ -5,8 +5,9 @@
       "h1a": "Firma, cifra y comunícate.",
       "h1b": "Sin confiar en los servidores de nadie.",
       "p": "Radix Seal convierte la Radix Wallet en la autoridad de certificación de tu propia institución. Los documentos se firman y cifran íntegramente en el navegador, los archivos viajan de par a par entre las partes, y las pruebas quedan ancladas en un ledger público que cualquiera (auditor, regulador o contraparte) puede verificar de forma independiente, para siempre.",
-      "btn_console": "Abrir la consola",
+      "btn_console": "Firmar documento",
       "btn_compare": "Comparar con las alternativas actuales",
+      "security_key": "Tu wallet funciona como una llave de seguridad (passkey): pruebas tu identidad firmando un reto, sin exponer la clave.",
       "illustration_alt": "La insignia de Radix Seal: un sello en relieve sobre papel",
       "illustration_caption": "El sello Radix Seal: un estándar abierto en el ledger. Cada usuario acuña su propio NFT de sello soulbound, que actúa como insignia de su colección de atestaciones: el equivalente en cadena a un sello institucional, en autocustodia.",
       "metric1_value": "0",
@@ -25,8 +26,8 @@
         },
         {
           "h1a": "Firma documentos",
-          "h1b": "que se verifican sin depender de esta web.",
-          "p": "Cada firma queda registrada como NFT en tu colección personal, protegida por tu sello soulbound. Cualquiera comprueba en el ledger quién firmó y quién falta, con el archivo original y sin necesidad de cuenta."
+          "h1b": "verificables, sin intermediarios.",
+          "p": "El certificado prueba cada firma sin depender de esta web: cualquiera la verifica con el archivo original, sin necesitar una cuenta de Radix. Y si quieres, anclas la firma como NFT soulbound en tu colección para dejar constancia en el ledger."
         },
         {
           "h1a": "Cifra archivos",
@@ -63,8 +64,7 @@
             "Sin límite de tamaño: por bloques, nunca se sube",
             "Clave derivada de tu wallet: nada que almacenar ni perder",
             "Transferencia directa navegador a navegador, cifrada de extremo a extremo",
-            "El receptor descifra solo cuando el propietario aprueba y firma",
-            "Firma con wallet hardware en el roadmap"
+            "El receptor descifra solo cuando el propietario aprueba y firma"
           ],
           "cta": "Abrir la herramienta de cifrado"
         },
@@ -79,6 +79,65 @@
             "Nada se almacena: cierras la página y desaparece"
           ],
           "cta": "Abrir el chat seguro"
+        }
+      ]
+    },
+    "encryption": {
+      "label": "Cifrado",
+      "h2a": "Cifrado que nunca",
+      "h2b": "confía en un servidor",
+      "sub": "Radix Seal liga un archivo a tu cuenta con una clave derivada de tu wallet, lo cifra en tu navegador y lo comparte de par a par. Ningún servidor custodia tu archivo ni tu clave. Aquí tienes cómo funciona, por qué encaja en instituciones y en qué mejora los métodos actuales.",
+      "howTitle": "Cómo funciona",
+      "steps": [
+        {
+          "title": "Clave desde tu wallet",
+          "desc": "La clave AES-256 se deriva de una firma ROLA determinista sobre un reto por archivo, así solo la cuenta que cifró el archivo puede volver a derivarla. No se guarda nada: ni contraseña ni fichero de clave."
+        },
+        {
+          "title": "Cifrado en tu navegador",
+          "desc": "El archivo se cifra por bloques con AES-256-GCM, íntegramente en tu dispositivo. Sin límite de tamaño y sin que un solo byte llegue a un servidor."
+        },
+        {
+          "title": "Compartido de par a par",
+          "desc": "Cuando lo compartes, el archivo viaja por un canal directo y cifrado de extremo a extremo entre navegadores. El receptor abre un enlace y se transfiere de navegador a navegador."
+        },
+        {
+          "title": "Registro de acceso en el ledger",
+          "desc": "Con ROLA + Ledger, quien cifra acuña una firma que marca que esa cuenta cifró el archivo, más una invitación por receptor autorizado, así queda constancia pública y verificable de quién puede descifrar."
+        }
+      ],
+      "institutionsTitle": "Por qué importa a las instituciones",
+      "institutions": [
+        {
+          "title": "Soberanía del dato",
+          "desc": "Documentos y claves nunca tocan un servidor de terceros: no hay encargado de tratamiento que custodie tu contenido, ni transferencia internacional que evaluar, ni brecha de un proveedor que pueda exponer tus archivos."
+        },
+        {
+          "title": "Sin carga de gestión de claves",
+          "desc": "La clave se vuelve a derivar de la wallet que tu organización ya controla, así no hay nada que almacenar, rotar, custodiar en depósito ni perder, ni un servidor de claves que asegurar."
+        },
+        {
+          "title": "Acceso auditable",
+          "desc": "Con ROLA + Ledger, quién fue autorizado y quién descifró queda registrado en un ledger público, verificable años después sin cuenta de proveedor ni una API que pueda haberse retirado."
+        }
+      ],
+      "comparisonTitle": "En qué mejora los métodos actuales",
+      "comparison": [
+        {
+          "title": "Sin claves que compartir ni filtrar",
+          "desc": "La clave se deriva de tu wallet y nunca sale de ella. No envías contraseñas ni ficheros de clave por ningún canal, así que no hay fuga de claves, y el archivo tampoco sale de tu dispositivo, así que no hay fuga de información."
+        },
+        {
+          "title": "Solo quien cifra libera el descifrado",
+          "desc": "Solo la cuenta que cifró el archivo puede volver a derivar la clave. Nadie más, ni siquiera esta web, puede descifrarlo sin la aprobación explícita de esa cuenta, firmada con su wallet."
+        },
+        {
+          "title": "Gratis",
+          "desc": "Cifrar, compartir y descifrar es gratuito. Los métodos actuales suelen ser de pago, con una licencia o una suscripción por usuario o por archivo. Aquí el único coste posible es una fracción de céntimo en comisiones de red, y solo si eliges el registro en el ledger."
+        },
+        {
+          "title": "El ledger, solo si quieres constancia",
+          "desc": "Todo funciona en local y de par a par sin tocar la cadena. Solo interactúas con el ledger si quieres dejar constancia pública y verificable de quién cifró el archivo y quién puede descifrarlo."
         }
       ]
     },
@@ -106,7 +165,7 @@
         {
           "tag": "Paso 4",
           "title": "Prueba pública y permanente",
-          "desc": "Opcionalmente, el hash de un documento se ancla en el ledger de Radix como NFT soulbound. La prueba lleva marca de tiempo del consenso, es inmutable y verificable por cualquiera sin necesitar cuenta con nadie."
+          "desc": "Opcionalmente, el hash de un documento se ancla en el ledger de Radix como NFT soulbound. La prueba lleva marca de tiempo del consenso, es inmutable y verificable por cualquiera sin necesitar una cuenta de Radix."
         }
       ],
       "standard_title": "Un estándar abierto en el ledger, no un producto",
@@ -114,7 +173,7 @@
       "standard_points": [
         {
           "title": "Insignia soulbound",
-          "desc": "Cada usuario acuña un NFT de sello intransferible: no se puede comprar, vender ni robar, solo se obtiene controlando la cuenta."
+          "desc": "Cada usuario acuña un NFT de sello intransferible: no se puede comprar, vender ni robar. Cada cuenta acuña el suyo firmando con su propia wallet, así que tener el sello demuestra que controlas esa cuenta, y solo tú puedes usarlo."
         },
         {
           "title": "Colecciones de atestaciones",
@@ -305,7 +364,7 @@
           ]
         }
       ],
-      "note": "Alcance honesto: una firma de Radix Seal prueba la integridad de un documento, su marca de tiempo por consenso y el control de la cuenta firmante, y cualquier nombre divulgado lo autodeclara la wallet del firmante. Donde la normativa exige una firma cualificada con identidad verificada (como eIDAS QES), Radix Seal complementa esos esquemas con mayor custodia, confidencialidad y longevidad; no reclama su estatus legal.",
+      "note": "Una firma de Radix Seal prueba la integridad de un documento, su marca de tiempo por consenso y el control de la cuenta firmante, y cualquier nombre divulgado lo autodeclara la wallet del firmante. Donde la normativa exige una firma cualificada con identidad verificada (como eIDAS QES), Radix Seal complementa esos esquemas con mayor custodia, confidencialidad y longevidad. Cuando se implemente idOS (identidad descentralizada) en Radix, una firma de Radix Seal podría llegar a tener validez legal, al ligar la cuenta firmante a una identidad verificada.",
       "explanations": {
         "custody": "Autocustodia real: la clave nunca sale de tu wallet ni de tu dispositivo. PGP también la mantiene en local; la diferencia es que la wallet añade recuperación y una firma guiada sin gestionar llaveros a mano.",
         "anchor": "Un ledger público y descentralizado no depende de la honestidad de una empresa ni de una CA: miles de nodos validan cada transacción y cualquiera puede leerla. No hay un punto único que comprometer ni que pueda desaparecer.",
@@ -315,8 +374,8 @@
         "timestamp": "La marca de tiempo la fija el consenso de la red al confirmar la transacción: no la controla ninguna empresa y no puede retocarse después.",
         "longevity": "La prueba vive en un ledger público replicado por cientos de nodos: no caduca con un certificado ni desaparece si un proveedor cierra.",
         "cost": "Sin suscripciones ni pago por documento: solo la comisión de red, una fracción de céntimo. PGP también es gratuito, pero su coste operativo en gestión de claves y formación es alto.",
-        "identity": "Aquí gana la PKI cualificada: una autoridad valida la identidad legal del firmante y la normativa (eIDAS QES) le otorga el máximo valor probatorio. Radix Seal prueba el control de la cuenta, no quién eres legalmente.",
-        "ease": "Las suites en la nube ganan en fricción cero para el firmante ocasional: un enlace en el correo y listo. Radix Seal pide instalar una wallet y una preparación única antes de la primera firma.",
+        "identity": "La PKI cualificada cubre algo que Radix Seal hoy no: una autoridad valida la identidad legal del firmante y la normativa (eIDAS QES) le otorga el máximo valor probatorio. Radix Seal prueba el control de la cuenta, no quién eres legalmente (cuando llegue idOS a Radix, esta diferencia se estrecha).",
+        "ease": "Las suites en la nube tienen menos fricción para el firmante ocasional: un enlace en el correo y listo. Radix Seal pide instalar una wallet y una preparación única antes de la primera firma.",
         "workflow": "Años de producto dan a las suites SaaS plantillas, recordatorios automáticos y decenas de integraciones. Radix Seal cubre hoy el flujo esencial de invitar, firmar y verificar."
       }
     },
@@ -325,7 +384,7 @@
       "h2b": "algo que se alquila.",
       "sub": "Firma un documento, cifra un archivo o abre una conversación verificada, ahora mismo, desde tu navegador, con la wallet que tu organización ya controla.",
       "btn_sign": "Firma tu primer documento",
-      "btn_console": "Explora todas las herramientas de la consola"
+      "btn_console": "Cifra tu primer documento"
     },
     "privacy": {
       "label": "Privacidad por diseño",
@@ -371,13 +430,16 @@
           "desc": "La colección de cada firmante está protegida por su Seal intransferible: una prueba de autoría que se lee directamente de la cadena, sin confiar en nadie."
         }
       ],
-      "cta": "Verificar un documento"
+      "cta": "Verificar un documento",
+      "officialTitle": "Recurso oficial de Radix Seal",
+      "officialHint": "El recurso de marca auténtico en cada red. Una colección de firma solo es auténtica si sus metadatos referencian una de estas direcciones. Confirma la dirección antes de confiar en una colección.",
+      "officialCopy": "Copiar"
     },
     "anatomy": {
       "label": "Anatomía del sello",
       "h2a": "Cómo funcionan el sello,",
       "h2b": "la colección y sus NFTs",
-      "sub": "Todo el modelo de Radix Seal se apoya en dos NFTs base que acuñas una sola vez, y en cuatro tipos de NFT que se guardan dentro de tu colección. Aquí tienes qué es cada uno, quién lo acuña y qué prueba, para que quede claro sin tecnicismos.",
+      "sub": "Todo el modelo de Radix Seal se apoya en dos NFTs base que acuñas una sola vez, y en cinco tipos de NFT que se guardan dentro de tu colección. Aquí tienes qué es cada uno, quién lo acuña y qué prueba, para que quede claro sin tecnicismos.",
       "foundationsTitle": "Los dos NFTs base (una sola vez)",
       "foundations": [
         {
@@ -397,11 +459,11 @@
           "props": [
             "Reutilizable: cada documento añade un NFT numerado (#1, #2, #3...)",
             "Reglas bloqueadas al crearla: datos inalterables para siempre",
-            "Solo tu Seal puede acuñar dentro"
+            "Solo tu Seal puede acuñar en tu colección, así que nadie más puede crear firmas ni invitaciones en tu nombre"
           ]
         }
       ],
-      "typesTitle": "Los cuatro tipos de NFT dentro de la colección",
+      "typesTitle": "Los cinco tipos de NFT dentro de la colección",
       "typesSub": "Todos comparten la misma cadena de custodia infalsificable: viven en una colección cuyo propietario es tu Seal soulbound, en tu cuenta. Por eso nadie puede falsificarlos en tu nombre.",
       "types": [
         {
@@ -415,28 +477,28 @@
           "kind": "signature",
           "name": "Firma",
           "mintedBy": "Lo acuña cada firmante en su propia colección",
-          "proves": "Que esa cuenta firmó ese documento concreto",
+          "proves": "La cuenta firmó ese documento concreto",
           "desc": "Es el registro que de verdad cuenta como firma: intransferible, con datos bloqueados. Imposible de falsificar porque solo el Seal del firmante puede acuñar en su colección."
         },
         {
           "kind": "cipher-signature",
           "name": "Firma de cifrado",
           "mintedBy": "Lo acuña quien cifra, en su propia colección",
-          "proves": "Que esa cuenta cifró ese archivo concreto",
+          "proves": "La cuenta cifró ese archivo concreto",
           "desc": "Solo en el modo ROLA + Ledger. Se acuña siempre, con o sin receptores: un registro público y permanente en la colección de quien cifra de que esa cuenta cifró el archivo, el equivalente en cifrado a la firma de un documento."
         },
         {
           "kind": "cipher-invite",
           "name": "Invitación de cifrado",
           "mintedBy": "Lo acuña quien cifra, uno por receptor autorizado",
-          "proves": "Que esa cuenta tiene permiso para pedir el descifrado",
+          "proves": "La cuenta tiene permiso para pedir el descifrado",
           "desc": "Solo en el modo ROLA + Ledger. Se deposita en la wallet del receptor y lleva el hash del archivo cifrado. Sin esta invitación, una cuenta no puede ni solicitar la clave al emisor."
         },
         {
           "kind": "cipher-receipt",
           "name": "Acuse de descifrado",
           "mintedBy": "Lo acuña el receptor tras obtener la clave",
-          "proves": "Que esa cuenta descifró el archivo",
+          "proves": "La cuenta descifró el archivo",
           "desc": "Opcional, en el modo ROLA + Ledger. Registro público y permanente en la colección del receptor de que obtuvo la clave, verificable por el emisor en el ledger."
         }
       ],

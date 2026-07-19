@@ -49,6 +49,8 @@ export default function Privacy({ t, locale }: SealLocaleSectionProps) {
         <FadeIn delay={0.2} className="flex justify-center">
           <Link
             href={`/${locale}${SEAL_LINKS.sign}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex justify-center items-center px-8 py-4 rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-secondary)] text-[var(--color-bg)] font-bold hover:opacity-90 transition-opacity"
           >
             {privacy.cta}
