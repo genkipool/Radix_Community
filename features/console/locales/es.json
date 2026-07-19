@@ -112,11 +112,11 @@
         "description": "Cifra cualquier archivo con la firma de tu wallet de Radix y compártelo entre pares por un canal cifrado. El archivo nunca sale de tu navegador.",
         "guide": {
           "guideTitle": "Guía: Cifrar Documento",
-          "guideDescription": "Cifra archivos con una clave derivada de una firma determinista de la Radix Wallet: solo la cuenta que cifró un archivo puede desbloquearlo, desde cualquier dispositivo y sin almacenar la clave en ningún sitio. Los archivos se procesan por bloques en tu navegador (sin límite de tamaño), se guardan en un almacén local del navegador y se comparten directamente entre navegadores por un canal WebRTC cifrado de extremo a extremo. Ningún servidor ve un solo byte de tu archivo. Hay dos métodos de cifrado: solo ROLA, donde tú decides a quién le liberas la clave, y ROLA + Ledger, donde autorizas por adelantado a cuentas concretas acuñando una invitación NFT por receptor, y queda constancia pública de quién puede descifrar.",
+          "guideDescription": "Cifra archivos con una clave derivada de una firma determinista de la Radix Wallet: solo la cuenta que cifró un archivo puede desbloquearlo, desde cualquier dispositivo y sin almacenar la clave en ningún sitio. Los archivos se procesan por bloques en tu navegador (sin límite de tamaño), se guardan en un almacén local del navegador y se comparten directamente entre navegadores por un canal WebRTC cifrado de extremo a extremo. Ningún servidor ve un solo byte de tu archivo. Hay dos métodos de cifrado: solo ROLA, donde tú decides a quién le liberas la clave, y ROLA + Ledger, donde quien cifra acuña siempre una firma NFT que registra que esa cuenta cifró el archivo y, opcionalmente, una invitación NFT por receptor autorizado, y queda constancia pública de quién cifró el archivo y quién puede descifrarlo.",
           "guideSteps": [
             "1. Elige el método. Solo ROLA: la clave se deriva de tu firma y liberas el descifrado a quien tú apruebes. ROLA + Ledger: además autorizas cuentas concretas en el ledger, así que solo ellas podrán pedirte el descifrado.",
             "2. Preparación (solo ROLA + Ledger, una vez): necesitas tu NFT Seal y tu colección de firma, los mismos que usa Firmar documento. Si te faltan, aparecen las cajas para desplegarlos y crearlos antes de cifrar.",
-            "3. Cifrar: conecta tu wallet, suelta cualquier archivo y pulsa Cifrar. En ROLA + Ledger añades antes la lista de receptores autorizados. Tu wallet firma un reto único para este archivo y la clave AES-256 se deriva de esa firma. En ROLA + Ledger, una segunda confirmación acuña y deposita las invitaciones NFT en las cuentas de los receptores.",
+            "3. Cifrar: conecta tu wallet, suelta cualquier archivo y pulsa Cifrar. En ROLA + Ledger añades antes la lista de receptores autorizados. Tu wallet firma un reto único para este archivo y la clave AES-256 se deriva de esa firma. En ROLA + Ledger, una segunda confirmación acuña tu firma de cifrado NFT (el registro de que esa cuenta cifró el archivo) más una invitación NFT por receptor autorizado, depositada en sus cuentas. Los receptores son opcionales: sin ninguno, solo se acuña tu firma NFT.",
             "4. Descargar o compartir: guarda el contenedor .radixseal.enc, o pulsa Compartir para obtener un enlace y un código QR para el receptor. El archivo viaja de navegador a navegador cuando el receptor abre el enlace; mantén esta pestaña abierta.",
             "5. Aprobar (solo ROLA): cuando el receptor pida descifrar verás quién lo pide y para qué archivo (comprueba la huella) y firmarás en tu wallet para liberar la clave.",
             "6. Aprobar (ROLA + Ledger): el receptor firma un reto ROLA con su cuenta invitada al pedir el descifrado. Tu navegador comprueba en el ledger que esa cuenta tiene la invitación NFT de este archivo antes de mostrarte la solicitud; verás su cuenta probada y la insignia de invitación verificada.",
@@ -134,8 +134,12 @@
               "definition": "Solo ROLA vincula la clave a tu cuenta y tú decides a quién apruebas el descifrado, sin dejar rastro en la cadena. ROLA + Ledger añade una capa de permiso verificable: autorizas cuentas concretas por adelantado con una invitación NFT, y tanto el permiso como el descifrado quedan comprobables en el ledger."
             },
             {
+              "term": "Firma de cifrado (NFT)",
+              "definition": "En ROLA + Ledger, quien cifra la acuña siempre en su propia colección: un registro público y permanente de que esa cuenta cifró el archivo (el hash de la cabecera del contenedor). Es el equivalente en cifrado a la firma de un documento, y se acuña haya o no receptores autorizados."
+            },
+            {
               "term": "Invitación de cifrado (NFT)",
-              "definition": "En ROLA + Ledger, el emisor acuña una invitación por receptor autorizado en su colección de firma y la deposita en la wallet de cada uno. Lleva grabado el hash del contenedor y la cuenta autorizada. Solo las cuentas con esta invitación pueden enviar el reto ROLA para pedir el descifrado."
+              "definition": "En ROLA + Ledger, el emisor acuña una invitación por receptor autorizado en su colección de firma y la deposita en la wallet de cada uno. Lleva grabado el hash del contenedor y la cuenta autorizada. Solo las cuentas con esta invitación pueden enviar el reto ROLA para pedir el descifrado. Los receptores son opcionales."
             },
             {
               "term": "Reto de desbloqueo",

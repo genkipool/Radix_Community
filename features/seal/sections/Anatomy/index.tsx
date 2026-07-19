@@ -9,6 +9,7 @@
  */
 import {
   BadgeCheck,
+  FileLock,
   FileSignature,
   FolderLock,
   KeyRound,
@@ -29,6 +30,7 @@ const FOUNDATION_ICONS = [
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   invite: <Mail className="size-6 text-[var(--color-primary)]" />,
   signature: <FileSignature className="size-6 text-[var(--color-secondary)]" />,
+  'cipher-signature': <FileLock className="size-6 text-[var(--color-secondary)]" />,
   'cipher-invite': <KeyRound className="size-6 text-[var(--color-primary)]" />,
   'cipher-receipt': <ReceiptText className="size-6 text-[var(--color-secondary)]" />,
 };

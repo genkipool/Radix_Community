@@ -112,11 +112,11 @@
         "description": "Encrypt any file with your Radix wallet signature and share it peer-to-peer over an encrypted channel. The file never leaves your browser.",
         "guide": {
           "guideTitle": "Guide: Encrypt Document",
-          "guideDescription": "Encrypts files with a key derived from a deterministic Radix Wallet signature: only the account that encrypted a file can ever unlock it, from any device, with no key stored anywhere. Files are processed in chunks in your browser (no size limit), kept in local browser storage and shared directly between browsers over an end-to-end encrypted WebRTC channel. No server ever sees a byte of your file. There are two encryption methods: ROLA only, where you decide who to release the key to, and ROLA + Ledger, where you authorize specific accounts in advance by minting one invitation NFT per receiver, leaving a public record of who may decrypt.",
+          "guideDescription": "Encrypts files with a key derived from a deterministic Radix Wallet signature: only the account that encrypted a file can ever unlock it, from any device, with no key stored anywhere. Files are processed in chunks in your browser (no size limit), kept in local browser storage and shared directly between browsers over an end-to-end encrypted WebRTC channel. No server ever sees a byte of your file. There are two encryption methods: ROLA only, where you decide who to release the key to, and ROLA + Ledger, where the encryptor always mints a signature NFT recording that this account encrypted the file and, optionally, one invitation NFT per authorized receiver, leaving a public record of who encrypted the file and who may decrypt it.",
           "guideSteps": [
             "1. Pick the method. ROLA only: the key is derived from your signature and you release decryption to whoever you approve. ROLA + Ledger: you also authorize specific accounts on the ledger, so only they can request decryption from you.",
             "2. Setup (ROLA + Ledger only, one time): you need your Seal NFT and your signing collection, the same ones Sign Document uses. If they are missing, the boxes to deploy and create them appear before you can encrypt.",
-            "3. Encrypt: connect your wallet, drop any file and press Encrypt. For ROLA + Ledger you first add the list of authorized receivers. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature. For ROLA + Ledger, a second confirmation mints and deposits the invitation NFTs into the receivers' accounts.",
+            "3. Encrypt: connect your wallet, drop any file and press Encrypt. For ROLA + Ledger you first add the list of authorized receivers. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature. For ROLA + Ledger, a second confirmation mints your encryption signature NFT (the record that this account encrypted the file) plus one invitation NFT per authorized receiver, deposited into their accounts. Receivers are optional: with none, only your signature NFT is minted.",
             "4. Download or share: save the .radixseal.enc container, or press Share to get a link and QR code for the receiver. The file travels browser-to-browser when the receiver opens the link; keep this tab open.",
             "5. Approve (ROLA only): when the receiver asks to decrypt, you'll see who is asking and for which file (check the fingerprint), and sign in your wallet to release the key.",
             "6. Approve (ROLA + Ledger): the receiver signs a ROLA challenge with their invited account when requesting decryption. Your browser checks on the ledger that this account holds the file's invitation NFT before showing you the request; you'll see their proven account and the verified-invitation badge.",
@@ -134,8 +134,12 @@
               "definition": "ROLA only binds the key to your account and you decide who to approve for decryption, leaving no on-chain trace. ROLA + Ledger adds a verifiable permission layer: you authorize specific accounts in advance with an invitation NFT, and both the permission and the decryption become checkable on the ledger."
             },
             {
+              "term": "Encryption signature (NFT)",
+              "definition": "In ROLA + Ledger, the encryptor always mints this into their own collection: a public, permanent record that this account encrypted the file (its container header hash). It is the encryption counterpart of a document signature, minted whether or not there are authorized receivers."
+            },
+            {
               "term": "Encryption invitation (NFT)",
-              "definition": "In ROLA + Ledger, the sender mints one invitation per authorized receiver into their signing collection and deposits it into each receiver's wallet. It carries the container hash and the authorized account. Only accounts holding this invitation can send the ROLA challenge to request decryption."
+              "definition": "In ROLA + Ledger, the sender mints one invitation per authorized receiver into their signing collection and deposits it into each receiver's wallet. It carries the container hash and the authorized account. Only accounts holding this invitation can send the ROLA challenge to request decryption. Receivers are optional."
             },
             {
               "term": "Unlock challenge",

@@ -75,7 +75,7 @@ and the only shared dependency is a public, decentralized ledger.
 
 ## 3. The NFTs
 
-The whole model rests on two base NFTs that a user mints once, plus four NFT
+The whole model rests on two base NFTs that a user mints once, plus five NFT
 types that live inside their collection.
 
 ### 3.1 The two base NFTs (one time only)
@@ -103,7 +103,7 @@ request adds a numbered NFT (#1, #2, #3 and so on).
 - Minting is gated by the owner (the seal); the data of every minted NFT is
   locked; burning is denied so evidence is permanent.
 
-### 3.2 The four NFT types inside the collection
+### 3.2 The five NFT types inside the collection
 
 Every one of these shares the same unforgeable chain of custody: it lives in a
 collection whose owner is your soulbound Seal, in your account.
@@ -112,6 +112,7 @@ collection whose owner is your soulbound Seal, in your account.
 | --- | --- | --- |
 | `invite` | The request issuer, one per required signer | Public record of who was asked to sign a document |
 | `signature` | Each signer, into their own collection | That this account signed that specific document |
+| `cipher-signature` | The encryptor, into their own collection | That this account encrypted a specific file (always minted) |
 | `cipher-invite` | The encryptor, one per authorized receiver | That this account may request the file's decryption key |
 | `cipher-receipt` | The receiver, after obtaining the key | That this account decrypted the file |
 
@@ -153,7 +154,7 @@ The data schema is fixed and every field is locked at mint:
 
 | Field | Meaning |
 | --- | --- |
-| `kind` | `invite`, `signature`, `cipher-invite` or `cipher-receipt` |
+| `kind` | `invite`, `signature`, `cipher-signature`, `cipher-invite` or `cipher-receipt` |
 | `document_hash` | Blake2b-256 of the document (or of the encrypted container header) |
 | `network` | Network id |
 | `signer` | The account this NFT concerns |
@@ -211,13 +212,16 @@ Two methods:
 - **ROLA only.** You decide who to release the key to; there is no on chain
   trace. When a receiver asks, you see who is asking and for which file (a
   human checkable fingerprint), and you approve by signing.
-- **ROLA + Ledger.** You authorize specific accounts in advance by minting one
-  `cipher-invite` NFT per receiver into your signing collection. A receiver can
-  only request the key by signing a ROLA challenge bound to the exact container
-  and session; the encryptor's browser verifies, on the ledger, that the account
-  holds the invitation before releasing the key. After decrypting, the receiver
-  can optionally mint a `cipher-receipt` as public proof that they obtained the
-  key.
+- **ROLA + Ledger.** The encryptor always mints a `cipher-signature` into their
+  own collection: a public, permanent record that this account encrypted this
+  file (its container header hash), the encryption counterpart of a document
+  signature. Authorized receivers are optional: for each one you add, a
+  `cipher-invite` NFT is also minted into your collection and deposited into that
+  receiver's wallet. A receiver can only request the key by signing a ROLA
+  challenge bound to the exact container and session; the encryptor's browser
+  verifies, on the ledger, that the account holds the invitation before releasing
+  the key. After decrypting, the receiver can optionally mint a `cipher-receipt`
+  as public proof that they obtained the key.
 
 The key released over the channel is the derived file key, never the raw ROLA
 signature, and the channel itself is DTLS encrypted.
@@ -268,7 +272,7 @@ with the signer account, disclosed name and email if any, and either a ROLA
 proof or, for on ledger signatures, `null`), an optional `onChain` anchor and an
 optional `request` pointer.
 
-**Encrypted container (`.radixenc`).** A binary container: an 8 byte magic, a
+**Encrypted container (`.radixseal.enc`).** A binary container: an 8 byte magic, a
 uint32 header length, a canonical JSON header, then AES-256-GCM chunks. The
 header records the file salt, base IV, chunk layout, original name and size,
 sender account and public key, network, dApp definition, origin, and, for
@@ -365,4 +369,4 @@ it does not claim their legal status.
   `<collection>:#<firstId>#`, from which the full required signer set is
   reconstructable.
 - **Certificate**: the `.radixsig.json` envelope produced by signing.
-- **Container**: the `.radixenc` encrypted file.
+- **Container**: the `.radixseal.enc` encrypted file.

@@ -419,6 +419,13 @@
           "desc": "This is the record that truly counts as a signature: non-transferable, data locked. Impossible to forge because only the signer's Seal can mint into their collection."
         },
         {
+          "kind": "cipher-signature",
+          "name": "Encryption signature",
+          "mintedBy": "Minted by whoever encrypts, into their own collection",
+          "proves": "That this account encrypted that specific file",
+          "desc": "Only in ROLA + Ledger mode. Always minted, with or without receivers: a public, permanent record in the encryptor's collection that this account encrypted the file, the encryption counterpart of a document signature."
+        },
+        {
           "kind": "cipher-invite",
           "name": "Encryption invitation",
           "mintedBy": "Minted by whoever encrypts, one per authorized receiver",

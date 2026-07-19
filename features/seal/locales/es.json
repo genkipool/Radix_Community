@@ -419,6 +419,13 @@
           "desc": "Es el registro que de verdad cuenta como firma: intransferible, con datos bloqueados. Imposible de falsificar porque solo el Seal del firmante puede acuñar en su colección."
         },
         {
+          "kind": "cipher-signature",
+          "name": "Firma de cifrado",
+          "mintedBy": "Lo acuña quien cifra, en su propia colección",
+          "proves": "Que esa cuenta cifró ese archivo concreto",
+          "desc": "Solo en el modo ROLA + Ledger. Se acuña siempre, con o sin receptores: un registro público y permanente en la colección de quien cifra de que esa cuenta cifró el archivo, el equivalente en cifrado a la firma de un documento."
+        },
+        {
           "kind": "cipher-invite",
           "name": "Invitación de cifrado",
           "mintedBy": "Lo acuña quien cifra, uno por receptor autorizado",
