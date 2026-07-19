@@ -28,7 +28,7 @@ import {
   sanitizeSymbol,
   sealBrandRoles,
 } from './nf-manifest-helpers';
-import { RADIX_SEAL_NAME, SEAL_INFO_URL } from '../constants/seal';
+import { RADIX_SEAL_NAME, RADIX_SEAL_SYMBOL, SEAL_INFO_URL } from '../constants/seal';
 
 export interface RadixSealDeployInput {
   /** Absolute URL of the hosted seal image (icon_url). */
@@ -66,10 +66,12 @@ export function buildRadixSealDeployManifest({
   // Admin-editable deploy: unlock the brand metadata so the owner (admin badge)
   // can update it later. Immutable deploy: lock every entry.
   const brandLocked = !adminBadge;
-  const symbol = sanitizeSymbol(rawSymbol);
+  // Always emit a symbol; default to SEAL when the deployer leaves it empty so
+  // the brand is consistent across networks.
+  const symbol = sanitizeSymbol(rawSymbol) || RADIX_SEAL_SYMBOL;
   const metadata = [
     initialMetadataEntry('name', RADIX_SEAL_NAME, brandLocked),
-    ...(symbol ? [initialMetadataEntry('symbol', symbol, brandLocked)] : []),
+    initialMetadataEntry('symbol', symbol, brandLocked),
     initialMetadataEntry(
       'description',
       'Radix Seal is a self-custody document-signature toolkit on the Radix ' +

@@ -49,6 +49,8 @@ export const SIGN_COLLECTION_MARKER_VALUE = 'v1';
 /* ─── Display defaults ────────────────────────────────────────────────────── */
 
 export const RADIX_SEAL_NAME = 'Radix Seal';
+/** Default symbol of the brand resource when the deployer leaves it empty. */
+export const RADIX_SEAL_SYMBOL = 'SEAL';
 /** Default name/symbol of a signing collection when the user leaves them empty. */
 export const DEFAULT_COLLECTION_NAME = 'Collection Radix Seal';
 export const DEFAULT_COLLECTION_SYMBOL = 'CSEAL';

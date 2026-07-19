@@ -12,7 +12,7 @@ import {
   buildRadixSealDeployManifest,
   buildSealAdminBadgeManifest,
 } from '../lib/radix-seal-manifest';
-import { radixSealAddress, sealImageUrl } from '../constants/seal';
+import { radixSealAddress, RADIX_SEAL_SYMBOL, sealImageUrl } from '../constants/seal';
 import { networkNameForId } from '../lib/network';
 
 /**
@@ -28,7 +28,7 @@ export function SealDeployPanel({ t }: { t: SignDictionary }) {
   const { sendTransaction, isSending } = useConsoleTransaction();
   const account = accounts[0]?.address ?? null;
   const [imageUrl, setImageUrl] = useState(() => sealImageUrl());
-  const [symbol, setSymbol] = useState('');
+  const [symbol, setSymbol] = useState(RADIX_SEAL_SYMBOL);
   const [adminBadge, setAdminBadge] = useState('');
   const [badgeMinted, setBadgeMinted] = useState(false);
   const [deployedSeal, setDeployedSeal] = useState<string | null>(null);
