@@ -76,7 +76,8 @@
             "Messages travel peer-to-peer over an encrypted channel",
             "Each invitation link works for a single conversation",
             "Identity checks verified locally, in each browser",
-            "Nothing is stored: close the page and it is gone"
+            "Encrypted file sending with no size limit over the same channel",
+            "Nothing leaves your browser: messages vanish when the page closes and the local copy of received files is deleted after 24 hours"
           ],
           "cta": "Open the secure chat"
         }

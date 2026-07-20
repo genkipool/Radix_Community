@@ -76,7 +76,8 @@
             "Los mensajes viajan de par a par por un canal cifrado",
             "Cada enlace de invitación sirve para una única conversación",
             "Verificación de identidad comprobada en local, en cada navegador",
-            "Nada se almacena: cierras la página y desaparece"
+            "Envío de archivos cifrados sin límite de tamaño por el mismo canal",
+            "Nada sale de tu navegador: los mensajes desaparecen al cerrar la página y la copia local de los archivos recibidos se borra a las 24 horas"
           ],
           "cta": "Abrir el chat seguro"
         }

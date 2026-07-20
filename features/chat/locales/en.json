@@ -40,6 +40,9 @@
       "verified": "wallet-verified",
       "placeholder": "Write a message… (Enter to send)",
       "send": "Send",
+      "attach": "Send a file",
+      "download": "Download",
+      "fileFailed": "The transfer did not complete.",
       "leave": "Leave chat",
       "empty": "The room is secure. Say hello!",
       "closedBanner": "The other side left the conversation. Messages stay on this page until you close it.",
@@ -57,6 +60,7 @@
       "webrtc_failed": "Could not establish a direct connection between browsers. Try again.",
       "crypto_unsupported": "This browser lacks the cryptography needed to verify signatures. Please update it.",
       "message_rejected": "A message failed verification. The room was closed for safety.",
+      "storage_quota": "Not enough free storage in this browser to receive the file.",
       "unknown": "Something went wrong. Please try again."
     }
   }

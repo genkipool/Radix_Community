@@ -14,7 +14,9 @@ export function ChatRoom({
   peer,
   messages,
   closed,
+  sendingFile,
   onSend,
+  onSendFile,
   onLeave,
 }: {
   t: ChatDictionary;
@@ -22,7 +24,10 @@ export function ChatRoom({
   messages: ChatMessage[];
   /** The other side left; the log stays readable but input is disabled. */
   closed: boolean;
+  /** An outgoing file is in flight (attach is disabled meanwhile). */
+  sendingFile: boolean;
   onSend: (text: string) => void;
+  onSendFile: (file: File) => void;
   onLeave: () => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
@@ -91,7 +96,7 @@ export function ChatRoom({
           </p>
         )}
         {messages.map((message: ChatMessage) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble key={message.id} t={t} message={message} />
         ))}
         <div ref={endRef} />
       </div>
@@ -105,7 +110,13 @@ export function ChatRoom({
             {t.room.closedBanner}
           </p>
         ) : (
-          <ChatComposer t={t} disabled={closed} onSend={onSend} />
+          <ChatComposer
+            t={t}
+            disabled={closed}
+            sendingFile={sendingFile}
+            onSend={onSend}
+            onSendFile={onSendFile}
+          />
         )}
       </footer>
     </div>

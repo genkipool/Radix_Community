@@ -15,7 +15,12 @@ describe('Radix Seal SVG single source', () => {
       resolve(process.cwd(), 'public/SVGs/radix-seal.svg'),
       'utf8',
     );
-    expect(onDisk).toBe(radixSealSvg({ ink: SEAL_INK, emboss: true }));
+    expect(onDisk).toBe(
+      radixSealSvg({ ink: SEAL_INK, emboss: true, lettersAsPaths: true }),
+    );
+    // The on-ledger asset must not depend on fonts: wallet renderers (e.g.
+    // AndroidSVG behind Coil) ship no Montserrat and may not draw <text>.
+    expect(onDisk).not.toContain('<text');
   });
 
   it('the inline variant shares the geometry but swaps ink and drops the emboss', () => {
@@ -24,6 +29,8 @@ describe('Radix Seal SVG single source', () => {
     expect(inline).toContain('stroke="currentColor"');
     expect(inline).not.toContain(SEAL_INK);
     expect(inline).not.toContain('filter="url(#stamped)"');
+    // The inline mark keeps real text (the browser has the font).
+    expect(inline).toContain('<text');
     // Same geometry as the file (a load-bearing coordinate from each element).
     expect(inline).toContain('cx="250" cy="250" r="215"');
     // The emblem's vertical-offset group (value may be tuned over time).

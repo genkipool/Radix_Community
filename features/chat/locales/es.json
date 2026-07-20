@@ -40,6 +40,9 @@
       "verified": "verificado por wallet",
       "placeholder": "Escribe un mensaje… (Enter para enviar)",
       "send": "Enviar",
+      "attach": "Enviar un archivo",
+      "download": "Descargar",
+      "fileFailed": "La transferencia no se completó.",
       "leave": "Salir del chat",
       "empty": "La sala es segura. ¡Saluda!",
       "closedBanner": "El otro extremo salió de la conversación. Los mensajes permanecen en esta página hasta que la cierres.",
@@ -57,6 +60,7 @@
       "webrtc_failed": "No se pudo establecer una conexión directa entre navegadores. Inténtalo de nuevo.",
       "crypto_unsupported": "Este navegador no tiene la criptografía necesaria para verificar firmas. Actualízalo.",
       "message_rejected": "Un mensaje no superó la verificación. La sala se cerró por seguridad.",
+      "storage_quota": "No hay almacenamiento libre suficiente en este navegador para recibir el archivo.",
       "unknown": "Algo salió mal. Inténtalo de nuevo."
     }
   }

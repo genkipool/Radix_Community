@@ -8,5 +8,10 @@ import { resolve } from 'node:path';
 import { radixSealSvg, SEAL_INK } from '../features/seal/lib/radix-seal-svg';
 
 const target = resolve(process.cwd(), 'public/SVGs/radix-seal.svg');
-writeFileSync(target, radixSealSvg({ ink: SEAL_INK, emboss: true }));
+// Letters as traced outlines: wallet NFT renderers ship no Montserrat and
+// have unreliable <text> support, so the on-ledger asset embeds geometry.
+writeFileSync(
+  target,
+  radixSealSvg({ ink: SEAL_INK, emboss: true, lettersAsPaths: true }),
+);
 console.log(`Wrote ${target}`);

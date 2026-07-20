@@ -7,7 +7,9 @@ import { IDB_NAME, IDB_TTL_MS } from '../constants/cipher';
 
 export interface CipherFileMeta {
   id: string;
-  kind: 'encrypted-local' | 'received';
+  /** `chat` entries are plaintext attachments spilled by the secure chat;
+   *  they share this store (and its 24 h retention) with the cipher tool. */
+  kind: 'encrypted-local' | 'received' | 'chat';
   /** Original (plaintext) file name, from the header. */
   fileName: string;
   /** Container download name (fileName + .radixseal.enc). */
