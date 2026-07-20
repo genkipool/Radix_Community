@@ -69,17 +69,22 @@ export function parseWatermarkParams(
 /**
  * Builds the shareable co-signer URL for a request. `pathname` may be any page
  * under the sign tool (including an already-directory-shaped one); the tool
- * base is recovered from it so the link never nests.
+ * base is recovered from it so the link never nests. Without a `requestKey`
+ * the link is a plain document-delivery URL: it opens the sign tool (on the
+ * requested tab) and the P2P room in the fragment serves the file.
  */
 export function buildShareUrl(input: {
   origin: string;
   pathname: string;
-  requestKey: string;
+  /** On-ledger request key; omit for a document-delivery-only link. */
+  requestKey?: string;
   docName?: string;
   /** Initiator's delivery formats, applied on the co-signer side too. */
   outputs?: OutputFormat[];
   /** Initiator's watermark choice (custom images cannot travel by URL). */
   watermark?: SharedWatermark;
+  /** Tab the link should open on (request links force `sign` by themselves). */
+  tab?: 'basic' | 'sign' | 'verify';
   /**
    * P2P room for direct document delivery. Rides in the URL FRAGMENT so it
    * never reaches server logs or link-preview bots.
@@ -101,9 +106,13 @@ export function buildShareUrl(input: {
       params.set('wmt', input.watermark.text);
     }
   }
+  if (input.tab) params.set('tab', input.tab);
   const query = params.toString() ? `?${params.toString()}` : '';
   const fragment = input.sendRoomId ? `#s=${input.sendRoomId}` : '';
 
+  if (!input.requestKey) {
+    return `${input.origin}${base}${query}${fragment}`;
+  }
   const parsed = parseRequestKey(input.requestKey);
   if (!parsed) {
     // Unrecognized key shape: fall back to the query format, which is opaque.

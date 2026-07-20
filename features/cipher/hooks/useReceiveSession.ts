@@ -81,6 +81,22 @@ export function useReceiveSession(roomId: string) {
       peerRef.current?.close();
     };
 
+    // Every wire event funnels through ONE promise chain. The handlers do
+    // async work (storage estimate, IndexedDB writes), so without this the
+    // first chunk frames can outrun the still-persisting `meta` and get
+    // dropped, and `transfer-complete` can read the received count before
+    // the last chunk writes settle; both surface as a phantom
+    // `peer_disconnected` on every transfer.
+    let queue: Promise<void> = Promise.resolve();
+    const enqueue = (task: () => void | Promise<void>) => {
+      queue = queue
+        .then(() => {
+          if (cancelled || phaseRef.current === 'error') return;
+          return task();
+        })
+        .catch(fail);
+    };
+
     const decryptWithKey = async (fileKeyHex: string) => {
       const fileId = fileIdRef.current;
       const parsed = headRef.current;
@@ -105,82 +121,75 @@ export function useReceiveSession(roomId: string) {
     };
 
     const handleMessage = (message: DataChannelMessage) => {
-      void (async () => {
-        try {
-          if (message.t === 'meta') {
-            const headBytes = base64ToBytes(message.headB64);
-            const parsed = parseContainerHeadBytes(headBytes);
-            // Refuse up front if the browser can't hold the ciphertext.
-            const estimate = await navigator.storage?.estimate?.().catch(() => null);
-            if (estimate?.quota != null && estimate.usage != null) {
-              const needed = encryptedDataSize(parsed.header) * 1.1;
-              if (estimate.quota - estimate.usage < needed) {
-                throw new Error('storage_quota');
-              }
+      enqueue(async () => {
+        if (message.t === 'meta') {
+          const headBytes = base64ToBytes(message.headB64);
+          const parsed = parseContainerHeadBytes(headBytes);
+          // Refuse up front if the browser can't hold the ciphertext.
+          const estimate = await navigator.storage?.estimate?.().catch(() => null);
+          if (estimate?.quota != null && estimate.usage != null) {
+            const needed = encryptedDataSize(parsed.header) * 1.1;
+            if (estimate.quota - estimate.usage < needed) {
+              throw new Error('storage_quota');
             }
-            const fileId = newFileId();
-            fileIdRef.current = fileId;
-            headRef.current = parsed;
-            headB64Ref.current = message.headB64;
-            encryptedNameRef.current = `${parsed.header.fileName}.radixseal.enc`;
-            await putFileMeta({
-              id: fileId,
-              kind: 'received',
-              fileName: parsed.header.fileName,
-              encryptedName: encryptedNameRef.current,
-              headBytes: new Blob([headBytes as Uint8Array<ArrayBuffer>]),
-              headerHash: parsed.headerHash,
-              chunkCount: parsed.header.chunkCount,
-              receivedChunks: 0,
-              complete: false,
-              createdAt: Date.now(),
-            });
-            setHead(parsed);
-            setProgress(0);
-            moveTo('receiving');
-          } else if (message.t === 'chunk-start') {
-            assembler.start(message.index, message.byteLength);
-          } else if (message.t === 'transfer-complete') {
-            const fileId = fileIdRef.current;
-            const expected = headRef.current?.header.chunkCount ?? 0;
-            if (!fileId || received !== expected) {
-              throw new Error('peer_disconnected');
-            }
-            await updateFileMeta(fileId, {
-              complete: true,
-              receivedChunks: received,
-            });
-            peerRef.current?.sendMessage({ t: 'receipt', receivedChunks: received });
-            moveTo('received');
-          } else if (message.t === 'decrypt-approved') {
-            await decryptWithKey(message.fileKeyHex);
-          } else if (message.t === 'decrypt-denied') {
-            setDenyReason(message.reason);
-            setError(
-              message.reason === 'rejected' ? null : DENY_TO_ERROR[message.reason],
-            );
-            moveTo('denied');
-          } else if (message.t === 'bye') {
-            handlePeerClose();
           }
-        } catch (e) {
-          fail(e);
+          const fileId = newFileId();
+          fileIdRef.current = fileId;
+          headRef.current = parsed;
+          headB64Ref.current = message.headB64;
+          encryptedNameRef.current = `${parsed.header.fileName}.radixseal.enc`;
+          await putFileMeta({
+            id: fileId,
+            kind: 'received',
+            fileName: parsed.header.fileName,
+            encryptedName: encryptedNameRef.current,
+            headBytes: new Blob([headBytes as Uint8Array<ArrayBuffer>]),
+            headerHash: parsed.headerHash,
+            chunkCount: parsed.header.chunkCount,
+            receivedChunks: 0,
+            complete: false,
+            createdAt: Date.now(),
+          });
+          setHead(parsed);
+          setProgress(0);
+          moveTo('receiving');
+        } else if (message.t === 'chunk-start') {
+          assembler.start(message.index, message.byteLength);
+        } else if (message.t === 'transfer-complete') {
+          // The queue guarantees every chunk write above already settled.
+          const fileId = fileIdRef.current;
+          const expected = headRef.current?.header.chunkCount ?? 0;
+          if (!fileId || received !== expected) {
+            throw new Error('peer_disconnected');
+          }
+          await updateFileMeta(fileId, {
+            complete: true,
+            receivedChunks: received,
+          });
+          peerRef.current?.sendMessage({ t: 'receipt', receivedChunks: received });
+          moveTo('received');
+        } else if (message.t === 'decrypt-approved') {
+          await decryptWithKey(message.fileKeyHex);
+        } else if (message.t === 'decrypt-denied') {
+          setDenyReason(message.reason);
+          setError(
+            message.reason === 'rejected' ? null : DENY_TO_ERROR[message.reason],
+          );
+          moveTo('denied');
+        } else if (message.t === 'bye') {
+          handlePeerClose();
         }
-      })();
+      });
     };
 
     const handleBinary = (bytes: ArrayBuffer) => {
-      void (async () => {
-        try {
-          const chunk = assembler.push(bytes);
-          if (!chunk || !fileIdRef.current || !headRef.current) return;
-          await putChunk(fileIdRef.current, chunk.index, chunk.blob);
-          received += 1;
-          setProgress(received / headRef.current.header.chunkCount);
-        } catch (e) {
-          fail(e);
-        }
-      })();
+      enqueue(async () => {
+        const chunk = assembler.push(bytes);
+        if (!chunk || !fileIdRef.current || !headRef.current) return;
+        await putChunk(fileIdRef.current, chunk.index, chunk.blob);
+        received += 1;
+        setProgress(received / headRef.current.header.chunkCount);
+      });
     };
 
     // Micro-delay so a dev StrictMode double-mount doesn't join the room

@@ -99,8 +99,10 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
       : 'basic';
   const [tab, setTab] = useState<Tab>(initialTab);
   const doc = useDocumentFile(t);
+  // The room fragment alone is enough: document-delivery links (no on-ledger
+  // request) also feed the received file into the dropzone.
   const receive = useReceiveFileChannel({
-    roomId: hasRequestParam ? sendRoom : null,
+    roomId: sendRoom,
     onFile: (file) => {
       void doc.onFile(file);
     },
@@ -240,6 +242,29 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 {t.basic.hint}
+              </p>
+            )}
+            {/* Document-delivery links have no request box, so the live
+                receive status shows here, next to the dropzone it fills. */}
+            {!hasRequestParam && receive.phase !== 'idle' && (
+              <p
+                className="text-xs font-semibold"
+                style={{
+                  color:
+                    receive.phase === 'error'
+                      ? 'var(--color-danger, #dc2626)'
+                      : receive.phase === 'done'
+                        ? 'var(--color-success)'
+                        : 'var(--color-text-muted)',
+                }}
+              >
+                {receive.phase === 'connecting'
+                  ? t.onchain.recvConnecting
+                  : receive.phase === 'receiving'
+                    ? `${t.onchain.recvReceiving} ${Math.round(receive.progress * 100)}%`
+                    : receive.phase === 'done'
+                      ? t.onchain.recvDone
+                      : t.onchain.recvError}
               </p>
             )}
             <FileDropzone
