@@ -36,6 +36,9 @@ export type ChatWireMessage =
       networkId: number;
     }
   | { t: 'msg'; seq: number; ivB64: string; ctB64: string }
+  /** File announcement: encrypted `ChatFileMeta`, then the encrypted binary
+   *  frames follow on the channel until `size` plaintext bytes arrived. */
+  | { t: 'file'; seq: number; ivB64: string; ctB64: string }
   | { t: 'bye' };
 
 /** Encrypted message body (JSON before AES-GCM). */
@@ -44,12 +47,33 @@ export interface ChatPlaintext {
   at: number;
 }
 
-/** A rendered chat entry. */
+/** Encrypted file announcement body (JSON before AES-GCM). */
+export interface ChatFileMeta {
+  name: string;
+  mime: string;
+  size: number;
+  at: number;
+}
+
+/** Attachment state rendered inside a chat entry. */
+export interface ChatFileState {
+  name: string;
+  mime: string;
+  size: number;
+  /** 0..1 transferred. */
+  progress: number;
+  status: 'transferring' | 'done' | 'error';
+  /** Object URL for download, set once the file is complete. */
+  url?: string;
+}
+
+/** A rendered chat entry: a text message or a file attachment. */
 export interface ChatMessage {
   id: string;
   direction: 'sent' | 'received';
   text: string;
   at: number;
+  file?: ChatFileState;
 }
 
 /** The counterpart, once their handshake proof has been verified locally. */
@@ -81,4 +105,5 @@ export type ChatErrorCode =
   | 'webrtc_failed'
   | 'crypto_unsupported'
   | 'message_rejected'
+  | 'storage_quota'
   | 'unknown';

@@ -12,6 +12,7 @@ const CODES: ReadonlySet<string> = new Set([
   'webrtc_failed',
   'crypto_unsupported',
   'message_rejected',
+  'storage_quota',
 ] satisfies ChatErrorCode[]);
 
 /** Map a thrown Error(<code>) to its i18n error code; anything else → unknown. */

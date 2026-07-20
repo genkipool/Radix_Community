@@ -35,7 +35,9 @@ export function ChatSessionView({
           peer={session.peerIdentity}
           messages={session.messages}
           closed={session.phase === 'closed'}
+          sendingFile={session.sendingFile}
           onSend={(text) => void session.send(text)}
+          onSendFile={(file) => void session.sendFile(file)}
           onLeave={session.leave}
         />
         {session.phase === 'closed' && (

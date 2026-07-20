@@ -44,8 +44,8 @@ model:
   several people, off chain or anchored on the ledger.
 - **Encrypt document**: lock a file to an account and share it peer to peer,
   optionally gating decryption to on ledger authorized accounts.
-- **Secure chat**: end to end encrypted conversations where both sides prove who
-  they are with their wallet.
+- **Secure chat**: end to end encrypted conversations, with encrypted file
+  sending of any size, where both sides prove who they are with their wallet.
 
 The file itself never leaves the browser. Only what is strictly needed to verify
 (a hash and account addresses) is ever anchored on chain.
@@ -234,6 +234,13 @@ Two parties open an end to end encrypted channel. Both prove their identity by
 signing a ROLA challenge with their wallet, and the session key is derived from
 that verified exchange, so no server can read, alter or impersonate anything. The
 invitation room id rides in the URL fragment, which never reaches server logs.
+
+Files can be sent over the same channel with no size limit: they are encrypted
+with the session key and streamed in chunks, so memory stays flat on both sides
+(the only bound is the receiving browser's storage quota). Messages exist only
+on the open page; the local copy a browser keeps of received files, used for
+the download, is deleted automatically after 24 hours. Anything the user saved
+to disk is, of course, theirs to keep.
 
 ---
 

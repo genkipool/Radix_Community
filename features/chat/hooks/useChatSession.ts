@@ -15,15 +15,37 @@ import {
   type PeerHandlers,
 } from '@/features/p2p/lib/webrtc';
 import type { PeerRole } from '@/features/p2p/types/p2p.types';
-import { MAX_MESSAGE_CHARS } from '../constants/chat';
+import {
+  assembleContainerBlob,
+  cleanupExpired,
+  deleteFile,
+  newFileId,
+  putChunk,
+  putFileMeta,
+  updateFileMeta,
+} from '@/features/cipher/lib/idb';
+import {
+  FILE_FRAME_BYTES,
+  FILE_SPILL_BYTES,
+  MAX_MESSAGE_CHARS,
+} from '../constants/chat';
 import type {
   ChatErrorCode,
+  ChatFileMeta,
+  ChatFileState,
   ChatMessage,
   ChatPhase,
   ChatWireMessage,
   VerifiedPeer,
 } from '../types/chat.types';
-import { decryptChatMessage, encryptChatMessage } from '../lib/chatCrypto';
+import {
+  decryptChatMessage,
+  decryptFileChunk,
+  decryptFileMeta,
+  encryptChatMessage,
+  encryptFileChunk,
+  encryptFileMeta,
+} from '../lib/chatCrypto';
 import { toChatErrorCode } from '../lib/errors';
 import {
   deriveChatKey,
@@ -38,6 +60,22 @@ import {
 
 type ChatPeer = Peer<ChatWireMessage>;
 type HandshakeMessage = Extract<ChatWireMessage, { t: 'handshake' }>;
+
+/** Receiver-side assembly of the file currently coming in. Decrypted frames
+ *  buffer in memory up to FILE_SPILL_BYTES and are then flushed to IndexedDB
+ *  (the cipher store, 24 h retention), so memory stays flat at any size. */
+interface IncomingFile {
+  seq: number;
+  meta: ChatFileMeta;
+  messageId: string;
+  /** IndexedDB file id holding the flushed chunks. */
+  fileId: string;
+  buffer: Uint8Array[];
+  buffered: number;
+  flushed: number;
+  received: number;
+  index: number;
+}
 
 /** Abort the session if the peer connects but never completes the handshake. */
 const HANDSHAKE_TIMEOUT_MS = 60_000;
@@ -60,6 +98,7 @@ export function useChatSession() {
   const [peerIdentity, setPeerIdentity] = useState<VerifiedPeer | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [error, setError] = useState<ChatErrorCode | null>(null);
+  const [sendingFile, setSendingFile] = useState(false);
 
   const phaseRef = useRef<ChatPhase>('idle');
   const roleRef = useRef<PeerRole>('host');
@@ -71,11 +110,33 @@ export function useChatSession() {
   const sendSeqRef = useRef(0);
   const recvSeqRef = useRef(0);
   const handshakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sendingFileRef = useRef(false);
+  const incomingFileRef = useRef<IncomingFile | null>(null);
+  const objectUrlsRef = useRef<string[]>([]);
+  // Incoming wire events run through ONE promise chain: the async handlers
+  // (decrypt, assembly) must process in arrival order, or file frames could
+  // outrun their announcement and AAD indices would misalign.
+  const wireQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const moveTo = (next: ChatPhase) => {
     phaseRef.current = next;
     setPhase(next);
   };
+
+  /** Patch the attachment state of one entry (progress, completion, URL). */
+  function updateFile(messageId: string, patch: Partial<ChatFileState>): void {
+    setMessages((current) =>
+      current.map((m) =>
+        m.id === messageId && m.file ? { ...m, file: { ...m.file, ...patch } } : m,
+      ),
+    );
+  }
+
+  function trackObjectUrl(blob: Blob | File): string {
+    const url = URL.createObjectURL(blob);
+    objectUrlsRef.current.push(url);
+    return url;
+  }
 
   function teardown(): void {
     if (handshakeTimerRef.current) clearTimeout(handshakeTimerRef.current);
@@ -86,16 +147,35 @@ export function useChatSession() {
     signalingRef.current = null;
     keyRef.current = null;
     ephemeralRef.current = null;
+    // A transfer cannot survive the session: mark whatever was in flight and
+    // drop its partial local copy.
+    const incoming = incomingFileRef.current;
+    incomingFileRef.current = null;
+    if (incoming) void deleteFile(incoming.fileId).catch(() => undefined);
+    setMessages((current) =>
+      current.map((m) =>
+        m.file?.status === 'transferring'
+          ? { ...m, file: { ...m.file, status: 'error' } }
+          : m,
+      ),
+    );
   }
 
   // Never leave the peer/signaling dangling if the view unmounts mid-session.
+  // Local copies of past attachments expire after 24 h (shared cipher store).
   useEffect(() => {
+    void cleanupExpired().catch(() => undefined);
+    const urls = objectUrlsRef.current;
     return () => {
       if (handshakeTimerRef.current) clearTimeout(handshakeTimerRef.current);
       peerRef.current?.close();
       peerRef.current = null;
       void signalingRef.current?.leave();
       signalingRef.current = null;
+      const incoming = incomingFileRef.current;
+      incomingFileRef.current = null;
+      if (incoming) void deleteFile(incoming.fileId).catch(() => undefined);
+      for (const url of urls) URL.revokeObjectURL(url);
     };
   }, []);
 
@@ -197,24 +277,174 @@ export function useChatSession() {
     ]);
   }
 
+  async function handleFileAnnouncement(
+    message: Extract<ChatWireMessage, { t: 'file' }>,
+  ): Promise<void> {
+    const key = keyRef.current;
+    if (!key) throw new Error('message_rejected');
+    if (message.seq !== recvSeqRef.current) throw new Error('message_rejected');
+    // One incoming file at a time: a second announcement mid-transfer is a
+    // protocol violation.
+    if (incomingFileRef.current) throw new Error('message_rejected');
+    const peerRole = roleRef.current === 'host' ? 'guest' : 'host';
+    const meta = await decryptFileMeta(
+      key,
+      peerRole,
+      message.seq,
+      message.ivB64,
+      message.ctB64,
+    );
+    // No fixed size limit: the only bound is the browser's storage quota,
+    // checked up front so a too-big file fails before any bytes flow.
+    const estimate = await navigator.storage?.estimate?.().catch(() => null);
+    if (estimate?.quota != null && estimate.usage != null) {
+      if (estimate.quota - estimate.usage < meta.size * 1.05) {
+        throw new Error('storage_quota');
+      }
+    }
+    recvSeqRef.current += 1;
+
+    const messageId = `r-${message.seq}`;
+    const empty = meta.size === 0;
+    setMessages((current) => [
+      ...current,
+      {
+        id: messageId,
+        direction: 'received',
+        text: '',
+        at: meta.at,
+        file: {
+          name: meta.name,
+          mime: meta.mime,
+          size: meta.size,
+          progress: empty ? 1 : 0,
+          status: empty ? 'done' : 'transferring',
+          url: empty
+            ? trackObjectUrl(new Blob([], { type: meta.mime }))
+            : undefined,
+        },
+      },
+    ]);
+    if (!empty) {
+      const fileId = newFileId();
+      await putFileMeta({
+        id: fileId,
+        kind: 'chat',
+        fileName: meta.name,
+        encryptedName: meta.name,
+        headBytes: new Blob([]),
+        headerHash: '',
+        chunkCount: 0,
+        receivedChunks: 0,
+        complete: false,
+        createdAt: Date.now(),
+      });
+      incomingFileRef.current = {
+        seq: message.seq,
+        meta,
+        messageId,
+        fileId,
+        buffer: [],
+        buffered: 0,
+        flushed: 0,
+        received: 0,
+        index: 0,
+      };
+    }
+  }
+
+  /** Persist the buffered frames as one IndexedDB chunk record. */
+  async function flushIncoming(incoming: IncomingFile): Promise<void> {
+    if (incoming.buffered === 0) return;
+    await putChunk(
+      incoming.fileId,
+      incoming.flushed,
+      new Blob(incoming.buffer as BlobPart[]),
+    );
+    incoming.flushed += 1;
+    incoming.buffer = [];
+    incoming.buffered = 0;
+  }
+
+  async function handleFileFrame(bytes: ArrayBuffer): Promise<void> {
+    const incoming = incomingFileRef.current;
+    const key = keyRef.current;
+    // Stray frames (no announced file) are dropped, like unknown messages.
+    if (!incoming || !key) return;
+    const peerRole = roleRef.current === 'host' ? 'guest' : 'host';
+    const plain = await decryptFileChunk(
+      key,
+      peerRole,
+      incoming.seq,
+      incoming.index,
+      new Uint8Array(bytes),
+    );
+    incoming.index += 1;
+    incoming.buffer.push(plain);
+    incoming.buffered += plain.byteLength;
+    incoming.received += plain.byteLength;
+    if (incoming.received > incoming.meta.size) {
+      throw new Error('message_rejected');
+    }
+    if (incoming.received === incoming.meta.size) {
+      await flushIncoming(incoming);
+      await updateFileMeta(incoming.fileId, {
+        chunkCount: incoming.flushed,
+        receivedChunks: incoming.flushed,
+        complete: true,
+      });
+      incomingFileRef.current = null;
+      // Disk-backed Blob over the stored chunks; wrapping restores the mime.
+      const blob = new Blob([await assembleContainerBlob(incoming.fileId)], {
+        type: incoming.meta.mime || 'application/octet-stream',
+      });
+      updateFile(incoming.messageId, {
+        progress: 1,
+        status: 'done',
+        url: trackObjectUrl(blob),
+      });
+      return;
+    }
+    if (incoming.buffered >= FILE_SPILL_BYTES) await flushIncoming(incoming);
+    const progress = incoming.received / incoming.meta.size;
+    // Throttle re-renders to whole-percent steps.
+    if (
+      Math.floor(progress * 100) >
+      Math.floor(((incoming.received - plain.byteLength) / incoming.meta.size) * 100)
+    ) {
+      updateFile(incoming.messageId, { progress });
+    }
+  }
+
+  /** Serialize incoming wire work; failures close the room via `fail`. */
+  function enqueueWire(task: () => void | Promise<void>): void {
+    wireQueueRef.current = wireQueueRef.current
+      .then(() => {
+        const current = phaseRef.current;
+        if (current === 'error' || current === 'closed') return;
+        return task();
+      })
+      .catch(fail);
+  }
+
   const wireHandlers: PeerHandlers<ChatWireMessage> = {
     onMessage(message) {
-      void (async () => {
-        try {
-          if (message.t === 'handshake') {
-            await handlePeerHandshake(message);
-          } else if (message.t === 'msg') {
-            await handleEncryptedMessage(message);
-          } else if (message.t === 'bye') {
-            teardown();
-            moveTo('closed');
-          }
-        } catch (e) {
-          fail(e);
+      enqueueWire(async () => {
+        if (message.t === 'handshake') {
+          await handlePeerHandshake(message);
+        } else if (message.t === 'msg') {
+          await handleEncryptedMessage(message);
+        } else if (message.t === 'file') {
+          await handleFileAnnouncement(message);
+        } else if (message.t === 'bye') {
+          teardown();
+          moveTo('closed');
         }
-      })();
+      });
     },
-    onBinary: () => undefined,
+    onBinary(bytes) {
+      enqueueWire(() => handleFileFrame(bytes));
+    },
     onClose() {
       const current = phaseRef.current;
       if (current === 'closed' || current === 'error' || current === 'idle') return;
@@ -308,6 +538,82 @@ export function useChatSession() {
     }
   }
 
+  /**
+   * Encrypt and stream one file: an announcement message (the metadata,
+   * AES-GCM like any text message) followed by encrypted 64 KiB frames.
+   * One outgoing file at a time; text can interleave freely.
+   */
+  async function sendFile(file: File): Promise<void> {
+    const peer = peerRef.current;
+    const key = keyRef.current;
+    if (!peer || !key || phaseRef.current !== 'secure') return;
+    if (sendingFileRef.current) return;
+    sendingFileRef.current = true;
+    setSendingFile(true);
+    const seq = sendSeqRef.current;
+    const messageId = `s-${seq}`;
+    try {
+      const at = Date.now();
+      const meta: ChatFileMeta = {
+        name: file.name,
+        mime: file.type || 'application/octet-stream',
+        size: file.size,
+        at,
+      };
+      const wire = await encryptFileMeta(key, roleRef.current, seq, meta);
+      peer.sendMessage({ t: 'file', seq, ivB64: wire.ivB64, ctB64: wire.ctB64 });
+      sendSeqRef.current += 1;
+      setMessages((current) => [
+        ...current,
+        {
+          id: messageId,
+          direction: 'sent',
+          text: '',
+          at,
+          file: {
+            name: meta.name,
+            mime: meta.mime,
+            size: meta.size,
+            progress: file.size === 0 ? 1 : 0,
+            status: file.size === 0 ? 'done' : 'transferring',
+            url: trackObjectUrl(file),
+          },
+        },
+      ]);
+
+      let sent = 0;
+      let index = 0;
+      let lastPct = 0;
+      while (sent < file.size) {
+        const slice = file.slice(sent, sent + FILE_FRAME_BYTES);
+        const frame = await encryptFileChunk(
+          key,
+          roleRef.current,
+          seq,
+          index,
+          new Uint8Array(await slice.arrayBuffer()),
+        );
+        await peer.sendBinary(frame.buffer as ArrayBuffer);
+        sent += slice.size;
+        index += 1;
+        const pct = Math.floor((sent / file.size) * 100);
+        if (pct > lastPct) {
+          lastPct = pct;
+          updateFile(messageId, { progress: sent / file.size });
+        }
+      }
+      updateFile(messageId, { progress: 1, status: 'done' });
+    } catch (e) {
+      updateFile(messageId, { status: 'error' });
+      // If the peer politely left mid-transfer the room is already closed;
+      // only surface a session error while the room was still live.
+      if (phaseRef.current === 'secure') fail(e);
+    } finally {
+      sendingFileRef.current = false;
+      setSendingFile(false);
+    }
+  }
+
   /** Politely end the conversation. */
   function leave(): void {
     peerRef.current?.sendMessage({ t: 'bye' });
@@ -321,9 +627,11 @@ export function useChatSession() {
     peerIdentity,
     shareUrl,
     error,
+    sendingFile,
     start,
     join,
     send,
+    sendFile,
     leave,
   };
 }
