@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Snowflake, Undo2, Unlock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Pencil, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -11,10 +12,18 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAccountResources } from '../../hooks/useAccountResources';
 import { useResourceRoles } from '../../hooks/useResourceRoles';
 import type { GatewayRoleEntry } from '@/features/dashboard/types';
-import type { MetadataItem } from '@/features/dashboard/types/shared.types';
+import type { MetadataItem, MetadataTypedValue } from '@/features/dashboard/types/shared.types';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
+import { useNftData, useMissingNfts } from '../../hooks/useNftData';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
+import {
+  setStringMetadata,
+  setUrlMetadata,
+  setAddressMetadata,
+  setStringArrayMetadata,
+  setAddressArrayMetadata,
+} from '../../lib/metadata-manifests';
 import {
   burnManifest,
   burnNonFungibleManifest,
@@ -39,6 +48,7 @@ import { OptionButtons } from '../shared/OptionButtons';
 import { AuthRoleRow } from '../shared/AuthRoleRow';
 import { TextField, SearchField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
+import { resolveTargetVault, targetKind } from '../../lib/vault-resolve';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
 
@@ -55,7 +65,7 @@ const ACTION_ICONS: Record<ResourceAction, ReactNode> = {
   mint: <Coins className="size-4" />,
   mintNft: <Layers className="size-4" />,
   burn: <Flame className="size-4" />,
-  lockMetadata: <Lock className="size-4" />,
+  lockMetadata: <Pencil className="size-4" />,
   setOwnerRole: <Crown className="size-4" />,
   recall: <Undo2 className="size-4" />,
   freeze: <Snowflake className="size-4" />,
@@ -84,6 +94,71 @@ const AUTH_ROLE_PAIRS = [
   { setter: 'metadata_locker', updater: 'metadata_locker_updater' },
   { setter: 'non_fungible_data_updater', updater: 'non_fungible_data_updater_updater', nftOnly: true },
 ];
+
+/**
+ * Renders a metadata entry's typed value as text for display. Handles scalar
+ * values (`value`), arrays (`values`, e.g. tags / dapp_definitions), and the
+ * url/identifier shapes; returns '' when there is nothing displayable.
+ */
+function formatMetadataValue(typed?: MetadataTypedValue): string {
+  if (!typed) return '';
+  if (Array.isArray(typed.values)) {
+    return typed.values
+      .map((v) =>
+        typeof v === 'object' && v !== null
+          ? ((v as { value?: string }).value ?? JSON.stringify(v))
+          : String(v),
+      )
+      .join(', ');
+  }
+  if (typed.value != null) {
+    return typeof typed.value === 'object' ? JSON.stringify(typed.value) : String(typed.value);
+  }
+  if (typed.url != null) return String(typed.url);
+  if (typed.identifier != null) return String(typed.identifier);
+  return '';
+}
+
+/** Metadata types whose value can be edited from a single text field. */
+function isEditableMetadataType(type?: string): boolean {
+  return [
+    'String',
+    'Url',
+    'GlobalAddress',
+    'Address',
+    'StringArray',
+    'GlobalAddressArray',
+    'AddressArray',
+  ].includes(type ?? 'String');
+}
+
+/** SET_METADATA for an edited value, preserving its on-ledger type. */
+function buildSetMetadata(
+  address: string,
+  key: string,
+  typed: MetadataTypedValue | undefined,
+  value: string,
+): string {
+  const asList = () =>
+    value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  switch (typed?.type) {
+    case 'Url':
+      return setUrlMetadata(address, key, value);
+    case 'GlobalAddress':
+    case 'Address':
+      return setAddressMetadata(address, key, value);
+    case 'StringArray':
+      return setStringArrayMetadata(address, key, asList());
+    case 'GlobalAddressArray':
+    case 'AddressArray':
+      return setAddressArrayMetadata(address, key, asList());
+    default:
+      return setStringMetadata(address, key, value);
+  }
+}
 
 function LockToggle({
   locked,
@@ -122,7 +197,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const common = t.common;
   const labels = t.myResources;
   const { language } = useLanguage();
-  const { isLoading: walletLoading } = useRadixWallet();
+  const { isLoading: walletLoading, activeNetwork } = useRadixWallet();
 
   const [accounts, setAccounts] = useState<string[]>([]);
   const [resource, setResource] = useState<string | null>(null);
@@ -130,11 +205,17 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [burnNftIds, setBurnNftIds] = useState<Set<string>>(new Set());
+  // Recall targets whole vaults (you cannot recall an individual NFT without
+  // its vault), each identified by the account that owns it.
+  const [recallVaults, setRecallVaults] = useState<Set<string>>(new Set());
   const [proof, setProof] = useState<BadgeProofSelection | null>(null);
   const [showManifest, setShowManifest] = useState(false);
   const [showAuthRoles, setShowAuthRoles] = useState(false);
   const [lockedMetaKeys, setLockedMetaKeys] = useState<Set<string>>(new Set());
   const [burnNftSearch, setBurnNftSearch] = useState('');
+  const [recallNftSearch, setRecallNftSearch] = useState('');
+  const [freezeVaultSearch, setFreezeVaultSearch] = useState('');
+  const [freezeVaults, setFreezeVaults] = useState<Set<string>>(new Set());
   const [badgeSearch, setBadgeSearch] = useState('');
 
   // For backwards compatibility in queries
@@ -176,6 +257,110 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const selectedFungible = holdings?.fungibles.find((f) => f.resourceAddress === resource);
   const selectedNonFungible = holdings?.nonFungibles.find((nf) => nf.resourceAddress === resource);
 
+  const { data: ownedNftData } = useNftData(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+  const { data: missingNftData } = useMissingNfts(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+
+  interface VaultInfo {
+    address: string;
+    /** Account that owns the vault (shown so the user targets the right one). */
+    account?: string;
+    nftCount: number;
+    /** Every NFT local id held in this vault (recall targets them all). */
+    ids: string[];
+    firstImageUrl?: string;
+  }
+
+  const allVaultsData: VaultInfo[] = (() => {
+    if (!isNonFungible) return [];
+    const map = new Map<string, VaultInfo>();
+
+    // The connected account's own vault.
+    const ownedVault = selectedNonFungible?.vaultAddress;
+    if (ownedVault) {
+      const ownedIds = selectedNonFungible?.ids ?? [];
+      map.set(ownedVault, {
+        address: ownedVault,
+        account: account ?? undefined,
+        nftCount: ownedNftData?.length ?? ownedIds.length,
+        ids: [...ownedIds],
+        firstImageUrl: ownedNftData?.[0]?.imageUrl || selectedNonFungible?.iconUrl,
+      });
+    }
+
+    // Vaults in other accounts, resolved from the NFT location endpoint.
+    if (missingNftData) {
+      for (const nft of missingNftData) {
+        if (!nft.vaultAddress) continue;
+        let vault = map.get(nft.vaultAddress);
+        if (!vault) {
+          vault = {
+            address: nft.vaultAddress,
+            account: nft.ownerAccount,
+            nftCount: 0,
+            ids: [],
+            firstImageUrl: nft.imageUrl || selectedNonFungible?.iconUrl,
+          };
+          map.set(nft.vaultAddress, vault);
+        }
+        vault.nftCount++;
+        vault.ids.push(nft.id);
+        if (!vault.account && nft.ownerAccount) vault.account = nft.ownerAccount;
+      }
+    }
+
+    return Array.from(map.values());
+  })();
+
+  /** Card label for a vault: the owning account, else a short vault id. */
+  const vaultLabel = (v: VaultInfo) =>
+    v.account ? truncateAddress(v.account, 6, 6) : `Bóveda …${v.address.slice(-4)}`;
+
+  /** Selectable vault card (shared by recall and freeze). Shows the owning
+   *  account address and the NFT count. */
+  const renderVaultCard = (
+    vault: VaultInfo,
+    isSelected: boolean,
+    onToggle: () => void,
+    disabled: boolean,
+  ) => (
+    <button
+      key={vault.address}
+      type="button"
+      disabled={disabled}
+      onClick={onToggle}
+      className="group flex items-center gap-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95 p-2.5"
+      style={{
+        background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
+        borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
+      }}
+      title={`${vault.account ?? vault.address}`}
+    >
+      {vault.firstImageUrl && (
+        <SafeImage
+          src={vault.firstImageUrl}
+          alt={vault.address}
+          fallbackName={vault.account || 'Vault'}
+          className="size-8 rounded-lg object-cover shadow-sm shrink-0"
+        />
+      )}
+      <div className="flex flex-col min-w-0">
+        <span
+          className="truncate font-mono font-bold text-xs leading-tight"
+          style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
+        >
+          {vaultLabel(vault)}
+        </span>
+        <span
+          className="truncate text-[11px] font-medium opacity-70"
+          style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+        >
+          {vault.nftCount} NFT{vault.nftCount !== 1 ? 's' : ''}
+        </span>
+      </div>
+      {isSelected && <Check className="size-4 shrink-0 ml-auto" style={{ color: 'var(--color-primary)' }} />}
+    </button>
+  );
+
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
@@ -207,6 +392,42 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   });
   const activeAction = availableActions.includes(action) ? action : availableActions[0] ?? 'lockMetadata';
 
+  // Recall/freeze target: a single field accepting an account_ (resolved to its
+  // vault for this resource, with NFT ids) or a raw internal_vault_ address.
+  const targetInput = (fields.vault ?? '').trim();
+  const targetIsResolvable =
+    (activeAction === 'recall' || activeAction === 'freeze') &&
+    !!resource &&
+    targetKind(targetInput) !== 'unknown';
+  const {
+    data: resolvedTarget,
+    isFetching: resolvingTarget,
+    error: resolveError,
+  } = useQuery({
+    queryKey: ['resolve-vault', activeNetwork, resource, targetInput],
+    enabled: targetIsResolvable,
+    queryFn: () => resolveTargetVault(targetInput, resource ?? '', activeNetwork),
+    staleTime: 30_000,
+  });
+  // NFT ids for a manually targeted vault: from the resolver (account input) or,
+  // for a raw vault, from the already-discovered vault list.
+  const resolvedNftIds = (): string[] => {
+    if (!resolvedTarget) return [];
+    if (resolvedTarget.ids.length > 0) return resolvedTarget.ids;
+    return allVaultsData.find((v) => v.address === resolvedTarget.vault)?.ids ?? [];
+  };
+
+  // Only the first 50 discovered vaults are shown as selectable cards; the rest
+  // are reached through the account/vault field above.
+  const VAULT_CARD_LIMIT = 50;
+  const filterVaultsBySearch = (search: string) =>
+    allVaultsData.filter(
+      (v) =>
+        !search ||
+        v.address.toLowerCase().includes(search.toLowerCase()) ||
+        (v.account?.toLowerCase().includes(search.toLowerCase()) ?? false),
+    );
+
   /* ── Build the manifest for the configured action ── */
   const buildActionManifest = (): string => {
     if (!account || !resource) return '';
@@ -215,23 +436,42 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         return field('amount')
           ? mintFungibleManifest(resource, field('amount')) + DEPOSIT_ALL_SUFFIX(account)
           : '';
-      case 'mintNft':
-        return field('nftId') && field('nftName')
+      case 'mintNft': {
+        // The id defaults to the next free integer and the image to the
+        // collection icon (both shown as placeholders), so entering the NAME
+        // alone is enough to build the manifest — a single input suffices.
+        const nftId =
+          field('nftId') || (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#');
+        const nftName = field('nftName');
+        return nftName
           ? mintNonFungibleManifest(resource, {
-              id: field('nftId'),
-              name: field('nftName'),
+              id: nftId,
+              name: nftName,
               description: field('nftDescription'),
-              keyImageUrl: field('nftImageUrl'),
+              keyImageUrl: field('nftImageUrl') || selectedNonFungible?.iconUrl || '',
             }) + DEPOSIT_ALL_SUFFIX(account)
           : '';
+      }
       case 'burn':
         if (isNonFungible) {
           return burnNftIds.size > 0 ? burnNonFungibleManifest(account, resource, Array.from(burnNftIds)) : '';
         }
         return field('amount') ? burnManifest(account, resource, field('amount')) : '';
       case 'lockMetadata': {
-        const keysToLock = Array.from(lockedMetaKeys);
-        return keysToLock.map(k => lockMetadataManifest(resource, k)).join('');
+        const items = (rolesData?.details?.metadata?.items as MetadataItem[] | undefined) ?? [];
+        let m = '';
+        // 1) Apply edits to unlocked, editable keys (SET must precede LOCK).
+        for (const item of items) {
+          if (item.is_locked || !isEditableMetadataType(item.value?.typed?.type)) continue;
+          const edited = fields[`meta:${resource}:${item.key}`];
+          const original = formatMetadataValue(item.value?.typed);
+          if (edited !== undefined && edited.trim() !== original) {
+            m += buildSetMetadata(resource, item.key, item.value?.typed, edited.trim());
+          }
+        }
+        // 2) Lock the keys the user marked.
+        for (const k of lockedMetaKeys) m += lockMetadataManifest(resource, k);
+        return m;
       }
       case 'setOwnerRole': {
         const currentOwnerRule = normalizedRoles?.['owner'] || 'badge';
@@ -243,17 +483,56 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         return setOwnerRoleManifest(resource, rule);
       }
       case 'recall': {
-        const recallVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
+        if (isNonFungible) {
+          // Recall every NFT in each selected vault (recall is vault-scoped):
+          // the cards the user picked, plus a manually targeted vault beyond the
+          // listed ones (an account_ input resolves its vault AND its ids).
+          let manifest = '';
+          for (const vaultAddr of recallVaults) {
+            const vault = allVaultsData.find((v) => v.address === vaultAddr);
+            if (vault && vault.ids.length > 0) {
+              manifest += recallManifest(vault.address, '0', vault.ids);
+            }
+          }
+          if (resolvedTarget && !recallVaults.has(resolvedTarget.vault)) {
+            const ids = resolvedNftIds();
+            if (ids.length > 0) manifest += recallManifest(resolvedTarget.vault, '0', ids);
+          }
+          if (manifest) manifest += DEPOSIT_ALL_SUFFIX(account);
+          return manifest;
+        }
+        // Fungible: recall an amount from the resolved target vault (recall
+        // targets OTHER accounts' vaults, entered as an account or vault). Only
+        // fall back to the own vault when the field is empty: a typed-but-
+        // unresolved target must NOT silently hit the connected account.
+        const recallVault =
+          resolvedTarget?.vault || (targetInput === '' ? selectedFungible?.vaultAddress ?? '' : '');
         const recallAmount = field('amount');
         return recallVault && recallAmount
           ? recallManifest(recallVault, recallAmount) + DEPOSIT_ALL_SUFFIX(account)
           : '';
       }
       case 'freeze': {
-        const freezeVault = field('vault') || selectedFungible?.vaultAddress || selectedNonFungible?.vaultAddress || '';
         const freezeFlag = field('flag');
         const freezeMode = field('mode') || 'freeze';
-        return freezeVault && freezeFlag
+        if (!freezeFlag) return '';
+
+        if (isNonFungible) {
+          // Selected cards plus a manually targeted vault (freeze needs no ids).
+          const targets = new Set<string>(freezeVaults);
+          if (resolvedTarget) targets.add(resolvedTarget.vault);
+          if (targets.size === 0) return '';
+          return Array.from(targets)
+            .map((vault) => freezeVaultManifest(vault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze'))
+            .join('');
+        }
+
+        // Fungible: freeze/unfreeze the resolved target vault. Only fall back to
+        // the own vault when the field is empty (a typed-but-unresolved target
+        // must not silently hit the connected account).
+        const freezeVault =
+          resolvedTarget?.vault || (targetInput === '' ? selectedFungible?.vaultAddress ?? '' : '');
+        return freezeVault
           ? freezeVaultManifest(freezeVault, freezeFlag as FreezeFlag, freezeMode !== 'unfreeze')
           : '';
       }
@@ -264,7 +543,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const manifest = actionManifest
     ? (proof ? buildBadgeProofManifest([proof]) : '') + actionManifest
     : '';
-  const canSend = !!manifest && !isSending && !walletLoading;
+  const baseCanSend = !!manifest && !isSending && !walletLoading;
 
 
   const roleInfo = ACTION_TO_ROLES[activeAction];
@@ -304,6 +583,48 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   } else if (activeAction === 'setOwnerRole') {
     if (ownerBadgeAddr) requiredBadgeForAction = [ownerBadgeAddr];
   }
+
+  let prioritizedIdsForProof: string[] = [];
+  if (activeAction === 'burn') prioritizedIdsForProof = Array.from(burnNftIds);
+  else if (activeAction === 'recall') {
+    prioritizedIdsForProof = Array.from(recallVaults).flatMap(
+      (v) => allVaultsData.find((x) => x.address === v)?.ids ?? [],
+    );
+  }
+
+  // Effective rule governing the active action (roles set to 'owner' inherit
+  // the resource owner rule).
+  const resolveEffectiveRule = (roleName?: string): string | undefined => {
+    if (!roleName) return undefined;
+    const r = normalizedRoles?.[roleName];
+    return r === 'owner' ? normalizedRoles?.['owner'] : r;
+  };
+  const activeRule =
+    activeAction === 'setOwnerRole'
+      ? normalizedRoles?.['owner']
+      : resolveEffectiveRule(roleInfo?.setter);
+  // A Radix Seal signing collection is created with a LOCKED (Fixed) owner role,
+  // so SET_OWNER_ROLE can never succeed on it. Detected by its metadata marker;
+  // the gateway does not expose the owner-role lock reliably for other resources.
+  const ownerRoleLocked = (
+    (rolesData?.details?.metadata?.items as MetadataItem[] | undefined) ?? []
+  ).some((m) => m.key === 'radix_sign_collection' && m.value?.typed?.value === 'v1');
+  const ownerRoleActionLocked = activeAction === 'setOwnerRole' && ownerRoleLocked;
+
+  // A 'badge' rule needs a matching badge PROOF presented. DenyAll can never
+  // succeed. AllowAll needs nothing. A locked owner role can never be changed.
+  const actionNeedsBadge = activeRule === 'badge';
+  const actionForbidden = activeRule === 'denyAll' || ownerRoleActionLocked;
+  // The picker only offers required badges the account actually holds, so when
+  // the user lacks it, `proof` stays null → the action must stay disabled.
+  const presentedBadgeOk =
+    !!proof &&
+    (!requiredBadgeForAction ||
+      requiredBadgeForAction.some(
+        (b) => b === proof.resourceAddress || b.startsWith(proof.resourceAddress),
+      ));
+  const badgeRequirementMet = !actionNeedsBadge || presentedBadgeOk;
+  const canSend = baseCanSend && !actionForbidden && badgeRequirementMet;
 
   return (
     <div className="space-y-5">
@@ -368,6 +689,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           onChange={setProof}
           disabled={isSending}
           requiredBadges={requiredBadgeForAction}
+          prioritizedIds={prioritizedIdsForProof}
           rolesLoading={rolesLoading}
         />
       </ToolSection>
@@ -467,10 +789,18 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
               const ownerVal = normalizedRoles['owner'] || 'badge';
               roleStr = authRoleLabels[ownerVal] || ownerVal;
               ruleType = ownerVal;
-              isActionLocked = false;
+              // The owner role of a signing collection is Fixed: mark it locked.
+              isActionLocked = ownerRoleLocked;
             }
 
-            const isActionDenied = ruleType === 'denyAll';
+            // A locked owner role (Fixed) can never be changed, so its options
+            // and the send button are disabled, like a denied action.
+            const isActionDenied = ruleType === 'denyAll' || ownerRoleActionLocked;
+            // When the action needs a badge the account does not hold (so no
+            // proof is presented), every input is locked too, making it clear
+            // nothing can be edited until the badge is presented.
+            const badgeMissing = actionNeedsBadge && !presentedBadgeOk;
+            const inputsDisabled = isActionDenied || badgeMissing;
 
             return (
               <>
@@ -492,7 +822,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                 />
 
                 {roleStr && (
-                  <div className={`mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-xs font-medium border ${isActionDenied ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-[var(--color-primary)]/5 text-[var(--color-primary)] border-[var(--color-primary)]/20'}`}>
+                  <div className={`mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-xs font-medium border ${isActionDenied || badgeMissing ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-[var(--color-primary)]/5 text-[var(--color-primary)] border-[var(--color-primary)]/20'}`}>
                     <div className="flex items-center gap-2">
                       <span className="opacity-80">{labels.fields.requirementFor} {actionLabels[activeAction]?.name || activeAction}:</span>
                       <span className="font-bold flex items-center gap-1.5">
@@ -502,10 +832,18 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                         {roleStr}
                       </span>
                     </div>
-                    {isActionLocked && (
+                    {isActionLocked && !badgeMissing && (
                       <div className="flex items-center gap-1.5 opacity-80" title={labels.fields.ruleLockedHint}>
                         <Lock className="size-3" />
                         <span>{labels.fields.ruleLocked}</span>
+                      </div>
+                    )}
+                    {/* Badge-missing warning lives here (stable banner) so it
+                        never shifts the form below. */}
+                    {badgeMissing && (
+                      <div className="flex items-center gap-1.5 basis-full">
+                        <Lock className="size-3 shrink-0" />
+                        <span>{labels.fields.badgeRequiredHint}</span>
                       </div>
                     )}
                   </div>
@@ -517,7 +855,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
                     onChange={(value) => setField('amount', value)}
                     type="number"
-                    disabled={isSending || isActionDenied}
+                    disabled={isSending || inputsDisabled}
                     placeholder={rolesData?.details?.details?.total_supply ? `Suministro: ${formatNumber(Number(rolesData.details.details.total_supply), 4, language)}` : ''}
                   />
                 )}
@@ -528,7 +866,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       value={burnNftSearch}
                       onChange={setBurnNftSearch}
                       placeholder={labels.fields.searchNfts.replace('{count}', selectedNonFungible.ids.length.toString())}
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                     <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: burnNftIds.size > 0 ? 'visible' : 'hidden' }}>
                       <Flame className="size-3.5" />
@@ -543,20 +881,20 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {selectedNonFungible.ids
-                        .filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase()))
-                        .map((nftId) => {
-                          const isSelected = burnNftIds.has(nftId);
+                      {(ownedNftData || selectedNonFungible.ids.map(id => ({ id, name: selectedNonFungible.name || 'NFT', imageUrl: selectedNonFungible.iconUrl })))
+                        .filter(nft => !burnNftSearch || nft.id.toLowerCase().includes(burnNftSearch.toLowerCase()) || nft.name?.toLowerCase().includes(burnNftSearch.toLowerCase()))
+                        .map((nft) => {
+                          const isSelected = burnNftIds.has(nft.id);
                           return (
                             <button
-                              key={nftId}
+                              key={nft.id}
                               type="button"
-                              disabled={isSending || isActionDenied}
+                              disabled={isSending || inputsDisabled}
                               onClick={() => {
                                 setBurnNftIds((prev) => {
                                   const next = new Set(prev);
-                                  if (next.has(nftId)) next.delete(nftId);
-                                  else next.add(nftId);
+                                  if (next.has(nft.id)) next.delete(nft.id);
+                                  else next.add(nft.id);
                                   return next;
                                 });
                               }}
@@ -565,13 +903,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 background: isSelected ? 'rgba(var(--color-primary-rgb), 0.08)' : 'var(--color-surface)',
                                 borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-card-border)',
                               }}
-                              title={nftId}
+                              title={nft.id}
                             >
-                              {selectedNonFungible.iconUrl && (
+                              {(nft.imageUrl || selectedNonFungible.iconUrl) && (
                                 <SafeImage
-                                  src={selectedNonFungible.iconUrl}
-                                  alt={nftId}
-                                  fallbackName={selectedNonFungible.name || 'NFT'}
+                                  src={nft.imageUrl || selectedNonFungible.iconUrl || ''}
+                                  alt={nft.id}
+                                  fallbackName={nft.name || selectedNonFungible.name || 'NFT'}
                                   className="size-8 rounded-lg object-cover shadow-sm shrink-0"
                                 />
                               )}
@@ -580,13 +918,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                   className="truncate font-bold text-xs leading-tight"
                                   style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
                                 >
-                                  {selectedNonFungible.name || 'NFT'}
+                                  {nft.name || selectedNonFungible.name || 'NFT'}
                                 </span>
                                 <span
                                   className="truncate text-[11px] font-medium opacity-70"
                                   style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
                                 >
-                                  {nftId}
+                                  {nft.id}
                                 </span>
                               </div>
                               {isSelected && (
@@ -595,7 +933,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             </button>
                           );
                         })}
-                      {selectedNonFungible.ids.filter(id => !burnNftSearch || id.toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
+                      {(!ownedNftData ? selectedNonFungible.ids : ownedNftData).filter(nft => !burnNftSearch || (typeof nft === 'string' ? nft : nft.id).toLowerCase().includes(burnNftSearch.toLowerCase())).length === 0 && (
                         <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
                           {labels.fields.noNftsFound}
                         </div>
@@ -606,30 +944,37 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
                 {activeAction === 'mintNft' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Each input is the NEW NFT's own data field. The id is
+                        suggested as the next free integer; the rest start empty
+                        (the collection icon only pre-fills the image, as a
+                        convenience) so nothing carries the resource address. */}
                     <TextField
                       label={labels.fields.nftId}
                       hint={labels.fields.nftIdHint}
-                      value={isActionDenied ? (selectedNonFungible?.ids[0] ?? '') : (fields.nftId ?? (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#'))}
+                      value={fields.nftId ?? (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#')}
                       onChange={(value) => setField('nftId', value)}
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                     <TextField
                       label={labels.fields.nftName}
-                      value={isActionDenied ? (selectedNonFungible?.name ?? '') : (fields.nftName ?? selectedNonFungible?.name ?? '')}
+                      placeholder={labels.fields.nftNamePlaceholder}
+                      value={fields.nftName ?? ''}
                       onChange={(value) => setField('nftName', value)}
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                     <TextField
                       label={labels.fields.nftDescription}
-                      value={isActionDenied ? resource : (fields.nftDescription ?? resource ?? '')}
+                      placeholder={labels.fields.nftDescriptionPlaceholder}
+                      value={fields.nftDescription ?? ''}
                       onChange={(value) => setField('nftDescription', value)}
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                     <TextField
                       label={labels.fields.nftImageUrl}
-                      value={isActionDenied ? (selectedNonFungible?.iconUrl ?? '') : (fields.nftImageUrl ?? selectedNonFungible?.iconUrl ?? '')}
+                      placeholder="https://…"
+                      value={fields.nftImageUrl ?? selectedNonFungible?.iconUrl ?? ''}
                       onChange={(value) => setField('nftImageUrl', value)}
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                   </div>
                 )}
@@ -639,14 +984,20 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     {(rolesData?.details?.metadata?.items as MetadataItem[] | undefined)?.map((item) => {
                       const alreadyLocked = item.is_locked;
                       const markedToLock = lockedMetaKeys.has(item.key);
-                      // Format value for display
-                      let displayVal = item.value?.typed?.value;
-                      if (typeof displayVal === 'object') displayVal = JSON.stringify(displayVal);
-                      
+                      // Every metadata type: scalar (`value`), array (`values`),
+                      // url/identifier, else the raw hex fallback.
+                      const displayVal = formatMetadataValue(item.value?.typed) || item.value?.raw_hex || '';
+                      // Unlocked keys of a supported type can be edited (SET) as
+                      // well as locked; locked ones stay read-only.
+                      const editable =
+                        !alreadyLocked && isEditableMetadataType(item.value?.typed?.type);
+                      const editKey = `meta:${resource}:${item.key}`;
+
                       return (
                         <TextField
                           key={item.key}
                           label={item.key}
+                          hint={editable ? labels.fields.editMetadataHint : undefined}
                           labelEnd={
                             <LockToggle
                               locked={alreadyLocked || markedToLock}
@@ -657,14 +1008,14 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 else next.add(item.key);
                                 setLockedMetaKeys(next);
                               }}
-                              disabled={isSending || isActionDenied || alreadyLocked}
+                              disabled={isSending || inputsDisabled || alreadyLocked}
                               label={alreadyLocked ? 'Locked' : 'Lock'}
                               hint={alreadyLocked ? labels.fields.alreadyLockedHint : labels.fields.lockFieldHint}
                             />
                           }
-                          value={displayVal || item.value?.raw_hex || ''}
-                          disabled={true}
-                          onChange={() => {}}
+                          value={editable ? (fields[editKey] ?? displayVal) : displayVal}
+                          disabled={!editable || isSending || inputsDisabled}
+                          onChange={editable ? (v) => setField(editKey, v) : () => {}}
                         />
                       );
                     })}
@@ -686,7 +1037,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                         value={fields.ruleKind || ruleType}
                         onChange={(value) => setField('ruleKind', value)}
                         size="sm"
-                        disabled={isSending || isActionDenied}
+                        disabled={isSending || inputsDisabled}
                       />
                     </div>
                     {(fields.ruleKind || ruleType) === 'badge' && (() => {
@@ -703,7 +1054,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                             value={badgeSearch}
                             onChange={setBadgeSearch}
                             placeholder={labels.fields.searchBadge}
-                            disabled={isSending || isActionDenied}
+                            disabled={isSending || inputsDisabled}
                           />
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                             {filteredBadges.map((opt) => {
@@ -712,7 +1063,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 <ResourceCard
                                   key={opt.value}
                                   isActive={isActive}
-                                  disabled={isSending || isActionDenied}
+                                  disabled={isSending || inputsDisabled}
                                   onClick={() => setField('badgeResource', isActive ? '' : opt.value)}
                                   name={opt.name}
                                   address={opt.address}
@@ -738,24 +1089,162 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                   </div>
                 )}
 
-                {(activeAction === 'recall' || activeAction === 'freeze') && (
-                  <TextField
-                    label={labels.fields.vault}
-                    hint={labels.fields.vaultHint}
-                    value={isActionDenied ? resource : (fields.vault ?? selectedFungible?.vaultAddress ?? selectedNonFungible?.vaultAddress ?? '')}
-                    onChange={(value) => setField('vault', value)}
-                    disabled={isSending || isActionDenied}
-                  />
+                {(activeAction === 'freeze' || activeAction === 'recall') && (
+                  <div className="flex flex-col gap-1.5">
+                    <TextField
+                      label={labels.fields.vault}
+                      hint={labels.fields.vaultHint}
+                      value={fields.vault ?? ''}
+                      onChange={(value) => setField('vault', value)}
+                      placeholder={labels.fields.vaultPlaceholder}
+                      disabled={isSending || inputsDisabled}
+                    />
+                    {targetInput && targetKind(targetInput) === 'unknown' && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                        {labels.fields.vaultInvalid}
+                      </span>
+                    )}
+                    {resolvingTarget && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-text-muted)' }}>
+                        {labels.fields.vaultResolving}
+                      </span>
+                    )}
+                    {!resolvingTarget && targetKind(targetInput) === 'account' && resolveError && (
+                      <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                        {labels.fields.vaultResolveError}
+                      </span>
+                    )}
+                    {!resolvingTarget &&
+                      targetKind(targetInput) === 'account' &&
+                      !resolveError &&
+                      resolvedTarget === null && (
+                        <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                          {labels.fields.vaultNotHeld}
+                        </span>
+                      )}
+                    {!resolvingTarget && resolvedTarget && targetKind(targetInput) === 'account' && (
+                      <span className="text-[11px] px-1 font-mono truncate" style={{ color: 'var(--color-primary)' }}>
+                        {labels.fields.vaultResolved.replace('{vault}', truncateAddress(resolvedTarget.vault, 8, 6))}
+                        {isNonFungible ? ` · ${resolvedNftIds().length} NFT` : ''}
+                      </span>
+                    )}
+                  </div>
                 )}
-                {activeAction === 'recall' && (
+                {activeAction === 'recall' && isFungible && (
                   <TextField
                     label={labels.fields.amount}
                     value={isActionDenied ? (selectedFungible?.amount ?? '') : (fields.amount ?? '')}
                     onChange={(value) => setField('amount', value)}
                     type="number"
                     placeholder={selectedFungible ? `Saldo: ${formatNumber(Number(selectedFungible.amount), 4, language)}` : ''}
-                    disabled={isSending || isActionDenied}
+                    disabled={isSending || inputsDisabled}
                   />
+                )}
+                {activeAction === 'recall' && isNonFungible && (
+                  <div className="flex flex-col gap-3">
+                    <SearchField
+                      value={recallNftSearch}
+                      onChange={setRecallNftSearch}
+                      placeholder={labels.fields.searchVaults.replace('{count}', allVaultsData.length.toString())}
+                      disabled={isSending || inputsDisabled}
+                    />
+                    <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: recallVaults.size > 0 ? 'visible' : 'hidden' }}>
+                      <Undo2 className="size-3.5" />
+                      <span>{recallVaults.size === 1 ? labels.fields.vaultsSelected.replace('{count}', '1') : labels.fields.vaultsSelectedPlural.replace('{count}', recallVaults.size.toString())}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRecallVaults(new Set())}
+                        className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.clearSelection}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {filterVaultsBySearch(recallNftSearch)
+                        .slice(0, VAULT_CARD_LIMIT)
+                        .map((vault) =>
+                          renderVaultCard(
+                            vault,
+                            recallVaults.has(vault.address),
+                            () => {
+                              setRecallVaults((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(vault.address)) next.delete(vault.address);
+                                else next.add(vault.address);
+                                return next;
+                              });
+                            },
+                            isSending || inputsDisabled,
+                          ),
+                        )}
+                      {filterVaultsBySearch(recallNftSearch).length === 0 && (
+                        <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.noVaultsFound}
+                        </div>
+                      )}
+                      {filterVaultsBySearch(recallNftSearch).length > VAULT_CARD_LIMIT && (
+                        <div className="col-span-full text-center py-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.vaultsLimited
+                            .replace('{shown}', String(VAULT_CARD_LIMIT))
+                            .replace('{total}', String(filterVaultsBySearch(recallNftSearch).length))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {activeAction === 'freeze' && isNonFungible && (
+                  <div className="flex flex-col gap-3">
+                    <SearchField
+                      value={freezeVaultSearch}
+                      onChange={setFreezeVaultSearch}
+                      placeholder={labels.fields.searchVaults.replace('{count}', allVaultsData.length.toString())}
+                      disabled={isSending || inputsDisabled}
+                    />
+                    <div className="flex items-center gap-2 text-xs font-medium px-1" style={{ color: 'var(--color-primary)', visibility: freezeVaults.size > 0 ? 'visible' : 'hidden' }}>
+                      <Snowflake className="size-3.5" />
+                      <span>{freezeVaults.size === 1 ? labels.fields.vaultsSelected.replace('{count}', '1') : labels.fields.vaultsSelectedPlural.replace('{count}', freezeVaults.size.toString())}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFreezeVaults(new Set())}
+                        className="ml-auto text-[11px] underline cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.clearSelection}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                      {filterVaultsBySearch(freezeVaultSearch)
+                        .slice(0, VAULT_CARD_LIMIT)
+                        .map((vault) =>
+                          renderVaultCard(
+                            vault,
+                            freezeVaults.has(vault.address),
+                            () => {
+                              setFreezeVaults((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(vault.address)) next.delete(vault.address);
+                                else next.add(vault.address);
+                                return next;
+                              });
+                            },
+                            isSending || inputsDisabled,
+                          ),
+                        )}
+                      {filterVaultsBySearch(freezeVaultSearch).length === 0 && (
+                        <div className="col-span-full text-center py-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.noVaultsFound}
+                        </div>
+                      )}
+                      {filterVaultsBySearch(freezeVaultSearch).length > VAULT_CARD_LIMIT && (
+                        <div className="col-span-full text-center py-2 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                          {labels.fields.vaultsLimited
+                            .replace('{shown}', String(VAULT_CARD_LIMIT))
+                            .replace('{total}', String(filterVaultsBySearch(freezeVaultSearch).length))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {activeAction === 'freeze' && (
                   <>
@@ -767,7 +1256,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       value={fields.mode ?? 'freeze'}
                       onChange={(value) => setField('mode', value)}
                       size="sm"
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                     <OptionButtons
                       options={FREEZE_FLAGS.map((flag) => ({
@@ -777,7 +1266,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       value={fields.flag ?? ''}
                       onChange={(value) => setField('flag', value)}
                       size="sm"
-                      disabled={isSending || isActionDenied}
+                      disabled={isSending || inputsDisabled}
                     />
                   </>
                 )}
@@ -803,7 +1292,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         <SimulateButton
           t={t.simulate}
           onClick={() => preview.simulate(manifest)}
-          disabled={!manifest || isSending}
+          disabled={!canSend}
           loading={preview.isSimulating}
         />
       </div>

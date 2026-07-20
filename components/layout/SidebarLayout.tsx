@@ -68,7 +68,7 @@ export default function SidebarLayout({
 
     return (
         <aside
-            className={`w-full md:w-96 flex flex-col border-r shrink-0 cursor-pointer ${className}`}
+            className={`hidden md:flex w-full md:w-96 flex-col border-r shrink-0 cursor-pointer ${className}`}
             style={{
                 background: 'var(--color-bg)',
                 borderColor: 'var(--color-card-border)',
@@ -78,16 +78,12 @@ export default function SidebarLayout({
             }}
             onDragStart={e => e.preventDefault()}
         >
-            {/* Desktop: Internal scroll + Sticky behavior moved here */}
+            {/* Desktop only: internal scroll + sticky. The sidebar is hidden
+                entirely on mobile (the <aside> above is `hidden md:flex`). */}
             <div
-                className={`hidden md:flex flex-col overflow-y-auto md:sticky md:top-${heightOffset / 4}`}
+                className={`flex flex-col overflow-y-auto md:sticky md:top-${heightOffset / 4}`}
                 style={{ height: `calc(100vh - ${heightOffset}px)`, scrollbarWidth: 'none' }}
             >
-                {sidebarInner}
-            </div>
-
-            {/* Mobile: Normal flow */}
-            <div className="md:hidden flex flex-col">
                 {sidebarInner}
             </div>
         </aside>

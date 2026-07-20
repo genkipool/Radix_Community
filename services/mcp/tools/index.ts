@@ -8,6 +8,7 @@ import { McpToolRegistry } from '../registry';
 import { searchRadixDocsTool, readRadixDocTool } from './docs';
 import { ledgerTools } from './ledger';
 import { consoleTools } from './console';
+import { signTools } from './sign';
 import { connectorTools } from './connector';
 import { siteTools } from './site';
 
@@ -22,6 +23,7 @@ export function getMcpRegistry(): McpToolRegistry {
     ...knowledgeTools,
     ...ledgerTools,
     ...consoleTools,
+    ...signTools,
     ...connectorTools,
   ]);
   return registry;

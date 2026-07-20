@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { ConnectWalletPopover } from '@/features/wallet/components/ConnectWalletPopover';
 import { type RichDescriptionProps } from '../types/components.types';
 
 /**
@@ -32,7 +33,7 @@ function HighlightBlock({ text, keywords }: { text: string; keywords: string[] }
   );
 }
 
-export function RichDescription({ text, keywords, ctaPhrase, onCtaClick }: RichDescriptionProps) {
+export function RichDescription({ text, keywords, ctaPhrase }: RichDescriptionProps) {
   const idx = ctaPhrase ? text.indexOf(ctaPhrase) : -1;
 
   if (idx === -1) {
@@ -45,19 +46,21 @@ export function RichDescription({ text, keywords, ctaPhrase, onCtaClick }: RichD
   return (
     <>
       <HighlightBlock text={before} keywords={keywords} />
-      <button
-        type="button"
-        onClick={onCtaClick}
-        className="
-          inline-block px-1
-          text-[var(--color-primary)] font-bold
-          hover:opacity-80 transition-all duration-200 cursor-pointer select-none
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60
-        "
-        aria-label={ctaPhrase}
-      >
-        {ctaPhrase}
-      </button>
+      <ConnectWalletPopover>
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={ctaPhrase}
+          className="
+            inline-block px-1
+            text-[var(--color-primary)] font-bold
+            hover:opacity-80 transition-all duration-200 cursor-pointer select-none
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/60
+          "
+        >
+          {ctaPhrase}
+        </span>
+      </ConnectWalletPopover>
       <HighlightBlock text={after} keywords={keywords} />
     </>
   );

@@ -13,10 +13,12 @@
     "test:coverage": "vitest run --coverage",
     "update-votes": "npx tsx scripts/update-protocol-votes.ts",
     "pages:build": "npx @cloudflare/next-on-pages",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "npx react-doctor@latest",
+    "gen:seal-svg": "npx tsx scripts/gen-seal-svg.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@noble/curves": "1.9.7",
     "@radixdlt/babylon-gateway-api-sdk": "^1.10.1",
     "@radixdlt/radix-dapp-toolkit": "^2.3.0",
     "@radixdlt/radix-engine-toolkit": "^1.0.6",
@@ -34,7 +36,9 @@
     "mermaid": "^11.15.0",
     "motion": "^12.40.0",
     "next": "16.2.7",
+    "pdf-lib": "^1.17.1",
     "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-hook-form": "^7.76.1",
@@ -57,6 +61,7 @@
     "@types/big.js": "^6.2.2",
     "@types/marked": "^5.0.2",
     "@types/node": "^22.19.19",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/sanitize-html": "^2.16.1",

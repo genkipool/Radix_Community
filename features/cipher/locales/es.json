@@ -1,0 +1,157 @@
+{
+  "cipher": {
+    "tabs": {
+      "encrypt": "Cifrar",
+      "decrypt": "Descifrar"
+    },
+    "disclaimer": {
+      "title": "Tu archivo nunca sale de tu navegador",
+      "body": "El cifrado, el descifrado y el almacenamiento ocurren en local. El archivo solo viaja cuando tú decides compartirlo con un enlace: en ese caso va por un canal directo entre navegadores, cifrado de extremo a extremo, nunca a través de un servidor. Si no compartes el enlace, no sale de tu navegador. La clave se deriva de la firma de tu wallet: solo la cuenta que cifró un archivo puede desbloquearlo."
+    },
+    "connect": {
+      "title": "Conecta tu Radix Wallet",
+      "subtitle": "Cifrar vincula el archivo a tu cuenta: solo una firma de esta cuenta podrá desbloquearlo después.",
+      "mainnet": "Conectar (Mainnet)",
+      "stokenet": "Conectar (Stokenet)"
+    },
+    "modes": {
+      "label": "Método de cifrado",
+      "rola": "Cifrar con ROLA",
+      "rolaDescription": "Firma un reto con tu Radix Wallet; la clave de cifrado se deriva de esa firma.",
+      "rolaLedger": "Cifrar con ROLA + Ledger",
+      "rolaLedgerDescription": "Igual que ROLA, y además queda constancia en el libro mayor: se acuña una invitación NFT por receptor autorizado en tu colección de firma. Solo esas cuentas podrán enviarte el reto ROLA para descifrar este archivo."
+    },
+    "file": {
+      "label": "Archivo a cifrar",
+      "prompt": "Suelta aquí cualquier archivo o haz clic para buscarlo. Sin límite de tamaño: se procesa por bloques y nunca se sube.",
+      "encLabel": "Archivo cifrado",
+      "encPrompt": "Suelta aquí un archivo .radixseal.enc o haz clic para buscarlo.",
+      "metaName": "Archivo original",
+      "metaSize": "Tamaño",
+      "metaSender": "Cifrado por",
+      "metaDate": "Fecha",
+      "metaNetwork": "Red",
+      "metaAccess": "Protección",
+      "accessRola": "ROLA",
+      "accessRolaLedger": "ROLA + Ledger",
+      "fingerprint": "Huella",
+      "invalid": "Esto no es un archivo .radixseal.enc válido."
+    },
+    "ledger": {
+      "receiversLabel": "Receptores autorizados (opcional)",
+      "receiversHint": "Opcional: déjalo vacío para cifrar el archivo solo para ti. Por cada cuenta que añadas se acuña una invitación NFT en tu colección de firma (la misma de la sección Firmar documento) y se deposita en la wallet de ese receptor, así solo esas cuentas podrán solicitar el descifrado.",
+      "receiverPlaceholder": "account_rdx… / account_tdx_2_…",
+      "addReceiver": "Añadir receptor",
+      "invalidReceiver": "Dirección de cuenta no válida para esta red",
+      "register": "Registrar en la cadena",
+      "registerHint": "El archivo está cifrado. Regístralo en la cadena para acuñar las invitaciones NFT (una por receptor, o un registro para ti si no hay ninguno). Simula antes para comprobar que no fallará.",
+      "minting": "Acuñando las invitaciones NFT en el ledger… Confirma en tu wallet.",
+      "minted": "Invitaciones acuñadas y depositadas. Los receptores ya pueden solicitar el descifrado.",
+      "mintFailed": "No se pudieron acuñar las invitaciones. Sin ellas, ningún receptor podrá pedir el descifrado.",
+      "retryMint": "Reintentar acuñado",
+      "requestGateTitle": "Conecta la wallet invitada",
+      "requestGateSubtitle": "Este archivo se cifró con ROLA + Ledger: para pedir el descifrado tienes que firmar un reto ROLA con la cuenta que recibió la invitación NFT de este archivo.",
+      "requestWithProof": "Firmar reto y solicitar descifrado",
+      "authorizing": "Comprobando en el ledger la invitación del solicitante…",
+      "authorizedBadge": "Invitación verificada en el ledger",
+      "requesterAccount": "Cuenta solicitante",
+      "receiptTitle": "Acuse de descifrado (opcional)",
+      "receiptHint": "Acuña un NFT en tu colección de firma que deja constancia pública y permanente de que esta cuenta descifró el archivo. El emisor podrá verificarlo en el ledger.",
+      "receiptButton": "Acuñar acuse en el ledger",
+      "receiptMinting": "Confirma en tu wallet…",
+      "receiptDone": "Acuse acuñado en el ledger."
+    },
+    "encrypt": {
+      "button": "Cifrar",
+      "readyTitle": "Archivo cifrado",
+      "readyHint": "Descarga la copia cifrada para guardarla, o compártela directamente con un receptor por un canal seguro.",
+      "download": "Descargar archivo cifrado",
+      "share": "Compartir con un receptor",
+      "encryptAnother": "Cifrar otro archivo",
+      "viewTransaction": "Ver transacción"
+    },
+    "progress": {
+      "signing": "Confirma la solicitud en tu Radix Wallet…",
+      "cancel": "Cancelar",
+      "deriving": "Derivando la clave de cifrado…",
+      "encrypting": "Cifrando",
+      "decrypting": "Descifrando",
+      "transferring": "Enviando archivo cifrado",
+      "receiving": "Recibiendo archivo cifrado",
+      "connecting": "Conectando con el otro extremo…",
+      "waitingPeer": "Esperando a que el otro extremo abra el enlace…",
+      "waitingApproval": "Solicitud enviada. Esperando a que el emisor apruebe y firme…",
+      "waitingRequest": "Transferencia completa. Esperando la solicitud de descifrado…",
+      "transferComplete": "Transferencia completa.",
+      "keySent": "Clave enviada. El receptor ya puede descifrar el archivo. Puedes cerrar esta página."
+    },
+    "share": {
+      "title": "Comparte este enlace",
+      "hintReceive": "Envía este enlace a la persona que debe recibir el archivo. Al abrirlo se crea un canal cifrado directo y el archivo se transfiere de navegador a navegador. Además de recibir el archivo, esa persona te devuelve un reto ROLA, para que tú, con una firma de tu wallet, liberes la clave y su copia se descifre.",
+      "hintUnlock": "Envía este enlace a la persona que cifró el archivo (p. ej. por WhatsApp). Cuando lo abra y firme con su wallet, tu archivo se descifrará aquí.",
+      "copy": "Copiar enlace",
+      "copied": "¡Copiado!",
+      "qrAlt": "Código QR con el enlace para compartir",
+      "cancel": "Cancelar conexión"
+    },
+    "request": {
+      "title": "Solicitud de descifrado",
+      "body": "{name} quiere descifrar {file}",
+      "approve": "Aprobar y firmar",
+      "deny": "Rechazar",
+      "denied": "Solicitud rechazada.",
+      "verifiedBadge": "nombre verificado por wallet",
+      "anonymous": "Alguien"
+    },
+    "receiver": {
+      "nameLabel": "Tu nombre",
+      "namePlaceholder": "Se muestra al emisor cuando solicitas el descifrado",
+      "personaHint": "Usando el nombre de la persona de tu wallet conectada.",
+      "decryptButton": "Descifrar",
+      "requestButton": "Solicitar descifrado",
+      "downloadEncrypted": "Descargar copia cifrada (.radixseal.enc)",
+      "saveDecrypted": "Guardar archivo descifrado",
+      "deleteLocal": "Eliminar copia local",
+      "receivedTitle": "Archivo recibido"
+    },
+    "localDecrypt": {
+      "title": "Tú cifraste este archivo",
+      "hint": "La cuenta conectada coincide con la que cifró este archivo. Puedes descifrarlo aquí mismo firmando con tu wallet.",
+      "button": "Soy el emisor: descifrar aquí"
+    },
+    "unlock": {
+      "title": "Solicitud de descifrado",
+      "gateSubtitle": "Conecta la cuenta de wallet que cifró este archivo para aprobar la solicitud.",
+      "wrongAccount": "La cuenta conectada no coincide con la que cifró este archivo. Se esperaba: {account}",
+      "done": "Clave enviada. {name} ya puede descifrar el archivo. Puedes cerrar esta página."
+    },
+    "errors": {
+      "wallet_rejected": "La solicitud de la wallet fue rechazada.",
+      "no_proof": "La wallet no devolvió una prueba de firma.",
+      "challenge_mismatch": "La wallet firmó un reto distinto. Inténtalo de nuevo.",
+      "secp256k1": "Esta cuenta usa una clave secp256k1. El cifrado requiere una cuenta Babylon (curve25519) para poder re-derivar la clave de forma determinista.",
+      "origin_mismatch": "Este archivo se cifró en otro sitio ({origin}) y no puede desbloquearse aquí.",
+      "network_mismatch": "Este archivo se cifró en otra red.",
+      "account_mismatch": "La cuenta conectada no es la que cifró este archivo.",
+      "header_mismatch": "La solicitud no coincide con el archivo compartido en esta sesión.",
+      "decrypt_failed": "Fallo al descifrar: clave incorrecta o archivo corrupto.",
+      "not_authorized": "La cuenta no tiene la invitación NFT de cifrado de este archivo, o la prueba no es válida.",
+      "no_collection": "La cuenta que firmó no tiene colección de firma en el ledger. Completa la preparación (Seal y colección) y vuelve a cifrar.",
+      "peer_disconnected": "Se perdió la conexión con el otro extremo. Pídele que vuelva a abrir el enlace e inténtalo de nuevo.",
+      "room_busy": "Alguien ya se unió con este enlace. Cada enlace sirve para una sola sesión.",
+      "signaling_unavailable": "No se pudo contactar con el servicio de señalización. Revisa tu conexión e inténtalo de nuevo.",
+      "storage_quota": "No hay suficiente almacenamiento en el navegador para este archivo.",
+      "invalid_container": "Esto no es un archivo .radixseal.enc válido.",
+      "webrtc_failed": "No se pudo establecer una conexión directa entre navegadores. Inténtalo de nuevo, idealmente con ambos dispositivos en redes que permitan tráfico entre pares.",
+      "file_read": "No se pudo leer el archivo.",
+      "unknown": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "security": {
+      "title": "Cómo funciona",
+      "boundToAccount": "La clave se deriva de una firma determinista de la wallet, por lo que queda vinculada a la cuenta que cifra, a este sitio y a esta red.",
+      "headerVisible": "El archivo cifrado mantiene visibles en su cabecera el nombre original y la cuenta emisora: compártelo solo con quien pueda ver esos datos.",
+      "neverUploaded": "El contenido del archivo nunca toca un servidor: se queda en tu navegador y viaja solo por el canal cifrado directo."
+    },
+    "leaveWarning": "Hay una sesión de transferencia activa. Si sales, el otro extremo se desconectará."
+  }
+}

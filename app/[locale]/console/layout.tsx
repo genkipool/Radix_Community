@@ -18,7 +18,7 @@ export default async function ConsoleLayout({ children, params }: ConsoleLayoutP
   const { locale } = await params;
   const [cookieStore, t] = await Promise.all([
     cookies(),
-    getFeatureDictionary(locale as Locale, ['console']),
+    getFeatureDictionary(locale as Locale, ['console', 'sign', 'cipher', 'chat']),
   ]);
 
   const initialAutoCollapse = cookieStore.get('console_auto_collapse')?.value === 'true';

@@ -19,6 +19,9 @@ export const CONSOLE_TOOL_SLUGS = [
   'faucet',
   'wallet-playground',
   'claim-package-royalties',
+  'sign-document',
+  'encrypt-document',
+  'chat',
 ] as const;
 
 

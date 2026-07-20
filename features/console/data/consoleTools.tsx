@@ -6,13 +6,17 @@ import {
   Coins,
   Droplets,
   FileCode2,
+  FileLock2,
+  FileSignature,
   FlaskConical,
   Landmark,
   LayoutDashboard,
+  MessageSquareLock,
   Rocket,
   ScanSearch,
   Settings2,
   Sparkles,
+  Stamp,
   Wrench,
 } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
@@ -150,6 +154,32 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '234,179,8',
     requiresWallet: true,
   },
+  'sign-document': {
+    slug: 'sign-document',
+    icon: <FileSignature className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '236,72,153',
+    // Verify works without a wallet; the Sign tab self-gates on connection.
+    requiresWallet: false,
+    wide: true,
+  },
+  'encrypt-document': {
+    slug: 'encrypt-document',
+    icon: <FileLock2 className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '34,197,94',
+    // Receiving/decrypting works without a wallet; the Encrypt tab self-gates.
+    requiresWallet: false,
+    wide: true,
+  },
+  chat: {
+    slug: 'chat',
+    icon: <MessageSquareLock className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '14,165,233',
+    // Both sides sign, but the tool self-gates with its own explanatory copy.
+    requiresWallet: false,
+  },
 };
 
 /* ─── Sidebar groups ──────────────────────────────────────────────────────── */
@@ -179,6 +209,14 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     icon: <Rocket className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     tools: ['build-manifest', 'transaction-manifest', 'deploy-package', 'component-panel'],
+  },
+  {
+    // Radix Seal: the self-custody suite (sign, encrypt, chat) that all share
+    // the same wallet-derived trust model.
+    id: 'radix-seal',
+    icon: <Stamp className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    tools: ['sign-document', 'encrypt-document', 'chat'],
   },
   {
     id: 'utilities',

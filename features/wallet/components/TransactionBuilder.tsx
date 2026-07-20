@@ -16,6 +16,7 @@ import { RadixIcon } from '@/components/shared/RadixIcon';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { extractRuleAddress } from '@/features/dashboard/utils/resourceUtils';
 
 interface TransactionBuilderProps {
     accountAddress: string;
@@ -314,17 +315,18 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             }
             
             if (ruleToCheck?.type === 'Protected') {
-                const req = ruleToCheck.access_rule?.proof_rule?.requirement || ruleToCheck.requirement || {};
-                const nf = req.non_fungible || {};
-                
-                const badgeAddress = nf.resource_address || req.resource_address;
-                
-                if (badgeAddress) {
+                const extracted = extractRuleAddress(ruleToCheck);
+                if (extracted) {
+                    const [badgeAddress, badgeLocalId] = extracted.split('|');
                     let hasBadge = false;
                     
                     const nfResource = entityData.non_fungible_resources?.items?.find((i: { resource_address: string, vaults?: { items?: Array<{ items?: string[] }> } }) => i.resource_address === badgeAddress);
                     if (nfResource && (nfResource.vaults?.items?.[0]?.items?.length || 0) > 0) {
-                        hasBadge = true;
+                        if (badgeLocalId) {
+                            if (nfResource.vaults?.items?.[0]?.items?.includes(badgeLocalId)) hasBadge = true;
+                        } else {
+                            hasBadge = true;
+                        }
                     }
                     
                     const fResource = entityData.fungible_resources?.items?.find((i: { resource_address: string, amount: string }) => i.resource_address === badgeAddress);
@@ -332,8 +334,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                         hasBadge = true;
                     }
                     
-                    if (!badges.find(b => b.badgeAddress === badgeAddress)) {
-                        badges.push({ badgeAddress, hasBadge });
+                    if (!badges.find(b => b.badgeAddress === badgeAddress && b.badgeLocalId === badgeLocalId)) {
+                        badges.push({ badgeAddress, badgeLocalId, hasBadge });
                     }
                 }
             }
@@ -411,7 +413,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             if (b.hasBadge) {
                 const nfResource = entityData?.non_fungible_resources?.items?.find((i: { resource_address: string, vaults?: { items?: Array<{ items?: string[] }> } }) => i.resource_address === b.badgeAddress);
                 if (nfResource && (nfResource.vaults?.items?.[0]?.items?.length || 0) > 0) {
-                    const localId = nfResource.vaults!.items![0].items![0];
+                    const localId = b.badgeLocalId || nfResource.vaults!.items![0].items![0];
                     proofs += `CALL_METHOD\n    Address("${accountAddress}")\n    "create_proof_of_non_fungibles"\n    Address("${b.badgeAddress}")\n    Array<NonFungibleLocalId>(NonFungibleLocalId("${localId}"))\n;\n`;
                 } else {
                     proofs += `CALL_METHOD\n    Address("${accountAddress}")\n    "create_proof_of_amount"\n    Address("${b.badgeAddress}")\n    Decimal("1")\n;\n`;

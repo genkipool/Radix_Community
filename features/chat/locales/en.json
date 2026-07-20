@@ -1,0 +1,63 @@
+{
+  "chat": {
+    "disclaimer": {
+      "title": "End-to-end encrypted, wallet-verified",
+      "body": "Messages travel directly between browsers over an encrypted channel. Both sides prove their identity by signing with their Radix Wallet, each proof is verified locally, and the session key is derived from that verified exchange, so no server can read, alter or impersonate anything."
+    },
+    "connect": {
+      "title": "Connect your Radix Wallet",
+      "subtitle": "Your wallet signature is what proves your identity to the other side: both participants sign to open the room.",
+      "mainnet": "Connect (Mainnet)",
+      "stokenet": "Connect (Stokenet)"
+    },
+    "start": {
+      "title": "Start a secure chat",
+      "hint": "Your wallet signs the room challenge, then you get a link and QR code to send to the other person. The chat starts when they open it and sign too.",
+      "button": "Create secure chat"
+    },
+    "join": {
+      "title": "Join secure chat",
+      "hint": "You have been invited to an end-to-end encrypted chat. Sign with your wallet to verify your identity and enter the room.",
+      "button": "Sign & join"
+    },
+    "share": {
+      "title": "Share this link",
+      "hint": "Send this link to the person you want to chat with. When they open it and sign with their wallet, the room becomes secure.",
+      "copy": "Copy link",
+      "qrAlt": "QR code with the chat invitation link"
+    },
+    "status": {
+      "signing": "Confirm the request in your Radix Wallet…",
+      "creating": "Creating the room…",
+      "waiting": "Waiting for the other person to open the link…",
+      "connecting": "Connecting to the room…",
+      "handshaking": "Verifying identities…",
+      "closed": "The conversation has ended.",
+      "cancel": "Cancel"
+    },
+    "room": {
+      "securedWith": "Secure chat with",
+      "verified": "wallet-verified",
+      "placeholder": "Write a message… (Enter to send)",
+      "send": "Send",
+      "leave": "Leave chat",
+      "empty": "The room is secure. Say hello!",
+      "closedBanner": "The other side left the conversation. Messages stay on this page until you close it.",
+      "startAnother": "Start another chat"
+    },
+    "errors": {
+      "wallet_rejected": "The wallet request was rejected.",
+      "no_proof": "The wallet did not return a signature proof.",
+      "challenge_mismatch": "The wallet signed a different challenge. Please try again.",
+      "secp256k1": "This account uses a secp256k1 key. The chat requires a Babylon account (curve25519).",
+      "peer_verification_failed": "The other side's identity could not be verified. The room was closed for safety.",
+      "peer_disconnected": "The connection to the other side was lost.",
+      "room_busy": "Someone already joined this invitation. Each link works for a single conversation.",
+      "signaling_unavailable": "Could not reach the signaling service. Check your connection and try again.",
+      "webrtc_failed": "Could not establish a direct connection between browsers. Try again.",
+      "crypto_unsupported": "This browser lacks the cryptography needed to verify signatures. Please update it.",
+      "message_rejected": "A message failed verification. The room was closed for safety.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  }
+}

@@ -36,8 +36,8 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
   const isStandaloneMode = !!externalWindow;
 
   return (
-    <SidePanelModal 
-        isOpen={isOpen && !!slug && !!guide} 
+    <SidePanelModal
+        isOpen={isOpen && !!slug}
         onClose={handleClose}
         isStandalone={isStandaloneMode}
         isPinned={isPinned}
@@ -83,13 +83,14 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
               {(guide?.guideDescription as string) || (toolT?.description as string)}
             </p>
 
+            {Array.isArray(guide?.guideSteps) && guide.guideSteps.length > 0 && (
             <div className="space-y-6">
               <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
                 Instrucciones de uso
               </h3>
 
               <div className="space-y-6 mt-6">
-                {Array.isArray(guide?.guideSteps) && guide.guideSteps.map((step: string, idx: number) => {
+                {guide.guideSteps.map((step: string, idx: number) => {
                   const match = step.match(/^(\d+)\.\s+(.*)$/);
                   const isNumberFirst = !!match;
                   const content = isNumberFirst ? match[2] : step;
@@ -113,6 +114,7 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
                 })}
               </div>
             </div>
+            )}
 
             {Array.isArray(guide?.example) && guide.example.length > 0 && (
               <div className="space-y-6 pt-4">

@@ -10,6 +10,12 @@ import blogEs from '@/features/blog/locales/es.json';
 import communityEn from '@/features/community/locales/en.json';
 import communityEs from '@/features/community/locales/es.json';
 
+import chatEn from '@/features/chat/locales/en.json';
+import chatEs from '@/features/chat/locales/es.json';
+
+import cipherEn from '@/features/cipher/locales/en.json';
+import cipherEs from '@/features/cipher/locales/es.json';
+
 import consoleEn from '@/features/console/locales/en.json';
 import consoleEs from '@/features/console/locales/es.json';
 
@@ -45,6 +51,12 @@ import hyperscaleEs from '@/features/hyperscale/locales/es.json';
 
 import infrastructureEn from '@/features/infrastructure/locales/en.json';
 import infrastructureEs from '@/features/infrastructure/locales/es.json';
+
+import sealEn from '@/features/seal/locales/en.json';
+import sealEs from '@/features/seal/locales/es.json';
+
+import signEn from '@/features/sign/locales/en.json';
+import signEs from '@/features/sign/locales/es.json';
 
 type TranslationModule = { seo?: Record<string, unknown> } & Record<string, unknown>;
 
@@ -84,6 +96,8 @@ export const mergeTranslations = (common: TranslationModule, features: Translati
 const en = mergeTranslations(commonEn, [
   academyEn,
   blogEn,
+  chatEn,
+  cipherEn,
   communityEn,
   consoleEn,
   dappsEn,
@@ -97,11 +111,15 @@ const en = mergeTranslations(commonEn, [
   homeEn,
   hyperscaleEn,
   infrastructureEn,
+  sealEn,
+  signEn,
 ]);
 
 const es = mergeTranslations(commonEs, [
   academyEs,
   blogEs,
+  chatEs,
+  cipherEs,
   communityEs,
   consoleEs,
   dappsEs,
@@ -115,11 +133,15 @@ const es = mergeTranslations(commonEs, [
   homeEs,
   hyperscaleEs,
   infrastructureEs,
+  sealEs,
+  signEs,
 ]);
 
 export type Dictionary = typeof commonEn &
   typeof academyEn &
   typeof blogEn &
+  typeof chatEn &
+  typeof cipherEn &
   typeof communityEn &
   typeof consoleEn &
   typeof dappsEn &
@@ -132,7 +154,9 @@ export type Dictionary = typeof commonEn &
   typeof googleWalletEn &
   typeof homeEn &
   typeof hyperscaleEn &
-  typeof infrastructureEn;
+  typeof infrastructureEn &
+  typeof sealEn &
+  typeof signEn;
 
 export const translations = {
   en: en as unknown as Dictionary,
@@ -140,14 +164,17 @@ export const translations = {
 };
 
 export type FeatureKey =
-  | 'academy' | 'blog' | 'community' | 'console' | 'dapps' | 'dashboard'
+  | 'academy' | 'blog' | 'chat' | 'cipher' | 'community' | 'console' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
-  | 'games' | 'googleWallet' | 'home' | 'hyperscale' | 'infrastructure';
+  | 'games' | 'googleWallet' | 'home' | 'hyperscale' | 'infrastructure'
+  | 'seal' | 'sign';
 
 const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ default: Record<string, unknown> }>>> = {
   en: {
     academy: () => import('@/features/academy/locales/en.json'),
     blog: () => import('@/features/blog/locales/en.json'),
+    chat: () => import('@/features/chat/locales/en.json'),
+    cipher: () => import('@/features/cipher/locales/en.json'),
     community: () => import('@/features/community/locales/en.json'),
     console: () => import('@/features/console/locales/en.json'),
     dapps: () => import('@/features/dapps/locales/en.json'),
@@ -161,10 +188,14 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     home: () => import('@/features/home/locales/en.json'),
     hyperscale: () => import('@/features/hyperscale/locales/en.json'),
     infrastructure: () => import('@/features/infrastructure/locales/en.json'),
+    seal: () => import('@/features/seal/locales/en.json'),
+    sign: () => import('@/features/sign/locales/en.json'),
   },
   es: {
     academy: () => import('@/features/academy/locales/es.json'),
     blog: () => import('@/features/blog/locales/es.json'),
+    chat: () => import('@/features/chat/locales/es.json'),
+    cipher: () => import('@/features/cipher/locales/es.json'),
     community: () => import('@/features/community/locales/es.json'),
     console: () => import('@/features/console/locales/es.json'),
     dapps: () => import('@/features/dapps/locales/es.json'),
@@ -178,6 +209,8 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     home: () => import('@/features/home/locales/es.json'),
     hyperscale: () => import('@/features/hyperscale/locales/es.json'),
     infrastructure: () => import('@/features/infrastructure/locales/es.json'),
+    seal: () => import('@/features/seal/locales/es.json'),
+    sign: () => import('@/features/sign/locales/es.json'),
   }
 };
 

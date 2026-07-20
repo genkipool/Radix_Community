@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
   // ── React Compiler (stable in Next.js 16) ─────────────────────────────────
   reactCompiler: true,
 
+  // ── LAN testing (dev only) ──────────────────────────────────────────────────
+  // Allows opening the dev server from other devices on the local network
+  // (e.g. testing the encrypt-document P2P flow phone ↔ laptop) without the
+  // cross-origin dev-asset blocks and the webpack-hmr websocket spam.
+  // Ignored in production builds.
+  allowedDevOrigins: ['192.168.1.48', '*.local'],
+
   // ── Package import optimisation ────────────────────────────────────────────
   // Rewrites barrel-file imports (e.g. `import { X } from 'lucide-react'`) into
   // direct sub-path imports so only the symbols actually used end up in the

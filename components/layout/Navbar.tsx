@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info
+  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -50,6 +50,7 @@ import { RadixLogo } from '@/components/shared/RadixLogo';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { WalletProfileModal } from '@/features/wallet/components/WalletProfileModal';
+import { WalletNetworkPopoverContent } from '@/features/wallet/components/WalletNetworkPopoverContent';
 import { BuyXRDModal } from '@/features/home/sections/BuyXRD/components/BuyXRDModal';
 import { CarouselFilter } from '@/components/ui/CarouselFilter';
 import type { Dictionary } from '@/i18n';
@@ -75,10 +76,11 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
   ecosystem: [
     { key: 'infrastructure', href: '/infrastructure', icon: <Server className="size-4" />, descKey: 'popup_eco_infra_desc' },
     { key: 'hyperscale', href: '/hyperscale', icon: <Zap className="size-4" />, descKey: 'popup_eco_hyperscale_desc' },
+    { key: 'seal', href: '/seal', icon: <Stamp className="size-4" />, descKey: 'popup_eco_seal_desc' },
     { key: 'google_wallet', href: '/google-wallet', icon: <Nfc className="size-4" />, descKey: 'popup_eco_google_wallet_desc' },
+    { key: 'dashboard', href: '/dashboard', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
     { key: 'dapps', href: '/dapps', icon: <Layers className="size-4" />, descKey: 'popup_eco_dapps_desc' },
     { key: 'games', href: '/games', icon: <Gamepad2 className="size-4" />, descKey: 'popup_dev_games_desc' },
-    { key: 'dashboard', href: '/dashboard', icon: <BarChart2 className="size-4" />, descKey: 'popup_eco_dashboard_desc' },
     { key: 'astrolescent', href: 'https://astrolescent.com/', icon: <Route className="size-4" />, descKey: 'popup_eco_astro_desc' },
   ],
   developers: [
@@ -420,66 +422,6 @@ function LanguagePopupContent({
   );
 }
 
-function WalletPopupContent({
-  connect,
-  t,
-  sessions,
-  switchNetwork,
-  isLoading,
-  disconnect
-}: {
-  connect: (networkId: RadixNetworkId, isUpdate?: boolean) => void,
-  t: Dictionary,
-  sessions: Record<'mainnet' | 'stokenet', unknown>,
-  switchNetwork: (network: 'mainnet' | 'stokenet') => void,
-  isLoading: boolean,
-  disconnect: () => void
-}) {
-  const onNetworkClick = (netName: 'mainnet' | 'stokenet', netId: RadixNetworkId) => {
-    if (sessions[netName]) {
-      switchNetwork(netName);
-    } else {
-      connect(netId);
-    }
-  };
-
-  return (
-    <div className="p-4 w-[280px]">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-3 px-1">
-        {t.nav?.wallet_select_network ?? 'Select Network'}
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => onNetworkClick('mainnet', RadixNetworkId.Mainnet)}
-          className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
-          disabled={isLoading}
-        >
-          <Globe className="size-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
-          <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_mainnet ?? 'Mainnet'}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onNetworkClick('stokenet', RadixNetworkId.Stokenet)}
-          className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl hover:bg-[var(--color-surface)] active:scale-95 transition-all cursor-pointer border border-[var(--color-card-border)] hover:border-[var(--color-accent)] group"
-          disabled={isLoading}
-        >
-          <Server className="size-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)]" />
-          <span className="text-sm font-semibold text-[var(--color-text-main)]">{t.nav?.wallet_stokenet ?? 'Stokenet'}</span>
-        </button>
-      </div>
-      {isLoading && (
-        <button
-          type="button"
-          onClick={() => disconnect()}
-          className="mt-4 w-full py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-red-500 transition-colors text-center"
-        >
-          {t.nav?.wallet_cancel_connection ?? 'Cancelar conexión'}
-        </button>
-      )}
-    </div>
-  );
-}
 
 interface ConnectedWalletPopupContentProps {
   t: Dictionary;
@@ -1035,7 +977,7 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                    <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
                   </NavPopup>
                 )}
               </div>
@@ -1165,7 +1107,7 @@ export default function Navbar() {
                     </button>
                   }
                 >
-                  <WalletPopupContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
+                  <WalletNetworkPopoverContent connect={connect} t={t} sessions={sessions} switchNetwork={switchNetwork} isLoading={isLoading} disconnect={disconnect} />
                 </NavPopup>
               )}
               <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center p-2 text-[var(--color-text-main)] ml-1 sm:ml-2 hover:text-[var(--color-primary)] transition-colors" aria-label={isOpen ? 'Close menu' : 'Open menu'}>
@@ -1331,7 +1273,7 @@ export default function Navbar() {
                       </button>
                     }
                   >
-                    <WalletPopupContent
+                    <WalletNetworkPopoverContent
                       connect={(netId) => { connect(netId); setIsOpen(false); }}
                       t={t}
                       sessions={sessions}

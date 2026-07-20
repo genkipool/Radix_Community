@@ -25,13 +25,169 @@
     "groups": {
       "assets": "Assets",
       "deploy": "Build & Deploy",
+      "radix-seal": "Radix Seal",
       "utilities": "Utilities",
       "ai": "AI & Automation"
     },
     "tools": {
+      "sign-document": {
+        "title": "Sign Document",
+        "description": "Sign a file with your Radix wallet, off-chain or anchored on-ledger as a soulbound NFT. The file is hashed locally and never uploaded.",
+        "guide": {
+          "guideTitle": "Guide: Sign Document",
+          "guideDescription": "Sign documents with your Radix wallet without the file ever leaving your browser: only its Blake2b-256 hash is signed. You can sign alone, sign with several people by passing a JSON certificate around off-chain, or sign with several people on the ledger with the Radix Seal flow, where every signature is recorded as an NFT and anyone can verify it by reading the network, without depending on this site. The ledger flow involves four NFTs with distinct roles: the Seal (your insignia), your signing collection (your personal archive), invitations (notices of who is asked to sign) and signatures (the record that actually counts). The glossary below explains each one and how verification works.",
+          "guideSteps": [
+            "1. One-time setup for the ledger flow: mint your Seal (non-transferable insignia, once) and create your signing collection, optionally with your company identity (name, website and logo get recorded into its metadata).",
+            "2. Drop the document. It is hashed locally and never uploaded; its Blake2b-256 hash appears under the box. If the PDF carries embedded Radix data (certificate, original or request), it is broken down right there.",
+            "3. Sign alone: choose what identity to disclose and the output format (.radixsig.json certificate or PDF with the certificate embedded) and press Sign. Optionally anchor the hash as a soulbound NFT in your collection.",
+            "4. Create the request: one invitation NFT per signer, valid for that document only, is minted and deposited into each signer's wallet. With \"Sign and send\", your own signature NFT is minted in the same transaction.",
+            "5. Share the link: it carries the right network, the document name and the output formats you chose. If you keep the tab open, the document travels on its own, browser to browser, over an encrypted direct channel. You can also download the PDF with the request embedded and send just that file.",
+            "6. Each signer opens the link, receives or uploads the document, the tool checks it matches the request's hash, and they sign from their wallet by minting their signature NFT. On their first time, their Seal and collection are set up on the spot.",
+            "7. Status refreshes automatically every 30 seconds by reading the ledger: who has signed and who is pending. Once complete, you download the certificate or the signed PDF.",
+            "8. Verify: in the Verify tab you can drop the file with its certificate, a self-contained signed PDF, or paste the request key (collection + id) to read the signatures straight from the ledger, with no certificate and no wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Seal (personal insignia)",
+              "definition": "A non-transferable NFT you mint once from the official Radix Seal resource. It has two jobs: it identifies you as a signer and it is the only key able to mint into your signing collection. It can never be sold, moved or burned. Without your Seal nobody, not even this site, can create anything in your name."
+            },
+            {
+              "term": "Signing collection",
+              "definition": "Your personal, reusable NFT resource, created once. Its owner rule is locked forever and requires your Seal. Inside it, with consecutive numbering (#1, #2, #3...), the other two NFT types are minted: the invitations you issue and your signatures. Everything inside is non-transferable and its data can never be edited. It works as your own self-custodied certificate authority: you issue, the ledger attests."
+            },
+            {
+              "term": "Invitation NFT (kind: invite)",
+              "definition": "Minted by the request issuer, one per required signer, into their own collection, and deposited into each invitee's wallet. It carries the document hash, the invited account, the total signer count and the id of the batch's first invitation; thanks to that, the full batch is the public, immutable list of who must sign, readable from the request key alone. It is a notice, not a signature: the issuer can recall it after a wrong address, but can never touch a signature."
+            },
+            {
+              "term": "Signature NFT (kind: signature)",
+              "definition": "Minted by each signer into their own collection at the moment of signing. It carries the document hash, the signer's account, the key of the request it answers and the date. This is the record that counts as the signature: non-transferable, data locked, and impossible to forge because only the signer's Seal can mint into their collection."
+            },
+            {
+              "term": "How a signature is checked (off-chain)",
+              "definition": "The certificate holds one ROLA proof per signer: the wallet signs a challenge derived from the document hash and the canonical metadata. Verification re-hashes the file, rebuilds the challenge and validates each cryptographic signature against its account's public key. If a single byte of the document changes, the hash no longer matches and verification fails."
+            },
+            {
+              "term": "How a signature is checked (on-ledger)",
+              "definition": "A signer only counts as signed if the chain of custody read from the ledger holds: a signature NFT with the document's hash exists inside a collection whose owner rule, locked forever, requires one specific Seal, and that non-transferable Seal sits in the signer's account. Pending signers are the invitees of the batch for which that check finds no signature NFT yet."
+            },
+            {
+              "term": "Honest limit",
+              "definition": "The signature proves account control, document integrity and date; the disclosed name is self-declared by the wallet. It is not a qualified electronic signature (eIDAS QES) because no authority binds the account to a verified legal identity."
+            }
+          ]
+        }
+      },
+      "chat": {
+        "title": "Secure Chat",
+        "description": "End-to-end encrypted chat between browsers. Both sides prove their identity with a Radix wallet signature, verified locally — no server can read or impersonate.",
+        "guide": {
+          "guideTitle": "Guide: Secure Chat",
+          "guideDescription": "A direct, end-to-end encrypted conversation between two browsers. Each participant signs a challenge with their Radix Wallet that commits to a fresh ephemeral key; both proofs are verified locally (signature + account derivation), and the session key is agreed from that verified exchange. Messages travel over WebRTC with an extra AES-256-GCM layer and anti-replay sequence numbers — the signaling server only relays the connection handshake and can read nothing.",
+          "guideSteps": [
+            "1. Connect your wallet and press Create secure chat; sign the room challenge.",
+            "2. Send the generated link or QR code to the other person over any channel.",
+            "3. When they open it, connect their wallet and sign, both identities are verified and the room turns secure.",
+            "4. The header shows the other side's account address with a wallet-verified badge — that is who you are really talking to.",
+            "5. Chat freely; messages exist only in the two browsers. Leaving the page ends the conversation and nothing is stored."
+          ],
+          "glossary": [
+            {
+              "term": "Identity verification",
+              "definition": "Each peer's ROLA signature is checked in your browser: the Ed25519 signature must be valid and the public key must derive to the claimed account address. A failed check closes the room."
+            },
+            {
+              "term": "Session key",
+              "definition": "Ephemeral ECDH keys are exchanged inside the signed challenges, so the derived AES-256-GCM key belongs to this conversation only (forward secrecy: it never existed before and is destroyed when the page closes)."
+            },
+            {
+              "term": "Anti-replay",
+              "definition": "Every message is sealed with its sequence number and sender role; replayed, reordered or reflected messages fail authentication and close the room."
+            }
+          ]
+        }
+      },
+      "encrypt-document": {
+        "title": "Encrypt Document",
+        "description": "Encrypt any file with your Radix wallet signature and share it peer-to-peer over an encrypted channel. The file never leaves your browser.",
+        "guide": {
+          "guideTitle": "Guide: Encrypt Document",
+          "guideDescription": "Encrypts files with a key derived from a deterministic Radix Wallet signature: only the account that encrypted a file can ever unlock it, from any device, with no key stored anywhere. Files are processed in chunks in your browser (no size limit), kept in local browser storage and shared directly between browsers over an end-to-end encrypted WebRTC channel. No server ever sees a byte of your file. There are two encryption methods: ROLA only, where you decide who to release the key to, and ROLA + Ledger, where the encryptor always mints a signature NFT recording that this account encrypted the file and, optionally, one invitation NFT per authorized receiver, leaving a public record of who encrypted the file and who may decrypt it.",
+          "guideSteps": [
+            "1. Pick the method. ROLA only: the key is derived from your signature and you release decryption to whoever you approve. ROLA + Ledger: you also authorize specific accounts on the ledger, so only they can request decryption from you.",
+            "2. Setup (ROLA + Ledger only, one time): you need your Seal NFT and your signing collection, the same ones Sign Document uses. If they are missing, the boxes to deploy and create them appear before you can encrypt.",
+            "3. Encrypt: connect your wallet, drop any file and press Encrypt. For ROLA + Ledger you first add the list of authorized receivers. Your wallet signs a challenge unique to this file and the AES-256 key is derived from that signature. For ROLA + Ledger, a second confirmation mints your encryption signature NFT (the record that this account encrypted the file) plus one invitation NFT per authorized receiver, deposited into their accounts. Receivers are optional: with none, only your signature NFT is minted.",
+            "4. Download or share: save the .radixseal.enc container, or press Share to get a link and QR code for the receiver. The file travels browser-to-browser when the receiver opens the link; keep this tab open.",
+            "5. Approve (ROLA only): when the receiver asks to decrypt, you'll see who is asking and for which file (check the fingerprint), and sign in your wallet to release the key.",
+            "6. Approve (ROLA + Ledger): the receiver signs a ROLA challenge with their invited account when requesting decryption. Your browser checks on the ledger that this account holds the file's invitation NFT before showing you the request; you'll see their proven account and the verified-invitation badge.",
+            "7. Reverse flow: if you received a .radixseal.enc file, open the Decrypt tab, load it and request decryption. The tool detects the file's method: for ROLA + Ledger you must connect the invited account and sign the challenge.",
+            "8. Sender shortcut: if the connected wallet is the account that encrypted the file, the Decrypt tab unlocks it directly, no link needed.",
+            "9. Receipt (ROLA + Ledger, optional): after decrypting, the receiver can mint a receipt NFT into their collection as public, permanent evidence that they obtained the key, verifiable by the sender on the ledger."
+          ],
+          "glossary": [
+            {
+              "term": "ROLA",
+              "definition": "Radix Off-Ledger Authentication: the wallet signs a challenge to prove account ownership. Ed25519 signatures are deterministic, so the same account over the same challenge always re-creates the same encryption key."
+            },
+            {
+              "term": "ROLA only vs ROLA + Ledger",
+              "definition": "ROLA only binds the key to your account and you decide who to approve for decryption, leaving no on-chain trace. ROLA + Ledger adds a verifiable permission layer: you authorize specific accounts in advance with an invitation NFT, and both the permission and the decryption become checkable on the ledger."
+            },
+            {
+              "term": "Encryption signature (NFT)",
+              "definition": "In ROLA + Ledger, the encryptor always mints this into their own collection: a public, permanent record that this account encrypted the file (its container header hash). It is the encryption counterpart of a document signature, minted whether or not there are authorized receivers."
+            },
+            {
+              "term": "Encryption invitation (NFT)",
+              "definition": "In ROLA + Ledger, the sender mints one invitation per authorized receiver into their signing collection and deposits it into each receiver's wallet. It carries the container hash and the authorized account. Only accounts holding this invitation can send the ROLA challenge to request decryption. Receivers are optional."
+            },
+            {
+              "term": "Unlock challenge",
+              "definition": "The ROLA challenge the receiver signs to request the key. It is bound to the exact container hash, the session room and the network, so a captured signature cannot be reused in another session or for another file."
+            },
+            {
+              "term": "Decryption receipt (NFT)",
+              "definition": "An optional record the receiver mints into their own collection after obtaining the key. It is non-transferable with locked data: public, permanent evidence that this account decrypted the file, verifiable by anyone on the ledger."
+            },
+            {
+              "term": ".radixseal.enc",
+              "definition": "The encrypted container. Its header keeps the original file name, the encrypting account, network, site and protection method (ROLA or ROLA + Ledger) visible so decryption can be routed; the content is AES-256-GCM encrypted per chunk."
+            },
+            {
+              "term": "Key binding",
+              "definition": "The key is bound to the encrypting account, this site (origin), its dApp definition and the network. Files encrypted elsewhere (for example on localhost) cannot be unlocked here, and the tool reports this explicitly."
+            },
+            {
+              "term": "WebRTC",
+              "definition": "Direct browser-to-browser channel, encrypted end-to-end (DTLS). A signaling room is used only to exchange the connection handshake, never file data or keys."
+            }
+          ]
+        }
+      },
       "claim-package-royalties": {
         "title": "Claim Package Royalties",
-        "description": "Claim accumulated XRD royalties from a Scrypto package."
+        "description": "Claim accumulated XRD royalties from a Scrypto package.",
+        "guide": {
+          "guideTitle": "Guide: Claim Package Royalties",
+          "guideDescription": "Scrypto packages can configure royalties: a small amount of XRD that accrues every time someone calls their blueprints. This tool builds the transaction that claims that accumulated balance and deposits it into your account. You must hold the package owner badge — the network rejects claims from any other account.",
+          "guideSteps": [
+            "1. Connect the wallet that holds the package owner badge.",
+            "2. Paste the address of the package (package_…) whose royalties you want to claim.",
+            "3. Select the account to deposit the claimed XRD into.",
+            "4. Simulate the transaction to see the accrued amount before signing.",
+            "5. Press Claim and approve the transaction in your wallet."
+          ],
+          "glossary": [
+            {
+              "term": "Package royalties",
+              "definition": "An XRD fee defined by a blueprint's author, charged automatically on every invocation and accumulated in the package itself until its owner claims it."
+            },
+            {
+              "term": "Owner badge",
+              "definition": "The NFT you received when deploying the package. The claim instruction presents that badge as proof; without it, the transaction fails."
+            }
+          ]
+        }
       },
       "send-transaction": {
         "title": "Send Transaction",
@@ -540,15 +696,16 @@
       },
       "convert-olympia-address": {
         "title": "Convert Olympia Address",
-        "description": "Convert an Olympia account or resource address into its Babylon equivalent.",
+        "description": "Convert an Olympia address into its Babylon equivalent (and back), and generate the QR to import the account into the Radix Wallet app.",
         "guide": {
           "guideTitle": "Guide: Convert Olympia Address",
-          "guideDescription": "A vital historical tool. Radix underwent a massive global tech upgrade (from the 'Olympia' network to the current 'Babylon' network). Addresses changed formats. This mathematical utility instantly translates old formats to new ones locally, without internet queries.",
+          "guideDescription": "A vital historical tool. Radix underwent a massive global tech upgrade (from the 'Olympia' network to the current 'Babylon' network). Addresses changed formats. This utility translates old addresses to the new format (and legacy Babylon accounts back to their Olympia address), and builds the same import QR the Olympia Desktop Wallet shows for migrating accounts into the mobile Radix Wallet.",
           "guideSteps": [
-            "1. Identify Old Address: Obtain the old address requiring modernization (old accounts started with `rdx1...`, old resources by common Olympia token names).",
+            "1. Identify Old Address: Obtain the old address requiring modernization (old accounts started with `rdx1...`, old resources by common Olympia token names). You can also paste a legacy Babylon account (`account_...`) to recover its original Olympia address.",
             "2. Input Data: Paste into the text field.",
-            "3. Instant Conversion: The tool runs elliptic curve cryptography algorithms locally in your browser, deriving the corresponding Babylon address.",
-            "4. Copy Result: Use the copy button to utilize the new `account_...` address on the current network."
+            "3. Instant Conversion: The tool derives the corresponding Babylon address (the reverse direction recovers the public key from an on-ledger signature).",
+            "4. Copy Result: Use the copy button to utilize the new `account_...` address on the current network.",
+            "5. Import into the Wallet: For account addresses, adjust the account type, address index and seed phrase length, then scan the generated QR with the Radix Wallet app (Settings → Troubleshooting → Import from a Legacy Wallet) following the on-screen steps."
           ],
           "glossary": [
             {
@@ -1138,13 +1295,42 @@
       "linkUnverifiedHint": "Could not verify the two-way link: the other side does not (yet) link back to this entity"
     },
     "olympia": {
-      "inputLabel": "Olympia address",
-      "placeholder": "Olympia account (rdx...) or resource (..._rr1...) address",
+      "inputLabel": "Address to convert",
+      "placeholder": "Olympia account (rdx...), resource (..._rr1...) or legacy Babylon account (account_...)",
       "convert": "Convert",
       "result": "Babylon address",
+      "olympiaResult": "Olympia address",
       "error": "The address could not be converted. Check that it is a valid Olympia address.",
-      "hint": "Account addresses derive a virtual Babylon account; resource addresses (containing _rr1) derive the Babylon resource address.",
-      "network": "Target network"
+      "hint": "Olympia account addresses derive a virtual Babylon account; resource addresses (with _rr1) derive the Babylon resource address; a Babylon account address (account_...) is resolved back to its original Olympia address.",
+      "network": "Target network",
+      "reverseErrorNoTx": "This account has no signed transactions on Babylon. Its public key (and therefore its Olympia address) can only be recovered from an on-ledger signature, so the reverse conversion is not possible yet.",
+      "reverseErrorNotFound": "The account's public key could not be recovered from its recent transactions. It may not be a legacy (migrated from Olympia) account, or its withdrawals were signed by a different key.",
+      "reverseNote": "A Babylon address is a one-way hash of the account's public key, so the Olympia address is recovered from a real signature found on the ledger.",
+      "qrTitle": "Wallet import QR",
+      "qrDescription": "Scan this QR with the Radix Wallet app (Android or iOS) to import the legacy account. It contains only public data — never your seed phrase or private keys.",
+      "qrDownload": "Save QR (PNG)",
+      "accountType": "Account type",
+      "accountTypeSoftware": "Software (seed phrase)",
+      "accountTypeSoftwareDesc": "Account created in the Olympia Desktop Wallet from a seed phrase",
+      "accountTypeHardware": "Hardware (Ledger)",
+      "accountTypeHardwareDesc": "Account created with a Ledger hardware device",
+      "addressIndex": "Address index",
+      "addressIndexHint": "BIP44 derivation index of the account in the Olympia wallet (0 = first account). It must match the original wallet or the seed-phrase verification will fail.",
+      "accountName": "Account name",
+      "accountNameHint": "Optional label shown in the wallet during import (max 30 ASCII characters).",
+      "wordCount": "Seed phrase length",
+      "wordCountHint": "Number of words of the Olympia seed phrase (the mobile wallet asks for it to verify software accounts).",
+      "stepsTitle": "How to import the account in the Radix Wallet (Android & iOS)",
+      "steps": [
+        "Install and set up the Radix Wallet app on your phone (Google Play / App Store).",
+        "Keep the Olympia Desktop Wallet seed phrase at hand (or your Ledger device and the Radix Connector browser extension for hardware accounts).",
+        "In the app, open Settings (gear icon) → Troubleshooting → \"Import from a Legacy Wallet\".",
+        "Scan the QR code shown above.",
+        "Review the account to import — the wallet shows the obsolete Olympia address and the new Babylon address — and tap \"Import\".",
+        "Software account: type the Olympia seed phrase to verify ownership. Ledger account: connect and confirm with your Ledger via Radix Connector.",
+        "Done — the account appears in the wallet as \"Legacy\" with its new Babylon address. Keep the Olympia seed phrase safe; you may still need it."
+      ],
+      "stepsNote": "The flow is identical on Android and iOS. Account type, address index and seed phrase length must match the original Olympia wallet, otherwise the wallet will reject the verification."
     },
     "sendTransaction": {
       "builder": "Transaction builder",
@@ -1879,8 +2065,8 @@
           "hint": "Withdraw an amount and destroy it permanently"
         },
         "lockMetadata": {
-          "name": "Lock metadata",
-          "hint": "Permanently lock a metadata field so it can never change again"
+          "name": "Edit metadata",
+          "hint": "Edit the value of unlocked fields and, optionally, lock them so they can never change again"
         },
         "setOwnerRole": {
           "name": "Owner role",
@@ -1904,8 +2090,15 @@
         "nftImageUrl": "Image URL",
         "metadataKey": "Metadata key",
         "metadataKeyHint": "name, symbol, description, icon_url, tags, info_url, …",
-        "vault": "Vault address",
-        "vaultHint": "The internal_vault_… address holding the tokens (find it in the dashboard)",
+        "vault": "Account or vault address",
+        "vaultHint": "Paste the account_… address holding the tokens (its vault is resolved automatically) or a raw internal_vault_… address. For NFTs, the first 50 vaults appear as buttons below; reach the rest by pasting the account here.",
+        "vaultPlaceholder": "account_… or internal_vault_…",
+        "vaultInvalid": "Enter an account_… or internal_vault_… address.",
+        "vaultResolving": "Resolving the vault…",
+        "vaultResolveError": "Could not read that account from the ledger.",
+        "vaultNotHeld": "That account does not hold this resource.",
+        "vaultResolved": "Vault: {vault}",
+        "vaultsLimited": "Showing the first {shown} of {total} vaults. Reach the rest by pasting their account above.",
         "freeze": "Freeze",
         "freezeHint": "Blocks the selected operations on the vault",
         "unfreeze": "Unfreeze",
@@ -1930,7 +2123,15 @@
         "ruleLockedHint": "The access rule for this action cannot be modified",
         "accessRule": "Access Rule",
         "alreadyLockedHint": "Already locked on ledger",
-        "lockFieldHint": "Lock field"
+        "lockFieldHint": "Lock field",
+        "searchVaults": "Search {count} vault(s) by account or address…",
+        "vaultsSelected": "{count} vault selected",
+        "vaultsSelectedPlural": "{count} vaults selected",
+        "noVaultsFound": "No vaults found",
+        "nftNamePlaceholder": "New NFT name",
+        "nftDescriptionPlaceholder": "New NFT description",
+        "badgeRequiredHint": "This action requires presenting a badge you do not hold in the selected account.",
+        "editMetadataHint": "You can edit this value (unlocked). Change it or lock it."
       }
     },
     "faucet": {
