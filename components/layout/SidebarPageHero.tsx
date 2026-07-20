@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { ContentHero } from '@/components/layout/ContentHero';
 import { CollapsibleHeroSection } from '@/components/layout/CollapsibleHeroSection';
 import { FeaturedCard, type FeaturedCardProps } from '@/components/ui/FeaturedCard';
+import { ConnectWalletPopover } from '@/features/wallet/components/ConnectWalletPopover';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -85,18 +86,15 @@ export function SidebarPageHero({
                 const parts = heroDescription.split(cta_connect_wallet);
                 content = [
                   parts[0],
-                  <button
-                    type="button"
-                    key="connect"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onConnectWallet();
-                    }}
-                    className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mx-1"
-                  >
-                    {cta_connect_wallet}
-                  </button>,
+                  <ConnectWalletPopover key="connect">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="text-[var(--color-primary)] font-bold hover:text-[var(--color-accent)] transition-all mx-1 cursor-pointer"
+                    >
+                      {cta_connect_wallet}
+                    </span>
+                  </ConnectWalletPopover>,
                   parts[1]
                 ];
               }
