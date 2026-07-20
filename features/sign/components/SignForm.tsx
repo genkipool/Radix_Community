@@ -973,6 +973,51 @@ export function ResultPanel({
   const { activeNetworkId } = useRadixWallet();
   const anchoring = phase === 'anchoring';
 
+  // Without an on-ledger request the share link still exists: it delivers the
+  // signed artifact itself over the P2P channel. For PDFs that is the signed
+  // PDF (certificate embedded), so the receiver can verify or co-sign from
+  // one file; otherwise the original document travels as-is.
+  const [shareArtifact, setShareArtifact] = useState<{
+    bytes: Uint8Array;
+    name: string;
+    type: string;
+  } | null>(null);
+  useEffect(() => {
+    if (result.envelope.request) return;
+    let cancelled = false;
+    void (async () => {
+      if (isPdfResult(result)) {
+        try {
+          const pdf = await embedCertificateInPdf(
+            result.fileBytes,
+            envelope,
+            result.fileBytes,
+          );
+          if (!cancelled) {
+            setShareArtifact({
+              bytes: pdf,
+              name: `${stripExtension(result.fileName)}-signed.pdf`,
+              type: 'application/pdf',
+            });
+          }
+          return;
+        } catch {
+          // Fall back to sharing the original document below.
+        }
+      }
+      if (!cancelled) {
+        setShareArtifact({
+          bytes: result.fileBytes,
+          name: result.fileName,
+          type: result.fileType,
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [envelope, result]);
+
   const { payload } = envelope;
   const pdfBtn = outputs.includes('embedded') && isPdfResult(result);
   const certBtn = outputs.includes('detached') || !pdfBtn;
@@ -1083,7 +1128,7 @@ export function ResultPanel({
 
       <SignerProgress t={t} envelope={envelope} />
 
-      {envelope.request && (
+      {envelope.request ? (
         // Multi-party on-ledger: the link co-signers open to see the request
         // and co-sign, with the direct document channel available by default.
         <ShareLinkSection
@@ -1095,6 +1140,22 @@ export function ResultPanel({
           bytes={result.fileBytes}
           outputs={outputs}
         />
+      ) : (
+        shareArtifact && (
+          // Every other signing still gets a share link + QR: it delivers the
+          // signed artifact directly, browser to browser.
+          <ShareLinkSection
+            t={t}
+            docName={shareArtifact.name}
+            fileName={shareArtifact.name}
+            fileType={shareArtifact.type}
+            bytes={shareArtifact.bytes}
+            outputs={outputs}
+            tab="sign"
+            title={t.onchain.shareDocTitle}
+            hint={t.onchain.shareDocHint}
+          />
+        )
       )}
 
       {canAnchor && needsSetup && (

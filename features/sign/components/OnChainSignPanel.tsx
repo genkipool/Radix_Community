@@ -451,7 +451,7 @@ export function OnChainSignPanel({
         )}
       </ToolSection>
 
-      {requestId && status && !status.complete && signatures.length > 1 && (
+      {requestId && status && !status.complete && (
         <ShareLinkSection
           t={t}
           requestKey={status.requestId ?? requestId}
@@ -579,120 +579,131 @@ export function OnChainSignPanel({
           </div>
         </ToolSection>
       ) : (
-        status && (
-          <ToolSection title={t.onchain.signSectionTitle}>
-            {loading && !statusQuery.data ? (
-              <Muted text={t.onchain.checkingEligibility} />
-            ) : wrongNetwork ? (
-              <Danger
-                text={t.onchain.wrongNetwork.replace(
-                  /\{network\}/g,
-                  NETWORKS[requestNetworkId!]?.networkName ?? '',
-                )}
-              />
-            ) : !eligible ? (
-              <>
-                <Danger text={t.onchain.notEligible} />
-                <Muted text={t.onchain.notEligibleHint} />
-              </>
-            ) : alreadySigned ? (
-              <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-success)]">
-                <BadgeCheck className="size-4 shrink-0" />
-                {t.onchain.alreadySigned}
+        // Rendered even before the status resolves (or if the lookup fails):
+        // the sign + simulate buttons must always be visible on a shared-link
+        // page, disabled until signing is actually possible.
+        <ToolSection title={t.onchain.signSectionTitle}>
+          {loading && !statusQuery.data ? (
+            <Muted text={t.onchain.checkingEligibility} />
+          ) : statusQuery.isError ? (
+            <Danger text={t.onchain.statusError} />
+          ) : notFound ? (
+            <Muted text={t.onchain.notFound} />
+          ) : wrongNetwork ? (
+            <Danger
+              text={t.onchain.wrongNetwork.replace(
+                /\{network\}/g,
+                NETWORKS[requestNetworkId!]?.networkName ?? '',
+              )}
+            />
+          ) : status && !eligible ? (
+            <>
+              <Danger text={t.onchain.notEligible} />
+              <Muted text={t.onchain.notEligibleHint} />
+            </>
+          ) : alreadySigned ? (
+            <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-success)]">
+              <BadgeCheck className="size-4 shrink-0" />
+              {t.onchain.alreadySigned}
+            </p>
+          ) : status ? (
+            <>
+              <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                <BadgeCheck className="size-3.5 shrink-0 text-[var(--color-success)]" />
+                {t.onchain.inviteInWallet}
               </p>
-            ) : (
-              <>
-                <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  <BadgeCheck className="size-3.5 shrink-0 text-[var(--color-success)]" />
-                  {t.onchain.inviteInWallet}
-                </p>
-                {!setup.seal && setup.ready && (
-                  <div
-                    className="rounded-xl border p-3.5 space-y-2"
-                    style={{
-                      background: 'var(--color-surface)',
-                      borderColor: 'var(--color-card-border)',
-                    }}
+              {!setup.seal && setup.ready && (
+                <div
+                  className="rounded-xl border p-3.5 space-y-2"
+                  style={{
+                    background: 'var(--color-surface)',
+                    borderColor: 'var(--color-card-border)',
+                  }}
+                >
+                  <p
+                    className="flex items-center gap-2 text-xs font-bold"
+                    style={{ color: 'var(--color-text-main)' }}
                   >
-                    <p
-                      className="flex items-center gap-2 text-xs font-bold"
-                      style={{ color: 'var(--color-text-main)' }}
-                    >
-                      <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
-                      {t.onchain.sealStep}
-                    </p>
-                    <div className="space-y-2 pl-6">
-                      {!sealDeployed ? (
-                        <Muted text={t.onchain.sealNotDeployed} />
-                      ) : (
-                        <>
-                          <Muted text={t.onchain.sealMissing} />
-                          <button
-                            type="button"
-                            disabled={busy || !actingAccount}
-                            onClick={async () => {
-                              if (!actingAccount) return;
-                              const ok = await mintSeal({
-                                account: actingAccount,
-                                imageUrl: nftImage,
-                              });
-                              if (ok) setup.refetch();
-                            }}
-                            className="flex items-center gap-2 px-4 h-9 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
-                          >
-                            {phase === 'minting-seal' ? (
-                              <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                            ) : (
-                              <Stamp className="size-3.5" />
-                            )}
-                            {phase === 'minting-seal'
-                              ? t.onchain.sealMinting
-                              : t.onchain.sealGet}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {setup.seal && !setup.collection && (
-                  <Muted text={t.onchain.firstSignNote} />
-                )}
-                {errorMsg && <Danger text={errorMsg} />}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    disabled={!canSign}
-                    onClick={onSign}
-                    className="flex w-full items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    {phase === 'signing' || phase === 'creating-collection' ? (
-                      <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    <Circle className="size-4 shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+                    {t.onchain.sealStep}
+                  </p>
+                  <div className="space-y-2 pl-6">
+                    {!sealDeployed ? (
+                      <Muted text={t.onchain.sealNotDeployed} />
                     ) : (
-                      <Send className="size-4" />
+                      <>
+                        <Muted text={t.onchain.sealMissing} />
+                        <button
+                          type="button"
+                          disabled={busy || !actingAccount}
+                          onClick={async () => {
+                            if (!actingAccount) return;
+                            const ok = await mintSeal({
+                              account: actingAccount,
+                              imageUrl: nftImage,
+                            });
+                            if (ok) setup.refetch();
+                          }}
+                          className="flex items-center gap-2 px-4 h-9 rounded-full font-bold text-xs text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+                        >
+                          {phase === 'minting-seal' ? (
+                            <span className="size-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          ) : (
+                            <Stamp className="size-3.5" />
+                          )}
+                          {phase === 'minting-seal'
+                            ? t.onchain.sealMinting
+                            : t.onchain.sealGet}
+                        </button>
+                      </>
                     )}
-                    {phase === 'signing' || phase === 'creating-collection'
-                      ? t.onchain.signing
-                      : t.onchain.sign}
-                  </button>
-                  <SimulateButton
-                    t={consoleT.simulate}
-                    onClick={simulateSign}
-                    disabled={!canSign}
-                    loading={preview.isSimulating}
-                  />
+                  </div>
                 </div>
-                {!docHash && <Muted text={t.onchain.needFile} />}
-                {hashMismatch && <Danger text={t.onchain.fileMismatch} />}
-                <SimulateResultCard
+              )}
+              {setup.seal && !setup.collection && (
+                <Muted text={t.onchain.firstSignNote} />
+              )}
+              {errorMsg && <Danger text={errorMsg} />}
+            </>
+          ) : null}
+          {!alreadySigned && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  disabled={!canSign}
+                  onClick={onSign}
+                  className="flex w-full items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {phase === 'signing' || phase === 'creating-collection' ? (
+                    <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  ) : (
+                    <Send className="size-4" />
+                  )}
+                  {phase === 'signing' || phase === 'creating-collection'
+                    ? t.onchain.signing
+                    : t.onchain.sign}
+                </button>
+                <SimulateButton
                   t={consoleT.simulate}
-                  preview={preview.preview}
-                  error={preview.error}
-                  onClose={preview.reset}
+                  onClick={simulateSign}
+                  disabled={!canSign}
+                  loading={preview.isSimulating}
                 />
-              </>
-            )}
-          </ToolSection>
-        )
+              </div>
+              {status && !!docHash && hashMismatch && (
+                <Danger text={t.onchain.fileMismatch} />
+              )}
+              {status && !docHash && <Muted text={t.onchain.needFile} />}
+              <SimulateResultCard
+                t={consoleT.simulate}
+                preview={preview.preview}
+                error={preview.error}
+                onClose={preview.reset}
+              />
+            </>
+          )}
+        </ToolSection>
       )}
 
       <ManualKey
