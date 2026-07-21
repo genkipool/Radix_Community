@@ -271,6 +271,7 @@
       "anchoring": "Anchoring on-ledger…",
       "downloadCert": "Download certificate",
       "downloadPdf": "Download signed PDF",
+      "downloadSigned": "Download signed file",
       "newSignature": "Sign another",
       "viewOnLedger": "View transaction",
       "anchorNow": "Anchor on-ledger",

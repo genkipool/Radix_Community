@@ -52,6 +52,7 @@ export function ChatSessionView({
           sendingFile={session.sendingFile}
           onSend={(text) => void session.send(text)}
           onSendFile={(file) => void session.sendFile(file)}
+          onCancelFile={session.cancelSendFile}
           onLeave={session.leave}
         />
         {session.phase === 'closed' && (

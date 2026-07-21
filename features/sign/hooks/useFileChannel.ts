@@ -96,13 +96,19 @@ export function useSendFileChannel(input: {
         const end = Math.min(total, offset + FRAME_BYTES);
         await peer.sendBinary(buf.slice(offset, end));
         // Whole-percent steps only, to keep re-renders cheap on big files.
+        // Cap below 100%: the last frames are still draining, so 100% would be
+        // a lie until the buffer is empty (set truthfully after flush below).
         const pct = total > 0 ? Math.floor((end / total) * 100) : 100;
         if (pct > lastPct) {
           lastPct = pct;
-          setProgress(end / total);
+          setProgress(Math.min(end / total, 0.99));
         }
       }
       peer.sendMessage({ t: 'done' });
+      // Every byte (frames + the done marker) is on the wire now — only here is
+      // 100% true. Then wait for the receiver to confirm it has the whole file.
+      await peer.flush();
+      if (active) setProgress(1);
       await acked;
       peer.close();
       peer = null;

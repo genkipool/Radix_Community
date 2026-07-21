@@ -17,6 +17,7 @@ export function ChatRoom({
   sendingFile,
   onSend,
   onSendFile,
+  onCancelFile,
   onLeave,
 }: {
   t: ChatDictionary;
@@ -28,6 +29,8 @@ export function ChatRoom({
   sendingFile: boolean;
   onSend: (text: string) => void;
   onSendFile: (file: File) => void;
+  /** Abort the file currently being sent. */
+  onCancelFile: () => void;
   onLeave: () => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
@@ -38,7 +41,7 @@ export function ChatRoom({
 
   return (
     <div
-      className="flex flex-col rounded-3xl border overflow-hidden"
+      className="flex h-[90vh] flex-col rounded-3xl border overflow-hidden"
       style={{
         background: 'var(--color-card-bg)',
         borderColor: 'var(--color-card-border)',
@@ -86,7 +89,7 @@ export function ChatRoom({
         </button>
       </header>
 
-      <div className="flex h-[clamp(20rem,60vh,48rem)] flex-col gap-3 overflow-y-auto px-5 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
         {messages.length === 0 && (
           <p
             className="m-auto text-sm"
@@ -96,7 +99,12 @@ export function ChatRoom({
           </p>
         )}
         {messages.map((message: ChatMessage) => (
-          <MessageBubble key={message.id} t={t} message={message} />
+          <MessageBubble
+            key={message.id}
+            t={t}
+            message={message}
+            onCancel={onCancelFile}
+          />
         ))}
         <div ref={endRef} />
       </div>

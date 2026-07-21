@@ -57,61 +57,75 @@ export interface Peer<TMessage> {
   sendMessage(message: TMessage): void;
   /** Sends one frame, honouring DataChannel backpressure. */
   sendBinary(bytes: ArrayBuffer): Promise<void>;
+  /**
+   * Resolves once every queued byte has actually left the send buffer (it is
+   * on the wire, not merely handed to `send()`). Lets a sender report "done"
+   * or 100% truthfully instead of the instant the last frame was enqueued.
+   */
+  flush(): Promise<void>;
   close(): void;
 }
 
 /** How long ICE may take once the peers start negotiating. */
 const CONNECT_TIMEOUT_MS = 30_000;
 
-/** How often the backpressure watchdog samples the send buffer. */
-const DRAIN_POLL_MS = 5_000;
+/** How often the drain watchdog samples the send buffer. */
+const DRAIN_POLL_MS = 1_000;
 
 /**
- * Consecutive polls with zero drain progress before the peer is treated as
- * gone. A slow-but-alive link keeps shrinking the buffer and resets the
- * counter, so only a genuine stall (nothing ACKed for DRAIN_POLL_MS * this)
- * aborts the transfer.
+ * Polls with zero drain progress before the peer is treated as gone (~60s). A
+ * real disconnect flips `readyState` off `open` and is caught within one poll,
+ * so this only guards the pathological "channel open but nothing draining"
+ * case — kept generous because a slow receiver (e.g. writing each chunk to
+ * IndexedDB) legitimately backpressures the sender for a while, and a tight
+ * bound here is exactly what dropped healthy large-file transfers before.
  */
-const DRAIN_STALL_LIMIT = 3;
+const DRAIN_STALL_POLLS = 60;
 
 /**
- * Block until the DataChannel send buffer drains below its low-water mark.
- * Resolves on `bufferedamountlow`; rejects if the channel closes or the buffer
- * stalls (never shrinks) across DRAIN_STALL_LIMIT polls. Crucially it does NOT
- * impose a fixed deadline: a large file over a slow relay can spend minutes
- * draining legitimately, and a wall-clock timeout here would kill a healthy
- * session mid-transfer.
+ * Block until the DataChannel send buffer drains to `target` bytes. Resolves
+ * promptly via `bufferedamountlow` when possible; rejects only if the channel
+ * closes (detected within one poll) or the buffer never shrinks for
+ * DRAIN_STALL_POLLS polls. No wall-clock deadline: a large file over a slow
+ * relay can spend minutes draining legitimately.
  */
-function waitForDrain(dc: RTCDataChannel): Promise<void> {
+function waitUntilDrained(dc: RTCDataChannel, target: number): Promise<void> {
+  if (dc.readyState !== 'open') return Promise.reject(new Error('peer_disconnected'));
+  if (dc.bufferedAmount <= target) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     let lastBuffered = dc.bufferedAmount;
     let stalls = 0;
 
-    const onLow = () => finish(resolve);
+    const finish = (action: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearInterval(watchdog);
+      dc.removeEventListener('bufferedamountlow', onLow);
+      action();
+    };
+    // The event only fires at the low-water mark; it just lets us resolve
+    // sooner. All stall accounting lives in the interval below.
+    const onLow = () => {
+      if (dc.bufferedAmount <= target) finish(resolve);
+    };
     const watchdog = setInterval(() => {
       if (dc.readyState !== 'open') {
         finish(() => reject(new Error('peer_disconnected')));
         return;
       }
       const buffered = dc.bufferedAmount;
-      if (buffered < lastBuffered) {
+      if (buffered <= target) {
+        finish(resolve);
+      } else if (buffered < lastBuffered) {
         lastBuffered = buffered;
         stalls = 0;
-      } else if (++stalls >= DRAIN_STALL_LIMIT) {
+      } else if (++stalls >= DRAIN_STALL_POLLS) {
         finish(() => reject(new Error('peer_disconnected')));
       }
     }, DRAIN_POLL_MS);
 
-    function finish(action: () => void): void {
-      if (settled) return;
-      settled = true;
-      clearInterval(watchdog);
-      dc.removeEventListener('bufferedamountlow', onLow);
-      action();
-    }
-
-    dc.addEventListener('bufferedamountlow', onLow, { once: true });
+    dc.addEventListener('bufferedamountlow', onLow);
   });
 }
 
@@ -153,10 +167,14 @@ function wirePeer<TMessage>(
     async sendBinary(bytes) {
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       if (dc.bufferedAmount > BUFFERED_HIGH) {
-        await waitForDrain(dc);
+        await waitUntilDrained(dc, BUFFERED_LOW);
       }
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       dc.send(bytes);
+    },
+    async flush() {
+      if (dc.readyState !== 'open') throw new Error('peer_disconnected');
+      await waitUntilDrained(dc, 0);
     },
     close() {
       closed = true;

@@ -271,6 +271,7 @@
       "anchoring": "Anclando en la cadena…",
       "downloadCert": "Descargar certificado",
       "downloadPdf": "Descargar PDF firmado",
+      "downloadSigned": "Descargar archivo firmado",
       "newSignature": "Firmar otro",
       "viewOnLedger": "Ver transacción",
       "anchorNow": "Anclar en la cadena",

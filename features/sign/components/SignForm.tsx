@@ -71,6 +71,13 @@ export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   );
 }
 
+/** True when every required signer has signed (open certificates need one). */
+export function envelopeComplete(env: AttestationEnvelope): boolean {
+  const required = env.payload.signers;
+  const signed = new Set(env.signatures.map((s) => s.signerAccount));
+  return required.length === 0 ? signed.size > 0 : required.every((a) => signed.has(a));
+}
+
 export function SignForm({
   t,
   consoleT,
@@ -185,6 +192,14 @@ export function SignForm({
 
   const busy = phase === 'signing' || phase === 'anchoring';
   const coSignMode = !!loadedCert;
+  // A dropped certificate/PDF whose whole required-signer set has ALREADY
+  // signed: nothing left to add, so the primary action becomes downloading the
+  // signed artifact. Open certificates (no required set) keep accepting
+  // signatures, so they never switch to download-only.
+  const coSignComplete =
+    coSignMode &&
+    loadedCert!.payload.signers.length > 0 &&
+    envelopeComplete(loadedCert!);
   const watermarkOptions: WatermarkOptions = {
     kind: watermark,
     text: watermarkText,
@@ -436,6 +451,26 @@ export function SignForm({
     downloadCertificate(res.envelope);
   };
 
+  // Deliver the already-complete certificate as a signed artifact: for a PDF,
+  // the original with the certificate embedded (verifies on its own); otherwise
+  // the detached certificate JSON.
+  const downloadSignedDoc = async () => {
+    if (!loadedCert) return;
+    const isPdf =
+      !!file &&
+      (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
+    if (isPdf && coSignBytes) {
+      try {
+        const pdf = await embedCertificateInPdf(coSignBytes, loadedCert, coSignBytes);
+        downloadBytes(pdf, `${stripExtension(file.name)}-signed.pdf`, 'application/pdf');
+        return;
+      } catch {
+        // Fall back to the detached certificate below.
+      }
+    }
+    downloadCertificate(loadedCert);
+  };
+
   const startOver = () => {
     setResult(null);
     doc.onFile(null);
@@ -611,19 +646,32 @@ export function SignForm({
               {errorMsg}
             </p>
           )}
-          <button
-            type="button"
-            disabled={!coSignBytes || hashMismatch || busy}
-            onClick={handleCoSign}
-            className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {busy ? (
-              <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-            ) : (
-              <FileSignature className="size-4" />
-            )}
-            {busy ? t.actions.signing : t.cosign.addSignature}
-          </button>
+          {coSignComplete ? (
+            // Everyone required has already signed: no signature to add, just
+            // hand over the finished signed document.
+            <button
+              type="button"
+              onClick={() => void downloadSignedDoc()}
+              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-md transition-all hover:opacity-90 active:scale-95"
+            >
+              <Download className="size-4" />
+              {t.actions.downloadSigned}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!coSignBytes || hashMismatch || busy}
+              onClick={handleCoSign}
+              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            >
+              {busy ? (
+                <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              ) : (
+                <FileSignature className="size-4" />
+              )}
+              {busy ? t.actions.signing : t.cosign.addSignature}
+            </button>
+          )}
         </>
       ) : sharedRequestId ? (
         // Invited co-signer (shared link or carrier PDF): straight to the

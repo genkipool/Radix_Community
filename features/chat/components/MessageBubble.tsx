@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, FileIcon, XCircle } from 'lucide-react';
+import { Download, FileIcon, X, XCircle } from 'lucide-react';
 import { formatBytes } from '@/features/cipher/lib/format';
 import type { ChatDictionary } from '../types/dictionary';
 import type { ChatMessage } from '../types/chat.types';
@@ -16,12 +16,17 @@ const timeFormat: Intl.DateTimeFormatOptions = {
 export function MessageBubble({
   t,
   message,
+  onCancel,
 }: {
   t: ChatDictionary;
   message: ChatMessage;
+  /** Abort the in-flight outgoing file (only meaningful while sending). */
+  onCancel?: () => void;
 }) {
   const sent = message.direction === 'sent';
   const file = message.file;
+  const transferring = file?.status === 'transferring';
+  const pct = file ? Math.round(file.progress * 100) : 0;
   return (
     <div className={`flex ${sent ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -41,18 +46,19 @@ export function MessageBubble({
         }
       >
         {file ? (
-          <div className="flex min-w-48 items-center gap-3">
+          <div className="flex min-w-48 max-w-full items-center gap-3">
             <FileIcon className={`size-8 shrink-0 ${sent ? 'text-white/90' : ''}`} />
             <div className="min-w-0 flex-1 space-y-1">
               <p className="truncate text-sm font-semibold" title={file.name}>
                 {file.name}
               </p>
-              <p className={`text-[11px] ${sent ? 'text-white/70' : ''}`}
+              <p className={`text-[11px] tabular-nums ${sent ? 'text-white/70' : ''}`}
                 style={sent ? undefined : { color: 'var(--color-text-muted)' }}
               >
                 {formatBytes(file.size)}
+                {transferring && ` · ${pct}%`}
               </p>
-              {file.status === 'transferring' && (
+              {transferring && (
                 <div
                   className="h-1.5 w-full overflow-hidden rounded-full"
                   style={{
@@ -64,7 +70,7 @@ export function MessageBubble({
                   <div
                     className="h-full rounded-full transition-[width]"
                     style={{
-                      width: `${Math.round(file.progress * 100)}%`,
+                      width: `${pct}%`,
                       background: sent
                         ? 'rgba(255,255,255,0.9)'
                         : 'var(--color-primary)',
@@ -76,6 +82,15 @@ export function MessageBubble({
                 <p className="flex items-center gap-1 text-[11px] font-semibold text-[var(--color-danger,#dc2626)]">
                   <XCircle className="size-3" />
                   {t.room.fileFailed}
+                </p>
+              )}
+              {file.status === 'canceled' && (
+                <p
+                  className={`flex items-center gap-1 text-[11px] font-semibold ${sent ? 'text-white/80' : ''}`}
+                  style={sent ? undefined : { color: 'var(--color-text-muted)' }}
+                >
+                  <XCircle className="size-3" />
+                  {t.room.fileCanceled}
                 </p>
               )}
               {file.status === 'done' && file.url && (
@@ -92,6 +107,17 @@ export function MessageBubble({
                 </a>
               )}
             </div>
+            {sent && transferring && onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                aria-label={t.room.cancelSend}
+                title={t.room.cancelSend}
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
         ) : (
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
