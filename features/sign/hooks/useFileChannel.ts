@@ -40,6 +40,8 @@ export function useSendFileChannel(input: {
   const { enabled, roomId, fileName, fileType, bytes } = input;
   const [phase, setPhase] = useState<SendChannelPhase>('idle');
   const [deliveries, setDeliveries] = useState(0);
+  /** Fraction [0, 1] of the current delivery; 0 while waiting for a peer. */
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +80,7 @@ export function useSendFileChannel(input: {
         return false;
       }
       setPhase('sending');
+      setProgress(0);
       peer.sendMessage({
         t: 'meta',
         name: fileName,
@@ -87,10 +90,17 @@ export function useSendFileChannel(input: {
       // Fresh ArrayBuffer copy: the view may sit on a shared/offset buffer.
       const buf = new ArrayBuffer(bytes.byteLength);
       new Uint8Array(buf).set(bytes);
-      for (let offset = 0; offset < buf.byteLength && active; offset += FRAME_BYTES) {
-        await peer.sendBinary(
-          buf.slice(offset, Math.min(buf.byteLength, offset + FRAME_BYTES)),
-        );
+      const total = buf.byteLength;
+      let lastPct = 0;
+      for (let offset = 0; offset < total && active; offset += FRAME_BYTES) {
+        const end = Math.min(total, offset + FRAME_BYTES);
+        await peer.sendBinary(buf.slice(offset, end));
+        // Whole-percent steps only, to keep re-renders cheap on big files.
+        const pct = total > 0 ? Math.floor((end / total) * 100) : 100;
+        if (pct > lastPct) {
+          lastPct = pct;
+          setProgress(end / total);
+        }
       }
       peer.sendMessage({ t: 'done' });
       await acked;
@@ -103,6 +113,7 @@ export function useSendFileChannel(input: {
     void (async () => {
       while (active) {
         setPhase('waiting');
+        setProgress(0);
         try {
           if (!(await serveOnce())) return;
         } catch {
@@ -122,7 +133,7 @@ export function useSendFileChannel(input: {
     };
   }, [enabled, roomId, fileName, fileType, bytes]);
 
-  return { phase, deliveries };
+  return { phase, deliveries, progress };
 }
 
 export type ReceiveChannelPhase =

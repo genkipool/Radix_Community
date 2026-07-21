@@ -63,6 +63,58 @@ export interface Peer<TMessage> {
 /** How long ICE may take once the peers start negotiating. */
 const CONNECT_TIMEOUT_MS = 30_000;
 
+/** How often the backpressure watchdog samples the send buffer. */
+const DRAIN_POLL_MS = 5_000;
+
+/**
+ * Consecutive polls with zero drain progress before the peer is treated as
+ * gone. A slow-but-alive link keeps shrinking the buffer and resets the
+ * counter, so only a genuine stall (nothing ACKed for DRAIN_POLL_MS * this)
+ * aborts the transfer.
+ */
+const DRAIN_STALL_LIMIT = 3;
+
+/**
+ * Block until the DataChannel send buffer drains below its low-water mark.
+ * Resolves on `bufferedamountlow`; rejects if the channel closes or the buffer
+ * stalls (never shrinks) across DRAIN_STALL_LIMIT polls. Crucially it does NOT
+ * impose a fixed deadline: a large file over a slow relay can spend minutes
+ * draining legitimately, and a wall-clock timeout here would kill a healthy
+ * session mid-transfer.
+ */
+function waitForDrain(dc: RTCDataChannel): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    let lastBuffered = dc.bufferedAmount;
+    let stalls = 0;
+
+    const onLow = () => finish(resolve);
+    const watchdog = setInterval(() => {
+      if (dc.readyState !== 'open') {
+        finish(() => reject(new Error('peer_disconnected')));
+        return;
+      }
+      const buffered = dc.bufferedAmount;
+      if (buffered < lastBuffered) {
+        lastBuffered = buffered;
+        stalls = 0;
+      } else if (++stalls >= DRAIN_STALL_LIMIT) {
+        finish(() => reject(new Error('peer_disconnected')));
+      }
+    }, DRAIN_POLL_MS);
+
+    function finish(action: () => void): void {
+      if (settled) return;
+      settled = true;
+      clearInterval(watchdog);
+      dc.removeEventListener('bufferedamountlow', onLow);
+      action();
+    }
+
+    dc.addEventListener('bufferedamountlow', onLow, { once: true });
+  });
+}
+
 function wirePeer<TMessage>(
   pc: RTCPeerConnection,
   dc: RTCDataChannel,
@@ -101,20 +153,7 @@ function wirePeer<TMessage>(
     async sendBinary(bytes) {
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       if (dc.bufferedAmount > BUFFERED_HIGH) {
-        await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(
-            () => reject(new Error('peer_disconnected')),
-            CONNECT_TIMEOUT_MS,
-          );
-          dc.addEventListener(
-            'bufferedamountlow',
-            () => {
-              clearTimeout(timer);
-              resolve();
-            },
-            { once: true },
-          );
-        });
+        await waitForDrain(dc);
       }
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       dc.send(bytes);

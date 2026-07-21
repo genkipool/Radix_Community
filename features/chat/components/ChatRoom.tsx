@@ -86,7 +86,7 @@ export function ChatRoom({
         </button>
       </header>
 
-      <div className="flex h-[26rem] flex-col gap-3 overflow-y-auto px-5 py-4">
+      <div className="flex h-[clamp(20rem,60vh,48rem)] flex-col gap-3 overflow-y-auto px-5 py-4">
         {messages.length === 0 && (
           <p
             className="m-auto text-sm"
