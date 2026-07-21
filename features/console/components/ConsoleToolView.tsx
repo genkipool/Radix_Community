@@ -58,6 +58,7 @@ import McpTool from './tools/McpTool';
 import SignDocumentTool from './tools/SignDocumentTool';
 import EncryptDocumentTool from './tools/EncryptDocumentTool';
 import ChatTool from './tools/ChatTool';
+import AddressBookTool from './tools/AddressBookTool';
 
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
@@ -68,6 +69,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'my-resources': MyResourcesTool,
   'sbor-decoder': SborDecoderTool,
   'address-utils': AddressUtilsTool,
+  'address-book': AddressBookTool,
   faucet: FaucetTool,
   'wallet-playground': WalletPlaygroundTool,
   'deploy-package': DeployPackageTool,

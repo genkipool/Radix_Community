@@ -80,15 +80,15 @@
       },
       "chat": {
         "title": "Secure Chat",
-        "description": "End-to-end encrypted chat between browsers. Both sides prove their identity with a Radix wallet signature, verified locally — no server can read or impersonate.",
+        "description": "End-to-end encrypted chat between browsers. Both sides prove their identity with a Radix wallet signature, verified locally, and no server can read or impersonate.",
         "guide": {
           "guideTitle": "Guide: Secure Chat",
-          "guideDescription": "A direct, end-to-end encrypted conversation between two browsers. Each participant signs a challenge with their Radix Wallet that commits to a fresh ephemeral key; both proofs are verified locally (signature + account derivation), and the session key is agreed from that verified exchange. Messages travel over WebRTC with an extra AES-256-GCM layer and anti-replay sequence numbers — the signaling server only relays the connection handshake and can read nothing.",
+          "guideDescription": "A direct, end-to-end encrypted conversation between two browsers. Each participant signs a challenge with their Radix Wallet that commits to a fresh ephemeral key; both proofs are verified locally (signature + account derivation), and the session key is agreed from that verified exchange. Messages travel over WebRTC with an extra AES-256-GCM layer and anti-replay sequence numbers, and the signaling server only relays the connection handshake and can read nothing.",
           "guideSteps": [
             "1. Connect your wallet and press Create secure chat; sign the room challenge.",
             "2. Send the generated link or QR code to the other person over any channel.",
             "3. When they open it, connect their wallet and sign, both identities are verified and the room turns secure.",
-            "4. The header shows the other side's account address with a wallet-verified badge — that is who you are really talking to.",
+            "4. The header shows the other side's wallet-verified account address, so you know who you are really talking to.",
             "5. Chat freely; messages exist only in the two browsers. Leaving the page ends the conversation and nothing is stored."
           ],
           "glossary": [
@@ -776,6 +776,10 @@
             }
           ]
         }
+      },
+      "address-book": {
+        "title": "Address Book",
+        "description": "Save and organise Radix addresses (accounts, validators, pools, components and packages) by category, verified on-ledger. The same address book as in your wallet profile."
       },
       "address-utils": {
         "title": "Address Utilities",

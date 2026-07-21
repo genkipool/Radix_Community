@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { BadgeCheck, LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, Send, ShieldCheck } from 'lucide-react';
 import { shortAddress } from '@/utils/format';
+import { CopyButton } from '@/components/ui/CopyButton';
+import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
+import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
+import type { SentTransactionSummary } from '@/features/wallet/components/TransactionBuilder';
 import type { ChatDictionary } from '../types/dictionary';
 import type { ChatMessage, VerifiedPeer } from '../types/chat.types';
 import { ChatComposer } from './ChatComposer';
+import { ChatTransactionModal } from './ChatTransactionModal';
 import { MessageBubble } from './MessageBubble';
 
 /** The secure room: verified-identity header, message log and composer. */
@@ -35,7 +40,30 @@ export function ChatRoom({
 }) {
   const endRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { accounts } = useRadixWallet();
+  const { entries: addressBook } = useAddressBook();
+  const [txOpen, setTxOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Best-effort display name for the peer: whatever label the local user has
+  // for that address (their address book, or one of their own accounts). Only
+  // the ROLA-proven account address is guaranteed; the name is a convenience.
+  const peerName =
+    addressBook.find((e) => e.address === peer.account)?.name ??
+    accounts.find((a) => a.address === peer.account)?.label ??
+    null;
+
+  // Post a short summary of a committed transfer into the chat; the txid is
+  // linkified to the explorer by MessageBubble.
+  const announceTransaction = (summary: SentTransactionSummary) => {
+    const amounts = summary.transfers
+      .map((x) => `${x.amount} ${x.symbol}`)
+      .join(', ');
+    const fee = summary.feePaid
+      ? `\n${t.room.txFeeLabel}: ${summary.feePaid} XRD`
+      : '';
+    onSend(`\u{1F4B8} ${t.room.txSentLabel}: ${amounts}${fee}\n${summary.hash}`);
+  };
   // Exact pixel height that fits below whatever chrome sits above the card
   // (navbar + tool header), so the whole chat is visible without page scroll on
   // any resolution. Measured, not guessed, because the header height varies.
@@ -114,34 +142,58 @@ export function ChatRoom({
             <p className="text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
               {t.room.securedWith}
             </p>
-            <p
-              className="flex items-center gap-1.5 truncate font-mono text-sm font-bold"
-              style={{ color: 'var(--color-text-main)' }}
-              title={peer.account}
-            >
-              {shortAddress(peer.account)}
+            <div className="flex min-w-0 items-center gap-1.5">
+              {peerName && (
+                <span
+                  className="truncate text-sm font-bold"
+                  style={{ color: 'var(--color-text-main)' }}
+                  title={peerName}
+                >
+                  {peerName}
+                </span>
+              )}
               <span
-                className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                className="truncate font-mono text-sm font-bold"
                 style={{
-                  background: 'rgba(var(--color-primary-rgb), 0.1)',
-                  color: 'var(--color-primary)',
+                  color: peerName
+                    ? 'var(--color-text-muted)'
+                    : 'var(--color-text-main)',
                 }}
+                title={peer.account}
               >
-                <BadgeCheck className="size-3" />
-                {t.room.verified}
+                {shortAddress(peer.account)}
               </span>
-            </p>
+              <CopyButton
+                value={peer.account}
+                variant="ghost"
+                size="xs"
+                className="shrink-0"
+              />
+            </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onLeave}
-          className="flex items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          <LogOut className="size-3.5" />
-          {t.room.leave}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!closed && (
+            <button
+              type="button"
+              onClick={() => setTxOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              <Send className="size-3.5" />
+              <span className="hidden sm:inline">{t.room.sendTx}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onLeave}
+            className="flex items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <LogOut className="size-3.5" />
+            <span className="hidden sm:inline">{t.room.leave}</span>
+          </button>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
@@ -182,6 +234,15 @@ export function ChatRoom({
           />
         )}
       </footer>
+
+      {txOpen && (
+        <ChatTransactionModal
+          t={t}
+          peerAccount={peer.account}
+          onClose={() => setTxOpen(false)}
+          onTransactionSent={announceTransaction}
+        />
+      )}
     </div>
   );
 }

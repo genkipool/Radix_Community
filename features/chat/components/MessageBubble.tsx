@@ -2,8 +2,35 @@
 
 import { Download, FileIcon, X, XCircle } from 'lucide-react';
 import { formatBytes } from '@/features/cipher/lib/format';
+import { useLanguage } from '@/context/LanguageContext';
+import { explorerTxUrl } from '@/features/sign/lib/explorer';
 import type { ChatDictionary } from '../types/dictionary';
 import type { ChatMessage } from '../types/chat.types';
+
+// Transaction intent hashes (txid_rdx1… / txid_tdx_2_1…) in message text.
+const TX_ID_RE = /(txid_[a-z0-9_]+)/gi;
+
+/** Renders message text, turning any transaction id into a link that opens the
+ *  explorer in a new tab. `split` on a capturing group puts matches at odd
+ *  indices. */
+function renderMessageText(text: string, language: string, sent: boolean) {
+  return text.split(TX_ID_RE).map((part, i) => {
+    if (i % 2 === 0) return <span key={i}>{part}</span>;
+    const short = part.length > 22 ? `${part.slice(0, 14)}…${part.slice(-6)}` : part;
+    return (
+      <a
+        key={i}
+        href={explorerTxUrl(language, part)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`font-mono underline underline-offset-2 ${sent ? 'text-white' : ''}`}
+        style={sent ? undefined : { color: 'var(--color-primary)' }}
+      >
+        {short}
+      </a>
+    );
+  });
+}
 
 const timeFormat: Intl.DateTimeFormatOptions = {
   hour: '2-digit',
@@ -23,6 +50,7 @@ export function MessageBubble({
   /** Abort the in-flight outgoing file (only meaningful while sending). */
   onCancel?: () => void;
 }) {
+  const { language } = useLanguage();
   const sent = message.direction === 'sent';
   const file = message.file;
   const transferring = file?.status === 'transferring';
@@ -121,7 +149,7 @@ export function MessageBubble({
           </div>
         ) : (
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-            {message.text}
+            {renderMessageText(message.text, language, sent)}
           </p>
         )}
         <p
