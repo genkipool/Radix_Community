@@ -51,16 +51,6 @@ export default function ChatTool({}: ConsoleToolProps) {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
-      <p
-        className="text-xs leading-relaxed"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
-        <strong style={{ color: 'var(--color-text-main)' }}>
-          {t.disclaimer.title}.
-        </strong>{' '}
-        {t.disclaimer.body}
-      </p>
-
       <WalletConnectGate
         title={t.connect.title}
         subtitle={t.connect.subtitle}

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { ShieldCheck, Wallet } from 'lucide-react';
+import { FileDown, ShieldCheck, Wallet } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { useReceiveFileChannel } from '@/features/sign/hooks/useFileChannel';
@@ -131,6 +132,42 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   const cleanOnboarding = effectiveTab === 'sign' && needsOnboarding;
 
   if (!t) return null;
+
+  // While a document is arriving over the direct channel, the ONLY thing on
+  // screen is the receive box (like the cipher tool): no tabs, no dropzone, no
+  // signing options competing for attention. Once it finishes the file is
+  // loaded and the full flow appears so the signature can be added.
+  const receiving =
+    receive.phase === 'connecting' || receive.phase === 'receiving';
+  if (receiving) {
+    return (
+      <div className="mx-auto w-full max-w-4xl">
+        <ToolSection title={t.onchain.recvTitle} hint={t.onchain.recvHint}>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-primary)]">
+              <FileDown className="size-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p
+                className="truncate text-sm font-bold"
+                style={{ color: 'var(--color-text-main)' }}
+              >
+                {t.onchain.recvTitle}
+              </p>
+            </div>
+          </div>
+          <ProgressRow
+            label={
+              receive.phase === 'connecting'
+                ? t.onchain.recvConnecting
+                : t.onchain.recvReceiving
+            }
+            fraction={receive.phase === 'receiving' ? receive.progress : undefined}
+          />
+        </ToolSection>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">

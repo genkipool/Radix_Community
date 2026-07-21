@@ -27,6 +27,20 @@ export function ChatSessionView({
   const isGuest = roomId != null;
   useLeaveWarning(session.phase === 'secure' || session.phase === 'waiting');
 
+  // Shown only BEFORE the room opens: once the secure chat is live the screen
+  // stays clean (just the room, whose header already reads "Chat seguro con…").
+  const disclaimer = (
+    <p
+      className="text-xs leading-relaxed"
+      style={{ color: 'var(--color-text-muted)' }}
+    >
+      <strong style={{ color: 'var(--color-text-main)' }}>
+        {t.disclaimer.title}.
+      </strong>{' '}
+      {t.disclaimer.body}
+    </p>
+  );
+
   if ((session.phase === 'secure' || session.phase === 'closed') && session.peerIdentity) {
     return (
       <div className="space-y-4">
@@ -60,6 +74,7 @@ export function ChatSessionView({
   if (session.phase === 'idle') {
     return (
       <div className="space-y-4">
+        {disclaimer}
         <div className="space-y-1">
           <h3 className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
             {isGuest ? t.join.title : t.start.title}
@@ -81,10 +96,12 @@ export function ChatSessionView({
   }
 
   return (
-    <ToolSection
-      title={isGuest ? t.join.title : t.start.title}
-      hint={isGuest ? t.join.hint : t.start.hint}
-    >
+    <div className="space-y-4">
+      {disclaimer}
+      <ToolSection
+        title={isGuest ? t.join.title : t.start.title}
+        hint={isGuest ? t.join.hint : t.start.hint}
+      >
       {session.phase === 'signing' && <ProgressRow label={t.status.signing} />}
       {session.phase === 'creating' && <ProgressRow label={t.status.creating} />}
       {session.phase === 'connecting' && <ProgressRow label={t.status.connecting} />}
@@ -136,6 +153,7 @@ export function ChatSessionView({
           </button>
         </div>
       )}
-    </ToolSection>
+      </ToolSection>
+    </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Copy, Radio, RefreshCw } from 'lucide-react';
+import { Ban, Copy, Radio, RefreshCw } from 'lucide-react';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { QrCode } from '@/features/p2p/components/QrCode';
 import { randomRoomId } from '@/features/p2p/lib/session-url';
 import { useSendFileChannel } from '../hooks/useFileChannel';
@@ -126,47 +127,72 @@ export function ShareLinkSection({
 
       {bytes && (
         <div
-          className="rounded-xl border p-3 space-y-1.5"
+          className="rounded-xl border p-3.5 space-y-2.5"
           style={{
             background: 'var(--color-surface)',
-            borderColor: 'var(--color-card-border)',
+            borderColor:
+              sendEnabled && channel.phase === 'sending'
+                ? 'var(--color-primary)'
+                : 'var(--color-card-border)',
           }}
         >
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={sendEnabled}
-              onChange={(e) => setSendEnabled(e.target.checked)}
-              className="size-3.5 accent-[var(--color-primary)]"
-            />
-            <span
-              className="flex items-center gap-1.5 text-xs font-bold"
-              style={{ color: 'var(--color-text-main)' }}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <span
+                className="flex items-center gap-1.5 text-xs font-bold"
+                style={{ color: 'var(--color-text-main)' }}
+              >
+                <Radio className="size-3.5 shrink-0" />
+                {t.onchain.sendToggle}
+              </span>
+              <p
+                className="text-[11px] leading-relaxed"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                {t.onchain.sendToggleHint}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSendEnabled((on) => !on)}
+              className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold transition-opacity hover:opacity-80"
+              style={{ color: 'var(--color-text-muted)' }}
             >
-              <Radio className="size-3.5" />
-              {t.onchain.sendToggle}
-            </span>
-          </label>
-          <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-            {t.onchain.sendToggleHint}
-          </p>
-          {sendEnabled && channel.phase !== 'idle' && (
-            <p
-              className="flex items-center gap-1.5 text-[11px] font-semibold"
-              style={{
-                color:
-                  channel.phase === 'error'
-                    ? 'var(--color-danger, #dc2626)'
-                    : 'var(--color-text-muted)',
-              }}
-            >
-              {channel.phase !== 'error' && (
-                <RefreshCw
-                  className={`size-3 shrink-0 ${channel.phase === 'sending' ? 'animate-spin' : ''}`}
-                />
+              {sendEnabled ? (
+                <>
+                  <Ban className="size-3.5" />
+                  {t.onchain.sendCancel}
+                </>
+              ) : (
+                <>
+                  <Radio className="size-3.5" />
+                  {t.onchain.sendResume}
+                </>
               )}
-              {statusText}
-            </p>
+            </button>
+          </div>
+
+          {sendEnabled && channel.phase === 'sending' ? (
+            // Live delivery in flight: label + gradient bar + percentage.
+            <ProgressRow label={t.onchain.sendSending} fraction={channel.progress} />
+          ) : (
+            sendEnabled &&
+            channel.phase !== 'idle' && (
+              <p
+                className="flex items-center gap-1.5 text-[11px] font-semibold"
+                style={{
+                  color:
+                    channel.phase === 'error'
+                      ? 'var(--color-danger, #dc2626)'
+                      : 'var(--color-text-muted)',
+                }}
+              >
+                {channel.phase !== 'error' && (
+                  <RefreshCw className="size-3 shrink-0" />
+                )}
+                {statusText}
+              </p>
+            )
           )}
         </div>
       )}

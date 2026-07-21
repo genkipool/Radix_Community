@@ -37,15 +37,18 @@ interface MetadataItem {
   key: string;
   value?: { typed?: { value?: string; type?: string } };
 }
+interface NonFungibleResourceItem {
+  resource_address: string;
+  vaults?: { items?: Array<{ items?: string[] }> };
+}
 interface EntityDetailsItem {
   address: string;
   metadata?: { items?: MetadataItem[] };
   details?: { total_supply?: string };
   non_fungible_resources?: {
-    items?: Array<{
-      resource_address: string;
-      vaults?: { items?: Array<{ items?: string[] }> };
-    }>;
+    items?: NonFungibleResourceItem[];
+    /** Set when the account holds more NFT resources than one page returns. */
+    next_cursor?: string;
   };
 }
 interface EntityDetailsResponse {
@@ -74,6 +77,41 @@ async function entityDetails(
   return data.items ?? [];
 }
 
+/**
+ * Every non-fungible resource the account holds, following pagination. The
+ * first page rides on the entity-details response; the rest come from the
+ * non-fungibles page endpoint. Without this an account holding many NFT
+ * resources can push its seal or signing collection past the first page, so
+ * discovery misses it and wrongly re-shows the "create collection" onboarding
+ * (typically when a shared link switches network and the localStorage cache no
+ * longer short-circuits the scan).
+ */
+async function allNonFungibleResources(
+  net: Network,
+  account: string,
+  optIns?: Record<string, unknown>,
+): Promise<NonFungibleResourceItem[]> {
+  const [item] = await entityDetails(net, [account], optIns);
+  const first = item?.non_fungible_resources;
+  const items: NonFungibleResourceItem[] = [...(first?.items ?? [])];
+  let cursor = first?.next_cursor;
+  while (cursor) {
+    const page = await gatewayPost<{
+      items?: NonFungibleResourceItem[];
+      next_cursor?: string;
+    }>(net, '/state/entity/page/non-fungibles/', {
+      address: account,
+      aggregation_level: optIns ? 'Vault' : 'Global',
+      cursor,
+      ...(optIns ? { opt_ins: optIns } : {}),
+    }).catch(() => null);
+    if (!page) break;
+    items.push(...(page.items ?? []));
+    cursor = page.next_cursor;
+  }
+  return items;
+}
+
 /* ─── Seal ────────────────────────────────────────────────────────────────── */
 
 /** The account's own seal NFT, or null (not minted yet / brand undeployed). */
@@ -83,13 +121,11 @@ export async function findUserSeal(
 ): Promise<UserSeal | null> {
   const sealResource = radixSealAddress(networkId);
   if (!sealResource) return null;
-  const [item] = await entityDetails(network(networkId), [account], {
+  const items = await allNonFungibleResources(network(networkId), account, {
     non_fungible_include_nfids: true,
   });
   const vaults =
-    item?.non_fungible_resources?.items?.find(
-      (r) => r.resource_address === sealResource,
-    )?.vaults?.items ?? [];
+    items.find((r) => r.resource_address === sealResource)?.vaults?.items ?? [];
   const localId = vaults.flatMap((v) => v.items ?? [])[0];
   return localId
     ? { globalId: `${sealResource}:${localId}`, localId }
@@ -175,8 +211,7 @@ export async function findSignCollection(
     forgetSignCollection(networkId, account);
   }
 
-  const [accountItem] = await entityDetails(net, [account]);
-  const held = (accountItem?.non_fungible_resources?.items ?? []).map(
+  const held = (await allNonFungibleResources(net, account)).map(
     (r) => r.resource_address,
   );
   for (let i = 0; i < held.length; i += 20) {
