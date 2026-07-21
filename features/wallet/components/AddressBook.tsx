@@ -111,7 +111,7 @@ function EntryRow({
     if (isEditing) {
         const detected = addressCategory(formAddress);
         return (
-            <div className="-mx-2 rounded-lg border-b border-[var(--color-border)]/30 bg-[var(--color-surface)]/10 px-2 py-3">
+            <div className="-mx-2 border-b border-[var(--color-card-border)] bg-[var(--color-surface)]/10 px-2 py-3">
                 <div className="space-y-3">
                     <input
                         type="text"
@@ -164,7 +164,7 @@ function EntryRow({
     }
 
     return (
-        <div className="group -mx-2 flex items-center justify-between rounded-lg border-b border-[var(--color-border)]/30 px-2 py-3 transition-colors hover:bg-[var(--color-surface)]/20">
+        <div className="group -mx-2 flex items-center justify-between border-b border-[var(--color-card-border)] px-2 py-3 transition-colors hover:bg-[var(--color-surface)]/20">
             <div className="min-w-0 flex-1 pr-3">
                 <div className="flex items-center gap-2">
                     <h4 className="truncate text-[14px] font-semibold text-[var(--color-text-main)]">{entry.name}</h4>

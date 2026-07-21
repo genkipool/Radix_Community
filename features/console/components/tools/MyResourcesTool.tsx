@@ -46,7 +46,7 @@ import { extractRuleAddress } from '@/features/dashboard/utils/resourceUtils';
 import { ManifestCode } from '../shared/ManifestCode';
 import { OptionButtons } from '../shared/OptionButtons';
 import { AuthRoleRow } from '../shared/AuthRoleRow';
-import { TextField, SearchField } from '../shared/fields';
+import { TextField, SearchField, AddressField } from '../shared/fields';
 import { SendToWalletButton } from '../shared/SendToWalletButton';
 import { resolveTargetVault, targetKind } from '../../lib/vault-resolve';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
@@ -1091,13 +1091,14 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
                 {(activeAction === 'freeze' || activeAction === 'recall') && (
                   <div className="flex flex-col gap-1.5">
-                    <TextField
+                    <AddressField
                       label={labels.fields.vault}
                       hint={labels.fields.vaultHint}
                       value={fields.vault ?? ''}
                       onChange={(value) => setField('vault', value)}
                       placeholder={labels.fields.vaultPlaceholder}
                       disabled={isSending || inputsDisabled}
+                      categories={['account']}
                     />
                     {targetInput && targetKind(targetInput) === 'unknown' && (
                       <span className="text-[11px] px-1" style={{ color: 'var(--color-danger, #dc2626)' }}>

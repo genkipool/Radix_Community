@@ -192,6 +192,7 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
               addLabel={t.ledger.addReceiver}
               placeholder={t.ledger.receiverPlaceholder}
               disabled={busy}
+              categories={['account']}
             />
             <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
               {t.ledger.receiversHint}

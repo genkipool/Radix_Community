@@ -2,6 +2,8 @@
 
 import { Plus, X } from 'lucide-react';
 import { FieldShell } from './fields';
+import { AddressPickerButton } from './AddressPickerButton';
+import type { AddressCategory } from '@/features/wallet/hooks/useAddressBook';
 
 interface StringListFieldProps {
   label: string;
@@ -11,6 +13,8 @@ interface StringListFieldProps {
   addLabel: string;
   disabled?: boolean;
   error?: string;
+  /** When set, each row gets a "+" address picker scoped to these families. */
+  categories?: AddressCategory[];
 }
 
 /** Editable list of string values (claimed entities, websites, dApp definitions). */
@@ -22,6 +26,7 @@ export function StringListField({
   addLabel,
   disabled,
   error,
+  categories,
 }: StringListFieldProps) {
   return (
     <FieldShell label={label} error={error}>
@@ -41,6 +46,13 @@ export function StringListField({
                 color: 'var(--color-text-main)',
               }}
             />
+            {categories && (
+              <AddressPickerButton
+                categories={categories}
+                disabled={disabled}
+                onSelect={(addr) => onChange(values.map((v, i) => (i === index ? addr : v)))}
+              />
+            )}
             <button
               type="button"
               disabled={disabled}

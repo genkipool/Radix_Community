@@ -45,9 +45,9 @@ export function ChatRoom({
   const [txOpen, setTxOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Best-effort display name for the peer: whatever label the local user has
-  // for that address (their address book, or one of their own accounts). Only
-  // the ROLA-proven account address is guaranteed; the name is a convenience.
+  // Display name for the peer: the name saved for that address in the agenda
+  // first, then its label if it is one of the connected wallet's own accounts;
+  // nothing when neither exists.
   const peerName =
     addressBook.find((e) => e.address === peer.account)?.name ??
     accounts.find((a) => a.address === peer.account)?.label ??
@@ -131,7 +131,7 @@ export function ChatRoom({
       }}
     >
       <header
-        className="flex shrink-0 items-center justify-between gap-3 border-b px-5 py-4"
+        className="flex shrink-0 items-center justify-between gap-4 border-b px-5 py-4"
         style={{ borderColor: 'var(--color-card-border)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -142,16 +142,16 @@ export function ChatRoom({
             <p className="text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
               {t.room.securedWith}
             </p>
+            {peerName && (
+              <p
+                className="truncate text-sm font-bold"
+                style={{ color: 'var(--color-text-main)' }}
+                title={peerName}
+              >
+                {peerName}
+              </p>
+            )}
             <div className="flex min-w-0 items-center gap-1.5">
-              {peerName && (
-                <span
-                  className="truncate text-sm font-bold"
-                  style={{ color: 'var(--color-text-main)' }}
-                  title={peerName}
-                >
-                  {peerName}
-                </span>
-              )}
               <span
                 className="truncate font-mono text-sm font-bold"
                 style={{
@@ -172,28 +172,26 @@ export function ChatRoom({
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {!closed && (
-            <button
-              type="button"
-              onClick={() => setTxOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
-              style={{ color: 'var(--color-primary)' }}
-            >
-              <Send className="size-3.5" />
-              <span className="hidden sm:inline">{t.room.sendTx}</span>
-            </button>
-          )}
+        {!closed && (
           <button
             type="button"
-            onClick={onLeave}
-            className="flex items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
-            style={{ color: 'var(--color-text-muted)' }}
+            onClick={() => setTxOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+            style={{ color: 'var(--color-primary)' }}
           >
-            <LogOut className="size-3.5" />
-            <span className="hidden sm:inline">{t.room.leave}</span>
+            <Send className="size-3.5" />
+            <span className="hidden sm:inline">{t.room.sendTx}</span>
           </button>
-        </div>
+        )}
+        <button
+          type="button"
+          onClick={onLeave}
+          className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          <LogOut className="size-3.5" />
+          <span className="hidden sm:inline">{t.room.leave}</span>
+        </button>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">

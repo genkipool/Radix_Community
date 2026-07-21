@@ -23,7 +23,7 @@ import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
 import { OptionButtons } from '../shared/OptionButtons';
-import { TextField, TextAreaField } from '../shared/fields';
+import { TextField, TextAreaField, AddressField } from '../shared/fields';
 import { ManifestCode } from '../shared/ManifestCode';
 import { SimulateResultCard } from '../shared/SimulatePanel';
 import { TxResultBanner } from '../shared/TxResultBanner';
@@ -271,11 +271,12 @@ export default function ComponentPanelTool({ t }: ConsoleToolProps) {
       <ToolSection title={labels.searchLabel}>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <TextField
+            <AddressField
               value={addressInput}
               onChange={setAddressInput}
               placeholder={labels.searchPlaceholder}
               error={isError ? labels.loadError : undefined}
+              categories={['component']}
             />
           </div>
           <button
