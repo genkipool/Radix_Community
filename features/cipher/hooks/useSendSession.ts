@@ -52,6 +52,9 @@ export function useSendSession() {
   const headB64Ref = useRef<string | null>(null);
   const roomIdRef = useRef<string | null>(null);
   const phaseRef = useRef<SendPhase>('idle');
+  // Resolved when the receiver acknowledges (`receipt`) that every chunk landed
+  // in its store — the truthful "transfer complete" signal.
+  const receiptRef = useRef<(() => void) | null>(null);
 
   const moveTo = (next: SendPhase) => {
     phaseRef.current = next;
@@ -109,6 +112,9 @@ export function useSendSession() {
         return;
       }
       setRequest({ requesterName: message.requesterName });
+    } else if (message.t === 'receipt') {
+      receiptRef.current?.();
+      receiptRef.current = null;
     } else if (message.t === 'bye') {
       handleClose();
     }
@@ -147,6 +153,11 @@ export function useSendSession() {
       headB64Ref.current = bytesToBase64(headBytes);
 
       moveTo('transferring');
+      // Arm the receipt wait BEFORE the last frames go out, so a fast receiver
+      // can't ack before we are listening.
+      const receipt = new Promise<void>((resolve) => {
+        receiptRef.current = resolve;
+      });
       await sendEncryptedFile(
         peer,
         headBytes,
@@ -154,7 +165,15 @@ export function useSendSession() {
         (index) => getChunk(result.fileId, index),
         setProgress,
       );
-      moveTo('transferred');
+      // The bytes are only queued until the buffer drains; wait for that, then
+      // for the receiver's receipt, before claiming the transfer is complete.
+      await peer.flush();
+      await Promise.race([
+        receipt,
+        new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
+      ]);
+      // A disconnect during the wait already moved us to 'error'; don't override.
+      if (phaseRef.current === 'transferring') moveTo('transferred');
     } catch (e) {
       setError(toCipherErrorCode(e));
       moveTo('error');

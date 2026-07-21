@@ -43,6 +43,8 @@
       "attach": "Send a file",
       "download": "Download",
       "fileFailed": "The transfer did not complete.",
+      "fileCanceled": "Send canceled.",
+      "cancelSend": "Cancel send",
       "leave": "Leave chat",
       "empty": "The room is secure. Say hello!",
       "closedBanner": "The other side left the conversation. Messages stay on this page until you close it.",

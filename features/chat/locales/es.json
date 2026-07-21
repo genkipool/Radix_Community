@@ -43,6 +43,8 @@
       "attach": "Enviar un archivo",
       "download": "Descargar",
       "fileFailed": "La transferencia no se completó.",
+      "fileCanceled": "Envío cancelado.",
+      "cancelSend": "Cancelar envío",
       "leave": "Salir del chat",
       "empty": "La sala es segura. ¡Saluda!",
       "closedBanner": "El otro extremo salió de la conversación. Los mensajes permanecen en esta página hasta que la cierres.",

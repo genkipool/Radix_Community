@@ -39,6 +39,8 @@ export type ChatWireMessage =
   /** File announcement: encrypted `ChatFileMeta`, then the encrypted binary
    *  frames follow on the channel until `size` plaintext bytes arrived. */
   | { t: 'file'; seq: number; ivB64: string; ctB64: string }
+  /** The sender aborted the in-flight file: the receiver drops its partial. */
+  | { t: 'file-cancel'; seq: number }
   | { t: 'bye' };
 
 /** Encrypted message body (JSON before AES-GCM). */
@@ -62,7 +64,7 @@ export interface ChatFileState {
   size: number;
   /** 0..1 transferred. */
   progress: number;
-  status: 'transferring' | 'done' | 'error';
+  status: 'transferring' | 'done' | 'error' | 'canceled';
   /** Object URL for download, set once the file is complete. */
   url?: string;
 }

@@ -111,6 +111,8 @@ export function useChatSession() {
   const recvSeqRef = useRef(0);
   const handshakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendingFileRef = useRef(false);
+  // Flipped by cancelSendFile(); the outgoing loop checks it between frames.
+  const cancelSendRef = useRef(false);
   const incomingFileRef = useRef<IncomingFile | null>(null);
   const objectUrlsRef = useRef<string[]>([]);
   // Incoming wire events run through ONE promise chain: the async handlers
@@ -416,6 +418,16 @@ export function useChatSession() {
     }
   }
 
+  /** The peer aborted the file it was sending: drop the partial local copy and
+   *  mark the entry canceled (the log stays; only this transfer ends). */
+  function handleFileCancel(): void {
+    const incoming = incomingFileRef.current;
+    if (!incoming) return;
+    incomingFileRef.current = null;
+    void deleteFile(incoming.fileId).catch(() => undefined);
+    updateFile(incoming.messageId, { status: 'canceled' });
+  }
+
   /** Serialize incoming wire work; failures close the room via `fail`. */
   function enqueueWire(task: () => void | Promise<void>): void {
     wireQueueRef.current = wireQueueRef.current
@@ -436,6 +448,8 @@ export function useChatSession() {
           await handleEncryptedMessage(message);
         } else if (message.t === 'file') {
           await handleFileAnnouncement(message);
+        } else if (message.t === 'file-cancel') {
+          handleFileCancel();
         } else if (message.t === 'bye') {
           teardown();
           moveTo('closed');
@@ -549,6 +563,7 @@ export function useChatSession() {
     if (!peer || !key || phaseRef.current !== 'secure') return;
     if (sendingFileRef.current) return;
     sendingFileRef.current = true;
+    cancelSendRef.current = false;
     setSendingFile(true);
     const seq = sendSeqRef.current;
     const messageId = `s-${seq}`;
@@ -585,6 +600,12 @@ export function useChatSession() {
       let index = 0;
       let lastPct = 0;
       while (sent < file.size) {
+        if (cancelSendRef.current) {
+          // Tell the peer to drop its partial, mark ours canceled, and stop.
+          peer.sendMessage({ t: 'file-cancel', seq });
+          updateFile(messageId, { status: 'canceled' });
+          return;
+        }
         const slice = file.slice(sent, sent + FILE_FRAME_BYTES);
         const frame = await encryptFileChunk(
           key,
@@ -596,12 +617,14 @@ export function useChatSession() {
         await peer.sendBinary(frame.buffer as ArrayBuffer);
         sent += slice.size;
         index += 1;
+        // Cap below 100% until the buffer flushes, so the bar is truthful.
         const pct = Math.floor((sent / file.size) * 100);
         if (pct > lastPct) {
           lastPct = pct;
-          updateFile(messageId, { progress: sent / file.size });
+          updateFile(messageId, { progress: Math.min(sent / file.size, 0.99) });
         }
       }
+      await peer.flush();
       updateFile(messageId, { progress: 1, status: 'done' });
     } catch (e) {
       updateFile(messageId, { status: 'error' });
@@ -612,6 +635,12 @@ export function useChatSession() {
       sendingFileRef.current = false;
       setSendingFile(false);
     }
+  }
+
+  /** Request cancellation of the file currently being sent (if any). The send
+   *  loop notices between frames, tells the peer, and stops. */
+  function cancelSendFile(): void {
+    if (sendingFileRef.current) cancelSendRef.current = true;
   }
 
   /** Politely end the conversation. */
@@ -632,6 +661,7 @@ export function useChatSession() {
     join,
     send,
     sendFile,
+    cancelSendFile,
     leave,
   };
 }
