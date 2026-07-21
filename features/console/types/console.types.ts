@@ -16,6 +16,7 @@ export const CONSOLE_TOOL_SLUGS = [
   'convert-olympia-address',
   'sbor-decoder',
   'address-utils',
+  'address-book',
   'faucet',
   'wallet-playground',
   'claim-package-royalties',

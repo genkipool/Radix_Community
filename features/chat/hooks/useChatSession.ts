@@ -490,7 +490,15 @@ export function useChatSession() {
       const myHandshake = await prepareIdentity('host', roomId);
 
       moveTo('creating');
-      setShareUrl(buildShareUrl({ r: roomId }));
+      // Carry the network so whoever opens the link lands on the same one (the
+      // handshake commits to networkId, so a mismatched guest can't verify).
+      setShareUrl(
+        buildShareUrl(
+          activeNetworkId != null
+            ? { r: roomId, n: String(activeNetworkId) }
+            : { r: roomId },
+        ),
+      );
       const signaling = await createSignaling(roomId);
       signalingRef.current = signaling;
 

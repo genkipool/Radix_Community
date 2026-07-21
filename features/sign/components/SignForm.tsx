@@ -817,6 +817,7 @@ export function SignForm({
                   addLabel={t.options.addSigner}
                   placeholder={t.options.signerPlaceholder}
                   disabled={busy}
+                  categories={['account']}
                 />
                 <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                   {onchainMode

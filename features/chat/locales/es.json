@@ -36,8 +36,14 @@
       "cancel": "Cancelar"
     },
     "room": {
-      "securedWith": "Chat seguro con",
+      "securedWith": "Chat seguro con verificado por wallet",
       "verified": "verificado por wallet",
+      "sendTx": "Enviar transacción",
+      "txTitle": "Enviar transacción",
+      "txFrom": "Desde la cuenta",
+      "txSentLabel": "Transacción enviada",
+      "txFeeLabel": "Comisión",
+      "close": "Cerrar",
       "placeholder": "Escribe un mensaje… (Enter para enviar)",
       "send": "Enviar",
       "attach": "Enviar un archivo",

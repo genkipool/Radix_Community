@@ -36,8 +36,14 @@
       "cancel": "Cancel"
     },
     "room": {
-      "securedWith": "Secure chat with",
+      "securedWith": "Secure chat with wallet-verified",
       "verified": "wallet-verified",
+      "sendTx": "Send transaction",
+      "txTitle": "Send transaction",
+      "txFrom": "From account",
+      "txSentLabel": "Transaction sent",
+      "txFeeLabel": "Fee",
+      "close": "Close",
       "placeholder": "Write a message… (Enter to send)",
       "send": "Send",
       "attach": "Send a file",

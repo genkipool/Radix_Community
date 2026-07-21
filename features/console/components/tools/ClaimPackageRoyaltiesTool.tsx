@@ -11,7 +11,7 @@ import { TxResultBanner } from '../shared/TxResultBanner';
 import { SimulateButton, SimulateResultCard } from '../shared/SimulatePanel';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { useAccountResources } from '../../hooks/useAccountResources';
-import { TextField } from '../shared/fields';
+import { AddressField } from '../shared/fields';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
 
 export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
@@ -45,13 +45,14 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
 
   return (
     <div className="space-y-5">
-      <TextField
+      <AddressField
         label={labels.entityAddress}
         placeholder={labels.entityAddressPlaceholder}
         value={entityAddress}
         onChange={setEntityAddress}
         disabled={isSending}
         hint={labels.entityAddressHint}
+        categories={['package', 'component']}
       />
       
       <div className="pt-4">

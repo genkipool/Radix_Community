@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X, Search, Check } from 'lucide-react';
 import { m, AnimatePresence } from "motion/react";
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -18,6 +19,15 @@ import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheIn
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
 import { extractRuleAddress } from '@/features/dashboard/utils/resourceUtils';
 
+/** Summary of a committed transfer, for consumers that want to announce it. */
+export interface SentTransactionSummary {
+    hash: string;
+    networkId: number;
+    /** XRD fee paid, as a decimal string (when the gateway reported it). */
+    feePaid?: string;
+    transfers: { amount: string; symbol: string }[];
+}
+
 interface TransactionBuilderProps {
     accountAddress: string;
     t?: Record<string, unknown>;
@@ -25,6 +35,14 @@ interface TransactionBuilderProps {
     /** Reports the manifest of the currently configured transfer ('' while incomplete) */
     onManifestChange?: (manifest: string) => void;
     actions?: React.ReactNode;
+    /** Pre-fills the destination address (e.g. the chat peer). */
+    initialDestinationAddress?: string;
+    /** Skip the shared module-level state cache (so an embedded instance, like
+     *  the chat modal, neither reads a stale destination nor pollutes the
+     *  console tool's cached one). */
+    disableCache?: boolean;
+    /** Fires once the transaction commits, with a summary of what was sent. */
+    onTransactionSent?: (summary: SentTransactionSummary) => void;
 }
 
 type GatewayRuleInfo = {
@@ -141,7 +159,7 @@ function buildTransferGroups(assets: AssetItem[], destinationAddress: string): T
     return groups;
 }
 
-export function TransactionBuilder({ accountAddress, t, onManifestChange, actions }: TransactionBuilderProps) {
+export function TransactionBuilder({ accountAddress, t, onManifestChange, actions, initialDestinationAddress, disableCache, onTransactionSent }: TransactionBuilderProps) {
     const navT = (t?.nav || {}) as Record<string, string>;
     const { activeNetworkId, activeNetwork, accounts } = useRadixWallet();
     const { entries: addressBookEntries } = useAddressBook();
@@ -151,9 +169,11 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     const { data: validatorsData } = useValidatorsQuery(network);
 
     const cacheKey = `${network}-${accountAddress}`;
-    const cachedState = transactionStateCache.get(cacheKey);
+    const cachedState = disableCache ? undefined : transactionStateCache.get(cacheKey);
 
-    const [destinationAddress, setDestinationAddress] = useState(cachedState?.destinationAddress ?? '');
+    const [destinationAddress, setDestinationAddress] = useState(
+        initialDestinationAddress ?? cachedState?.destinationAddress ?? '',
+    );
     const [addressValidity, setAddressValidity] = useState<Record<string, boolean>>({});
 
     const [assets, setAssets] = useState<AssetItem[]>(cachedState?.assets ?? [
@@ -179,8 +199,9 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     ];
 
     useEffect(() => {
+        if (disableCache) return;
         transactionStateCache.set(cacheKey, { destinationAddress, assets });
-    }, [cacheKey, destinationAddress, assets]);
+    }, [cacheKey, destinationAddress, assets, disableCache]);
 
 
     const [popupOpen, setPopupOpen] = useState(false);
@@ -216,21 +237,46 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
     }, [assets]);
 
     const containerRef = useRef<HTMLDivElement>(null);
+    // The popup renders in a portal with fixed positioning anchored to whatever
+    // "+" was clicked, so it is never clipped or hidden by a scrolling/overflow
+    // ancestor (e.g. the wallet profile modal header). anchorElRef lets us
+    // re-measure on scroll/resize so it stays glued to its trigger.
+    const popupRef = useRef<HTMLDivElement>(null);
+    const anchorElRef = useRef<HTMLElement | null>(null);
+    const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
     const [popupDirection, setPopupDirection] = useState<'down' | 'up'>('down');
 
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            const node = e.target as Node;
+            const insideBuilder = containerRef.current?.contains(node);
+            // The popup lives in a portal (outside containerRef), so clicks in it
+            // must not count as "outside".
+            const insidePopup = popupRef.current?.contains(node);
+            if (!insideBuilder && !insidePopup) {
                 setPopupOpen(false);
                 setPopupDestTarget(null);
-
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Keep the portal popup anchored to its trigger as the page/modal scrolls.
+    useEffect(() => {
+        if (!popupOpen) return;
+        const reposition = () => {
+            if (anchorElRef.current) setAnchorRect(anchorElRef.current.getBoundingClientRect());
+        };
+        window.addEventListener('resize', reposition);
+        window.addEventListener('scroll', reposition, true);
+        return () => {
+            window.removeEventListener('resize', reposition);
+            window.removeEventListener('scroll', reposition, true);
+        };
+    }, [popupOpen]);
 
 
 
@@ -758,6 +804,14 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 return;
             }
 
+            // Human-readable list of what leaves the account, for onTransactionSent.
+            const symbolByResource = new Map(assets.map(a => [a.resourceAddress, a.symbol] as const));
+            const sentTransfers = groups.flatMap(g => g.items.map(it =>
+                it.type === 'fungible'
+                    ? { amount: String(it.amount), symbol: symbolByResource.get(it.resourceAddress) || 'XRD' }
+                    : { amount: String(it.nonFungibleLocalIds?.length ?? 1), symbol: symbolByResource.get(it.resourceAddress) || 'NFT' }
+            ));
+
             const baseManifest = buildMultiTransferManifest(accountAddress, groups);
             const manifest = buildProofManifest() + baseManifest;
 
@@ -802,6 +856,13 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                     try {
                         const details = await apiFetchTransactionDetails(hash, netName);
                         if (details && (details.transaction_status === 'CommittedSuccess' || details.transaction_status === 'Committed')) {
+                            // Announce the committed transfer (txid + amounts + fee).
+                            onTransactionSent?.({
+                                hash,
+                                networkId: activeNetworkId || RadixNetworkId.Mainnet,
+                                feePaid: (details as { fee_paid?: string }).fee_paid,
+                                transfers: sentTransfers,
+                            });
                             // Wait 2 seconds for Gateway to sync new ledger state before refetching
                             await new Promise(resolve => setTimeout(resolve, 2000));
                             for (const acc of accounts || []) {
@@ -861,8 +922,10 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
         setAddressCount(0);
 
         const el = triggerElement;
+        anchorElRef.current = el ?? null;
         if (el) {
             const rect = el.getBoundingClientRect();
+            setAnchorRect(rect);
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
             if (spaceBelow < 400 && spaceAbove > spaceBelow) {
@@ -870,6 +933,8 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             } else {
                 setPopupDirection('down');
             }
+        } else {
+            setAnchorRect(null);
         }
 
         // For global address popup: initialize selection from already-added assets
@@ -1552,6 +1617,27 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
         return <>{itemsWithState.map(i => i.jsx)}</>;
     };
+    // Fixed viewport position for the portal popup: anchored under its trigger
+    // when there is room, above it otherwise, always clamped inside the viewport
+    // with a max-height so nothing spills off-screen or behind the modal header.
+    const computePopupStyle = (): React.CSSProperties => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const width = Math.min(380, vw - 24);
+        // Above the wallet profile side panel (z-[9001]) so it is never covered.
+        const zIndex = 10000;
+        if (!anchorRect) {
+            return { position: 'fixed', left: Math.max(12, (vw - width) / 2), top: 72, width, maxHeight: vh - 144, zIndex };
+        }
+        const left = Math.min(Math.max(12, anchorRect.right - width), Math.max(12, vw - width - 12));
+        const spaceBelow = vh - anchorRect.bottom;
+        const spaceAbove = anchorRect.top;
+        const openBelow = spaceBelow >= 280 || spaceBelow >= spaceAbove;
+        return openBelow
+            ? { position: 'fixed', left, top: anchorRect.bottom + 8, width, maxHeight: Math.max(220, vh - anchorRect.bottom - 16), zIndex }
+            : { position: 'fixed', left, bottom: vh - anchorRect.top + 8, width, maxHeight: Math.max(220, anchorRect.top - 16), zIndex };
+    };
+
     const getSelectionPopup = (context: { assetId?: string | null, destTarget?: string | null }) => {
         const targetDest = context.destTarget ?? null;
         const targetAsset = context.assetId ?? null;
@@ -1559,18 +1645,20 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
             popupDestTarget === targetDest &&
             editingAssetId === targetAsset;
 
-        return (
+        const popup = (
             <AnimatePresence>
                 {(isMatch && popupOpen) && (
                     <m.div
+                        ref={popupRef}
                         initial={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: popupDirection === 'up' ? -8 : 8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute left-0 right-0 z-50 ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden`}
+                        style={computePopupStyle()}
+                        className="flex flex-col rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl shadow-2xl overflow-hidden"
                     >
                         {/* Tabs and Close */}
-                        <div className="px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                        <div className="shrink-0 px-3 pt-3 flex items-center justify-between border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1">
                                 {tabs.map(tab => (
                                     <div
@@ -1609,7 +1697,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                         </div>
 
                         {/* Search */}
-                        <div className="p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                        <div className="shrink-0 p-3 border-b border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-text-muted)]" />
                                 <input
@@ -1631,7 +1719,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                         </div>
 
                         {/* Content */}
-                        <div className="p-2 max-h-56 overflow-y-auto custom-scrollbar">
+                        <div className="p-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                             {isLoadingAssets ? (
                                 <div className="flex justify-center items-center h-20 text-[var(--color-text-muted)] text-xs">Cargando...</div>
                             ) : (
@@ -1646,7 +1734,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
 
                         {/* Confirm button */}
                         {isAddressMode && (
-                            <div className="p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
+                            <div className="shrink-0 p-3 border-t border-[var(--color-card-border)] bg-[var(--color-bg)]/50">
                                 <button
                                     type="button"
                                     onClick={handleConfirmSelection}
@@ -1660,6 +1748,12 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                 )}
             </AnimatePresence>
         );
+
+        // Portal to <body> so no overflow/stacking context of an ancestor (the
+        // wallet modal's scrollable, header-topped panel) can clip or cover it.
+        return typeof document !== 'undefined'
+            ? createPortal(popup, document.body)
+            : popup;
     };
 
     return (
@@ -1841,6 +1935,9 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                         type="button"
                                         aria-label="Seleccionar dirección"
                                         disabled={isWalletEmpty}
+                                        // e.currentTarget is a DOM node captured in an event handler, not a
+                                        // render-time ref read; the compiler rule is a false positive here.
+                                        // eslint-disable-next-line react-hooks/refs
                                         onClick={(e) => handleOpenPopup('address', undefined, groupId, e.currentTarget)}
                                         className="size-7 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Vincular activos"

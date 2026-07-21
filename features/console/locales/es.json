@@ -80,15 +80,15 @@
       },
       "chat": {
         "title": "Chat Seguro",
-        "description": "Chat cifrado de extremo a extremo entre navegadores. Ambas partes demuestran su identidad con una firma de la wallet de Radix, verificada en local — ningún servidor puede leer ni suplantar.",
+        "description": "Chat cifrado de extremo a extremo entre navegadores. Ambas partes demuestran su identidad con una firma de la wallet de Radix, verificada en local, y ningún servidor puede leer ni suplantar.",
         "guide": {
           "guideTitle": "Guía: Chat Seguro",
-          "guideDescription": "Una conversación directa y cifrada de extremo a extremo entre dos navegadores. Cada participante firma con su Radix Wallet un reto que compromete una clave efímera nueva; ambas pruebas se verifican en local (firma + derivación de cuenta), y la clave de sesión se acuerda a partir de ese intercambio verificado. Los mensajes viajan por WebRTC con una capa extra AES-256-GCM y números de secuencia anti-replay — el servidor de señalización solo transporta el handshake de conexión y no puede leer nada.",
+          "guideDescription": "Una conversación directa y cifrada de extremo a extremo entre dos navegadores. Cada participante firma con su Radix Wallet un reto que compromete una clave efímera nueva; ambas pruebas se verifican en local (firma + derivación de cuenta), y la clave de sesión se acuerda a partir de ese intercambio verificado. Los mensajes viajan por WebRTC con una capa extra AES-256-GCM y números de secuencia anti-replay, y el servidor de señalización solo transporta el handshake de conexión y no puede leer nada.",
           "guideSteps": [
             "1. Conecta tu wallet y pulsa Crear chat seguro; firma el reto de la sala.",
             "2. Envía el enlace o el código QR generado a la otra persona por cualquier canal.",
             "3. Cuando lo abra, conecte su wallet y firme, ambas identidades se verifican y la sala pasa a ser segura.",
-            "4. La cabecera muestra la dirección de cuenta del otro extremo con una insignia de verificación — con eso sabes con quién hablas de verdad.",
+            "4. La cabecera muestra la dirección de cuenta del otro extremo verificada por wallet, así sabes con quién hablas de verdad.",
             "5. Chatea libremente; los mensajes solo existen en los dos navegadores. Salir de la página termina la conversación y no se guarda nada."
           ],
           "glossary": [
@@ -776,6 +776,10 @@
             }
           ]
         }
+      },
+      "address-book": {
+        "title": "Agenda de Direcciones",
+        "description": "Guarda y organiza direcciones de Radix (cuentas, validadores, pools, componentes y paquetes) por categorías, con verificación en la red. La misma agenda que en el perfil de tu billetera."
       },
       "address-utils": {
         "title": "Utilidades de Direcciones",

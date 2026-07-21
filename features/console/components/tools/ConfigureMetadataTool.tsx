@@ -26,7 +26,7 @@ import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
 import { AccountPicker } from '../shared/AccountPicker';
 import { OptionButtons } from '../shared/OptionButtons';
-import { TextField, TextAreaField } from '../shared/fields';
+import { TextField, TextAreaField, AddressField, ALL_ADDRESS_CATEGORIES } from '../shared/fields';
 import { StringListField } from '../shared/StringListField';
 import { TwoWayLinkStatus, type TwoWayLinkKind } from '../shared/TwoWayLinkStatus';
 import { BadgeProofPicker } from '../shared/BadgeProofPicker';
@@ -424,11 +424,12 @@ export default function ConfigureMetadataTool({ t }: ConsoleToolProps) {
       <ToolSection title={labels.searchLabel}>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <TextField
+            <AddressField
               value={addressInput}
               onChange={setAddressInput}
               placeholder={labels.searchPlaceholder}
               error={isError ? labels.loadError : undefined}
+              categories={ALL_ADDRESS_CATEGORIES}
             />
           </div>
           <button

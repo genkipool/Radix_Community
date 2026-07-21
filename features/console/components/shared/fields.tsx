@@ -2,6 +2,18 @@
 
 import { ReactNode } from 'react';
 import { Search } from 'lucide-react';
+import { AddressPickerButton } from './AddressPickerButton';
+import type { AddressCategory } from '@/features/wallet/hooks/useAddressBook';
+
+/** Every on-ledger address family — for inputs that accept any address. */
+export const ALL_ADDRESS_CATEGORIES: AddressCategory[] = [
+  'account',
+  'validator',
+  'pool',
+  'component',
+  'package',
+  'resource',
+];
 
 /* ─── Field shell (label + control + hint/error) ──────────────────────────── */
 
@@ -97,6 +109,33 @@ export function TextField({
         )}
       </div>
     </FieldShell>
+  );
+}
+
+/* ─── Address input (text + "+" picker) ───────────────────────────────────── */
+
+interface AddressFieldProps extends Omit<TextFieldProps, 'type' | 'trailing'> {
+  /** Address families this input accepts; the picker popup shows only these. */
+  categories: AddressCategory[];
+}
+
+/**
+ * A `TextField` for on-ledger addresses with a "+" button that opens a picker
+ * scoped to `categories` (wallet accounts + saved agenda entries of those
+ * kinds), so each input only ever offers addresses it accepts.
+ */
+export function AddressField({ categories, ...props }: AddressFieldProps) {
+  return (
+    <TextField
+      {...props}
+      trailing={
+        <AddressPickerButton
+          categories={categories}
+          onSelect={props.onChange}
+          disabled={props.disabled}
+        />
+      }
+    />
   );
 }
 

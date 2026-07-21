@@ -10,7 +10,7 @@ import { inspectAddress, type AddressInspection } from '../../lib/address-inspec
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
 import { OptionButtons } from '../shared/OptionButtons';
-import { TextField } from '../shared/fields';
+import { TextField, AddressField, ALL_ADDRESS_CATEGORIES } from '../shared/fields';
 
 type Curve = 'ed25519' | 'secp256k1';
 
@@ -63,10 +63,11 @@ export default function AddressUtilsTool({ t }: ConsoleToolProps) {
     <div className="space-y-5">
       {/* Inspector */}
       <ToolSection title={labels.inspectTitle} hint={labels.inspectHint}>
-        <TextField
+        <AddressField
           value={address}
           onChange={setAddress}
           placeholder={labels.inspectPlaceholder}
+          categories={ALL_ADDRESS_CATEGORIES}
         />
         {inspection && (
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>

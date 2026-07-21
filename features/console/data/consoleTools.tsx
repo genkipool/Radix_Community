@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   Binary,
   Blocks,
+  BookUser,
   Bot,
   Coins,
   Droplets,
@@ -133,6 +134,14 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '20,184,166',
     requiresWallet: false,
   },
+  'address-book': {
+    slug: 'address-book',
+    icon: <BookUser className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '99,102,241',
+    // Local + on-ledger verification only; no wallet connection required.
+    requiresWallet: false,
+  },
   faucet: {
     slug: 'faucet',
     icon: <Droplets className="size-5" />,
@@ -225,6 +234,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     tools: [
       'configure-metadata',
       'address-utils',
+      'address-book',
       'sbor-decoder',
       'convert-olympia-address',
       'wallet-playground',
