@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BadgeCheck, LogOut, ShieldCheck } from 'lucide-react';
 import { shortAddress } from '@/utils/format';
 import type { ChatDictionary } from '../types/dictionary';
@@ -34,21 +34,76 @@ export function ChatRoom({
   onLeave: () => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  // Exact pixel height that fits below whatever chrome sits above the card
+  // (navbar + tool header), so the whole chat is visible without page scroll on
+  // any resolution. Measured, not guessed, because the header height varies.
+  const [deskHeight, setDeskHeight] = useState<number | null>(null);
+
+  // On phones the chat takes over the whole screen (immersive); leaving the
+  // room (closed) drops back to the normal in-page layout.
+  const fullscreen = isMobile && !closed;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages.length]);
 
+  useLayoutEffect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const measure = () => {
+      setIsMobile(mobileQuery.matches);
+      const el = cardRef.current;
+      if (!el || mobileQuery.matches) {
+        setDeskHeight(null);
+        return;
+      }
+      // Distance from the viewport top to the card, minus a bottom gap that
+      // also covers the page's own bottom padding.
+      const top = el.getBoundingClientRect().top;
+      setDeskHeight(Math.max(320, window.innerHeight - top - 48));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  // Lock the background while the phone chat is fullscreen so it can't scroll
+  // behind the overlay; restored on leave/unmount.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [fullscreen]);
+
+  const height = fullscreen
+    ? '100dvh'
+    : isMobile
+      ? '70dvh'
+      : deskHeight != null
+        ? `${deskHeight}px`
+        : 'calc(100dvh - 17rem)';
+
   return (
     <div
-      className="flex h-[90vh] flex-col rounded-3xl border overflow-hidden"
+      ref={cardRef}
+      className={`flex flex-col overflow-hidden ${
+        fullscreen
+          ? 'fixed inset-0 z-[100] border-0'
+          : 'relative rounded-3xl border'
+      }`}
       style={{
+        height,
+        minHeight: fullscreen ? undefined : '20rem',
         background: 'var(--color-card-bg)',
         borderColor: 'var(--color-card-border)',
       }}
     >
       <header
-        className="flex items-center justify-between gap-3 border-b px-5 py-4"
+        className="flex shrink-0 items-center justify-between gap-3 border-b px-5 py-4"
         style={{ borderColor: 'var(--color-card-border)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
@@ -110,7 +165,7 @@ export function ChatRoom({
       </div>
 
       <footer
-        className="border-t px-5 py-4"
+        className="shrink-0 border-t px-5 py-4"
         style={{ borderColor: 'var(--color-card-border)' }}
       >
         {closed ? (
