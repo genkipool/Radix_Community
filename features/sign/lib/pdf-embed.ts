@@ -12,6 +12,10 @@
  * the user's OWN file, in their OWN browser, and is never uploaded.
  */
 import type { AttestationEnvelope } from '../types/sign.types';
+import {
+  appendSignaturePage,
+  type CertificatePageOptions,
+} from './pdf-signature-page';
 
 /** Attachment names — the extractor looks these up. */
 export const CERT_ATTACHMENT = 'radix-certificate.radixsig.json';
@@ -37,15 +41,29 @@ export interface RequestPointer {
 /**
  * Returns a new PDF identical to `pdfBytes` (already watermarked, if any) but
  * with the certificate and the original file attached. Throws on a bad PDF.
+ *
+ * When `signaturePage` is given, a VISIBLE signature-certificate page is also
+ * appended (best-effort: a rendering hiccup never blocks the attachments). The
+ * page is presentation only — the intact original is still embedded, so the
+ * document hash is unaffected (see pdf-signature-page.ts).
  */
 export async function embedCertificateInPdf(
   pdfBytes: Uint8Array,
   envelope: AttestationEnvelope,
   originalBytes?: Uint8Array,
+  signaturePage?: CertificatePageOptions,
 ): Promise<Uint8Array> {
   const { PDFDocument } = await import('pdf-lib');
 
   const pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
+
+  if (signaturePage) {
+    try {
+      await appendSignaturePage(pdfDoc, envelope, signaturePage);
+    } catch {
+      // Visible page is optional; keep the machine-readable attachments below.
+    }
+  }
 
   const certJson = new TextEncoder().encode(JSON.stringify(envelope, null, 2));
   await pdfDoc.attach(certJson as Uint8Array<ArrayBuffer>, CERT_ATTACHMENT, {

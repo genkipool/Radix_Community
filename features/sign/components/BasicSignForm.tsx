@@ -9,9 +9,11 @@ import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useDocumentSign } from '../hooks/useDocumentSign';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { looksLikeEnvelope, ResultPanel } from './SignForm';
+import { useLanguage } from '@/context/LanguageContext';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
 import { embedCertificateInPdf } from '../lib/pdf-embed';
+import { signaturePageOptions } from '../lib/pdf-signature-page';
 import type { SignDictionary } from '../types/dictionary';
 import type {
   AttestationEnvelope,
@@ -46,6 +48,7 @@ export function BasicSignForm({
   const [result, setResult] = useState<SignResult | null>(null);
 
   const { sign, coSign, phase, error, reset } = useDocumentSign();
+  const { language } = useLanguage();
   const busy = phase === 'signing' || phase === 'anchoring';
   const coSignMode = !!loadedCert;
 
@@ -82,7 +85,12 @@ export function BasicSignForm({
     if (chosen.includes('embedded') && isPdfResult(res)) {
       try {
         // The original bytes are embedded intact so the PDF verifies alone.
-        const pdf = await embedCertificateInPdf(res.fileBytes, res.envelope, res.fileBytes);
+        const pdf = await embedCertificateInPdf(
+          res.fileBytes,
+          res.envelope,
+          res.fileBytes,
+          await signaturePageOptions(res.envelope, t, language),
+        );
         downloadBytes(
           pdf,
           `${stripExtension(res.fileName)}-signed.pdf`,

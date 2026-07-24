@@ -1,0 +1,563 @@
+/**
+ * Renders a VISIBLE "Signature Certificate" page and appends it as the last
+ * page of a signed PDF (Phase 1 of the visible-signature work).
+ *
+ * Why a rendered page: Radix Seal already embeds the machine-readable
+ * certificate as a PDF attachment (see pdf-embed.ts), but most viewers hide
+ * attachments and Radix Seal is not a PAdES/X.509 signature, so nothing about
+ * the signature shows on screen. This page makes the signature human-readable
+ * WITHOUT any special viewer: who signed, when, the document hash, the network,
+ * the on-ledger anchor, and a QR to the verifier.
+ *
+ * It is PRESENTATION ONLY. The page is drawn on the carrier PDF; the intact
+ * ORIGINAL document is still embedded separately (pdf-embed.ts) and that is
+ * what verification re-hashes, so adding this page never changes the document
+ * hash. Nothing here is part of the trust model.
+ *
+ * Honesty: any disclosed name is SELF-DECLARED by the signer's wallet, never a
+ * CA-verified legal identity, so the page says exactly that and never imitates
+ * a qualified (eIDAS QES) signature appearance.
+ */
+import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
+import type { AttestationEnvelope } from '../types/sign.types';
+import type { SignDictionary } from '../types/dictionary';
+import { NETWORKS } from '@/features/wallet/constants/network';
+import { SEAL_IMAGE_PATH } from '../constants/seal';
+import { findCollectionIssuer } from '../services/sealDiscovery';
+import { parseRequestKey } from './share';
+import { svgUrlToPngBytes, fetchImageBytes } from './pdf-watermark';
+
+/** An RGB triple in the 0..1 range that pdf-lib's colours use. */
+type Rgb01 = [number, number, number];
+
+/** pdf-lib's `rgb(r,g,b)` helper, injected so the Cursor stays synchronous. */
+type RgbFn = (r: number, g: number, b: number) => RGB;
+
+/** Localised strings for the page (supplied by the caller's dictionary). */
+export interface CertificatePageLabels {
+  title: string;
+  tagline: string;
+  documentSection: string;
+  issuer: string;
+  file: string;
+  hash: string;
+  network: string;
+  /** When the attestation was created by the initiator (document section). */
+  created: string;
+  /** When a signer actually signed (per-signature). */
+  signedAt: string;
+  reason: string;
+  signaturesSection: string;
+  signedBy: string;
+  account: string;
+  email: string;
+  selfDeclared: string;
+  anchorSection: string;
+  anchorResource: string;
+  anchorTx: string;
+  verifyTitle: string;
+  verifyInstruction: string;
+  disclaimerTitle: string;
+  disclaimer: string;
+  generated: string;
+}
+
+export interface CertificatePageOptions {
+  labels: CertificatePageLabels;
+  /** Full URL of the verification tool (encoded into the QR + shown as text). */
+  verifyUrl: string;
+  /** Human-readable network name (e.g. "Mainnet"). */
+  networkName: string;
+  /** BCP-47 locale for date formatting. */
+  locale: string;
+  /** Same-origin path/URL of the seal SVG, rasterised for the header logo. */
+  sealImageUrl?: string;
+  /** Issuer identity read from the on-ledger collection (org name/site/logo). */
+  issuer?: { orgName?: string; orgWebsite?: string; iconUrl?: string };
+  /** Brand accent (0..1 RGB) read from the active theme; falls back to indigo. */
+  accent?: Rgb01;
+}
+
+/**
+ * The signing collection whose issuer identity to display: the initiator's
+ * collection for an on-ledger request, otherwise the anchored collection. Null
+ * for a purely off-ledger certificate (no on-ledger collection to read).
+ */
+function issuerCollection(env: AttestationEnvelope): string | null {
+  if (env.request) return parseRequestKey(env.request.requestId)?.collection ?? null;
+  return env.onChain?.resourceAddress ?? null;
+}
+
+/**
+ * Builds the visible signature-certificate page options for an embedded PDF:
+ * localised labels, the certificate's own network name, a verify URL (also
+ * encoded into the page's QR), and — when the certificate is on-ledger — the
+ * issuer's organisation read from the collection metadata. Async because that
+ * issuer lookup reads the ledger; best-effort, so a gateway hiccup just omits
+ * the issuer line. Co-located with the renderer so every call site shares one
+ * source of truth.
+ */
+export async function signaturePageOptions(
+  env: AttestationEnvelope,
+  t: SignDictionary,
+  locale: string,
+): Promise<CertificatePageOptions> {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const collection = issuerCollection(env);
+  const issuer = collection
+    ? (await findCollectionIssuer(env.payload.networkId, collection).catch(
+        () => null,
+      )) ?? undefined
+    : undefined;
+  return {
+    labels: t.certificatePage,
+    verifyUrl: `${origin}/${locale}/console/sign-document?tab=verify`,
+    networkName:
+      NETWORKS[env.payload.networkId]?.networkName ?? `#${env.payload.networkId}`,
+    locale,
+    sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
+    issuer,
+    accent: readBrandAccent(),
+  };
+}
+
+// ─── Layout constants (A4 portrait, points) ──────────────────────────────────
+
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const MARGIN = 54;
+const CONTENT_W = PAGE_W - MARGIN * 2;
+
+const INK: Rgb01 = [0.11, 0.13, 0.2];
+const MUTED: Rgb01 = [0.42, 0.45, 0.55];
+/** Default accent (indigo) when the theme's brand colour can't be read. */
+const ACCENT: Rgb01 = [0.29, 0.33, 0.92];
+const LINE: Rgb01 = [0.86, 0.88, 0.93];
+const WHITE: Rgb01 = [1, 1, 1];
+
+// ─── Colour helpers ───────────────────────────────────────────────────────────
+
+/** Parses `#rgb`, `#rrggbb` or `rgb(r,g,b)` into a 0..1 triple, or null. */
+export function parseColor(css: string): Rgb01 | null {
+  const s = css.trim();
+  const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1];
+    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    const n = parseInt(full, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255) as Rgb01;
+  }
+  const rgb = s.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (rgb) {
+    return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])].map((v) =>
+      Math.min(1, v / 255),
+    ) as Rgb01;
+  }
+  return null;
+}
+
+/** Rough relative luminance (0..1), enough to choose readable text colours. */
+function luminance([r, g, b]: Rgb01): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Darkens a colour just enough to stay readable as text on a white page. */
+function readableOnWhite(c: Rgb01): Rgb01 {
+  const l = luminance(c);
+  if (l <= 0.45) return c;
+  const f = 0.45 / l;
+  return [c[0] * f, c[1] * f, c[2] * f];
+}
+
+// ─── Small helpers ────────────────────────────────────────────────────────────
+
+/** Wraps text to `maxWidth`, breaking over-long tokens (hashes, addresses). */
+function wrapLines(
+  text: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number,
+): string[] {
+  const out: string[] = [];
+  for (const paragraph of text.split('\n')) {
+    let line = '';
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+        line = candidate;
+        continue;
+      }
+      if (line) out.push(line);
+      // A single token wider than the line (hash/address): hard-break it.
+      if (font.widthOfTextAtSize(word, size) > maxWidth) {
+        let chunk = '';
+        for (const ch of word) {
+          if (font.widthOfTextAtSize(chunk + ch, size) > maxWidth) {
+            out.push(chunk);
+            chunk = ch;
+          } else {
+            chunk += ch;
+          }
+        }
+        line = chunk;
+      } else {
+        line = word;
+      }
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+function base64PngToBytes(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.split(',')[1] ?? '';
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function shortAccount(account: string): string {
+  return account.length > 24
+    ? `${account.slice(0, 11)}…${account.slice(-6)}`
+    : account;
+}
+
+function fmtDate(iso: string, locale: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(locale);
+}
+
+/**
+ * Loads a (possibly cross-origin) image URL into a pdf-lib image. SVGs are
+ * rasterised via canvas; PNG/JPG bytes are fetched directly. Best-effort: any
+ * CORS/parse failure returns null so the issuer logo is simply omitted.
+ */
+async function embedRemoteImage(
+  pdfDoc: PDFDocument,
+  url: string,
+): Promise<PDFImage | null> {
+  try {
+    const lower = url.toLowerCase();
+    const isSvg = lower.endsWith('.svg') || lower.startsWith('data:image/svg');
+    const bytes = isSvg ? await svgUrlToPngBytes(url, 160) : await fetchImageBytes(url);
+    if (!bytes) return null;
+    const isJpg =
+      /\.jpe?g($|\?)/.test(lower) || lower.startsWith('data:image/jpeg');
+    return isJpg
+      ? await pdfDoc.embedJpg(bytes as Uint8Array<ArrayBuffer>).catch(() => null)
+      : await pdfDoc.embedPng(bytes as Uint8Array<ArrayBuffer>).catch(() => null);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reads the active theme's brand colour (`--color-primary`) as a 0..1 RGB
+ * triple, for tinting the certificate. Undefined outside the browser or when
+ * the value can't be parsed, so the renderer falls back to its default accent.
+ */
+export function readBrandAccent(): Rgb01 | undefined {
+  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function')
+    return undefined;
+  try {
+    const value = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-primary')
+      .trim();
+    return parseColor(value) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// ─── The renderer ─────────────────────────────────────────────────────────────
+
+/**
+ * A tiny top-down cursor over one or more appended pages. Adds a fresh page
+ * when the content runs past the bottom margin, so many signers never overflow.
+ */
+class Cursor {
+  page: PDFPage;
+  y: number;
+  constructor(
+    private doc: PDFDocument,
+    private fonts: { regular: PDFFont; bold: PDFFont },
+    private rgbFn: RgbFn,
+    /** Accent already darkened to stay readable on the white page. */
+    private accentInk: Rgb01,
+  ) {
+    this.page = doc.addPage([PAGE_W, PAGE_H]);
+    this.y = PAGE_H - MARGIN;
+  }
+
+  private rgb(c: [number, number, number]): RGB {
+    return this.rgbFn(c[0], c[1], c[2]);
+  }
+
+  ensure(space: number) {
+    if (this.y - space < MARGIN) {
+      this.page = this.doc.addPage([PAGE_W, PAGE_H]);
+      this.y = PAGE_H - MARGIN;
+    }
+  }
+
+  gap(h: number) {
+    this.y -= h;
+  }
+
+  /** Draws wrapped text at the cursor and advances past it. */
+  text(
+    value: string,
+    opts: {
+      size?: number;
+      bold?: boolean;
+      color?: [number, number, number];
+      x?: number;
+      maxWidth?: number;
+      lineGap?: number;
+    } = {},
+  ) {
+    const size = opts.size ?? 10;
+    const font = opts.bold ? this.fonts.bold : this.fonts.regular;
+    const x = opts.x ?? MARGIN;
+    const maxWidth = opts.maxWidth ?? CONTENT_W - (x - MARGIN);
+    const lineHeight = size * 1.35;
+    const lines = wrapLines(value, font, size, maxWidth);
+    for (const line of lines) {
+      this.ensure(lineHeight);
+      this.page.drawText(line, {
+        x,
+        y: this.y - size,
+        size,
+        font,
+        color: this.rgb(opts.color ?? INK),
+      });
+      this.y -= lineHeight;
+    }
+    if (opts.lineGap) this.y -= opts.lineGap;
+  }
+
+  /** A "Label: value" field where the label is muted and value wraps below. */
+  field(label: string, value: string, opts: { mono?: boolean } = {}) {
+    this.text(label.toUpperCase(), { size: 7.5, bold: true, color: MUTED });
+    this.gap(1);
+    this.text(value, { size: opts.mono ? 9 : 10.5 });
+    this.gap(6);
+  }
+
+  sectionTitle(label: string) {
+    this.ensure(30);
+    this.gap(6);
+    this.text(label, { size: 12, bold: true, color: this.accentInk });
+    this.gap(3);
+    this.rule();
+    this.gap(6);
+  }
+
+  rule() {
+    this.ensure(2);
+    this.page.drawLine({
+      start: { x: MARGIN, y: this.y },
+      end: { x: PAGE_W - MARGIN, y: this.y },
+      thickness: 0.75,
+      color: this.rgb(LINE),
+    });
+    this.y -= 2;
+  }
+}
+
+/**
+ * Appends the visible signature-certificate page(s) to `pdfDoc`. Best-effort:
+ * the caller wraps this so a font/QR/logo hiccup never blocks the (attachment)
+ * embedding. Renders nothing meaningful only if the whole draw throws.
+ */
+export async function appendSignaturePage(
+  pdfDoc: PDFDocument,
+  envelope: AttestationEnvelope,
+  opts: CertificatePageOptions,
+): Promise<void> {
+  const { StandardFonts, rgb } = await import('pdf-lib');
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const { labels: L, locale } = opts;
+  const { payload } = envelope;
+
+  // Brand accent (from the active theme) tints the band, section titles and
+  // links; the page stays white with dark ink, so it prints cleanly whatever
+  // the signer's theme. `accentInk` is darkened enough to read on white; the
+  // band picks light or dark text from the accent's own luminance.
+  const accent: Rgb01 = opts.accent ?? ACCENT;
+  const accentInk = readableOnWhite(accent);
+  const lightBand = luminance(accent) > 0.6;
+  const bandText: Rgb01 = lightBand ? INK : WHITE;
+  const bandSubText: Rgb01 = lightBand ? MUTED : [0.9, 0.91, 0.98];
+
+  const cur = new Cursor(pdfDoc, { regular, bold }, rgb, accentInk);
+
+  // ── Header band ──
+  const bandH = 74;
+  const bandY = PAGE_H - bandH;
+  cur.page.drawRectangle({
+    x: 0,
+    y: bandY,
+    width: PAGE_W,
+    height: bandH,
+    color: rgb(accent[0], accent[1], accent[2]),
+  });
+
+  // Seal logo (optional; skipped silently if it can't be rasterised).
+  let logoRight = MARGIN;
+  if (opts.sealImageUrl) {
+    try {
+      const png = await svgUrlToPngBytes(opts.sealImageUrl, 200);
+      if (png) {
+        const img = await pdfDoc.embedPng(png as Uint8Array<ArrayBuffer>);
+        const dim = 40;
+        cur.page.drawImage(img, {
+          x: MARGIN,
+          y: bandY + (bandH - dim) / 2,
+          width: dim,
+          height: dim,
+        });
+        logoRight = MARGIN + dim + 14;
+      }
+    } catch {
+      // No logo — the title alone is fine.
+    }
+  }
+  cur.page.drawText(L.title, {
+    x: logoRight,
+    y: bandY + bandH - 34,
+    size: 20,
+    font: bold,
+    color: rgb(bandText[0], bandText[1], bandText[2]),
+  });
+  cur.page.drawText(L.tagline, {
+    x: logoRight,
+    y: bandY + bandH - 52,
+    size: 9,
+    font: regular,
+    color: rgb(bandSubText[0], bandSubText[1], bandSubText[2]),
+  });
+
+  cur.y = bandY - 22;
+
+  // ── Document section ──
+  cur.sectionTitle(L.documentSection);
+  // Issuer first (when the on-ledger collection declares one): "which
+  // institution issued it" is what signers most want to see. The issuer's own
+  // logo (collection `icon_url`) sits beside the name; best-effort, so a
+  // cross-origin fetch that fails just drops the image.
+  if (opts.issuer && (opts.issuer.orgName || opts.issuer.orgWebsite)) {
+    cur.text(L.issuer.toUpperCase(), { size: 7.5, bold: true, color: MUTED });
+    cur.gap(2);
+    const logo = opts.issuer.iconUrl
+      ? await embedRemoteImage(pdfDoc, opts.issuer.iconUrl)
+      : null;
+    if (logo && opts.issuer.orgName) {
+      const box = 26;
+      cur.ensure(box);
+      const top = cur.y;
+      const dim = logo.scaleToFit(box, box);
+      cur.page.drawImage(logo, {
+        x: MARGIN,
+        y: top - box + (box - dim.height) / 2,
+        width: dim.width,
+        height: dim.height,
+      });
+      cur.page.drawText(opts.issuer.orgName, {
+        x: MARGIN + box + 10,
+        y: top - box / 2 - 4,
+        size: 12,
+        font: bold,
+        color: rgb(INK[0], INK[1], INK[2]),
+      });
+      cur.y = top - box;
+      cur.gap(4);
+    } else if (opts.issuer.orgName) {
+      cur.text(opts.issuer.orgName, { size: 11, bold: true });
+    }
+    if (opts.issuer.orgWebsite)
+      cur.text(opts.issuer.orgWebsite, { size: 9, color: accentInk });
+    cur.gap(6);
+  }
+  cur.field(L.file, payload.fileName || '—');
+  cur.field(L.hash, payload.docHash, { mono: true });
+  cur.field(L.network, opts.networkName);
+  cur.field(L.created, fmtDate(payload.timestamp, locale));
+  if (payload.message.trim()) cur.field(L.reason, payload.message.trim());
+
+  // ── Signatures section ──
+  cur.sectionTitle(`${L.signaturesSection} (${envelope.signatures.length})`);
+  envelope.signatures.forEach((s, i) => {
+    const name = s.disclosedName?.trim();
+    cur.text(`${L.signedBy}: ${name || shortAccount(s.signerAccount)}`, {
+      size: 11.5,
+      bold: true,
+    });
+    cur.gap(3);
+    if (name) {
+      cur.text(L.selfDeclared, { size: 7.5, color: MUTED });
+      cur.gap(2);
+    }
+    cur.field(L.account, s.signerAccount, { mono: true });
+    if (s.disclosedEmail?.trim()) cur.field(L.email, s.disclosedEmail.trim());
+    cur.field(L.signedAt, fmtDate(s.signedAt, locale));
+    if (i < envelope.signatures.length - 1) {
+      cur.rule();
+      cur.gap(6);
+    }
+  });
+
+  // ── On-ledger anchor (optional) ──
+  if (envelope.onChain) {
+    cur.sectionTitle(L.anchorSection);
+    cur.field(L.anchorResource, envelope.onChain.resourceAddress, { mono: true });
+    cur.field(L.anchorTx, envelope.onChain.transactionIntentHash, { mono: true });
+  }
+
+  // ── Verify box (QR + instruction) ──
+  cur.sectionTitle(L.verifyTitle);
+  const qrSize = 96;
+  cur.ensure(qrSize + 8);
+  let qrDrawn = false;
+  try {
+    const QRCode = (await import('qrcode')).default;
+    const dataUrl = await QRCode.toDataURL(opts.verifyUrl, {
+      width: qrSize * 3,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+    });
+    const img = await pdfDoc.embedPng(base64PngToBytes(dataUrl) as Uint8Array<ArrayBuffer>);
+    cur.page.drawImage(img, {
+      x: MARGIN,
+      y: cur.y - qrSize,
+      width: qrSize,
+      height: qrSize,
+    });
+    qrDrawn = true;
+  } catch {
+    // No QR — the URL text below still lets anyone verify.
+  }
+  const textX = qrDrawn ? MARGIN + qrSize + 16 : MARGIN;
+  const textW = PAGE_W - MARGIN - textX;
+  const savedY = cur.y;
+  cur.text(L.verifyInstruction, { x: textX, maxWidth: textW, size: 9.5 });
+  cur.gap(3);
+  cur.text(opts.verifyUrl, { x: textX, maxWidth: textW, size: 9, color: accentInk });
+  // Keep the cursor below the taller of the QR / text column.
+  cur.y = Math.min(cur.y, savedY - qrSize);
+  cur.gap(10);
+
+  // ── Honest disclaimer + footer ──
+  cur.rule();
+  cur.gap(6);
+  cur.text(L.disclaimerTitle, { size: 8, bold: true, color: MUTED });
+  cur.gap(2);
+  cur.text(L.disclaimer, { size: 8, color: MUTED });
+  cur.gap(6);
+  cur.text(`${L.generated} · ${fmtDate(new Date().toISOString(), locale)}`, {
+    size: 7.5,
+    color: MUTED,
+  });
+}

@@ -32,6 +32,7 @@ import { SealOnboarding } from './SealOnboarding';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
 import { embedCertificateInPdf } from '../lib/pdf-embed';
+import { signaturePageOptions } from '../lib/pdf-signature-page';
 import {
   applyWatermark,
   type WatermarkKind,
@@ -59,6 +60,7 @@ type IdentityOpt = DisclosurePolicy | 'email';
 
 const isPdfResult = (r: { fileType: string; fileName: string }) =>
   r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
+
 
 export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   if (!v || typeof v !== 'object') return false;
@@ -152,6 +154,7 @@ export function SignForm({
   const { createRequest, signRequest } = useSealRequest();
   const invitePreview = useTransactionPreview();
   const { activeNetworkId } = useRadixWallet();
+  const { language } = useLanguage();
 
   // A dropped signed PDF carries the certificate + original inside, so a
   // co-signer can drop ONE file: we auto-load the certificate and use the
@@ -265,7 +268,12 @@ export function SignForm({
         // Watermark is a visible layer on the delivered PDF; the ORIGINAL bytes
         // are embedded intact (third arg) so the document hash still matches.
         const visible = await applyWatermark(res.fileBytes, watermarkOptions);
-        const pdf = await embedCertificateInPdf(visible, res.envelope, res.fileBytes);
+        const pdf = await embedCertificateInPdf(
+          visible,
+          res.envelope,
+          res.fileBytes,
+          await signaturePageOptions(res.envelope, t, language),
+        );
         downloadBytes(
           pdf,
           `${stripExtension(res.fileName)}-signed.pdf`,
@@ -461,7 +469,12 @@ export function SignForm({
       (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
     if (isPdf && coSignBytes) {
       try {
-        const pdf = await embedCertificateInPdf(coSignBytes, loadedCert, coSignBytes);
+        const pdf = await embedCertificateInPdf(
+          coSignBytes,
+          loadedCert,
+          coSignBytes,
+          await signaturePageOptions(loadedCert, t, language),
+        );
         downloadBytes(pdf, `${stripExtension(file.name)}-signed.pdf`, 'application/pdf');
         return;
       } catch {
@@ -1041,6 +1054,7 @@ export function ResultPanel({
             result.fileBytes,
             envelope,
             result.fileBytes,
+            await signaturePageOptions(envelope, t, language),
           );
           if (!cancelled) {
             setShareArtifact({
@@ -1065,7 +1079,7 @@ export function ResultPanel({
     return () => {
       cancelled = true;
     };
-  }, [envelope, result]);
+  }, [envelope, result, language, t]);
 
   const { payload } = envelope;
   const pdfBtn = outputs.includes('embedded') && isPdfResult(result);
@@ -1140,7 +1154,12 @@ export function ResultPanel({
   const downloadPdf = async () => {
     try {
       // Embed the original bytes so the signed PDF verifies on its own.
-      const pdf = await embedCertificateInPdf(result.fileBytes, envelope, result.fileBytes);
+      const pdf = await embedCertificateInPdf(
+        result.fileBytes,
+        envelope,
+        result.fileBytes,
+        await signaturePageOptions(envelope, t, language),
+      );
       downloadBytes(
         pdf,
         `${stripExtension(result.fileName)}-signed.pdf`,

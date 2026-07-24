@@ -16,7 +16,7 @@ export interface WatermarkOptions {
 
 const SEAL_TEXT = 'RADIX SEAL';
 
-async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
+export async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -28,9 +28,10 @@ async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
 
 /**
  * Rasterizes an SVG (same-origin URL or data URI) to PNG bytes via a canvas —
- * pdf-lib can only embed PNG/JPG. Browser-only; null on any failure.
+ * pdf-lib can only embed PNG/JPG. Browser-only; null on any failure. Exported
+ * so the visible signature page can embed the seal logo too.
  */
-async function svgUrlToPngBytes(
+export async function svgUrlToPngBytes(
   url: string,
   targetSize = 1000,
 ): Promise<Uint8Array | null> {
