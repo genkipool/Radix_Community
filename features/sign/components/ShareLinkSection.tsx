@@ -2,10 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 import { Ban, Radio, RefreshCw } from 'lucide-react';
-import { CopyButton } from '@/components/ui/CopyButton';
-import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { ProgressRow } from '@/features/p2p/components/ProgressRow';
-import { QrCode } from '@/features/p2p/components/QrCode';
+import { ShareLinkCard } from '@/features/p2p/components/ShareLinkCard';
 import { randomRoomId } from '@/features/p2p/lib/session-url';
 import { useSendFileChannel } from '../hooks/useFileChannel';
 import { buildShareUrl, type SharedWatermark } from '../lib/share';
@@ -92,30 +90,15 @@ export function ShareLinkSection({
           : t.onchain.sendWaiting;
 
   return (
-    <ToolSection
+    // The link + QR presentation is the SHARED one, so signing, file transfer
+    // and chat look identical; only the direct-delivery panel below is specific
+    // to signing.
+    <ShareLinkCard
       title={title ?? t.onchain.shareTitle}
       hint={hint ?? t.onchain.shareHint}
+      url={shareUrl}
+      qrAlt={t.onchain.qrAlt}
     >
-      <div className="flex flex-col sm:flex-row items-center gap-6">
-        {shareUrl && (
-          <QrCode value={shareUrl} alt={t.onchain.qrAlt} size={160} />
-        )}
-        <div className="flex-1 min-w-0 w-full flex items-center gap-2">
-          {/* Plain, unboxed: the link is text to read and copy, not a field. */}
-          <span
-            className="flex-1 min-w-0 text-xs font-mono break-all"
-            style={{ color: 'var(--color-text-main)' }}
-          >
-            {shareUrl}
-          </span>
-          <CopyButton
-            value={shareUrl}
-            variant="minimal"
-            size="md"
-            className="shrink-0"
-          />
-        </div>
-      </div>
 
       {bytes && (
         <div
@@ -190,6 +173,6 @@ export function ShareLinkSection({
       )}
 
       {children}
-    </ToolSection>
+    </ShareLinkCard>
   );
 }

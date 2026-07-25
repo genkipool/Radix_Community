@@ -15,9 +15,7 @@ import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { DecryptPanel } from '@/features/cipher/components/DecryptPanel';
 import { EncryptPanel } from '@/features/cipher/components/EncryptPanel';
 import { ReceiveView } from '@/features/cipher/components/ReceiveView';
-import { SendSessionView } from '@/features/cipher/components/SendSessionView';
 import { UnlockView } from '@/features/cipher/components/UnlockView';
-import type { EncryptResult } from '@/features/cipher/hooks/useEncryptFlow';
 import { cleanupExpired } from '@/features/cipher/lib/idb';
 import { parseSessionHash } from '@/features/cipher/lib/session-url';
 import type { CipherDictionary } from '@/features/cipher/types/dictionary';
@@ -53,7 +51,6 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
   const [tab, setTab] = useState<Tab>('encrypt');
   const [mode, setMode] = useState<EncryptMode>('rola');
   const [session, setSession] = useState<PeerSession | null>(null);
-  const [shared, setShared] = useState<EncryptResult | null>(null);
   // Selected file lives here so it survives switching the encryption mode (the
   // EncryptPanel remounts per mode to reset the flow, but keeps the document).
   const [file, setFile] = useState<File | null>(null);
@@ -222,12 +219,7 @@ export default function EncryptDocumentTool({}: ConsoleToolProps) {
                   file={file}
                   onFileChange={setFile}
                   actingAccount={effectiveAccount}
-                  onShare={setShared}
-                  onReset={() => setShared(null)}
                 />
-                {shared && (
-                  <SendSessionView t={t} result={shared} onCancel={() => setShared(null)} />
-                )}
               </>
             )}
           </CipherGate>

@@ -22,6 +22,7 @@ third party can implement or verify it independently.
 6. [Encrypting a document](#6-encrypting-a-document)
 7. [Secure chat](#7-secure-chat)
 8. [Verification](#8-verification)
+   - [8.1 Verification API](#81-verification-api)
 9. [File formats](#9-file-formats)
 10. [Sharing and peer to peer transport](#10-sharing-and-peer-to-peer-transport)
 11. [The brand resource and its admin badge](#11-the-brand-resource-and-its-admin-badge)
@@ -319,6 +320,64 @@ and the complete batch must exist so a burned invitation cannot shrink the quoru
 
 Because none of these checks depends on editable metadata or on this site, a
 signature stays verifiable for as long as the public ledger exists.
+
+### 8.1 Verification API
+
+Two public POST endpoints let a system verify without a browser, a wallet, an
+account or an API key. Both are stateless and neither ever receives a document.
+
+**`/api/sign/verify`** takes the certificate wrapped in an `envelope` field (the
+whole contents of the `.radixsig.json`) and answers with:
+
+| Field | Meaning |
+| --- | --- |
+| `complete` | Every required signer has a valid signature. This is the field to gate on |
+| `allValid` | Every signature present is cryptographically valid |
+| `signatures` | Per signer: account, disclosed name and email, `valid`, `required` |
+| `requiredSigners` | The authoritative required set |
+| `docHash`, `timestamp`, `message`, `networkId` | Payload data |
+| `onChainValid`, `sealValid` | On ledger anchor and official insignia |
+
+`onChainValid` and `sealValid` are `null` when they do not apply (an off ledger
+certificate, or the brand not deployed on that network). Null means "nothing to
+check", not "invalid": treating it as a failure would reject valid certificates.
+
+```bash
+jq '{envelope: .}' document.radixsig.json \
+  | curl -X POST https://radix-community.genkipool.com/api/sign/verify \
+      -H 'Content-Type: application/json' --data-binary @-
+```
+
+**`/api/sign/onchain-status`** takes `networkId` plus a `requestId` (and
+optionally a `docHash`) and reports, straight from the ledger, who was required
+to sign, who has signed, whether it is `complete`, whether the hash matches, and
+the issuer's published identity. It needs neither the document nor the
+certificate, so it suits polling the state of a file being signed.
+
+```bash
+curl -X POST https://radix-community.genkipool.com/api/sign/onchain-status \
+  -H 'Content-Type: application/json' \
+  -d '{"networkId":2,"requestId":"resource_tdx_2_1...:#25#"}'
+```
+
+**Checking the document is the caller's job.** The API never sees the file, so a
+positive answer only proves that someone signed *a* hash. To prove it is *your*
+document, hash it locally with Blake2b-256 and compare it against `docHash`.
+Accept only when the hashes match AND `complete` is true. With a signed PDF, the
+bytes to hash are the embedded `radix-original-<name>` attachment, not the PDF
+itself, which additionally carries the presentation layers.
+
+**Limits and errors.** 300 requests per minute per IP (`429` with `Retry-After`),
+certificates up to 64 KiB (`413`), `400` for malformed JSON, a certificate that
+fails the schema or an unknown network, and `500` on internal failure.
+
+**Deployment note.** ROLA validates the origin the signature was produced for,
+taken from the deployment's configured application URL. Verify against the same
+deployment that produced the signatures; an institution running its own instance
+on another domain will not validate off ledger signatures made elsewhere by this
+route. On ledger signatures are unaffected: they are checked through the chain of
+custody by reading the network, independently of any domain. One more reason to
+anchor anything that matters.
 
 ---
 
