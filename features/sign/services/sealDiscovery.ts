@@ -20,6 +20,9 @@ import {
   RADIX_SEAL_STANDARD_KEY,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
+  ORG_NAME_KEY,
+  ORG_URL_KEY,
+  ICON_URL_KEY,
 } from '../constants/seal';
 
 export interface UserSeal {
@@ -143,6 +146,35 @@ function isSignCollection(item: EntityDetailsItem): boolean {
     metadataValue(item, SIGN_COLLECTION_MARKER_KEY) ===
     SIGN_COLLECTION_MARKER_VALUE
   );
+}
+
+/** Issuer identity published (owner-editable) on a signing collection. */
+export interface CollectionIssuer {
+  orgName?: string;
+  orgWebsite?: string;
+  /** The collection's `icon_url` — the issuer's own logo. */
+  iconUrl?: string;
+}
+
+/**
+ * Reads the optional issuer identity (`org_name` / `org_url` / `icon_url`) from
+ * a signing collection's metadata, for display on the visible signature
+ * certificate. Returns null when the collection sets none (or on any gateway
+ * error) — the page simply omits the issuer block. Purely presentational: it is
+ * NEVER part of verification (see the verify route's insignia check).
+ */
+export async function findCollectionIssuer(
+  networkId: number,
+  resourceAddress: string,
+): Promise<CollectionIssuer | null> {
+  const [item] = await entityDetails(network(networkId), [resourceAddress]).catch(
+    () => [],
+  );
+  if (!item) return null;
+  const orgName = metadataValue(item, ORG_NAME_KEY);
+  const orgWebsite = metadataValue(item, ORG_URL_KEY);
+  const iconUrl = metadataValue(item, ICON_URL_KEY);
+  return orgName || orgWebsite ? { orgName, orgWebsite, iconUrl } : null;
 }
 
 /**

@@ -16,7 +16,37 @@ export interface WatermarkOptions {
 
 const SEAL_TEXT = 'RADIX SEAL';
 
-async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
+/**
+ * Decodes a base64 `data:` URL to bytes WITHOUT fetching it. A picked image
+ * arrives as a data URL, and the app's CSP `connect-src` does not allow `data:`
+ * — so `fetch()` on it is blocked in the browser and the user's PNG/JPG
+ * watermark silently never appeared. Decoding locally sidesteps the network
+ * entirely (and is faster).
+ */
+function dataUrlToBytes(url: string): Uint8Array | null {
+  const comma = url.indexOf(',');
+  if (comma < 0) return null;
+  const meta = url.slice(0, comma);
+  const body = url.slice(comma + 1);
+  try {
+    if (!meta.includes(';base64')) {
+      // Rare, but a data URL may be percent-encoded rather than base64.
+      const decoded = decodeURIComponent(body);
+      const out = new Uint8Array(decoded.length);
+      for (let i = 0; i < decoded.length; i += 1) out[i] = decoded.charCodeAt(i);
+      return out;
+    }
+    const binary = atob(body);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
+  if (url.startsWith('data:')) return dataUrlToBytes(url);
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -28,9 +58,10 @@ async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
 
 /**
  * Rasterizes an SVG (same-origin URL or data URI) to PNG bytes via a canvas —
- * pdf-lib can only embed PNG/JPG. Browser-only; null on any failure.
+ * pdf-lib can only embed PNG/JPG. Browser-only; null on any failure. Exported
+ * so the visible signature page can embed the seal logo too.
  */
-async function svgUrlToPngBytes(
+export async function svgUrlToPngBytes(
   url: string,
   targetSize = 1000,
 ): Promise<Uint8Array | null> {

@@ -9,9 +9,11 @@ import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useDocumentSign } from '../hooks/useDocumentSign';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { looksLikeEnvelope, ResultPanel } from './SignForm';
+import { useLanguage } from '@/context/LanguageContext';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
-import { embedCertificateInPdf } from '../lib/pdf-embed';
+import { buildDeliverablePdf } from '../lib/signed-pdf';
+import { signaturePageOptions } from '../lib/pdf-signature-page';
 import type { SignDictionary } from '../types/dictionary';
 import type {
   AttestationEnvelope,
@@ -43,15 +45,25 @@ export function BasicSignForm({
   const [loadedCert, setLoadedCert] = useState<AttestationEnvelope | null>(null);
   const [certError, setCertError] = useState('');
   const [outputs, setOutputs] = useState<OutputFormat[]>(['detached']);
+  // Until the user picks for themselves, a PDF also gets the embedded PDF: it
+  // is the self-contained artifact (certificate + original + visible page in
+  // one file), so it should not take an extra click to obtain.
+  const [outputsPicked, setOutputsPicked] = useState(false);
   const [result, setResult] = useState<SignResult | null>(null);
 
   const { sign, coSign, phase, error, reset } = useDocumentSign();
+  const { language } = useLanguage();
   const busy = phase === 'signing' || phase === 'anchoring';
   const coSignMode = !!loadedCert;
 
+  const effectiveOutputs: OutputFormat[] =
+    !outputsPicked && pdfOk ? [...new Set([...outputs, 'embedded' as const])] : outputs;
+
   // At least one output format must stay selected.
   const onOutputsChange = (v: OutputFormat[]) => {
-    if (v.length > 0) setOutputs(v);
+    if (v.length === 0) return;
+    setOutputsPicked(true);
+    setOutputs(v);
   };
 
   const onCert = async (picked: File | null) => {
@@ -81,8 +93,13 @@ export function BasicSignForm({
     let delivered = false;
     if (chosen.includes('embedded') && isPdfResult(res)) {
       try {
-        // The original bytes are embedded intact so the PDF verifies alone.
-        const pdf = await embedCertificateInPdf(res.fileBytes, res.envelope, res.fileBytes);
+        // Same single pipeline as the advanced flow: the original bytes are
+        // embedded intact so the PDF verifies on its own.
+        const pdf = await buildDeliverablePdf({
+          fileBytes: res.fileBytes,
+          envelope: res.envelope,
+          pageOptions: await signaturePageOptions(res.envelope, t, language),
+        });
         downloadBytes(
           pdf,
           `${stripExtension(res.fileName)}-signed.pdf`,
@@ -116,7 +133,7 @@ export function BasicSignForm({
         });
     if (res) {
       setResult(res);
-      await deliver(res, outputs);
+      await deliver(res, effectiveOutputs);
     }
   };
 
@@ -134,7 +151,7 @@ export function BasicSignForm({
         t={t}
         consoleT={consoleT}
         result={result}
-        outputs={outputs}
+        outputs={effectiveOutputs}
         onReset={startOver}
         allowAnchor={false}
       />
@@ -164,7 +181,7 @@ export function BasicSignForm({
       <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
         <OptionButtons<OutputFormat>
           multiple
-          value={outputs}
+          value={effectiveOutputs}
           onChange={onOutputsChange}
           disabled={busy}
           options={[

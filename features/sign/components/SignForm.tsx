@@ -31,12 +31,16 @@ import { ShareLinkSection } from './ShareLinkSection';
 import { SealOnboarding } from './SealOnboarding';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
-import { embedCertificateInPdf } from '../lib/pdf-embed';
+import { signaturePageOptions } from '../lib/pdf-signature-page';
+import { buildDeliverablePdf } from '../lib/signed-pdf';
+import { readP12Info, type P12Info } from '../lib/pdf-pades';
 import {
-  applyWatermark,
-  type WatermarkKind,
-  type WatermarkOptions,
-} from '../lib/pdf-watermark';
+  PadesSignSection,
+  emptyPadesConfig,
+  type PadesConfig,
+  type PadesStatus,
+} from './PadesSignSection';
+import type { WatermarkKind, WatermarkOptions } from '../lib/pdf-watermark';
 import {
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
@@ -59,6 +63,40 @@ type IdentityOpt = DisclosurePolicy | 'email';
 
 const isPdfResult = (r: { fileType: string; fileName: string }) =>
   r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
+
+/**
+ * Records the X.509 identity on the signer's OWN (newest) signature entry, so
+ * it travels inside the certificate. Co-signing rebuilds the PDF from the
+ * original — which drops the previous PAdES signature — so without this the
+ * earlier signer's certificate would disappear from the signed document.
+ */
+function withSignerCertificate(res: SignResult, info: P12Info | null): SignResult {
+  const signatures = res.envelope.signatures;
+  if (!info || signatures.length === 0) return res;
+  const updated = [...signatures];
+  updated[updated.length - 1] = {
+    ...updated[updated.length - 1],
+    certificate: {
+      subjectCN: info.subjectCN,
+      subjectO: info.subjectO,
+      issuer: info.issuer,
+      serialNumber: info.serialNumber,
+      validFrom: info.validFrom.toISOString(),
+      validTo: info.validTo.toISOString(),
+    },
+  };
+  return { ...res, envelope: { ...res.envelope, signatures: updated } };
+}
+
+/** Maps a PAdES/p12 signing failure to a dictionary error code. */
+function padesErrorCode(err: unknown): string {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return /mac|password|pkcs12|invalid|decrypt/.test(msg)
+    ? 'wrong_password'
+    : 'generic';
+}
+
+
 
 export function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   if (!v || typeof v !== 'object') return false;
@@ -130,12 +168,24 @@ export function SignForm({
   const [outputs, setOutputs] = useState<OutputFormat[]>(
     sharedOutputs && sharedOutputs.length > 0 ? sharedOutputs : ['detached'],
   );
+  // Until the user picks for themselves, a PDF also gets the embedded PDF: it
+  // is the self-contained artifact (certificate + original + visible page in
+  // one file), so it should not take an extra click to obtain.
+  const [outputsPicked, setOutputsPicked] = useState(
+    !!sharedOutputs && sharedOutputs.length > 0,
+  );
+  const effectiveOutputs: OutputFormat[] =
+    !outputsPicked && pdfOk ? [...new Set([...outputs, 'embedded' as const])] : outputs;
   // Watermark for the embedded (signed) PDF. Presentation only: the original is
   // embedded intact, so the document hash is unaffected.
   const [watermark, setWatermark] = useState<WatermarkKind>(
     sharedWatermark?.kind ?? 'none',
   );
   const [watermarkText, setWatermarkText] = useState(sharedWatermark?.text ?? '');
+  // Watermark carried inside a dropped signed PDF: it belongs to the document,
+  // not to this signer, so it is reused as-is and its picker stays hidden.
+  const [inheritedWatermark, setInheritedWatermark] =
+    useState<WatermarkOptions | null>(null);
   const [watermarkImage, setWatermarkImage] = useState<string | null>(null);
   const [watermarkImageFile, setWatermarkImageFile] = useState<File | null>(null);
   // A shared link — or a dropped PDF carrying an embedded request pointer —
@@ -147,11 +197,20 @@ export function SignForm({
   // ('sign'), or only issues invitations without signing ('send').
   const [inviteMode, setInviteMode] = useState<'sign' | 'send'>('sign');
   const [result, setResult] = useState<SignResult | null>(null);
+  // Optional PAdES / X.509 certificate signing (advanced, PDF output only).
+  const [pades, setPades] = useState<PadesConfig>(emptyPadesConfig);
+  const [padesError, setPadesError] = useState('');
+  const [padesStatus, setPadesStatus] = useState<PadesStatus>('idle');
+  // Separate from `padesStatus` so a re-check never clears the current verdict.
+  const [padesChecking, setPadesChecking] = useState(false);
+  // Certificate identity from the validated .p12, printed on the visible page.
+  const [padesCert, setPadesCert] = useState<P12Info | null>(null);
 
   const { sign, coSign, phase, error, reset } = useDocumentSign();
   const { createRequest, signRequest } = useSealRequest();
   const invitePreview = useTransactionPreview();
   const { activeNetworkId } = useRadixWallet();
+  const { language } = useLanguage();
 
   // A dropped signed PDF carries the certificate + original inside, so a
   // co-signer can drop ONE file: we auto-load the certificate and use the
@@ -177,12 +236,17 @@ export function SignForm({
           setCertError('');
           setCoSignBytes(original);
           setCoSignHash(blake2b256Hex(original));
+          // The document already has a look chosen by whoever started it: keep
+          // it verbatim (rebuilding from the original would otherwise strip it)
+          // and do not offer a second, competing watermark.
+          setInheritedWatermark(att.watermark);
           return;
         }
       }
       if (!cancelled) {
         setCoSignBytes(bytes);
         setCoSignHash(docHash);
+        setInheritedWatermark(null);
       }
     })();
     return () => {
@@ -200,7 +264,9 @@ export function SignForm({
     coSignMode &&
     loadedCert!.payload.signers.length > 0 &&
     envelopeComplete(loadedCert!);
-  const watermarkOptions: WatermarkOptions = {
+  // An inherited watermark wins: the document's look was decided by whoever
+  // started it, and every co-signer must reproduce it exactly.
+  const watermarkOptions: WatermarkOptions = inheritedWatermark ?? {
     kind: watermark,
     text: watermarkText,
     imageUrl: watermark === 'own' ? (watermarkImage ?? undefined) : undefined,
@@ -209,6 +275,57 @@ export function SignForm({
   // "On-chain" applies equally to single and multi signing — the only
   // difference downstream is whether the co-signer address list is shown.
   const onchainMode = onchain || forcedOnchain;
+
+  // Validate the PAdES certificate + password the moment both are present, so
+  // signing is blocked (and an error shown) BEFORE the wallet signs — never
+  // after. Debounced so it does not run on every keystroke. All state updates
+  // happen inside the timer (never synchronously in the effect body).
+  useEffect(() => {
+    let cancelled = false;
+    const file = pades.file;
+    const password = pades.password;
+    const ready = pades.enabled && !!file && !!password;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      if (!ready || !file) {
+        setPadesStatus('idle');
+        setPadesError('');
+        setPadesCert(null);
+        return;
+      }
+      // Only the spinner flag changes here: the previous verdict (and its
+      // message) STAYS on screen while re-checking, so typing never makes the
+      // error box disappear and reappear (which shifted the page and flickered).
+      setPadesChecking(true);
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        // Reading the identity IS the validation: null means wrong password or
+        // an unreadable file, and the details feed the visible page.
+        const info = await readP12Info(bytes, password);
+        if (cancelled) return;
+        setPadesCert(info);
+        setPadesStatus(info ? 'valid' : 'invalid');
+        setPadesError(info ? '' : 'wrong_password');
+      } catch {
+        if (cancelled) return;
+        setPadesCert(null);
+        setPadesStatus('invalid');
+        setPadesError('wrong_password');
+      } finally {
+        if (!cancelled) setPadesChecking(false);
+      }
+    }, ready ? 400 : 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pades.enabled, pades.file, pades.password]);
+
+  // Certificate signing applies to any PDF (every PDF now gets a signed PDF
+  // artifact). It blocks signing until the certificate is verified, so a bad
+  // password can never reach the wallet step.
+  const padesActive = pades.enabled && pdfOk;
+  const padesBlocking = padesActive && padesStatus !== 'valid';
 
   const identityValue: IdentityOpt[] = includeEmail
     ? [disclosure, 'email']
@@ -262,18 +379,32 @@ export function SignForm({
     let delivered = false;
     if (chosen.includes('embedded') && isPdfResult(res)) {
       try {
-        // Watermark is a visible layer on the delivered PDF; the ORIGINAL bytes
-        // are embedded intact (third arg) so the document hash still matches.
-        const visible = await applyWatermark(res.fileBytes, watermarkOptions);
-        const pdf = await embedCertificateInPdf(visible, res.envelope, res.fileBytes);
+        setPadesError('');
+        const pdf = await buildDeliverablePdf({
+          fileBytes: res.fileBytes,
+          envelope: res.envelope,
+          watermark: watermarkOptions,
+          pageOptions: await signaturePageOptions(
+            res.envelope,
+            t,
+            language,
+            padesActive,
+          ),
+          pades: padesActive ? pades : null,
+        });
         downloadBytes(
           pdf,
           `${stripExtension(res.fileName)}-signed.pdf`,
           'application/pdf',
         );
         delivered = true;
-      } catch {
-        // Fall back to the detached certificate below.
+      } catch (err) {
+        // A certificate failure must surface, never silently hand over a PDF
+        // missing the requested signature; other failures fall back to the JSON.
+        if (padesActive) {
+          setPadesError(padesErrorCode(err));
+          return;
+        }
       }
     }
     if (chosen.includes('detached') || !delivered) {
@@ -336,7 +467,8 @@ export function SignForm({
         onChain: onchainMode && !multi,
       });
       if (!res) return;
-      finalRes = res;
+      // Record the certificate on this signer's entry so it survives co-signing.
+      finalRes = padesActive ? withSignerCertificate(res, padesCert) : res;
     }
 
     // On-ledger required signer set: for "sign and send" the initiator is a
@@ -373,7 +505,7 @@ export function SignForm({
     }
 
     setResult(finalRes);
-    await deliver(finalRes, outputs);
+    await deliver(finalRes, effectiveOutputs);
   };
 
   // Preview the invitation transaction (multi on-ledger).
@@ -419,8 +551,10 @@ export function SignForm({
 
   const handleCoSign = async () => {
     if (!coSignBytes || !file || !loadedCert) return;
-    const res = await coSign(loadedCert, coSignBytes, file.name, file.type);
-    if (!res) return;
+    const signed = await coSign(loadedCert, coSignBytes, file.name, file.type);
+    if (!signed) return;
+    // This co-signer's own certificate, recorded alongside the earlier ones.
+    const res = padesActive ? withSignerCertificate(signed, padesCert) : signed;
 
     // On-ledger multi: the co-signer's signature is ROLA (above); we also mint
     // their OWN signature NFT (record) into their Seal collection, so the
@@ -448,7 +582,9 @@ export function SignForm({
     }
 
     setResult(res);
-    downloadCertificate(res.envelope);
+    // Deliver the SAME artifacts as a first signature (signed PDF included):
+    // the co-signer had to download the JSON and rebuild the PDF by hand before.
+    await deliver(res, effectiveOutputs);
   };
 
   // Deliver the already-complete certificate as a signed artifact: for a PDF,
@@ -461,10 +597,26 @@ export function SignForm({
       (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'));
     if (isPdf && coSignBytes) {
       try {
-        const pdf = await embedCertificateInPdf(coSignBytes, loadedCert, coSignBytes);
+        setPadesError('');
+        const pdf = await buildDeliverablePdf({
+          fileBytes: coSignBytes,
+          envelope: loadedCert,
+          watermark: watermarkOptions,
+          pageOptions: await signaturePageOptions(
+            loadedCert,
+            t,
+            language,
+            padesActive,
+          ),
+          pades: padesActive ? pades : null,
+        });
         downloadBytes(pdf, `${stripExtension(file.name)}-signed.pdf`, 'application/pdf');
         return;
-      } catch {
+      } catch (err) {
+        if (padesActive) {
+          setPadesError(padesErrorCode(err));
+          return;
+        }
         // Fall back to the detached certificate below.
       }
     }
@@ -486,8 +638,12 @@ export function SignForm({
         t={t}
         consoleT={consoleT}
         result={result}
-        outputs={outputs}
+        outputs={effectiveOutputs}
         onReset={startOver}
+        pades={padesActive ? pades : null}
+        watermark={watermarkOptions}
+        padesError={padesError}
+        onPadesError={setPadesError}
       />
     );
   }
@@ -538,10 +694,12 @@ export function SignForm({
     <ToolSection title={t.options.outputTitle} hint={t.options.outputHint}>
       <OptionButtons<OutputFormat>
         multiple
-        value={outputs}
+        value={effectiveOutputs}
         onChange={(v) => {
           // At least one output format must stay selected.
-          if (v.length > 0) setOutputs(v);
+          if (v.length === 0) return;
+          setOutputsPicked(true);
+          setOutputs(v);
         }}
         disabled={busy}
         options={[
@@ -562,7 +720,8 @@ export function SignForm({
     </ToolSection>
   );
 
-  const watermarkBox = pdfOk && outputs.includes('embedded') && (
+  // Hidden once the document already carries one (see `inheritedWatermark`).
+  const watermarkBox = pdfOk && !inheritedWatermark && (
     <ToolSection title={t.seal.watermarkTitle} hint={t.seal.watermarkHint}>
       <OptionButtons<WatermarkKind>
         value={watermark}
@@ -618,6 +777,20 @@ export function SignForm({
     </ToolSection>
   );
 
+  // Certificate signing makes sense for any PDF — including when co-signing,
+  // where each signer may add their own certificate.
+  const padesBox = pdfOk && (
+    <PadesSignSection
+      t={t}
+      config={pades}
+      onChange={setPades}
+      disabled={busy}
+      status={padesStatus}
+      checking={padesChecking}
+      error={padesError}
+    />
+  );
+
   return (
     <div className="space-y-5">
       {coSignMode ? (
@@ -646,6 +819,10 @@ export function SignForm({
               {errorMsg}
             </p>
           )}
+          {/* A co-signer gets the same PDF options as the initiator: their own
+              watermark and, above all, their OWN certificate. */}
+          {watermarkBox}
+          {padesBox}
           {coSignComplete ? (
             // Everyone required has already signed: no signature to add, just
             // hand over the finished signed document.
@@ -660,7 +837,7 @@ export function SignForm({
           ) : (
             <button
               type="button"
-              disabled={!coSignBytes || hashMismatch || busy}
+              disabled={!coSignBytes || hashMismatch || busy || padesBlocking}
               onClick={handleCoSign}
               className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >
@@ -700,7 +877,7 @@ export function SignForm({
             initialRequestId={sharedRequestId}
             account={onchainAccount}
             solo={false}
-            outputs={outputs}
+            outputs={effectiveOutputs}
             watermark={watermarkOptions}
           />
         </>
@@ -762,6 +939,8 @@ export function SignForm({
           {outputBox}
 
           {watermarkBox}
+
+          {padesBox}
 
           <ToolSection title={t.options.multiTitle} hint={t.options.multiHint}>
             <OptionButtons<'single' | 'multiple'>
@@ -899,7 +1078,7 @@ export function SignForm({
           <div className={onchainMode ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
             <button
               type="button"
-              disabled={!docHash || hashing || busy}
+              disabled={!docHash || hashing || busy || padesBlocking}
               onClick={handleSign}
               className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >
@@ -1006,6 +1185,10 @@ export function ResultPanel({
   outputs,
   onReset,
   allowAnchor = true,
+  pades,
+  watermark,
+  padesError,
+  onPadesError,
 }: {
   t: SignDictionary;
   consoleT: ConsoleDictionary;
@@ -1014,6 +1197,12 @@ export function ResultPanel({
   onReset: () => void;
   /** Basic mode hides the on-ledger anchoring option entirely. */
   allowAnchor?: boolean;
+  /** PAdES/X.509 config lifted from the form, so downloads keep the cert. */
+  pades?: PadesConfig | null;
+  /** Watermark lifted from the form, so downloads keep it too. */
+  watermark?: WatermarkOptions;
+  padesError?: string;
+  onPadesError?: (code: string) => void;
 }) {
   const [envelope, setEnvelope] = useState<AttestationEnvelope>(result.envelope);
   const { anchor, phase, error } = useDocumentSign();
@@ -1032,16 +1221,24 @@ export function ResultPanel({
     type: string;
   } | null>(null);
   useEffect(() => {
-    if (result.envelope.request) return;
     let cancelled = false;
     void (async () => {
       if (isPdfResult(result)) {
         try {
-          const pdf = await embedCertificateInPdf(
-            result.fileBytes,
+          // The shared artifact is the SAME file the download button produces:
+          // watermark, visible page, attachments and certificate signature.
+          const pdf = await buildDeliverablePdf({
+            fileBytes: result.fileBytes,
             envelope,
-            result.fileBytes,
-          );
+            watermark,
+            pageOptions: await signaturePageOptions(
+              envelope,
+              t,
+              language,
+              !!pades?.enabled,
+            ),
+            pades,
+          });
           if (!cancelled) {
             setShareArtifact({
               bytes: pdf,
@@ -1065,11 +1262,17 @@ export function ResultPanel({
     return () => {
       cancelled = true;
     };
-  }, [envelope, result]);
+  }, [envelope, result, language, t, pades, watermark]);
 
   const { payload } = envelope;
-  const pdfBtn = outputs.includes('embedded') && isPdfResult(result);
-  const certBtn = outputs.includes('detached') || !pdfBtn;
+  const padesErrorMsg = padesError
+    ? (t.pades.errors as Record<string, string>)[padesError] ?? t.pades.errors.generic
+    : '';
+  // Always offer BOTH artifacts: the signed PDF is the self-contained one and
+  // the JSON travels to other tools, so hiding either only costs the user a
+  // round trip through the options.
+  const pdfBtn = isPdfResult(result);
+  const certBtn = true;
 
   const signed = new Set(envelope.signatures.map((s) => s.signerAccount));
   const complete =
@@ -1139,14 +1342,31 @@ export function ResultPanel({
 
   const downloadPdf = async () => {
     try {
-      // Embed the original bytes so the signed PDF verifies on its own.
-      const pdf = await embedCertificateInPdf(result.fileBytes, envelope, result.fileBytes);
+      onPadesError?.('');
+      // Identical pipeline to the auto-download and the shared artifact, so the
+      // watermark and the certificate signature are never silently dropped.
+      const pdf = await buildDeliverablePdf({
+        fileBytes: result.fileBytes,
+        envelope,
+        watermark,
+        pageOptions: await signaturePageOptions(
+          envelope,
+          t,
+          language,
+          !!pades?.enabled,
+        ),
+        pades,
+      });
       downloadBytes(
         pdf,
         `${stripExtension(result.fileName)}-signed.pdf`,
         'application/pdf',
       );
-    } catch {
+    } catch (err) {
+      if (pades?.enabled) {
+        onPadesError?.(padesErrorCode(err));
+        return;
+      }
       downloadCertificate(envelope);
     }
   };
@@ -1180,14 +1400,19 @@ export function ResultPanel({
       {envelope.request ? (
         // Multi-party on-ledger: the link co-signers open to see the request
         // and co-sign, with the direct document channel available by default.
+        // It carries the SIGNED PDF once we have it (it holds the certificate,
+        // the signatures so far and the intact original in one file, and the
+        // receiver's dropzone recovers the original from it), falling back to
+        // the plain document while it is still being built.
         <ShareLinkSection
           t={t}
           requestKey={envelope.request.requestId}
           docName={payload.fileName}
-          fileName={result.fileName}
-          fileType={result.fileType}
-          bytes={result.fileBytes}
+          fileName={shareArtifact?.name ?? result.fileName}
+          fileType={shareArtifact?.type ?? result.fileType}
+          bytes={shareArtifact?.bytes ?? result.fileBytes}
           outputs={outputs}
+          networkId={envelope.request.networkId}
         />
       ) : (
         shareArtifact && (
@@ -1200,6 +1425,7 @@ export function ResultPanel({
             fileType={shareArtifact.type}
             bytes={shareArtifact.bytes}
             outputs={outputs}
+            networkId={payload.networkId}
             tab="sign"
             title={t.onchain.shareDocTitle}
             hint={t.onchain.shareDocHint}
@@ -1256,6 +1482,18 @@ export function ResultPanel({
             onClose={preview.reset}
           />
         </ToolSection>
+      )}
+
+      {padesErrorMsg && (
+        <p
+          className="rounded-xl border px-4 py-3 text-sm"
+          style={{
+            borderColor: 'var(--color-danger, #dc2626)',
+            color: 'var(--color-danger, #dc2626)',
+          }}
+        >
+          {padesErrorMsg}
+        </p>
       )}
 
       <div className="flex flex-col sm:flex-row gap-3">

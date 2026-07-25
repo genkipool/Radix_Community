@@ -4,15 +4,19 @@
  * `/Root /Names /EmbeddedFiles` name tree ourselves. All lazy, browser-only.
  */
 import type { AttestationEnvelope } from '../types/sign.types';
+import type { WatermarkOptions } from './pdf-watermark';
 import {
   CERT_ATTACHMENT,
   ORIGINAL_ATTACHMENT_PREFIX,
   REQUEST_ATTACHMENT,
+  WATERMARK_ATTACHMENT,
   type RequestPointer,
 } from './pdf-embed';
 
 export interface RadixAttachments {
   envelope: AttestationEnvelope | null;
+  /** Watermark the document was delivered with, so co-signing can keep it. */
+  watermark: WatermarkOptions | null;
   originalBytes: Uint8Array | null;
   originalName: string | null;
 }
@@ -100,7 +104,20 @@ export async function extractRadixAttachments(
   const originalName =
     originalEntry?.[0].replace(`${ORIGINAL_ATTACHMENT_PREFIX}-`, '') ?? null;
 
-  return { envelope, originalBytes, originalName };
+  // Presentation only, and re-applied verbatim by the next signer so the
+  // document keeps the look the initiator gave it.
+  let watermark: WatermarkOptions | null = null;
+  const wmBytes = files.get(WATERMARK_ATTACHMENT);
+  if (wmBytes) {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(wmBytes));
+      if (parsed && typeof parsed.kind === 'string') watermark = parsed;
+    } catch {
+      /* malformed watermark spec: the document simply loses it */
+    }
+  }
+
+  return { envelope, originalBytes, originalName, watermark };
 }
 
 /** The embedded request pointer + original document from a shared PDF. */

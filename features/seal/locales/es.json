@@ -50,6 +50,8 @@
           "desc": "Firma cualquier archivo con tu Radix Wallet. El documento se resume (hash) en local y nunca se sube: solo se firma el hash, probando integridad, fecha y control de la clave de la cuenta.",
           "points": [
             "Certificado adjunto o incrustado directamente en el PDF",
+            "Página de firma visible dentro del PDF, legible en cualquier lector",
+            "Firma opcional con tu propio certificado X.509 (PAdES), que Adobe y Foxit reconocen",
             "Anclaje opcional en el ledger como NFT soulbound",
             "Firma multiparte: varios firmantes en un mismo certificado",
             "Divulgación de identidad que tú controlas: nombre, email o solo firma",

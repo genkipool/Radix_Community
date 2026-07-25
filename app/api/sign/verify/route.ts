@@ -35,6 +35,23 @@ const proofSchema = z.object({
   curve: z.enum(['curve25519', 'secp256k1']),
 });
 
+/**
+ * Optional record of the X.509 certificate a signer used for the PDF's PAdES
+ * signature. Purely informational: it is NOT part of any verification (the ROLA
+ * proof does not commit to it), it only has to be accepted so certificates
+ * carrying it still validate.
+ */
+const signerCertificateSchema = z
+  .object({
+    subjectCN: z.string().max(256),
+    subjectO: z.string().max(256),
+    issuer: z.string().max(256),
+    serialNumber: z.string().max(128),
+    validFrom: z.string().max(64),
+    validTo: z.string().max(64),
+  })
+  .strict();
+
 const signatureSchema = z
   .object({
     signerAccount: z.string().max(256),
@@ -44,6 +61,7 @@ const signatureSchema = z
     // are verified via their on-chain signature NFT (chain of custody).
     proof: proofSchema.nullable(),
     signedAt: z.string().max(64),
+    certificate: signerCertificateSchema.optional(),
   })
   .strict();
 

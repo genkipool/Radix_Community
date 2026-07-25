@@ -33,7 +33,20 @@ export async function createSignaling(roomId: string): Promise<CipherSignaling> 
 
   let channel: RealtimeChannel;
   try {
-    channel = getSupabaseBrowserClient().channel(`cipher:${roomId}`, {
+    const client = getSupabaseBrowserClient();
+    const name = `cipher:${roomId}`;
+    // Only ONE channel may exist per topic. Two overlapping subscriptions fight
+    // over it — the first `unsubscribe()` tears the topic down for the second —
+    // which leaves a host that looks connected but receives nothing. React
+    // StrictMode (dev mounts every effect twice) and Fast Refresh produce
+    // exactly that overlap, so drop any stale channel before subscribing.
+    await Promise.all(
+      client
+        .getChannels()
+        .filter((existing) => existing.topic === `realtime:${name}`)
+        .map((stale) => client.removeChannel(stale).catch(() => undefined)),
+    );
+    channel = client.channel(name, {
       config: {
         broadcast: { self: false, ack: true },
         presence: { key: peerId },
@@ -43,11 +56,19 @@ export async function createSignaling(roomId: string): Promise<CipherSignaling> 
     throw new Error('signaling_unavailable');
   }
 
+  // Signals that arrive before `onSignal` is registered. Joining the room
+  // announces our presence, and the peer answers IMMEDIATELY — often before the
+  // caller (a tick later) installs its handler. Dropping those frames silently
+  // lost the offer, and the join then waited for one that never came again:
+  // the intermittent "shared link does not work" failure. Queue and replay.
+  const earlySignals: SignalMessage[] = [];
+
   channel.on('broadcast', { event: 'signal' }, ({ payload }) => {
     const signal = payload as SignalMessage;
     // Point-to-point: ignore our own echoes and frames meant for other peers.
     if (signal.from === peerId || signal.to !== peerId) return;
-    signalCb?.(signal);
+    if (signalCb) signalCb(signal);
+    else earlySignals.push(signal);
   });
 
   const announcePeers = () => {
@@ -88,6 +109,9 @@ export async function createSignaling(roomId: string): Promise<CipherSignaling> 
     },
     onSignal(cb) {
       signalCb = cb;
+      // Replay whatever landed while nobody was listening (see `earlySignals`).
+      const queued = earlySignals.splice(0);
+      for (const signal of queued) cb(signal);
     },
     onPeerJoin(cb) {
       joinCb = cb;

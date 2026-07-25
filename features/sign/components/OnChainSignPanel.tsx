@@ -30,7 +30,9 @@ import {
   buildSignatureMintManifest,
 } from '../lib/sign-request';
 import { embedCertificateInPdf, embedRequestInPdf } from '../lib/pdf-embed';
+import { signaturePageOptions } from '../lib/pdf-signature-page';
 import { applyWatermark, type WatermarkOptions } from '../lib/pdf-watermark';
+import { useLanguage } from '@/context/LanguageContext';
 import type { OutputFormat } from '../types/sign.types';
 import {
   buildOnChainCertificate,
@@ -83,6 +85,7 @@ export function OnChainSignPanel({
   watermark: WatermarkOptions;
 }) {
   const { activeNetworkId, accounts } = useRadixWallet();
+  const { language } = useLanguage();
   const { mintSeal, createCollection, createRequest, signRequest, phase, error } =
     useSealRequest();
   const preview = useTransactionPreview();
@@ -339,7 +342,12 @@ export function OnChainSignPanel({
       // Watermark is a visible layer; the original bytes are embedded intact so
       // the document hash is preserved for verification.
       const visible = await applyWatermark(doc.bytes, watermark);
-      const pdf = await embedCertificateInPdf(visible, cert, doc.bytes);
+      const pdf = await embedCertificateInPdf(
+        visible,
+        cert,
+        doc.bytes,
+        await signaturePageOptions(cert, t, language),
+      );
       downloadBytes(pdf, `${stripExtension(doc.file.name)}-signed.pdf`, 'application/pdf');
     } catch {
       downloadCertificate(cert);
@@ -461,6 +469,7 @@ export function OnChainSignPanel({
           bytes={doc.bytes}
           outputs={outputs}
           watermark={{ kind: watermark.kind, text: watermark.text }}
+          networkId={statusNetworkId ?? undefined}
         >
           {canShareAsPdf && (
             <>

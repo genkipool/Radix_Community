@@ -46,6 +46,12 @@ export const COLLECTION_MARKER_VALUE = 'v1';
 export const SIGN_COLLECTION_MARKER_KEY = 'radix_sign_collection';
 export const SIGN_COLLECTION_MARKER_VALUE = 'v1';
 
+/** Optional, owner-editable issuer identity on a signing collection. */
+export const ORG_NAME_KEY = 'org_name';
+export const ORG_URL_KEY = 'org_url';
+/** The collection's display image (owner-editable), used as the issuer logo. */
+export const ICON_URL_KEY = 'icon_url';
+
 /* ─── Display defaults ────────────────────────────────────────────────────── */
 
 export const RADIX_SEAL_NAME = 'Radix Seal';

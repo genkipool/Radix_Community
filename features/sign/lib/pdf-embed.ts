@@ -12,11 +12,17 @@
  * the user's OWN file, in their OWN browser, and is never uploaded.
  */
 import type { AttestationEnvelope } from '../types/sign.types';
+import {
+  appendSignaturePage,
+  type CertificatePageOptions,
+} from './pdf-signature-page';
+import type { WatermarkOptions } from './pdf-watermark';
 
 /** Attachment names — the extractor looks these up. */
 export const CERT_ATTACHMENT = 'radix-certificate.radixsig.json';
 export const ORIGINAL_ATTACHMENT_PREFIX = 'radix-original';
 export const REQUEST_ATTACHMENT = 'radix-request.json';
+export const WATERMARK_ATTACHMENT = 'radix-watermark.json';
 
 /**
  * Pointer to an on-ledger signing request, embedded into the shared PDF so
@@ -37,15 +43,35 @@ export interface RequestPointer {
 /**
  * Returns a new PDF identical to `pdfBytes` (already watermarked, if any) but
  * with the certificate and the original file attached. Throws on a bad PDF.
+ *
+ * When `signaturePage` is given, a VISIBLE signature-certificate page is also
+ * appended (best-effort: a rendering hiccup never blocks the attachments). The
+ * page is presentation only — the intact original is still embedded, so the
+ * document hash is unaffected (see pdf-signature-page.ts).
  */
 export async function embedCertificateInPdf(
   pdfBytes: Uint8Array,
   envelope: AttestationEnvelope,
   originalBytes?: Uint8Array,
+  signaturePage?: CertificatePageOptions,
+  /**
+   * The watermark that was stamped on this carrier. Attached so it TRAVELS with
+   * the document: co-signing rebuilds the PDF from the intact original, which
+   * would otherwise drop the initiator's watermark on every new signature.
+   */
+  watermarkSpec?: WatermarkOptions,
 ): Promise<Uint8Array> {
   const { PDFDocument } = await import('pdf-lib');
 
   const pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
+
+  if (signaturePage) {
+    try {
+      await appendSignaturePage(pdfDoc, envelope, signaturePage);
+    } catch {
+      // Visible page is optional; keep the machine-readable attachments below.
+    }
+  }
 
   const certJson = new TextEncoder().encode(JSON.stringify(envelope, null, 2));
   await pdfDoc.attach(certJson as Uint8Array<ArrayBuffer>, CERT_ATTACHMENT, {
@@ -61,6 +87,16 @@ export async function embedCertificateInPdf(
     await pdfDoc.attach(originalBytes as Uint8Array<ArrayBuffer>, name, {
       mimeType: 'application/octet-stream',
       description: 'Original signed document (for verification)',
+      creationDate: new Date(envelope.payload.timestamp),
+      modificationDate: new Date(envelope.payload.timestamp),
+    });
+  }
+
+  if (watermarkSpec && watermarkSpec.kind !== 'none') {
+    const wmJson = new TextEncoder().encode(JSON.stringify(watermarkSpec));
+    await pdfDoc.attach(wmJson as Uint8Array<ArrayBuffer>, WATERMARK_ATTACHMENT, {
+      mimeType: 'application/json',
+      description: 'Watermark applied to this document (presentation only)',
       creationDate: new Date(envelope.payload.timestamp),
       modificationDate: new Date(envelope.payload.timestamp),
     });
