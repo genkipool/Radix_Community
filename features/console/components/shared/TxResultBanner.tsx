@@ -10,6 +10,7 @@ import type { ConsoleCommonDictionary } from '../../types/i18n.types';
 import type { ConsoleTxResult } from '../../types/console.types';
 import type { TransactionPreviewResult } from '../../services/transactionPreview';
 import { BalanceChangeRow } from './SimulatePanel';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 
 interface TxResultBannerProps {
   t: ConsoleCommonDictionary;
@@ -85,7 +86,9 @@ export function TxResultBanner({ t, result, error, createdEntityLabel, onReset, 
 
   if (!result) return null;
 
-  const dashboardHref = `/${language}/dashboard?view=transactions&tx=${encodeURIComponent(result.transactionIntentHash)}&network=${activeNetwork}`;
+  const dashboardHref = dashboardRoutes.entity(language, result.transactionIntentHash, {
+    network: activeNetwork,
+  });
 
   return (
     <div className="relative rounded-2xl border border-[var(--color-primary)]/30 border-l-[4px] border-l-[var(--color-primary)] bg-[var(--color-primary)]/5 p-5 space-y-4 mt-4">

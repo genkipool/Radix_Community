@@ -2,7 +2,9 @@
 'use client';
 
 import { useState, useTransition, useDeferredValue, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { DashboardView, Network } from '../types';
+import { dashboardRoutes } from '../lib/routes';
 import { isRadixAddress } from '../utils/radixAddress';
 
 export interface UseDashboardUrlSyncOptions {
@@ -11,6 +13,8 @@ export interface UseDashboardUrlSyncOptions {
   initialNetwork: Network;
   initialSearchQuery: string;
   initialDateRange?: { start: string | null; end: string | null };
+  /** Active locale, needed to build canonical dashboard paths. */
+  locale: string;
 }
 
 function syncTxUrlParam(searchQuery: string) {
@@ -34,8 +38,10 @@ export function useDashboardUrlSync({
   initialNetwork,
   initialSearchQuery,
   initialDateRange = { start: null, end: null },
+  locale,
 }: UseDashboardUrlSyncOptions) {
 
+  const router = useRouter();
   const [, startViewTransition] = useTransition();
 
   const [activeView, setActiveView] = useState<DashboardView>(initialView);
@@ -73,38 +79,33 @@ export function useDashboardUrlSync({
     if (range.end) url.searchParams.set('end', range.end);
     else url.searchParams.delete('end');
 
-    if (activeView === 'transactions') {
-      url.searchParams.set('view', 'transactions');
-    }
-    
     window.history.replaceState({}, '', url.toString());
     setDateRange(range);
   };
 
+  /**
+   * Each view is a route of its own now, so switching is a real navigation:
+   * the URL becomes canonical, the server re-runs its prefetch, and the back
+   * button undoes the change. The local state is still updated so the switch
+   * paints immediately instead of waiting for the server round trip.
+   */
   const handleViewChange = (view: DashboardView) => {
-    const url = new URL(window.location.href);
-    if (view === 'transactions') {
-      url.searchParams.set('view', 'transactions');
-    } else {
-      url.searchParams.delete('view');
-      url.searchParams.delete('tag');
-    }
-    url.searchParams.set('network', network);
-    url.searchParams.delete('tx');
-    window.history.replaceState({}, '', url.toString());
     _setSearchQuery('');
     setDateRange({ start: null, end: null });
 
-    startViewTransition(() => setActiveView(view));
+    startViewTransition(() => {
+      setActiveView(view);
+      router.push(dashboardRoutes.view(locale, view, { network }), { scroll: false });
+    });
   };
 
   const handleNetworkChange = (net: Network) => {
     const url = new URL(window.location.href);
     url.searchParams.set('network', net);
-    if (activeView === 'transactions') {
-      url.searchParams.set('view', 'transactions');
-    }
+    // `tx` is the legacy focus param; drop both names so the new network is
+    // not left pointing at an entity that belongs to the other ledger.
     url.searchParams.delete('tx');
+    url.searchParams.delete('entity');
     window.history.replaceState({}, '', url.toString());
     _setSearchQuery('');
     setDateRange({ start: null, end: null });

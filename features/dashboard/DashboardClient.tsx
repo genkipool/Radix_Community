@@ -111,7 +111,7 @@ export default function DashboardClient({
     handleViewChange, handleNetworkChange,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
-    initialDateRange,
+    initialDateRange, locale: language,
   });
 
   /* Date Range Filter (Temporal state while picking dates) */

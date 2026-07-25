@@ -4,6 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { radixSealAddress } from '@/features/sign/constants/seal';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 
 /**
  * This site's own explorer, opened straight on the resource. The dashboard's
@@ -11,8 +12,9 @@ import { radixSealAddress } from '@/features/sign/constants/seal';
  * `validateAddress` before `validateTxHash`), so one link covers both.
  */
 function explorerResourceUrl(locale: string, network: string, address: string): string {
-  const net = network === 'Mainnet' ? 'mainnet' : 'stokenet';
-  return `/${locale}/dashboard?network=${net}&view=transactions&tx=${address}`;
+  return dashboardRoutes.entity(locale, address, {
+    network: network === 'Mainnet' ? 'mainnet' : 'stokenet',
+  });
 }
 
 /**

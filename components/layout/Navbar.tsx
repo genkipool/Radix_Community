@@ -823,7 +823,7 @@ export default function Navbar() {
               {NAV_LINKS.map((link) => {
                 const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
                   item.key === 'dashboard' && activeNetwork === 'stokenet'
-                    ? { ...item, href: '/dashboard?network=stokenet' }
+                    ? { ...item, href: '/dashboard/staking?network=stokenet' }
                     : item
                 );
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
@@ -1125,7 +1125,7 @@ export default function Navbar() {
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
                 const popupItems = NAV_POPUP_ITEMS[link.key]?.map(item => 
                   item.key === 'dashboard' && activeNetwork === 'stokenet'
-                    ? { ...item, href: '/dashboard?network=stokenet' }
+                    ? { ...item, href: '/dashboard/staking?network=stokenet' }
                     : item
                 );
                 const isHashLink = link.path.startsWith('/#');
