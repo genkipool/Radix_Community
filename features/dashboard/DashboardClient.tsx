@@ -81,6 +81,9 @@ export default function DashboardClient({
   initialNetwork,
   initialActiveTag = ['All'],
   initialTransactionActiveTag = 'All',
+  initialWalletFilter = true,
+  initialNetworkStats = null,
+  initialNetworkFromUrl = false,
   initialValSortMode = 'random',
   initialTxSortMode = 'newest',
   initialValColumns = 2,
@@ -105,13 +108,13 @@ export default function DashboardClient({
 
   /* View / Network / Search (URL Sync) / Date Range */
   const {
-    activeView, network, setNetwork, deferredNetwork,
+    activeView, network, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
     dateRange, handleDateRangeChange,
-    handleViewChange, handleNetworkChange,
+    handleViewChange, handleNetworkChange, setTagInUrl,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
-    initialDateRange,
+    initialDateRange, locale: language,
   });
 
   /* Date Range Filter (Temporal state while picking dates) */
@@ -123,32 +126,51 @@ export default function DashboardClient({
   
   const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses } = useRadixWallet();
 
-  // Derive wallet filter from connection state (avoid useEffect sync anti-pattern)
-  const [walletFilterToggled, setWalletFilterToggled] = useState(isConnected && accounts.length > 0);
-  const hasActiveSearch = searchQuery.trim().length > 0;
-  const isWalletFilterActive = !hasActiveSearch && walletFilterToggled && isConnected && accounts.length > 0;
 
-  const isMounted = useRef(false);
+  // Last network the WALLET reported. The trigger below has to be an actual
+  // wallet-side change, not merely "the wallet differs from the URL": the URL
+  // is the source of truth, and while `switchNetwork` is in flight the two
+  // legitimately disagree. Reacting to the difference navigated away from a
+  // freshly opened entity link before its wallet switch had landed.
+  const lastWalletNetwork = useRef<string | null>(null);
 
   // Synchronize dashboard network with wallet activeNetwork
   useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
-      // On initial mount, if URL network differs from default wallet network, sync wallet TO url.
-      if (network && activeNetwork && activeNetwork !== network) {
+    // Nothing to reconcile until the wallet reports a network.
+    if (!activeNetwork) return;
+
+    const previouslyKnown = lastWalletNetwork.current;
+    lastWalletNetwork.current = activeNetwork;
+
+    // FIRST time we learn the wallet's network. That is hydration, not a choice
+    // the user just made: the wallet connects a moment after the page mounts and
+    // reports its default. Treating it as a switch is what dragged a Stokenet
+    // link onto Mainnet the instant the wallet woke up.
+    //
+    // The URL is the source of truth, so the WALLET follows it, never the other
+    // way round, or a shared link would open on the wrong ledger.
+    if (previouslyKnown === null) {
+      if (activeNetwork !== network) {
         switchNetwork(network as 'mainnet' | 'stokenet');
       }
       return;
     }
 
-    // On subsequent changes, if wallet network changes (e.g., from modal), sync dashboard TO wallet.
-    if (activeNetwork && network && activeNetwork !== network) {
-      setNetwork(activeNetwork);
-      const url = new URL(window.location.href);
-      url.searchParams.set('network', activeNetwork);
-      window.history.replaceState({}, '', url.toString());
+    // A link that names its network PINS the page, and the wallet never drags
+    // it elsewhere. This is not a nicety: the wallet provider restores its own
+    // network from a cookie in a `setTimeout(0)` right after mount, and when
+    // there is no session for the requested ledger it forces its own choice
+    // outright. Following that would yank a shared Stokenet link onto Mainnet a
+    // blink after opening it, and re-asserting instead would just loop against
+    // a provider that is behaving correctly. The dashboard can perfectly well
+    // display one ledger while the wallet is connected to another.
+    if (initialNetworkFromUrl) return;
+
+    // No network in the URL, so the wallet leads: follow a real switch.
+    if (activeNetwork !== previouslyKnown && activeNetwork !== network) {
+      handleNetworkChange(activeNetwork as 'mainnet' | 'stokenet');
     }
-  }, [activeNetwork, network, switchNetwork, setNetwork]);
+  }, [activeNetwork, network, switchNetwork, handleNetworkChange, initialNetworkFromUrl]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
     setPendingRange(range);
@@ -176,12 +198,31 @@ export default function DashboardClient({
     initialValReadingMode, initialTxReadingMode,
     initialValAutoCollapse, initialTxAutoCollapse,
     initialActiveTag, initialTransactionActiveTag,
+    initialWalletFilter,
   });
+
+  // The toggle is a persisted preference (see useDashboardPreferences): a view
+  // change is a real navigation, so anything kept only in memory would reset.
+  const walletFilterToggled = prefs.walletFilter;
+  const setWalletFilterToggled = prefs.setWalletFilter;
+  const hasActiveSearch = searchQuery.trim().length > 0;
+  const isWalletFilterActive = !hasActiveSearch && walletFilterToggled && isConnected && accounts.length > 0;
 
   // ── View-local derived values (validators vs transactions) ──
   const sortMode = activeView === 'staking' ? prefs.valSortMode : prefs.txSortMode;
   const columns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
-  const deferredColumns = useDeferredValue(columns);
+  // Deferring the column count keeps the grid responsive while the user drags
+  // the column slider. But a deferred value holds the PREVIOUS one for a
+  // render, and each view has its own count, so on a view switch that painted
+  // the other view's grid for a frame — the flicker.
+  //
+  // Tagging the value with the view it belongs to fixes it without losing the
+  // benefit: while the deferred pair still refers to the view we just left, the
+  // immediate count is used instead.
+  const columnsForView = { view: activeView, columns };
+  const deferredPair = useDeferredValue(columnsForView);
+  const deferredColumns =
+    deferredPair.view === activeView ? deferredPair.columns : columns;
   const readingMode = activeView === 'staking' ? prefs.valReadingMode : prefs.txReadingMode;
   const autoCollapse = activeView === 'staking' ? prefs.valAutoCollapse : prefs.txAutoCollapse;
 
@@ -239,9 +280,14 @@ export default function DashboardClient({
   const { copiedText: copiedAddress, copy: copyAddress } = useCopyToClipboard(600);
 
   /* ══ React Query — Validators ============================== */
-  const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(deferredNetwork);
+  // Only the staking view needs the validator list; the explorer gets the
+  // aggregates it displays from the server instead of 287 full objects.
+  const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(
+    deferredNetwork,
+    activeView === 'staking',
+  );
   const realValidators = validatorsData?.validators ?? [];
-  const networkStats = validatorsData?.networkStats ?? null;
+  const networkStats = validatorsData?.networkStats ?? initialNetworkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
   const connectedAddresses = (isConnected && accounts.length > 0) 
@@ -305,7 +351,10 @@ export default function DashboardClient({
 
 
   /* ── Infinite scroll effects ─────────────────────────────── */
-  useInfiniteScrollTx({ activeView, hasNextPage, isFetchingNextPage, fetchNextPage });
+  const visibleTxCount = useInfiniteScrollTx({
+    activeView, hasNextPage, isFetchingNextPage, fetchNextPage,
+    loadedCount: txs.length,
+  });
   // Loops removed: server now handles filtering via "query"
 
   /* ── Derived network stats (fallback) ────────────────────── */
@@ -327,6 +376,7 @@ export default function DashboardClient({
   const { filteredTxs, explorerStats: _explorerStats } = useExploradorFilters({
     txs, deferredSearch, activeView,
   });
+  const visibleTxs = filteredTxs.slice(0, visibleTxCount);
 
   /* ── Reading-mode: resolve the currently open card ──────── */
   const expandedPostId = expanded.expandedPosts.size > 0
@@ -409,9 +459,7 @@ export default function DashboardClient({
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           activeView={activeView}
-          onViewChange={(view) => {
-            handleViewChange(view);
-          }}
+          onViewChange={handleViewChange}
           network={network}
           onNetworkChange={(net) => {
             handleNetworkChange(net);
@@ -448,14 +496,8 @@ export default function DashboardClient({
           transactionActiveTag={prefs.transactionActiveTag}
           onTransactionTagChange={(tag) => {
             prefs.setTransactionActiveTag(tag);
-            // Sync tag to URL so server prefetches correct filtered data
-            const url = new URL(window.location.href);
-            if (tag && tag !== 'All') {
-              url.searchParams.set('tag', tag);
-            } else {
-              url.searchParams.delete('tag');
-            }
-            window.history.replaceState({}, '', url.toString());
+            // The URL owns the filter, so the server prefetches the right slice.
+            setTagInUrl(tag);
           }}
           sortMode={sortMode}
           onSortModeChange={setSortMode}
@@ -492,7 +534,11 @@ export default function DashboardClient({
             }
           }}
           isWalletFilterActive={isWalletFilterActive}
-          onWalletFilterChange={setWalletFilterToggled}
+          // Toggle the RAW preference, never the derived one. The button is
+          // shown as inactive while a search is on (the search wins), so
+          // writing the derived value back turned the filter ON instead of
+          // off, and it then snapped on as soon as the search was cleared.
+          onWalletFilterChange={() => setWalletFilterToggled((on: boolean) => !on)}
           dt={dt}
         />
 
@@ -504,7 +550,10 @@ export default function DashboardClient({
             filteredValidators={filtered}
             visibleValCount={visibleValCount}
             sentinelRef={sentinelRef}
-            filteredTxs={filteredTxs}
+            // Only the visible window is rendered, exactly as the validator
+            // grid does with visibleValCount. The full list stays available to
+            // the expanded-card modal below.
+            filteredTxs={visibleTxs}
             loadingTxs={loadingTxs}
             txsInitialized={txsInitialized}
             columns={deferredColumns}

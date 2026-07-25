@@ -434,8 +434,14 @@
         }
       ],
       "cta": "Verificar un documento",
+      "apiTitle": "API pública de verificación",
+      "apiHint": "Tus sistemas pueden comprobar un certificado sin navegador, sin wallet, sin cuenta y sin clave de API. El endpoint no recibe nunca el documento: solo el certificado.",
+      "apiCurlLabel": "Verificar un certificado",
+      "apiNote": "Responde si cada firma es válida y si han firmado todos los requeridos. Para probar que se trata de tu documento, calcula su hash Blake2b-256 y compáralo con el que devuelve la respuesta.",
+      "apiDocs": "Documentación completa del estándar",
       "officialTitle": "Recurso oficial de Radix Seal",
       "officialHint": "El recurso de marca auténtico en cada red. Una colección de firma solo es auténtica si sus metadatos referencian una de estas direcciones. Confirma la dirección antes de confiar en una colección.",
+      "officialExplorer": "Ver el recurso en el explorador",
       "officialCopy": "Copiar"
     },
     "anatomy": {

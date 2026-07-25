@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BadgeCheck, Download, ExternalLink, Lock, RotateCcw, Share2, Stamp, XCircle } from 'lucide-react';
+import { BadgeCheck, Download, ExternalLink, Lock, RotateCcw, Stamp, XCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { explorerTxUrl } from '@/features/sign/lib/explorer';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { StringListField } from '@/features/console/components/shared/StringListField';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
+import { SendSessionView } from './SendSessionView';
 import {
   SimulateButton,
   SimulateResultCard,
@@ -18,7 +19,6 @@ import { buildCipherInviteManifest } from '@/features/sign/lib/sign-request';
 import { sealImageUrl } from '@/features/sign/constants/seal';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import type { CipherDictionary } from '../types/dictionary';
-import type { EncryptResult } from '../hooks/useEncryptFlow';
 import { useEncryptFlow } from '../hooks/useEncryptFlow';
 import { formatBytes } from '../lib/format';
 import { TransferProgress } from './TransferProgress';
@@ -38,14 +38,12 @@ interface EncryptPanelProps {
   actingAccount: string | null;
   /** Console dictionary — provides the shared Simulate button/result strings. */
   consoleT: ConsoleDictionary;
-  /** When provided, the result card offers sharing the file with a receiver. */
-  onShare?: (result: EncryptResult) => void;
   /** Fired whenever the current result is discarded (new file / start over). */
   onReset?: () => void;
 }
 
 /** Encrypt tab body: pick a file, sign, stream-encrypt, download/share. */
-export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, actingAccount, onShare, onReset }: EncryptPanelProps) {
+export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, actingAccount, onReset }: EncryptPanelProps) {
   const flow = useEncryptFlow();
   const preview = useTransactionPreview();
   const { language } = useLanguage();
@@ -113,6 +111,10 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
   // completes, for ROLA + Ledger once the on-ledger record is minted.
   const downloadedRef = useRef(false);
   const downloadable = flow.phase === 'ready' && !!flow.result && (!ledger || mintState === 'done');
+  // The share session opens on its own as soon as the file is ready (no button
+  // to hunt for, same as signing and chat); cancelling it hides the panel until
+  // the next encryption.
+  const [shareDismissed, setShareDismissed] = useState(false);
   useEffect(() => {
     if (!downloadable || downloadedRef.current) return;
     downloadedRef.current = true;
@@ -151,6 +153,7 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
     if (busy) return;
     onFileChange(candidate);
     if (flow.phase !== 'idle') {
+      setShareDismissed(false);
       onReset?.();
       void flow.reset();
       setMintState('idle');
@@ -162,6 +165,7 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
 
   const restart = () => {
     onFileChange(null);
+    setShareDismissed(false);
     onReset?.();
     void flow.reset();
     setMintState('idle');
@@ -324,20 +328,6 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
               <Download className="size-4" />
               {t.encrypt.download}
             </button>
-            {onShare && (
-              <button
-                type="button"
-                onClick={() => flow.result && onShare(flow.result)}
-                className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
-                style={{
-                  borderColor: 'var(--color-card-border)',
-                  color: 'var(--color-text-main)',
-                }}
-              >
-                <Share2 className="size-4" />
-                {t.encrypt.share}
-              </button>
-            )}
             {txHash && (
               <a
                 href={explorerTxUrl(language, txHash)}
@@ -364,6 +354,16 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
             </button>
           </div>
         </ToolSection>
+      )}
+
+      {/* Sharing needs no button: the moment the file is ready its link and QR
+          are on screen, exactly like the signing and chat flows. */}
+      {downloadable && flow.result && !shareDismissed && (
+        <SendSessionView
+          t={t}
+          result={flow.result}
+          onCancel={() => setShareDismissed(true)}
+        />
       )}
     </div>
   );

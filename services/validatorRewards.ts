@@ -42,6 +42,33 @@ const REDIS_REWARDS_ALL = 'validator_rewards_all';
 const REDIS_REWARDS_YEAR_PREFIX = 'validator_rewards_';
 const REDIS_REWARDS_META = 'validator_rewards_meta';
 const REDIS_EPOCH_REWARDS = 'validator_epoch_rewards';
+
+/**
+ * How many finished epochs of per-epoch rewards are kept, and therefore how far
+ * back a sync can still repair. The epoch-history table shows 6, so this leaves
+ * margin. The sync window is derived from this so the two cannot drift: a run
+ * that fetched fewer epochs than are retained would leave permanent holes.
+ */
+export const EPOCH_REWARDS_RETENTION = 10;
+
+/**
+ * Cache tag for the per-epoch rewards read path. Exported so the sync can
+ * invalidate exactly what it just rewrote: the reader caches for minutes, so
+ * without this a freshly synced epoch stayed invisible and its reward columns
+ * looked empty even though the data was already in Redis.
+ */
+export const EPOCH_REWARDS_CACHE_TAG = 'all_validator_epoch_rewards_cache';
+
+/**
+ * How many FINISHED epochs the history table must be able to fill in.
+ *
+ * The table draws 6 rows: the live epoch, which has no rewards yet by
+ * definition, plus the 5 that closed before it. Every one of those 5 has to
+ * carry its v XRD / d XRD figures, so the sync treats any of them missing from
+ * Redis as damage to repair rather than as history.
+ */
+export const EPOCH_REWARDS_MIN_COVERAGE = 5;
+
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const MAX_YEARS_TO_KEEP = 5;
 
@@ -263,9 +290,19 @@ export async function syncRewardsToRedis(
         pipeline.set(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`, bucket);
     }
 
-    // Store last 6 epochs reward data for the epoch history table
+    // Per-epoch rewards for the history table.
+    //
+    // This is deliberately NOT gated on `processedEpochs`. That set only holds
+    // epochs that passed the per-validator accumulation guard above, which
+    // exists to stop daily/yearly totals being counted twice — a different
+    // question from "does the table have this epoch". Gating both on it meant a
+    // re-fetched epoch could never be repaired: the guard skipped it, the set
+    // came back empty, and the whole block was skipped with it. Backfilling a
+    // hole here is idempotent, because each epoch is assigned, not added.
     const epochNumbers = Array.from(processedEpochs).sort((a, b) => b - a);
-    if (epochNumbers.length > 0) {
+    const fetchedEpochs = Array.from(new Set(events.map((ev) => ev.epoch)));
+
+    if (events.length > 0) {
         // Build per-epoch map: { epoch -> { address -> { fee, pool } } }
         const epochMap: Record<number, Record<string, { fee: number; pool: number }>> = {};
         for (const ev of events) {
@@ -273,35 +310,52 @@ export async function syncRewardsToRedis(
             epochMap[ev.epoch][ev.validatorAddress] = { fee: ev.validatorFeeXrd, pool: ev.stakePoolAddedXrd };
         }
 
-        // Read existing epoch rewards and merge
+        // Read existing epoch rewards and merge.
+        //
+        // A failed read must not be mistaken for "there was nothing": falling
+        // back to {} would rewrite the key with only this run's epochs and wipe
+        // every epoch already stored. So a read error aborts the merge instead.
         let existingEpochRewards: Record<string, Record<string, { fee: number; pool: number }>> | null = null;
+        let readFailed = false;
         try {
             existingEpochRewards = await redis.get(REDIS_EPOCH_REWARDS);
-        } catch {
-            // First time
+        } catch (e) {
+            readFailed = true;
+            logger.error({ err: e }, '[ValidatorRewards] Could not read epoch rewards; skipping epoch-map write to avoid destroying stored epochs');
         }
 
-        const merged = existingEpochRewards ?? {};
-        for (const [epoch, rewards] of Object.entries(epochMap)) {
-            merged[epoch] = rewards;
-        }
+        if (!readFailed) {
+            const merged = existingEpochRewards ?? {};
+            for (const [epoch, rewards] of Object.entries(epochMap)) {
+                merged[epoch] = rewards;
+            }
 
-        // Keep only last 10 epochs (buffer beyond the 6 displayed)
-        const sortedKeys = Object.keys(merged)
-            .map(Number)
-            .sort((a, b) => b - a)
-            .slice(0, 10);
-        const pruned: Record<string, Record<string, { fee: number; pool: number }>> = {};
-        for (const k of sortedKeys) {
-            pruned[k.toString()] = merged[k.toString()];
-        }
+            // Keep only the retained window (buffer beyond the 6 displayed).
+            const sortedKeys = Object.keys(merged)
+                .map(Number)
+                .sort((a, b) => b - a)
+                .slice(0, EPOCH_REWARDS_RETENTION);
+            const pruned: Record<string, Record<string, { fee: number; pool: number }>> = {};
+            for (const k of sortedKeys) {
+                pruned[k.toString()] = merged[k.toString()];
+            }
 
-        pipeline.set(REDIS_EPOCH_REWARDS, pruned);
+            pipeline.set(REDIS_EPOCH_REWARDS, pruned);
+        }
     }
 
-    // Update sync metadata
+    // Update sync metadata.
+    //
+    // The high-water mark must never move backwards. `Math.max(...[], 0)` reset
+    // it to zero whenever every event was skipped by the accumulation guard,
+    // which made the next run treat all of history as new.
+    const previousMeta = await getRewardsSyncMeta().catch(() => null);
     const meta: RewardsSyncMeta = {
-        lastProcessedEpoch: Math.max(...epochNumbers, 0),
+        lastProcessedEpoch: Math.max(
+            ...epochNumbers,
+            ...fetchedEpochs,
+            previousMeta?.lastProcessedEpoch ?? 0,
+        ),
         lastRunTimestamp: new Date().toISOString(),
     };
     pipeline.set(REDIS_REWARDS_META, meta);
@@ -325,7 +379,7 @@ import { cacheLife, cacheTag } from 'next/cache';
 async function getCachedAllEpochRewards() {
     "use cache";
     cacheLife("minutes");
-    cacheTag('all_validator_epoch_rewards_cache');
+    cacheTag(EPOCH_REWARDS_CACHE_TAG);
 
     const redis = getRedis();
     if (!redis) return null;
@@ -474,5 +528,53 @@ export async function getRewardsSyncMeta(): Promise<RewardsSyncMeta | null> {
         return await redis.get<RewardsSyncMeta>(REDIS_REWARDS_META);
     } catch {
         return null;
+    }
+}
+
+/**
+ * Which epochs currently hold per-epoch reward data.
+ *
+ * Read straight from Redis rather than through the cached getter: the sync uses
+ * this to decide what to repair, and a cached answer would have it repairing
+ * epochs it already fixed, or missing ones it just lost.
+ */
+export async function getStoredEpochRewardEpochs(): Promise<number[]> {
+    const redis = getRedis();
+    if (!redis) return [];
+
+    try {
+        const data = await redis.get<Record<string, unknown>>(REDIS_EPOCH_REWARDS);
+        if (!data) return [];
+        return Object.keys(data)
+            .map(Number)
+            .filter(Number.isFinite)
+            .sort((a, b) => b - a);
+    } catch (e) {
+        logger.error({ err: e }, '[ValidatorRewards] Failed to read stored epoch list');
+        return [];
+    }
+}
+
+/**
+ * Records that a sync ran, without claiming it processed anything.
+ *
+ * Most runs of a five-minute cron find nothing new, because epochs also last
+ * about five minutes. Those runs returned success and wrote nothing at all, so
+ * `lastRunTimestamp` went stale while the job was perfectly healthy — leaving
+ * no way to tell a quiet cron from a dead one. This marks the run as alive and
+ * leaves the high-water mark untouched.
+ */
+export async function touchSyncRun(): Promise<void> {
+    const redis = getRedis();
+    if (!redis) return;
+
+    try {
+        const previous = await redis.get<RewardsSyncMeta>(REDIS_REWARDS_META);
+        await redis.set(REDIS_REWARDS_META, {
+            lastProcessedEpoch: previous?.lastProcessedEpoch ?? 0,
+            lastRunTimestamp: new Date().toISOString(),
+        } satisfies RewardsSyncMeta);
+    } catch (e) {
+        logger.error({ err: e }, '[ValidatorRewards] Failed to record sync heartbeat');
     }
 }

@@ -24,12 +24,19 @@ export function ChatTransactionModal({
   peerAccount,
   onClose,
   onTransactionSent,
+  container,
 }: {
   t: ChatDictionary;
   peerAccount: string;
   onClose: () => void;
   /** Fires when the transfer commits; the chat announces it, then we close. */
   onTransactionSent: (summary: SentTransactionSummary) => void;
+  /**
+   * Render into this element instead of the page body. Used when the chat is in
+   * its floating window: the form then gets a window of its own, so it fills it
+   * edge to edge rather than being an overlay squeezed into a small viewport.
+   */
+  container?: HTMLElement | null;
 }) {
   const { t: fullDictionary, language } = useLanguage();
   const { accounts } = useRadixWallet();
@@ -38,6 +45,9 @@ export function ChatTransactionModal({
   );
 
   if (typeof document === 'undefined') return null;
+  // A dedicated window needs no dimming backdrop and no click-outside to close:
+  // the window's own chrome is the way out.
+  const ownWindow = !!container;
 
   const handleSent = (summary: SentTransactionSummary) => {
     onTransactionSent(summary);
@@ -46,12 +56,18 @@ export function ChatTransactionModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex overflow-y-auto bg-black/70 p-4 sm:p-6"
-      style={{ backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
+      className={
+        ownWindow
+          ? 'flex min-h-full w-full overflow-y-auto p-4'
+          : 'fixed inset-0 z-[120] flex overflow-y-auto bg-black/70 p-4 sm:p-6'
+      }
+      style={ownWindow ? undefined : { backdropFilter: 'blur(4px)' }}
+      onClick={ownWindow ? undefined : onClose}
     >
       <div
-        className="m-auto w-full max-w-2xl rounded-3xl border shadow-2xl"
+        className={`m-auto w-full ${
+          ownWindow ? 'max-w-none' : 'max-w-2xl rounded-3xl border shadow-2xl'
+        }`}
         style={{
           background: 'var(--color-card-bg)',
           borderColor: 'var(--color-card-border)',
@@ -104,6 +120,6 @@ export function ChatTransactionModal({
         </div>
       </div>
     </div>,
-    document.body,
+    container ?? document.body,
   );
 }

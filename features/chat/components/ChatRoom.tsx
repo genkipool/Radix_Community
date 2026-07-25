@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { LogOut, Send, ShieldCheck } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { LogOut, PictureInPicture2, Send, ShieldCheck } from 'lucide-react';
 import { shortAddress } from '@/utils/format';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -12,6 +13,8 @@ import type { ChatMessage, VerifiedPeer } from '../types/chat.types';
 import { ChatComposer } from './ChatComposer';
 import { ChatTransactionModal } from './ChatTransactionModal';
 import { MessageBubble } from './MessageBubble';
+import { useDocumentPip } from '../hooks/useDocumentPip';
+import { useDetachedWindow } from '../hooks/useDetachedWindow';
 
 /** The secure room: verified-identity header, message log and composer. */
 export function ChatRoom({
@@ -44,6 +47,13 @@ export function ChatRoom({
   const { entries: addressBook } = useAddressBook();
   const [txOpen, setTxOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // Floating always-on-top window, so the conversation stays visible while the
+  // user works elsewhere. Chromium-only, hence the capability check.
+  const pip = useDocumentPip();
+  // Only one Picture-in-Picture window is allowed per tab, so when the chat is
+  // the one floating, the transaction form gets a detached window of its own
+  // instead of being squeezed into the small chat window.
+  const txWindow = useDetachedWindow();
 
   // Display name for the peer: the name saved for that address in the agenda
   // first, then its label if it is one of the connected wallet's own accounts;
@@ -55,6 +65,11 @@ export function ChatRoom({
 
   // Post a short summary of a committed transfer into the chat; the txid is
   // linkified to the explorer by MessageBubble.
+  const closeTx = () => {
+    setTxOpen(false);
+    txWindow.close();
+  };
+
   const announceTransaction = (summary: SentTransactionSummary) => {
     const amounts = summary.transfers
       .map((x) => `${x.amount} ${x.symbol}`)
@@ -107,7 +122,9 @@ export function ChatRoom({
     };
   }, [fullscreen]);
 
-  const height = fullscreen
+  const height = pip.pipWindow
+    ? '100dvh'
+    : fullscreen
     ? '100dvh'
     : isMobile
       ? '70dvh'
@@ -115,17 +132,20 @@ export function ChatRoom({
         ? `${deskHeight}px`
         : 'calc(100dvh - 17rem)';
 
-  return (
+  const card = (
     <div
       ref={cardRef}
       className={`flex flex-col overflow-hidden ${
-        fullscreen
-          ? 'fixed inset-0 z-[100] border-0'
-          : 'relative rounded-3xl border'
+        pip.pipWindow
+          ? 'h-full border-0'
+          : fullscreen
+            ? 'fixed inset-0 z-[100] border-0'
+            : 'relative rounded-3xl border'
       }`}
       style={{
         height,
-        minHeight: fullscreen ? undefined : '20rem',
+        // The floating window sizes itself, so no minimum may fight it.
+        minHeight: fullscreen || pip.pipWindow ? undefined : '20rem',
         background: 'var(--color-card-bg)',
         borderColor: 'var(--color-card-border)',
       }}
@@ -175,12 +195,31 @@ export function ChatRoom({
         {!closed && (
           <button
             type="button"
-            onClick={() => setTxOpen(true)}
+            onClick={() => {
+              if (pip.pipWindow) {
+                txWindow.open({ title: t.room.txTitle });
+              }
+              setTxOpen(true);
+            }}
             className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
             style={{ color: 'var(--color-primary)' }}
           >
             <Send className="size-3.5" />
             <span className="hidden sm:inline">{t.room.sendTx}</span>
+          </button>
+        )}
+        {pip.supported && !closed && (
+          <button
+            type="button"
+            onClick={() => (pip.pipWindow ? pip.close() : void pip.open())}
+            className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+            style={{ color: 'var(--color-text-muted)' }}
+            title={pip.pipWindow ? t.room.pipExit : t.room.pip}
+          >
+            <PictureInPicture2 className="size-3.5" />
+            <span className="hidden lg:inline">
+              {pip.pipWindow ? t.room.pipExit : t.room.pip}
+            </span>
           </button>
         )}
         <button
@@ -237,10 +276,42 @@ export function ChatRoom({
         <ChatTransactionModal
           t={t}
           peerAccount={peer.account}
-          onClose={() => setTxOpen(false)}
+          container={txWindow.detached?.document.body ?? null}
+          onClose={closeTx}
           onTransactionSent={announceTransaction}
         />
       )}
     </div>
+  );
+
+  if (!pip.pipWindow) return card;
+
+  // Live in the floating window, leaving a compact placeholder in the page so
+  // the conversation is obviously still open and one click brings it back.
+  return (
+    <>
+      <div
+        className="flex flex-col items-center justify-center gap-4 rounded-3xl border px-6 py-12 text-center"
+        style={{
+          background: 'var(--color-card-bg)',
+          borderColor: 'var(--color-card-border)',
+        }}
+      >
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-primary)]">
+          <PictureInPicture2 className="size-6 text-white" />
+        </div>
+        <p className="text-sm font-bold" style={{ color: 'var(--color-text-main)' }}>
+          {t.room.pipActive}
+        </p>
+        <button
+          type="button"
+          onClick={pip.close}
+          className="flex items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
+        >
+          {t.room.pipExit}
+        </button>
+      </div>
+      {createPortal(card, pip.pipWindow.document.body)}
+    </>
   );
 }

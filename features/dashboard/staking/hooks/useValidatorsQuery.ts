@@ -17,8 +17,15 @@ interface ValidatorsData {
   networkStats: NetworkStats;
 }
 
-export function useValidatorsQuery(network: Network) {
+/**
+ * @param enabled  Views that do not show validators pass `false`, so the
+ *                 explorer neither ships the list in its payload nor fetches
+ *                 it on the client. Its aggregate figures arrive separately as
+ *                 `networkStats` from the server.
+ */
+export function useValidatorsQuery(network: Network, enabled = true) {
   return useQuery<ValidatorsData>({
+    enabled,
     queryKey:    ['validators', network],
     queryFn:     () => apiFetchValidators(network as 'mainnet' | 'stokenet'),
     staleTime:               300_000,

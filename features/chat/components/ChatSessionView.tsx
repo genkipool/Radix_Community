@@ -115,7 +115,6 @@ export function ChatSessionView({
             title={t.share.title}
             hint={t.share.hint}
             url={session.shareUrl}
-            copyLabel={t.share.copy}
             qrAlt={t.share.qrAlt}
           />
           <ProgressRow label={t.status.waiting} />

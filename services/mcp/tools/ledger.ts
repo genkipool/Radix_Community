@@ -31,6 +31,7 @@ import {
 import type { NetworkStats, TransactionInfo, Validator } from '@/types/radix';
 import { defineMcpTool } from '../registry';
 import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 
 const networkSchema = z
   .enum(['mainnet', 'stokenet'])
@@ -106,7 +107,7 @@ export const lookupEntityTool = defineMcpTool({
       `${cliSection('Metadata')}\n${cliKeyValues(metadataRows(details))}`,
       `${cliSection('Raw details')}\n${cliCode(rawJson(typed ?? details), 'json')}`,
       cliNext([
-        `Explore it visually: ${ctx.origin}/en/dashboard?search=${address}`,
+        `Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', address)}`,
         inspection.entityType === 'account'
           ? 'Call get_account_balances for its token and NFT holdings.'
           : 'Call search_radix_docs to learn about this entity kind.',
@@ -207,7 +208,7 @@ export const getTransactionTool = defineMcpTool({
       tx.manifest_instructions
         ? `${cliSection('Manifest')}\n${cliCode(String(tx.manifest_instructions).slice(0, 3_000))}`
         : undefined,
-      cliNext([`Explore it visually: ${ctx.origin}/en/dashboard?search=${intentHash}`]),
+      cliNext([`Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', intentHash)}`]),
     );
     return {
       text,
@@ -280,7 +281,7 @@ export const listValidatorsTool = defineMcpTool({
         ]),
       ),
       cliNext([
-        `Full dashboard with charts: ${ctx.origin}/en/dashboard`,
+        `Full dashboard with charts: ${ctx.origin}${dashboardRoutes.staking('en')}`,
         `Stake from the console (wallet required): ${ctx.origin}/en/console/staking`,
         'Call lookup_entity with a validator address for its full on-ledger state.',
       ]),

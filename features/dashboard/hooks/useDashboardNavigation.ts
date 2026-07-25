@@ -1,0 +1,139 @@
+'use client';
+
+/**
+ * The only place the dashboard writes to the URL.
+ *
+ * Before this, seven scattered `window.history.replaceState` calls edited the
+ * address bar behind the router's back. That had three real costs: the server
+ * component never re-ran, so changing network, tag or date range silently
+ * stopped using the server prefetch; the back button did nothing, because
+ * `replaceState` leaves no history entry; and Next's router state drifted away
+ * from the actual URL, which is a classic source of a later navigation
+ * restoring a stale address.
+ *
+ * Everything now goes through the router and is built from the route contract,
+ * so a URL can only ever be produced one way.
+ *
+ * `replace` vs `push`: only a deliberate destination (changing view, opening an
+ * entity) earns a history entry. Refining what you are looking at — network,
+ * dates, tag, typing in the search box — replaces, so the back button steps out
+ * of the dashboard instead of walking back through every keystroke.
+ */
+import { useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type { DashboardView, Network } from '../types';
+import {
+  dashboardRoutes,
+  parseDashboardQuery,
+  serializeDashboardQuery,
+  type DashboardQuery,
+  type TxTag,
+} from '../lib/routes';
+
+export interface UseDashboardNavigationOptions {
+  locale: string;
+  /** View currently rendered, so query-only changes stay on their own path. */
+  view: DashboardView;
+}
+
+export function useDashboardNavigation({ locale, view }: UseDashboardNavigationOptions) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isNavigating, startNavigation] = useTransition();
+
+  /** View state currently in the URL. */
+  const current = (): DashboardQuery =>
+    parseDashboardQuery(Object.fromEntries(searchParams.entries()));
+
+  /** The URL as it stands, to compare a destination against. */
+  const currentHref = () => {
+    const search = searchParams.toString();
+    return search ? `${pathname}?${search}` : pathname;
+  };
+
+  /**
+   * Navigates only when the destination actually differs. Without this, routine
+   * UI actions (clearing the search box, clicking a tag) fired a router call and
+   * a server round trip to arrive at the URL already on screen.
+   */
+  const navigate = (href: string, mode: 'push' | 'replace') => {
+    if (href === currentHref()) return;
+    startNavigation(() =>
+      mode === 'push'
+        ? router.push(href, { scroll: false })
+        : router.replace(href, { scroll: false }),
+    );
+  };
+
+  /**
+   * Keeps the current path (which may be an entity page) and only rewrites the
+   * query, so refining a filter never throws you back to the list.
+   */
+  const replaceQuery = (patch: Partial<DashboardQuery>) => {
+    const next = { ...current(), ...patch };
+    // On an entity page the entity lives in the path, never in the query.
+    const onEntityPage = /\/dashboard\/(tx|resource|account|validator)\//.test(pathname);
+    if (onEntityPage) delete next.entity;
+    navigate(`${pathname}${serializeDashboardQuery(next)}`, 'replace');
+  };
+
+  return {
+    isNavigating,
+
+    /**
+     * Switches view WITHOUT tearing the dashboard down.
+     *
+     * A full navigation would unmount the whole client and rebuild it, which is
+     * what made switching feel heavy: the shell, the toolbar and every card had
+     * to be recreated for what is conceptually a tab change. A shared layout
+     * cannot fix that here, because a Next layout never receives `searchParams`
+     * and the active network lives in the query string.
+     *
+     * So the URL is updated through the History API, which Next explicitly
+     * patches to keep its router in sync. The address stays canonical and
+     * shareable, the back button still works, and nothing remounts. A cold load
+     * of either URL is still served by its own route, which is what keeps each
+     * view's payload down.
+     */
+    goToView: (next: DashboardView) => {
+      const { network } = current();
+      const href = dashboardRoutes.view(locale, next, { network });
+      if (href === currentHref()) return;
+      window.history.pushState(null, '', href);
+    },
+
+    /**
+     * Switches ledger. Always lands on the current view's LIST: an entity from
+     * one network does not exist on the other, so staying on its page would
+     * show an address that cannot resolve.
+     */
+    setNetwork: (network: Network) => {
+      navigate(dashboardRoutes.view(locale, view, { network }), 'replace');
+    },
+
+    setDateRange: (range: { start: string | null; end: string | null }) => {
+      replaceQuery({ start: range.start ?? undefined, end: range.end ?? undefined });
+    },
+
+    setTag: (tag: string) => {
+      replaceQuery({ tag: (tag as TxTag) || undefined });
+    },
+
+    /**
+     * Focuses an entity, or clears the focus. A resolvable address goes to its
+     * own page; clearing returns to the list. Called as the user types, hence
+     * `replace`, and only for a complete address — partial text filters on the
+     * client without touching the URL.
+     */
+    focusEntity: (value: string | null) => {
+      const { network } = current();
+      navigate(
+        value
+          ? dashboardRoutes.entity(locale, value, { network })
+          : dashboardRoutes.view(locale, view, { network }),
+        'replace',
+      );
+    },
+  };
+}

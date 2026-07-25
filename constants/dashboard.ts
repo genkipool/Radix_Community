@@ -33,6 +33,12 @@ export const VALIDATOR_MODAL_THRESHOLD = 3;
 
 /* ── Progressive rendering page size for validators ────────── */
 export const VALIDATOR_PAGE_SIZE = 24;
+/**
+ * Transactions revealed per scroll step. The server seeds 100 (the Redis tip is
+ * fixed at that size), so without a visible window the explorer hydrated ~100
+ * cards before it could respond. Mirrors VALIDATOR_PAGE_SIZE.
+ */
+export const TRANSACTION_PAGE_SIZE = 24;
 
 /* ── Cookie keys ─────────────────────────────────────────────── */
 export const COOKIE_KEYS = {
@@ -46,4 +52,5 @@ export const COOKIE_KEYS = {
   txReadingMode:        'db_tx_reading_mode',
   valAutoCollapse:      'db_val_auto_collapse',
   txAutoCollapse:       'db_tx_auto_collapse',
+  walletFilter:         'db_wallet_filter',
 } as const;

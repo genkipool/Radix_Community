@@ -434,8 +434,14 @@
         }
       ],
       "cta": "Verify a document",
+      "apiTitle": "Public verification API",
+      "apiHint": "Your systems can check a certificate with no browser, no wallet, no account and no API key. The endpoint never receives the document, only the certificate.",
+      "apiCurlLabel": "Verify a certificate",
+      "apiNote": "It answers whether each signature is valid and whether every required signer has signed. To prove it is your document, hash it with Blake2b-256 and compare it against the hash in the response.",
+      "apiDocs": "Full standard documentation",
       "officialTitle": "Official Radix Seal resource",
       "officialHint": "The genuine brand resource per network. A signing collection is only authentic if its metadata references one of these addresses. Confirm the address before trusting a collection.",
+      "officialExplorer": "View the resource in the explorer",
       "officialCopy": "Copy"
     },
     "anatomy": {

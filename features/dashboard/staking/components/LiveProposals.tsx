@@ -26,14 +26,19 @@ export function useLiveProposals(validator: Validator) {
 
     const liveEpoch = isNewEpoch ? snap.currentEpoch : serverLiveEpoch;
 
-    const bridgedEpochs = snap.finalizedEpochs.map(fe => {
+    // Only epochs this validator actually has a record for. Emitting a 0/0 row
+    // when the live buffer holds nothing for it would be indistinguishable from
+    // a genuine "proposed nothing" epoch, and it was those placeholder rows
+    // that the de-duplication below used to strip.
+    const bridgedEpochs = snap.finalizedEpochs.flatMap(fe => {
         const stats = fe.data.get(validator.address);
-        return {
+        if (!stats) return [];
+        return [{
             epoch: fe.epoch,
-            completedProposals: stats?.made ?? 0,
-            missedProposals: stats?.missed ?? 0,
+            completedProposals: stats.made,
+            missedProposals: stats.missed,
             isLive: false
-        };
+        }];
     });
 
     const unifiedRows = (() => {
@@ -56,20 +61,28 @@ export function useLiveProposals(validator: Validator) {
             ...serverRows
         ];
 
-        // 4. De-duplicate and Sanitize (Remove non-live 0/0 rows)
+        // 4. De-duplicate.
+        //
+        // Every epoch that reached this point is one we have data for, so all of
+        // them are kept. Dropping rows whose counts were 0/0 is what produced
+        // the gaps in the table (…329121, 329116…): a validator that simply was
+        // not selected to propose during an epoch legitimately scores 0 made and
+        // 0 missed, and its row vanished as if the epoch had never happened.
+        //
+        // The server already emits a CONTIGUOUS range (see cleanEpochPerformance
+        // in services/gateway/validators.ts), so keeping every row restores the
+        // unbroken sequence. On a conflict the row carrying actual counts wins,
+        // since the server falls back to zeros when a snapshot is missing.
         const unique = Array.from(
             combined.reduce((map, row) => {
                 const existing = map.get(row.epoch);
-                const hasData = row.completedProposals > 0 || row.missedProposals > 0;
-
                 if (!existing) {
-                    if (row.isLive || hasData) map.set(row.epoch, row);
-                } else {
-                    const existingHasData = existing.completedProposals > 0 || existing.missedProposals > 0;
-                    if (!existingHasData && hasData) {
-                        map.set(row.epoch, row);
-                    }
+                    map.set(row.epoch, row);
+                    return map;
                 }
+                const hasData = row.completedProposals > 0 || row.missedProposals > 0;
+                const existingHasData = existing.completedProposals > 0 || existing.missedProposals > 0;
+                if (!existingHasData && hasData) map.set(row.epoch, row);
                 return map;
             }, new Map<number, typeof liveRow>()).values()
         );

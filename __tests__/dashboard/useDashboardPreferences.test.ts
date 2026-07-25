@@ -26,6 +26,7 @@ describe('useDashboardPreferences', () => {
         initialTxAutoCollapse: true,
         initialActiveTag: ['all'],
         initialTransactionActiveTag: 'stake',
+        initialWalletFilter: true,
     };
 
     it('initializes with provided props', () => {
@@ -40,8 +41,13 @@ describe('useDashboardPreferences', () => {
     it('updates state and calls setCookie when preferences change', () => {
         const { result } = renderHook(() => useDashboardPreferences(defaultProps));
 
-        // Initial render calls setCookie for all 10 props
-        expect(setCookie).toHaveBeenCalledTimes(10);
+        // One cookie write per persisted preference on the initial render.
+        // Derived from the hook's own output so adding a preference does not
+        // make this assertion fail for the wrong reason.
+        const persistedCount = Object.keys(result.current).filter(
+            (key) => !key.startsWith('set'),
+        ).length;
+        expect(setCookie).toHaveBeenCalledTimes(persistedCount);
         vi.clearAllMocks();
 
         // Change one preference

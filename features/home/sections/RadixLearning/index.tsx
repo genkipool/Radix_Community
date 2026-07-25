@@ -16,7 +16,7 @@ export default function RadixLearning({ t, language }: LanguageSectionProps) {
             badge: t.aprendizaje?.cards?.staking?.badge,
             title: t.aprendizaje?.cards?.staking?.title,
             desc: t.aprendizaje?.cards?.staking?.desc,
-            link: `/${language}/dashboard`,
+            link: `/${language}/dashboard/staking`,
             linkText: t.aprendizaje?.cards?.staking?.linkText,
             isInternal: true,
         },

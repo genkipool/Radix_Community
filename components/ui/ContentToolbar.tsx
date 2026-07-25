@@ -2,12 +2,13 @@
 import React, { useEffect, useRef } from 'react';
 
 import {
-    SortAsc, SortDesc, BookOpen,
+    SortAsc, SortDesc,
     FoldVertical, UnfoldVertical,
     Calendar,
 } from 'lucide-react';
 import { AutoCollapseToggle } from './AutoCollapseToggle';
 import { CalendarDropdown, type CalendarTranslations, type DateRange } from './CalendarDropdown';
+import { ReadingModeButton } from './ReadingModeButton';
 
 // Types
 
@@ -81,7 +82,6 @@ export function ContentToolbar({
     calendarButtonTitle,
 }: ContentToolbarProps) {
     const isCollapseDisabled = columns >= 5 || readingMode;
-    const isReadingModeDisabled = columns >= 5;
 
     const containerRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -177,15 +177,12 @@ export function ContentToolbar({
             )}
 
             {/* Reading mode */}
-            <button
-                type="button"
-                onClick={isReadingModeDisabled ? undefined : () => setReadingMode(!readingMode)}
-                title={toolbarT?.reading_mode || 'Reading Mode'}
-                disabled={isReadingModeDisabled}
-                className={`${btnBase} ${readingMode ? btnActive : btnInactive} ${isReadingModeDisabled ? (readingMode ? 'cursor-default' : 'cursor-default opacity-80') : ''}`}
-            >
-                <BookOpen className="size-4" />
-            </button>
+            <ReadingModeButton
+                readingMode={readingMode}
+                setReadingMode={setReadingMode}
+                columns={columns}
+                label={toolbarT?.reading_mode || 'Reading Mode'}
+            />
 
             {/* Expand / Collapse all */}
             <button

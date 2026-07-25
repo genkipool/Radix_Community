@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchTransactions, apiFetchValidators } from '@/features/dashboard/services/apiClient';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import type { DashboardToolbarProps } from '../types';
+import { ReadingModeButton } from '@/components/ui/ReadingModeButton';
 
 /**
  * DashboardToolbar
@@ -43,6 +44,39 @@ export const DashboardToolbar = ({
     const queryClient = useQueryClient();
     const { isConnected } = useRadixWallet();
     const isSearchActive = searchQuery.trim().length > 0;
+
+    /**
+     * Warms the OTHER view's data while the pointer is on its button, so the
+     * switch has everything ready. Each view only loads its own data now, so
+     * without this the first switch would wait on a request.
+     *
+     * The keys mirror the real queries exactly; a near-miss would prefetch into
+     * a cache entry nobody reads.
+     */
+    const handlePrefetchView = () => {
+        if (activeView === 'transactions') {
+            queryClient.prefetchQuery({
+                queryKey: ['validators', network],
+                queryFn: () => apiFetchValidators(network as 'mainnet' | 'stokenet'),
+                staleTime: 300_000,
+            });
+            return;
+        }
+        // Switching to the explorer resets search and date range, so the key is
+        // the plain one for the active tag.
+        queryClient.prefetchInfiniteQuery({
+            queryKey: [
+                'transactions', network, undefined, transactionActiveTag,
+                { start: null, end: null },
+            ],
+            queryFn: () => apiFetchTransactions({
+                cursor: undefined, limit: 15, address: undefined,
+                network: network as 'mainnet' | 'stokenet',
+            }),
+            initialPageParam: undefined,
+            staleTime: 30_000,
+        });
+    };
 
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
         // Prefetch validators
@@ -79,6 +113,7 @@ export const DashboardToolbar = ({
                     <button
                         type="button"
                         onClick={() => onViewChange(activeView === 'staking' ? 'transactions' : 'staking')}
+                        onMouseEnter={handlePrefetchView}
                         className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-bold transition-colors border border-[var(--color-card-border)] bg-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] w-[130px] sm:w-[140px] shrink-0"
                     >
                         <RadixIcon className="size-[18px] shrink-0" strokeColor="currentColor" />
@@ -112,6 +147,17 @@ export const DashboardToolbar = ({
                             {dt?.network?.stokenet || 'Stokenet'}
                         </button>
                     </div>
+
+                    {/* Reading mode, for the layouts where the full toolbar on
+                        the right is hidden. Same component, so it behaves and
+                        looks exactly like its desktop counterpart. */}
+                    <ReadingModeButton
+                        className="xl:hidden shrink-0"
+                        readingMode={readingMode}
+                        setReadingMode={onReadingModeChange}
+                        columns={columns}
+                        label={dt?.toolbar?.reading_mode || 'Reading Mode'}
+                    />
                 </div>
 
                 {/* Center Controls: Tag Filters (Full width on mobile to drop to bottom) */}

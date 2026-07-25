@@ -18,7 +18,6 @@ export function SharePanel({
       title={t.share.title}
       hint={hint}
       url={url}
-      copyLabel={t.share.copy}
       qrAlt={t.share.qrAlt}
     />
   );
