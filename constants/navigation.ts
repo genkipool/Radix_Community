@@ -9,7 +9,7 @@ export const NAV_LINKS = [
       { key: 'google_wallet', path: '/google-wallet' },
       { key: 'dapps', path: '/dapps' },
       { key: 'games', path: '/games' },
-      { key: 'dashboard', path: '/dashboard' },
+      { key: 'dashboard', path: '/dashboard/staking' },
     ],
   },
   {
@@ -77,7 +77,7 @@ export const FOOTER_LINKS = {
     { key: 'wallet_android', path: 'https://play.google.com/store/apps/details?id=com.radixpublishing.radixwallet.android' },
     { key: 'wallet_chrome', path: 'https://chrome.google.com/webstore/detail/radix-wallet-connector/bfeplaecgkoeckiidkgkmlllfbaeplgm' },
     { key: 'buy_xrd', path: 'https://www.kucoin.com/trade/XRD-USDT' },
-    { key: 'staking', path: '/dashboard' },
+    { key: 'staking', path: '/dashboard/staking' },
   ],
 };
 

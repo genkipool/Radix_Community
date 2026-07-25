@@ -177,6 +177,14 @@ export const dashboardRoutes = {
     `${base(locale)}/${viewToSegment(view)}${serializeDashboardQuery(query)}`,
 
   /**
+   * A transaction's page, built without inspecting the value. Templates hand
+   * out a placeholder (`<intent_hash>`) for an agent to substitute, and that
+   * has to keep the canonical shape instead of degrading to the explorer.
+   */
+  tx: (locale: string, intentHash: string, query: DashboardQuery = {}) =>
+    `${base(locale)}/tx/${intentHash}${serializeDashboardQuery(query)}`,
+
+  /**
    * An entity's own page. Kinds without a dedicated route fall back to the
    * explorer focused on them, so a link is always valid.
    */

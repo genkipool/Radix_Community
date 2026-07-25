@@ -36,7 +36,7 @@ export default function Staking({ t, language }: LanguageSectionProps) {
                 {i === 2 && <Building2 className="size-6 text-[var(--color-accent)]" />}
               </div>
               {i === 0 ? (
-                <Link href={`/${language}/dashboard`} className="block group/link">
+                <Link href={`/${language}/dashboard/staking`} className="block group/link">
                   <h4 className="text-xl font-bold text-[var(--color-text-main)] mb-3 group-hover/link:text-[var(--color-primary)] transition-colors duration-300 flex items-center gap-2">
                     {feature.title as string}
                     <ExternalLink className="size-4 opacity-50 group-hover/link:opacity-100 transition-opacity" />

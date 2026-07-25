@@ -160,58 +160,67 @@ export async function DashboardPageShell({
   const serverQueryClient = makeQueryClient();
   const marketDataPromise = getMarketDataCached();
 
+  // Each route ships ONLY what it renders. Before the views were split they
+  // shared one page, so both data sets travelled together: staking carried 100
+  // transactions it never shows, and the explorer 287 validator objects it uses
+  // for nothing but four aggregate figures (now passed as `networkStats`).
+  const showsTransactions = view === 'transactions';
+  let networkStats: NetworkStats = EMPTY_NETWORK_STATS;
+
   try {
-    // First page of transactions, by decreasing specificity.
-    const txData = await (async () => {
-      if (entity) {
-        const data = await searchTransactionsByAddress(entity, undefined, 15, network);
-        return { transactions: data.transactions, nextCursor: data.nextCursor };
-      }
-      if (dateRange.start || dateRange.end) {
-        const data = await fetchFilteredTransactions({
-          tag: activeTxTag,
-          start: dateRange.start,
-          end: dateRange.end,
-          limit: 15,
-          network,
-          timezone,
-        });
-        return { transactions: data.transactions, nextCursor: data.nextCursor };
-      }
-      if (activeTxTag !== 'All') {
-        const data = await fetchFilteredTransactions({
-          tag: activeTxTag,
-          limit: 15,
-          network,
-          timezone,
-        });
-        return { transactions: data.transactions, nextCursor: data.nextCursor };
-      }
-      const data = await getRecentTransactionsCached(undefined, 100, network);
-      return {
-        transactions: (data?.transactions ?? []) as TransactionInfo[],
-        nextCursor: data?.nextCursor ?? undefined,
-      };
-    })();
+    // Aggregates are needed by BOTH views (the header shows them), but only the
+    // staking view needs the list behind them in its cache.
+    const validatorsData = await getValidatorsCached(network);
+    networkStats = validatorsData?.networkStats ?? EMPTY_NETWORK_STATS;
 
-    await serverQueryClient.prefetchQuery({
-      queryKey: ['validators', network],
-      queryFn: async () => {
-        const data = await getValidatorsCached(network);
+    if (!showsTransactions) {
+      serverQueryClient.setQueryData(['validators', network], {
+        validators: validatorsData?.validators ?? ([] as Validator[]),
+        networkStats,
+      });
+    }
+
+    if (showsTransactions) {
+      // First page of transactions, by decreasing specificity.
+      const txData = await (async () => {
+        if (entity) {
+          const data = await searchTransactionsByAddress(entity, undefined, 15, network);
+          return { transactions: data.transactions, nextCursor: data.nextCursor };
+        }
+        if (dateRange.start || dateRange.end) {
+          const data = await fetchFilteredTransactions({
+            tag: activeTxTag,
+            start: dateRange.start,
+            end: dateRange.end,
+            limit: 15,
+            network,
+            timezone,
+          });
+          return { transactions: data.transactions, nextCursor: data.nextCursor };
+        }
+        if (activeTxTag !== 'All') {
+          const data = await fetchFilteredTransactions({
+            tag: activeTxTag,
+            limit: 15,
+            network,
+            timezone,
+          });
+          return { transactions: data.transactions, nextCursor: data.nextCursor };
+        }
+        const data = await getRecentTransactionsCached(undefined, 100, network);
         return {
-          validators: data?.validators ?? ([] as Validator[]),
-          networkStats: data?.networkStats ?? EMPTY_NETWORK_STATS,
+          transactions: (data?.transactions ?? []) as TransactionInfo[],
+          nextCursor: data?.nextCursor ?? undefined,
         };
-      },
-      staleTime: 300_000,
-    });
+      })();
 
-    // Seed the infinite query with what we just fetched. Proposer display data
-    // is enriched at the service layer, so no per-request lookup map is needed.
-    serverQueryClient.setQueryData(
-      ['transactions', network, entity ?? undefined, activeTxTag, dateRange],
-      { pages: [txData], pageParams: [undefined] },
-    );
+      // Seed the infinite query with what we just fetched. Proposer display data
+      // is enriched at the service layer, so no per-request lookup map is needed.
+      serverQueryClient.setQueryData(
+        ['transactions', network, entity ?? undefined, activeTxTag, dateRange],
+        { pages: [txData], pageParams: [undefined] },
+      );
+    }
 
     // Deep entity metadata is deliberately NOT hydrated here: cards fetch their
     // own icons and symbols on the client, keeping CPU and TTFB down.
@@ -242,6 +251,13 @@ export async function DashboardPageShell({
         initialTxReadingMode={c.bool(COOKIE_KEYS.txReadingMode)}
         initialValAutoCollapse={c.bool(COOKIE_KEYS.valAutoCollapse)}
         initialTxAutoCollapse={c.bool(COOKIE_KEYS.txAutoCollapse)}
+        initialNetworkStats={networkStats}
+        initialNetworkFromUrl={!!query.network}
+        initialWalletFilter={
+          // Default ON for a connected wallet, matching the previous behaviour;
+          // once the user has chosen, their cookie decides.
+          cookieStore.get(COOKIE_KEYS.walletFilter)?.value !== 'false'
+        }
         initialSearchQuery={entity ?? ''}
         initialDateRange={dateRange}
         randomSeed={randomSeed}

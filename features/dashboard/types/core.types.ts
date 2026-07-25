@@ -1,4 +1,5 @@
 import type { Dictionary } from '@/i18n';
+import type { NetworkStats } from '@/types/radix';
 
 export type Network = 'mainnet' | 'stokenet';
 export type DashboardView = 'staking' | 'transactions';
@@ -28,6 +29,19 @@ export type TranslationsT = Dictionary;
 export interface DashboardInitialProps {
   timezone: string;
   initialView?: DashboardView;
+  /** Wallet filter toggle, persisted so a view change does not reset it. */
+  initialWalletFilter?: boolean;
+  /**
+   * Aggregate network figures, so a view that does not list validators never
+   * has to carry the full list just to display four numbers.
+   */
+  initialNetworkStats?: NetworkStats | null;
+  /**
+   * The URL named the network explicitly (`?network=`). That pins the page: a
+   * shared link must open on its own ledger regardless of what the wallet
+   * happens to be set to.
+   */
+  initialNetworkFromUrl?: boolean;
   initialNetwork: Network;
   initialActiveTag?: string[];
   initialTransactionActiveTag?: string;

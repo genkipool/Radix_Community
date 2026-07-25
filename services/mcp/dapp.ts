@@ -17,6 +17,7 @@
 import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
 import { networkIdFromName } from '@/services/ret';
 import type { Network } from '@/services/gateway/client';
+import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 
 /**
  * Canonical public origin of the Radix Community site. Must match the website
@@ -32,12 +33,21 @@ export function dappDefinitionFor(network: Network): string {
   return NETWORKS[id]?.dAppDefinitionAddress ?? '';
 }
 
-/** Deep link to the custom dashboard's transaction view for an intent hash. */
+/**
+ * Deep link to the custom dashboard's page for a transaction.
+ *
+ * Built from the dashboard's route contract so it always emits the canonical
+ * path; it used to hand-assemble the pre-migration `?view=…&tx=…` query, which
+ * still resolved but only through a redirect.
+ */
 export function dashboardTxUrl(network: Network | string, intentHash = '<intent_hash>'): string {
-  return (
-    `${RADIX_COMMUNITY_ORIGIN}/es/dashboard` +
-    `?network=${network}&view=transactions&tag=Success&tx=${intentHash}`
-  );
+  // The caller may pass a placeholder like '<network>', so only a real ledger
+  // name becomes a query parameter.
+  const query =
+    network === 'mainnet' || network === 'stokenet'
+      ? { network: network as 'mainnet' | 'stokenet' }
+      : undefined;
+  return `${RADIX_COMMUNITY_ORIGIN}${dashboardRoutes.tx('es', intentHash, query)}`;
 }
 
 /**

@@ -281,7 +281,7 @@ export const listValidatorsTool = defineMcpTool({
         ]),
       ),
       cliNext([
-        `Full dashboard with charts: ${ctx.origin}/en/dashboard`,
+        `Full dashboard with charts: ${ctx.origin}${dashboardRoutes.staking('en')}`,
         `Stake from the console (wallet required): ${ctx.origin}/en/console/staking`,
         'Call lookup_entity with a validator address for its full on-ledger state.',
       ]),

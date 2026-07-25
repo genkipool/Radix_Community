@@ -159,7 +159,12 @@ export const DashboardModals = ({
 
     {/* ── Account reading-mode modal ── */}
     <AnimatePresence initial={false}>
-      {readingMode && expandedAccount && (
+      {/* Entity cards only exist in the explorer (they come from searching an
+          address), so this modal belongs to that view. Without the guard a
+          validator opened in STAKING matched here too — its id is its
+          `validator_…` address — and the explorer's entity card rendered on top
+          of the validator one. The two modals above are gated the same way. */}
+      {readingMode && activeView === 'transactions' && expandedAccount && (
         <React.Fragment key="account-modal">
           <ModalOverlay onClose={closeExpanded} blur="sm" />
           <m.div

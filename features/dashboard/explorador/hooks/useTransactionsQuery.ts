@@ -64,7 +64,11 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, add
     // [PROTECTIVE COMMENT] DO NOT REMOVE or CHANGE placeholderData: keepPreviousData.
     // It is strictly required to prevent the UI from flashing skeletons when the user reloads the list or changes filters.
     placeholderData:      keepPreviousData,
-    enabled:              true,
+    // Gated by view again. The comment above described a hazard from the days
+    // when switching view was a client-side toggle over a shared hydrated
+    // cache; each view is a route of its own now, arriving with its own server
+    // prefetch, so a view that shows no transactions simply does not query.
+    enabled,
     // When a date filter is active, force a client-side refetch because the
     // server prefetch may have used a fallback timezone (UTC). The client
     // always sends the correct IANA timezone via Intl.DateTimeFormat, so

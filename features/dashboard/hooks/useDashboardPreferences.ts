@@ -25,6 +25,7 @@ export function useDashboardPreferences({
   initialValReadingMode,  initialTxReadingMode,
   initialValAutoCollapse, initialTxAutoCollapse,
   initialActiveTag,       initialTransactionActiveTag,
+  initialWalletFilter,
 }: UseDashboardPreferencesOptions) {
   const [activeTag,            setActiveTag]            = useState<string[]>(initialActiveTag);
   const [transactionActiveTag, setTransactionActiveTag] = useState(initialTransactionActiveTag);
@@ -36,6 +37,9 @@ export function useDashboardPreferences({
   const [txReadingMode,        setTxReadingMode]        = useState(initialTxReadingMode);
   const [valAutoCollapse,      setValAutoCollapse]      = useState(initialValAutoCollapse);
   const [txAutoCollapse,       setTxAutoCollapse]       = useState(initialTxAutoCollapse);
+  // Persisted like every other view preference: switching view is a real
+  // navigation now, so anything held only in memory is lost on the way.
+  const [walletFilter,         setWalletFilter]         = useState(initialWalletFilter);
 
   // ── Cookie sync — each effect fires only when its own value changes ──
   useEffect(() => { setCookie(COOKIE_KEYS.activeTag,       activeTag.join(','));  }, [activeTag]);
@@ -48,6 +52,7 @@ export function useDashboardPreferences({
   useEffect(() => { setCookie(COOKIE_KEYS.txReadingMode,   String(txReadingMode));  }, [txReadingMode]);
   useEffect(() => { setCookie(COOKIE_KEYS.valAutoCollapse, String(valAutoCollapse));}, [valAutoCollapse]);
   useEffect(() => { setCookie(COOKIE_KEYS.txAutoCollapse,  String(txAutoCollapse)); }, [txAutoCollapse]);
+  useEffect(() => { setCookie(COOKIE_KEYS.walletFilter,    String(walletFilter));   }, [walletFilter]);
 
   return {
     activeTag,            setActiveTag,
@@ -60,5 +65,6 @@ export function useDashboardPreferences({
     txReadingMode,        setTxReadingMode,
     valAutoCollapse,      setValAutoCollapse,
     txAutoCollapse,       setTxAutoCollapse,
+    walletFilter,         setWalletFilter,
   };
 }

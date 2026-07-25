@@ -223,7 +223,10 @@ export const VEB_STYLES = `
     /* EPOCHS TABLE */
     .veb-history { padding-top: 2px; padding-bottom: 0px; }
     .veb-epochs-panel { background: var(--color-surface); }
-    .veb-epochs { padding: 0 16px 0px 16px; overflow-x: auto; }
+    /* Top padding matters: without it the panel heading sat flush against
+       the block's edge in every layout except the classic one, which had its
+       own override. */
+    .veb-epochs { padding: 12px 16px 0 16px; overflow-x: auto; }
     .veb-epochs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .veb-live-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; color: var(--color-text-muted); }
     .veb-table { width: 100%; border-collapse: collapse; }

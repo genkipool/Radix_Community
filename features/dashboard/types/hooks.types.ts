@@ -28,4 +28,6 @@ export interface UseDashboardPreferencesOptions {
   initialTxAutoCollapse:       boolean;
   initialActiveTag:            string[];
   initialTransactionActiveTag: string;
+  /** Wallet filter toggle, persisted so a view change does not reset it. */
+  initialWalletFilter:         boolean;
 }
