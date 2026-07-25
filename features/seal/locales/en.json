@@ -50,6 +50,8 @@
           "desc": "Sign any file with your Radix Wallet. The document is hashed locally and never uploaded: only the hash is signed, proving integrity, timestamp and control of the account key.",
           "points": [
             "Attached certificate or embedded directly inside the PDF",
+            "Visible signature page inside the PDF, readable in any viewer",
+            "Optional signature with your own X.509 certificate (PAdES), recognised by Adobe and Foxit",
             "Optional on-ledger anchoring as a soulbound NFT",
             "Multi-party signing: several signers on one certificate",
             "Identity disclosure you control: name, email or signature only",

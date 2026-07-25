@@ -208,7 +208,7 @@ function openTimeout(dc: RTCDataChannel): Promise<void> {
   });
 }
 
-/** Host side: wait for the first guest, offer, open the channel. */
+/** Host side: wait for a guest, offer, open the channel. */
 export async function connectAsHost<TMessage>(
   signaling: CipherSignaling,
   handlers: PeerHandlers<TMessage>,
@@ -216,17 +216,26 @@ export async function connectAsHost<TMessage>(
   const pc = new RTCPeerConnection({ iceServers: iceServers() });
   const dc = pc.createDataChannel('cipher', { ordered: true });
   let guestId: string | null = null;
+  let channelOpen = false;
 
   // The host may wait indefinitely for a guest; the ICE timeout only starts
-  // once someone joins and negotiation actually begins.
-  let armTimeout: () => void = () => undefined;
+  // once someone joins and negotiation actually begins, and it is re-armed if
+  // we switch to a newer guest.
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let fail: (error: Error) => void = () => undefined;
   const opened = new Promise<void>((resolve, reject) => {
-    dc.onopen = () => resolve();
-    dc.onerror = () => reject(new Error('webrtc_failed'));
-    armTimeout = () => {
-      setTimeout(() => reject(new Error('webrtc_failed')), CONNECT_TIMEOUT_MS);
+    fail = reject;
+    dc.onopen = () => {
+      channelOpen = true;
+      if (timer) clearTimeout(timer);
+      resolve();
     };
+    dc.onerror = () => reject(new Error('webrtc_failed'));
   });
+  const armTimeout = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fail(new Error('webrtc_failed')), CONNECT_TIMEOUT_MS);
+  };
 
   signaling.onSignal((signal) => {
     if (signal.t === 'answer' && signal.from === guestId) {
@@ -239,18 +248,26 @@ export async function connectAsHost<TMessage>(
   });
 
   signaling.onPeerJoin((peerId) => {
-    if (guestId) {
-      // One-shot room: turn away anyone after the first guest.
+    if (channelOpen) {
+      // Session established: this room is one-to-one, so turn latecomers away.
       void signaling
         .send({ t: 'bye', from: signaling.peerId, to: peerId })
         .catch(() => undefined);
       return;
     }
+    // Nothing is connected yet, so a NEW peer simply becomes the guest we
+    // negotiate with. Rejecting it (the old behaviour) meant a guest that
+    // reloaded, or retried after losing the race with the host, was answered
+    // `bye` while the host went on waiting for a peer that would never reply —
+    // the room stayed dead until its timeout.
+    const retarget = guestId !== null && guestId !== peerId;
     guestId = peerId;
     armTimeout();
     watchIce(pc, signaling, peerId);
     void (async () => {
-      const offer = await pc.createOffer();
+      // An ICE restart is required when re-offering to a different peer, so the
+      // candidate pair is renegotiated from scratch.
+      const offer = await pc.createOffer(retarget ? { iceRestart: true } : undefined);
       await pc.setLocalDescription(offer);
       await signaling.send({
         t: 'offer',

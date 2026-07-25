@@ -84,6 +84,37 @@ describe('visible signature certificate page', () => {
     expect(reloaded.getPageCount()).toBe(doc.getPageCount());
   });
 
+  it("renders each signer's certificate record and the PAdES note", async () => {
+    const env = baseEnvelope();
+    env.signatures[0].certificate = {
+      subjectCN: 'Kyusang Cho',
+      subjectO: 'Enviogt',
+      issuer: 'AC FNMT Usuarios',
+      serialNumber: '00a1b2c3',
+      validFrom: '2026-01-01T00:00:00.000Z',
+      validTo: '2027-01-01T00:00:00.000Z',
+    };
+    const doc = await emptyDoc(1);
+    const before = doc.getPageCount();
+    await appendSignaturePage(doc, env, { ...opts, padesSigned: true });
+    expect(doc.getPageCount()).toBeGreaterThan(before);
+    const reloaded = await PDFDocument.load(await doc.save());
+    expect(reloaded.getPageCount()).toBe(doc.getPageCount());
+  });
+
+  it('lists the signers still pending on a partially-signed document', async () => {
+    const env = baseEnvelope();
+    // Two required signers, only the first has signed.
+    env.payload.signers = [
+      env.signatures[0].signerAccount,
+      'account_rdx12pending000000000000000000000000000000000',
+    ];
+    const doc = await emptyDoc(1);
+    await appendSignaturePage(doc, env, opts);
+    const reloaded = await PDFDocument.load(await doc.save());
+    expect(reloaded.getPageCount()).toBe(doc.getPageCount());
+  });
+
   it('parses theme colours (#hex and rgb())', () => {
     expect(parseColor('#4f46e5')).toEqual([0x4f / 255, 0x46 / 255, 0xe5 / 255]);
     expect(parseColor('#fff')).toEqual([1, 1, 1]);

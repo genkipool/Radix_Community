@@ -16,11 +16,13 @@ import {
   appendSignaturePage,
   type CertificatePageOptions,
 } from './pdf-signature-page';
+import type { WatermarkOptions } from './pdf-watermark';
 
 /** Attachment names — the extractor looks these up. */
 export const CERT_ATTACHMENT = 'radix-certificate.radixsig.json';
 export const ORIGINAL_ATTACHMENT_PREFIX = 'radix-original';
 export const REQUEST_ATTACHMENT = 'radix-request.json';
+export const WATERMARK_ATTACHMENT = 'radix-watermark.json';
 
 /**
  * Pointer to an on-ledger signing request, embedded into the shared PDF so
@@ -52,6 +54,12 @@ export async function embedCertificateInPdf(
   envelope: AttestationEnvelope,
   originalBytes?: Uint8Array,
   signaturePage?: CertificatePageOptions,
+  /**
+   * The watermark that was stamped on this carrier. Attached so it TRAVELS with
+   * the document: co-signing rebuilds the PDF from the intact original, which
+   * would otherwise drop the initiator's watermark on every new signature.
+   */
+  watermarkSpec?: WatermarkOptions,
 ): Promise<Uint8Array> {
   const { PDFDocument } = await import('pdf-lib');
 
@@ -79,6 +87,16 @@ export async function embedCertificateInPdf(
     await pdfDoc.attach(originalBytes as Uint8Array<ArrayBuffer>, name, {
       mimeType: 'application/octet-stream',
       description: 'Original signed document (for verification)',
+      creationDate: new Date(envelope.payload.timestamp),
+      modificationDate: new Date(envelope.payload.timestamp),
+    });
+  }
+
+  if (watermarkSpec && watermarkSpec.kind !== 'none') {
+    const wmJson = new TextEncoder().encode(JSON.stringify(watermarkSpec));
+    await pdfDoc.attach(wmJson as Uint8Array<ArrayBuffer>, WATERMARK_ATTACHMENT, {
+      mimeType: 'application/json',
+      description: 'Watermark applied to this document (presentation only)',
       creationDate: new Date(envelope.payload.timestamp),
       modificationDate: new Date(envelope.payload.timestamp),
     });

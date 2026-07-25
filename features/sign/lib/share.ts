@@ -25,6 +25,11 @@ export function parseRequestKey(
   return match ? { collection: match[1], id: match[2] } : null;
 }
 
+/** Reads the `?net=` network id a share link carries, or null. */
+export function parseNetworkParam(value: string | null): number | null {
+  return value === '1' ? 1 : value === '2' ? 2 : null;
+}
+
 /** `resource_rdx1…` → 1 (mainnet), `resource_tdx_2_1…` → 2 (stokenet). */
 export function networkIdFromResource(address: string): number | null {
   if (address.startsWith('resource_rdx1')) return 1;
@@ -86,6 +91,12 @@ export function buildShareUrl(input: {
   /** Tab the link should open on (request links force `sign` by themselves). */
   tab?: 'basic' | 'sign' | 'verify';
   /**
+   * Radix network the signature belongs to. Carried so opening the link points
+   * the app at the right ledger: without it a Stokenet signature opened on
+   * Mainnet (only on-ledger request links could infer it from the resource).
+   */
+  networkId?: number;
+  /**
    * P2P room for direct document delivery. Rides in the URL FRAGMENT so it
    * never reaches server logs or link-preview bots.
    */
@@ -107,6 +118,7 @@ export function buildShareUrl(input: {
     }
   }
   if (input.tab) params.set('tab', input.tab);
+  if (input.networkId != null) params.set('net', String(input.networkId));
   const query = params.toString() ? `?${params.toString()}` : '';
   const fragment = input.sendRoomId ? `#s=${input.sendRoomId}` : '';
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { Ban, Copy, Radio, RefreshCw } from 'lucide-react';
+import { Ban, Radio, RefreshCw } from 'lucide-react';
+import { CopyButton } from '@/components/ui/CopyButton';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { QrCode } from '@/features/p2p/components/QrCode';
@@ -28,6 +29,7 @@ export function ShareLinkSection({
   bytes,
   outputs,
   watermark,
+  networkId,
   tab,
   title,
   hint,
@@ -43,6 +45,8 @@ export function ShareLinkSection({
   bytes: Uint8Array | null;
   outputs: OutputFormat[];
   watermark?: SharedWatermark;
+  /** Network the signature belongs to, so the link opens on the right ledger. */
+  networkId?: number;
   /** Tab the link opens on (request links force the sign tab by themselves). */
   tab?: 'basic' | 'sign' | 'verify';
   /** Section title/hint overrides (defaults: the request-link copy). */
@@ -51,7 +55,6 @@ export function ShareLinkSection({
   /** Extra share actions (e.g. the request-PDF download). */
   children?: ReactNode;
 }) {
-  const [copied, setCopied] = useState(false);
   // ON by default: the link delivers the document itself while the tab lives.
   const [sendEnabled, setSendEnabled] = useState(true);
   const [roomId] = useState(() => randomRoomId());
@@ -73,16 +76,11 @@ export function ShareLinkSection({
           docName,
           outputs,
           watermark,
+          networkId,
           tab,
           sendRoomId: sendEnabled && bytes ? roomId : undefined,
         })
       : '';
-
-  const copy = () => {
-    navigator.clipboard?.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
 
   const statusText =
     channel.phase === 'sending'
@@ -102,26 +100,20 @@ export function ShareLinkSection({
         {shareUrl && (
           <QrCode value={shareUrl} alt={t.onchain.qrAlt} size={160} />
         )}
-        <div className="flex-1 min-w-0 w-full flex gap-2">
-          <input
-            readOnly
-            value={shareUrl}
-            className="flex-1 min-w-0 rounded-xl border px-3 py-2 text-xs font-mono outline-none"
-            style={{
-              background: 'var(--color-surface)',
-              borderColor: 'var(--color-card-border)',
-              color: 'var(--color-text-main)',
-            }}
-          />
-          <button
-            type="button"
-            onClick={copy}
-            className="flex items-center gap-1.5 px-4 rounded-xl border font-bold text-xs"
-            style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+        <div className="flex-1 min-w-0 w-full flex items-center gap-2">
+          {/* Plain, unboxed: the link is text to read and copy, not a field. */}
+          <span
+            className="flex-1 min-w-0 text-xs font-mono break-all"
+            style={{ color: 'var(--color-text-main)' }}
           >
-            <Copy className="size-3.5" />
-            {copied ? t.onchain.copied : t.onchain.copy}
-          </button>
+            {shareUrl}
+          </span>
+          <CopyButton
+            value={shareUrl}
+            variant="minimal"
+            size="md"
+            className="shrink-0"
+          />
         </div>
       </div>
 

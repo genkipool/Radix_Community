@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { FileDown, ShieldCheck, Wallet } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,6 +16,7 @@ import { useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { useReceiveFileChannel } from '@/features/sign/hooks/useFileChannel';
 import {
   networkIdFromResource,
+  parseNetworkParam,
   parseOutputsParam,
   parseSendRoom,
   parseWatermarkParams,
@@ -20,13 +27,25 @@ import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { AccountPicker } from '@/features/console/components/shared/AccountPicker';
 import { BasicSignForm } from '@/features/sign/components/BasicSignForm';
 import { EmbeddedPdfDetails } from '@/features/sign/components/EmbeddedPdfDetails';
-import { SignForm } from '@/features/sign/components/SignForm';
+import { SignForm, envelopeComplete } from '@/features/sign/components/SignForm';
+import { extractRadixAttachments, isPdfBytes } from '@/features/sign/lib/pdf-extract';
+import { downloadBytes, downloadCertificate } from '@/features/sign/lib/certificate';
+import type { AttestationEnvelope } from '@/features/sign/types/sign.types';
 import { VerifyForm } from '@/features/sign/components/VerifyForm';
 import { useDocumentFile } from '@/features/sign/hooks/useDocumentFile';
 import type { SignDictionary } from '@/features/sign/types/dictionary';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 
 type Tab = 'basic' | 'sign' | 'verify';
+
+/**
+ * Layout effects run before the browser paints, so reading the share link's
+ * room id here means the signing UI is never painted for a split second before
+ * the receive box replaces it. Falls back to useEffect during SSR, where layout
+ * effects do not run (and React would warn).
+ */
+const useBeforePaint =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /**
  * Console tool: document signing & verification. The page header (title +
@@ -55,11 +74,13 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
     searchParams.get('wmt'),
   );
   const hasRequestParam = !!sharedRequestKey;
-  // The request key names its network in the resource prefix: the connect
-  // gate pre-selects it so the co-signer lands on the right network.
-  const requestNetworkId = sharedRequestKey
-    ? (networkIdFromResource(sharedRequestKey) as RadixNetworkId | null)
-    : null;
+  // Network the link belongs to, so the page opens on the right ledger. An
+  // on-ledger request names it in its resource prefix; every other share link
+  // (plain document delivery) carries it as `?net=` — without that, a Stokenet
+  // signature opened on Mainnet.
+  const requestNetworkId = (sharedRequestKey
+    ? networkIdFromResource(sharedRequestKey)
+    : parseNetworkParam(searchParams.get('net'))) as RadixNetworkId | null;
 
   // Opening a shared link switches the app to the request's network once, so
   // the page loads pointed at the right ledger (the user can still switch).
@@ -78,17 +99,24 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   // URL fragment. Read it once, strip it from the address bar (it is a
   // capability), and receive the document straight into the dropzone.
   const [sendRoom, setSendRoom] = useState<string | null>(null);
-  useEffect(() => {
+  // A fully-signed document received over the link, kept for the explicit
+  // download button (the automatic save may be blocked by the browser).
+  const [receivedSigned, setReceivedSigned] = useState<{
+    bytes: Uint8Array;
+    name: string;
+    envelope: AttestationEnvelope;
+  } | null>(null);
+  useBeforePaint(() => {
     const room = parseSendRoom(window.location.hash);
-    if (!room) return;
-    history.replaceState(
-      null,
-      '',
-      window.location.pathname + window.location.search,
-    );
-    // Deferred: state updates must never run synchronously in an effect.
-    const timer = setTimeout(() => setSendRoom(room), 0);
-    return () => clearTimeout(timer);
+    if (room) {
+      history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search,
+      );
+    }
+    // Runs before paint, so the signing UI is never flashed on a share link.
+    setSendRoom(room);
   }, []);
   // A shared request forces the advanced tab; otherwise an optional `?tab=`
   // param can deep-link into a specific tab (e.g. verify from the seal page).
@@ -106,6 +134,26 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
     roomId: sendRoom,
     onFile: (file) => {
       void doc.onFile(file);
+      // A document arriving already FULLY signed leaves the receiver nothing to
+      // do, so hand them the file straight away. We also keep it around for an
+      // explicit download button: browsers can block a programmatic download
+      // that no click asked for, and that must not leave the user stranded.
+      // Still-pending documents are only loaded — those need the signing flow.
+      void (async () => {
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          if (!isPdfBytes(bytes)) return;
+          const att = await extractRadixAttachments(bytes);
+          if (!att.envelope || !envelopeComplete(att.envelope)) return;
+          setReceivedSigned({ bytes, name: file.name, envelope: att.envelope });
+          // Nothing left to sign, so land on Verify: it shows every signature,
+          // the on-ledger state and the hash check without another click.
+          setTab('verify');
+          downloadBytes(bytes, file.name, 'application/pdf');
+        } catch {
+          /* the file is loaded either way */
+        }
+      })();
     },
   });
   // A dropped PDF carrying an embedded request also needs the advanced flow.
@@ -137,8 +185,13 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   // screen is the receive box (like the cipher tool): no tabs, no dropzone, no
   // signing options competing for attention. Once it finishes the file is
   // loaded and the full flow appears so the signature can be added.
+  // Hidden for as long as a document is on its way. Keyed off `sendRoom` (known
+  // before paint) rather than only the channel phase, so the signing UI is not
+  // shown for a moment while the channel is still starting up.
   const receiving =
-    receive.phase === 'connecting' || receive.phase === 'receiving';
+    (!!sendRoom && receive.phase !== 'done' && receive.phase !== 'error') ||
+    receive.phase === 'connecting' ||
+    receive.phase === 'receiving';
   if (receiving) {
     return (
       <div className="mx-auto w-full max-w-4xl">
@@ -356,6 +409,52 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
         </SignGate>
       ) : (
         <VerifyForm t={t} doc={doc} />
+      )}
+
+      {receivedSigned && (
+        // A document that arrived signed by everyone: the verification above
+        // already shows all of it, so the only thing left is keeping the files.
+        // Last thing on the page and deliberately NOT boxed — these are the
+        // page's final actions, not another panel of information.
+        <div className="space-y-3">
+          <p
+            className="text-xs leading-relaxed"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            <strong style={{ color: 'var(--color-text-main)' }}>
+              {t.onchain.recvSignedTitle}.
+            </strong>{' '}
+            {t.onchain.recvSignedHint}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                downloadBytes(
+                  receivedSigned.bytes,
+                  receivedSigned.name,
+                  'application/pdf',
+                )
+              }
+              className="flex flex-1 items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow-md transition-all hover:opacity-90 active:scale-95"
+            >
+              <FileDown className="size-4" />
+              {t.actions.downloadPdf}
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCertificate(receivedSigned.envelope)}
+              className="flex flex-1 items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
+              style={{
+                borderColor: 'var(--color-card-border)',
+                color: 'var(--color-text-main)',
+              }}
+            >
+              <FileDown className="size-4" />
+              {t.actions.downloadCert}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

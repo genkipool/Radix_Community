@@ -469,6 +469,7 @@ export function OnChainSignPanel({
           bytes={doc.bytes}
           outputs={outputs}
           watermark={{ kind: watermark.kind, text: watermark.text }}
+          networkId={statusNetworkId ?? undefined}
         >
           {canShareAsPdf && (
             <>

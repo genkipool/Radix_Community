@@ -52,9 +52,25 @@ export interface CertificatePageLabels {
   account: string;
   email: string;
   selfDeclared: string;
+  /** "3 of 5 required signatures" style summary. */
+  signedCount: string;
+  /** Still-missing required signers. */
+  pendingSection: string;
+  pendingNote: string;
+  complete: string;
   anchorSection: string;
   anchorResource: string;
   anchorTx: string;
+  anchorRequest: string;
+  anchorNote: string;
+  /* Certificate (PAdES / X.509) section — one entry per signer that used one. */
+  certSection: string;
+  certSubject: string;
+  certOrg: string;
+  certIssuer: string;
+  certValidity: string;
+  certSerial: string;
+  certNote: string;
   verifyTitle: string;
   verifyInstruction: string;
   disclaimerTitle: string;
@@ -76,6 +92,13 @@ export interface CertificatePageOptions {
   issuer?: { orgName?: string; orgWebsite?: string; iconUrl?: string };
   /** Brand accent (0..1 RGB) read from the active theme; falls back to indigo. */
   accent?: Rgb01;
+  /**
+   * True when this PDF is about to be PAdES-signed, so the page can say the
+   * file carries a standard PDF signature the reader validates. The certificate
+   * DETAILS are printed per signer, read from the envelope (see
+   * `SignerCertificate`), which is what makes them survive co-signing.
+   */
+  padesSigned?: boolean;
 }
 
 /**
@@ -101,6 +124,8 @@ export async function signaturePageOptions(
   env: AttestationEnvelope,
   t: SignDictionary,
   locale: string,
+  /** True when the delivered PDF will also carry a PAdES signature. */
+  padesSigned?: boolean,
 ): Promise<CertificatePageOptions> {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const collection = issuerCollection(env);
@@ -118,6 +143,7 @@ export async function signaturePageOptions(
     sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
     issuer,
     accent: readBrandAccent(),
+    padesSigned,
   };
 }
 
@@ -488,7 +514,29 @@ export async function appendSignaturePage(
   if (payload.message.trim()) cur.field(L.reason, payload.message.trim());
 
   // ── Signatures section ──
+  // Who actually signed vs. who still has to, so a partially-signed document
+  // says so on its face instead of looking finished.
+  //
+  // The roster is required ∪ already-signed, NOT the required list alone: when
+  // signing off-ledger the initiator's own account is not in `payload.signers`
+  // (it is unknown when the challenge is derived), so counting only the
+  // required list read as "1 of 1" while two people had actually signed.
+  const signedAccounts = new Set(envelope.signatures.map((s) => s.signerAccount));
+  const required = payload.signers;
+  const roster = [...new Set([...required, ...signedAccounts])];
+  const pending = roster.filter((a) => !signedAccounts.has(a));
+  const isComplete = pending.length === 0;
+
   cur.sectionTitle(`${L.signaturesSection} (${envelope.signatures.length})`);
+  if (roster.length > 1 || pending.length > 0) {
+    cur.text(
+      L.signedCount
+        .replace('{signed}', String(signedAccounts.size))
+        .replace('{total}', String(roster.length)),
+      { size: 9, bold: true, color: isComplete ? accentInk : MUTED },
+    );
+    cur.gap(5);
+  }
   envelope.signatures.forEach((s, i) => {
     const name = s.disclosedName?.trim();
     cur.text(`${L.signedBy}: ${name || shortAccount(s.signerAccount)}`, {
@@ -509,11 +557,71 @@ export async function appendSignaturePage(
     }
   });
 
+  // ── Still pending (multi-party, not yet complete) ──
+  if (pending.length > 0) {
+    cur.sectionTitle(`${L.pendingSection} (${pending.length})`);
+    cur.text(L.pendingNote, { size: 8, color: MUTED });
+    cur.gap(5);
+    pending.forEach((account) => {
+      cur.text(`•  ${account}`, { size: 9, color: MUTED });
+      cur.gap(2);
+    });
+    cur.gap(4);
+  } else if (roster.length > 1) {
+    cur.text(L.complete, { size: 9, bold: true, color: accentInk });
+    cur.gap(6);
+  }
+
   // ── On-ledger anchor (optional) ──
-  if (envelope.onChain) {
+  // Both on-ledger shapes belong here: a stand-alone anchor (`onChain`) and a
+  // multi-party signing request (`request`). Only the first was printed, so an
+  // on-ledger multi-party signature showed nothing at all about the ledger.
+  if (envelope.onChain || envelope.request) {
     cur.sectionTitle(L.anchorSection);
-    cur.field(L.anchorResource, envelope.onChain.resourceAddress, { mono: true });
-    cur.field(L.anchorTx, envelope.onChain.transactionIntentHash, { mono: true });
+    if (envelope.onChain) {
+      cur.field(L.anchorResource, envelope.onChain.resourceAddress, { mono: true });
+      cur.field(L.anchorTx, envelope.onChain.transactionIntentHash, { mono: true });
+    }
+    if (envelope.request) {
+      cur.field(L.anchorRequest, envelope.request.requestId, { mono: true });
+    }
+    cur.text(L.anchorNote, { size: 7.5, color: MUTED });
+    cur.gap(4);
+  }
+
+  // ── Certificate signatures (PAdES / X.509), one entry per signer ──
+  // Read from the envelope, so every signer's certificate stays on the record
+  // even after a co-signer regenerates the PDF from the original.
+  const certified = envelope.signatures.filter((s) => s.certificate);
+  if (certified.length > 0) {
+    cur.sectionTitle(L.certSection);
+    certified.forEach((s, i) => {
+      const c = s.certificate!;
+      // With several certificates, say whose each one is.
+      if (certified.length > 1) {
+        cur.text(s.disclosedName?.trim() || shortAccount(s.signerAccount), {
+          size: 10.5,
+          bold: true,
+        });
+        cur.gap(4);
+      }
+      cur.field(L.certSubject, c.subjectCN || '—');
+      if (c.subjectO) cur.field(L.certOrg, c.subjectO);
+      if (c.issuer) cur.field(L.certIssuer, c.issuer);
+      cur.field(
+        L.certValidity,
+        `${fmtDate(c.validFrom, locale)} — ${fmtDate(c.validTo, locale)}`,
+      );
+      if (c.serialNumber) cur.field(L.certSerial, c.serialNumber, { mono: true });
+      if (i < certified.length - 1) {
+        cur.rule();
+        cur.gap(6);
+      }
+    });
+    if (opts.padesSigned) {
+      cur.text(L.certNote, { size: 7.5, color: MUTED });
+      cur.gap(4);
+    }
   }
 
   // ── Verify box (QR + instruction) ──

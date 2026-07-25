@@ -17,6 +17,8 @@ third party can implement or verify it independently.
 3. [The NFTs](#3-the-nfts)
 4. [Metadata and data conventions (the standard)](#4-metadata-and-data-conventions-the-standard)
 5. [Signing a document](#5-signing-a-document)
+   - [5.1 What the signed PDF contains](#51-what-the-signed-pdf-contains)
+   - [5.2 Optional certificate signature (PAdES / X.509)](#52-optional-certificate-signature-pades--x509)
 6. [Encrypting a document](#6-encrypting-a-document)
 7. [Secure chat](#7-secure-chat)
 8. [Verification](#8-verification)
@@ -41,7 +43,9 @@ It powers three self custody tools that all share the same wallet derived trust
 model:
 
 - **Sign document**: prove authorship and integrity of any file, alone or with
-  several people, off chain or anchored on the ledger.
+  several people, off chain or anchored on the ledger. A signed PDF carries a
+  human readable signature page, and can additionally be signed with the
+  signer's own X.509 certificate so ordinary PDF readers recognise it.
 - **Encrypt document**: lock a file to an account and share it peer to peer,
   optionally gating decryption to on ledger authorized accounts.
 - **Secure chat**: end to end encrypted conversations, with encrypted file
@@ -196,6 +200,54 @@ has signed, the record is public, permanent and verifiable by anyone.
 The optional embedded PDF output carries the certificate and the intact original
 document inside it, so a single self contained file verifies on its own.
 
+### 5.1 What the signed PDF contains
+
+A delivered PDF is assembled in a fixed order, and only the first and last steps
+touch the bytes a reader sees:
+
+1. **Watermark** (optional). A presentation layer stamped on the carrier: the
+   Radix Seal mark, or your own text or image. Its specification travels inside
+   the PDF as an attachment, so a co signer rebuilding the document reproduces
+   the same look instead of losing it.
+2. **Visible signature page.** A rendered page appended at the end, readable in
+   any viewer without opening an attachments panel. It states the issuer, the
+   file, the document hash, the network, the dates, every signer (with the name
+   marked as self declared), who is still pending, the on ledger record, a QR
+   code to the verifier, and an honest note on what the signature proves.
+3. **Attachments.** The certificate, the intact original document and the
+   watermark specification.
+4. **Certificate signature** (optional, see 5.2). Applied last, because any
+   later change to the bytes would invalidate it.
+
+Because the original document is embedded intact and is what verification re
+hashes, none of the presentation layers can affect the document hash.
+
+### 5.2 Optional certificate signature (PAdES / X.509)
+
+A PDF can additionally be signed with the signer's own X.509 certificate,
+producing a standard PAdES / PKCS#7 signature. This is what makes a PDF reader
+such as Adobe or Foxit show the document in its native signature panel and
+validate the certificate's distinguished name against its own trusted
+authorities.
+
+The certificate is supplied by the signer as a PKCS#12 bundle and the signature
+is computed in the browser: the private key never leaves the device and is never
+uploaded. There is no endpoint that signs on someone's behalf, because that
+would mean holding their key.
+
+The two layers are independent and complementary. Radix Seal proves integrity,
+timestamp and control of an account without any authority; the X.509 layer adds
+the legal recognition that a trusted certificate authority provides. A self
+signed certificate still produces a valid PAdES signature, but a reader will
+mark it untrusted until the recipient trusts it.
+
+Co signing rebuilds the PDF from the intact original, so the previous signer's
+PAdES signature does not survive that step. Each signer's certificate identity
+is therefore recorded in the certificate itself (see 9), which keeps it on the
+record for every later signature. That record is informational: unlike the ROLA
+proof, it is not cryptographically bound, and only the PDF's current signature
+is validated by the reader.
+
 ---
 
 ## 6. Encrypting a document
@@ -279,6 +331,20 @@ with the signer account, disclosed name and email if any, and either a ROLA
 proof or, for on ledger signatures, `null`), an optional `onChain` anchor and an
 optional `request` pointer.
 
+A signature entry may also carry an optional `certificate` object recording the
+X.509 identity that signer used for the PDF's PAdES signature: `subjectCN`,
+`subjectO`, `issuer`, `serialNumber`, `validFrom` and `validTo`. It exists so the
+identity survives co signing, is purely informational, and is never part of
+verification. Only the `payload` is bound by the ROLA challenge, so adding this
+field does not affect any signature.
+
+**Signed PDF.** A normal PDF that carries, as embedded files,
+`radix-certificate.radixsig.json` (the certificate), `radix-original-<name>`
+(the intact original document, which is what verification re hashes) and, when
+one was applied, `radix-watermark.json` (the watermark specification, so co
+signers reproduce the same look). It also has the visible signature page
+appended, and optionally a PAdES signature over the whole file.
+
 **Encrypted container (`.radixseal.enc`).** A binary container: an 8 byte magic, a
 uint32 header length, a canonical JSON header, then AES-256-GCM chunks. The
 header records the file salt, base IV, chunk layout, original name and size,
@@ -288,8 +354,6 @@ per chunk AAD binds the header hash, the chunk index and a last chunk flag, so
 reordering, truncation, cross file substitution and header tampering all fail the
 authentication tag.
 
-**Signed PDF (optional).** A normal PDF with the certificate and the intact
-original document attached inside it, so it verifies on its own.
 
 ---
 
@@ -369,6 +433,20 @@ electronic signature (such as eIDAS QES), because no authority binds the account
 to a verified legal identity. Where regulation requires that, Radix Seal
 complements those schemes with stronger custody, confidentiality and longevity;
 it does not claim their legal status.
+
+The optional certificate signature (5.2) is how the two meet: bring your own
+X.509 certificate from a trusted authority and the same PDF carries both the
+legal recognition that authority provides and the self custodied, permanently
+verifiable Radix record. Radix Seal never issues certificates, and the visible
+signature page states plainly what each layer does and does not prove, so a
+document is never dressed up as qualified when it is not.
+
+On longevity, the two modes differ. An on ledger signature stays verifiable for
+as long as the Radix Network exists, whatever happens to the accounts afterwards.
+The lighter off ledger certificate also never expires and verifies against the
+ledger without depending on this site, with one caveat: it relies on the signer
+not later rotating the key set of their account. For anything meant to hold up
+over the long term, anchor it.
 
 ---
 

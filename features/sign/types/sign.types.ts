@@ -75,6 +75,26 @@ export interface SignatureProof {
   curve: 'curve25519' | 'secp256k1';
 }
 
+/**
+ * Identity of the X.509 certificate a signer used for the optional PAdES
+ * signature, recorded so it TRAVELS with the certificate: co-signing rebuilds
+ * the PDF from the original, which drops the previous PAdES signature, and
+ * without this the earlier signer's certificate would vanish from the record.
+ *
+ * Informational only. Unlike the ROLA proof, it is not cryptographically bound
+ * to anything, so it is displayed as a record of what the signer used — only
+ * the PDF's CURRENT signature is validated by the reader.
+ */
+export interface SignerCertificate {
+  subjectCN: string;
+  subjectO: string;
+  issuer: string;
+  serialNumber: string;
+  /** ISO-8601 validity window. */
+  validFrom: string;
+  validTo: string;
+}
+
 /** One signer's contribution to the certificate. */
 export interface SignatureEntry {
   /** Account that produced this signature. */
@@ -91,6 +111,8 @@ export interface SignatureEntry {
   proof: SignatureProof | null;
   /** ISO-8601 timestamp this signer signed. */
   signedAt: string;
+  /** X.509 certificate this signer also signed the PDF with, if any. */
+  certificate?: SignerCertificate;
 }
 
 /** A single minted attestation NFT, tied to the signer that holds it. */

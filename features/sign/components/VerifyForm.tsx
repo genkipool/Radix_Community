@@ -229,6 +229,7 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
       {/* ── On-ledger status ── */}
       <ToolSection
         title={t.onchain.statusTitle}
+        hint={t.onchain.statusHint}
         action={
           <button
             type="button"

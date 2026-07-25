@@ -57,6 +57,14 @@ export function useSendFileChannel(input: {
     let signaling: CipherSignaling | null = null;
     let peer: Peer<WireMessage> | null = null;
 
+    /** Drops a half-open session so the room can be re-armed cleanly. */
+    const teardown = async () => {
+      peer?.close();
+      peer = null;
+      await signaling?.leave().catch(() => undefined);
+      signaling = null;
+    };
+
     const serveOnce = async () => {
       signaling = await createSignaling(roomId);
       if (!active) {
@@ -107,7 +115,17 @@ export function useSendFileChannel(input: {
       peer.sendMessage({ t: 'done' });
       // Every byte (frames + the done marker) is on the wire now — only here is
       // 100% true. Then wait for the receiver to confirm it has the whole file.
-      await peer.flush();
+      //
+      // Past this point the receiver may close at ANY moment: it acks and tears
+      // the channel down as soon as it holds the file. A disconnect here is
+      // therefore a COMPLETED delivery, not a failure — treating it as one is
+      // what made a successful transfer look failed, re-arm the room and keep
+      // showing "waiting for a signer" while the file had actually arrived.
+      try {
+        await peer.flush();
+      } catch {
+        /* receiver already gone: it has everything by definition */
+      }
       if (active) setProgress(1);
       await acked;
       peer.close();
@@ -117,18 +135,31 @@ export function useSendFileChannel(input: {
     };
 
     void (async () => {
+      // A failed round must NEVER end the loop: the very first attempt can lose
+      // the race with a co-signer opening the link (ICE timeout, signaling
+      // hiccup, guest reloading), and giving up left the link permanently dead
+      // until the user hit "resend" by hand. Instead we re-arm the room with a
+      // short backoff, so the link keeps working on its own.
+      let failures = 0;
       while (active) {
         setPhase('waiting');
         setProgress(0);
         try {
           if (!(await serveOnce())) return;
+          failures = 0;
         } catch {
           if (!active) return;
+          failures += 1;
+          // Surfaced until the room is re-armed on the next iteration.
           setPhase('error');
-          return;
+          await teardown();
         }
-        // Small pause before re-hosting the room for the next co-signer.
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!active) return;
+        // Backoff between rounds: immediate re-arm for the next co-signer,
+        // growing (capped) while attempts keep failing.
+        await new Promise((resolve) =>
+          setTimeout(resolve, failures === 0 ? 500 : Math.min(2000 * failures, 8000)),
+        );
       }
     })();
 
@@ -150,10 +181,14 @@ export type ReceiveChannelPhase =
   | 'error';
 
 /**
- * Guest side. Joins `roomId` once and resolves the received document through
+ * Guest side. Joins `roomId` and resolves the received document through
  * `onFile` (the shared dropzone handler, so hashing/checks run as if the user
  * had dropped the file). `onFile` is read through a ref: this repo bans
  * useCallback and the handler is recreated every render.
+ *
+ * Attempts are RETRIED: opening a share link routinely loses the race with the
+ * host still arming its room (or re-arming it between co-signers), and a single
+ * shot left the link looking permanently broken.
  */
 export function useReceiveFileChannel(input: {
   roomId: string | null;
@@ -172,60 +207,87 @@ export function useReceiveFileChannel(input: {
   useEffect(() => {
     if (!roomId || startedRef.current) return;
     startedRef.current = true;
+    let cancelled = false;
     let peer: Peer<WireMessage> | null = null;
-    let meta: { name: string; mime: string; size: number } | null = null;
-    const parts: ArrayBuffer[] = [];
-    let received = 0;
-    let finished = false;
 
-    void (async () => {
-      setPhase('connecting');
-      const signaling = await createSignaling(roomId);
-      peer = await connectAsGuest<WireMessage>(signaling, {
-        onMessage: (m) => {
-          if (m.t === 'meta') {
-            if (m.size > MAX_FILE_BYTES) {
-              finished = true;
-              setPhase('error');
-              peer?.close();
-              return;
-            }
-            meta = m;
-            setProgress(0);
-            setPhase('receiving');
-          } else if (m.t === 'done' && meta && !finished) {
-            finished = true;
-            const file = new File(parts, meta.name || 'document', {
-              type: meta.mime || 'application/octet-stream',
-            });
-            peer?.sendMessage({ t: 'received' });
-            setPhase('done');
-            onFileRef.current(file);
-            // Give the ack a moment to flush before tearing down.
-            setTimeout(() => peer?.close(), 500);
-          }
-        },
-        onBinary: (frame) => {
+    /** One join attempt; resolves true once the whole file is in. */
+    const receiveOnce = () =>
+      new Promise<boolean>((resolve) => {
+        let meta: { name: string; mime: string; size: number } | null = null;
+        const parts: ArrayBuffer[] = [];
+        let received = 0;
+        let finished = false;
+
+        const fail = () => {
           if (finished) return;
-          parts.push(frame);
-          received += frame.byteLength;
-          if (received > MAX_FILE_BYTES) {
-            finished = true;
-            setPhase('error');
-            peer?.close();
+          finished = true;
+          peer?.close();
+          resolve(false);
+        };
+
+        void (async () => {
+          setPhase('connecting');
+          const signaling = await createSignaling(roomId);
+          if (cancelled) {
+            void signaling.leave();
+            fail();
             return;
           }
-          if (meta?.size) setProgress(Math.min(1, received / meta.size));
-        },
-        onClose: () => {
-          if (!finished) setPhase('error');
-        },
+          peer = await connectAsGuest<WireMessage>(signaling, {
+            onMessage: (m) => {
+              if (m.t === 'meta') {
+                if (m.size > MAX_FILE_BYTES) {
+                  setPhase('error');
+                  fail();
+                  return;
+                }
+                meta = m;
+                setProgress(0);
+                setPhase('receiving');
+              } else if (m.t === 'done' && meta && !finished) {
+                finished = true;
+                const file = new File(parts, meta.name || 'document', {
+                  type: meta.mime || 'application/octet-stream',
+                });
+                peer?.sendMessage({ t: 'received' });
+                setPhase('done');
+                onFileRef.current(file);
+                // Give the ack a moment to flush before tearing down.
+                setTimeout(() => peer?.close(), 500);
+                resolve(true);
+              }
+            },
+            onBinary: (frame) => {
+              if (finished) return;
+              parts.push(frame);
+              received += frame.byteLength;
+              if (received > MAX_FILE_BYTES) {
+                setPhase('error');
+                fail();
+                return;
+              }
+              if (meta?.size) setProgress(Math.min(1, received / meta.size));
+            },
+            // Losing the peer mid-round is a failed attempt, not the end.
+            onClose: fail,
+          });
+        })().catch(fail);
       });
-    })().catch(() => {
-      if (!finished) setPhase('error');
-    });
+
+    void (async () => {
+      // Generous but bounded: the host re-arms its room every few seconds, so
+      // a handful of spaced attempts covers a slow sender without spinning.
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
+        if (await receiveOnce()) return;
+        if (cancelled) return;
+        setPhase('connecting');
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      if (!cancelled) setPhase('error');
+    })();
 
     return () => {
+      cancelled = true;
       peer?.close();
     };
   }, [roomId]);
