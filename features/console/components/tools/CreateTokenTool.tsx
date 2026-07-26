@@ -739,15 +739,6 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
         copyLabel={common.copy}
       />
 
-      <TxResultBanner
-        t={common}
-        result={result}
-        error={(error && error.toLowerCase().includes('failedtopreparetransaction')) ? (common.errors?.failedToPrepareTransaction || 'Error al preparar la transacción. Comprueba que todo esté bien rellenado.') : error}
-        createdEntityLabel={labels.successResource}
-        onReset={reset}
-      />
-      {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />}
-
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex-1 w-full">
           <SendToWalletButton
@@ -767,6 +758,15 @@ export default function CreateTokenTool({ t }: ConsoleToolProps) {
           />
         </div>
       </div>
+      <TxResultBanner
+        t={common}
+        result={result}
+        error={(error && error.toLowerCase().includes('failedtopreparetransaction')) ? (common.errors?.failedToPrepareTransaction || 'Error al preparar la transacción. Comprueba que todo esté bien rellenado.') : error}
+        createdEntityLabel={labels.successResource}
+        onReset={reset}
+      />
+      {!result && !error && <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />}
+
     </div>
   );
 }

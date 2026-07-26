@@ -14,6 +14,7 @@ import { apiFetchEntityDetails, apiFetchTransactionDetails, apiFetchNonFungibleD
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { RadixIcon } from '@/components/shared/RadixIcon';
+import { SaveToAddressBookButton } from './SaveToAddressBookButton';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
 import { invalidateAccountStakingData } from '@/features/dashboard/utils/cacheInvalidation';
 import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
@@ -1931,6 +1932,16 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                                     );
                                 })()}
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    {/* A destination you just typed is the one
+                                        most worth keeping for next time. */}
+                                    {addressValidity[header.destAddress || ''] !== false && (
+                                        <SaveToAddressBookButton
+                                            address={header.destAddress || ''}
+                                            saveLabel={navT.wallet_save_contact || 'Guardar en la agenda'}
+                                            savedLabel={navT.wallet_saved_contact || 'Ya está en tu agenda'}
+                                            className="bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
+                                        />
+                                    )}
                                     <button
                                         type="button"
                                         aria-label="Seleccionar dirección"
@@ -2097,7 +2108,7 @@ export function TransactionBuilder({ accountAddress, t, onManifestChange, action
                             <button
                                 type="button"
                                 onClick={handleSend}
-                                disabled={isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress || isMissingBadges}
+                                disabled={!previewManifest.trim() || isTransacting || isWalletEmpty || isAnyOverdrawn || hasAnyInvalidAddress || isMissingBadges}
                                 className="flex-1 font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 transform-gpu origin-center will-change-transform [backface-visibility:hidden] [-webkit-font-smoothing:antialiased] [&:not(:disabled):hover]:brightness-110 [&:not(:disabled):hover]:shadow-xl [&:not(:disabled):active]:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] text-white flex justify-center items-center gap-2"
                             >
                                 {isTransacting ? (

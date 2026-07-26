@@ -155,7 +155,15 @@
     "social_youtube": "YouTube",
     "popup_soc_yt_desc": "Official videos, tutorials and conferences",
     "about_us": "About Us",
-    "popup_about_us_desc": "Discover our mission, vision and team"
+    "popup_about_us_desc": "Discover our mission, vision and team",
+    "wallet_save_contact": "Save to the address book",
+    "wallet_saved_contact": "Already in your address book",
+    "agenda_tab_recent": "Recent",
+    "agenda_recent_hint": "Accounts you have dealt with over the last month, newest first. Read from the ledger: nothing is stored until you press the address book button.",
+    "agenda_recent_loading": "Looking through your transactions…",
+    "agenda_recent_empty": "No movements with other accounts in the last month.",
+    "agenda_recent_failed": "Could not read your transactions. Check the connection and try again.",
+    "agenda_search": "Search…"
   },
   "roadmap_status": {
     "done": "Done",

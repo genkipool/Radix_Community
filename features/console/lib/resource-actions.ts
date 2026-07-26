@@ -117,6 +117,78 @@ export function suggestNonFungibleLocalId(
   return `#${highest + 1}#`;
 }
 
+
+/* ─── NFT data field types ────────────────────────────────────────────────── */
+
+/**
+ * SBOR kinds, as the Gateway reports them in `programmatic_json`, that a plain
+ * text input can express, with how each is written in a manifest.
+ *
+ * A schema is not all strings: a field declared `U64` refuses `"5"` and wants
+ * `5u64`, a `Decimal` wants `Decimal("1.5")`. Emitting everything quoted worked
+ * only for the all-string schemas this app creates and failed on anyone else's.
+ */
+const INTEGER_KINDS = [
+  'I8', 'I16', 'I32', 'I64', 'I128',
+  'U8', 'U16', 'U32', 'U64', 'U128',
+] as const;
+
+/** A sample value per kind, shown when no existing NFT can supply a real one. */
+const KIND_EXAMPLES: Record<string, string> = {
+  String: 'texto',
+  Bool: 'true',
+  Decimal: '1.5',
+  PreciseDecimal: '1.5',
+  NonFungibleLocalId: '#1#',
+  Reference: 'resource_…',
+  Own: 'internal_…',
+  I8: '-8', I16: '-16', I32: '-32', I64: '-64', I128: '-128',
+  U8: '8', U16: '16', U32: '32', U64: '64', U128: '128',
+};
+
+/** True when the kind can be typed into a text box at all. */
+export function isEditableNftFieldKind(kind: string | undefined): boolean {
+  return !!kind && kind in KIND_EXAMPLES;
+}
+
+/** `U64 · 64` — the type and a sample, for an empty field's placeholder. */
+export function nftFieldPlaceholder(kind: string | undefined): string {
+  if (!kind) return '';
+  const example = KIND_EXAMPLES[kind];
+  return example ? `${kind} · ${example}` : kind;
+}
+
+/**
+ * One NFT data value as manifest syntax for its kind. Returns null for kinds a
+ * text field cannot express (enums, arrays, tuples), so the caller can leave
+ * them alone rather than emit something the engine will reject.
+ */
+export function nftFieldLiteral(
+  kind: string | undefined,
+  value: string,
+): string | null {
+  const raw = value.trim();
+  if (!kind || kind === 'String') return `"${escape(value)}"`;
+  if ((INTEGER_KINDS as readonly string[]).includes(kind)) {
+    return `${raw || '0'}${kind.toLowerCase()}`;
+  }
+  switch (kind) {
+    case 'Bool':
+      return raw === 'true' ? 'true' : 'false';
+    case 'Decimal':
+      return `Decimal("${escape(raw || '0')}")`;
+    case 'PreciseDecimal':
+      return `PreciseDecimal("${escape(raw || '0')}")`;
+    case 'NonFungibleLocalId':
+      return `NonFungibleLocalId("${escape(raw)}")`;
+    case 'Reference':
+    case 'Own':
+      return `Address("${escape(raw)}")`;
+    default:
+      return null;
+  }
+}
+
 export interface MintNftData {
   /** Full local id INCLUDING its delimiters. Ignored for RUID resources. */
   id: string;
@@ -124,17 +196,18 @@ export interface MintNftData {
   description: string;
   keyImageUrl: string;
   /**
-   * Extra string field values, in the SAME order the resource's NF-data schema
-   * declared its custom fields at creation. Required when minting into a
-   * resource that has custom fields (e.g. a Radix Seal attestation collection).
+   * Every field beyond the three standard ones, in the SAME order the schema
+   * declared them. A mint must carry the resource's complete field set, so
+   * these are not optional: a Radix Seal collection adds nine, and sending
+   * only the three standard ones is refused outright.
    */
-  customValues?: string[];
+  customValues?: Array<{ value: string; kind?: string }>;
 }
 
 /** The (name, description, key_image_url [, custom…]) data tuple of one NFT. */
 const nftDataTuple = (nft: MintNftData) => {
   const extra = (nft.customValues ?? [])
-    .map((value) => `,\n                "${escape(value)}"`)
+    .map((field) => `,\n                ${nftFieldLiteral(field.kind, field.value) ?? '""'}`)
     .join('');
   return `Tuple(
             Tuple(
@@ -204,12 +277,13 @@ export const updateNonFungibleDataManifest = (
   localId: string,
   field: string,
   value: string,
+  kind?: string,
 ) => `
 UPDATE_NON_FUNGIBLE_DATA
     Address("${resource}")
     NonFungibleLocalId("${escape(localId)}")
     "${escape(field)}"
-    "${escape(value)}"
+    ${nftFieldLiteral(kind, value) ?? `"${escape(value)}"`}
 ;
 `;
 

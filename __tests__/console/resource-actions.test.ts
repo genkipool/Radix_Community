@@ -12,6 +12,9 @@ import {
   formatNonFungibleLocalId,
   isValidNonFungibleLocalId,
   suggestNonFungibleLocalId,
+  isEditableNftFieldKind,
+  nftFieldLiteral,
+  nftFieldPlaceholder,
   updateNonFungibleDataManifest,
   toNonFungibleIdKind,
   nonFungibleIdKindLabel,
@@ -152,7 +155,7 @@ describe('non-fungible local id types', () => {
       name: 'n',
       description: 'd',
       keyImageUrl: '',
-      customValues: ['hash', 'signer'],
+      customValues: [{ value: 'hash' }, { value: 'signer' }],
     };
     expect(mintNonFungibleManifest(RES, nft)).toContain('"signer"');
     expect(mintRuidNonFungibleManifest(RES, nft)).toContain('"signer"');
@@ -222,5 +225,118 @@ describe('non-fungible data updates', () => {
   it('escapes quotes so a value cannot break out of the manifest', () => {
     const manifest = updateNonFungibleDataManifest(RES, '#1#', 'name', 'a" ; DROP');
     expect(manifest).toContain('a\\" ; DROP');
+  });
+});
+
+/**
+ * A mint must carry EVERY field the schema declares. A Radix Seal collection
+ * adds nine of its own to the three standard ones, and sending only the three
+ * is refused by the engine with
+ * "expected_field_count: 12, found: 3".
+ */
+describe('minting into a custom schema', () => {
+  const SIGN_FIELDS = [
+    'signature',
+    'a'.repeat(64),
+    '2',
+    ACC,
+    '0',
+    '1',
+    '1',
+    '',
+    '2026-01-01T00:00:00.000Z',
+  ];
+
+  it('emits one value per custom field, after the three standard ones', () => {
+    const manifest = mintNonFungibleManifest(RES, {
+      id: '#1#',
+      name: 'Signature',
+      description: 'desc',
+      keyImageUrl: 'https://img',
+      customValues: SIGN_FIELDS.map((value) => ({ value })),
+    });
+    // 3 base + 9 custom, all inside the single data tuple.
+    const tuple = manifest.slice(manifest.indexOf('Tuple('));
+    expect(tuple.match(/"/g)!.length / 2).toBe(12);
+    expect(manifest).toContain('"signature"');
+    expect(manifest).toContain('"2026-01-01T00:00:00.000Z"');
+  });
+
+  it('keeps the values positional, empties included', () => {
+    const manifest = mintNonFungibleManifest(RES, {
+      id: '#1#',
+      name: 'n',
+      description: '',
+      keyImageUrl: '',
+      customValues: [{ value: 'first' }, { value: '' }, { value: 'third' }],
+    });
+    const values = [...manifest.matchAll(/"([^"]*)"/g)].map((m) => m[1]);
+    // Address, then name, description, image, then the customs in order.
+    expect(values.slice(-3)).toEqual(['first', '', 'third']);
+  });
+
+  it('still works for a plain resource with no custom fields', () => {
+    const manifest = mintNonFungibleManifest(RES, {
+      id: '#1#',
+      name: 'n',
+      description: 'd',
+      keyImageUrl: 'https://i',
+    });
+    const tuple = manifest.slice(manifest.indexOf('Tuple('));
+    expect(tuple.match(/"/g)!.length / 2).toBe(3);
+  });
+});
+
+/**
+ * A schema is not all strings. A `U64` field refuses `"5"` and wants `5u64`, a
+ * `Decimal` wants `Decimal("1.5")`. Quoting everything worked only for the
+ * all-string schemas this app creates.
+ */
+describe('typed NFT data fields', () => {
+  it('writes each kind in its own manifest syntax', () => {
+    expect(nftFieldLiteral('String', 'hola')).toBe('"hola"');
+    expect(nftFieldLiteral(undefined, 'hola')).toBe('"hola"');
+    expect(nftFieldLiteral('U64', '5')).toBe('5u64');
+    expect(nftFieldLiteral('I32', '-7')).toBe('-7i32');
+    expect(nftFieldLiteral('Bool', 'true')).toBe('true');
+    expect(nftFieldLiteral('Bool', 'nope')).toBe('false');
+    expect(nftFieldLiteral('Decimal', '1.5')).toBe('Decimal("1.5")');
+    expect(nftFieldLiteral('NonFungibleLocalId', '#1#')).toBe(
+      'NonFungibleLocalId("#1#")',
+    );
+    expect(nftFieldLiteral('Reference', RES)).toBe(`Address("${RES}")`);
+  });
+
+  it('refuses kinds a text box cannot express', () => {
+    expect(nftFieldLiteral('Enum', 'x')).toBeNull();
+    expect(nftFieldLiteral('Array', 'x')).toBeNull();
+    expect(isEditableNftFieldKind('Enum')).toBe(false);
+    expect(isEditableNftFieldKind('U64')).toBe(true);
+  });
+
+  it('never leaves a numeric field empty in the manifest', () => {
+    expect(nftFieldLiteral('U64', '')).toBe('0u64');
+    expect(nftFieldLiteral('Decimal', '')).toBe('Decimal("0")');
+  });
+
+  it('offers the type and a sample as a placeholder', () => {
+    expect(nftFieldPlaceholder('U64')).toBe('U64 · 64');
+    expect(nftFieldPlaceholder('Decimal')).toBe('Decimal · 1.5');
+    expect(nftFieldPlaceholder(undefined)).toBe('');
+  });
+
+  it('carries the kind through a mint and an update', () => {
+    const mint = mintNonFungibleManifest(RES, {
+      id: '#1#',
+      name: 'n',
+      description: 'd',
+      keyImageUrl: '',
+      customValues: [{ value: '7', kind: 'U64' }, { value: 'x' }],
+    });
+    expect(mint).toContain('7u64');
+    expect(mint).toContain('"x"');
+    expect(updateNonFungibleDataManifest(RES, '#1#', 'count', '9', 'U32')).toContain(
+      '9u32',
+    );
   });
 });

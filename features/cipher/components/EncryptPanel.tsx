@@ -239,16 +239,6 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
           that is minted automatically after the ROLA signature. */}
       {(flow.phase === 'idle' || flow.phase === 'error') && (
         <>
-          {/* Above the buttons: the dry-run result is what you read BEFORE
-              deciding to send, so it should not push the action off screen. */}
-          {ledger && (
-            <SimulateResultCard
-              t={consoleT.simulate}
-              preview={preview.preview}
-              error={preview.error}
-              onClose={preview.reset}
-            />
-          )}
           <div className={ledger ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
             <button
               type="button"
@@ -273,6 +263,14 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
               />
             )}
           </div>
+          {ledger && (
+            <SimulateResultCard
+              t={consoleT.simulate}
+              preview={preview.preview}
+              error={preview.error}
+              onClose={preview.reset}
+            />
+          )}
         </>
       )}
 

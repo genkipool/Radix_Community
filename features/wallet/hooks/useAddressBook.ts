@@ -76,13 +76,56 @@ export function useAddressBook() {
         }
     };
 
+    /**
+     * Why an entry was refused. The agenda is keyed by address AND by name:
+     * two contacts with the same address are the same contact, and two with
+     * the same name are indistinguishable wherever the name is what shows.
+     */
+    const duplicateReason = (
+        entry: { name: string; address: string },
+        ignoreId?: string,
+    ): 'duplicate_address' | 'duplicate_name' | null => {
+        const name = entry.name.trim().toLowerCase();
+        const address = entry.address.trim().toLowerCase();
+        const others = entries.filter((e) => e.id !== ignoreId);
+        if (others.some((e) => e.address.trim().toLowerCase() === address)) {
+            return 'duplicate_address';
+        }
+        if (others.some((e) => e.name.trim().toLowerCase() === name)) {
+            return 'duplicate_name';
+        }
+        return null;
+    };
+
     const addEntry = (entry: Omit<AddressBookEntry, 'id' | 'category'>) => {
         const newEntry: AddressBookEntry = {
             ...entry,
             id: crypto.randomUUID(),
             category: addressCategory(entry.address),
         };
+        if (duplicateReason(newEntry)) return;
         saveEntries([...entries, newEntry]);
+    };
+
+    /**
+     * One-click save from anywhere an address is shown. Falls back to the
+     * address as the name when the preferred one is taken, so a save never
+     * fails for a reason the user cannot see or fix from there.
+     */
+    const addContact = (
+        address: string,
+        preferredName?: string,
+    ): 'saved' | 'duplicate_address' => {
+        const clean = address.trim();
+        if (duplicateReason({ name: '', address: clean }) === 'duplicate_address') {
+            return 'duplicate_address';
+        }
+        const name = (preferredName ?? '').trim() || clean;
+        addEntry({
+            address: clean,
+            name: duplicateReason({ name, address: clean }) ? clean : name,
+        });
+        return 'saved';
     };
 
     const updateEntry = (id: string, updated: Omit<AddressBookEntry, 'id' | 'category'>) => {
@@ -102,6 +145,8 @@ export function useAddressBook() {
     return {
         entries,
         addEntry,
+        addContact,
+        duplicateReason,
         updateEntry,
         deleteEntry,
     };

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { m, AnimatePresence } from 'motion/react';
-import { BookUser, Check, Edit2, Loader2, Trash2, X } from 'lucide-react';
+import { BookUser, Check, Edit2, Loader2, Search, Trash2, X } from 'lucide-react';
 import {
     useAddressBook,
     addressCategory,
@@ -11,6 +11,10 @@ import {
 } from '../hooks/useAddressBook';
 import { useRadixWallet } from '../hooks/useRadixWallet';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { useQuery } from '@tanstack/react-query';
+import { CopyButton } from '@/components/ui/CopyButton';
+import { truncateAddress } from '@/utils/formatters';
+import { fetchRecentAddresses, type RecentAddress } from '../services/recentAddresses';
 
 type NavT = Record<string, string>;
 
@@ -25,10 +29,11 @@ const CATEGORY_ORDER: AddressCategory[] = [
     'other',
 ];
 
-function tabLabel(cat: AddressCategory | 'all', navT: NavT): string {
+function tabLabel(cat: AddressCategory | 'all' | 'recent', navT: NavT): string {
     const key = `agenda_tab_${cat}`;
-    const fallback: Record<AddressCategory | 'all', string> = {
+    const fallback: Record<AddressCategory | 'all' | 'recent', string> = {
         all: 'Todas',
+        recent: 'Recientes',
         account: 'Cuentas',
         validator: 'Validadores',
         pool: 'Pools',
@@ -208,7 +213,7 @@ export function AddressBook({
     /** Hide the internal title row (the console page already has a header). */
     showHeader?: boolean;
 }) {
-    const { entries, addEntry, updateEntry, deleteEntry } = useAddressBook();
+    const { entries, addEntry, addContact, updateEntry, deleteEntry } = useAddressBook();
     const { activeNetwork } = useRadixWallet();
 
     const [isAdding, setIsAdding] = useState(false);
@@ -217,16 +222,34 @@ export function AddressBook({
     const [formAddress, setFormAddress] = useState('');
     const [formNote, setFormNote] = useState('');
     const [addErrorMsg, setAddErrorMsg] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<AddressCategory | 'all'>('all');
+    const [activeTab, setActiveTab] = useState<AddressCategory | 'all' | 'recent'>('all');
+    const [search, setSearch] = useState('');
+    const matches = (...fields: Array<string | undefined>) => {
+        const needle = search.trim().toLowerCase();
+        return !needle || fields.some((f) => (f ?? '').toLowerCase().includes(needle));
+    };
+
+    // Loaded only when the tab is opened: it costs several Gateway pages.
+    const { accounts } = useRadixWallet();
+    const accountAddresses = accounts.map((a) => a.address);
+    const recentQuery = useQuery({
+        queryKey: ['recent-addresses', activeNetwork, accountAddresses.join(',')],
+        enabled: activeTab === 'recent' && accountAddresses.length > 0,
+        staleTime: 60_000,
+        queryFn: () =>
+            fetchRecentAddresses({ network: activeNetwork, accounts: accountAddresses }),
+    });
+    const savedAddresses = new Set(entries.map((e) => e.address));
 
     // Only surface tabs for categories that actually have entries.
     const presentSet = new Set(entries.map((e) => e.category ?? addressCategory(e.address)));
     const presentCategories = CATEGORY_ORDER.filter((c) => presentSet.has(c));
 
-    const visibleEntries =
-        activeTab === 'all'
+    const visibleEntries = (
+        activeTab === 'all' || activeTab === 'recent'
             ? entries
-            : entries.filter((e) => (e.category ?? addressCategory(e.address)) === activeTab);
+            : entries.filter((e) => (e.category ?? addressCategory(e.address)) === activeTab)
+    ).filter((e) => matches(e.name, e.address, e.note));
 
     const resetForm = () => {
         setFormName('');
@@ -383,10 +406,20 @@ export function AddressBook({
             </AnimatePresence>
 
             {/* Category tabs (only when there is more than one family to split) */}
-            {presentCategories.length > 1 && (
-                <div className="mb-1 flex items-center gap-4 overflow-x-auto border-b border-[var(--color-card-border)]/50 no-scrollbar">
-                    {(['all', ...presentCategories] as const).map((cat) => {
-                        const count = cat === 'all' ? entries.length : entries.filter((e) => (e.category ?? addressCategory(e.address)) === cat).length;
+            {(presentCategories.length > 1 || accountAddresses.length > 0) && (
+                /* Nine tabs plus the search do not fit a phone, and can
+                   overflow even a desktop column. The strip scrolls on its own
+                   while the search stays pinned at the end, so it can never be
+                   pushed out of reach. */
+                <div className="mb-1 flex items-center gap-3 border-b border-[var(--color-card-border)]/50">
+                  <div className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto no-scrollbar">
+                    {(['all', ...presentCategories, 'recent'] as const).map((cat) => {
+                        const count =
+                            cat === 'all'
+                                ? entries.length
+                                : cat === 'recent'
+                                    ? (recentQuery.data?.length ?? 0)
+                                    : entries.filter((e) => (e.category ?? addressCategory(e.address)) === cat).length;
                         const active = activeTab === cat;
                         return (
                             <button
@@ -398,13 +431,38 @@ export function AddressBook({
                                         : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'
                                 }`}
                             >
-                                {tabLabel(cat, navT)} ({count})
+                                {tabLabel(cat, navT)}
+                                {cat !== 'recent' || recentQuery.data ? ` (${count})` : ''}
                             </button>
                         );
                     })}
+                  </div>
+                    {/* Last in the row, and never scrolled away: searches
+                        whichever list is showing. */}
+                    <div className="flex shrink-0 items-center gap-1.5 pb-1.5">
+                        <Search className="size-3.5 text-[var(--color-text-muted)]" />
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder={navT.agenda_search || 'Buscar…'}
+                            aria-label={navT.agenda_search || 'Buscar…'}
+                            className="w-28 bg-transparent text-xs text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-muted)] focus:w-40 transition-[width]"
+                        />
+                    </div>
                 </div>
             )}
 
+            {activeTab === 'recent' ? (
+                <RecentAddresses
+                    navT={navT}
+                    loading={recentQuery.isFetching}
+                    failed={recentQuery.isError}
+                    items={(recentQuery.data ?? []).filter((r) => matches(r.address))}
+                    saved={savedAddresses}
+                    onSave={(address) => addContact(address)}
+                />
+            ) : (
             <div className="mt-2">
                 {entries.length === 0 && !isAdding ? (
                     <div className="py-6 text-center italic text-[var(--color-text-muted)] opacity-60">
@@ -422,6 +480,94 @@ export function AddressBook({
                     ))
                 )}
             </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Accounts this wallet dealt with in the last month, newest first, each with a
+ * one-click save. Read from the ledger, so there is nothing to keep in sync.
+ */
+function RecentAddresses({
+    navT,
+    loading,
+    failed,
+    items,
+    saved,
+    onSave,
+}: {
+    navT: NavT;
+    loading: boolean;
+    /** The ledger read failed: say so rather than show an empty list. */
+    failed: boolean;
+    items: RecentAddress[];
+    saved: Set<string>;
+    onSave: (address: string) => void;
+}) {
+    if (failed) {
+        return (
+            <p className="py-6 text-center text-sm italic text-red-500">
+                {navT.agenda_recent_failed || 'No se pudieron leer tus transacciones.'}
+            </p>
+        );
+    }
+    if (loading && items.length === 0) {
+        return (
+            <p className="py-6 text-center text-sm italic text-[var(--color-text-muted)] opacity-60">
+                {navT.agenda_recent_loading || 'Buscando en tus transacciones…'}
+            </p>
+        );
+    }
+    if (items.length === 0) {
+        return (
+            <p className="py-6 text-center text-sm italic text-[var(--color-text-muted)] opacity-60">
+                {navT.agenda_recent_empty || 'Sin movimientos con otras cuentas en el último mes.'}
+            </p>
+        );
+    }
+    return (
+        <div className="mt-2">
+            <p className="pb-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                {navT.agenda_recent_hint ||
+                    'Cuentas con las que has interactuado en el último mes, de más reciente a más antigua.'}
+            </p>
+            {items.map((item) => {
+                const isSaved = saved.has(item.address);
+                return (
+                    <div
+                        key={item.address}
+                        className="flex items-center justify-between gap-3 border-b border-[var(--color-card-border)]/50 py-3"
+                    >
+                        <div className="min-w-0">
+                            <p className="truncate font-mono text-xs text-[var(--color-text-main)]" title={item.address}>
+                                {truncateAddress(item.address, 10, 8)}
+                            </p>
+                            <p className="text-[11px] text-[var(--color-text-muted)]">
+                                {item.lastSeen.toLocaleDateString()}
+                                {item.count > 1 ? ` · ${item.count}` : ''}
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                            <CopyButton value={item.address} size="xs" variant="ghost" />
+                            <button
+                                type="button"
+                                disabled={isSaved}
+                                onClick={() => onSave(item.address)}
+                                title={
+                                    isSaved
+                                        ? navT.wallet_saved_contact || 'Ya está en tu agenda'
+                                        : navT.wallet_save_contact || 'Guardar en la agenda'
+                                }
+                                className="inline-flex size-7 items-center justify-center rounded-lg transition-colors disabled:cursor-default"
+                                style={{ color: isSaved ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                            >
+                                {isSaved ? <Check className="size-3.5" /> : <BookUser className="size-3.5" />}
+                            </button>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }

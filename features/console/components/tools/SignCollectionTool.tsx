@@ -714,13 +714,6 @@ function CreateTab({
         )}
       </ToolSection>
 
-      <SimulateResultCard
-        t={consoleT.simulate}
-        preview={preview.preview}
-        error={preview.error}
-        onClose={preview.reset}
-      />
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           type="button"
@@ -742,6 +735,12 @@ function CreateTab({
           loading={preview.isSimulating}
         />
       </div>
+      <SimulateResultCard
+        t={consoleT.simulate}
+        preview={preview.preview}
+        error={preview.error}
+        onClose={preview.reset}
+      />
     </div>
   );
 }
