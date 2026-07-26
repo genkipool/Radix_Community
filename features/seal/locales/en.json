@@ -15,7 +15,7 @@
       "metric2_value": "100%",
       "metric2": "Of the cryptography runs client-side, in your browser",
       "metric3_value": "3",
-      "metric3": "Tools under one trust model: sign, encrypt and chat",
+      "metric3": "Tools under one trust model: collection, sign, encrypt and chat",
       "metric4_value": "1",
       "metric4": "Wallet signature is all it takes to prove control of an account",
       "slides": [
@@ -41,10 +41,22 @@
     },
     "capabilities": {
       "label": "The toolset",
-      "h2a": "Three tools,",
+      "h2a": "Four tools,",
       "h2b": "one trust model",
       "sub": "Every Radix Seal tool follows the same rule: your wallet proves identity, your browser does the cryptography, and no intermediary ever holds content or keys. Available today in the Radix console.",
       "tools": [
+        {
+          "title": "Your signing collection",
+          "desc": "Your insignia and the collection where your signatures and invitations live. It is the chain of custody that makes an on-ledger signature yours and no one else's: the collection belongs to your insignia, and your insignia can never leave your account.",
+          "points": [
+            "Created for you the first time you sign or encrypt: no need to come here to start",
+            "Editable issuer identity: your organisation's name, logo and website, on everything you issue",
+            "Several collections when you need them: one to sign as an individual and another as a company, or one per company",
+            "What you have issued never moves and can never be deleted: switching only decides where the next ones are minted",
+            "One insignia can carry several collections, or each identity can have its own with its own logo"
+          ],
+          "cta": "Open the collection section"
+        },
         {
           "title": "Sign documents",
           "desc": "Sign any file with your Radix Wallet. The document is hashed locally and never uploaded: only the hash is signed, proving integrity, timestamp and control of the account key.",
@@ -66,7 +78,9 @@
             "No file size limit: chunked, never uploaded",
             "Key derived from your wallet: nothing to store or lose",
             "Direct browser-to-browser transfer, end-to-end encrypted",
-            "Receiver decrypts only when the owner approves and signs"
+            "Receiver decrypts only when the owner approves and signs",
+            "ROLA + Ledger mode: only accounts holding your invitation NFT can ask for the key. Without that NFT in their wallet, there is no decryption.",
+            "Resumable transfer: if the connection drops, the file continues where it stopped"
           ],
           "cta": "Open the encryption tool"
         },
@@ -79,7 +93,8 @@
             "Each invitation link works for a single conversation",
             "Identity checks verified locally, in each browser",
             "Encrypted file sending with no size limit over the same channel",
-            "Nothing leaves your browser: messages vanish when the page closes and the local copy of received files is deleted after 24 hours"
+            "Nothing leaves your browser: messages vanish when the page closes and the local copy of received files is deleted after 24 hours",
+            "Typing indicator, and the other side's wallet name above their address"
           ],
           "cta": "Open the secure chat"
         }

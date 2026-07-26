@@ -11,6 +11,7 @@ import {
   FileSignature,
   FlaskConical,
   Landmark,
+  Layers,
   LayoutDashboard,
   MessageSquareLock,
   Rocket,
@@ -163,6 +164,13 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '234,179,8',
     requiresWallet: true,
   },
+  'sign-collection': {
+    slug: 'sign-collection',
+    icon: <Layers className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '168,85,247',
+    requiresWallet: true,
+  },
   'sign-document': {
     slug: 'sign-document',
     icon: <FileSignature className="size-5" />,
@@ -225,7 +233,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     id: 'radix-seal',
     icon: <Stamp className="size-5" />,
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
-    tools: ['sign-document', 'encrypt-document', 'chat'],
+    tools: ['sign-collection', 'sign-document', 'encrypt-document', 'chat'],
   },
   {
     id: 'utilities',

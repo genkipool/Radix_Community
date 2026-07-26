@@ -34,6 +34,9 @@ export interface UserSeal {
 export interface UserSignCollection {
   resourceAddress: string;
   totalSupply: number;
+  /** Display metadata, so a human can tell two collections apart. */
+  name?: string;
+  iconUrl?: string;
 }
 
 interface MetadataItem {
@@ -47,7 +50,7 @@ interface NonFungibleResourceItem {
 interface EntityDetailsItem {
   address: string;
   metadata?: { items?: MetadataItem[] };
-  details?: { total_supply?: string };
+  details?: { total_supply?: string; role_assignments?: unknown };
   non_fungible_resources?: {
     items?: NonFungibleResourceItem[];
     /** Set when the account holds more NFT resources than one page returns. */
@@ -117,22 +120,81 @@ async function allNonFungibleResources(
 
 /* ─── Seal ────────────────────────────────────────────────────────────────── */
 
-/** The account's own seal NFT, or null (not minted yet / brand undeployed). */
-export async function findUserSeal(
+/**
+ * EVERY seal the account holds. Normally one — the insignia is self-minted and
+ * soulbound — but the brand is open-mint, so nothing stops an account from
+ * minting a second one, and each is a DIFFERENT global id. That matters
+ * because a signing collection is owned by one specific seal.
+ */
+export async function findUserSeals(
   networkId: number,
   account: string,
-): Promise<UserSeal | null> {
+): Promise<UserSeal[]> {
   const sealResource = radixSealAddress(networkId);
-  if (!sealResource) return null;
+  if (!sealResource) return [];
   const items = await allNonFungibleResources(network(networkId), account, {
     non_fungible_include_nfids: true,
   });
   const vaults =
     items.find((r) => r.resource_address === sealResource)?.vaults?.items ?? [];
-  const localId = vaults.flatMap((v) => v.items ?? [])[0];
-  return localId
-    ? { globalId: `${sealResource}:${localId}`, localId }
-    : null;
+  return vaults
+    .flatMap((v) => v.items ?? [])
+    .map((localId) => ({ globalId: `${sealResource}:${localId}`, localId }));
+}
+
+/** The account's own seal NFT, or null (not minted yet / brand undeployed). */
+export async function findUserSeal(
+  networkId: number,
+  account: string,
+): Promise<UserSeal | null> {
+  return (await findUserSeals(networkId, account))[0] ?? null;
+}
+
+/**
+ * The `resource:localId` a non-fungible owner rule requires, or null. The
+ * Gateway nests it under access_rule → proof_rule → requirement, and reports
+ * the id under `simple_rep`.
+ */
+function ownerRuleGlobalId(roleAssignments: unknown): string | null {
+  try {
+    const owner = (roleAssignments as { owner?: { rule?: unknown } })?.owner?.rule;
+    const rule = owner as Record<string, unknown>;
+    const accessRule = (rule?.access_rule ?? rule) as Record<string, unknown>;
+    const proofRule = (accessRule?.proof_rule ?? accessRule) as Record<string, unknown>;
+    const requirement = (proofRule?.requirement ?? {}) as Record<string, unknown>;
+    const nonFungible = (requirement?.non_fungible ?? {}) as Record<string, unknown>;
+    const resource = nonFungible?.resource_address as string | undefined;
+    const rawId = nonFungible?.local_id;
+    const localId =
+      typeof rawId === 'string'
+        ? rawId
+        : ((rawId as { simple_rep?: string })?.simple_rep ?? '');
+    return resource && localId ? `${resource}:${localId}` : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Which of the account's seals actually commands `collection`.
+ *
+ * The collection's owner rule names ONE seal by global id, so with two seals in
+ * the wallet, picking whichever the Gateway listed first builds the mint proof
+ * from the wrong NFT and the transaction fails the auth check with nothing to
+ * explain it. With a single seal (the normal case) this costs no extra request.
+ */
+export async function pickSealForCollection(
+  networkId: number,
+  seals: UserSeal[],
+  collectionAddress: string | null,
+): Promise<UserSeal | null> {
+  if (seals.length <= 1 || !collectionAddress) return seals[0] ?? null;
+  const [item] = await entityDetails(network(networkId), [collectionAddress]).catch(
+    () => [],
+  );
+  const owner = ownerRuleGlobalId(item?.details?.role_assignments);
+  // No readable owner rule: keep the previous behaviour rather than guess.
+  return seals.find((seal) => seal.globalId === owner) ?? seals[0] ?? null;
 }
 
 /* ─── Signing collection ──────────────────────────────────────────────────── */
@@ -177,6 +239,38 @@ export async function findCollectionIssuer(
   return orgName || orgWebsite ? { orgName, orgWebsite, iconUrl } : null;
 }
 
+/** The editable face of a signing collection, as it stands on the ledger. */
+export interface CollectionProfile {
+  name?: string;
+  symbol?: string;
+  /** The collection's own `icon_url` — the issuer's logo. */
+  iconUrl?: string;
+  orgName?: string;
+  orgUrl?: string;
+}
+
+/**
+ * The unlocked display metadata of a collection, for pre-filling the edit form.
+ * Everything else it carries (description, marker, seal reference, issuer
+ * account, tags) was locked at creation and can never change.
+ */
+export async function findCollectionProfile(
+  networkId: number,
+  resourceAddress: string,
+): Promise<CollectionProfile> {
+  const [item] = await entityDetails(network(networkId), [resourceAddress]).catch(
+    () => [],
+  );
+  if (!item) return {};
+  return {
+    name: metadataValue(item, 'name'),
+    symbol: metadataValue(item, 'symbol'),
+    iconUrl: metadataValue(item, ICON_URL_KEY),
+    orgName: metadataValue(item, ORG_NAME_KEY),
+    orgUrl: metadataValue(item, ORG_URL_KEY),
+  };
+}
+
 /**
  * True when the collection references the CURRENT official Radix Seal resource
  * (its locked `radix_seal` metadata). After a brand redeploy the seal resource
@@ -203,6 +297,16 @@ function toSupply(item: EntityDetailsItem): number {
   return Math.floor(Number(item.details?.total_supply ?? '0')) || 0;
 }
 
+/** Everything the UI needs about a collection, from one details response. */
+function toCollection(item: EntityDetailsItem): UserSignCollection {
+  return {
+    resourceAddress: item.address,
+    totalSupply: toSupply(item),
+    name: metadataValue(item, 'name'),
+    iconUrl: metadataValue(item, ICON_URL_KEY),
+  };
+}
+
 const cacheKey = (networkId: number, account: string) =>
   `radix-sign-collection:${networkId}:${account}`;
 
@@ -214,6 +318,28 @@ function readCache(networkId: number, account: string): string | null {
   }
 }
 
+/**
+ * Every collection this browser has seen for the account, active or not.
+ *
+ * Discovery scans what the account HOLDS, and a brand-new collection holds
+ * nothing: the seal owns it, but no NFT of it sits in any vault, so the ledger
+ * scan cannot see it until the first invitation or signature is minted. The
+ * Gateway offers no "resources owned by this NFT" index to ask instead, so the
+ * addresses this browser created are kept and re-verified on every read.
+ */
+const knownKey = (networkId: number, account: string) =>
+  `radix-sign-collections:${networkId}:${account}`;
+
+function readKnown(networkId: number, account: string): string[] {
+  try {
+    const raw = localStorage.getItem(knownKey(networkId, account));
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((a) => typeof a === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export function rememberSignCollection(
   networkId: number,
   account: string,
@@ -221,6 +347,13 @@ export function rememberSignCollection(
 ): void {
   try {
     localStorage.setItem(cacheKey(networkId, account), resourceAddress);
+    const known = readKnown(networkId, account);
+    if (!known.includes(resourceAddress)) {
+      localStorage.setItem(
+        knownKey(networkId, account),
+        JSON.stringify([...known, resourceAddress]),
+      );
+    }
   } catch {
     /* private mode — discovery still works, just uncached */
   }
@@ -237,24 +370,78 @@ export async function findSignCollection(
   if (cached) {
     const [item] = await entityDetails(net, [cached]).catch(() => []);
     if (item && isSignCollection(item) && belongsToCurrentSeal(item, networkId)) {
-      return { resourceAddress: cached, totalSupply: toSupply(item) };
+      return toCollection(item);
     }
     // Stale (e.g. a collection from a previous seal deploy): drop it.
     forgetSignCollection(networkId, account);
   }
 
+  const best = (await findSignCollections(networkId, account))[0] ?? null;
+  if (best) rememberSignCollection(networkId, account, best.resourceAddress);
+  return best;
+}
+
+/**
+ * The account's signing collection together with the seal that commands it —
+ * the pair every mint needs, resolved consistently. Always prefer this over
+ * reading the two separately: the seal is only correct RELATIVE to the
+ * collection whose owner rule names it.
+ */
+export async function findSealAndCollection(
+  networkId: number,
+  account: string,
+): Promise<{ seal: UserSeal | null; collection: UserSignCollection | null }> {
+  const [seals, collection] = await Promise.all([
+    findUserSeals(networkId, account),
+    findSignCollection(networkId, account),
+  ]);
+  const seal = await pickSealForCollection(
+    networkId,
+    seals,
+    collection?.resourceAddress ?? null,
+  );
+  return { seal, collection };
+}
+
+/**
+ * EVERY signing collection the account holds, best first.
+ *
+ * An account can end up with more than one: created in two tabs, created by
+ * hand, or created again because a discovery miss re-offered the onboarding.
+ * They are all valid on-ledger — the issuer identity (org name, logo) lives per
+ * collection, so a second one can even be deliberate — but the tool has to
+ * commit to ONE, and "whichever the Gateway happened to list first" is not an
+ * order anybody promised.
+ *
+ * Ranked by minted supply, descending. Burning is denied in these collections,
+ * so supply is exactly how much evidence (invitations, signatures) lives
+ * inside, and the ranking means an accidental empty duplicate can never
+ * displace the collection holding the account's history. Ties break on the
+ * address, so the answer is stable across calls.
+ */
+export async function findSignCollections(
+  networkId: number,
+  account: string,
+): Promise<UserSignCollection[]> {
+  const net = network(networkId);
   const held = (await allNonFungibleResources(net, account)).map(
     (r) => r.resource_address,
   );
-  for (let i = 0; i < held.length; i += 20) {
-    const details = await entityDetails(net, held.slice(i, i + 20));
-    const match = details.find(
-      (item) => isSignCollection(item) && belongsToCurrentSeal(item, networkId),
-    );
-    if (match) {
-      rememberSignCollection(networkId, account, match.address);
-      return { resourceAddress: match.address, totalSupply: toSupply(match) };
+  // Holdings alone miss an empty collection, so the ones this browser created
+  // are added as candidates. Every candidate is still verified below: a stale
+  // or foreign address simply fails the marker check and drops out.
+  const candidates = [...new Set([...held, ...readKnown(networkId, account)])];
+  const found: UserSignCollection[] = [];
+  for (let i = 0; i < candidates.length; i += 20) {
+    const details = await entityDetails(net, candidates.slice(i, i + 20));
+    for (const item of details) {
+      if (!isSignCollection(item) || !belongsToCurrentSeal(item, networkId)) continue;
+      found.push(toCollection(item));
     }
   }
-  return null;
+  return found.sort(
+    (a, b) =>
+      b.totalSupply - a.totalSupply ||
+      a.resourceAddress.localeCompare(b.resourceAddress),
+  );
 }

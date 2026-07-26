@@ -17,8 +17,7 @@ import {
   buildSignatureMintManifest,
 } from '../lib/sign-request';
 import {
-  findSignCollection,
-  findUserSeal,
+  findSealAndCollection,
   rememberSignCollection,
 } from '../services/sealDiscovery';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
@@ -158,10 +157,9 @@ export function useDocumentSign() {
     // uses; NFTs are told apart by `kind`). Owner = the official Radix Seal, so
     // verification binds it to the account via an unforgeable chain of custody.
     // Requires the account's soulbound Seal (its insignia).
-    const seal = await findUserSeal(networkId, account);
+    const { seal, collection } = await findSealAndCollection(networkId, account);
     if (!seal) throw new Error('seal_required');
 
-    const collection = await findSignCollection(networkId, account);
     const localIdNum = collection ? collection.totalSupply + 1 : 1;
     // A stand-alone anchor has no on-ledger invitation, so `request` is empty;
     // verification (`signerHasSigned`) keys on kind + doc hash + signer only.

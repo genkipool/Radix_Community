@@ -23,6 +23,7 @@ import { useTransactionPreview } from '@/features/console/hooks/useTransactionPr
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
+import { SignCollectionSwitch } from './SignCollectionSwitch';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import {
   buildSignCollectionCreateManifest,
@@ -672,6 +673,9 @@ export function OnChainSignPanel({
               {setup.seal && !setup.collection && (
                 <Muted text={t.onchain.firstSignNote} />
               )}
+              {/* Which collection this signature will be recorded in, and a
+                  way out if the account holds more than one. */}
+              <SignCollectionSwitch t={t} account={actingAccount} setup={setup} />
               {errorMsg && <Danger text={errorMsg} />}
             </>
           ) : null}

@@ -35,10 +35,17 @@ import {
 import {
   DEFAULT_COLLECTION_NAME,
   DEFAULT_COLLECTION_SYMBOL,
+  ICON_URL_KEY,
+  ORG_NAME_KEY,
+  ORG_URL_KEY,
   RADIX_SEAL_STANDARD_KEY,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
 } from '../constants/seal';
+import {
+  setStringMetadata,
+  setUrlMetadata,
+} from '@/features/console/lib/metadata-manifests';
 import type { IssuerMeta } from '../types/sign.types';
 
 /* ─── Shared NF-data schema (invitations + signatures) ────────────────────── */
@@ -237,11 +244,12 @@ export function buildSignCollectionCreateManifest(
       burner: 'denyAll',
       burner_updater: 'denyAll',
       withdrawer: 'denyAll',
-      // The seal holder may re-point each NFT's key_image_url (cosmetic only,
-      // just like the collection's icon_url). The evidence fields
-      // (document_hash, signer, kind, request) stay locked in the schema, so
-      // this can never rewrite what a signature proves. Rule locked forever.
-      nft_data_setter: 'owner',
+      // NOTHING inside a minted NFT can ever be rewritten, image included:
+      // every field is locked in the schema below, so this role has nothing
+      // left to govern. Invitations land in OTHER people's wallets, which is
+      // where the Radix Seal insignia is seen, and a fixed image means an
+      // issuer cannot quietly restyle evidence after someone signed it.
+      nft_data_setter: 'denyAll',
       nft_data_setter_updater: 'denyAll',
       // Unlocked display metadata (name, icon_url, org_url) is editable by
       // the seal holder ONLY — and that rule itself can never be changed.
@@ -262,12 +270,64 @@ export function buildSignCollectionCreateManifest(
           }),
         ]
       : [],
-    // key_image_url stays MUTABLE (owner-editable via nft_data_setter); name and
-    // description remain locked. Evidence lives in the locked custom fields.
-    nftBaseFieldsLocked: { name: true, description: true, key_image_url: false },
+    // Every base field locked, key_image_url included: each invitation and
+    // signature carries the Radix Seal image for good. Issuer branding lives on
+    // the COLLECTION (its icon_url, org_name, org_url), which stays editable.
+    nftBaseFieldsLocked: { name: true, description: true, key_image_url: true },
     nftCustomFields: [...SIGN_NFT_FIELDS],
     firstNftId: 1,
   });
+}
+
+/* ─── Collection display metadata ─────────────────────────────────────────── */
+
+export interface CollectionMetadataInput {
+  /** Account holding the seal that owns the collection (it signs and proves). */
+  account: string;
+  sealGlobalId: string;
+  collection: string;
+  /** Only keys present are written; undefined leaves the ledger value alone. */
+  name?: string;
+  symbol?: string;
+  /** The collection's `icon_url`: the issuer's logo. */
+  iconUrl?: string;
+  orgName?: string;
+  orgUrl?: string;
+}
+
+/**
+ * Updates the DISPLAY metadata of a signing collection: its name, symbol, logo
+ * and the issuer identity shown on certificates.
+ *
+ * These are the only keys left unlocked at creation, and `metadata_setter` is
+ * the owner role, so the transaction must present a proof of the seal that owns
+ * the collection. Everything that a signature actually proves — the marker, the
+ * seal reference, the issuer account, each NFT's evidence fields — was locked
+ * forever and is untouched by this.
+ */
+export function buildCollectionMetadataManifest(
+  input: CollectionMetadataInput,
+): string {
+  const updates = [
+    input.name !== undefined
+      ? setStringMetadata(input.collection, 'name', input.name)
+      : '',
+    input.symbol !== undefined
+      ? setStringMetadata(input.collection, 'symbol', sanitizeSymbol(input.symbol))
+      : '',
+    input.iconUrl !== undefined
+      ? setUrlMetadata(input.collection, ICON_URL_KEY, input.iconUrl)
+      : '',
+    input.orgName !== undefined
+      ? setStringMetadata(input.collection, ORG_NAME_KEY, input.orgName)
+      : '',
+    input.orgUrl !== undefined
+      ? setUrlMetadata(input.collection, ORG_URL_KEY, input.orgUrl)
+      : '',
+  ].join('');
+  if (!updates.trim()) return '';
+  return `${sealProof(input.account, input.sealGlobalId)}
+${updates}`;
 }
 
 /* ─── Request creation (mint + distribute invitations) ────────────────────── */

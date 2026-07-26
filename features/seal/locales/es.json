@@ -15,7 +15,7 @@
       "metric2_value": "100%",
       "metric2": "De la criptografía se ejecuta en tu navegador, en local",
       "metric3_value": "3",
-      "metric3": "Herramientas bajo un mismo modelo: firmar, cifrar y chatear",
+      "metric3": "Herramientas bajo un mismo modelo: colección, firmar, cifrar y chatear",
       "metric4_value": "1",
       "metric4": "Firma de wallet basta para probar el control de una cuenta",
       "slides": [
@@ -41,10 +41,22 @@
     },
     "capabilities": {
       "label": "Las herramientas",
-      "h2a": "Tres herramientas,",
+      "h2a": "Cuatro herramientas,",
       "h2b": "un mismo modelo de confianza",
       "sub": "Toda herramienta de Radix Seal sigue la misma regla: tu wallet prueba la identidad, tu navegador hace la criptografía y ningún intermediario custodia nunca el contenido ni las claves. Disponibles hoy en la consola de Radix.",
       "tools": [
+        {
+          "title": "Tu colección de firma",
+          "desc": "Tu insignia y la colección donde viven tus firmas e invitaciones. Es la cadena de custodia que hace que una firma en la cadena sea tuya y de nadie más: la colección pertenece a tu insignia, y tu insignia no puede salir de tu cuenta.",
+          "points": [
+            "Se crea sola la primera vez que firmas o cifras: no hay que pasar por aquí para empezar",
+            "Identidad de emisor editable: nombre, logo y web de tu organización, en lo que emitas",
+            "Varias colecciones si las necesitas: una para firmar como particular y otra como empresa, o una por empresa",
+            "Lo ya emitido nunca se mueve ni se puede borrar: cambiar de colección solo decide dónde se acuña lo próximo",
+            "Una insignia puede llevar varias colecciones, o cada identidad la suya con su logo"
+          ],
+          "cta": "Abrir la sección de colección"
+        },
         {
           "title": "Firmar documentos",
           "desc": "Firma cualquier archivo con tu Radix Wallet. El documento se resume (hash) en local y nunca se sube: solo se firma el hash, probando integridad, fecha y control de la clave de la cuenta.",
@@ -66,7 +78,9 @@
             "Sin límite de tamaño: por bloques, nunca se sube",
             "Clave derivada de tu wallet: nada que almacenar ni perder",
             "Transferencia directa navegador a navegador, cifrada de extremo a extremo",
-            "El receptor descifra solo cuando el propietario aprueba y firma"
+            "El receptor descifra solo cuando el propietario aprueba y firma",
+            "Modo ROLA + Ledger: solo las cuentas que tengan tu invitación NFT pueden pedir la clave. Sin ese NFT en su wallet, no hay descifrado posible.",
+            "Transferencia reanudable: si se corta la conexión, el archivo continúa donde se quedó"
           ],
           "cta": "Abrir la herramienta de cifrado"
         },
@@ -79,7 +93,8 @@
             "Cada enlace de invitación sirve para una única conversación",
             "Verificación de identidad comprobada en local, en cada navegador",
             "Envío de archivos cifrados sin límite de tamaño por el mismo canal",
-            "Nada sale de tu navegador: los mensajes desaparecen al cerrar la página y la copia local de los archivos recibidos se borra a las 24 horas"
+            "Nada sale de tu navegador: los mensajes desaparecen al cerrar la página y la copia local de los archivos recibidos se borra a las 24 horas",
+            "Indicador de escritura y el nombre de la wallet del otro extremo sobre su dirección"
           ],
           "cta": "Abrir el chat seguro"
         }

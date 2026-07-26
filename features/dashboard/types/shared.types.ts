@@ -47,6 +47,13 @@ export interface GatewayEntityDetails {
   details?: {
     type?: string;
     divisibility?: number;
+    /** Non-fungible resources only: the local-id type fixed at creation. */
+    non_fungible_id_type?: 'String' | 'Integer' | 'Bytes' | 'Ruid';
+    /**
+     * NFT data fields the schema declared mutable. Fixed at creation: unlike
+     * resource metadata, a field cannot be locked or unlocked afterwards.
+     */
+    non_fungible_data_mutable_fields?: string[];
     total_supply?: number | string;
     total_minted?: number | string;
     total_burned?: number | string;
