@@ -26,8 +26,19 @@ export const MAX_HEADER_BYTES = 16 * 1024;
 
 export const FILE_EXTENSION = '.radixseal.enc';
 
-/** DataChannel binary frame size (safe cross-browser SCTP message size). */
-export const WIRE_FRAME_SIZE = 64 * 1024;
+/**
+ * DataChannel binary frame size.
+ *
+ * 16 KiB, the size every browser handles natively and the one WebRTC guidance
+ * settles on. The channel is ordered, so a frame in flight delays everything
+ * queued behind it: with 64 KiB frames a control message (or the transport
+ * keepalive) waited four times longer to get out, which on a slow or lossy
+ * link is exactly when that latency matters. Smaller frames also give the
+ * backpressure check four times finer granularity. Frame boundaries are not
+ * part of the format — the receiver reassembles by the announced chunk length
+ * — so this can change without breaking any existing container or peer.
+ */
+export const WIRE_FRAME_SIZE = 16 * 1024;
 
 export const IDB_NAME = 'radix-cipher';
 
