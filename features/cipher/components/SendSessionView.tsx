@@ -50,6 +50,14 @@ export function SendSessionView({
         {session.phase === 'transferring' && (
           <TransferProgress label={t.progress.transferring} fraction={session.progress} />
         )}
+        {/* A lost link is not a lost transfer: the room stays armed under the
+            same URL and the receiver resumes from the chunks it already has. */}
+        {session.phase === 'reconnecting' && (
+          <TransferProgress
+            label={t.progress.reconnecting}
+            fraction={session.progress > 0 ? session.progress : undefined}
+          />
+        )}
         {session.phase === 'transferred' && !session.request && (
           <TransferProgress label={t.progress.waitingRequest} />
         )}

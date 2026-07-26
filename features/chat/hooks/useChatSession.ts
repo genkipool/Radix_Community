@@ -55,6 +55,7 @@ import {
 import {
   buildChatChallengePayload,
   deriveChatChallenge,
+  sanitizeDeclaredName,
   verifyPeerHandshake,
 } from '../lib/identity';
 
@@ -81,6 +82,16 @@ interface IncomingFile {
 const HANDSHAKE_TIMEOUT_MS = 60_000;
 
 /**
+ * Drop the peer's "typing" state if no refresh arrives. The sender repeats it
+ * while typing and clears it when it stops, but a closed tab or a lost frame
+ * must never leave the dots dancing forever.
+ */
+const TYPING_TTL_MS = 6_000;
+
+/** Minimum gap between outgoing "still typing" pings. */
+const TYPING_PING_MS = 2_500;
+
+/**
  * End-to-end encrypted chat session, host or guest side.
  *
  * Protocol: on channel open each side sends a `handshake` carrying its
@@ -92,13 +103,15 @@ const HANDSHAKE_TIMEOUT_MS = 60_000;
  * sequence AAD — on top of WebRTC's DTLS.
  */
 export function useChatSession() {
-  const { activeNetworkId } = useRadixWallet();
+  const { activeNetworkId, persona } = useRadixWallet();
   const [phase, setPhase] = useState<ChatPhase>('idle');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [peerIdentity, setPeerIdentity] = useState<VerifiedPeer | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [error, setError] = useState<ChatErrorCode | null>(null);
   const [sendingFile, setSendingFile] = useState(false);
+  /** The peer is composing a message right now. */
+  const [peerTyping, setPeerTyping] = useState(false);
 
   const phaseRef = useRef<ChatPhase>('idle');
   const roleRef = useRef<PeerRole>('host');
@@ -115,6 +128,10 @@ export function useChatSession() {
   const cancelSendRef = useRef(false);
   const incomingFileRef = useRef<IncomingFile | null>(null);
   const objectUrlsRef = useRef<string[]>([]);
+  /** Expiry timer for the peer's typing state (see TYPING_TTL_MS). */
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** When we last told the peer we are typing, to rate-limit the pings. */
+  const typingSentAtRef = useRef(0);
   // Incoming wire events run through ONE promise chain: the async handlers
   // (decrypt, assembly) must process in arrival order, or file frames could
   // outrun their announcement and AAD indices would misalign.
@@ -140,9 +157,22 @@ export function useChatSession() {
     return url;
   }
 
+  /** Show/hide the peer's typing dots, re-arming their expiry. */
+  function markPeerTyping(on: boolean): void {
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = null;
+    setPeerTyping(on);
+    if (!on) return;
+    typingTimerRef.current = setTimeout(() => {
+      typingTimerRef.current = null;
+      setPeerTyping(false);
+    }, TYPING_TTL_MS);
+  }
+
   function teardown(): void {
     if (handshakeTimerRef.current) clearTimeout(handshakeTimerRef.current);
     handshakeTimerRef.current = null;
+    markPeerTyping(false);
     peerRef.current?.close();
     peerRef.current = null;
     void signalingRef.current?.leave();
@@ -170,6 +200,7 @@ export function useChatSession() {
     const urls = objectUrlsRef.current;
     return () => {
       if (handshakeTimerRef.current) clearTimeout(handshakeTimerRef.current);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       peerRef.current?.close();
       peerRef.current = null;
       void signalingRef.current?.leave();
@@ -219,6 +250,11 @@ export function useChatSession() {
       signature: proof.signature,
       ecdhPubB64: ephemeral.pubB64,
       networkId: activeNetworkId,
+      // Courtesy only, so the peer sees a name above the address instead of a
+      // bare account. Unsigned by design (see ChatWireMessage.label).
+      ...(sanitizeDeclaredName(persona?.label)
+        ? { label: sanitizeDeclaredName(persona?.label) }
+        : {}),
     };
   }
 
@@ -444,7 +480,11 @@ export function useChatSession() {
       enqueueWire(async () => {
         if (message.t === 'handshake') {
           await handlePeerHandshake(message);
+        } else if (message.t === 'typing') {
+          if (phaseRef.current === 'secure') markPeerTyping(message.on === true);
         } else if (message.t === 'msg') {
+          // A delivered message ends the composing state on its own.
+          markPeerTyping(false);
           await handleEncryptedMessage(message);
         } else if (message.t === 'file') {
           await handleFileAnnouncement(message);
@@ -535,6 +575,24 @@ export function useChatSession() {
     }
   }
 
+  /**
+   * Tell the peer whether we are composing. `true` is rate-limited to one ping
+   * every TYPING_PING_MS (the composer calls it on every keystroke); `false`
+   * always goes out at once, so the dots stop the moment the user does.
+   */
+  function setTyping(on: boolean): void {
+    const peer = peerRef.current;
+    if (!peer || phaseRef.current !== 'secure') return;
+    if (on) {
+      const now = Date.now();
+      if (now - typingSentAtRef.current < TYPING_PING_MS) return;
+      typingSentAtRef.current = now;
+    } else {
+      typingSentAtRef.current = 0;
+    }
+    peer.sendMessage({ t: 'typing', on });
+  }
+
   /** Encrypt and send one message; appends it locally on success. */
   async function send(text: string): Promise<void> {
     const peer = peerRef.current;
@@ -542,6 +600,7 @@ export function useChatSession() {
     const trimmed = text.trim();
     if (!peer || !key || !trimmed || phaseRef.current !== 'secure') return;
     const body = trimmed.slice(0, MAX_MESSAGE_CHARS);
+    setTyping(false);
     try {
       const seq = sendSeqRef.current;
       const at = Date.now();
@@ -665,11 +724,13 @@ export function useChatSession() {
     shareUrl,
     error,
     sendingFile,
+    peerTyping,
     start,
     join,
     send,
     sendFile,
     cancelSendFile,
+    setTyping,
     leave,
   };
 }

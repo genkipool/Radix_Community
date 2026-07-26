@@ -34,8 +34,18 @@ export type ChatWireMessage =
       /** Raw P-256 public key, base64. */
       ecdhPubB64: string;
       networkId: number;
+      /**
+       * The peer's own wallet persona label, so each side can show a name
+       * instead of a bare address. SELF-DECLARED: the ROLA challenge commits
+       * to the room, role and ephemeral key, NOT to this string, so it proves
+       * nothing. Only the account address is verified identity.
+       */
+      label?: string;
     }
   | { t: 'msg'; seq: number; ivB64: string; ctB64: string }
+  /** Live "is typing" state. Carries no content, so it needs no encryption
+   *  beyond the channel's own DTLS. */
+  | { t: 'typing'; on: boolean }
   /** File announcement: encrypted `ChatFileMeta`, then the encrypted binary
    *  frames follow on the channel until `size` plaintext bytes arrived. */
   | { t: 'file'; seq: number; ivB64: string; ctB64: string }
@@ -80,7 +90,13 @@ export interface ChatMessage {
 
 /** The counterpart, once their handshake proof has been verified locally. */
 export interface VerifiedPeer {
+  /** Cryptographically proven: this peer controls this account. */
   account: string;
+  /**
+   * Wallet persona label the peer sent for itself. Convenience only, NOT part
+   * of the proof — a locally saved agenda name always takes precedence.
+   */
+  declaredName?: string;
 }
 
 export type ChatPhase =

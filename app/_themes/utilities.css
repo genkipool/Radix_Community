@@ -216,3 +216,32 @@ button[disabled],
 .animate-hero-out {
   animation: hero-slide-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* ── Chat "peer is typing" dots ───────────────────────────────────────────
+   Three circles riding a wave: each dot repeats the same lift, offset by an
+   inline animation-delay, which reads as a travelling ripple rather than three
+   dots blinking together.
+   ─────────────────────────────────────────────────────────────────────── */
+.chat-typing-dot {
+  will-change: transform, opacity;
+  animation: chat-typing-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes chat-typing-wave {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-typing-dot {
+    animation: none !important;
+    will-change: auto !important;
+    opacity: 0.7;
+  }
+}

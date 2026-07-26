@@ -79,6 +79,7 @@
       "transferring": "Enviando archivo cifrado",
       "receiving": "Recibiendo archivo cifrado",
       "connecting": "Conectando con el otro extremo…",
+      "reconnecting": "Se perdió la conexión. Reintentando… El archivo continúa donde se quedó.",
       "waitingPeer": "Esperando a que el otro extremo abra el enlace…",
       "waitingApproval": "Solicitud enviada. Esperando a que el emisor apruebe y firme…",
       "waitingRequest": "Transferencia completa. Esperando la solicitud de descifrado…",

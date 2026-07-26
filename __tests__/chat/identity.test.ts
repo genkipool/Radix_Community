@@ -5,6 +5,7 @@ import {
   buildChatChallengePayload,
   deriveChatChallenge,
   rolaSignatureMessage,
+  sanitizeDeclaredName,
   verifyPeerHandshake,
 } from '@/features/chat/lib/identity';
 import { generateEphemeralKeys } from '@/features/chat/lib/handshake';
@@ -127,5 +128,34 @@ describe('verifyPeerHandshake', () => {
         origin: 'https://evil.test',
       }),
     ).rejects.toThrow('peer_verification_failed');
+  });
+});
+
+describe('declared peer name', () => {
+  it('carries the persona label through a verified handshake', async () => {
+    const handshake = await syntheticWalletHandshake();
+    const verified = await verifyPeerHandshake(
+      { ...handshake, label: '  Luis  ' },
+      { ...CONTEXT, expectedRole: 'guest' },
+    );
+    expect(verified.declaredName).toBe('Luis');
+  });
+
+  it('is absent when the peer sends none', async () => {
+    const handshake = await syntheticWalletHandshake();
+    const verified = await verifyPeerHandshake(handshake, {
+      ...CONTEXT,
+      expectedRole: 'guest',
+    });
+    expect(verified.declaredName).toBeUndefined();
+  });
+
+  it('strips control characters and caps the length of untrusted labels', () => {
+    // A label is free text from the peer: newlines and zero-width characters
+    // could otherwise forge extra lines in the header.
+    expect(sanitizeDeclaredName('a b\u200bc\nd')).toBe('a b c d');
+    expect(sanitizeDeclaredName('   ')).toBeUndefined();
+    expect(sanitizeDeclaredName(42)).toBeUndefined();
+    expect(sanitizeDeclaredName('x'.repeat(200))).toHaveLength(48);
   });
 });

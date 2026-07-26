@@ -58,6 +58,12 @@ export interface Peer<TMessage> {
   /** Sends one frame, honouring DataChannel backpressure. */
   sendBinary(bytes: ArrayBuffer): Promise<void>;
   /**
+   * Bytes handed to `send()` that have NOT left the buffer yet. A sender that
+   * subtracts this from what it enqueued knows how much really reached the
+   * wire, which is the only honest basis for a progress bar.
+   */
+  bufferedAmount(): number;
+  /**
    * Resolves once every queued byte has actually left the send buffer (it is
    * on the wire, not merely handed to `send()`). Lets a sender report "done"
    * or 100% truthfully instead of the instant the last frame was enqueued.
@@ -68,6 +74,20 @@ export interface Peer<TMessage> {
 
 /** How long ICE may take once the peers start negotiating. */
 const CONNECT_TIMEOUT_MS = 30_000;
+
+/**
+ * How long `connectionState === 'disconnected'` may last before the peer is
+ * declared gone.
+ *
+ * `disconnected` is NOT a close: it is what ICE reports when consent checks
+ * miss for a moment, which happens routinely under a sustained transfer, on
+ * Wi-Fi hand-offs and behind a busy TURN relay — and it recovers on its own
+ * seconds later while the DataChannel stays open. Treating it as fatal (the
+ * old behaviour) killed healthy transfers mid-flight and is exactly what made
+ * every non-trivial file report "connection lost". A real drop escalates to
+ * `failed`, or closes the channel, and is still caught immediately.
+ */
+const DISCONNECT_GRACE_MS = 20_000;
 
 /** How often the drain watchdog samples the send buffer. */
 const DRAIN_POLL_MS = 1_000;
@@ -154,9 +174,27 @@ function wirePeer<TMessage>(
     handlers.onClose();
   };
   dc.onclose = notifyClose;
+
+  // See DISCONNECT_GRACE_MS: a flap back to `connected` cancels the countdown.
+  let graceTimer: ReturnType<typeof setTimeout> | null = null;
+  const cancelGrace = () => {
+    if (graceTimer) clearTimeout(graceTimer);
+    graceTimer = null;
+  };
   pc.onconnectionstatechange = () => {
-    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+    const state = pc.connectionState;
+    if (state === 'failed' || state === 'closed') {
+      cancelGrace();
       notifyClose();
+    } else if (state === 'disconnected') {
+      if (!graceTimer) {
+        graceTimer = setTimeout(() => {
+          graceTimer = null;
+          if (pc.connectionState !== 'connected') notifyClose();
+        }, DISCONNECT_GRACE_MS);
+      }
+    } else if (state === 'connected') {
+      cancelGrace();
     }
   };
 
@@ -166,11 +204,16 @@ function wirePeer<TMessage>(
     },
     async sendBinary(bytes) {
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
+      // Checked BEFORE every frame, so the buffer can never hold more than
+      // BUFFERED_HIGH + one frame no matter how fast the caller loops.
       if (dc.bufferedAmount > BUFFERED_HIGH) {
         await waitUntilDrained(dc, BUFFERED_LOW);
       }
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       dc.send(bytes);
+    },
+    bufferedAmount() {
+      return dc.bufferedAmount;
     },
     async flush() {
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
@@ -178,6 +221,7 @@ function wirePeer<TMessage>(
     },
     close() {
       closed = true;
+      cancelGrace();
       dc.close();
       pc.close();
     },
