@@ -23,7 +23,29 @@ const logger = {
     console.error('[LiveStore]', msg, ...args, obj),
 };
 
-let currentGateway = 'https://mainnet.radixdlt.com';
+/**
+ * Gateway per ledger. These must match the ones the rest of the dashboard uses
+ * (`apiFetchEntityDetails` in features/dashboard/services/apiClient.ts), or the
+ * live figures would come from a different ledger than the cards around them.
+ */
+const GATEWAYS = {
+  mainnet: 'https://mainnet.radixdlt.com',
+  stokenet: 'https://gateway-stokenet.radix.community',
+} as const;
+
+export type LiveNetwork = keyof typeof GATEWAYS;
+
+/**
+ * The ledger this store is following.
+ *
+ * It used to be a constant pointing at mainnet, with nothing able to change it.
+ * The storage key below already branched on stokenet, so the intent was there,
+ * but the switch was never wired: on Stokenet the epoch-history table showed
+ * MAINNET's live epoch and mainnet's proposal counts, silently, because a
+ * plausible-looking number is not obviously the wrong one.
+ */
+let currentNetwork: LiveNetwork = 'mainnet';
+let currentGateway: string = GATEWAYS.mainnet;
 
 async function gPost(path: string, body: object): Promise<unknown> {
     const r = await fetch(currentGateway + path, {
@@ -61,7 +83,7 @@ export type LiveStoreSnapshot = {
 const STORAGE_PREFIX = 'radix_live_v2_';
 
 function getStorageKey() {
-    return STORAGE_PREFIX + (currentGateway.includes('stokenet') ? 'stokenet' : 'mainnet');
+    return STORAGE_PREFIX + currentNetwork;
 }
 
 function saveState() {
@@ -407,6 +429,55 @@ export function getLiveSnapshot(): LiveStoreSnapshot { return state; }
 export function getLastKnownEpoch(): number | null { return state.currentEpoch; }
 
 let activePollers = 0;
+
+/**
+ * Points the store at a ledger.
+ *
+ * Everything accumulated so far belongs to the previous one (epoch numbers,
+ * proposal counts, the validator set, the ledger cursor), so it is all dropped
+ * rather than carried across. Whatever was persisted for the incoming network
+ * is loaded in its place, which is why the storage key is per network.
+ *
+ * Safe to call on every render: switching to the network already in use does
+ * nothing at all.
+ */
+export function setLiveNetwork(network: LiveNetwork): void {
+    // Browser-only. The polling loop never runs on the server, and mutating
+    // this module there would leak one request's ledger into the next.
+    if (typeof window === 'undefined') return;
+    if (network === currentNetwork) return;
+
+    currentNetwork = network;
+    currentGateway = GATEWAYS[network];
+
+    // Nothing from the old ledger may survive: an epoch number from one network
+    // means nothing on the other, and mixing them is the bug being fixed.
+    state = { epochProposals: new Map(), finalizedEpochs: [], currentEpoch: null };
+    epochValidatorSet = [];
+    lastStateVersion = 0;
+    initialized = false;
+    initializing = false;
+    consecutiveErrors = 0;
+    currentPollIntervalMs = BASE_POLL_INTERVAL_MS;
+
+    loadState();
+
+    // Re-initialise against the new gateway if anyone is still watching.
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+    if (activePollers > 0) {
+        init().then(() => {
+            if (!pollingInterval && activePollers > 0) {
+                pollingInterval = setInterval(poll, currentPollIntervalMs);
+            }
+        });
+    }
+
+    subscribers.forEach((s) => s());
+    epochSubscribers.forEach((s) => s());
+}
 
 export function startPolling(): void {
     activePollers++;

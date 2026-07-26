@@ -57,6 +57,9 @@ export function PackageCard({
     const isCopied = copiedAddress === address;
 
     const [activeTab, setActiveTab] = useState<'summary' | 'metadata' | 'configuration' | 'raw'>('summary');
+    // Nothing is rendered until the details are in hand. The card must never
+    // appear half-built: the grid holds its previous content until this
+    // resolves, which is what keeps the swap in a single frame.
     if (isError || isLoading) return null;
 
     const tabs = getTabsForEntity(address, tt);

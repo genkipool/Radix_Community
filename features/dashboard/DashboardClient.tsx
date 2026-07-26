@@ -26,6 +26,21 @@ import { AnimatePresence, m } from "motion/react";
 
 const EMPTY_ACCOUNTS: string[] = [];
 
+/**
+ * Address prefixes the explorer can render a dedicated card for. Listed once so
+ * the search box and the reading-mode modal cannot disagree about what counts
+ * as an entity.
+ */
+const ENTITY_PREFIXES = [
+  'account_',
+  'package_',
+  'component_',
+  'resource_',
+  'transactiontracker_',
+  'consensusmanager_',
+  'validator_',
+] as const;
+
 /* Services & types */
 import type { NetworkStats } from '@/types/radix';
 import type { Dictionary } from '@/i18n';
@@ -45,6 +60,8 @@ import { useDashboardPreferences } from './hooks/useDashboardPreferences';
 import { useExpandedCards } from './hooks/useExpandedCards';
 import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { useDashboardUrlSync, useDashboardUrlEffects } from './hooks/useDashboardUrlSync';
+import { useFocusedEntity, useReadyEntities } from './hooks/useEntityReadiness';
+import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConnectedStakes } from './staking/hooks/useConnectedStakes';
@@ -112,6 +129,7 @@ export default function DashboardClient({
     searchQuery, setSearchQuery, deferredSearch,
     dateRange, handleDateRangeChange,
     handleViewChange, handleNetworkChange, setTagInUrl,
+    isNavigating, committedEntity,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
     initialDateRange, locale: language,
@@ -200,6 +218,28 @@ export default function DashboardClient({
     initialActiveTag, initialTransactionActiveTag,
     initialWalletFilter,
   });
+
+  /**
+   * Point the live-proposal store at the ledger this page is showing.
+   *
+   * It defaulted to mainnet with no way to change it, so on Stokenet the
+   * epoch-history table showed mainnet's live epoch and mainnet's proposal
+   * counts next to Stokenet validators.
+   *
+   * The first call goes in a state initialiser rather than an effect on
+   * purpose: child effects run BEFORE their parent's, so a validator card
+   * mounting could otherwise kick off polling against mainnet and load
+   * mainnet's persisted epoch before this component ever got a turn. Running
+   * during the first render closes that window. The effect below then handles
+   * the user switching network afterwards.
+   */
+  useState(() => {
+    setLiveNetwork(initialNetwork);
+    return null;
+  });
+  useEffect(() => {
+    setLiveNetwork(network);
+  }, [network]);
 
   // The toggle is a persisted preference (see useDashboardPreferences): a view
   // change is a real navigation, so anything kept only in memory would reset.
@@ -384,22 +424,54 @@ export default function DashboardClient({
     : null;
   const expandedPost = expandedPostId ? realValidators.find(v => v.id === expandedPostId) ?? null : null;
   const expandedTx = expandedPostId ? txs.find(tx => tx.intentHash === expandedPostId) ?? null : null;
-  const isAccountSearch = deferredSearch.trim().startsWith('account_') && deferredSearch.trim().length >= 60; // Simple heuristic or use isRadixAddress
-  const isPackageSearch = deferredSearch.trim().startsWith('package_') && deferredSearch.trim().length >= 60;
-  const isComponentSearch = deferredSearch.trim().startsWith('component_') && deferredSearch.trim().length >= 60;
-  const isResourceSearch = deferredSearch.trim().startsWith('resource_') && deferredSearch.trim().length >= 60;
-  const isSystemSearch = (deferredSearch.trim().startsWith('transactiontracker_') || deferredSearch.trim().startsWith('consensusmanager_')) && deferredSearch.trim().length >= 60;
-  const isValidatorSearch = deferredSearch.trim().startsWith('validator_') && deferredSearch.trim().length >= 60;
-  
-  const expandedEntity = (expandedPostId?.startsWith('account_') || expandedPostId?.startsWith('package_') || expandedPostId?.startsWith('component_') || expandedPostId?.startsWith('resource_') || expandedPostId?.startsWith('transactiontracker_') || expandedPostId?.startsWith('consensusmanager_') || expandedPostId?.startsWith('validator_')) ? expandedPostId : null;
+  /**
+   * The address the entity cards are showing.
+   *
+   * Two things have to hold at once for the grid not to jump:
+   *
+   *  - CLEARING the box must not take effect until the navigation commits. The
+   *    transactions underneath come from that same round trip, so removing the
+   *    card immediately left the previous address's transactions alone on
+   *    screen for a moment before the full list replaced them.
+   *  - A NEW entity must not take effect until its details are in hand, which
+   *    `useFocusedEntity` enforces. Until then the grid keeps showing what it
+   *    already had.
+   */
+  const typedEntity = (() => {
+    const value = deferredSearch.trim();
+    return value.length >= 60 && ENTITY_PREFIXES.some((p) => value.startsWith(p)) ? value : null;
+  })();
+  const pendingEntity = isNavigating ? committedEntity : null;
+  const focusedEntity = useFocusedEntity({
+    requested: typedEntity ?? pendingEntity,
+    fallback: pendingEntity,
+    network: deferredNetwork,
+  });
 
-  // Compute accounts to show for the explorer view using deferred values
-  const accountsToShow = isAccountSearch ? [deferredSearch.trim()] : (txAddresses || []);
-  const packagesToShow = isPackageSearch ? [deferredSearch.trim()] : [];
-  const componentsToShow = isComponentSearch ? [deferredSearch.trim()] : [];
-  const resourcesToShow = isResourceSearch ? [deferredSearch.trim()] : [];
-  const systemEntitiesToShow = isSystemSearch ? [deferredSearch.trim()] : [];
-  const validatorsToShow = isValidatorSearch ? [deferredSearch.trim()] : [];
+  const isAccountSearch = focusedEntity.startsWith('account_');
+  const isPackageSearch = focusedEntity.startsWith('package_');
+  const isComponentSearch = focusedEntity.startsWith('component_');
+  const isResourceSearch = focusedEntity.startsWith('resource_');
+  const isSystemSearch = focusedEntity.startsWith('transactiontracker_') || focusedEntity.startsWith('consensusmanager_');
+  const isValidatorSearch = focusedEntity.startsWith('validator_');
+
+  const expandedEntity =
+    expandedPostId && ENTITY_PREFIXES.some((p) => expandedPostId.startsWith(p))
+      ? expandedPostId
+      : null;
+
+  // Which entity cards the explorer grid puts above the transactions.
+  //
+  // The wallet's account cards wait for the whole group, so clearing the search
+  // box no longer paints the transaction list first and then pushes it down as
+  // each account resolves.
+  const readyWalletAccounts = useReadyEntities(txAddresses ?? EMPTY_ACCOUNTS, deferredNetwork);
+  const accountsToShow = isAccountSearch ? [focusedEntity] : readyWalletAccounts;
+  const packagesToShow = isPackageSearch ? [focusedEntity] : [];
+  const componentsToShow = isComponentSearch ? [focusedEntity] : [];
+  const resourcesToShow = isResourceSearch ? [focusedEntity] : [];
+  const systemEntitiesToShow = isSystemSearch ? [focusedEntity] : [];
+  const validatorsToShow = isValidatorSearch ? [focusedEntity] : [];
 
   /* ── URL side effects (URL parameter sync) ──────────────── */
   useDashboardUrlEffects({
