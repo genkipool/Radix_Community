@@ -24,7 +24,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useDocumentSign } from '../hooks/useDocumentSign';
 import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
-import { findSignCollection, findUserSeal } from '../services/sealDiscovery';
+import { findSealAndCollection } from '../services/sealDiscovery';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { OnChainSignPanel } from './OnChainSignPanel';
 import { ShareLinkSection } from './ShareLinkSection';
@@ -564,10 +564,10 @@ export function SignForm({
     const cosigner =
       res.envelope.signatures[res.envelope.signatures.length - 1]?.signerAccount;
     if (request && cosigner) {
-      const [seal, collection] = await Promise.all([
-        findUserSeal(request.networkId, cosigner),
-        findSignCollection(request.networkId, cosigner),
-      ]);
+      const { seal, collection } = await findSealAndCollection(
+        request.networkId,
+        cosigner,
+      );
       if (seal && collection) {
         await signRequest({
           account: cosigner,

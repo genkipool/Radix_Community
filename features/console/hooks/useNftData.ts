@@ -45,6 +45,42 @@ export function useNftData(resourceAddress: string | null, ids: string[]) {
   });
 }
 
+export interface NftField {
+  name: string;
+  value: string;
+}
+
+/**
+ * Every data field of ONE NFT with its current value, for the edit form.
+ * `useNftData` only pulls out name and image; this keeps the rest, which is
+ * what an editor needs to show.
+ */
+export function useNftFields(resourceAddress: string | null, id: string | null) {
+  const { activeNetwork } = useRadixWallet();
+
+  return useQuery({
+    queryKey: ['nft-fields', activeNetwork, resourceAddress, id],
+    queryFn: async (): Promise<NftField[]> => {
+      if (!resourceAddress || !id) return [];
+      const data = await apiFetchNonFungibleData(resourceAddress, [id], activeNetwork);
+      const item = (data as unknown as NfDataItem[])[0];
+      return (item?.data?.programmatic_json?.fields ?? [])
+        .filter((f) => !!f.field_name)
+        .map((f) => ({
+          name: f.field_name!,
+          value:
+            f.value == null
+              ? ''
+              : typeof f.value === 'object'
+                ? JSON.stringify(f.value)
+                : String(f.value),
+        }));
+    },
+    enabled: !!resourceAddress && !!id,
+    staleTime: 30_000,
+  });
+}
+
 export function useMissingNfts(resourceAddress: string | null, ownedIds: string[]) {
   const { activeNetwork } = useRadixWallet();
 

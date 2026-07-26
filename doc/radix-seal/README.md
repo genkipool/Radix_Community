@@ -15,6 +15,7 @@ third party can implement or verify it independently.
 1. [Overview](#1-overview)
 2. [Design principles](#2-design-principles)
 3. [The NFTs](#3-the-nfts)
+   - [3.3 Several collections under one insignia](#33-several-collections-under-one-insignia)
 4. [Metadata and data conventions (the standard)](#4-metadata-and-data-conventions-the-standard)
 5. [Signing a document](#5-signing-a-document)
    - [5.1 What the signed PDF contains](#51-what-the-signed-pdf-contains)
@@ -40,9 +41,12 @@ implement it without permission: discover a signer's collection, check its
 insignia and verify its signatures. There is no proprietary format and no
 central server in the trust path.
 
-It powers three self custody tools that all share the same wallet derived trust
+It powers four self custody tools that all share the same wallet derived trust
 model:
 
+- **Collection**: the insignia and the signing collection an account signs from.
+  Create them, see which are in use, hold more than one to sign under separate
+  identities, and edit the issuer identity that appears on what you issue.
 - **Sign document**: prove authorship and integrity of any file, alone or with
   several people, off chain or anchored on the ledger. A signed PDF carries a
   human readable signature page, and can additionally be signed with the
@@ -96,6 +100,15 @@ from the ledger alone, that the collection belongs to S.
 - Local id: a RUID (random, race free for concurrent public mints).
 - Withdraw, burn and recall are denied forever, so the seal can never leave the
   account that minted it.
+- Its image is written once, at mint: the issuer's logo when one is given, the
+  Radix Seal insignia otherwise. The brand declares no mutable NFT field and
+  denies the data updater role, so no one, not even the holder, can change it
+  afterwards. Radix roles are per resource, not per NFT, so there is no rule
+  that would let each holder edit only their own; a uniform, fixed insignia is
+  the deliberate consequence.
+- One insignia can own **several** collections. A second insignia is only needed
+  when a separate identity should carry its own image, and since it can never be
+  transferred or burned, minting one is a permanent decision.
 
 **Signing collection (your on ledger archive).** A personal, reusable non
 fungible resource. Its owner rule is locked at creation and requires your Seal
@@ -106,7 +119,9 @@ request adds a numbered NFT (#1, #2, #3 and so on).
 - Metadata `radix_seal` points at the official brand resource it belongs to.
 - Optional issuer metadata (`issuer` account, `org_name`, `org_url`, `icon_url`).
 - Minting is gated by the owner (the seal); the data of every minted NFT is
-  locked; burning is denied so evidence is permanent.
+  locked, image included; burning is denied so evidence is permanent.
+- Its owner rule is `Fixed`: the collection is bound to that one insignia for
+  life, which is why the pairing can be read from the ledger and trusted.
 
 ### 3.2 The five NFT types inside the collection
 
@@ -126,6 +141,46 @@ act in their own collection. The issuer can recall a mis sent invitation, but ca
 never touch a signature. Each NFT records, in locked data, the document hash it
 refers to, the account it concerns, and (for a request) the batch geometry so the
 full required set is reconstructable from the ledger alone.
+
+### 3.3 Several collections under one insignia
+
+An account may hold more than one signing collection, and that is a supported
+shape rather than an accident. The issuer identity (`name`, `icon_url`,
+`org_name`, `org_url`) lives on the collection, so one account can sign as an
+individual from one collection and as a company from another, or keep one
+collection per company.
+
+What this implies, and the tooling reflects it:
+
+- **Evidence never moves.** Invitations and signatures stay in the collection
+  they were minted into. Switching which collection is active only decides where
+  the *next* ones go, and anyone holding an older invitation keeps seeing the
+  issuer identity of the collection it came from.
+- **The active collection is chosen deterministically**, by minted supply, so a
+  freshly created empty one can never displace the collection that holds an
+  account's history.
+- **The insignia is resolved from the collection**, not from the wallet: a
+  collection's owner rule names one specific seal, and that is the only one whose
+  proof its mints accept. An account holding two insignias therefore still signs
+  correctly.
+- **A brand new collection holds no NFT of its own**, so it is invisible to a
+  scan of what an account holds until its first mint. Discovery accounts for
+  this; a third party integrator scanning holdings should expect the same blind
+  spot.
+
+Issuer identity is editable after creation by the seal holder (`SET_METADATA`
+under the owner role), so a name, a logo or an organisation's website can be
+corrected without touching anything that a signature proves: the marker, the
+brand reference, the issuing account and every NFT's own data were locked at
+creation and can never be rewritten.
+
+In the app this is the **Collection** tool: it lists the insignias an account
+holds and the collection each one commands, lists the collections with how many
+records they hold, switches which is active, creates new ones (reusing the
+existing insignia by default, or minting a fresh one for a separate identity)
+and edits the issuer identity. None of it is required to start: signing or
+encrypting for the first time still provisions a seal and a collection in one
+step.
 
 ---
 
@@ -155,7 +210,13 @@ An integrator can implement Radix Seal entirely from these conventions.
 
 ### 4.3 NFT data fields (every NFT in a collection)
 
-The data schema is fixed and every field is locked at mint:
+The data schema is fixed and every field is locked at mint, `key_image_url`
+included. Invitations land in other people's wallets, so a fixed image both
+carries the Radix Seal mark wherever evidence travels and stops an issuer from
+restyling a record after it was signed. A schema is set at creation and can
+never be altered, so a collection's mutable field set is whatever it declared on
+day one: an integrator reads it from the resource
+(`non_fungible_data_mutable_fields`) rather than assuming.
 
 | Field | Meaning |
 | --- | --- |
@@ -279,6 +340,12 @@ Two methods:
 The key released over the channel is the derived file key, never the raw ROLA
 signature, and the channel itself is DTLS encrypted.
 
+The transfer itself is **resumable**. Chunks are written to the receiver's
+IndexedDB one by one, and when a channel is lost the session rejoins the same
+room and tells the sender how many it already holds, so the file continues from
+there instead of starting over. Progress reports only bytes that actually left
+the send buffer, so the two sides cannot disagree about how far along they are.
+
 ---
 
 ## 7. Secure chat
@@ -287,6 +354,12 @@ Two parties open an end to end encrypted channel. Both prove their identity by
 signing a ROLA challenge with their wallet, and the session key is derived from
 that verified exchange, so no server can read, alter or impersonate anything. The
 invitation room id rides in the URL fragment, which never reaches server logs.
+
+Each side also sends the wallet persona label it chose for itself, so the room
+shows a name above the account address. That name is convenience only: it is not
+part of the signed challenge, so a name saved locally in the address book always
+takes precedence and the verified identity is the account, never the label. A
+live typing indicator travels on the same channel and carries no content.
 
 Files can be sent over the same channel with no size limit: they are encrypted
 with the session key and streamed in chunks, so memory stays flat on both sides
@@ -428,6 +501,16 @@ DataChannel, encrypted end to end by DTLS. A signaling room is used only to
 exchange the connection handshake, never file data or keys, and it is left as
 soon as the channel opens.
 
+Whether the peer is still there is decided by **evidence, not by ICE state**.
+ICE reports `disconnected` on paths that are working perfectly — a busy relay, a
+lossy uplink, a Wi-Fi hand-off — so that alone never ends a session. Two facts
+count as proof of life: a frame arrived, or bytes left the send buffer (SCTP
+only releases them once the peer acknowledges them). A transport keepalive every
+few seconds supplies that proof while the application is idle, and its packets
+also keep ICE's own receiving flag set on both sides. Sending is paced: the send
+buffer is capped and the event loop is handed back periodically, so a long
+transfer cannot starve the timers and handlers that keep the session healthy.
+
 ---
 
 ## 11. The brand resource and its admin badge
@@ -523,3 +606,4 @@ over the long term, anchor it.
   reconstructable.
 - **Certificate**: the `.radixsig.json` envelope produced by signing.
 - **Container**: the `.radixseal.enc` encrypted file.
+

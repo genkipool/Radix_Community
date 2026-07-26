@@ -224,7 +224,12 @@
       "complete": "Han firmado todos los requeridos",
       "completeTitle": "Documento completamente firmado",
       "completeBody": "Todos los firmantes requeridos han firmado en la cadena. El registro es público, permanente y verificable por cualquiera.",
-      "of": "de"
+      "of": "de",
+      "activeCollection": "Colección activa:",
+      "useAnotherCollection": "Usar otra",
+      "onlyOneCollection": "Esta cuenta solo tiene una colección de firma.",
+      "otherCollectionsHint": "Esta cuenta tiene más de una colección de firma. Las invitaciones y firmas ya emitidas se quedan en la suya; elige desde cuál quieres trabajar.",
+      "collectionRecords": "{count} registros"
     },
     "seal": {
       "deploy": {
@@ -332,7 +337,7 @@
       "anchorResource": "Colección (recurso)",
       "anchorTx": "Transacción",
       "anchorRequest": "Solicitud de firma (id de invitación)",
-      "anchorNote": "Registro público y permanente en la Red Radix. En el ledger solo constan el hash del documento y las cuentas \u2014 nunca el archivo, el mensaje ni un nombre.",
+      "anchorNote": "Registro público y permanente en la Red Radix. En el ledger solo constan el hash del documento y las cuentas — nunca el archivo, el mensaje ni un nombre.",
       "certSection": "Firma con certificado (PAdES / X.509)",
       "certSubject": "Firmado por (certificado)",
       "certOrg": "Organización",
@@ -403,6 +408,78 @@
       "message": "Mensaje",
       "timestamp": "Creado el",
       "badCert": "Ese archivo no es un certificado válido."
+    },
+    "collection": {
+      "intro": {
+        "title": "Tu seal manda sobre tu colección",
+        "body": "Radix Seal funciona en dos piezas: una insignia (el seal), que no se puede transferir ni quemar, y una colección de firma que pertenece a ese seal. Cada invitación y cada firma que emites es un NFT dentro de esa colección, y por eso una firma en la cadena se puede atribuir a tu cuenta. Aquí ves y gestionas ambas."
+      },
+      "tabs": {
+        "collections": "Mis colecciones",
+        "create": "Crear colección",
+        "identity": "Identidad de emisor"
+      },
+      "connect": {
+        "title": "Conecta tu Radix Wallet",
+        "subtitle": "La colección pertenece a tu seal, así que hace falta la wallet que lo custodia para verla y gestionarla."
+      },
+      "accountLabel": "Cuenta",
+      "seals": {
+        "title": "Tu seal",
+        "hint": "La insignia soulbound que manda sobre tus colecciones. No se puede transferir ni quemar.",
+        "none": "Esta cuenta todavía no tiene seal. Se acuña solo al crear tu primera colección, aquí o desde Firmar documento.",
+        "inUse": "En uso",
+        "severalNote": "Esta cuenta tiene más de un seal. Solo el que manda la colección activa sirve para firmar en ella; el resto queda inerte, y como el seal no se puede quemar, se queda ahí."
+      },
+      "list": {
+        "title": "Colecciones de firma",
+        "hint": "Donde viven tus invitaciones y tus firmas. La activa es la que usan Firmar documento y Cifrar.",
+        "loading": "Buscando tus colecciones en la cadena…",
+        "none": "Esta cuenta todavía no tiene ninguna colección de firma.",
+        "createFirst": "Crear mi colección",
+        "records": "{count} registros",
+        "active": "Activa",
+        "use": "Usar esta",
+        "severalNote": "Tienes más de una colección. Las invitaciones y firmas ya emitidas se quedan en la suya: cambiar de activa no las mueve, solo decide dónde se acuñan las próximas.",
+        "untitled": "Colección sin nombre"
+      },
+      "create": {
+        "title": "Nueva colección de firma",
+        "hint": "Se crea a nombre de tu seal, así que solo tú puedes acuñar en ella. El nombre y la identidad de emisor se pueden cambiar después.",
+        "duplicateWarning": "Cuidado: ya tienes una colección y vas a crear otra. Cada firma e invitación que has emitido vive dentro de la colección que usaste en ese momento, y ahí se queda: la nueva empieza vacía. Quien tenga una invitación tuya seguirá viendo el nombre y el logo de la colección antigua, no los de la nueva. A partir de ahora firmarás desde la que dejes activa. Crear una segunda tiene sentido si quieres separar identidades: por ejemplo una colección para firmar como particular y otra colección para firmar como empresa. Y si gestionas varias empresas, lo mismo: una colección por empresa, cada una con su nombre y su logo, para que quien reciba una firma vea desde el principio en nombre de quién está firmada.",
+        "sealLabel": "Selecciona la insignia seal propietaria",
+        "noSealNote": "Esta cuenta todavía no tiene insignia seal. El botón de abajo la acuña primero y crea la colección después: son dos confirmaciones seguidas en tu wallet.",
+        "nameLabel": "Nombre de la colección",
+        "nameHint": "Se puede cambiar más adelante",
+        "symbolLabel": "Símbolo",
+        "symbolHint": "Letras y números, corto",
+        "button": "Crear colección",
+        "working": "Confirma en tu wallet…",
+        "done": "Colección creada y activada.",
+        "logoHint": "Se usa como icono de la colección y como imagen de la insignia seal. Si lo dejas vacío se usa la imagen de Radix Seal.",
+        "newSealHint": "Insignia propia para esta identidad",
+        "sealModeLabel": "Insignia de esta colección",
+        "reuseSeal": "Reutilizar mi insignia",
+        "reuseSealHint": "Una insignia, varias colecciones",
+        "newSeal": "Acuñar una nueva",
+        "reuseSealNote": "La colección será propiedad de la insignia que ya tienes, que puede ser propietaria de varias. Una sola confirmación en la wallet, y el logo se usa solo como icono de la colección.",
+        "newSealNote": "Se acuña una segunda insignia con el logo que pongas y esta colección será suya. Como una insignia no se puede transferir ni quemar, se queda en la cuenta para siempre. Son dos confirmaciones seguidas en la wallet."
+      },
+      "identity": {
+        "title": "Identidad de emisor",
+        "hint": "Lo que ve quien recibe una firma tuya. Se guarda en la colección activa y hace falta una firma con tu seal para cambiarlo.",
+        "editing": "Editando:",
+        "noCollection": "Necesitas una colección activa para editar su identidad. Créala en la pestaña de al lado.",
+        "orgNameLabel": "Nombre de la organización",
+        "orgNameHint": "Opcional; aparece en el certificado",
+        "orgUrlLabel": "Web de la organización",
+        "logoLabel": "Logo de la colección (URL)",
+        "logoHint": "Icono de la colección; también se usa como logo del emisor",
+        "lockedNote": "Solo estos campos son editables. La descripción, la referencia al seal, la cuenta emisora y los datos de cada firma se sellaron al crear la colección y no se pueden tocar nunca, ni por ti.",
+        "save": "Guardar cambios",
+        "saving": "Confirma en tu wallet…",
+        "saved": "Identidad actualizada en la cadena."
+      }
     }
   },
   "seo": {

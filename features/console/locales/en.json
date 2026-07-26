@@ -30,6 +30,10 @@
       "ai": "AI & Automation"
     },
     "tools": {
+      "sign-collection": {
+        "title": "Signing Collection",
+        "description": "Create and manage the Radix Seal collection where your signatures and invitations live, plus the issuer identity everyone receiving them sees."
+      },
       "sign-document": {
         "title": "Sign Document",
         "description": "Sign a file with your Radix wallet, off-chain or anchored on-ledger as a soulbound NFT. The file is hashed locally and never uploaded.",
@@ -2064,6 +2068,10 @@
           "name": "Mint NFT",
           "hint": "Mint a new NFT with the standard name/description/image data (requires the minter badge)"
         },
+        "editNftData": {
+          "name": "Edit NFT data",
+          "hint": "Change one field of a specific NFT, its image for instance (requires the data updater badge)"
+        },
         "burn": {
           "name": "Burn",
           "hint": "Withdraw an amount and destroy it permanently"
@@ -2088,10 +2096,14 @@
       "fields": {
         "amount": "Amount",
         "nftId": "NFT id",
-        "nftIdHint": "Integer local id, e.g. #12#",
+        "nftIdHint": "{type} local id, the type this collection was created with.",
+        "nftIdPlaceholder": "{type} id, e.g. {example}",
+        "nftIdInvalid": "This id is not in the {type} format the collection requires.",
+        "nftIdRuid": "This collection uses RUID ids: the ledger generates them on mint, they are not chosen.",
         "nftName": "Name",
         "nftDescription": "Description",
         "nftImageUrl": "Image URL",
+        "nftDataNote": "Mutable fields were fixed when the collection was created and can no longer be locked or unlocked, unlike resource metadata. This edits ONE specific NFT: to change the whole collection's name or icon use Edit metadata.",
         "metadataKey": "Metadata key",
         "metadataKeyHint": "name, symbol, description, icon_url, tags, info_url, …",
         "vault": "Account or vault address",
@@ -2127,7 +2139,9 @@
         "ruleLockedHint": "The access rule for this action cannot be modified",
         "accessRule": "Access Rule",
         "alreadyLockedHint": "Already locked on ledger",
+        "alreadyLockedLabel": "Locked",
         "lockFieldHint": "Lock field",
+        "lockFieldLabel": "Lock",
         "searchVaults": "Search {count} vault(s) by account or address…",
         "vaultsSelected": "{count} vault selected",
         "vaultsSelectedPlural": "{count} vaults selected",
@@ -2135,7 +2149,12 @@
         "nftNamePlaceholder": "New NFT name",
         "nftDescriptionPlaceholder": "New NFT description",
         "badgeRequiredHint": "This action requires presenting a badge you do not hold in the selected account.",
-        "editMetadataHint": "You can edit this value (unlocked). Change it or lock it."
+        "editMetadataHint": "You can edit this value (unlocked). Change it or lock it.",
+        "nftDataLockedHint": "This field was sealed when the collection was created. An NFT's mutable fields are fixed at that moment and there is no way to lock or unlock them afterwards, unlike resource metadata.",
+        "nftDataLoading": "Loading the NFT's data…",
+        "unnamedResource": "Unnamed resource",
+        "unnamedNft": "NFT",
+        "nftDataAllLocked": "This resource declared no mutable field when it was created, so its NFTs' data can never be changed, not by its owner and not with any badge. That is the case for the Radix Seal insignia: its image is fixed at mint. The values below are read-only."
       }
     },
     "faucet": {

@@ -224,7 +224,12 @@
       "complete": "All required signers have signed",
       "completeTitle": "Document fully signed",
       "completeBody": "Every required signer has signed on-ledger. The record is public, permanent and verifiable by anyone.",
-      "of": "of"
+      "of": "of",
+      "activeCollection": "Active collection:",
+      "useAnotherCollection": "Use another",
+      "onlyOneCollection": "This account has only one signing collection.",
+      "otherCollectionsHint": "This account holds more than one signing collection. Invitations and signatures already issued stay in theirs; pick which one to work from.",
+      "collectionRecords": "{count} records"
     },
     "seal": {
       "deploy": {
@@ -332,7 +337,7 @@
       "anchorResource": "Collection (resource)",
       "anchorTx": "Transaction",
       "anchorRequest": "Signing request (invitation id)",
-      "anchorNote": "Public, permanent record on the Radix Network. Only the document hash and the accounts are on the ledger \u2014 never the file, the message or a name.",
+      "anchorNote": "Public, permanent record on the Radix Network. Only the document hash and the accounts are on the ledger — never the file, the message or a name.",
       "certSection": "Certificate signature (PAdES / X.509)",
       "certSubject": "Signed by (certificate)",
       "certOrg": "Organisation",
@@ -403,6 +408,78 @@
       "message": "Message",
       "timestamp": "Created at",
       "badCert": "That file is not a valid certificate."
+    },
+    "collection": {
+      "intro": {
+        "title": "Your seal commands your collection",
+        "body": "Radix Seal works in two pieces: an insignia (the seal), which can neither be transferred nor burned, and a signing collection owned by that seal. Every invitation and every signature you issue is an NFT inside that collection, which is what makes an on-ledger signature attributable to your account. This is where you see and manage both."
+      },
+      "tabs": {
+        "collections": "My collections",
+        "create": "Create collection",
+        "identity": "Issuer identity"
+      },
+      "connect": {
+        "title": "Connect your Radix Wallet",
+        "subtitle": "The collection belongs to your seal, so the wallet holding it is needed to view and manage it."
+      },
+      "accountLabel": "Account",
+      "seals": {
+        "title": "Your seal",
+        "hint": "The soulbound insignia that commands your collections. It can never be transferred or burned.",
+        "none": "This account has no seal yet. One is minted automatically with your first collection, here or from Sign document.",
+        "inUse": "In use",
+        "severalNote": "This account holds more than one seal. Only the one commanding the active collection can sign into it; the rest sit inert, and since a seal cannot be burned, they stay."
+      },
+      "list": {
+        "title": "Signing collections",
+        "hint": "Where your invitations and signatures live. The active one is what Sign document and Encrypt use.",
+        "loading": "Looking up your collections on-ledger…",
+        "none": "This account has no signing collection yet.",
+        "createFirst": "Create my collection",
+        "records": "{count} records",
+        "active": "Active",
+        "use": "Use this one",
+        "severalNote": "You hold more than one collection. Invitations and signatures already issued stay in theirs: switching the active one does not move them, it only decides where the next ones are minted.",
+        "untitled": "Untitled collection"
+      },
+      "create": {
+        "title": "New signing collection",
+        "hint": "Created in your seal's name, so only you can ever mint into it. The name and issuer identity can be changed later.",
+        "duplicateWarning": "Careful: you already have a collection and you are about to create a second one. Every signature and invitation you have issued lives inside the collection you used at the time, and stays there: the new one starts empty. Anyone holding an invitation from you will keep seeing the old collection's name and logo, not the new one's. From now on you will sign from whichever you leave active. A second collection makes sense to keep identities apart: for example one collection to sign as an individual and another collection to sign as a company. The same goes if you run several companies: one collection per company, each with its own name and logo, so whoever receives a signature sees straight away on whose behalf it was signed.",
+        "sealLabel": "Choose the owning seal insignia",
+        "noSealNote": "This account has no seal insignia yet. The button below mints one first and creates the collection second: two wallet confirmations, back to back.",
+        "nameLabel": "Collection name",
+        "nameHint": "Can be changed later",
+        "symbolLabel": "Symbol",
+        "symbolHint": "Short, letters and digits",
+        "button": "Create collection",
+        "working": "Confirm in your wallet…",
+        "done": "Collection created and made active.",
+        "logoHint": "Used as the collection's icon and as the seal insignia's image. Left empty, the Radix Seal image is used.",
+        "newSealHint": "Its own insignia for this identity",
+        "sealModeLabel": "Insignia for this collection",
+        "reuseSeal": "Reuse my insignia",
+        "reuseSealHint": "One insignia, several collections",
+        "newSeal": "Mint a new one",
+        "reuseSealNote": "The collection will belong to the insignia you already have, which can own several. A single wallet confirmation, and the logo is used only as the collection's icon.",
+        "newSealNote": "A second insignia is minted with the logo you set and this collection will be its own. Since an insignia can never be transferred or burned, it stays in the account forever. Two wallet confirmations, back to back."
+      },
+      "identity": {
+        "title": "Issuer identity",
+        "hint": "What someone receiving a signature from you sees. It lives on the active collection and changing it takes a signature from your seal.",
+        "editing": "Editing:",
+        "noCollection": "You need an active collection to edit its identity. Create one in the next tab.",
+        "orgNameLabel": "Organisation name",
+        "orgNameHint": "Optional; shown on the certificate",
+        "orgUrlLabel": "Organisation website",
+        "logoLabel": "Collection logo (URL)",
+        "logoHint": "The collection icon; also used as the issuer logo",
+        "lockedNote": "Only these fields are editable. The description, the seal reference, the issuing account and every signature's own data were sealed when the collection was created and can never be touched, not even by you.",
+        "save": "Save changes",
+        "saving": "Confirm in your wallet…",
+        "saved": "Identity updated on-ledger."
+      }
     }
   },
   "seo": {

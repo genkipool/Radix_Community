@@ -4,7 +4,9 @@ import {
   buildRadixSealDeployManifest,
   buildSealMintManifest,
 } from '@/features/sign/lib/radix-seal-manifest';
+import { SEAL_IMAGE_URL } from '@/features/sign/constants/seal';
 import {
+  buildCollectionMetadataManifest,
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
@@ -155,5 +157,149 @@ describe('signing collection + request manifests', () => {
         imageUrl: '',
       }),
     );
+  });
+});
+
+/**
+ * The collection's display metadata is the only part of it that can ever
+ * change, and only for the seal that owns it. Everything a signature proves was
+ * locked at creation.
+ */
+describe('collection issuer identity', () => {
+  const base = {
+    account: INITIATOR,
+    sealGlobalId: `${SEAL_RESOURCE}:{1111111111111111-2222222222222222-3333333333333333-4444444444444444}`,
+    collection: COLLECTION,
+  };
+
+  it('validates an update of every editable field', async () => {
+    const manifest = buildCollectionMetadataManifest({
+      ...base,
+      name: 'Notaría Pérez',
+      symbol: 'NPZ',
+      iconUrl: 'https://app.example/logo.png',
+      orgName: 'Notaría Pérez S.L.',
+      orgUrl: 'https://notaria.example',
+    });
+    await expectValidManifest(manifest);
+    // Owner-gated: the seal proof has to come first or the SET_METADATA fails.
+    expect(manifest.indexOf('create_proof_of_non_fungibles')).toBeLessThan(
+      manifest.indexOf('SET_METADATA'),
+    );
+  });
+
+  it('writes only the fields given, leaving the rest on-ledger untouched', async () => {
+    const manifest = buildCollectionMetadataManifest({ ...base, orgName: 'Solo esto' });
+    await expectValidManifest(manifest);
+    expect(manifest).toContain('"org_name"');
+    expect(manifest).not.toContain('"name"');
+    expect(manifest).not.toContain('"icon_url"');
+    expect(manifest.match(/SET_METADATA/g)).toHaveLength(1);
+  });
+
+  it('produces nothing when nothing changed', () => {
+    expect(buildCollectionMetadataManifest(base)).toBe('');
+  });
+
+  it('never touches the keys that were locked at creation', async () => {
+    const manifest = buildCollectionMetadataManifest({
+      ...base,
+      name: 'x',
+      orgName: 'y',
+      orgUrl: 'https://z.example',
+      iconUrl: 'https://z.example/i.png',
+      symbol: 'XYZ',
+    });
+    for (const locked of ['radix_sign_collection', 'radix_seal', 'issuer', 'description', 'tags']) {
+      expect(manifest).not.toContain(`"${locked}"`);
+    }
+  });
+});
+
+/**
+ * Invitations land in other people's wallets, so their image is the Radix Seal
+ * insignia and stays that way: locking it is both the branding and the
+ * guarantee that an issuer cannot restyle evidence after it was signed.
+ */
+describe('collection NFT images are sealed shut', () => {
+  const manifest = buildSignCollectionCreateManifest({
+    account: INITIATOR,
+    sealGlobalId: `${SEAL_RESOURCE}:{1111111111111111-2222222222222222-3333333333333333-4444444444444444}`,
+    sealAddress: SEAL_RESOURCE,
+    networkId: 1,
+    collectionName: 'Test',
+    imageUrl: 'https://app.example/seal.svg',
+  });
+
+  it('declares no mutable NFT field at all', () => {
+    // The schema's mutable-field list is the empty Array<String>() below it.
+    expect(manifest).toContain('Array<String>()');
+    expect(manifest).not.toContain('Array<String>("key_image_url")');
+  });
+
+  it('denies the data updater role, so nothing can rewrite a minted NFT', () => {
+    const roles = manifest.slice(manifest.indexOf('Tuple(\n      Enum<0u8>'));
+    expect(roles).not.toContain('"owner"');
+  });
+
+  /**
+   * Every entry point — the collection tool, the sign/encrypt onboarding, and
+   * the first signature that creates the collection on the fly — goes through
+   * this one builder, so the rules cannot differ by where the user started.
+   */
+  it('applies the same rules however the collection was requested', () => {
+    const asFirstSignature = buildSignCollectionCreateManifest({
+      account: INITIATOR,
+      sealGlobalId: `${SEAL_RESOURCE}:{1111111111111111-2222222222222222-3333333333333333-4444444444444444}`,
+      sealAddress: SEAL_RESOURCE,
+      networkId: 1,
+      collectionName: 'Test',
+      imageUrl: 'https://app.example/seal.svg',
+      firstSignature: {
+        docHash: 'a'.repeat(64),
+        request: '',
+        signedAt: '2026-01-01T00:00:00.000Z',
+      },
+    });
+    expect(asFirstSignature).toContain('Array<String>()');
+    expect(asFirstSignature).not.toContain('Array<String>("key_image_url")');
+  });
+
+  it('normalises the symbol the same way whatever the caller typed', () => {
+    const messy = buildSignCollectionCreateManifest({
+      account: INITIATOR,
+      sealGlobalId: `${SEAL_RESOURCE}:{1111111111111111-2222222222222222-3333333333333333-4444444444444444}`,
+      sealAddress: SEAL_RESOURCE,
+      networkId: 1,
+      collectionName: 'Test',
+      symbol: 'my-symbol-is-far-too-long',
+      imageUrl: 'https://app.example/seal.svg',
+    });
+    expect(messy).toContain('"MYSYM"');
+  });
+});
+
+/**
+ * The insignia's image is written once, at mint, and the brand's schema locks
+ * it: a seal minted blank is blank for good. So the rule is the issuer's logo
+ * when there is one, the Radix Seal image when there is not — never nothing.
+ */
+describe('seal insignia image', () => {
+  const mint = (imageUrl?: string) =>
+    buildSealMintManifest({ account: SIGNER_2, sealResource: SEAL_RESOURCE, imageUrl });
+
+  it("uses the issuer's logo when one was given", async () => {
+    const manifest = mint('https://acme.example/logo.png');
+    await expectValidManifest(manifest);
+    expect(manifest).toContain('"https://acme.example/logo.png"');
+  });
+
+  it('falls back to the Radix Seal image when the logo is empty', async () => {
+    for (const empty of [undefined, '', '   ']) {
+      const manifest = mint(empty);
+      await expectValidManifest(manifest);
+      expect(manifest).toContain(SEAL_IMAGE_URL);
+      expect(manifest).not.toContain('""');
+    }
   });
 });

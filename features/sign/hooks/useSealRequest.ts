@@ -9,14 +9,18 @@ import { buildSealMintManifest } from '../lib/radix-seal-manifest';
 import {
   buildCipherInviteManifest,
   buildCipherReceiptManifest,
+  buildCollectionMetadataManifest,
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
   requestKey,
 } from '../lib/sign-request';
 import {
-  findSignCollection,
+  findCollectionProfile,
+  findSealAndCollection,
+  findSignCollections,
   findUserSeal,
+  findUserSeals,
   rememberSignCollection,
   type UserSeal,
   type UserSignCollection,
@@ -30,6 +34,12 @@ import type { IssuerMeta } from '../types/sign.types';
  */
 export function useSealSetup(account: string | null) {
   const { activeNetworkId } = useRadixWallet();
+  /**
+   * The collection the user just picked, before the ledger re-read lands.
+   * Without it the UI waits on a network round trip to move the highlight,
+   * which reads as a laggy, unresponsive click.
+   */
+  const [pendingCollection, setPendingCollection] = useState<string | null>(null);
   const query = useQuery({
     queryKey: ['seal-setup', activeNetworkId, account],
     enabled: !!account && !!activeNetworkId,
@@ -37,11 +47,9 @@ export function useSealSetup(account: string | null) {
       seal: UserSeal | null;
       collection: UserSignCollection | null;
     }> => {
-      const [seal, collection] = await Promise.all([
-        findUserSeal(activeNetworkId!, account!),
-        findSignCollection(activeNetworkId!, account!),
-      ]);
-      return { seal, collection };
+      // With two seals in the wallet, only the one that commands the
+      // collection produces a proof the mint will accept.
+      return findSealAndCollection(activeNetworkId!, account!);
     },
   });
   return {
@@ -51,8 +59,75 @@ export function useSealSetup(account: string | null) {
     // redeploy where the discovered collection belongs to a previous seal) it
     // must not show as ready: it cannot be minted into with the new seal.
     collection: query.data?.seal ? (query.data?.collection ?? null) : null,
+    /** What the UI should show as active RIGHT NOW, refetch pending or not. */
+    activeAddress:
+      pendingCollection ??
+      (query.data?.seal ? (query.data?.collection?.resourceAddress ?? null) : null),
     loading: query.isFetching,
     ready: query.data !== undefined,
+    refetch: query.refetch,
+    /**
+     * Work from a different signing collection of the same account. Pins the
+     * choice (same store discovery reads) and re-reads the ledger, so the seal
+     * that owns THAT collection is resolved with it.
+     */
+    selectCollection: (resourceAddress: string) => {
+      if (!activeNetworkId || !account) return;
+      setPendingCollection(resourceAddress);
+      rememberSignCollection(activeNetworkId, account, resourceAddress);
+      void query.refetch().finally(() => setPendingCollection(null));
+    },
+  };
+}
+
+/**
+ * Every signing collection the account holds, loaded ON DEMAND — the normal
+ * path answers from the pinned choice in one request, and scanning an account's
+ * whole NFT holdings just to discover a duplicate that most accounts do not
+ * have would tax every page load.
+ */
+export function useSignCollections(account: string | null, enabled: boolean) {
+  const { activeNetworkId } = useRadixWallet();
+  const query = useQuery({
+    queryKey: ['sign-collections', activeNetworkId, account],
+    enabled: enabled && !!account && !!activeNetworkId,
+    queryFn: () => findSignCollections(activeNetworkId!, account!),
+    staleTime: 30_000,
+  });
+  return {
+    collections: query.data ?? [],
+    loading: query.isFetching,
+    /** Re-reads the ledger and resolves WITH the fresh list, so a caller can
+     *  wait for a just-created collection to show up in it. */
+    refetch: async (): Promise<UserSignCollection[]> =>
+      (await query.refetch()).data ?? [],
+  };
+}
+
+/** Every seal the account holds, so a second one can be chosen deliberately. */
+export function useUserSeals(account: string | null) {
+  const { activeNetworkId } = useRadixWallet();
+  const query = useQuery({
+    queryKey: ['user-seals', activeNetworkId, account],
+    enabled: !!account && !!activeNetworkId,
+    queryFn: () => findUserSeals(activeNetworkId!, account!),
+    staleTime: 30_000,
+  });
+  return { seals: query.data ?? [], loading: query.isFetching, refetch: query.refetch };
+}
+
+/** The unlocked display metadata of a collection, for the edit form. */
+export function useCollectionProfile(resourceAddress: string | null) {
+  const { activeNetworkId } = useRadixWallet();
+  const query = useQuery({
+    queryKey: ['collection-profile', activeNetworkId, resourceAddress],
+    enabled: !!resourceAddress && !!activeNetworkId,
+    queryFn: () => findCollectionProfile(activeNetworkId!, resourceAddress!),
+    staleTime: 30_000,
+  });
+  return {
+    profile: query.data ?? null,
+    loading: query.isFetching,
     refetch: query.refetch,
   };
 }
@@ -120,6 +195,12 @@ export function useSealRequest() {
   const provisionCollection = async (args: {
     account: string;
     existingSeal: UserSeal | null;
+    /**
+     * Mint a FRESH insignia for this collection even though the account already
+     * has one. Deliberate and irreversible: a seal can never be transferred or
+     * burned, so this leaves one more in the wallet forever.
+     */
+    forceNewSeal?: boolean;
     collectionName: string;
     symbol?: string;
     imageUrl: string;
@@ -133,8 +214,17 @@ export function useSealRequest() {
     // 1. Ensure the account holds its seal (mint + wait for it to be indexed).
     // Re-read the ledger before minting so a retry after a failed collection
     // step (seal already minted) does NOT mint a second seal.
-    let seal = args.existingSeal ?? (await findUserSeal(activeNetworkId, args.account));
+    let seal = args.forceNewSeal
+      ? null
+      : (args.existingSeal ?? (await findUserSeal(activeNetworkId, args.account)));
     if (!seal) {
+      // Snapshot BEFORE minting: with an account that already has seals, the
+      // new one is identified by being the id that was not in this set.
+      const before = new Set(
+        args.forceNewSeal
+          ? (await findUserSeals(activeNetworkId, args.account)).map((x) => x.globalId)
+          : [],
+      );
       setPhase('minting-seal');
       const sealTx = await sendTransaction(
         buildSealMintManifest({
@@ -145,7 +235,8 @@ export function useSealRequest() {
       );
       if (!sealTx) return fail('onchain_failed');
       for (let attempt = 0; attempt < 8 && !seal; attempt++) {
-        seal = await findUserSeal(activeNetworkId, args.account);
+        const seals = await findUserSeals(activeNetworkId, args.account);
+        seal = seals.find((x) => !before.has(x.globalId)) ?? null;
         if (!seal) await new Promise((resolve) => setTimeout(resolve, 1500));
       }
       if (!seal) return fail('seal_read_failed');
@@ -170,6 +261,33 @@ export function useSealRequest() {
     rememberSignCollection(activeNetworkId, args.account, resource);
     setPhase('done');
     return resource;
+  };
+
+  /**
+   * Rewrites the DISPLAY metadata of an existing collection: its name, symbol,
+   * logo and the issuer identity printed on certificates. Owner-gated, so the
+   * transaction carries a proof of the seal that owns it. Nothing a signature
+   * proves can be touched this way — those keys were locked at creation.
+   */
+  const updateCollectionMetadata = async (args: {
+    account: string;
+    sealGlobalId: string;
+    collection: string;
+    name?: string;
+    symbol?: string;
+    iconUrl?: string;
+    orgName?: string;
+    orgUrl?: string;
+  }): Promise<boolean> => {
+    setError(null);
+    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    const manifest = buildCollectionMetadataManifest(args);
+    if (!manifest) return true; // nothing changed
+    setPhase('creating');
+    const tx = await sendTransaction(manifest);
+    if (!tx) return !!fail('onchain_failed');
+    setPhase('done');
+    return true;
   };
 
   /**
@@ -338,6 +456,7 @@ export function useSealRequest() {
     mintSeal,
     provisionCollection,
     createCollection,
+    updateCollectionMetadata,
     createRequest,
     signRequest,
     mintCipherInvites,

@@ -1,17 +1,24 @@
 /**
  * Capabilities — RSC
  *
- * The three Radix Seal tools (sign, encrypt, chat): one large card per tool
- * with its guarantees as a checklist and a direct link into the console.
+ * The four Radix Seal tools (collection, sign, encrypt, chat): one large card
+ * per tool with its guarantees as a checklist and a direct link into the
+ * console. Collection comes first: it is where a signer's identity lives, and
+ * the other three write into it.
  */
 import Link from 'next/link';
-import { FileSignature, FileLock2, MessageSquareLock, Check, ArrowRight } from 'lucide-react';
+import { FileSignature, FileLock2, Layers, MessageSquareLock, Check } from 'lucide-react';
 import { SectionHeader } from '@/components/layout/SectionHeader';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { SEAL_LINKS } from '../../data/links';
 import type { SealLocaleSectionProps } from '../../types';
 
 const TOOL_META = [
+  {
+    key: 'collection',
+    icon: <Layers className="size-10 text-[var(--color-secondary)]" />,
+    href: SEAL_LINKS.collection,
+  },
   {
     key: 'sign',
     icon: <FileSignature className="size-10 text-[var(--color-primary)]" />,
@@ -43,7 +50,7 @@ export default function Capabilities({ t, locale }: SealLocaleSectionProps) {
           subtitle={cap.sub}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
           {TOOL_META.map((tool, i) => {
             const card = cap.tools[i];
             return (
@@ -74,10 +81,9 @@ export default function Capabilities({ t, locale }: SealLocaleSectionProps) {
                   href={`/${locale}${tool.href}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-auto inline-flex items-center gap-2 font-bold text-[var(--color-primary)] hover:gap-3 transition-all relative z-10"
+                  className="mt-auto inline-flex items-center font-bold text-[var(--color-primary)] hover:opacity-80 transition-opacity relative z-10"
                 >
                   {card.cta}
-                  <ArrowRight className="size-4" />
                 </Link>
               </FadeIn>
             );

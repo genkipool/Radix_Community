@@ -30,6 +30,10 @@
       "ai": "IA y Automatización"
     },
     "tools": {
+      "sign-collection": {
+        "title": "Colección de Firma",
+        "description": "Crea y gestiona la colección de Radix Seal donde viven tus firmas e invitaciones, y la identidad de emisor que ve quien las recibe."
+      },
       "sign-document": {
         "title": "Firmar Documento",
         "description": "Firma un archivo con tu wallet de Radix, fuera de cadena o anclado en el ledger como NFT soulbound. El archivo se hashea localmente y nunca se sube.",
@@ -2065,6 +2069,10 @@
           "name": "Acuñar NFT",
           "hint": "Acuña un nuevo NFT con los datos estándar nombre/descripción/imagen (requiere el badge de acuñación)"
         },
+        "editNftData": {
+          "name": "Editar datos de un NFT",
+          "hint": "Cambia un campo de un NFT concreto, por ejemplo su imagen (requiere el badge de actualización de datos)"
+        },
         "burn": {
           "name": "Quemar",
           "hint": "Retira una cantidad y destrúyela permanentemente"
@@ -2089,10 +2097,14 @@
       "fields": {
         "amount": "Cantidad",
         "nftId": "Id del NFT",
-        "nftIdHint": "Id local entero, p. ej. #12#",
+        "nftIdHint": "Id local de tipo {type}, el que fijó esta colección al crearse.",
+        "nftIdPlaceholder": "Tipo {type}, p. ej. {example}",
+        "nftIdInvalid": "Este id no tiene el formato {type} que exige la colección.",
+        "nftIdRuid": "Esta colección usa ids RUID: los genera el ledger al acuñar, no se eligen.",
         "nftName": "Nombre",
         "nftDescription": "Descripción",
         "nftImageUrl": "URL de imagen",
+        "nftDataNote": "Los campos mutables se fijaron al crear la colección y ya no se pueden bloquear ni desbloquear, a diferencia de los metadatos del recurso. Esto edita UN NFT concreto: para cambiar el nombre o el icono de la colección entera usa Editar metadatos.",
         "metadataKey": "Clave del metadato",
         "metadataKeyHint": "name, symbol, description, icon_url, tags, info_url, …",
         "vault": "Dirección de cuenta o bóveda",
@@ -2128,7 +2140,9 @@
         "ruleLockedHint": "La regla de acceso para esta acción no se puede modificar",
         "accessRule": "Regla de Acceso",
         "alreadyLockedHint": "Ya bloqueado en el ledger",
+        "alreadyLockedLabel": "Bloqueado",
         "lockFieldHint": "Bloquear campo",
+        "lockFieldLabel": "Bloquear",
         "searchVaults": "Buscar entre {count} bóveda(s) por cuenta o dirección…",
         "vaultsSelected": "{count} bóveda seleccionada",
         "vaultsSelectedPlural": "{count} bóvedas seleccionadas",
@@ -2136,7 +2150,12 @@
         "nftNamePlaceholder": "Nombre del nuevo NFT",
         "nftDescriptionPlaceholder": "Descripción del nuevo NFT",
         "badgeRequiredHint": "Esta acción requiere presentar un badge que no tienes en la cuenta seleccionada.",
-        "editMetadataHint": "Puedes editar este valor (no bloqueado). Cámbialo o bloquéalo."
+        "editMetadataHint": "Puedes editar este valor (no bloqueado). Cámbialo o bloquéalo.",
+        "nftDataLockedHint": "Este campo se selló al crear la colección. Los campos mutables de un NFT se fijan en ese momento y no existe forma de bloquearlos ni desbloquearlos después, a diferencia de los metadatos del recurso.",
+        "nftDataLoading": "Cargando los datos del NFT…",
+        "unnamedResource": "Recurso sin nombre",
+        "unnamedNft": "NFT",
+        "nftDataAllLocked": "Este recurso no declaró ningún campo mutable al crearse, así que los datos de sus NFT no se pueden cambiar nunca, ni por su propietario ni con ningún badge. Es el caso de la insignia Radix Seal: su imagen se fija al acuñarla. Abajo puedes ver los valores, solo de lectura."
       }
     },
     "faucet": {

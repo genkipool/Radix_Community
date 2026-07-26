@@ -28,7 +28,12 @@ import {
   sanitizeSymbol,
   sealBrandRoles,
 } from './nf-manifest-helpers';
-import { RADIX_SEAL_NAME, RADIX_SEAL_SYMBOL, SEAL_INFO_URL } from '../constants/seal';
+import {
+  RADIX_SEAL_NAME,
+  RADIX_SEAL_SYMBOL,
+  SEAL_IMAGE_URL,
+  SEAL_INFO_URL,
+} from '../constants/seal';
 
 export interface RadixSealDeployInput {
   /** Absolute URL of the hosted seal image (icon_url). */
@@ -218,16 +223,23 @@ export interface SealMintInput {
   account: string;
   /** Deployed seal brand resource. */
   sealResource: string;
-  /** Image shown on the seal NFT. */
-  imageUrl: string;
+  /** Issuer logo for the insignia; falls back to the Radix Seal image. */
+  imageUrl?: string;
 }
 
-/** Self-mints one soulbound seal NFT (RUID id) into the user's account. */
+/**
+ * Self-mints one soulbound seal NFT (RUID id) into the user's account.
+ *
+ * The image is the issuer's own logo when they gave one, and the Radix Seal
+ * insignia when they did not. Never empty: the brand's schema locks NFT data at
+ * mint, so an insignia minted blank stays blank forever.
+ */
 export function buildSealMintManifest({
   account,
   sealResource,
-  imageUrl,
+  imageUrl: requested,
 }: SealMintInput): string {
+  const imageUrl = requested?.trim() || SEAL_IMAGE_URL;
   return `MINT_RUID_NON_FUNGIBLE
     Address("${sealResource}")
     Array<Tuple>(

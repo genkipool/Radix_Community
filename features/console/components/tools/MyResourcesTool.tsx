@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronDown, Coins, Crown, Flame, Layers, Lock, Pencil, Snowflake, Undo2, Unlock } from 'lucide-react';
+import { Check, ChevronDown, Coins, Crown, Flame, Image as ImageIcon, Layers, Lock, Pencil, Snowflake, Undo2, Unlock } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ResourceCard } from '../shared/ResourceCard';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -14,7 +14,7 @@ import { useResourceRoles } from '../../hooks/useResourceRoles';
 import type { GatewayRoleEntry } from '@/features/dashboard/types';
 import type { MetadataItem, MetadataTypedValue } from '@/features/dashboard/types/shared.types';
 import { useConsoleTransaction } from '../../hooks/useConsoleTransaction';
-import { useNftData, useMissingNfts } from '../../hooks/useNftData';
+import { useNftData, useMissingNfts, useNftFields } from '../../hooks/useNftData';
 import { useTransactionPreview } from '../../hooks/useTransactionPreview';
 import { buildBadgeProofManifest } from '../../lib/badge-proof-manifest';
 import {
@@ -31,7 +31,14 @@ import {
   freezeVaultManifest,
   lockMetadataManifest,
   mintFungibleManifest,
-  mintNonFungibleManifest,
+  formatNonFungibleLocalId,
+  isValidNonFungibleLocalId,
+  mintNonFungibleForIdType,
+  nonFungibleIdKindLabel,
+  updateNonFungibleDataManifest,
+  suggestNonFungibleLocalId,
+  toNonFungibleIdKind,
+  NFT_ID_EXAMPLES,
   recallManifest,
   setOwnerRoleManifest,
   type FreezeFlag,
@@ -55,6 +62,7 @@ import { TxResultBanner } from '../shared/TxResultBanner';
 type ResourceAction =
   | 'mint'
   | 'mintNft'
+  | 'editNftData'
   | 'burn'
   | 'lockMetadata'
   | 'setOwnerRole'
@@ -64,6 +72,7 @@ type ResourceAction =
 const ACTION_ICONS: Record<ResourceAction, ReactNode> = {
   mint: <Coins className="size-4" />,
   mintNft: <Layers className="size-4" />,
+  editNftData: <ImageIcon className="size-4" />,
   burn: <Flame className="size-4" />,
   lockMetadata: <Pencil className="size-4" />,
   setOwnerRole: <Crown className="size-4" />,
@@ -76,6 +85,10 @@ const FREEZE_FLAGS: FreezeFlag[] = ['withdraw', 'deposit', 'burn', 'all'];
 const ACTION_TO_ROLES: Record<ResourceAction, { setter: string; updater: string } | null> = {
   mint: { setter: 'minter', updater: 'minter_updater' },
   mintNft: { setter: 'minter', updater: 'minter_updater' },
+  editNftData: {
+    setter: 'non_fungible_data_updater',
+    updater: 'non_fungible_data_updater_updater',
+  },
   burn: { setter: 'burner', updater: 'burner_updater' },
   lockMetadata: { setter: 'metadata_locker', updater: 'metadata_locker_updater' },
   setOwnerRole: null,
@@ -205,6 +218,8 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const [action, setAction] = useState<ResourceAction>('mint');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [burnNftIds, setBurnNftIds] = useState<Set<string>>(new Set());
+  /** NFT whose data is being rewritten (editNftData). */
+  const [editNftId, setEditNftId] = useState<string | null>(null);
   // Recall targets whole vaults (you cannot recall an individual NFT without
   // its vault), each identified by the account that owns it.
   const [recallVaults, setRecallVaults] = useState<Set<string>>(new Set());
@@ -258,7 +273,35 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const selectedNonFungible = holdings?.nonFungibles.find((nf) => nf.resourceAddress === resource);
 
   const { data: ownedNftData } = useNftData(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+  // Only loaded once an NFT is picked, which only happens in editNftData.
+  const { data: nftFieldsData } = useNftFields(isNonFungible ? resource : null, editNftId);
+  const nftFields = nftFieldsData ?? [];
+  /**
+   * Fields the schema declared mutable, straight from the ledger. Unlike
+   * metadata, this set is fixed when the resource is created: an NFT field
+   * cannot be locked or unlocked afterwards, so there is no lock toggle here.
+   */
+  const mutableNftFields =
+    rolesData?.details?.details?.non_fungible_data_mutable_fields ?? [];
+  const nftFieldKey = (name: string) => `nftdata:${resource}:${editNftId}:${name}`;
   const { data: missingNftData } = useMissingNfts(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
+
+  /* ── NFT local-id type ──
+     Fixed when the collection was created and NOT negotiable: minting an
+     integer id into a RUID collection (the Radix Seal brand is one) is
+     rejected by the engine as InvalidNonFungibleIdType. Everything about the
+     mint form follows from this value. */
+  const nftIdKind = toNonFungibleIdKind(rolesData?.details?.details?.non_fungible_id_type);
+  const nftIdLabel = nonFungibleIdKindLabel(nftIdKind);
+  const ruidCollection = nftIdKind === 'Ruid';
+  const suggestedNftId = suggestNonFungibleLocalId(nftIdKind, selectedNonFungible?.ids ?? []);
+  const rawNftId = fields.nftId ?? suggestedNftId;
+  // RUID ids come from the ledger, so nothing is sent for them.
+  const mintNftId = ruidCollection ? '' : formatNonFungibleLocalId(nftIdKind, rawNftId);
+  const nftIdInvalid =
+    !ruidCollection &&
+    rawNftId.trim() !== '' &&
+    !isValidNonFungibleLocalId(nftIdKind, mintNftId);
 
   interface VaultInfo {
     address: string;
@@ -364,13 +407,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const resourceOptions = [
     ...(holdings?.fungibles ?? []).map((f) => ({
       value: f.resourceAddress,
-      name: f.name || f.symbol || 'Unnamed resource',
+      name: f.name || f.symbol || labels.fields.unnamedResource,
       address: `${formatNumber(Number(f.amount), 4, language)} · ${truncateAddress(f.resourceAddress, 6, 5)}`,
       iconUrl: f.iconUrl,
     })),
     ...(holdings?.nonFungibles ?? []).map((nf) => ({
       value: nf.resourceAddress,
-      name: nf.name || 'Unnamed resource',
+      name: nf.name || labels.fields.unnamedResource,
       address: `${nf.ids.length} NFT · ${truncateAddress(nf.resourceAddress, 6, 5)}`,
       iconUrl: nf.iconUrl,
     })),
@@ -383,10 +426,11 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
   const actionLabels = labels.actions as Record<string, { name: string; hint: string }>;
   const availableActions: ResourceAction[] = (
-    ['mint', 'mintNft', 'burn', 'lockMetadata', 'setOwnerRole', 'recall', 'freeze'] as ResourceAction[]
+    ['mint', 'mintNft', 'editNftData', 'burn', 'lockMetadata', 'setOwnerRole', 'recall', 'freeze'] as ResourceAction[]
   ).filter((candidate) => {
     if (candidate === 'mint') return isFungible;
     if (candidate === 'mintNft') return isNonFungible;
+    if (candidate === 'editNftData') return isNonFungible;
     if (candidate === 'burn') return isFungible || isNonFungible;
     return true;
   });
@@ -437,20 +481,37 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           ? mintFungibleManifest(resource, field('amount')) + DEPOSIT_ALL_SUFFIX(account)
           : '';
       case 'mintNft': {
-        // The id defaults to the next free integer and the image to the
-        // collection icon (both shown as placeholders), so entering the NAME
-        // alone is enough to build the manifest — a single input suffices.
-        const nftId =
-          field('nftId') || (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#');
+        // The image defaults to the collection icon and the id to the next free
+        // one (both shown as placeholders), so entering the NAME alone is enough
+        // to build the manifest. The id must match the type the collection was
+        // created with, and RUID collections take no id at all.
         const nftName = field('nftName');
-        return nftName
-          ? mintNonFungibleManifest(resource, {
-              id: nftId,
-              name: nftName,
-              description: field('nftDescription'),
-              keyImageUrl: field('nftImageUrl') || selectedNonFungible?.iconUrl || '',
-            }) + DEPOSIT_ALL_SUFFIX(account)
-          : '';
+        if (!nftName) return '';
+        // An id of the wrong shape would only fail at the engine, so no
+        // manifest is offered until it matches the collection's type.
+        if (!ruidCollection && (!mintNftId || nftIdInvalid)) return '';
+        return (
+          mintNonFungibleForIdType(resource, nftIdKind, {
+            id: mintNftId,
+            name: nftName,
+            description: field('nftDescription'),
+            keyImageUrl: field('nftImageUrl') || selectedNonFungible?.iconUrl || '',
+          }) + DEPOSIT_ALL_SUFFIX(account)
+        );
+      }
+      case 'editNftData': {
+        if (!editNftId) return '';
+        // Same shape as editing metadata: every field the user actually
+        // changed, in one transaction. Immutable fields never reach here.
+        return nftFields
+          .filter((f) => mutableNftFields.includes(f.name))
+          .map((f) => {
+            const edited = fields[nftFieldKey(f.name)];
+            return edited !== undefined && edited !== f.value
+              ? updateNonFungibleDataManifest(resource, editNftId, f.name, edited)
+              : '';
+          })
+          .join('');
       }
       case 'burn':
         if (isNonFungible) {
@@ -586,6 +647,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
   let prioritizedIdsForProof: string[] = [];
   if (activeAction === 'burn') prioritizedIdsForProof = Array.from(burnNftIds);
+  if (activeAction === 'editNftData' && editNftId) prioritizedIdsForProof = [editNftId];
   else if (activeAction === 'recall') {
     prioritizedIdsForProof = Array.from(recallVaults).flatMap(
       (v) => allVaultsData.find((x) => x.address === v)?.ids ?? [],
@@ -881,7 +943,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {(ownedNftData || selectedNonFungible.ids.map(id => ({ id, name: selectedNonFungible.name || 'NFT', imageUrl: selectedNonFungible.iconUrl })))
+                      {(ownedNftData || selectedNonFungible.ids.map(id => ({ id, name: selectedNonFungible.name || labels.fields.unnamedNft, imageUrl: selectedNonFungible.iconUrl })))
                         .filter(nft => !burnNftSearch || nft.id.toLowerCase().includes(burnNftSearch.toLowerCase()) || nft.name?.toLowerCase().includes(burnNftSearch.toLowerCase()))
                         .map((nft) => {
                           const isSelected = burnNftIds.has(nft.id);
@@ -909,7 +971,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 <SafeImage
                                   src={nft.imageUrl || selectedNonFungible.iconUrl || ''}
                                   alt={nft.id}
-                                  fallbackName={nft.name || selectedNonFungible.name || 'NFT'}
+                                  fallbackName={nft.name || selectedNonFungible.name || labels.fields.unnamedNft}
                                   className="size-8 rounded-lg object-cover shadow-sm shrink-0"
                                 />
                               )}
@@ -918,7 +980,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                   className="truncate font-bold text-xs leading-tight"
                                   style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-main)' }}
                                 >
-                                  {nft.name || selectedNonFungible.name || 'NFT'}
+                                  {nft.name || selectedNonFungible.name || labels.fields.unnamedNft}
                                 </span>
                                 <span
                                   className="truncate text-[11px] font-medium opacity-70"
@@ -944,17 +1006,40 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
 
                 {activeAction === 'mintNft' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Each input is the NEW NFT's own data field. The id is
-                        suggested as the next free integer; the rest start empty
-                        (the collection icon only pre-fills the image, as a
-                        convenience) so nothing carries the resource address. */}
-                    <TextField
-                      label={labels.fields.nftId}
-                      hint={labels.fields.nftIdHint}
-                      value={fields.nftId ?? (selectedNonFungible ? `#${selectedNonFungible.ids.length + 1}#` : '#1#')}
-                      onChange={(value) => setField('nftId', value)}
-                      disabled={isSending || inputsDisabled}
-                    />
+                    {/* Each input is the NEW NFT's own data field. The rest start
+                        empty (the collection icon only pre-fills the image, as a
+                        convenience) so nothing carries the resource address.
+                        The id field only exists for collections whose ids the
+                        minter chooses: a RUID collection gets its ids from the
+                        ledger, so there is nothing to fill in. */}
+                    {ruidCollection ? (
+                      <div className="sm:col-span-2">
+                        <p
+                          className="text-xs leading-relaxed"
+                          style={{ color: 'var(--color-text-muted)' }}
+                        >
+                          {labels.fields.nftIdRuid}
+                        </p>
+                      </div>
+                    ) : (
+                      <TextField
+                        label={labels.fields.nftId}
+                        hint={
+                          nftIdInvalid
+                            ? labels.fields.nftIdInvalid.replace('{type}', nftIdLabel)
+                            : labels.fields.nftIdHint.replace('{type}', nftIdLabel)
+                        }
+                        // States the type and shows one, so a collection that
+                        // does not take plain integers says so before the
+                        // engine does.
+                        placeholder={labels.fields.nftIdPlaceholder
+                          .replace('{type}', nftIdLabel)
+                          .replace('{example}', NFT_ID_EXAMPLES[nftIdKind])}
+                        value={rawNftId}
+                        onChange={(value) => setField('nftId', value)}
+                        disabled={isSending || inputsDisabled}
+                      />
+                    )}
                     <TextField
                       label={labels.fields.nftName}
                       placeholder={labels.fields.nftNamePlaceholder}
@@ -976,6 +1061,144 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       onChange={(value) => setField('nftImageUrl', value)}
                       disabled={isSending || inputsDisabled}
                     />
+                  </div>
+                )}
+
+                {activeAction === 'editNftData' && selectedNonFungible && (
+                  <div className="space-y-3">
+                    {/* Same picker as burning, single choice: the NFT whose
+                        data is rewritten. Only ids this account holds are
+                        offered, which is also what the proof will cover. */}
+                    <SearchField
+                      value={burnNftSearch}
+                      onChange={setBurnNftSearch}
+                      placeholder={labels.fields.searchNfts.replace(
+                        '{count}',
+                        selectedNonFungible.ids.length.toString(),
+                      )}
+                      disabled={isSending || inputsDisabled}
+                    />
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1"
+                      style={{ scrollbarWidth: 'thin' }}
+                    >
+                      {(ownedNftData ||
+                        selectedNonFungible.ids.map((id) => ({
+                          id,
+                          name: selectedNonFungible.name || labels.fields.unnamedNft,
+                          imageUrl: selectedNonFungible.iconUrl,
+                        })))
+                        .filter(
+                          (nft) =>
+                            !burnNftSearch ||
+                            nft.id.toLowerCase().includes(burnNftSearch.toLowerCase()) ||
+                            nft.name?.toLowerCase().includes(burnNftSearch.toLowerCase()),
+                        )
+                        .map((nft) => {
+                          const isSelected = editNftId === nft.id;
+                          return (
+                            <button
+                              key={nft.id}
+                              type="button"
+                              disabled={isSending || inputsDisabled}
+                              onClick={() => setEditNftId(isSelected ? null : nft.id)}
+                              className="group flex items-center gap-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-sm active:scale-95 p-2.5"
+                              style={{
+                                background: isSelected
+                                  ? 'rgba(var(--color-primary-rgb), 0.08)'
+                                  : 'var(--color-surface)',
+                                borderColor: isSelected
+                                  ? 'var(--color-primary)'
+                                  : 'var(--color-card-border)',
+                              }}
+                              title={nft.id}
+                            >
+                              <SafeImage
+                                src={nft.imageUrl || selectedNonFungible.iconUrl || ''}
+                                alt={nft.id}
+                                fallbackName={nft.name || selectedNonFungible.name || labels.fields.unnamedNft}
+                                className="size-8 rounded-lg object-cover shadow-sm shrink-0"
+                              />
+                              <div className="flex min-w-0 flex-col">
+                                <span
+                                  className="truncate font-bold text-xs leading-tight"
+                                  style={{
+                                    color: isSelected
+                                      ? 'var(--color-primary)'
+                                      : 'var(--color-text-main)',
+                                  }}
+                                >
+                                  {nft.name || 'NFT'}
+                                </span>
+                                <span
+                                  className="truncate font-mono text-[10px]"
+                                  style={{ color: 'var(--color-text-muted)' }}
+                                >
+                                  {nft.id}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                    {/* Some resources declare NO mutable field at all (the
+                        Radix Seal brand is one): no role and no badge can ever
+                        change their NFTs, so say that instead of offering a
+                        form full of dead inputs. */}
+                    {editNftId && mutableNftFields.length === 0 && (
+                      <p
+                        className="flex items-start gap-2 rounded-xl border px-4 py-3 text-xs leading-relaxed"
+                        style={{
+                          borderColor: 'var(--color-card-border)',
+                          background: 'var(--color-surface)',
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        <Lock className="mt-0.5 size-3.5 shrink-0" />
+                        {labels.fields.nftDataAllLocked}
+                      </p>
+                    )}
+                    {editNftId && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {nftFields.map((nftField) => {
+                          // Same treatment as a metadata key that is already
+                          // locked on-ledger: read-only, with the lock chip
+                          // saying so. NFT fields have no lock/unlock
+                          // instruction at all — the schema decides at creation
+                          // — so a mutable one simply carries no chip.
+                          const editable = mutableNftFields.includes(nftField.name);
+                          const key = nftFieldKey(nftField.name);
+                          return (
+                            <TextField
+                              key={nftField.name}
+                              label={nftField.name}
+                              labelEnd={
+                                editable ? undefined : (
+                                  <LockToggle
+                                    locked
+                                    onToggle={() => undefined}
+                                    disabled
+                                    label={labels.fields.alreadyLockedLabel}
+                                    hint={labels.fields.nftDataLockedHint}
+                                  />
+                                )
+                              }
+                              value={fields[key] ?? nftField.value}
+                              onChange={(value) => setField(key, value)}
+                              disabled={!editable || isSending || inputsDisabled}
+                            />
+                          );
+                        })}
+                        {nftFields.length === 0 && (
+                          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                            {labels.fields.nftDataLoading}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                      {labels.fields.nftDataNote}
+                    </p>
                   </div>
                 )}
 
@@ -1009,7 +1232,11 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                 setLockedMetaKeys(next);
                               }}
                               disabled={isSending || inputsDisabled || alreadyLocked}
-                              label={alreadyLocked ? 'Locked' : 'Lock'}
+                              label={
+                                alreadyLocked
+                                  ? labels.fields.alreadyLockedLabel
+                                  : labels.fields.lockFieldLabel
+                              }
                               hint={alreadyLocked ? labels.fields.alreadyLockedHint : labels.fields.lockFieldHint}
                             />
                           }
