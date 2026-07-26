@@ -1,9 +1,12 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Paperclip, SendHorizontal } from 'lucide-react';
 import { MAX_MESSAGE_CHARS } from '../constants/chat';
 import type { ChatDictionary } from '../types/dictionary';
+
+/** Silence after the last keystroke before the peer's dots are cleared. */
+const TYPING_IDLE_MS = 2_000;
 
 /** Message input: Enter sends, Shift+Enter breaks the line. The paperclip
  *  attaches any file (no size limit: transfers stream with flat memory),
@@ -14,6 +17,7 @@ export function ChatComposer({
   sendingFile,
   onSend,
   onSendFile,
+  onTyping,
 }: {
   t: ChatDictionary;
   disabled: boolean;
@@ -21,15 +25,51 @@ export function ChatComposer({
   sendingFile: boolean;
   onSend: (text: string) => void;
   onSendFile: (file: File) => void;
+  /** Mirrors composing state to the peer (rate-limited by the session). */
+  onTyping: (typing: boolean) => void;
 }) {
   const [draft, setDraft] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The handler is recreated every render (this repo bans useCallback), so the
+  // unmount cleanup reads it through a ref instead of depending on it.
+  const onTypingRef = useRef(onTyping);
+  useEffect(() => {
+    onTypingRef.current = onTyping;
+  });
+
+  // Never leave the peer staring at dots because this side went away.
+  useEffect(() => {
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      onTypingRef.current(false);
+    };
+  }, []);
+
+  const stopTyping = () => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = null;
+    onTyping(false);
+  };
+
+  const onDraftChange = (value: string) => {
+    setDraft(value);
+    if (disabled) return;
+    if (!value.trim()) {
+      stopTyping();
+      return;
+    }
+    onTyping(true);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(stopTyping, TYPING_IDLE_MS);
+  };
 
   const submit = () => {
     const text = draft.trim();
     if (!text || disabled) return;
     onSend(text);
     setDraft('');
+    stopTyping();
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -73,8 +113,9 @@ export function ChatComposer({
         </button>
         <textarea
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={onKeyDown}
+          onBlur={stopTyping}
           placeholder={t.room.placeholder}
           disabled={disabled}
           rows={1}

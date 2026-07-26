@@ -94,6 +94,12 @@ export function ReceiveView({
         {session.phase === 'receiving' && (
           <TransferProgress label={t.progress.receiving} fraction={session.progress} />
         )}
+        {session.phase === 'reconnecting' && (
+          <TransferProgress
+            label={t.progress.reconnecting}
+            fraction={session.progress > 0 ? session.progress : undefined}
+          />
+        )}
         {session.phase === 'waitingApproval' && (
           <TransferProgress label={t.progress.waitingApproval} />
         )}

@@ -96,7 +96,17 @@ export interface UnlockProof {
  * secret that ever crosses the wire, protected by DTLS.
  */
 export type DataChannelMessage =
-  | { t: 'hello'; v: 1; role: 'sender' | 'receiver' }
+  | {
+      t: 'hello';
+      v: 1;
+      role: 'sender' | 'receiver';
+      /**
+       * Receiver only: chunks it already holds from a previous connection.
+       * The sender streams from there, so a dropped link resumes instead of
+       * re-sending the whole file (or failing).
+       */
+      haveChunks?: number;
+    }
   | { t: 'meta'; headB64: string }
   | { t: 'chunk-start'; index: number; byteLength: number }
   | { t: 'transfer-complete'; chunkCount: number }

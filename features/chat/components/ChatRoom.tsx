@@ -13,6 +13,7 @@ import type { ChatMessage, VerifiedPeer } from '../types/chat.types';
 import { ChatComposer } from './ChatComposer';
 import { ChatTransactionModal } from './ChatTransactionModal';
 import { MessageBubble } from './MessageBubble';
+import { TypingIndicator } from './TypingIndicator';
 import { useDocumentPip } from '../hooks/useDocumentPip';
 import { useDetachedWindow } from '../hooks/useDetachedWindow';
 
@@ -23,9 +24,11 @@ export function ChatRoom({
   messages,
   closed,
   sendingFile,
+  peerTyping,
   onSend,
   onSendFile,
   onCancelFile,
+  onTyping,
   onLeave,
 }: {
   t: ChatDictionary;
@@ -35,10 +38,14 @@ export function ChatRoom({
   closed: boolean;
   /** An outgoing file is in flight (attach is disabled meanwhile). */
   sendingFile: boolean;
+  /** The peer is composing right now: show the wave of dots. */
+  peerTyping: boolean;
   onSend: (text: string) => void;
   onSendFile: (file: File) => void;
   /** Abort the file currently being sent. */
   onCancelFile: () => void;
+  /** Mirror our own composing state to the peer. */
+  onTyping: (typing: boolean) => void;
   onLeave: () => void;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
@@ -55,13 +62,19 @@ export function ChatRoom({
   // instead of being squeezed into the small chat window.
   const txWindow = useDetachedWindow();
 
-  // Display name for the peer: the name saved for that address in the agenda
-  // first, then its label if it is one of the connected wallet's own accounts;
-  // nothing when neither exists.
-  const peerName =
+  // Display name for the peer, most trustworthy source first: the name saved
+  // for that address in the agenda, then its label if it is one of the
+  // connected wallet's own accounts, and finally the persona label the peer
+  // itself sent in the handshake. That last one is what shows for a stranger:
+  // before, a peer who was not already in the local agenda had no name at all,
+  // which is why the header only ever showed the raw address.
+  const savedName =
     addressBook.find((e) => e.address === peer.account)?.name ??
     accounts.find((a) => a.address === peer.account)?.label ??
     null;
+  const peerName = savedName ?? peer.declaredName ?? null;
+  // Self-declared names are not proof of anything; say so on hover.
+  const nameHint = savedName ? peerName! : t.room.declaredName;
 
   // Post a short summary of a committed transfer into the chat; the txid is
   // linkified to the explorer by MessageBubble.
@@ -166,7 +179,7 @@ export function ChatRoom({
               <p
                 className="truncate text-sm font-bold"
                 style={{ color: 'var(--color-text-main)' }}
-                title={peerName}
+                title={nameHint}
               >
                 {peerName}
               </p>
@@ -233,24 +246,33 @@ export function ChatRoom({
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
-        {messages.length === 0 && (
-          <p
-            className="m-auto text-sm"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            {t.room.empty}
-          </p>
-        )}
-        {messages.map((message: ChatMessage) => (
-          <MessageBubble
-            key={message.id}
-            t={t}
-            message={message}
-            onCancel={onCancelFile}
+      {/* Relative wrapper so the typing dots can sit in the corner of the log
+          instead of scrolling away with the messages. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+          {messages.length === 0 && (
+            <p
+              className="m-auto text-sm"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              {t.room.empty}
+            </p>
+          )}
+          {messages.map((message: ChatMessage) => (
+            <MessageBubble
+              key={message.id}
+              t={t}
+              message={message}
+              onCancel={onCancelFile}
+            />
+          ))}
+          <div ref={endRef} />
+        </div>
+        {peerTyping && !closed && (
+          <TypingIndicator
+            label={peerName ? `${peerName} ${t.room.typing}` : t.room.typing}
           />
-        ))}
-        <div ref={endRef} />
+        )}
       </div>
 
       <footer
@@ -268,6 +290,7 @@ export function ChatRoom({
             sendingFile={sendingFile}
             onSend={onSend}
             onSendFile={onSendFile}
+            onTyping={onTyping}
           />
         )}
       </footer>

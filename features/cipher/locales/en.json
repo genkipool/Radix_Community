@@ -55,6 +55,7 @@
       "transferring": "Sending encrypted file",
       "receiving": "Receiving encrypted file",
       "connecting": "Connecting to peer…",
+      "reconnecting": "Connection lost. Reconnecting… the transfer continues where it stopped.",
       "waitingPeer": "Waiting for the other side to open the link…",
       "waitingApproval": "Request sent. Waiting for the sender to approve and sign…",
       "waitingRequest": "Transfer complete. Waiting for the decrypt request…",

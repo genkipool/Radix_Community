@@ -50,9 +50,11 @@ export function ChatSessionView({
           messages={session.messages}
           closed={session.phase === 'closed'}
           sendingFile={session.sendingFile}
+          peerTyping={session.peerTyping}
           onSend={(text) => void session.send(text)}
           onSendFile={(file) => void session.sendFile(file)}
           onCancelFile={session.cancelSendFile}
+          onTyping={session.setTyping}
           onLeave={session.leave}
         />
         {session.phase === 'closed' && (

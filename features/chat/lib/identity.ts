@@ -167,5 +167,22 @@ export async function verifyPeerHandshake(
     throw new Error('peer_verification_failed');
   }
 
-  return { account: handshake.account };
+  return {
+    account: handshake.account,
+    declaredName: sanitizeDeclaredName(handshake.label),
+  };
+}
+
+/**
+ * The persona label is free text chosen by the peer and never signed, so it is
+ * treated as untrusted display data: trimmed, stripped of control characters
+ * (which could fake line breaks or hide text in the header) and length-capped.
+ */
+export function sanitizeDeclaredName(label: unknown): string | undefined {
+  if (typeof label !== 'string') return undefined;
+  const clean = label
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return clean ? clean.slice(0, 48) : undefined;
 }

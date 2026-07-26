@@ -38,6 +38,7 @@
     "room": {
       "securedWith": "Chat seguro con verificado por wallet",
       "verified": "verificado por wallet",
+      "declaredName": "Nombre que indica la otra persona en su wallet. Lo verificado es la cuenta, no el nombre.",
       "sendTx": "Enviar transacción",
       "txTitle": "Enviar transacción",
       "txFrom": "Desde la cuenta",
@@ -45,6 +46,7 @@
       "txFeeLabel": "Comisión",
       "close": "Cerrar",
       "placeholder": "Escribe un mensaje… (Enter para enviar)",
+      "typing": "está escribiendo…",
       "send": "Enviar",
       "attach": "Enviar un archivo",
       "download": "Descargar",
