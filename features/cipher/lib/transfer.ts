@@ -60,10 +60,24 @@ export async function sendEncryptedFile(
     onProgress(fraction);
   };
 
-  for (let index = startIndex; index < chunkCount; index++) {
+  // Read the next chunk from IndexedDB WHILE the current one streams. Without
+  // the lookahead the wire went idle at every chunk boundary, waiting on a
+  // 1 MiB read plus its copy — a stutter every megabyte, and dead air on a
+  // link that is happier being fed steadily.
+  const read = async (index: number): Promise<ArrayBuffer> => {
     const blob = await getChunkBlob(index);
     if (!blob) throw new Error('unknown');
-    const buf = await blob.arrayBuffer();
+    return blob.arrayBuffer();
+  };
+  let pending: Promise<ArrayBuffer> | null =
+    startIndex < chunkCount ? read(startIndex) : null;
+
+  for (let index = startIndex; index < chunkCount; index++) {
+    const buf = await pending!;
+    pending = index + 1 < chunkCount ? read(index + 1) : null;
+    // A failed lookahead must not surface as an unhandled rejection if the
+    // loop aborts first; the next iteration re-throws it properly.
+    pending?.catch(() => undefined);
     peer.sendMessage({ t: 'chunk-start', index, byteLength: buf.byteLength });
     for (let offset = 0; offset < buf.byteLength; offset += WIRE_FRAME_SIZE) {
       const end = Math.min(buf.byteLength, offset + WIRE_FRAME_SIZE);

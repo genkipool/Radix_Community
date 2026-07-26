@@ -76,46 +76,105 @@ export interface Peer<TMessage> {
 const CONNECT_TIMEOUT_MS = 30_000;
 
 /**
- * How long `connectionState === 'disconnected'` may last before the peer is
- * declared gone.
+ * Grace given to a NON-definitive ICE state (`disconnected`, and `failed`
+ * while bytes are still moving) before the peer is declared gone.
  *
- * `disconnected` is NOT a close: it is what ICE reports when consent checks
- * miss for a moment, which happens routinely under a sustained transfer, on
- * Wi-Fi hand-offs and behind a busy TURN relay — and it recovers on its own
- * seconds later while the DataChannel stays open. Treating it as fatal (the
- * old behaviour) killed healthy transfers mid-flight and is exactly what made
- * every non-trivial file report "connection lost". A real drop escalates to
- * `failed`, or closes the channel, and is still caught immediately.
+ * `disconnected` is not a close: ICE reports it as soon as the selected
+ * candidate pair stops seeing inbound packets for a couple of seconds, which
+ * happens routinely on a busy or lossy path, on Wi-Fi hand-offs and behind a
+ * loaded TURN relay, and it clears itself while the DataChannel never stops
+ * working. The grace is only the FLOOR: `livenessProven` below can extend it
+ * indefinitely while data keeps flowing.
  */
-const DISCONNECT_GRACE_MS = 20_000;
+const DISCONNECT_GRACE_MS = 15_000;
 
 /** How often the drain watchdog samples the send buffer. */
 const DRAIN_POLL_MS = 1_000;
 
 /**
- * Polls with zero drain progress before the peer is treated as gone (~60s). A
- * real disconnect flips `readyState` off `open` and is caught within one poll,
- * so this only guards the pathological "channel open but nothing draining"
- * case — kept generous because a slow receiver (e.g. writing each chunk to
- * IndexedDB) legitimately backpressures the sender for a while, and a tight
- * bound here is exactly what dropped healthy large-file transfers before.
+ * Give up on a send buffer that has neither shrunk nor shown any sign of life
+ * for this long. Generous on purpose: a slow receiver (writing every chunk to
+ * IndexedDB) or an SCTP retransmission storm on a lossy link legitimately
+ * freezes the buffer for a long time, and the peer keeps proving it is there
+ * through the keepalive in the meantime.
  */
-const DRAIN_STALL_POLLS = 60;
+const DRAIN_STALL_MS = 90_000;
+
+/**
+ * Transport-level keepalive. Not a feature message: it is filtered out before
+ * anything reaches `handlers.onMessage`, and every feature's protocol ignores
+ * unknown `t` values anyway, so a peer on an older build simply drops it.
+ *
+ * Two jobs. It proves the path works when the application has nothing to say
+ * (a chat sitting idle, a sender waiting for the decrypt request), and the
+ * packets themselves keep ICE's "receiving" flag set on both sides, which is
+ * what stops a quiet or one-way path from being declared `disconnected` in the
+ * first place.
+ */
+const KEEPALIVE_FRAME = '{"t":"__ka"}';
+const KEEPALIVE_MS = 3_000;
+
+/**
+ * How recently the path must have proven itself for the peer to count as
+ * alive. Comfortably above KEEPALIVE_MS so a single lost keepalive is not
+ * mistaken for a dead link.
+ */
+const LIVENESS_WINDOW_MS = 10_000;
+
+/**
+ * Hand the event loop back after this many frames. At 16 KiB a frame the pause
+ * costs a fraction of a millisecond per 256 KiB, far below any real link's
+ * throughput, and it is what lets timers and inbound frames be serviced while
+ * a file streams.
+ */
+const YIELD_EVERY_FRAMES = 16;
+
+/**
+ * Evidence that the path is working, independent of what ICE thinks.
+ *
+ * Two things count as proof, and both are facts rather than opinions: a frame
+ * ARRIVED from the peer, or bytes LEFT our send buffer (SCTP only releases
+ * them once the peer acknowledges them). Either one means packets are making
+ * the round trip right now.
+ */
+interface Liveness {
+  proof(): void;
+  provenWithin(ms: number): boolean;
+  since(): number;
+}
+
+function createLiveness(): Liveness {
+  let lastProofAt = Date.now();
+  return {
+    proof() {
+      lastProofAt = Date.now();
+    },
+    provenWithin(ms) {
+      return Date.now() - lastProofAt < ms;
+    },
+    since() {
+      return Date.now() - lastProofAt;
+    },
+  };
+}
 
 /**
  * Block until the DataChannel send buffer drains to `target` bytes. Resolves
  * promptly via `bufferedamountlow` when possible; rejects only if the channel
- * closes (detected within one poll) or the buffer never shrinks for
- * DRAIN_STALL_POLLS polls. No wall-clock deadline: a large file over a slow
- * relay can spend minutes draining legitimately.
+ * closes (detected within one poll) or nothing at all has happened for
+ * DRAIN_STALL_MS. No wall-clock deadline: a large file over a slow relay can
+ * spend minutes draining legitimately.
  */
-function waitUntilDrained(dc: RTCDataChannel, target: number): Promise<void> {
+function waitUntilDrained(
+  dc: RTCDataChannel,
+  target: number,
+  live: Liveness,
+): Promise<void> {
   if (dc.readyState !== 'open') return Promise.reject(new Error('peer_disconnected'));
   if (dc.bufferedAmount <= target) return Promise.resolve();
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     let lastBuffered = dc.bufferedAmount;
-    let stalls = 0;
 
     const finish = (action: () => void): void => {
       if (settled) return;
@@ -135,12 +194,14 @@ function waitUntilDrained(dc: RTCDataChannel, target: number): Promise<void> {
         return;
       }
       const buffered = dc.bufferedAmount;
+      if (buffered < lastBuffered) {
+        // Bytes left the buffer: the peer acknowledged them.
+        lastBuffered = buffered;
+        live.proof();
+      }
       if (buffered <= target) {
         finish(resolve);
-      } else if (buffered < lastBuffered) {
-        lastBuffered = buffered;
-        stalls = 0;
-      } else if (++stalls >= DRAIN_STALL_POLLS) {
+      } else if (!live.provenWithin(DRAIN_STALL_MS)) {
         finish(() => reject(new Error('peer_disconnected')));
       }
     }, DRAIN_POLL_MS);
@@ -149,15 +210,24 @@ function waitUntilDrained(dc: RTCDataChannel, target: number): Promise<void> {
   });
 }
 
-function wirePeer<TMessage>(
+/**
+ * Bind an open PeerConnection + DataChannel to a feature's handlers. Exported
+ * so the close/liveness rules can be exercised against fake transports.
+ */
+export function wirePeer<TMessage>(
   pc: RTCPeerConnection,
   dc: RTCDataChannel,
   handlers: PeerHandlers<TMessage>,
 ): Peer<TMessage> {
   dc.binaryType = 'arraybuffer';
   dc.bufferedAmountLowThreshold = BUFFERED_LOW;
+  const live = createLiveness();
+
   dc.onmessage = (event) => {
+    // Anything arriving is proof the path works, keepalives included.
+    live.proof();
     if (typeof event.data === 'string') {
+      if (event.data === KEEPALIVE_FRAME) return;
       try {
         handlers.onMessage(JSON.parse(event.data) as TMessage);
       } catch {
@@ -167,36 +237,76 @@ function wirePeer<TMessage>(
       handlers.onBinary(event.data as ArrayBuffer);
     }
   };
+
   let closed = false;
   const notifyClose = () => {
     if (closed) return;
     closed = true;
+    clearInterval(keepalive);
+    cancelGrace();
     handlers.onClose();
   };
   dc.onclose = notifyClose;
 
-  // See DISCONNECT_GRACE_MS: a flap back to `connected` cancels the countdown.
+  const keepalive = setInterval(() => {
+    if (dc.readyState !== 'open') return;
+    // While data is queued, drain progress already proves the peer is there;
+    // queueing another frame behind a full buffer would prove nothing and only
+    // add to the backlog.
+    if (dc.bufferedAmount > 0) return;
+    try {
+      dc.send(KEEPALIVE_FRAME);
+    } catch {
+      /* channel closing: onclose handles it */
+    }
+  }, KEEPALIVE_MS);
+
+  /**
+   * ICE state is an opinion; bytes on the wire are a fact. A non-definitive
+   * state starts a countdown that keeps being pushed back for as long as the
+   * link keeps proving itself, so a transfer that is visibly progressing is
+   * never torn down over `disconnected` — the exact churn that made bad links
+   * reconnect over and over mid-file.
+   */
   let graceTimer: ReturnType<typeof setTimeout> | null = null;
-  const cancelGrace = () => {
+  function cancelGrace(): void {
     if (graceTimer) clearTimeout(graceTimer);
     graceTimer = null;
+  }
+  const armGrace = () => {
+    if (graceTimer || closed) return;
+    graceTimer = setTimeout(function settle() {
+      graceTimer = null;
+      const state = pc.connectionState;
+      if (state === 'connected' || state === 'new') return;
+      if (live.provenWithin(LIVENESS_WINDOW_MS)) {
+        // Still moving data: keep waiting for ICE to catch up with reality.
+        armGrace();
+        return;
+      }
+      notifyClose();
+    }, DISCONNECT_GRACE_MS);
   };
+
   pc.onconnectionstatechange = () => {
     const state = pc.connectionState;
-    if (state === 'failed' || state === 'closed') {
-      cancelGrace();
+    if (state === 'closed') {
       notifyClose();
-    } else if (state === 'disconnected') {
-      if (!graceTimer) {
-        graceTimer = setTimeout(() => {
-          graceTimer = null;
-          if (pc.connectionState !== 'connected') notifyClose();
-        }, DISCONNECT_GRACE_MS);
-      }
+    } else if (state === 'failed' || state === 'disconnected') {
+      // `failed` normally means every candidate pair is dead, but it is also
+      // reported on paths that recover, so it goes through the same
+      // liveness-gated countdown rather than killing a working channel.
+      armGrace();
     } else if (state === 'connected') {
       cancelGrace();
     }
   };
+
+  // Frames sent since the last yield to the event loop. A caller that loops
+  // over a whole file never awaits anything real, which starves timers and
+  // inbound handlers (including the drain watchdog and the keepalive) on the
+  // very links that most need them.
+  let sinceYield = 0;
 
   return {
     sendMessage(message) {
@@ -207,7 +317,11 @@ function wirePeer<TMessage>(
       // Checked BEFORE every frame, so the buffer can never hold more than
       // BUFFERED_HIGH + one frame no matter how fast the caller loops.
       if (dc.bufferedAmount > BUFFERED_HIGH) {
-        await waitUntilDrained(dc, BUFFERED_LOW);
+        await waitUntilDrained(dc, BUFFERED_LOW, live);
+        sinceYield = 0;
+      } else if (++sinceYield >= YIELD_EVERY_FRAMES) {
+        sinceYield = 0;
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
       dc.send(bytes);
@@ -217,10 +331,11 @@ function wirePeer<TMessage>(
     },
     async flush() {
       if (dc.readyState !== 'open') throw new Error('peer_disconnected');
-      await waitUntilDrained(dc, 0);
+      await waitUntilDrained(dc, 0, live);
     },
     close() {
       closed = true;
+      clearInterval(keepalive);
       cancelGrace();
       dc.close();
       pc.close();
