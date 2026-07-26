@@ -7,6 +7,91 @@ import {
 import { type Validator } from '@/types/radix';
 
 
+
+export interface EpochRow {
+    epoch: number;
+    completedProposals: number;
+    missedProposals: number;
+    isLive: boolean;
+}
+
+/** As the server sends it: `isLive` marks the epoch current at render time. */
+type ServerEpochRow = Omit<EpochRow, 'isLive'> & { isLive?: boolean };
+
+/**
+ * The six rows of the epoch-history table, newest first and without holes.
+ *
+ * Three sources feed it: the live epoch, the epochs this browser watched
+ * finalize, and the contiguous range the server rendered with. Keeping them
+ * contiguous is the whole job — a missing row reads as if the epoch never
+ * happened.
+ */
+export function unifyEpochRows({
+    liveEpoch,
+    epochMade,
+    epochMissed,
+    bridgedEpochs,
+    serverPerformance,
+}: {
+    liveEpoch: number | null;
+    epochMade: number;
+    epochMissed: number;
+    bridgedEpochs: EpochRow[];
+    serverPerformance: ServerEpochRow[];
+}): EpochRow[] {
+    const normalised = serverPerformance.map((e) => ({ ...e, isLive: e.isLive ?? false }));
+
+    // No live epoch known yet: the server's own table is all there is, and
+    // inventing a live row for epoch 0 would head it with a row for an epoch
+    // that never existed.
+    if (liveEpoch === null) {
+        return normalised.sort((a, b) => b.epoch - a.epoch).slice(0, 6);
+    }
+
+    const liveRow: EpochRow = {
+        epoch: liveEpoch,
+        completedProposals: epochMade,
+        missedProposals: epochMissed,
+        isLive: true,
+    };
+
+    // The server marks the epoch that was current WHEN IT RENDERED. Once the
+    // chain moves on, that epoch is simply the most recent finalized one, and
+    // dropping it left a hole right under the live row: the table read
+    // "329450, 329448…". Only the row for the epoch that is live RIGHT NOW is
+    // redundant, because the row above already carries it with fresher counts.
+    const serverRows = normalised.flatMap((e) =>
+        e.epoch === liveEpoch ? [] : [{ ...e, isLive: false }],
+    );
+
+    // Every epoch that reached this point is one we have data for, so all of
+    // them are kept. Dropping rows whose counts were 0/0 is what produced an
+    // earlier round of gaps: a validator that simply was not selected to
+    // propose during an epoch legitimately scores 0 made and 0 missed.
+    //
+    // On a conflict the row carrying actual counts wins, since the server
+    // falls back to zeros when a snapshot is missing, and a bridged row holds
+    // the final tally where the server could only see a partial one.
+    const unique = Array.from(
+        [liveRow, ...bridgedEpochs, ...serverRows]
+            .reduce((map, row) => {
+                const existing = map.get(row.epoch);
+                if (!existing) {
+                    map.set(row.epoch, row);
+                    return map;
+                }
+                const hasData = row.completedProposals > 0 || row.missedProposals > 0;
+                const existingHasData =
+                    existing.completedProposals > 0 || existing.missedProposals > 0;
+                if (!existingHasData && hasData) map.set(row.epoch, row);
+                return map;
+            }, new Map<number, EpochRow>())
+            .values(),
+    );
+
+    return unique.sort((a, b) => b.epoch - a.epoch).slice(0, 6);
+}
+
 export function useLiveProposals(validator: Validator) {
     const snap = useSyncExternalStore(subscribeToLiveData, getLiveSnapshot, getLiveSnapshot);
 
@@ -41,57 +126,13 @@ export function useLiveProposals(validator: Validator) {
         }];
     });
 
-    const unifiedRows = (() => {
-        // 1. Live Row
-        const liveRow = {
-            epoch: liveEpoch ?? 0,
-            completedProposals: epochMade,
-            missedProposals: epochMissed,
-            isLive: true
-        };
-
-        // 2. Combine with client-side history (bridged)
-        // 3. Optional: Fallback to server data ONLY if we have very few rows in client memory
-        const serverRows = validator.epochPerformance
-            .flatMap(e => e.isLive ? [] : [{ ...e, isLive: false }]);
-
-        const combined = [
-            liveRow,
-            ...bridgedEpochs,
-            ...serverRows
-        ];
-
-        // 4. De-duplicate.
-        //
-        // Every epoch that reached this point is one we have data for, so all of
-        // them are kept. Dropping rows whose counts were 0/0 is what produced
-        // the gaps in the table (…329121, 329116…): a validator that simply was
-        // not selected to propose during an epoch legitimately scores 0 made and
-        // 0 missed, and its row vanished as if the epoch had never happened.
-        //
-        // The server already emits a CONTIGUOUS range (see cleanEpochPerformance
-        // in services/gateway/validators.ts), so keeping every row restores the
-        // unbroken sequence. On a conflict the row carrying actual counts wins,
-        // since the server falls back to zeros when a snapshot is missing.
-        const unique = Array.from(
-            combined.reduce((map, row) => {
-                const existing = map.get(row.epoch);
-                if (!existing) {
-                    map.set(row.epoch, row);
-                    return map;
-                }
-                const hasData = row.completedProposals > 0 || row.missedProposals > 0;
-                const existingHasData = existing.completedProposals > 0 || existing.missedProposals > 0;
-                if (!existingHasData && hasData) map.set(row.epoch, row);
-                return map;
-            }, new Map<number, typeof liveRow>()).values()
-        );
-
-        // 5. Sort and Slice
-        return unique
-            .sort((a, b) => b.epoch - a.epoch)
-            .slice(0, 6);
-    })();
+    const unifiedRows = unifyEpochRows({
+        liveEpoch,
+        epochMade,
+        epochMissed,
+        bridgedEpochs,
+        serverPerformance: validator.epochPerformance,
+    });
 
     return {
         epochMade,

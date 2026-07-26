@@ -36,8 +36,7 @@
       "cancel": "Cancelar"
     },
     "room": {
-      "securedWith": "Chat seguro con verificado por wallet",
-      "verified": "verificado por wallet",
+      "securedWith": "Chat seguro, identidad verificada con la wallet",
       "declaredName": "Nombre que indica la otra persona en su wallet. Lo verificado es la cuenta, no el nombre.",
       "sendTx": "Enviar transacción",
       "sendTxHint": "Enviar una transacción a esta cuenta sin salir del chat. El resumen se publica en la conversación.",
