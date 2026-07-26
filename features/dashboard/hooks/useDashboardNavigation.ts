@@ -25,6 +25,7 @@ import type { DashboardView, Network } from '../types';
 import {
   dashboardRoutes,
   parseDashboardQuery,
+  resolveEntityKind,
   serializeDashboardQuery,
   type DashboardQuery,
   type TxTag,
@@ -78,8 +79,24 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
     navigate(`${pathname}${serializeDashboardQuery(next)}`, 'replace');
   };
 
+  /**
+   * The entity the URL is currently COMMITTED to, which is not the same as the
+   * one being typed.
+   *
+   * Navigations run inside a transition, so during one this still reports the
+   * previous entity. That is what lets the entity card survive until its
+   * replacement data actually lands, instead of vanishing the instant the search
+   * box is cleared and leaving the old filtered transactions on screen alone.
+   */
+  const committedEntity = (() => {
+    const fromPath = /\/dashboard\/(?:tx|resource|account|validator)\/([^/?#]+)/.exec(pathname);
+    if (fromPath) return decodeURIComponent(fromPath[1]);
+    return current().entity ?? null;
+  })();
+
   return {
     isNavigating,
+    committedEntity,
 
     /**
      * Switches view WITHOUT tearing the dashboard down.
@@ -121,17 +138,34 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
     },
 
     /**
-     * Focuses an entity, or clears the focus. A resolvable address goes to its
-     * own page; clearing returns to the list. Called as the user types, hence
-     * `replace`, and only for a complete address — partial text filters on the
+     * Focuses an entity, or clears the focus. Called as the user types, hence
+     * `replace`, and only for a complete address: partial text filters on the
      * client without touching the URL.
+     *
+     * Where that lands depends on the view, because the entity routes all render
+     * the EXPLORER focused on an address. Pasting a validator into the staking
+     * search box therefore threw the user out of staking and onto the explorer's
+     * entity card — the opposite of what searching a list should do.
+     *
+     * So staking keeps a validator to itself and filters its own list in place,
+     * carrying the address in the query so the result is still a shareable link.
+     * Anything else has no representation in staking (there is no card for an
+     * account or a resource there), so it still goes to the explorer, which is
+     * the only view that can show it.
      */
     focusEntity: (value: string | null) => {
       const { network } = current();
+
+      if (!value) {
+        navigate(dashboardRoutes.view(locale, view, { network }), 'replace');
+        return;
+      }
+
+      const staysInStaking = view === 'staking' && resolveEntityKind(value) === 'validator';
       navigate(
-        value
-          ? dashboardRoutes.entity(locale, value, { network })
-          : dashboardRoutes.view(locale, view, { network }),
+        staysInStaking
+          ? dashboardRoutes.staking(locale, { network, entity: value })
+          : dashboardRoutes.entity(locale, value, { network }),
         'replace',
       );
     },

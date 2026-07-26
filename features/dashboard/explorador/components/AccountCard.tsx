@@ -115,6 +115,9 @@ export function AccountCard({
     };
 
     const queryClient = useQueryClient();
+    // Nothing is rendered until the details are in hand. The card must never
+    // appear half-built: the grid holds its previous content until this
+    // resolves, which is what keeps the swap in a single frame.
     if (isError || isLoading) return null;
 
     const handleTransactionsMouseEnter = () => {

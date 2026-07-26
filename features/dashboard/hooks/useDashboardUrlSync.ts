@@ -115,6 +115,12 @@ export function useDashboardUrlSync({
     handleNetworkChange,
     /** Lets the UI show a pending state while the server catches up. */
     isNavigating: nav.isNavigating,
+    /**
+     * The entity the URL is committed to. Lags the search box during a
+     * navigation, which is exactly what keeps the entity card and the
+     * transactions beneath it changing in the same frame.
+     */
+    committedEntity: nav.committedEntity,
     /** Query-only URL writes, for state owned elsewhere (e.g. the tag filter). */
     setTagInUrl: nav.setTag,
   };

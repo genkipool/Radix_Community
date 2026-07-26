@@ -34,6 +34,15 @@ import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import { parseDashboardQuery, type RawSearchParams } from '../lib/routes';
+import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
+import { entityKeys } from '@/features/dashboard/utils/entityCache';
+
+/**
+ * Ceiling on how many wallet account cards are resolved server-side. A wallet
+ * with dozens of accounts must not turn one page render into dozens of gateway
+ * lookups; beyond this the remaining cards fetch for themselves as before.
+ */
+const MAX_PREFETCHED_ACCOUNTS = 8;
 
 /** Dictionaries every dashboard route needs. */
 const DASHBOARD_NAMESPACES = [
@@ -222,8 +231,43 @@ export async function DashboardPageShell({
       );
     }
 
-    // Deep entity metadata is deliberately NOT hydrated here: cards fetch their
-    // own icons and symbols on the client, keeping CPU and TTFB down.
+    // Deep entity metadata is still NOT hydrated for the cards in the list:
+    // they fetch their own icons and symbols on the client, keeping CPU and
+    // TTFB down.
+    //
+    // The FOCUSED entity is the exception, and it earns it. Its card spans the
+    // full width at the top of the grid, so arriving without it meant painting
+    // the transaction list first and then pushing it all down when the card
+    // resolved. One entity is one cached lookup, and it buys a page that is
+    // complete on first paint.
+    //
+    // The wallet's own accounts get the same treatment, for the same reason.
+    // With the wallet filter on, the explorer puts an account card above the
+    // transactions for every connected account; fetched on the client they
+    // landed AFTER the transaction list had already painted, and shoved it
+    // down as they arrived one by one.
+    const walletFilterOn = cookieStore.get(COOKIE_KEYS.walletFilter)?.value !== 'false';
+    const walletAccounts =
+      showsTransactions && !entity && walletFilterOn
+        ? initialConnectedAccounts.slice(0, MAX_PREFETCHED_ACCOUNTS)
+        : [];
+
+    const cardAddresses = entity ? [entity] : walletAccounts;
+
+    // In parallel: these are independent lookups and each is cached for hours,
+    // so this must not become a serial chain in front of TTFB.
+    const cards = await Promise.all(
+      cardAddresses.map(async (address) => ({
+        address,
+        details: await fetchEntityDetailsForCard(address, network),
+      })),
+    );
+
+    for (const { address, details } of cards) {
+      if (details) {
+        serverQueryClient.setQueryData(entityKeys.detail(address, network), details);
+      }
+    }
   } catch (error) {
     // Non-fatal: the client fetches on mount when the cache is empty.
     const message = error instanceof Error ? error.message : String(error);

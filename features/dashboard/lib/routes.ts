@@ -211,11 +211,18 @@ export function legacyDashboardRedirect(
   params: RawSearchParams,
 ): string {
   const query = parseDashboardQuery(params);
+  const wasStaking = first(params.view) === 'staking';
+
   // A focused entity now has a page of its own, so send the old link straight
-  // there rather than to the explorer carrying a query parameter.
+  // there rather than to the explorer carrying a query parameter. The exception
+  // is a validator that was being looked at IN staking: the entity routes all
+  // render the explorer, so redirecting there would move the reader to a
+  // different view than the link they followed.
   if (query.entity) {
     const { entity, ...rest } = query;
-    return dashboardRoutes.entity(locale, entity, rest);
+    return wasStaking && resolveEntityKind(entity) === 'validator'
+      ? dashboardRoutes.staking(locale, query)
+      : dashboardRoutes.entity(locale, entity, rest);
   }
   const wantsExplorer =
     first(params.view) === 'transactions' || !!query.start || !!query.end;
