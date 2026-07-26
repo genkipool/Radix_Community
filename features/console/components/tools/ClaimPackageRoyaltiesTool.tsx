@@ -68,6 +68,21 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
         />
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-4 pt-4">
+        <SendToWalletButton
+          onClick={handleSend}
+          disabled={!canSend}
+          loading={isSending}
+          label={common.sendToWallet}
+          loadingLabel={common.sending}
+        />
+        <SimulateButton
+          t={t.simulate}
+          onClick={handleSimulate}
+          disabled={!canSend}
+          loading={preview.isSimulating}
+        />
+      </div>
       <TxResultBanner
         t={common}
         result={result}
@@ -85,21 +100,6 @@ export default function ClaimPackageRoyaltiesTool({ t }: ConsoleToolProps) {
         />
       )}
 
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <SendToWalletButton
-          onClick={handleSend}
-          disabled={!canSend}
-          loading={isSending}
-          label={common.sendToWallet}
-          loadingLabel={common.sending}
-        />
-        <SimulateButton
-          t={t.simulate}
-          onClick={handleSimulate}
-          disabled={!canSend}
-          loading={preview.isSimulating}
-        />
-      </div>
     </div>
   );
 }

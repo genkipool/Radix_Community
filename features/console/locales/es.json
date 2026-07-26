@@ -1998,7 +1998,32 @@
       "receiver_mutMethod_hint": "Método que puede modificar el estado del componente (&mut self).",
       "receiver_function": "Función",
       "receiver_function_hint": "Función a nivel de paquete, sin acceso a esta instancia del componente.",
-      "argHint": "Tipo: {type} — escribe el valor en sintaxis de manifiesto",
+      "argHint": "Tipo {type}. {help}",
+      "argTypes": {
+        "Bool": "Verdadero o falso. Escribe true o false, sin comillas.",
+        "String": "Texto libre, entre comillas dobles.",
+        "I8": "Número entero con signo, de -128 a 127. El sufijo i8 indica el tipo: 10i8 es el número 10.",
+        "I16": "Número entero con signo, hasta ±32.767. El sufijo i16 indica el tipo: 10i16 es el número 10.",
+        "I32": "Número entero con signo, hasta ±2.100 millones. El sufijo i32 indica el tipo: 10i32 es el número 10.",
+        "I64": "Número entero con signo, muy grande. El sufijo i64 indica el tipo: 10i64 es el número 10.",
+        "I128": "Número entero con signo, enorme. El sufijo i128 indica el tipo: 10i128 es el número 10.",
+        "U8": "Número entero sin signo, de 0 a 255. El sufijo u8 indica el tipo: 10u8 es el número 10.",
+        "U16": "Número entero sin signo, hasta 65.535. El sufijo u16 indica el tipo: 10u16 es el número 10.",
+        "U32": "Número entero sin signo, hasta 4.200 millones. El sufijo u32 indica el tipo: 10u32 es el número 10.",
+        "U64": "Número entero sin signo, muy grande. El sufijo u64 indica el tipo: 10u64 es el número 10.",
+        "U128": "Número entero sin signo, enorme. El sufijo u128 indica el tipo: 10u128 es el número 10.",
+        "Decimal": "Cantidad con decimales, la que usan los tokens. Se envuelve: Decimal(\"10.5\").",
+        "PreciseDecimal": "Como Decimal pero con más precisión: PreciseDecimal(\"10.5\").",
+        "NonFungibleLocalId": "Id de un NFT dentro de su recurso, con sus delimitadores: NonFungibleLocalId(\"#1#\").",
+        "Address": "Dirección de una cuenta, recurso o componente: Address(\"account_…\").",
+        "Own": "Dirección de algo interno, como una bóveda: Address(\"internal_…\").",
+        "Bucket": "Un cubo de tokens creado antes en el manifiesto. Escribe su nombre: Bucket(\"bucket1\").",
+        "Proof": "Una prueba creada antes en el manifiesto. Escribe su nombre: Proof(\"proof1\").",
+        "Enum": "Una opción de una lista cerrada. Enum<0u8>() es la primera, Enum<1u8>() la segunda; si lleva datos van dentro: Enum<1u8>(\"x\").",
+        "Array": "Una lista de valores del mismo tipo: Array<String>(\"a\", \"b\").",
+        "Tuple": "Varios valores juntos, en orden: Tuple(\"a\", 1u8).",
+        "other": "Escribe el valor en sintaxis de manifiesto Radix. Si no estás seguro, mira el ejemplo en gris del campo."
+      },
       "rawArgs": "Argumentos (sintaxis de manifiesto)",
       "rawArgsHint": "No se pudo resolver el esquema de argumentos; escribe cada argumento en sintaxis de manifiesto, uno por línea.",
       "execute": "Ejecutar",
@@ -2155,7 +2180,8 @@
         "nftDataLoading": "Cargando los datos del NFT…",
         "unnamedResource": "Recurso sin nombre",
         "unnamedNft": "NFT",
-        "nftDataAllLocked": "Este recurso no declaró ningún campo mutable al crearse, así que los datos de sus NFT no se pueden cambiar nunca, ni por su propietario ni con ningún badge. Es el caso de la insignia Radix Seal: su imagen se fija al acuñarla. Abajo puedes ver los valores, solo de lectura."
+        "nftDataAllLocked": "Este recurso no declaró ningún campo mutable al crearse, así que los datos de sus NFT no se pueden cambiar nunca, ni por su propietario ni con ningún badge. Es el caso de la insignia Radix Seal: su imagen se fija al acuñarla. Abajo puedes ver los valores, solo de lectura.",
+        "nftCustomFieldsNote": "Este recurso lleva campos propios en sus NFT. En Radix una acuñación tiene que enviarlos todos, así que no hay campos opcionales: los que dejes vacíos se acuñan vacíos, pero se envían igual. Aparecen arriba en el orden que fijó su esquema. El texto gris de cada uno es el valor que lleva un NFT que ya existe y, si no lleva ninguno, el tipo de dato con un ejemplo. Los campos de tipos que no caben en una caja de texto (listas, enumerados) aparecen desactivados. Si la colección todavía no tiene ningún NFT no hay de dónde leer el esquema, y solo se enviarán los tres campos estándar."
       }
     },
     "faucet": {

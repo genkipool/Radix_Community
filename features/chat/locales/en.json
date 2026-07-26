@@ -40,6 +40,7 @@
       "verified": "wallet-verified",
       "declaredName": "Name the other side reports from their wallet. The verified identity is the account, not the name.",
       "sendTx": "Send transaction",
+      "sendTxHint": "Send a transaction to this account without leaving the chat. A summary is posted to the conversation.",
       "txTitle": "Send transaction",
       "txFrom": "From account",
       "txSentLabel": "Transaction sent",
@@ -57,9 +58,12 @@
       "pipExit": "Back to the page",
       "pipActive": "The conversation is still open in a floating window.",
       "leave": "Leave chat",
+      "leaveHint": "Leave the chat and close the channel. Messages are lost when the page closes.",
       "empty": "The room is secure. Say hello!",
       "closedBanner": "The other side left the conversation. Messages stay on this page until you close it.",
-      "startAnother": "Start another chat"
+      "startAnother": "Start another chat",
+      "saveContact": "Save to the address book",
+      "savedContact": "Already in your address book"
     },
     "errors": {
       "wallet_rejected": "The wallet request was rejected.",

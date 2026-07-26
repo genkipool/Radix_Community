@@ -154,7 +154,15 @@
     "social_youtube": "YouTube",
     "popup_soc_yt_desc": "Vídeos, tutoriales y conferencias oficiales",
     "about_us": "Sobre Nosotros",
-    "popup_about_us_desc": "Descubre nuestra misión, visión y equipo"
+    "popup_about_us_desc": "Descubre nuestra misión, visión y equipo",
+    "wallet_save_contact": "Guardar en la agenda",
+    "wallet_saved_contact": "Ya está en tu agenda",
+    "agenda_tab_recent": "Recientes",
+    "agenda_recent_hint": "Cuentas con las que has interactuado en el último mes, de más reciente a más antigua. Se leen de la cadena: no se guarda nada hasta que pulses el botón de la agenda.",
+    "agenda_recent_loading": "Buscando en tus transacciones…",
+    "agenda_recent_empty": "Sin movimientos con otras cuentas en el último mes.",
+    "agenda_recent_failed": "No se pudieron leer tus transacciones. Revisa la conexión e inténtalo de nuevo.",
+    "agenda_search": "Buscar…"
   },
   "roadmap_status": {
     "done": "Completado",

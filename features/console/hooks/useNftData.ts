@@ -14,6 +14,8 @@ export interface NftData {
 interface NfDataField {
   field_name?: string;
   value?: unknown;
+  /** SBOR kind: String, U64, Decimal, Reference, Enum, Array… */
+  kind?: string;
 }
 
 interface NfDataItem {
@@ -48,6 +50,8 @@ export function useNftData(resourceAddress: string | null, ids: string[]) {
 export interface NftField {
   name: string;
   value: string;
+  /** SBOR kind, so a manifest can write the value the way its type needs. */
+  kind?: string;
 }
 
 /**
@@ -68,6 +72,7 @@ export function useNftFields(resourceAddress: string | null, id: string | null) 
         .filter((f) => !!f.field_name)
         .map((f) => ({
           name: f.field_name!,
+          kind: f.kind,
           value:
             f.value == null
               ? ''

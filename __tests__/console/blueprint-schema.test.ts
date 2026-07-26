@@ -134,4 +134,26 @@ describe('type hints', () => {
     expect(typeHintExample('String')).toBe('"text"');
     expect(typeHintExample('SomeCustomStruct')).toBe('Enum<0u8>()');
   });
+
+  /**
+   * A placeholder is only useful if it shows the SHAPE. `10i64` says nothing
+   * to someone who has never met SBOR, so the field pairs it with a plain
+   * language description; the example still has to be right.
+   */
+  it('gives a usable example for the composite kinds too', () => {
+    expect(typeHintExample('Array')).toBe('Array<String>("a", "b")');
+    expect(typeHintExample('Tuple')).toBe('Tuple("a", 1u8)');
+    expect(typeHintExample('Own')).toBe('Address("internal_...")');
+    expect(typeHintExample('Address')).toBe('Address("account_...")');
+    expect(typeHintExample('Bucket')).toBe('Bucket("bucket1")');
+  });
+
+  it('suffixes every integer example with its own type', () => {
+    for (const kind of ['I8', 'I16', 'I32', 'I64', 'I128'] as const) {
+      expect(typeHintExample(kind)).toBe(`10${kind.toLowerCase()}`);
+    }
+    for (const kind of ['U8', 'U16', 'U32', 'U64', 'U128'] as const) {
+      expect(typeHintExample(kind)).toBe(`10${kind.toLowerCase()}`);
+    }
+  });
 });

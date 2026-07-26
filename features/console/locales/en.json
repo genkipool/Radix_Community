@@ -1997,7 +1997,32 @@
       "receiver_mutMethod_hint": "Method that can modify the component state (&mut self).",
       "receiver_function": "Function",
       "receiver_function_hint": "Package-level function without access to this component instance.",
-      "argHint": "Type: {type} — write the value in manifest syntax",
+      "argHint": "Type {type}. {help}",
+      "argTypes": {
+        "Bool": "True or false. Write true or false, without quotes.",
+        "String": "Free text, in double quotes.",
+        "I8": "Signed integer, -128 to 127. The i8 suffix marks the type: 10i8 is the number 10.",
+        "I16": "Signed integer, up to ±32,767. The i16 suffix marks the type: 10i16 is the number 10.",
+        "I32": "Signed integer, up to ±2.1 billion. The i32 suffix marks the type: 10i32 is the number 10.",
+        "I64": "Signed integer, very large. The i64 suffix marks the type: 10i64 is the number 10.",
+        "I128": "Signed integer, enormous. The i128 suffix marks the type: 10i128 is the number 10.",
+        "U8": "Unsigned integer, 0 to 255. The u8 suffix marks the type: 10u8 is the number 10.",
+        "U16": "Unsigned integer, up to 65,535. The u16 suffix marks the type: 10u16 is the number 10.",
+        "U32": "Unsigned integer, up to 4.2 billion. The u32 suffix marks the type: 10u32 is the number 10.",
+        "U64": "Unsigned integer, very large. The u64 suffix marks the type: 10u64 is the number 10.",
+        "U128": "Unsigned integer, enormous. The u128 suffix marks the type: 10u128 is the number 10.",
+        "Decimal": "A number with decimals, the one tokens use. It is wrapped: Decimal(\"10.5\").",
+        "PreciseDecimal": "Like Decimal but with more precision: PreciseDecimal(\"10.5\").",
+        "NonFungibleLocalId": "An NFT's id within its resource, delimiters included: NonFungibleLocalId(\"#1#\").",
+        "Address": "The address of an account, resource or component: Address(\"account_…\").",
+        "Own": "The address of something internal, such as a vault: Address(\"internal_…\").",
+        "Bucket": "A bucket of tokens created earlier in the manifest. Write its name: Bucket(\"bucket1\").",
+        "Proof": "A proof created earlier in the manifest. Write its name: Proof(\"proof1\").",
+        "Enum": "One option from a fixed list. Enum<0u8>() is the first, Enum<1u8>() the second; any data goes inside: Enum<1u8>(\"x\").",
+        "Array": "A list of values of the same type: Array<String>(\"a\", \"b\").",
+        "Tuple": "Several values together, in order: Tuple(\"a\", 1u8).",
+        "other": "Write the value in Radix manifest syntax. When unsure, follow the grey example in the field."
+      },
       "rawArgs": "Arguments (manifest syntax)",
       "rawArgsHint": "The argument schema could not be resolved; write each argument in manifest syntax on its own line.",
       "execute": "Execute",
@@ -2154,7 +2179,8 @@
         "nftDataLoading": "Loading the NFT's data…",
         "unnamedResource": "Unnamed resource",
         "unnamedNft": "NFT",
-        "nftDataAllLocked": "This resource declared no mutable field when it was created, so its NFTs' data can never be changed, not by its owner and not with any badge. That is the case for the Radix Seal insignia: its image is fixed at mint. The values below are read-only."
+        "nftDataAllLocked": "This resource declared no mutable field when it was created, so its NFTs' data can never be changed, not by its owner and not with any badge. That is the case for the Radix Seal insignia: its image is fixed at mint. The values below are read-only.",
+        "nftCustomFieldsNote": "This resource carries its own fields on its NFTs. In Radix a mint has to supply all of them, so no field is optional: whatever you leave empty is minted empty, but it is still sent. They are listed above in the order its schema fixed. The grey text in each one is the value an existing NFT carries, or its data type with a sample when it carries none. Fields whose type does not fit in a text box (lists, enums) are disabled. If the collection has no NFT yet there is nothing to read the schema from, and only the three standard fields are sent."
       }
     },
     "faucet": {

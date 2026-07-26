@@ -203,7 +203,15 @@ function MethodCard({ t, blueprint, fn, options, onExecute, isSending, isActive 
                 })
               }
               placeholder={typeHintExample(input.typeHint)}
-              hint={labels.argHint.replace('{type}', input.typeHint)}
+              // The type name alone means nothing to most people: say what the
+              // value IS, in words, and let the placeholder show the shape.
+              hint={labels.argHint
+                .replace('{type}', input.typeHint)
+                .replace(
+                  '{help}',
+                  (labels.argTypes as Record<string, string>)[input.typeHint] ??
+                    labels.argTypes.other,
+                )}
               disabled={isSending}
             />
           ))}

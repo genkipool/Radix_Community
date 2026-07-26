@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquareLock, RotateCcw, XCircle } from 'lucide-react';
+import { MessageSquareLock, RotateCcw, ShieldCheck, XCircle } from 'lucide-react';
 import { ShareLinkCard } from '@/features/p2p/components/ShareLinkCard';
 import { ProgressRow } from '@/features/p2p/components/ProgressRow';
 import { useLeaveWarning } from '@/features/p2p/hooks/useLeaveWarning';
@@ -8,6 +8,21 @@ import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import type { ChatDictionary } from '../types/dictionary';
 import { useChatSession } from '../hooks/useChatSession';
 import { ChatRoom } from './ChatRoom';
+
+/** Abandons whatever step is in progress and returns to the start. */
+function CancelButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      className="text-xs font-semibold transition-opacity hover:opacity-80"
+      style={{ color: 'var(--color-text-muted)' }}
+    >
+      {label}
+    </button>
+  );
+}
 
 /**
  * One chat session, host (no roomId — creates and shares the invitation) or
@@ -44,6 +59,15 @@ export function ChatSessionView({
   if ((session.phase === 'secure' || session.phase === 'closed') && session.peerIdentity) {
     return (
       <div className="space-y-4">
+        {/* Outside the room card on purpose: it describes the session, not the
+            conversation, and inside it competed with the peer's own identity. */}
+        <p
+          className="flex items-center gap-2 text-xs font-semibold"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          <ShieldCheck className="size-3.5" style={{ color: 'var(--color-primary)' }} />
+          {t.room.securedWith}
+        </p>
         <ChatRoom
           t={t}
           peer={session.peerIdentity}
@@ -110,6 +134,16 @@ export function ChatSessionView({
       {session.phase === 'connecting' && <ProgressRow label={t.status.connecting} />}
       {session.phase === 'handshaking' && <ProgressRow label={t.status.handshaking} />}
 
+      {/* Every step that can keep you waiting gets a way out. Joining used to
+          offer none: a guest whose host never showed up was stuck on
+          "connecting" with nothing to press. */}
+      {(session.phase === 'signing' ||
+        session.phase === 'creating' ||
+        session.phase === 'connecting' ||
+        session.phase === 'handshaking') && (
+        <CancelButton label={t.status.cancel} onClick={onRestart} />
+      )}
+
       {session.phase === 'waiting' && session.shareUrl && (
         <div className="space-y-4">
           <ShareLinkCard
@@ -120,15 +154,7 @@ export function ChatSessionView({
             qrAlt={t.share.qrAlt}
           />
           <ProgressRow label={t.status.waiting} />
-          <button
-            type="button"
-            onClick={onRestart}
-            className="flex items-center gap-2 text-xs font-semibold transition-opacity hover:opacity-80"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            <XCircle className="size-3.5" />
-            {t.status.cancel}
-          </button>
+          <CancelButton label={t.status.cancel} onClick={onRestart} />
         </div>
       )}
 

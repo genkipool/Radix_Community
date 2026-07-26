@@ -33,7 +33,9 @@ import {
   mintFungibleManifest,
   formatNonFungibleLocalId,
   isValidNonFungibleLocalId,
+  isEditableNftFieldKind,
   mintNonFungibleForIdType,
+  nftFieldPlaceholder,
   nonFungibleIdKindLabel,
   updateNonFungibleDataManifest,
   suggestNonFungibleLocalId,
@@ -275,6 +277,19 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
   const { data: ownedNftData } = useNftData(isNonFungible ? resource : null, selectedNonFungible?.ids || []);
   // Only loaded once an NFT is picked, which only happens in editNftData.
   const { data: nftFieldsData } = useNftFields(isNonFungible ? resource : null, editNftId);
+  /**
+   * The resource's NF-data schema, learned from an NFT it already holds: the
+   * Gateway reports the fields in schema order. Minting has to supply EVERY
+   * field, so a resource with custom ones (a Radix Seal collection carries
+   * nine beyond the three standard) rejects a three-field mint outright.
+   */
+  const { data: schemaSample } = useNftFields(
+    isNonFungible ? resource : null,
+    selectedNonFungible?.ids[0] ?? null,
+  );
+  const customFields = (schemaSample ?? []).slice(3);
+  const customFieldNames = customFields.map((f) => f.name);
+  const customFieldKey = (name: string) => `nftcustom:${resource}:${name}`;
   const nftFields = nftFieldsData ?? [];
   /**
    * Fields the schema declared mutable, straight from the ledger. Unlike
@@ -496,6 +511,11 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
             name: nftName,
             description: field('nftDescription'),
             keyImageUrl: field('nftImageUrl') || selectedNonFungible?.iconUrl || '',
+            // Positional: the schema's own order, every field present.
+            customValues: customFields.map((f) => ({
+              value: field(customFieldKey(f.name)),
+              kind: f.kind,
+            })),
           }) + DEPOSIT_ALL_SUFFIX(account)
         );
       }
@@ -508,7 +528,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           .map((f) => {
             const edited = fields[nftFieldKey(f.name)];
             return edited !== undefined && edited !== f.value
-              ? updateNonFungibleDataManifest(resource, editNftId, f.name, edited)
+              ? updateNonFungibleDataManifest(
+                  resource,
+                  editNftId,
+                  f.name,
+                  edited,
+                  f.kind,
+                )
               : '';
           })
           .join('');
@@ -1042,14 +1068,19 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                     )}
                     <TextField
                       label={labels.fields.nftName}
-                      placeholder={labels.fields.nftNamePlaceholder}
+                      placeholder={
+                        schemaSample?.[0]?.value || labels.fields.nftNamePlaceholder
+                      }
                       value={fields.nftName ?? ''}
                       onChange={(value) => setField('nftName', value)}
                       disabled={isSending || inputsDisabled}
                     />
                     <TextField
                       label={labels.fields.nftDescription}
-                      placeholder={labels.fields.nftDescriptionPlaceholder}
+                      placeholder={
+                        schemaSample?.[1]?.value ||
+                        labels.fields.nftDescriptionPlaceholder
+                      }
                       value={fields.nftDescription ?? ''}
                       onChange={(value) => setField('nftDescription', value)}
                       disabled={isSending || inputsDisabled}
@@ -1061,6 +1092,36 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                       onChange={(value) => setField('nftImageUrl', value)}
                       disabled={isSending || inputsDisabled}
                     />
+                    {/* Whatever else this resource's schema declares. The mint
+                        must carry every field, so these are not optional. */}
+                    {customFields.map((sample) => (
+                      <TextField
+                        key={sample.name}
+                        label={sample.name}
+                        // What an existing NFT carries is the clearest hint;
+                        // an empty one falls back to its type and a sample.
+                        placeholder={
+                          sample.value || nftFieldPlaceholder(sample.kind)
+                        }
+                        value={fields[customFieldKey(sample.name)] ?? ''}
+                        onChange={(value) =>
+                          setField(customFieldKey(sample.name), value)
+                        }
+                        disabled={
+                          isSending ||
+                          inputsDisabled ||
+                          !isEditableNftFieldKind(sample.kind)
+                        }
+                      />
+                    ))}
+                    {customFieldNames.length > 0 && (
+                      <p
+                        className="sm:col-span-2 text-xs leading-relaxed"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        {labels.fields.nftCustomFieldsNote}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -1183,9 +1244,15 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                                   />
                                 )
                               }
+                              placeholder={nftFieldPlaceholder(nftField.kind)}
                               value={fields[key] ?? nftField.value}
                               onChange={(value) => setField(key, value)}
-                              disabled={!editable || isSending || inputsDisabled}
+                              disabled={
+                                !editable ||
+                                !isEditableNftFieldKind(nftField.kind) ||
+                                isSending ||
+                                inputsDisabled
+                              }
                             />
                           );
                         })}
@@ -1506,9 +1573,6 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
         </ToolSection>
       )}
 
-      <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-      <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
-
       <div className="flex w-full items-center gap-3">
         <SendToWalletButton
           onClick={() => sendTransaction(manifest)}
@@ -1524,6 +1588,9 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
           loading={preview.isSimulating}
         />
       </div>
+      <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
+      <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
+
     </div>
   );
 }

@@ -211,7 +211,11 @@ export function typeHintExample(typeHint: string): string {
     case 'NonFungibleLocalId': return 'NonFungibleLocalId("#1#")';
     case 'Bucket': return 'Bucket("bucket1")';
     case 'Proof': return 'Proof("proof1")';
-    case 'Address': return 'Address("...")';
+    case 'Address': return 'Address("account_...")';
+    case 'Array': return 'Array<String>("a", "b")';
+    case 'Tuple': return 'Tuple("a", 1u8)';
+    case 'Own': return 'Address("internal_...")';
+    case 'Enum': return 'Enum<0u8>()';
     default: return 'Enum<0u8>()';
   }
 }

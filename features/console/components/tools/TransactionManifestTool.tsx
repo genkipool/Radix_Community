@@ -152,9 +152,6 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
           )}
         </div>
 
-        <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-        <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
-
         {subintent.error && (
           <p className="text-xs font-medium text-red-500">
             {(common.errors as Record<string, string>)[subintent.error] ?? subintent.error}
@@ -201,6 +198,9 @@ export default function TransactionManifestTool({ t }: ConsoleToolProps) {
             />
           )}
         </div>
+        <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
+        <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
+
       </div>
 
       {showFlow && (

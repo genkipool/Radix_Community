@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { LogOut, PictureInPicture2, Send, ShieldCheck } from 'lucide-react';
 import { shortAddress } from '@/utils/format';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { SaveToAddressBookButton } from '@/features/wallet/components/SaveToAddressBookButton';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useAddressBook } from '@/features/wallet/hooks/useAddressBook';
 import type { SentTransactionSummary } from '@/features/wallet/components/TransactionBuilder';
@@ -172,9 +173,6 @@ export function ChatRoom({
             <ShieldCheck className="size-5 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold" style={{ color: 'var(--color-text-muted)' }}>
-              {t.room.securedWith}
-            </p>
             {peerName && (
               <p
                 className="truncate text-sm font-bold"
@@ -202,6 +200,13 @@ export function ChatRoom({
                 size="xs"
                 className="shrink-0"
               />
+              {/* The person you are talking to is the one worth keeping. */}
+              <SaveToAddressBookButton
+                address={peer.account}
+                name={peerName ?? undefined}
+                saveLabel={t.room.saveContact}
+                savedLabel={t.room.savedContact}
+              />
             </div>
           </div>
         </div>
@@ -214,6 +219,8 @@ export function ChatRoom({
               }
               setTxOpen(true);
             }}
+            title={t.room.sendTxHint}
+            aria-label={t.room.sendTx}
             className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
             style={{ color: 'var(--color-primary)' }}
           >
@@ -228,6 +235,7 @@ export function ChatRoom({
             className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
             style={{ color: 'var(--color-text-muted)' }}
             title={pip.pipWindow ? t.room.pipExit : t.room.pip}
+            aria-label={pip.pipWindow ? t.room.pipExit : t.room.pip}
           >
             <PictureInPicture2 className="size-3.5" />
             <span className="hidden lg:inline">
@@ -238,6 +246,8 @@ export function ChatRoom({
         <button
           type="button"
           onClick={onLeave}
+          title={t.room.leaveHint}
+          aria-label={t.room.leave}
           className="flex shrink-0 items-center gap-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
           style={{ color: 'var(--color-text-muted)' }}
         >

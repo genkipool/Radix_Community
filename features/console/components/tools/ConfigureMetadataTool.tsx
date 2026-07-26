@@ -370,9 +370,6 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
         />
       </ToolSection>
 
-      <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
-      <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
-
       <div className="flex items-center gap-4">
         <SendToWalletButton
           onClick={handleSend}
@@ -388,6 +385,9 @@ function MetadataForm({ t, entity }: { t: ConsoleDictionary; entity: MetadataEnt
           loading={preview.isSimulating}
         />
       </div>
+      <TxResultBanner t={common} result={result} error={error} onReset={reset}  preview={preview.preview} />
+      <SimulateResultCard t={t.simulate} preview={preview.preview} error={preview.error} onClose={preview.reset} />
+
     </div>
   );
 }
