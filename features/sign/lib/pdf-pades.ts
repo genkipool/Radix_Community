@@ -18,6 +18,8 @@
  * only enters the bundle when a user actually signs with a certificate.
  */
 
+import { pdfSafeDictString } from './pdf-text';
+
 export interface PadesSignInput {
   /** The final Radix PDF bytes (attachments + visible page already inside). */
   pdfBytes: Uint8Array;
@@ -153,12 +155,16 @@ export async function signPdfWithP12(input: PadesSignInput): Promise<Uint8Array>
   // A signature must sit inside an AcroForm signature field with a ByteRange
   // placeholder; pdf-lib writes it, then @signpdf fills the placeholder.
   const pdfDoc = await PDFDocument.load(input.pdfBytes);
+  // These four land in the signature dictionary as PDF literal strings, which
+  // pdf-lib writes between parens WITHOUT escaping their contents (it says so
+  // in PDFString). `name` is a self-declared persona name, so an unbalanced
+  // `)` in it would close the string early and corrupt the dictionary.
   pdflibAddPlaceholder({
     pdfDoc,
-    reason: input.reason ?? '',
-    contactInfo: input.contactInfo ?? '',
-    name: input.name ?? '',
-    location: input.location ?? '',
+    reason: pdfSafeDictString(input.reason ?? ''),
+    contactInfo: pdfSafeDictString(input.contactInfo ?? ''),
+    name: pdfSafeDictString(input.name ?? ''),
+    location: pdfSafeDictString(input.location ?? ''),
     signingTime: input.signingTime,
   });
   // Signing needs a plain xref table (no object streams) so the ByteRange can

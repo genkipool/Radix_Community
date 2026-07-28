@@ -66,12 +66,20 @@ interface WalletSignature {
 /**
  * Requests a single account proof over `challenge`, plus persona name/email per
  * the document policy. Throws Error(<code>) on failure (mapped to a message).
+ *
+ * `personaLabel` comes from the CONNECTED session, not from this request. The
+ * signing request is a one-time one, which RDT sends as an `unauthorizedRequest`
+ * — and RDT only fills `walletData.persona` for authorized ones, so the label
+ * is never in the response here however the policy is set. Reading it from the
+ * session the user is already logged in with is what lets the certificate name
+ * a person under "signature only", where no persona data is requested at all.
  */
 async function requestWalletSignature(
   rdt: Rdt,
   challenge: string,
   disclosure: DisclosurePolicy,
   includeEmail: boolean,
+  personaLabel?: string | null,
 ): Promise<WalletSignature> {
   // Bind the wallet signature to THIS document by feeding our challenge.
   rdt.walletApi.provideChallengeGenerator(async () => challenge);
@@ -112,7 +120,11 @@ async function requestWalletSignature(
       signature: proofEntry.proof.signature,
       curve: proofEntry.proof.curve,
     },
-    disclosedName: extractDisclosedName(walletData.personaData, disclosure),
+    disclosedName: extractDisclosedName(
+      walletData.personaData,
+      disclosure,
+      walletData.persona?.label ?? personaLabel,
+    ),
     disclosedEmail: includeEmail
       ? extractDisclosedEmail(walletData.personaData)
       : null,
@@ -124,7 +136,7 @@ async function requestWalletSignature(
  * optional on-ledger anchoring.
  */
 export function useDocumentSign() {
-  const { activeNetworkId } = useRadixWallet();
+  const { activeNetworkId, persona } = useRadixWallet();
   const { sendTransaction } = useConsoleTransaction();
   const [phase, setPhase] = useState<SignPhase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +268,7 @@ export function useDocumentSign() {
         challenge,
         input.disclosure,
         input.includeEmail,
+        persona?.label,
       );
 
       const entry: SignatureEntry = {
@@ -330,6 +343,7 @@ export function useDocumentSign() {
         challenge,
         payload.disclosure,
         payload.email,
+        persona?.label,
       );
 
       if (payload.signers.length > 0 && !payload.signers.includes(sig.account)) {

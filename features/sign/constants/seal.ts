@@ -61,8 +61,10 @@ export const RADIX_SEAL_SYMBOL = 'SEAL';
 export const DEFAULT_COLLECTION_NAME = 'Collection Radix Seal';
 export const DEFAULT_COLLECTION_SYMBOL = 'CSEAL';
 
-/** App-hosted path to the brand image (served from /public), used by the
- *  client-side PDF watermark, which fetches and rasterises it same-origin. */
+/** App-hosted path to the brand image (served from /public), used by the PDF
+ *  signature certificate, which fetches and rasterises it same-origin for the
+ *  header. This is the plated asset variant — the same bytes wallets render —
+ *  so the certificate's seal and the NFT's seal are one and the same picture. */
 export const SEAL_IMAGE_PATH = '/SVGs/radix-seal.svg';
 
 /**

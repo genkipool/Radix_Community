@@ -3,18 +3,37 @@
  *
  * The seal is used in two places that used to hold divergent copies:
  *  - the on-ledger / watermark asset `public/SVGs/radix-seal.svg` (a real file
- *    fetched by wallets, so it needs a fixed colour and the letterpress emboss);
+ *    fetched by wallets and rasterised by third parties, so it needs a fixed
+ *    ink, a real intrinsic size and its own opaque backing disc);
  *  - the theme-aware inline mark on the Radix Seal website (`RadixSealMark`),
- *    which draws with `currentColor` and no emboss so it adapts to light/dark.
+ *    which draws with `currentColor` on the page's own surface, so it adapts
+ *    to light/dark and needs no backing.
+ *
+ * The two used to diverge in a third way too: the file carried a letterpress
+ * emboss (`feDropShadow`) that the website mark never had. It is gone. A soft
+ * white shadow only works on white, eroded the thin strokes at thumbnail size,
+ * and `feDropShadow` is not something every SVG rasteriser in the chain
+ * supports. What is left is flat geometry that every renderer agrees on.
  *
  * Both now derive from THIS function — the geometry lives in exactly one place.
- * The checked-in `.svg` file is generated from `radixSealSvg({ ink: '#132245',
- * emboss: true })` and a test guards against drift (see the seal-svg test).
- * Regenerate the file with: `npm run gen:seal-svg`.
+ * The checked-in `.svg` file is generated from `radixSealSvg({ ink: SEAL_INK,
+ * plate: SEAL_PLATE, lettersAsPaths: true, fluid: false })` and a test guards
+ * against drift (see the seal-svg test).
+ * Regenerate the file with: `pnpm gen:seal-svg`.
  */
 
 /** Brand ink used by the standalone file. */
 export const SEAL_INK = '#132245';
+
+/**
+ * Opaque backing disc of the standalone asset. The file is shown over
+ * backgrounds nobody here controls — a wallet NFT card (light OR dark theme)
+ * and the coloured header band of the PDF signature certificate — where a
+ * transparent navy-on-nothing mark was all but invisible. Painting the seal on
+ * its own paper disc makes it read identically everywhere, which is the point:
+ * it is a seal, not a glyph.
+ */
+export const SEAL_PLATE = '#ffffff';
 
 const FONT_STACK =
   "'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -45,11 +64,11 @@ export interface SealSvgOptions {
   /** Fill/stroke colour: the brand ink for the file, `currentColor` inline. */
   ink?: string;
   /**
-   * Letterpress emboss (drop shadows that assume a LIGHT background). On for
-   * the standalone file/watermark; off for the theme-aware inline mark, where
-   * a light shadow would clash with a dark theme.
+   * Opaque disc painted behind the mark (see `SEAL_PLATE`). Set for the
+   * standalone asset, whose background is out of our hands; left off for the
+   * inline mark, which sits on the site's own theme-aware surface.
    */
-  emboss?: boolean;
+  plate?: string | null;
   /**
    * Emit the RADIX / SEAL lettering as pre-traced Montserrat outlines instead
    * of `<text>`. On for the standalone/on-ledger file so wallets without the
@@ -57,39 +76,50 @@ export interface SealSvgOptions {
    * mark, where the browser has the real font and text stays crisp/selectable.
    */
   lettersAsPaths?: boolean;
+  /**
+   * Size the SVG to its container (`width="100%"`), which is what the inline
+   * mark needs. The standalone file sets `false` so it declares a real
+   * intrinsic size instead: rasterisers outside the browser (the Radix image
+   * service that renders every NFT thumbnail, `<img>` → canvas in the PDF
+   * pipeline, AndroidSVG in the wallet's fallback decoder) resolve `100%`
+   * against nothing and fall back to their own default box, which is not even
+   * square.
+   */
+  fluid?: boolean;
 }
+
+/** The artwork's coordinate system; also the file's intrinsic size in px. */
+const VIEWBOX = 500;
 
 /** Full, self-contained SVG markup for the Radix Seal. */
 export function radixSealSvg({
   ink = SEAL_INK,
-  emboss = true,
+  plate = null,
   lettersAsPaths = false,
+  fluid = true,
 }: SealSvgOptions = {}): string {
-  const defs = emboss
-    ? `
-  <defs>
-    <filter id="stamped" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="-0.5" dy="-1" stdDeviation="0.5" flood-color="#000000" flood-opacity="0.3" result="shadow1"/>
-      <feDropShadow dx="1.5" dy="1.5" stdDeviation="1" flood-color="#ffffff" flood-opacity="0.8" in="shadow1" result="shadow2"/>
-    </filter>
-  </defs>`
+  const size = fluid ? '100%' : String(VIEWBOX);
+  const backing = plate
+    ? `\n  <circle cx="250" cy="250" r="238" fill="${plate}"/>`
     : '';
-  const filterAttr = emboss ? ' filter="url(#stamped)"' : '';
   const lettering = lettersAsPaths
     ? LETTER_PATHS.map((d) => `      <path d="${d}" fill="${ink}"/>`).join('\n')
     : `      <text y="355" font-family="${FONT_STACK}" font-size="54" font-weight="600" letter-spacing="2" fill="${ink}" text-anchor="middle"><tspan x="126">R</tspan><tspan x="188">A</tspan><tspan x="250">D</tspan><tspan x="312">I</tspan><tspan x="374">X</tspan></text>
       <text y="405" font-family="${FONT_STACK}" font-size="26" font-weight="600" letter-spacing="4" fill="${ink}" text-anchor="middle"><tspan x="175">S</tspan><tspan x="225">E</tspan><tspan x="275">A</tspan><tspan x="325">L</tspan></text>`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">${defs}
-  <g${filterAttr}>
+  // Hairlines (inner ring, divider rules) are deliberately heavier than a
+  // "true" hairline: the seal is read at 112 px in a wallet list and at 44 pt
+  // in the PDF header, and anything thinner simply disappears at that scale.
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEWBOX} ${VIEWBOX}" width="${size}" height="${size}">${backing}
+  <g>
     <circle cx="250" cy="250" r="215" fill="none" stroke="${ink}" stroke-width="12"/>
-    <circle cx="250" cy="250" r="198" fill="none" stroke="${ink}" stroke-width="3"/>
+    <circle cx="250" cy="250" r="198" fill="none" stroke="${ink}" stroke-width="4"/>
     <g transform="translate(0,5)">
       <g transform="translate(160.4, 125) scale(0.8)">
         <path d="M0,91.1 L27.35,91.1 L82.85,168.1 L156.45,0 L223.9,0" fill="none" stroke="${ink}" stroke-width="18.75" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
-      <line x1="150" y1="290" x2="232" y2="290" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="268" y1="290" x2="350" y2="290" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="150" y1="290" x2="232" y2="290" stroke="${ink}" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="268" y1="290" x2="350" y2="290" stroke="${ink}" stroke-width="3.5" stroke-linecap="round"/>
       <polygon points="250,284 256,290 250,296 244,290" fill="${ink}"/>
 ${lettering}
     </g>

@@ -26,6 +26,7 @@ import { SEAL_IMAGE_PATH } from '../constants/seal';
 import { findCollectionIssuer } from '../services/sealDiscovery';
 import { parseRequestKey } from './share';
 import { svgUrlToPngBytes, fetchImageBytes } from './pdf-watermark';
+import { pdfSafeText } from './pdf-text';
 
 /** An RGB triple in the 0..1 range that pdf-lib's colours use. */
 type Rgb01 = [number, number, number];
@@ -154,6 +155,10 @@ const PAGE_H = 841.89;
 const MARGIN = 54;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
+/** Side of the header seal in points, and the PNG it is rasterised from. */
+const SEAL_LOGO_SIZE = 44;
+const SEAL_LOGO_RASTER = 512;
+
 const INK: Rgb01 = [0.11, 0.13, 0.2];
 const MUTED: Rgb01 = [0.42, 0.45, 0.55];
 /** Default accent (indigo) when the theme's brand colour can't be read. */
@@ -249,6 +254,17 @@ function shortAccount(account: string): string {
     : account;
 }
 
+/**
+ * How a signer is named on the certificate: the name their wallet disclosed
+ * (full name, else the persona's nickname or label — see
+ * `extractDisclosedName`), and only when there is none, the account address.
+ * An address is a correct answer but a poor one, so it is the last resort, not
+ * the first. The full address is printed underneath either way.
+ */
+function signerLabel(signature: { disclosedName: string | null; signerAccount: string }): string {
+  return signature.disclosedName?.trim() || shortAccount(signature.signerAccount);
+}
+
 function fmtDate(iso: string, locale: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(locale);
@@ -266,7 +282,7 @@ async function embedRemoteImage(
   try {
     const lower = url.toLowerCase();
     const isSvg = lower.endsWith('.svg') || lower.startsWith('data:image/svg');
-    const bytes = isSvg ? await svgUrlToPngBytes(url, 160) : await fetchImageBytes(url);
+    const bytes = isSvg ? await svgUrlToPngBytes(url, 256) : await fetchImageBytes(url);
     if (!bytes) return null;
     const isJpg =
       /\.jpe?g($|\?)/.test(lower) || lower.startsWith('data:image/jpeg');
@@ -348,7 +364,11 @@ class Cursor {
     const x = opts.x ?? MARGIN;
     const maxWidth = opts.maxWidth ?? CONTENT_W - (x - MARGIN);
     const lineHeight = size * 1.35;
-    const lines = wrapLines(value, font, size, maxWidth);
+    // Every string the page draws funnels through here, ours and other
+    // people's alike, so this is the one place the sanitiser has to be for it
+    // not to be forgotten later. Our own labels are plain ASCII and hold no
+    // line breaks, so passing them through costs nothing. See pdf-text.ts.
+    const lines = wrapLines(pdfSafeText(value, 600), font, size, maxWidth);
     for (const line of lines) {
       this.ensure(lineHeight);
       this.page.drawText(line, {
@@ -431,14 +451,16 @@ export async function appendSignaturePage(
     color: rgb(accent[0], accent[1], accent[2]),
   });
 
-  // Seal logo (optional; skipped silently if it can't be rasterised).
+  // Seal logo (optional; skipped silently if it can't be rasterised). Drawn
+  // small but rasterised large: the old 200 px across a 40 pt mark is barely
+  // above screen resolution, and the seal's rings turned to mush in print.
   let logoRight = MARGIN;
   if (opts.sealImageUrl) {
     try {
-      const png = await svgUrlToPngBytes(opts.sealImageUrl, 200);
+      const png = await svgUrlToPngBytes(opts.sealImageUrl, SEAL_LOGO_RASTER);
       if (png) {
         const img = await pdfDoc.embedPng(png as Uint8Array<ArrayBuffer>);
-        const dim = 40;
+        const dim = SEAL_LOGO_SIZE;
         cur.page.drawImage(img, {
           x: MARGIN,
           y: bandY + (bandH - dim) / 2,
@@ -491,7 +513,10 @@ export async function appendSignaturePage(
         width: dim.width,
         height: dim.height,
       });
-      cur.page.drawText(opts.issuer.orgName, {
+      // Drawn straight onto the page rather than through the cursor (it sits
+      // beside the logo), so it needs the sanitiser applied by hand: the
+      // organisation name is ledger metadata, i.e. someone else's text.
+      cur.page.drawText(pdfSafeText(opts.issuer.orgName, 80), {
         x: MARGIN + box + 10,
         y: top - box / 2 - 4,
         size: 12,
@@ -539,7 +564,7 @@ export async function appendSignaturePage(
   }
   envelope.signatures.forEach((s, i) => {
     const name = s.disclosedName?.trim();
-    cur.text(`${L.signedBy}: ${name || shortAccount(s.signerAccount)}`, {
+    cur.text(`${L.signedBy}: ${signerLabel(s)}`, {
       size: 11.5,
       bold: true,
     });
@@ -599,10 +624,7 @@ export async function appendSignaturePage(
       const c = s.certificate!;
       // With several certificates, say whose each one is.
       if (certified.length > 1) {
-        cur.text(s.disclosedName?.trim() || shortAccount(s.signerAccount), {
-          size: 10.5,
-          bold: true,
-        });
+        cur.text(signerLabel(s), { size: 10.5, bold: true });
         cur.gap(4);
       }
       cur.field(L.certSubject, c.subjectCN || '—');
