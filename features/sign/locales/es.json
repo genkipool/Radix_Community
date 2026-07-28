@@ -37,7 +37,7 @@
       "identityFull": "Nombre completo",
       "identityFullDesc": "Nombre y apellidos",
       "identityNone": "Solo firma",
-      "identityNoneDesc": "Sin nombre, solo la cuenta",
+      "identityNoneDesc": "No comparte datos; muestra tu Persona",
       "identityEmail": "Correo",
       "identityEmailDesc": "Incluir el correo de tu wallet",
       "outputTitle": "Archivo firmado",

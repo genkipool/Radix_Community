@@ -14,31 +14,56 @@ import type {
  * chosen policy. Defensive: the wallet may return the name as a plain string or
  * as a `{ givenNames, familyName, nickname, variant }` structure, and may omit
  * it entirely (user has no name set) — in which case we return null.
+ *
+ * When the policy's own field comes back empty the name falls back, in order,
+ * to the persona's nickname and then to `personaLabel` (the name the signer
+ * gave that persona in their wallet). A signature certificate that says
+ * "Firmado por: account_tdx_2_12x…" when the wallet plainly knows a name reads
+ * like a bug; every step of the chain is still the signer's own self-declared
+ * text, never a verified identity, which is what the certificate page says.
+ *
+ * `policy === 'none'` ("signature only") suppresses the persona DATA — nothing
+ * is requested from the wallet, so no name and no email travel with the
+ * signature — but it still keeps the persona label, which the app already holds
+ * from the session the signer logged in with. Nothing extra is asked of the
+ * wallet to get it. When there is no label either, the caller prints the
+ * account address.
+ *
+ * None of this is load-bearing: `disclosedName` sits outside the signed payload
+ * (the ROLA challenge is derived from `payload`, which does not include it), so
+ * it is presentation only, exactly as the "self-declared" note on the
+ * certificate page says.
  */
 export function extractDisclosedName(
   personaData: unknown,
   policy: DisclosurePolicy,
+  /** The connected session's persona label (see the note above). */
+  personaLabel?: string | null,
 ): string | null {
-  if (policy === 'none') return null;
+  const fallback = personaLabel?.trim() || null;
+  if (policy === 'none') return fallback;
 
   const name = findFullNameEntry(personaData);
-  if (!name) return null;
+  if (!name) return fallback;
 
   if (typeof name === 'string') {
     // A single string: we can only honour "full_name"; surname is unknown.
-    return policy === 'surname' ? null : name.trim() || null;
+    const whole = name.trim();
+    if (policy === 'surname') return fallback;
+    return whole || fallback;
   }
 
   const given = (name.givenNames ?? '').trim();
   const family = (name.familyName ?? '').trim();
+  const nickname = (name.nickname ?? '').trim();
 
   if (policy === 'surname') {
-    return family || null;
+    return family || nickname || fallback;
   }
   // full_name: order by variant (eastern = family first) when known.
   const eastern = name.variant?.toLowerCase() === 'eastern';
-  const full = eastern ? `${family} ${given}` : `${given} ${family}`;
-  return full.trim() || null;
+  const full = (eastern ? `${family} ${given}` : `${given} ${family}`).trim();
+  return full || nickname || fallback;
 }
 
 /**

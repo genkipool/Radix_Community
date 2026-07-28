@@ -37,7 +37,7 @@
       "identityFull": "Full name",
       "identityFullDesc": "Given + family name",
       "identityNone": "Signature only",
-      "identityNoneDesc": "No name, just the account",
+      "identityNoneDesc": "Shares no data; shows your Persona",
       "identityEmail": "Email",
       "identityEmailDesc": "Include your wallet email",
       "outputTitle": "Signed output",

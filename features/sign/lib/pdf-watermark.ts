@@ -4,6 +4,9 @@
  * the original document is embedded separately for verification (see
  * pdf-embed.ts). Loaded lazily like the rest of the PDF tooling.
  */
+import { radixSealSvg, SEAL_INK } from '@/features/seal/lib/radix-seal-svg';
+import { pdfSafeText } from './pdf-text';
+
 export type WatermarkKind = 'none' | 'own' | 'seal';
 
 export interface WatermarkOptions {
@@ -15,6 +18,18 @@ export interface WatermarkOptions {
 }
 
 const SEAL_TEXT = 'RADIX SEAL';
+
+/**
+ * The seal as a watermark: ink only, no backing plate. The standalone asset
+ * carries an opaque white disc so it reads on a wallet card or a coloured
+ * band, but a watermark is drawn at 8% over the document's own text — a white
+ * disc there would wash out a page-sized circle of it. Built inline from the
+ * same source as the file, so it needs no fetch and cannot drift.
+ */
+function sealWatermarkDataUrl(): string {
+  const svg = radixSealSvg({ ink: SEAL_INK, lettersAsPaths: true, fluid: false });
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 /**
  * Decodes a base64 `data:` URL to bytes WITHOUT fetching it. A picked image
@@ -60,6 +75,11 @@ export async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
  * Rasterizes an SVG (same-origin URL or data URI) to PNG bytes via a canvas —
  * pdf-lib can only embed PNG/JPG. Browser-only; null on any failure. Exported
  * so the visible signature page can embed the seal logo too.
+ *
+ * `targetSize` is the longest edge of the PNG, so it is really "how much detail
+ * do I want": a logo drawn at 40 pt still needs several hundred pixels to stay
+ * sharp when the page is printed or zoomed, since the PDF keeps the bitmap as
+ * given and nothing re-renders the vector later.
  */
 export async function svgUrlToPngBytes(
   url: string,
@@ -74,14 +94,19 @@ export async function svgUrlToPngBytes(
       img.onerror = () => reject(new Error('svg_load_failed'));
       img.src = url;
     });
-    const w = img.naturalWidth || targetSize;
-    const h = img.naturalHeight || targetSize;
+    // An SVG sized in percentages has no intrinsic size, and browsers then
+    // report their own default box (300×150) — which would rasterise the
+    // artwork into a squashed rectangle. Only trust a pair we actually got.
+    const hasIntrinsic = img.naturalWidth > 0 && img.naturalHeight > 0;
+    const w = hasIntrinsic ? img.naturalWidth : targetSize;
+    const h = hasIntrinsic ? img.naturalHeight : targetSize;
     const scale = targetSize / Math.max(w, h);
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(w * scale);
     canvas.height = Math.round(h * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, 'image/png'),
@@ -111,7 +136,7 @@ export async function applyWatermark(
     // Prefer an image watermark when a URL is given (seal default or custom).
     const imageUrl =
       options.imageUrl ||
-      (options.kind === 'seal' ? '/SVGs/radix-seal.svg' : undefined);
+      (options.kind === 'seal' ? sealWatermarkDataUrl() : undefined);
     let embeddedImage: Awaited<ReturnType<typeof pdfDoc.embedPng>> | null = null;
     if (imageUrl) {
       const isSvg =
@@ -131,8 +156,12 @@ export async function applyWatermark(
       }
     }
 
+    // A custom watermark is the user's own free text drawn with a standard
+    // font, which raises on anything outside WinAnsi — and the whole function
+    // is best-effort, so an emoji in it would silently produce no watermark
+    // at all rather than an error. See pdf-text.ts.
     const text =
-      options.kind === 'seal' ? SEAL_TEXT : (options.text || '').trim();
+      options.kind === 'seal' ? SEAL_TEXT : pdfSafeText(options.text || '', 80);
     const font = embeddedImage
       ? null
       : await pdfDoc.embedFont(StandardFonts.HelveticaBold);
