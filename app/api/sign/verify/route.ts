@@ -377,11 +377,24 @@ export async function POST(req: NextRequest) {
         // and for the anchored single-sign flow whose signatures DO carry a ROLA
         // proof. Only asked for when the certificate claims an on-ledger side,
         // so a purely off-ledger one costs no Gateway round trip.
-        if (!anchoredAt && valid && (envelope.onChain || effectiveRequest)) {
+        let issuedAtAnchored: boolean | null = null;
+        if (valid && (onLedger || envelope.onChain || effectiveRequest)) {
           const record = onLedger ?? (await lookupSignature(s.signerAccount));
           if (record) {
-            anchoredAt = await ledgerTimestamp(network, record.stateVersion);
-            if (anchoredAt) anchorSource = 'ledger';
+            const committedAt = await ledgerTimestamp(network, record.stateVersion);
+            if (committedAt) {
+              // The NFT states its own date. It was written a moment before the
+              // transaction committed, so it should sit right beside the
+              // consensus time; a record whose `issued_at` says otherwise is
+              // contradicting the ledger it lives on.
+              issuedAtAnchored = record.issuedAt
+                ? signedAtAgrees(record.issuedAt, committedAt)
+                : null;
+              if (!anchoredAt) {
+                anchoredAt = committedAt;
+                anchorSource = 'ledger';
+              }
+            }
           }
         }
 
@@ -395,6 +408,7 @@ export async function POST(req: NextRequest) {
           anchoredAt,
           anchorSource,
           signedAtAnchored: signedAtAgrees(s.signedAt, anchoredAt),
+          issuedAtAnchored,
           timestampAuthority,
           timestampUntrustedAnchor,
         };

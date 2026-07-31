@@ -16,6 +16,7 @@ import { useTransactionPreview } from '@/features/console/hooks/useTransactionPr
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useSealRequest, useSealSetup } from '@/features/sign/hooks/useSealRequest';
 import { buildCipherInviteManifest } from '@/features/sign/lib/sign-request';
+import { fetchLedgerNow } from '@/features/sign/lib/ledger-time';
 import { sealImageUrl } from '@/features/sign/constants/seal';
 import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import type { CipherDictionary } from '../types/dictionary';
@@ -125,11 +126,12 @@ export function EncryptPanel({ t, consoleT, mode = 'rola', file, onFileChange, a
   // placeholder header hash (locked string data — a placeholder is enough to
   // check the transaction's roles/deposits would succeed). Receivers may be
   // empty (the encryptor's cipher-signature is still minted).
-  const onSimulateMint = () => {
+  const onSimulateMint = async () => {
     if (!actingAccount || !simSetup.seal || !simSetup.collection || activeNetworkId == null)
       return;
     preview.simulate(
       buildCipherInviteManifest({
+        issuedAt: await fetchLedgerNow(activeNetworkId),
         account: actingAccount,
         sealGlobalId: simSetup.seal.globalId,
         collection: simSetup.collection.resourceAddress,

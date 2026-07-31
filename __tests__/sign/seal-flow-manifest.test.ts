@@ -28,6 +28,10 @@ const SEAL_GID = `${SEAL_RESOURCE}:{1111111111111111-2222222222222222-3333333333
 const DOC_HASH =
   '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08';
 
+// `issued_at` is supplied by the caller (from the ledger's own clock), never
+// invented by the builder, so these use a fixed value.
+const ISSUED_AT = '2026-07-31T20:27:05.000Z';
+
 async function expectValidManifest(manifestStr: string) {
   const result = await RadixEngineToolkit.Instructions.staticallyValidate(
     { kind: 'String', value: manifestStr },
@@ -124,6 +128,7 @@ describe('signing collection + request manifests', () => {
         requiredSigners: [INITIATOR, SIGNER_2],
         alsoSign: true,
         imageUrl: 'https://acme.example/logo.png',
+        issuedAt: ISSUED_AT,
       }),
     );
   });
@@ -140,6 +145,7 @@ describe('signing collection + request manifests', () => {
         requiredSigners: [SIGNER_2],
         alsoSign: false,
         imageUrl: '',
+        issuedAt: ISSUED_AT,
       }),
     );
   });
@@ -155,6 +161,7 @@ describe('signing collection + request manifests', () => {
         networkId: 1,
         request: requestKey(COLLECTION, 7),
         imageUrl: '',
+        issuedAt: ISSUED_AT,
       }),
     );
   });

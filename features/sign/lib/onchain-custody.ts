@@ -346,6 +346,14 @@ export async function resolveSealRequest(
 export interface SignerSignature {
   /** Ledger state version of the mint, or 0 when the Gateway omits it. */
   stateVersion: number;
+  /**
+   * The `issued_at` written into the NFT. A mint cannot carry the consensus
+   * time of its own transaction — that time does not exist yet — so this is
+   * always written before the fact and is a CLAIM, never evidence. It is
+   * returned so verification can hold it against the commit time and report a
+   * record that contradicts itself.
+   */
+  issuedAt: string;
 }
 
 /**
@@ -404,7 +412,10 @@ export async function findSignerSignature(
     // Chain of custody: the collection's owner seal must live in `signer`
     // (and be the official brand when known).
     if (await collectionSealBelongsTo(network, collection, signer, officialSeal)) {
-      return { stateVersion: match.stateVersion };
+      return {
+        stateVersion: match.stateVersion,
+        issuedAt: match.fields.issued_at ?? '',
+      };
     }
   }
   return null;

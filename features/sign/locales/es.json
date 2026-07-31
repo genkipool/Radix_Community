@@ -419,7 +419,8 @@
       "nameDeclared": "El nombre mostrado nunca va en el ledger y ninguna firma lo cubre: es una declaración.",
       "requestFromKey": "Firmantes requeridos leídos de la clave que has introducido",
       "requestFromCert": "Firmantes requeridos leídos de la solicitud que indica el certificado",
-      "requestMismatch": "El certificado apunta a otra solicitud distinta de la clave que has introducido. Manda la tuya."
+      "requestMismatch": "El certificado apunta a otra solicitud distinta de la clave que has introducido. Manda la tuya.",
+      "clockIssuedAtMismatch": "El NFT de la firma declara una fecha distinta de la de su propia transacción"
     },
     "collection": {
       "intro": {

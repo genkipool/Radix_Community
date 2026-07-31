@@ -206,6 +206,14 @@ export interface VerifiedSignature {
    * independent clock contradicts — a backdated date, typically.
    */
   signedAtAnchored: boolean | null;
+  /**
+   * Whether the `issued_at` written inside the on-ledger signature NFT agrees
+   * with the commit time of the transaction that minted it. A mint cannot carry
+   * its own consensus time, so that field is always a claim; this says whether
+   * the claim survives contact with the ledger. Null when there is no on-ledger
+   * NFT, or when it records no date at all.
+   */
+  issuedAtAnchored: boolean | null;
   /** Authority that issued the timestamp token, for display. */
   timestampAuthority?: string | null;
   /** The token is valid but its anchor is not one this deployment knows. */

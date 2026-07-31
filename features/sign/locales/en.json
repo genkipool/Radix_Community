@@ -419,7 +419,8 @@
       "nameDeclared": "A displayed name never goes on the ledger and no signature covers it: it is a declaration.",
       "requestFromKey": "Required signers read from the key you entered",
       "requestFromCert": "Required signers read from the request the certificate points at",
-      "requestMismatch": "The certificate points at a different request than the key you entered. Yours wins."
+      "requestMismatch": "The certificate points at a different request than the key you entered. Yours wins.",
+      "clockIssuedAtMismatch": "The signature NFT states a date other than that of its own transaction"
     },
     "collection": {
       "intro": {

@@ -553,6 +553,13 @@ function SignatureClock({
           {t.verify.clockUntrusted}
         </p>
       )}
+      {/* The NFT's own `issued_at` is written before its transaction commits, so
+          it is a claim. Shown only when the ledger contradicts it. */}
+      {signature.issuedAtAnchored === false && (
+        <p className="text-[11px] font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+          {t.verify.clockIssuedAtMismatch}
+        </p>
+      )}
     </>
   );
 }

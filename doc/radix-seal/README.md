@@ -232,17 +232,28 @@ day one: an integrator reads it from the resource
 | `signer` | The account this NFT concerns |
 | `signer_index`, `signer_count`, `first_id` | Batch geometry for a request |
 | `request` | The request key this NFT answers |
-| `issued_at` | Timestamp supplied by the minter (see below on dates) |
+| `issued_at` | Ledger time read just before the mint (see below on dates) |
 
 The **request key** is the first invitation's global id,
 `<initiator collection>:#<firstId>#`. From it alone anyone can reconstruct the
 immutable required signer set by reading the locked invitation batch.
 
-**On dates.** `issued_at` is written by whoever mints the NFT, so it is a claim,
-not evidence. The defensible date of an on ledger signature is the consensus time
-of the transaction that minted it, which anyone can read back from the ledger
-state version the NFT was last updated at. Verification uses that one and ignores
-`issued_at`; an integrator should do the same.
+**On dates.** A mint cannot carry the consensus time of its own transaction:
+that time does not exist until the transaction commits, and a manifest has no way
+to pipe the result of `get_current_time` into the data of a `MINT` instruction.
+So `issued_at` is always written before the fact and is a claim, never evidence.
+
+Two things follow, and this implementation does both. The claim is sourced from
+the network rather than from the signer's browser — the Gateway's current
+`proposer_round_timestamp`, read immediately before building the manifest, so it
+lands seconds ahead of the commit instead of wherever a local clock was set. And
+the claim is checked: verification resolves the commit time from the state
+version the NFT was last updated at, compares `issued_at` against it, and reports
+any record that contradicts the ledger it lives on (`issuedAtAnchored`).
+
+The authoritative date of an on ledger signature therefore remains the commit
+time, not `issued_at`. An integrator reading the ledger directly should resolve
+it the same way, and treat a divergence as a record worth distrusting.
 
 ---
 
@@ -443,6 +454,7 @@ certificate?":
 | `anchoredAt` | The independent time, or `null` when the signature offers none |
 | `anchorSource` | `ledger` (consensus time of the minting transaction) or `timestamp` (an RFC 3161 authority) |
 | `signedAtAnchored` | Whether the declared `signedAt` agrees with it, within ten minutes |
+| `issuedAtAnchored` | Whether the NFT's own `issued_at` agrees with its transaction's commit time |
 | `timestampAuthority` | Name of the timestamping authority, for display |
 | `timestampUntrustedAnchor` | The token verifies but its trust anchor is not one this deployment knows |
 

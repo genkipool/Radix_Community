@@ -470,6 +470,8 @@ export interface SignRequestInput {
   alsoSign: boolean;
   /** Image for the minted NFTs (issuer logo or ''). */
   imageUrl: string;
+  /** Ledger time to record as `issued_at` (see lib/ledger-time). */
+  issuedAt: string;
 }
 
 /**
@@ -479,7 +481,7 @@ export interface SignRequestInput {
  * atomically if any signer's account rejects third-party deposits.
  */
 export function buildSignRequestManifest(input: SignRequestInput): string {
-  const issuedAt = new Date().toISOString();
+  const { issuedAt } = input;
   const firstId = input.nextId;
   const count = input.requiredSigners.length;
   if (count === 0) throw new Error('no required signers');
@@ -611,6 +613,8 @@ export interface CipherInviteInput {
   /** Accounts authorized to request the key — one invitation each. */
   receivers: string[];
   imageUrl: string;
+  /** Ledger time to record as `issued_at` (see lib/ledger-time). */
+  issuedAt: string;
 }
 
 /**
@@ -619,7 +623,7 @@ export interface CipherInviteInput {
  * atomically if any receiver blocks third-party deposits.
  */
 export function buildCipherInviteManifest(input: CipherInviteInput): string {
-  const issuedAt = new Date().toISOString();
+  const { issuedAt } = input;
   const firstId = input.nextId;
   const count = input.receivers.length;
 
@@ -700,6 +704,8 @@ export interface CipherReceiptInput {
   /** The encryptor's collection (where the invite batch lives). */
   inviteCollection: string;
   imageUrl: string;
+  /** Ledger time to record as `issued_at` (see lib/ledger-time). */
+  issuedAt: string;
 }
 
 /**
@@ -725,7 +731,7 @@ ${batchMint(input.collection, [
       networkId: input.networkId,
       signer: input.account,
       request: input.inviteCollection,
-      issuedAt: new Date().toISOString(),
+      issuedAt: input.issuedAt,
     }),
   },
 ])}
@@ -754,6 +760,8 @@ export interface SignatureMintInput {
   /** The request key (`<initiator collection>:#<firstId>#`). */
   request: string;
   imageUrl: string;
+  /** Ledger time to record as `issued_at` (see lib/ledger-time). */
+  issuedAt: string;
 }
 
 /** Mints the signer's soulbound signature into their own collection. */
@@ -769,7 +777,7 @@ ${batchMint(input.collection, [
       signer: input.account,
       request: input.request,
       imageUrl: input.imageUrl,
-      signedAt: new Date().toISOString(),
+      signedAt: input.issuedAt,
     }),
   },
 ])}

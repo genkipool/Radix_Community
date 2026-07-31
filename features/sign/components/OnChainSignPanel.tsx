@@ -46,6 +46,7 @@ import { networkIdFromResource } from '../lib/share';
 import { ShareLinkSection } from './ShareLinkSection';
 import { stripExtension } from '../lib/file';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
+import { fetchLedgerNow } from '../lib/ledger-time';
 import { fetchOnChainStatus, type OnChainStatus } from '../services/signApi';
 import type { SignDictionary } from '../types/dictionary';
 
@@ -188,10 +189,11 @@ export function OnChainSignPanel({
     }
   };
 
-  const simulateCreate = () => {
+  const simulateCreate = async () => {
     if (!canCreate || !setup.seal || !setup.collection) return;
     preview.simulate(
       buildSignRequestManifest({
+        issuedAt: await fetchLedgerNow(activeNetworkId ?? 2),
         account: account!,
         sealGlobalId: setup.seal.globalId,
         collection: setup.collection.resourceAddress,
@@ -253,11 +255,13 @@ export function OnChainSignPanel({
     }
   };
 
-  const simulateSign = () => {
+  const simulateSign = async () => {
     if (!canSign || !status?.docHash || !setup.seal || !signerAccount) return;
+    const issuedAt = await fetchLedgerNow(activeNetworkId ?? 2);
     preview.simulate(
       setup.collection
         ? buildSignatureMintManifest({
+            issuedAt,
             account: signerAccount,
             sealGlobalId: setup.seal.globalId,
             collection: setup.collection.resourceAddress,

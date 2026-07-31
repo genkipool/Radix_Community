@@ -21,6 +21,7 @@ import {
   rememberSignCollection,
 } from '../services/sealDiscovery';
 import { requestSignatureTimestamp } from '../services/signApi';
+import { fetchLedgerNow } from '../lib/ledger-time';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import type {
   AttestationEnvelope,
@@ -188,13 +189,15 @@ export function useDocumentSign() {
     networkId: number,
     input: {
       docHash: string;
-      timestamp: string;
       collectionName: string;
       imageUrl: string;
     },
   ): Promise<OnChainAnchor> {
     const sealAddress = radixSealAddress(networkId);
     const imageUrl = input.imageUrl || sealImageUrl(window.location.origin);
+    // The NFT's `issued_at` comes from the network, not from this browser, so
+    // verification can hold it against the commit time of its own transaction.
+    const issuedAt = await fetchLedgerNow(networkId);
 
     // Unified model: the signature lives as a `kind='signature'` NFT in the
     // account's Seal-OWNED collection (the same collection the invitation flow
@@ -217,6 +220,7 @@ export function useDocumentSign() {
           networkId,
           request: '',
           imageUrl,
+          issuedAt,
         })
       : buildSignCollectionCreateManifest({
           account,
@@ -225,7 +229,7 @@ export function useDocumentSign() {
           networkId,
           collectionName: input.collectionName || '',
           imageUrl,
-          firstSignature: { docHash: input.docHash, request: '', signedAt: input.timestamp },
+          firstSignature: { docHash: input.docHash, request: '', signedAt: issuedAt },
         });
 
     const tx = await sendTransaction(manifest);
@@ -318,7 +322,6 @@ export function useDocumentSign() {
           ...envelope,
           onChain: await anchorToCollection(sig.account, activeNetworkId, {
             docHash: input.docHash,
-            timestamp: payload.timestamp,
             collectionName: input.collectionName ?? '',
             imageUrl: input.imageUrl ?? '',
           }),
@@ -444,7 +447,6 @@ export function useDocumentSign() {
       setPhase('anchoring');
       const onChain = await anchorToCollection(who.account, activeNetworkId, {
         docHash: envelope.payload.docHash,
-        timestamp: new Date().toISOString(),
         collectionName: sealOpts?.collectionName ?? '',
         imageUrl: sealOpts?.imageUrl ?? '',
       });
