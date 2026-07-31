@@ -167,6 +167,17 @@ What this implies, and the tooling reflects it:
   scan of what an account holds until its first mint. Discovery accounts for
   this; a third party integrator scanning holdings should expect the same blind
   spot.
+- **The EARLIEST signature answers "when".** An account can hold several
+  signature NFTs for the same document — across collections, or from signing the
+  same file again — and the order a Gateway returns collections in is not an
+  order anybody promised. As a yes/no answer that made no difference; as a date
+  it does, so the first moment the account committed to that hash is the answer,
+  and it is the same answer for every caller. An integrator resolving a date
+  should take the minimum state version, not the first hit.
+- **Only collections under the CURRENT brand count.** After a brand redeploy,
+  collections created for the previous seal still exist and still hold their
+  evidence, but they no longer satisfy the insignia check, so their signatures
+  do not count towards a request. Both public endpoints apply this identically.
 
 Issuer identity is editable after creation by the seal holder (`SET_METADATA`
 under the owner role), so a name, a logo or an organisation's website can be
@@ -254,6 +265,14 @@ any record that contradicts the ledger it lives on (`issuedAtAnchored`).
 The authoritative date of an on ledger signature therefore remains the commit
 time, not `issued_at`. An integrator reading the ledger directly should resolve
 it the same way, and treat a divergence as a record worth distrusting.
+
+One caveat on comparing them: only an unambiguous instant can be compared.
+Collections minted before the format settled carry a locale formatted date with
+no timezone (`07/19/2026 17:17:25`), and an NFT minted by hand through the
+console carries whatever its owner typed. Resolving those against the reader's
+own timezone would make the same record pass in UTC and fail two hours out
+elsewhere, so `issuedAtAnchored` reports them as `null` (unknown) rather than as
+a contradiction. Silence is the honest answer where the ledger cannot adjudicate.
 
 ---
 
@@ -484,9 +503,11 @@ jq '{envelope: .}' document.radixsig.json \
 
 **`/api/sign/onchain-status`** takes `networkId` plus a `requestId` (and
 optionally a `docHash`) and reports, straight from the ledger, who was required
-to sign, who has signed and when (`signedAt`, the consensus time of the minting
-transaction), whether it is `complete`, whether the hash matches, and the
-issuer's published identity. It needs neither the document nor the
+to sign, who has signed and when (`signedAt`, the consensus time of the earliest
+qualifying minting transaction), whether it is `complete`, whether the hash
+matches, and the issuer's published identity. It applies exactly the same chain
+of custody as `/api/sign/verify`, official insignia included, so the two never
+disagree about who has signed or when. It needs neither the document nor the
 certificate, so it suits polling the state of a file being signed.
 
 ```bash

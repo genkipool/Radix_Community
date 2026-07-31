@@ -392,6 +392,20 @@ export async function findSignerSignature(
       SIGN_COLLECTION_MARKER_VALUE,
   );
 
+  /*
+   * The EARLIEST qualifying signature, not merely the first one stumbled upon.
+   *
+   * An account can hold many signature NFTs for the same document — several
+   * collections under one insignia, or simply the same document signed again —
+   * and the order collections come back in is not an order anybody promised. As
+   * a yes/no answer that made no difference, but this now reports WHEN, and
+   * "whichever the Gateway listed first" is not a date: two callers would get
+   * two different ones for the same account, and a certificate built from one
+   * would be contradicted by verification reading the other. The first moment
+   * the account committed to this hash is the defensible answer, and it is the
+   * same answer every time.
+   */
+  let earliest: SignerSignature | null = null;
   for (const collection of marked) {
     const address = collection.address ?? '';
     const ids =
@@ -401,22 +415,27 @@ export async function findSignerSignature(
     if (ids.length === 0) continue;
 
     const data = await nfRecords(network, address, ids);
-    const match = [...data.values()].find(
+    const matches = [...data.values()].filter(
       ({ fields }) =>
         fields.kind === 'signature' &&
         fields.document_hash === docHash &&
         fields.signer === signer,
     );
-    if (!match) continue;
+    if (matches.length === 0) continue;
 
     // Chain of custody: the collection's owner seal must live in `signer`
     // (and be the official brand when known).
-    if (await collectionSealBelongsTo(network, collection, signer, officialSeal)) {
-      return {
-        stateVersion: match.stateVersion,
-        issuedAt: match.fields.issued_at ?? '',
-      };
+    if (!(await collectionSealBelongsTo(network, collection, signer, officialSeal))) {
+      continue;
+    }
+    for (const match of matches) {
+      if (!earliest || match.stateVersion < earliest.stateVersion) {
+        earliest = {
+          stateVersion: match.stateVersion,
+          issuedAt: match.fields.issued_at ?? '',
+        };
+      }
     }
   }
-  return null;
+  return earliest;
 }

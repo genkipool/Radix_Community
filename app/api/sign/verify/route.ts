@@ -17,6 +17,7 @@ import {
 import { MAX_ENVELOPE_BYTES } from '@/features/sign/constants/limits';
 import { radixSealAddress, RADIX_SEAL_STANDARD_KEY } from '@/features/sign/constants/seal';
 import {
+  issuedAtAgrees,
   MAX_TOKEN_BASE64,
   sha256Hex,
   signedAtAgrees,
@@ -387,9 +388,7 @@ export async function POST(req: NextRequest) {
               // transaction committed, so it should sit right beside the
               // consensus time; a record whose `issued_at` says otherwise is
               // contradicting the ledger it lives on.
-              issuedAtAnchored = record.issuedAt
-                ? signedAtAgrees(record.issuedAt, committedAt)
-                : null;
+              issuedAtAnchored = issuedAtAgrees(record.issuedAt, committedAt);
               if (!anchoredAt) {
                 anchoredAt = committedAt;
                 anchorSource = 'ledger';

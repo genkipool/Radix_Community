@@ -4,6 +4,7 @@ import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
 import type { Network } from '@/services/gateway/client';
 import {
+  radixSealAddress,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
 } from '@/features/sign/constants/seal';
@@ -131,9 +132,19 @@ export async function POST(req: NextRequest) {
     // network agreed each signature existed. That consensus time is the only
     // defensible date for an on-ledger signature, so it is what the certificate
     // built from this status records — never the clock of whoever builds it.
+    // The official brand is required here too. Without it this route would
+    // count a signature in a collection gated by a look-alike seal that the
+    // verify route rejects, and the two would disagree about who has signed —
+    // and, now that this reports WHEN, about the date a certificate records.
+    const officialSeal = radixSealAddress(networkId);
     const signatures = await Promise.all(
       signers.map(async (s) => {
-        const found = await findSignerSignature(network, s.account, reqDocHash);
+        const found = await findSignerSignature(
+          network,
+          s.account,
+          reqDocHash,
+          officialSeal,
+        );
         return {
           account: s.account,
           signed: !!found,

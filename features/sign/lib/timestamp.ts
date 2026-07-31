@@ -83,16 +83,61 @@ export const MAX_TOKEN_BASE64 = 16 * 1024;
 export const SIGNED_AT_TOLERANCE_MS = 10 * 60 * 1000;
 
 /**
+ * An unambiguous instant, or null.
+ *
+ * `Date.parse` is happy to accept `07/19/2026 17:17:25` and resolve it against
+ * whatever timezone the machine running the check happens to be in. Comparing
+ * something like that against a ledger timestamp does not measure the record,
+ * it measures the server's `TZ`: the same NFT would pass in UTC and fail two
+ * hours out in Madrid. So only ISO-8601 carrying an explicit offset counts as
+ * something we can compare; anything else is unknown, and says so.
+ */
+export function instantOf(text: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(text)) {
+    return null;
+  }
+  const value = Date.parse(text);
+  return Number.isNaN(value) ? null : value;
+}
+
+/**
  * True when `declared` is corroborated by an independent `anchor` time. Null
  * when there is no anchor to compare against (nothing is claimed either way).
+ *
+ * A `declared` value this app did not write — no timezone, or not a date at all
+ * — counts as disagreement rather than as unknown: the certificate format is
+ * ours to define, every date we emit is `toISOString()`, so anything else in
+ * that slot has been through other hands.
  */
 export function signedAtAgrees(
   declared: string,
   anchor: string | null,
 ): boolean | null {
   if (!anchor) return null;
-  const a = Date.parse(declared);
-  const b = Date.parse(anchor);
-  if (Number.isNaN(a) || Number.isNaN(b)) return false;
+  const a = instantOf(declared);
+  const b = instantOf(anchor);
+  if (a === null || b === null) return false;
+  return Math.abs(a - b) <= SIGNED_AT_TOLERANCE_MS;
+}
+
+/**
+ * The same comparison for the `issued_at` written INSIDE an on-ledger NFT,
+ * against the commit time of the transaction that minted it.
+ *
+ * Unlike a certificate, that field is not ours alone to define. Collections
+ * minted before the format was pinned down carry a locale-formatted date with
+ * no timezone (`07/19/2026 17:17:25`), and an NFT minted by hand through the
+ * console carries whatever its owner typed. None of that is evidence of
+ * backdating, so an unparseable value is reported as UNKNOWN. Accusing honest
+ * records of contradicting the ledger would be worse than saying nothing.
+ */
+export function issuedAtAgrees(
+  issuedAt: string,
+  committedAt: string | null,
+): boolean | null {
+  if (!issuedAt || !committedAt) return null;
+  const a = instantOf(issuedAt);
+  const b = instantOf(committedAt);
+  if (a === null || b === null) return null;
   return Math.abs(a - b) <= SIGNED_AT_TOLERANCE_MS;
 }

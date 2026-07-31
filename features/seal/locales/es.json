@@ -64,6 +64,7 @@
             "Certificado adjunto o incrustado directamente en el PDF",
             "Página de firma visible dentro del PDF, legible en cualquier lector",
             "Firma opcional con tu propio certificado X.509 (PAdES), que Adobe y Foxit reconocen",
+            "Sello de tiempo de confianza (RFC 3161) en cada firma: la fecha no la pone tu navegador",
             "Anclaje opcional en el ledger como NFT soulbound",
             "Firma multiparte: varios firmantes en un mismo certificado",
             "Divulgación de identidad que tú controlas: nombre, email o solo firma",
@@ -320,7 +321,7 @@
               "saas": "Certificada por el propio reloj del proveedor",
               "pki": "Autoridad de sellado de tiempo de pago (RFC 3161)",
               "pgp": "Ninguna por defecto, autodeclarada",
-              "seal": "Fijada por el consenso de la red, inmutable",
+              "seal": "Consenso de la red al anclar; sello RFC 3161 gratuito en el resto",
               "winner": "seal",
               "expKey": "timestamp"
             }
@@ -382,14 +383,14 @@
           ]
         }
       ],
-      "note": "Una firma de Radix Seal prueba la integridad de un documento, su marca de tiempo por consenso y el control de la cuenta firmante, y cualquier nombre divulgado lo autodeclara la wallet del firmante. Donde la normativa exige una firma cualificada con identidad verificada (como eIDAS QES), Radix Seal complementa esos esquemas con mayor custodia, confidencialidad y longevidad. Cuando se implemente idOS (identidad descentralizada) en Radix, una firma de Radix Seal podría llegar a tener validez legal, al ligar la cuenta firmante a una identidad verificada.",
+      "note": "Una firma de Radix Seal prueba la integridad de un documento, su marca de tiempo contra un reloj independiente (el consenso de la red, o una autoridad de sellado RFC 3161) y el control de la cuenta firmante, y cualquier nombre divulgado lo autodeclara la wallet del firmante. Donde la normativa exige una firma cualificada con identidad verificada (como eIDAS QES), Radix Seal complementa esos esquemas con mayor custodia, confidencialidad y longevidad. Cuando se implemente idOS (identidad descentralizada) en Radix, una firma de Radix Seal podría llegar a tener validez legal, al ligar la cuenta firmante a una identidad verificada.",
       "explanations": {
         "custody": "Autocustodia real: la clave nunca sale de tu wallet ni de tu dispositivo. PGP también la mantiene en local; la diferencia es que la wallet añade recuperación y una firma guiada sin gestionar llaveros a mano.",
         "anchor": "Un ledger público y descentralizado no depende de la honestidad de una empresa ni de una CA: miles de nodos validan cada transacción y cualquiera puede leerla. No hay un punto único que comprometer ni que pueda desaparecer.",
         "confidential": "El documento se resume en tu navegador y lo único que se firma es ese hash. El contenido no se transmite a ningún servidor, así que nadie (ni siquiera esta web) puede verlo.",
         "transfer": "El canal directo va de navegador a navegador con cifrado de extremo a extremo. Ningún servidor almacena ni ve el archivo por el camino.",
         "verify": "Verificar solo requiere el archivo y leer el ledger público: sin cuentas, sin la API de un proveedor y sin depender de que esta web siga existiendo.",
-        "timestamp": "La marca de tiempo la fija el consenso de la red al confirmar la transacción: no la controla ninguna empresa y no puede retocarse después.",
+        "timestamp": "Al anclar, la marca de tiempo la fija el consenso de la red y no la controla ninguna empresa. Una firma fuera del ledger lleva un sello RFC 3161 de una autoridad de sellado, sin coste ni suscripción. En ambos casos la verificación contrasta la fecha declarada contra ese reloj independiente y avisa si no cuadran.",
         "longevity": "La prueba vive en un ledger público replicado por cientos de nodos: no caduca con un certificado ni desaparece si un proveedor cierra.",
         "cost": "Sin suscripciones ni pago por documento: solo la comisión de red, una fracción de céntimo. PGP también es gratuito, pero su coste operativo en gestión de claves y formación es alto.",
         "identity": "La PKI cualificada cubre algo que Radix Seal hoy no: una autoridad valida la identidad legal del firmante y la normativa (eIDAS QES) le otorga el máximo valor probatorio. Radix Seal prueba el control de la cuenta, no quién eres legalmente (cuando llegue idOS a Radix, esta diferencia se estrecha).",
@@ -441,7 +442,7 @@
         },
         {
           "title": "Clave de solicitud pública",
-          "desc": "Cada solicitud de firma tiene una clave (colección e id) con la que cualquiera consulta en el ledger quién debía firmar y quién ha firmado ya."
+          "desc": "Cada solicitud de firma tiene una clave (colección e id) con la que cualquiera consulta en el ledger quién debía firmar y quién ha firmado ya. Al verificar, la clave que aportas tú manda sobre la que indique el certificado: así la lista de firmantes requeridos no la elige quien lo produjo."
         },
         {
           "title": "Cadena de custodia en el ledger",
