@@ -14,6 +14,7 @@ import {
   buildSignRequestManifest,
   buildSignatureMintManifest,
   requestKey,
+  type CollectionMetaField,
 } from '../lib/sign-request';
 import {
   findCollectionProfile,
@@ -205,6 +206,7 @@ export function useSealRequest() {
     symbol?: string;
     imageUrl: string;
     issuer?: IssuerMeta;
+    extraMetadata?: CollectionMetaField[];
   }): Promise<string | null> => {
     setError(null);
     if (!activeNetworkId) return fail('wallet_not_connected');
@@ -253,6 +255,7 @@ export function useSealRequest() {
       symbol: args.symbol,
       imageUrl: args.imageUrl,
       issuer: args.issuer,
+      extraMetadata: args.extraMetadata,
     });
     const tx = await sendTransaction(manifest);
     if (!tx) return fail('onchain_failed');
@@ -301,6 +304,7 @@ export function useSealRequest() {
     symbol?: string;
     imageUrl: string;
     issuer?: IssuerMeta;
+    extraMetadata?: CollectionMetaField[];
     firstSignature?: { docHash: string; request: string };
   }): Promise<string | null> => {
     setError(null);
@@ -315,6 +319,7 @@ export function useSealRequest() {
       symbol: args.symbol,
       imageUrl: args.imageUrl,
       issuer: args.issuer,
+      extraMetadata: args.extraMetadata,
       firstSignature: args.firstSignature
         ? { ...args.firstSignature, signedAt: new Date().toISOString() }
         : undefined,

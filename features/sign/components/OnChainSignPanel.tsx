@@ -329,7 +329,7 @@ export function OnChainSignPanel({
       requiredSigners: status?.requiredSigners ?? [],
       signedAccounts: (status?.signatures ?? [])
         .filter((s) => s.signed)
-        .map((s) => s.account),
+        .map((s) => ({ account: s.account, signedAt: s.signedAt })),
       nonce: randomNonceHex(),
       requestId: status?.requestId ?? requestId,
     });

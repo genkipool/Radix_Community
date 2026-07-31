@@ -133,8 +133,13 @@ export function buildOnChainCertificate(input: {
   networkId: number;
   /** The invited/required signers (from the on-ledger request). */
   requiredSigners: string[];
-  /** Accounts that have signed on-ledger so far. */
-  signedAccounts: string[];
+  /**
+   * Accounts that have signed on-ledger so far, each with the consensus time of
+   * the transaction that recorded it. That time is the signature's real date;
+   * the certificate is often downloaded days later, and stamping it with the
+   * moment of download would put a date on the page that the ledger contradicts.
+   */
+  signedAccounts: Array<{ account: string; signedAt?: string | null }>;
   nonce: string;
   /** On-ledger request key, so verification re-resolves the required set. */
   requestId?: string;
@@ -156,12 +161,14 @@ export function buildOnChainCertificate(input: {
   };
   return {
     payload,
-    signatures: input.signedAccounts.map((account) => ({
+    signatures: input.signedAccounts.map(({ account, signedAt }) => ({
       signerAccount: account,
       disclosedName: null,
       disclosedEmail: null,
       proof: null,
-      signedAt: now,
+      // Falls back to now only when the ledger time could not be read, and
+      // verification then reports the date as uncorroborated.
+      signedAt: signedAt || now,
     })),
     onChain: null,
     request: input.requestId

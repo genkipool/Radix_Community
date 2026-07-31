@@ -407,7 +407,19 @@
       "pendingHeader": "Firmantes pendientes",
       "message": "Mensaje",
       "timestamp": "Creado el",
-      "badCert": "Ese archivo no es un certificado válido."
+      "badCert": "Ese archivo no es un certificado válido.",
+      "clockHeader": "Hora comprobada",
+      "clockLedger": "Confirmada por el ledger",
+      "clockTimestamp": "Sellada por {authority}",
+      "clockNone": "Sin reloj independiente: la fecha solo está declarada",
+      "clockMismatch": "La fecha declarada NO coincide con el reloj independiente",
+      "clockUntrusted": "Autoridad de sellado no reconocida por esta instalación",
+      "declaredHeader": "Datos declarados, no cubiertos por la firma",
+      "declaredNote": "En un certificado solo on-ledger, la cadena vincula al firmante con el hash del documento y con nada más. El mensaje, el nombre y las fechas de abajo los aporta quien construye el certificado.",
+      "nameDeclared": "El nombre mostrado nunca va en el ledger y ninguna firma lo cubre: es una declaración.",
+      "requestFromKey": "Firmantes requeridos leídos de la clave que has introducido",
+      "requestFromCert": "Firmantes requeridos leídos de la solicitud que indica el certificado",
+      "requestMismatch": "El certificado apunta a otra solicitud distinta de la clave que has introducido. Manda la tuya."
     },
     "collection": {
       "intro": {
@@ -463,7 +475,18 @@
         "reuseSealHint": "Una insignia, varias colecciones",
         "newSeal": "Acuñar una nueva",
         "reuseSealNote": "La colección será propiedad de la insignia que ya tienes, que puede ser propietaria de varias. Una sola confirmación en la wallet, y el logo se usa solo como icono de la colección.",
-        "newSealNote": "Se acuña una segunda insignia con el logo que pongas y esta colección será suya. Como una insignia no se puede transferir ni quemar, se queda en la cuenta para siempre. Son dos confirmaciones seguidas en la wallet."
+        "newSealNote": "Se acuña una segunda insignia con el logo que pongas y esta colección será suya. Como una insignia no se puede transferir ni quemar, se queda en la cuenta para siempre. Son dos confirmaciones seguidas en la wallet.",
+        "customTitle": "Metadatos propios",
+        "customHint": "Pares clave/valor que se escriben en la colección y que las wallets y exploradores muestran junto al resto. No pueden usarse las claves que la propia norma escribe (name, symbol, description, icon_url, tags, issuer, org_name, org_url, radix_seal, radix_sign_collection).",
+        "customKey": "Clave #{index}",
+        "customKeyPlaceholder": "p. ej. departamento",
+        "customValue": "Valor",
+        "customValuePlaceholder": "Valor del metadato",
+        "customAdd": "Añadir metadato",
+        "customRemove": "Quitar",
+        "customLock": "Bloquear",
+        "customLockHint": "Una vez bloqueado no se puede cambiar nunca más, ni por ti.",
+        "customReserved": "Esa clave la escribe la propia norma: elige otra."
       },
       "identity": {
         "title": "Identidad de emisor",

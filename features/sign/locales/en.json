@@ -407,7 +407,19 @@
       "pendingHeader": "Pending signers",
       "message": "Message",
       "timestamp": "Created at",
-      "badCert": "That file is not a valid certificate."
+      "badCert": "That file is not a valid certificate.",
+      "clockHeader": "Checked time",
+      "clockLedger": "Confirmed by the ledger",
+      "clockTimestamp": "Stamped by {authority}",
+      "clockNone": "No independent clock: the date is only declared",
+      "clockMismatch": "The declared date does NOT match the independent clock",
+      "clockUntrusted": "Timestamping authority not recognised by this deployment",
+      "declaredHeader": "Declared, not covered by the signature",
+      "declaredNote": "In an on-ledger-only certificate the chain ties the signer to the document hash and to nothing else. The message, the name and the dates below come from whoever built the certificate.",
+      "nameDeclared": "A displayed name never goes on the ledger and no signature covers it: it is a declaration.",
+      "requestFromKey": "Required signers read from the key you entered",
+      "requestFromCert": "Required signers read from the request the certificate points at",
+      "requestMismatch": "The certificate points at a different request than the key you entered. Yours wins."
     },
     "collection": {
       "intro": {
@@ -463,7 +475,18 @@
         "reuseSealHint": "One insignia, several collections",
         "newSeal": "Mint a new one",
         "reuseSealNote": "The collection will belong to the insignia you already have, which can own several. A single wallet confirmation, and the logo is used only as the collection's icon.",
-        "newSealNote": "A second insignia is minted with the logo you set and this collection will be its own. Since an insignia can never be transferred or burned, it stays in the account forever. Two wallet confirmations, back to back."
+        "newSealNote": "A second insignia is minted with the logo you set and this collection will be its own. Since an insignia can never be transferred or burned, it stays in the account forever. Two wallet confirmations, back to back.",
+        "customTitle": "Custom metadata",
+        "customHint": "Key/value pairs written onto the collection, shown by wallets and explorers next to the rest. The keys the standard writes itself are not available (name, symbol, description, icon_url, tags, issuer, org_name, org_url, radix_seal, radix_sign_collection).",
+        "customKey": "Key #{index}",
+        "customKeyPlaceholder": "e.g. department",
+        "customValue": "Value",
+        "customValuePlaceholder": "Metadata value",
+        "customAdd": "Add metadata",
+        "customRemove": "Remove",
+        "customLock": "Lock",
+        "customLockHint": "Once locked it can never be changed again, not even by you.",
+        "customReserved": "The standard writes that key itself: pick another."
       },
       "identity": {
         "title": "Issuer identity",

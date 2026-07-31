@@ -69,6 +69,69 @@ export const SIGN_NFT_FIELDS = [
 export const requestKey = (collection: string, firstId: number) =>
   `${collection}:#${firstId}#`;
 
+/* ─── Owner-supplied collection metadata ──────────────────────────────────── */
+
+/** One free-form metadata entry the creator adds to their own collection. */
+export interface CollectionMetaField {
+  key: string;
+  value: string;
+  /** Locked entries can never be changed again, by anyone, including the owner. */
+  locked: boolean;
+}
+
+/**
+ * Keys the builder writes itself and will not let a custom field touch.
+ *
+ * Two reasons, and only one of them is about tidiness. A repeated key in the
+ * same metadata map makes the whole transaction fail, so a creator typing
+ * `name` would just get a rejection they cannot explain. The rest —
+ * `radix_sign_collection`, `radix_seal`, `issuer` — is what verification reads
+ * to decide whether a collection is genuine and whose it is, and those must
+ * come from this builder alone, never from a text box.
+ */
+export const RESERVED_COLLECTION_METADATA_KEYS = new Set([
+  'name',
+  'symbol',
+  'description',
+  'icon_url',
+  'tags',
+  'issuer',
+  ORG_NAME_KEY,
+  ORG_URL_KEY,
+  SIGN_COLLECTION_MARKER_KEY,
+  RADIX_SEAL_STANDARD_KEY,
+]);
+
+/** How many custom entries one collection may declare at creation. */
+export const MAX_COLLECTION_META_FIELDS = 10;
+
+/** Whether a key may be used as a custom metadata entry. */
+export const isReservedCollectionMetadataKey = (key: string): boolean =>
+  RESERVED_COLLECTION_METADATA_KEYS.has(key.trim().toLowerCase());
+
+/**
+ * The custom entries as manifest syntax. Reserved keys and blanks are dropped
+ * HERE, in the shared builder, rather than only in the form: this is the single
+ * source of truth for what gets signed, and the same rule then holds however
+ * the manifest is reached.
+ */
+function customMetadataEntries(fields: CollectionMetaField[] | undefined): string[] {
+  if (!fields?.length) return [];
+  const seen = new Set<string>();
+  const entries: string[] = [];
+  for (const field of fields) {
+    const key = field.key.trim();
+    const value = field.value.trim();
+    if (!key || !value) continue;
+    const normalized = key.toLowerCase();
+    if (isReservedCollectionMetadataKey(key) || seen.has(normalized)) continue;
+    seen.add(normalized);
+    entries.push(initialMetadataEntry(key, value, field.locked));
+    if (entries.length >= MAX_COLLECTION_META_FIELDS) break;
+  }
+  return entries;
+}
+
 interface SignNftInput {
   kind: 'invite' | 'signature' | 'cipher-invite' | 'cipher-receipt' | 'cipher-signature';
   name: string;
@@ -173,6 +236,12 @@ export interface SignCollectionCreateInput {
   symbol?: string;
   issuer?: IssuerMeta;
   /**
+   * Free-form metadata the creator wants on their own collection (a department,
+   * a registry number, a policy URL). Wallets and explorers show it beside the
+   * standard keys. Reserved keys are refused by the builder.
+   */
+  extraMetadata?: CollectionMetaField[];
+  /**
    * Co-signers can bundle their first signature into the creation (initial
    * supply `#1#`) so first-time signing takes one less transaction.
    */
@@ -221,6 +290,7 @@ export function buildSignCollectionCreateManifest(
       : []),
     ...issuerMetadataEntries(input.issuer, input.account),
     initialMetadataArrayEntry('tags', ['radix-seal', 'signing'], true),
+    ...customMetadataEntries(input.extraMetadata),
   ].join(',\n          ');
 
   return createNonFungibleTokenManifest({

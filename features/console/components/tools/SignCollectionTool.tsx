@@ -5,8 +5,11 @@ import {
   BadgeCheck,
   Check,
   Layers,
+  Lock,
+  LockOpen,
   Plus,
   Save,
+  Trash2,
   TriangleAlert,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,6 +23,9 @@ import { buildSealMintManifest } from '@/features/sign/lib/radix-seal-manifest';
 import {
   buildCollectionMetadataManifest,
   buildSignCollectionCreateManifest,
+  isReservedCollectionMetadataKey,
+  MAX_COLLECTION_META_FIELDS,
+  type CollectionMetaField,
 } from '@/features/sign/lib/sign-request';
 import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGate';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -445,6 +451,41 @@ function CreateTab({
   /** Off by default: reuse the insignia the account already has. */
   const [newSeal, setNewSeal] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
+  /** Free-form metadata, same shape the token creator uses. */
+  const [customMeta, setCustomMeta] = useState<CustomMetaField[]>([]);
+
+  const addCustomMeta = () =>
+    setCustomMeta((prev) =>
+      prev.length >= MAX_COLLECTION_META_FIELDS
+        ? prev
+        : [
+            ...prev,
+            { id: crypto.randomUUID(), key: '', value: '', locked: false },
+          ],
+    );
+  const removeCustomMeta = (id: string) =>
+    setCustomMeta((prev) => prev.filter((field) => field.id !== id));
+  const setCustomMetaField = (id: string, part: 'key' | 'value', value: string) =>
+    setCustomMeta((prev) =>
+      prev.map((field) => (field.id === id ? { ...field, [part]: value } : field)),
+    );
+  const toggleCustomMetaLock = (id: string) =>
+    setCustomMeta((prev) =>
+      prev.map((field) =>
+        field.id === id ? { ...field, locked: !field.locked } : field,
+      ),
+    );
+
+  /** Only complete, non-reserved entries reach the manifest. */
+  const metaFields = (): CollectionMetaField[] =>
+    customMeta
+      .filter(
+        (field) =>
+          field.key.trim() &&
+          field.value.trim() &&
+          !isReservedCollectionMetadataKey(field.key),
+      )
+      .map(({ key, value, locked }) => ({ key: key.trim(), value: value.trim(), locked }));
 
   const busy = phase === 'minting-seal' || phase === 'creating-collection';
   const sealResource = seals[0]?.globalId.split(':')[0] ?? null;
@@ -485,6 +526,7 @@ function CreateTab({
         symbol: symbol.trim() || undefined,
         imageUrl,
         issuer: issuerMeta(),
+        extraMetadata: metaFields(),
       }),
     );
   };
@@ -503,6 +545,7 @@ function CreateTab({
   const onSubmit = async () => {
     if (!account) return;
     const issuer = issuerMeta();
+    const extraMetadata = metaFields();
     // With a seal in hand the collection is one transaction; without one, the
     // seal is minted first and its id read back (same path the onboarding uses).
     const resource = chosenSeal && !newSeal
@@ -513,6 +556,7 @@ function CreateTab({
           symbol: symbol.trim() || undefined,
           imageUrl,
           issuer,
+          extraMetadata,
         })
       : await provisionCollection({
           account,
@@ -522,6 +566,7 @@ function CreateTab({
           symbol: symbol.trim() || undefined,
           imageUrl,
           issuer,
+          extraMetadata,
         });
     if (resource) {
       setCreated(resource);
@@ -700,6 +745,16 @@ function CreateTab({
           />
         </div>
 
+        <CustomMetadataFields
+          labels={labels}
+          fields={customMeta}
+          disabled={busy}
+          onAdd={addCustomMeta}
+          onRemove={removeCustomMeta}
+          onChange={setCustomMetaField}
+          onToggleLock={toggleCustomMetaLock}
+        />
+
         {error && (
           <p className="text-xs font-medium text-[var(--color-danger)]">{errorText(t, error)}</p>
         )}
@@ -741,6 +796,133 @@ function CreateTab({
         error={preview.error}
         onClose={preview.reset}
       />
+    </div>
+  );
+}
+
+/* ─── Free-form collection metadata ───────────────────────────────────────── */
+
+/** A custom entry while it is still being typed (id keeps React rows stable). */
+interface CustomMetaField extends CollectionMetaField {
+  id: string;
+}
+
+/**
+ * Key/value metadata the creator adds to their own collection, the same way the
+ * token creator offers it. A signing collection is a resource like any other and
+ * its owner has things to say about it — a department, a registry number, an
+ * internal reference — that the standard's own keys have no place for.
+ *
+ * The keys the standard writes are refused inline rather than at send time: a
+ * duplicate key makes the whole transaction fail, and the ones that matter for
+ * verification must come from the manifest builder, never from a text box.
+ */
+function CustomMetadataFields({
+  labels,
+  fields,
+  disabled,
+  onAdd,
+  onRemove,
+  onChange,
+  onToggleLock,
+}: {
+  labels: Labels;
+  fields: CustomMetaField[];
+  disabled: boolean;
+  onAdd: () => void;
+  onRemove: (id: string) => void;
+  onChange: (id: string, part: 'key' | 'value', value: string) => void;
+  onToggleLock: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-3 pt-4 border-t" style={{ borderColor: 'var(--color-card-border)' }}>
+      <div className="space-y-1">
+        <span
+          className="block text-xs font-bold uppercase tracking-wider"
+          style={{ color: 'var(--color-text-muted)' }}
+        >
+          {labels.create.customTitle}
+        </span>
+        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+          {labels.create.customHint}
+        </p>
+      </div>
+
+      {fields.map((field, index) => {
+        const reserved =
+          !!field.key.trim() && isReservedCollectionMetadataKey(field.key);
+        return (
+          <div key={field.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+            <div className="w-full sm:w-1/3">
+              <TextField
+                label={labels.create.customKey.replace('#{index}', String(index + 1))}
+                value={field.key}
+                onChange={(value) => onChange(field.id, 'key', value)}
+                placeholder={labels.create.customKeyPlaceholder}
+                error={reserved ? labels.create.customReserved : undefined}
+                maxLength={64}
+                disabled={disabled}
+              />
+            </div>
+            <div className="w-full sm:flex-1">
+              <TextField
+                label={labels.create.customValue}
+                labelEnd={
+                  <button
+                    type="button"
+                    onClick={() => onToggleLock(field.id)}
+                    disabled={disabled}
+                    title={labels.create.customLockHint}
+                    aria-pressed={field.locked}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border transition-colors cursor-pointer disabled:opacity-50"
+                    style={{
+                      borderColor: field.locked
+                        ? 'var(--color-primary)'
+                        : 'var(--color-card-border)',
+                      color: field.locked
+                        ? 'var(--color-primary)'
+                        : 'var(--color-text-muted)',
+                      background: field.locked
+                        ? 'rgba(var(--color-primary-rgb), 0.08)'
+                        : 'transparent',
+                    }}
+                  >
+                    {field.locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+                    {labels.create.customLock}
+                  </button>
+                }
+                value={field.value}
+                onChange={(value) => onChange(field.id, 'value', value)}
+                placeholder={labels.create.customValuePlaceholder}
+                maxLength={256}
+                disabled={disabled}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => onRemove(field.id)}
+              disabled={disabled}
+              title={labels.create.customRemove}
+              className="mb-[2px] p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="size-4.5" />
+            </button>
+          </div>
+        );
+      })}
+
+      {fields.length < MAX_COLLECTION_META_FIELDS && (
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors hover:text-[var(--color-accent)] cursor-pointer disabled:opacity-50"
+          style={{ color: 'var(--color-primary)' }}
+        >
+          <Plus className="size-3.5" />
+          {labels.create.customAdd}
+        </button>
+      )}
     </div>
   );
 }

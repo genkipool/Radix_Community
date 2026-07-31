@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { blake2b256Hex } from '../lib/hash';
 import { verifyEnvelope } from '../services/signApi';
-import type { AttestationEnvelope, VerifyResult } from '../types/sign.types';
+import type {
+  AttestationEnvelope,
+  OnChainRequestRef,
+  VerifyResult,
+} from '../types/sign.types';
 
 export interface VerifyOutcome extends VerifyResult {
   /** The re-hashed file matches the hash committed in the certificate. */
@@ -28,16 +32,22 @@ export function useDocumentVerify() {
     setIsVerifying(false);
   };
 
+  /**
+   * `requestOverride` is the on-ledger request key the VERIFIER has, from the
+   * shared link or typed by hand. Passing it makes the required-signer set come
+   * from a request the certificate's author did not choose.
+   */
   const verify = async (
     fileBytes: Uint8Array,
     envelope: AttestationEnvelope,
+    requestOverride?: OnChainRequestRef | null,
   ): Promise<VerifyOutcome | null> => {
     setIsVerifying(true);
     setError(null);
     setOutcome(null);
     try {
       const fileMatches = blake2b256Hex(fileBytes) === envelope.payload.docHash;
-      const server = await verifyEnvelope(envelope);
+      const server = await verifyEnvelope(envelope, requestOverride);
       const ok =
         fileMatches &&
         server.allValid &&

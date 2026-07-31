@@ -9,11 +9,12 @@ import {
 } from '@/features/sign/constants/seal';
 import {
   entityDetails,
+  findSignerSignature,
+  ledgerTimestamp,
   metadataString,
   nfData,
   nfOwnerAccount,
   sealFromOwnerRule,
-  signerHasSigned,
 } from '@/features/sign/lib/onchain-custody';
 
 /**
@@ -126,12 +127,19 @@ export async function POST(req: NextRequest) {
       ? await nfOwnerAccount(network, seal.resource, seal.localId)
       : null;
 
-    // 4. Per-signer signature check (chain of custody).
+    // 4. Per-signer signature check (chain of custody), with the moment the
+    // network agreed each signature existed. That consensus time is the only
+    // defensible date for an on-ledger signature, so it is what the certificate
+    // built from this status records — never the clock of whoever builds it.
     const signatures = await Promise.all(
-      signers.map(async (s) => ({
-        account: s.account,
-        signed: await signerHasSigned(network, s.account, reqDocHash),
-      })),
+      signers.map(async (s) => {
+        const found = await findSignerSignature(network, s.account, reqDocHash);
+        return {
+          account: s.account,
+          signed: !!found,
+          signedAt: found ? await ledgerTimestamp(network, found.stateVersion) : null,
+        };
+      }),
     );
 
     return NextResponse.json({

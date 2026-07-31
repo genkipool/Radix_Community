@@ -208,6 +208,12 @@ An integrator can implement Radix Seal entirely from these conventions.
 | `org_url` | Issuer website (editable by the owner) |
 | `name`, `icon_url` | Display name and image (editable by the owner) |
 
+A collection may also carry free form keys of its owner's choosing, written at
+creation and optionally locked forever, for whatever the standard's own keys have
+no place for: a department, a registry number, an internal reference. The keys
+above are reserved, so a custom entry can never redefine one, and none of them is
+read during verification.
+
 ### 4.3 NFT data fields (every NFT in a collection)
 
 The data schema is fixed and every field is locked at mint, `key_image_url`
@@ -226,11 +232,17 @@ day one: an integrator reads it from the resource
 | `signer` | The account this NFT concerns |
 | `signer_index`, `signer_count`, `first_id` | Batch geometry for a request |
 | `request` | The request key this NFT answers |
-| `issued_at` | Timestamp |
+| `issued_at` | Timestamp supplied by the minter (see below on dates) |
 
 The **request key** is the first invitation's global id,
 `<initiator collection>:#<firstId>#`. From it alone anyone can reconstruct the
 immutable required signer set by reading the locked invitation batch.
+
+**On dates.** `issued_at` is written by whoever mints the NFT, so it is a claim,
+not evidence. The defensible date of an on ledger signature is the consensus time
+of the transaction that minted it, which anyone can read back from the ledger
+state version the NFT was last updated at. Verification uses that one and ignores
+`issued_at`; an integrator should do the same.
 
 ---
 
@@ -245,6 +257,15 @@ nonce, network). The result is a certificate (`.radixsig.json`) carrying the
 hash, the signer account, an optional disclosed name or email, and the
 cryptographic proof. Optionally you can also anchor a soulbound signature NFT into
 your collection.
+
+Once the wallet returns the proof, a Time Stamping Authority is asked to attest
+that it exists, and its token travels in the certificate (see section 9). An off
+ledger signature otherwise has no clock but the signer's own browser, which is
+another way of saying it has none: the date could be rewritten to any day at all
+and nothing would contradict it. The authority's time then becomes the recorded
+date. It is best effort — if the authority is unreachable the signature is made
+anyway with the local clock, and verification says plainly that the date rests on
+nothing.
 
 **Sign with several people (off chain).** You sign first and pass the certificate
 and the original file to the others. Each co signer drops both into the tool and
@@ -406,10 +427,38 @@ whole contents of the `.radixsig.json`) and answers with:
 | --- | --- |
 | `complete` | Every required signer has a valid signature. This is the field to gate on |
 | `allValid` | Every signature present is cryptographically valid |
-| `signatures` | Per signer: account, disclosed name and email, `valid`, `required` |
+| `signatures` | Per signer: account, disclosed name and email, `valid`, `required`, plus the time fields below |
 | `requiredSigners` | The authoritative required set |
+| `requestSource` | Where that set came from: `typed`, `certificate` or `none` |
+| `requestMismatch` | The certificate points at a request other than the one you supplied |
+| `payloadBound` | A valid ROLA proof covers the payload, so message, file name and date are signed |
 | `docHash`, `timestamp`, `message`, `networkId` | Payload data |
 | `onChainValid`, `sealValid` | On ledger anchor and official insignia |
+
+Per signature, the time fields answer "according to what, other than this
+certificate?":
+
+| Field | Meaning |
+| --- | --- |
+| `anchoredAt` | The independent time, or `null` when the signature offers none |
+| `anchorSource` | `ledger` (consensus time of the minting transaction) or `timestamp` (an RFC 3161 authority) |
+| `signedAtAnchored` | Whether the declared `signedAt` agrees with it, within ten minutes |
+| `timestampAuthority` | Name of the timestamping authority, for display |
+| `timestampUntrustedAnchor` | The token verifies but its trust anchor is not one this deployment knows |
+
+**Pass a request key when you have one.** A certificate names the on ledger
+request it wants to be measured against, and anyone can mint a collection whose
+one name invitation batch its own signature satisfies. Send the key you obtained
+independently as `requestOverride` (`{"networkId":2,"requestId":"resource_...:#25#"}`)
+and it replaces the certificate's, with `requestMismatch` telling you if the
+certificate was pointing elsewhere.
+
+**What a signature does and does not cover.** Only the `payload` is bound by the
+ROLA challenge. The disclosed name and email sit outside it in both modes and are
+never on the ledger, so they are declarations, never evidence. When
+`payloadBound` is false — a purely on ledger certificate — the ledger ties the
+signer to the document hash and to nothing else, and the message, file name and
+document date are declarations too.
 
 `onChainValid` and `sealValid` are `null` when they do not apply (an off ledger
 certificate, or the brand not deployed on that network). Null means "nothing to
@@ -423,8 +472,9 @@ jq '{envelope: .}' document.radixsig.json \
 
 **`/api/sign/onchain-status`** takes `networkId` plus a `requestId` (and
 optionally a `docHash`) and reports, straight from the ledger, who was required
-to sign, who has signed, whether it is `complete`, whether the hash matches, and
-the issuer's published identity. It needs neither the document nor the
+to sign, who has signed and when (`signedAt`, the consensus time of the minting
+transaction), whether it is `complete`, whether the hash matches, and the
+issuer's published identity. It needs neither the document nor the
 certificate, so it suits polling the state of a file being signed.
 
 ```bash
@@ -441,7 +491,7 @@ bytes to hash are the embedded `radix-original-<name>` attachment, not the PDF
 itself, which additionally carries the presentation layers.
 
 **Limits and errors.** 300 requests per minute per IP (`429` with `Retry-After`),
-certificates up to 64 KiB (`413`), `400` for malformed JSON, a certificate that
+certificates up to 256 KiB (`413`), `400` for malformed JSON, a certificate that
 fails the schema or an unknown network, and `500` on internal failure.
 
 **Deployment note.** ROLA validates the origin the signature was produced for,
@@ -462,6 +512,16 @@ required signers, timestamp, network id, nonce), an array of `signatures` (each
 with the signer account, disclosed name and email if any, and either a ROLA
 proof or, for on ledger signatures, `null`), an optional `onChain` anchor and an
 optional `request` pointer.
+
+A signature made off ledger may also carry `timeStampToken`: an RFC 3161 token
+(base64 DER) in which a Time Stamping Authority attests that this signature
+already existed at a given moment. Its message imprint is the SHA-256 of
+`radix-seal-timestamp:v1|<signer account>|<challenge>|<signature hex>`, so a
+token cannot be lifted from one signature onto another, and verification
+recomputes it from data already in the certificate. Requesting one is best effort
+— an authority being unreachable never blocks a signature — so the field is
+absent on certificates signed while it was down, and on every certificate
+produced before the field existed.
 
 A signature entry may also carry an optional `certificate` object recording the
 X.509 identity that signer used for the PDF's PAdES signature: `subjectCN`,
@@ -556,13 +616,35 @@ Seal and creates a fresh collection to sign under the new brand.
   must provably belong to the claimed signer through the locked owner rule.
 - **Tampering with the document.** Detected. The local re hash no longer matches
   the signed hash.
-- **Understating the required signer set.** Rejected. The set is re resolved from
-  the immutable invitation batch, and the complete batch must exist.
+- **Understating the required signer set.** Rejected *when you supply the request
+  key*. The set is re resolved from the immutable invitation batch and the
+  complete batch must exist, but the certificate nominates which request that is.
+  Anyone can mint a collection and a one name invitation batch their own
+  signature satisfies, so a certificate checked against its own pointer is
+  checked against a yardstick its author chose. Pass the key you obtained
+  independently (`requestOverride`, or the field in the verification tab) and it
+  wins; `requestMismatch` then reports a certificate that was pointing elsewhere.
+- **Backdating a signature.** Detected when the signature carries an independent
+  clock. On ledger, the consensus time of the minting transaction is not
+  something the signer picks. Off ledger, an RFC 3161 token proves the signature
+  already existed at the authority's time, and a certificate claiming an earlier
+  date contradicts it (`signedAtAnchored: false`). A signature with neither is
+  reported as having no independent clock rather than shown with a green tick
+  beside a date resting on nothing.
 - **A compromised site operator or admin badge.** Cannot forge signatures: the
   operator never holds user seals, and brand metadata is not part of verification.
 
+**Minting a signature NFT by hand is not an attack.** The console lets an account
+mint into its own collection with the whole schema filled in, and that produces a
+genuine signature: the mint is authorised by the account's own seal, so whatever
+it records, that account signed it. The security model never rested on this app
+being the only way to reach the ledger.
+
 What Radix Seal does not defend against is a signer voluntarily disclosing a false
-name (see the honest scope below) or losing control of their own account keys.
+name (see the honest scope below), the message and file name of a purely on ledger
+certificate (the ledger binds the signer and the document hash and nothing else,
+which is why `payloadBound` is reported), or losing control of their own account
+keys.
 
 ---
 

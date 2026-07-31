@@ -20,6 +20,7 @@ import {
   findSealAndCollection,
   rememberSignCollection,
 } from '../services/sealDiscovery';
+import { requestSignatureTimestamp } from '../services/signApi';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import type {
   AttestationEnvelope,
@@ -132,6 +133,37 @@ async function requestWalletSignature(
 }
 
 /**
+ * The certificate entry for one wallet signature, carrying a trusted timestamp
+ * whenever the authority answers.
+ *
+ * An off-ledger signature's date used to be `new Date()` — the signer's own
+ * clock, which a certificate holder could rewrite to any day they liked. With a
+ * token, the AUTHORITY's time becomes the date, so `signedAt` is something a
+ * verifier can check instead of something it has to take on faith. When the
+ * authority is unreachable the local clock is used as before: it is better to
+ * sign with a weakly-evidenced date than not to sign at all, and verification
+ * reports the difference rather than hiding it.
+ */
+async function timestampedEntry(
+  sig: WalletSignature,
+  challenge: string,
+): Promise<SignatureEntry> {
+  const stamp = await requestSignatureTimestamp(
+    sig.account,
+    challenge,
+    sig.proof.signature,
+  );
+  return {
+    signerAccount: sig.account,
+    disclosedName: sig.disclosedName,
+    disclosedEmail: sig.disclosedEmail,
+    proof: sig.proof,
+    signedAt: stamp?.genTime ?? new Date().toISOString(),
+    ...(stamp ? { timeStampToken: stamp.token } : {}),
+  };
+}
+
+/**
  * Orchestrates document signing (single or multi-party) and, for single-sign,
  * optional on-ledger anchoring.
  */
@@ -174,7 +206,7 @@ export function useDocumentSign() {
 
     const localIdNum = collection ? collection.totalSupply + 1 : 1;
     // A stand-alone anchor has no on-ledger invitation, so `request` is empty;
-    // verification (`signerHasSigned`) keys on kind + doc hash + signer only.
+    // verification (`findSignerSignature`) keys on kind + doc hash + signer only.
     const manifest = collection
       ? buildSignatureMintManifest({
           account,
@@ -271,13 +303,7 @@ export function useDocumentSign() {
         persona?.label,
       );
 
-      const entry: SignatureEntry = {
-        signerAccount: sig.account,
-        disclosedName: sig.disclosedName,
-        disclosedEmail: sig.disclosedEmail,
-        proof: sig.proof,
-        signedAt: new Date().toISOString(),
-      };
+      const entry = await timestampedEntry(sig, challenge);
       let envelope = buildEnvelope(payload, entry);
 
       // Single-sign inline anchoring (multi-sign anchors once complete).
@@ -357,13 +383,7 @@ export function useDocumentSign() {
         return null;
       }
 
-      const entry: SignatureEntry = {
-        signerAccount: sig.account,
-        disclosedName: sig.disclosedName,
-        disclosedEmail: sig.disclosedEmail,
-        proof: sig.proof,
-        signedAt: new Date().toISOString(),
-      };
+      const entry = await timestampedEntry(sig, challenge);
 
       setPhase('done');
       return {

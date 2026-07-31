@@ -75,6 +75,9 @@ interface NfDataResponse {
   non_fungible_ids?: Array<{
     non_fungible_id?: string;
     data?: { programmatic_json?: { fields?: Array<{ field_name?: string; value?: unknown }> } };
+    /** Ledger point the NFT last changed at. Its data is locked at mint, so
+     *  for these collections this IS the moment it was minted. */
+    last_updated_at_state_version?: number;
   }>;
 }
 
@@ -146,12 +149,19 @@ export async function entityDetails(
   return out;
 }
 
-export async function nfData(
+/** One NFT's locked fields together with the ledger point it was minted at. */
+export interface NfRecord {
+  fields: Record<string, string>;
+  /** Ledger state version of the mint, or 0 when the Gateway omits it. */
+  stateVersion: number;
+}
+
+export async function nfRecords(
   network: Network,
   resource: string,
   ids: string[],
-): Promise<Map<string, Record<string, string>>> {
-  const out = new Map<string, Record<string, string>>();
+): Promise<Map<string, NfRecord>> {
+  const out = new Map<string, NfRecord>();
   for (let i = 0; i < ids.length; i += 50) {
     const data = await gatewayPost<NfDataResponse>(
       network,
@@ -159,10 +169,57 @@ export async function nfData(
       { resource_address: resource, non_fungible_ids: ids.slice(i, i + 50) },
     ).catch(() => ({}) as NfDataResponse);
     for (const nf of data.non_fungible_ids ?? []) {
-      if (nf.non_fungible_id) out.set(nf.non_fungible_id, nfFieldMap(nf));
+      if (!nf.non_fungible_id) continue;
+      out.set(nf.non_fungible_id, {
+        fields: nfFieldMap(nf),
+        stateVersion: nf.last_updated_at_state_version ?? 0,
+      });
     }
   }
   return out;
+}
+
+export async function nfData(
+  network: Network,
+  resource: string,
+  ids: string[],
+): Promise<Map<string, Record<string, string>>> {
+  const records = await nfRecords(network, resource, ids);
+  return new Map([...records].map(([id, record]) => [id, record.fields]));
+}
+
+interface TransactionStreamResponse {
+  items?: Array<{ state_version?: number; round_timestamp?: string; confirmed_at?: string }>;
+}
+
+/**
+ * The consensus time of a ledger state version — the clock behind an on-ledger
+ * signature. Unlike the date written into the NFT (supplied by whoever minted
+ * it) or the one in a certificate, this one is agreed by the whole network and
+ * cannot be chosen, which is what makes it worth reading back.
+ *
+ * Returns null when the Gateway cannot resolve it; a missing clock is reported
+ * as missing, never guessed at.
+ */
+export async function ledgerTimestamp(
+  network: Network,
+  stateVersion: number,
+): Promise<string | null> {
+  if (!Number.isInteger(stateVersion) || stateVersion <= 0) return null;
+  const data = await gatewayPost<TransactionStreamResponse>(
+    network,
+    '/stream/transactions',
+    {
+      from_ledger_state: { state_version: stateVersion },
+      limit_per_page: 1,
+      order: 'Asc',
+    },
+  ).catch(() => ({}) as TransactionStreamResponse);
+  const item = data.items?.[0];
+  // The stream starts AT the requested version, so a different one back means
+  // the transaction is no longer retrievable and we know nothing about its time.
+  if (!item || item.state_version !== stateVersion) return null;
+  return item.confirmed_at ?? item.round_timestamp ?? null;
 }
 
 /**
@@ -285,18 +342,27 @@ export async function resolveSealRequest(
   return { docHash, requiredSigners };
 }
 
+/** A located on-ledger signature, with the ledger point that minted it. */
+export interface SignerSignature {
+  /** Ledger state version of the mint, or 0 when the Gateway omits it. */
+  stateVersion: number;
+}
+
 /**
- * True when `signer` holds a valid signature for `docHash` in a collection that
- * provably belongs to them (see chain of custody above). Pass `officialSeal`
+ * Locates `signer`'s valid signature for `docHash` in a collection that provably
+ * belongs to them (see chain of custody above), or null. Pass `officialSeal`
  * (the network's Radix Seal brand resource) to also require the owner seal be
  * the official brand.
+ *
+ * The state version comes back with it so callers can resolve WHEN the network
+ * agreed the signature existed, rather than trusting a date someone typed.
  */
-export async function signerHasSigned(
+export async function findSignerSignature(
   network: Network,
   signer: string,
   docHash: string,
   officialSeal = '',
-): Promise<boolean> {
+): Promise<SignerSignature | null> {
   const [accountItem] = await entityDetails(network, [signer], {
     non_fungible_include_nfids: true,
   });
@@ -326,20 +392,20 @@ export async function signerHasSigned(
         ?.ids.slice(0, MAX_IDS_PER_COLLECTION) ?? [];
     if (ids.length === 0) continue;
 
-    const data = await nfData(network, address, ids);
-    const hasSignature = [...data.values()].some(
-      (fields) =>
+    const data = await nfRecords(network, address, ids);
+    const match = [...data.values()].find(
+      ({ fields }) =>
         fields.kind === 'signature' &&
         fields.document_hash === docHash &&
         fields.signer === signer,
     );
-    if (!hasSignature) continue;
+    if (!match) continue;
 
     // Chain of custody: the collection's owner seal must live in `signer`
     // (and be the official brand when known).
     if (await collectionSealBelongsTo(network, collection, signer, officialSeal)) {
-      return true;
+      return { stateVersion: match.stateVersion };
     }
   }
-  return false;
+  return null;
 }

@@ -9,11 +9,20 @@ import { deriveChallenge } from '@/features/sign/lib/hash';
 import {
   collectionOwnedByAccount,
   entityDetails,
+  findSignerSignature,
+  ledgerTimestamp,
   resolveSealRequest,
-  signerHasSigned,
+  type SignerSignature,
 } from '@/features/sign/lib/onchain-custody';
 import { MAX_ENVELOPE_BYTES } from '@/features/sign/constants/limits';
 import { radixSealAddress, RADIX_SEAL_STANDARD_KEY } from '@/features/sign/constants/seal';
+import {
+  MAX_TOKEN_BASE64,
+  sha256Hex,
+  signedAtAgrees,
+  timestampImprintInput,
+} from '@/features/sign/lib/timestamp';
+import { verifyTimeStampTokenBase64 } from '@/features/sign/lib/tsa-verify';
 import type { VerifiedSignature } from '@/features/sign/types/sign.types';
 
 /**
@@ -62,6 +71,9 @@ const signatureSchema = z
     proof: proofSchema.nullable(),
     signedAt: z.string().max(64),
     certificate: signerCertificateSchema.optional(),
+    /** RFC 3161 timestamp token (base64 DER) attesting when this signature
+     *  existed. Verified below against this signature's own imprint. */
+    timeStampToken: z.string().max(MAX_TOKEN_BASE64).optional(),
   })
   .strict();
 
@@ -122,6 +134,13 @@ const bodySchema = z
         request: requestSchema,
       })
       .strict(),
+    /**
+     * A request key the VERIFIER supplied (typed in, or carried by the shared
+     * link). It outranks the certificate's own: a certificate names the request
+     * it wants to be measured against, so left to itself it can point at one
+     * whose invitation batch lists nobody it has not already collected.
+     */
+    requestOverride: requestSchema,
   })
   .strict();
 
@@ -230,7 +249,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'invalid_certificate' }, { status: 400 });
   }
-  const { envelope } = parsed.data;
+  const { envelope, requestOverride } = parsed.data;
   const { payload } = envelope;
 
   if (
@@ -248,18 +267,37 @@ export async function POST(req: NextRequest) {
       payload.networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
     const officialSeal = radixSealAddress(payload.networkId as RadixNetworkId);
 
-    // Authoritative required-signer set. For on-ledger certificates that
-    // reference their request, re-resolve it from the IMMUTABLE invitation batch
-    // so the certificate cannot understate who had to sign. Otherwise use the
-    // payload list (which the ROLA challenge already binds for off-ledger certs).
+    /*
+     * Authoritative required-signer set, re-resolved from the IMMUTABLE
+     * invitation batch so a certificate cannot understate who had to sign.
+     *
+     * WHICH request is resolved matters as much as resolving one. A certificate
+     * names its own, and anyone can mint a signing collection and a one-name
+     * invitation batch into it, so a certificate left to choose freely can point
+     * at a request that requires only the signer it already has. A key supplied
+     * by the verifier — typed in, or read from the link the issuer shared —
+     * therefore wins outright, and a certificate pointing somewhere else is
+     * flagged rather than quietly overridden.
+     */
+    const effectiveRequest = requestOverride ?? envelope.request ?? null;
+    const requestSource: 'typed' | 'certificate' | 'none' = requestOverride
+      ? 'typed'
+      : envelope.request
+        ? 'certificate'
+        : 'none';
+    const requestMismatch =
+      !!requestOverride &&
+      !!envelope.request &&
+      requestOverride.requestId.trim() !== envelope.request.requestId.trim();
+
     let requiredSigners: string[] = payload.signers;
-    // A certificate that references an on-ledger request stands or falls with
+    // A certificate measured against an on-ledger request stands or falls with
     // it: if the request cannot be resolved (bogus key, or an invitation was
     // burned on a legacy collection to shrink the quorum), completion is
     // DENIED rather than falling back to the certificate's own signer list.
     let requestResolved = true;
-    if (envelope.request) {
-      const resolved = await resolveSealRequest(network, envelope.request.requestId);
+    if (effectiveRequest) {
+      const resolved = await resolveSealRequest(network, effectiveRequest.requestId);
       if (resolved && resolved.docHash === payload.docHash) {
         requiredSigners = resolved.requiredSigners;
       } else {
@@ -267,6 +305,26 @@ export async function POST(req: NextRequest) {
       }
     }
     const openSet = requiredSigners.length === 0;
+
+    /*
+     * On-ledger signature lookups, resolved once per account. The same account
+     * is asked about by the per-signature loop, by the anchoring checks and by
+     * the multi-party branch below, and each lookup is several Gateway round
+     * trips over that account's whole NFT holdings.
+     */
+    const lookups = new Map<string, Promise<SignerSignature | null>>();
+    const lookupSignature = (account: string): Promise<SignerSignature | null> => {
+      const cached = lookups.get(account);
+      if (cached) return cached;
+      const pending = findSignerSignature(
+        network,
+        account,
+        payload.docHash,
+        officialSeal,
+      );
+      lookups.set(account, pending);
+      return pending;
+    };
 
     const signatures: VerifiedSignature[] = await Promise.all(
       envelope.signatures.map(async (s) => {
@@ -277,6 +335,7 @@ export async function POST(req: NextRequest) {
         // (anyone can mint an NFT for any hash, so an uninvited one must not
         // count). Open sets (no required list) accept any valid signer.
         const invited = openSet || requiredSigners.includes(s.signerAccount);
+        const onLedger = s.proof ? null : await lookupSignature(s.signerAccount);
         const valid = s.proof
           ? (
               await rola.verifySignedChallenge({
@@ -286,8 +345,46 @@ export async function POST(req: NextRequest) {
                 type: 'account',
               })
             ).isOk()
-          : invited &&
-            (await signerHasSigned(network, s.signerAccount, payload.docHash, officialSeal));
+          : invited && !!onLedger;
+
+        /*
+         * When this signature happened, according to something other than the
+         * certificate. Off-ledger that is the authority's genTime, valid only
+         * once the token is shown to cover THIS signature; on-ledger it is the
+         * consensus time of the transaction that minted it. Either way the
+         * declared `signedAt` becomes a claim that can be contradicted, which is
+         * the whole point: it used to be a claim nothing could touch.
+         */
+        let anchoredAt: string | null = null;
+        let anchorSource: 'ledger' | 'timestamp' | null = null;
+        let timestampAuthority: string | null = null;
+        let timestampUntrustedAnchor = false;
+
+        if (valid && s.proof && s.timeStampToken) {
+          const imprint = await sha256Hex(
+            timestampImprintInput(s.signerAccount, challenge, s.proof.signature),
+          );
+          const check = verifyTimeStampTokenBase64(s.timeStampToken, imprint);
+          if (check.valid && check.genTime) {
+            anchoredAt = check.genTime;
+            anchorSource = 'timestamp';
+            timestampAuthority = check.authority;
+            timestampUntrustedAnchor = !check.trusted;
+          }
+        }
+        // A certificate that also lives on the ledger has a clock there whether
+        // or not a token was ever obtained — including for older certificates,
+        // and for the anchored single-sign flow whose signatures DO carry a ROLA
+        // proof. Only asked for when the certificate claims an on-ledger side,
+        // so a purely off-ledger one costs no Gateway round trip.
+        if (!anchoredAt && valid && (envelope.onChain || effectiveRequest)) {
+          const record = onLedger ?? (await lookupSignature(s.signerAccount));
+          if (record) {
+            anchoredAt = await ledgerTimestamp(network, record.stateVersion);
+            if (anchoredAt) anchorSource = 'ledger';
+          }
+        }
+
         return {
           signerAccount: s.signerAccount,
           disclosedName: s.disclosedName,
@@ -295,6 +392,11 @@ export async function POST(req: NextRequest) {
           signedAt: s.signedAt,
           valid,
           required: openSet || requiredSigners.includes(s.signerAccount),
+          anchoredAt,
+          anchorSource,
+          signedAtAnchored: signedAtAgrees(s.signedAt, anchoredAt),
+          timestampAuthority,
+          timestampUntrustedAnchor,
         };
       }),
     );
@@ -327,11 +429,7 @@ export async function POST(req: NextRequest) {
           // Unified model: a signature NFT lives in the signer's Seal-owned
           // collection (owner = the OFFICIAL Radix Seal, in the signer's
           // account). This is the strongest binding.
-          if (
-            await signerHasSigned(network, nft.signerAccount, payload.docHash, officialSeal)
-          ) {
-            return true;
-          }
+          if (await lookupSignature(nft.signerAccount)) return true;
           // Legacy attestation: collection owned by the signer's account
           // signature badge, with a matching document hash. Kept so previously
           // anchored certificates still verify during the migration.
@@ -362,9 +460,7 @@ export async function POST(req: NextRequest) {
       // chain of custody (owner = the OFFICIAL Radix Seal, in the signer's
       // account) — the same infalsifiable check as the anchored case.
       const anchored = await Promise.all(
-        [...validAccounts].map((acc) =>
-          signerHasSigned(network, acc, payload.docHash, officialSeal),
-        ),
+        [...validAccounts].map(async (acc) => !!(await lookupSignature(acc))),
       );
       onChainValid = anchored.length > 0 && anchored.every(Boolean);
       // The custody check above already requires the official Seal.
@@ -383,6 +479,14 @@ export async function POST(req: NextRequest) {
       onChainValid,
       sealValid,
       onChain: envelope.onChain,
+      // Only a valid ROLA proof commits to the payload. Without one the ledger
+      // ties the signer to the document hash and to nothing else, so the
+      // message, file name and document date are declarations, not evidence.
+      payloadBound: envelope.signatures.some(
+        (s, index) => !!s.proof && signatures[index].valid,
+      ),
+      requestSource,
+      requestMismatch,
     });
   } catch {
     return NextResponse.json({ error: 'internal_error' }, { status: 500 });
