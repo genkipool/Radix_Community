@@ -21,7 +21,7 @@ import {
   rememberSignCollection,
 } from '../services/sealDiscovery';
 import { requestSignatureTimestamp } from '../services/signApi';
-import { fetchLedgerNow } from '../lib/ledger-time';
+import { fetchLedgerNow, fetchTransactionTime } from '../lib/ledger-time';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import type {
   AttestationEnvelope,
@@ -318,13 +318,31 @@ export function useDocumentSign() {
           return null;
         }
         setPhase('anchoring');
+        const onChain = await anchorToCollection(sig.account, activeNetworkId, {
+          docHash: input.docHash,
+          collectionName: input.collectionName ?? '',
+          imageUrl: input.imageUrl ?? '',
+        });
+        // Anchored: the consensus time of the transaction that recorded the
+        // signature replaces the timestamp authority's. Both are honest, but
+        // only one is the date a verifier reads off the ledger, and printing a
+        // different one on the signature page leaves a reader reconciling two.
+        const committedAt = await fetchTransactionTime(
+          activeNetworkId,
+          onChain.transactionIntentHash,
+        );
         envelope = {
           ...envelope,
-          onChain: await anchorToCollection(sig.account, activeNetworkId, {
-            docHash: input.docHash,
-            collectionName: input.collectionName ?? '',
-            imageUrl: input.imageUrl ?? '',
-          }),
+          onChain,
+          ...(committedAt
+            ? {
+                signatures: envelope.signatures.map((entry) =>
+                  entry.signerAccount === sig.account
+                    ? { ...entry, signedAt: committedAt }
+                    : entry,
+                ),
+              }
+            : {}),
         };
       }
 

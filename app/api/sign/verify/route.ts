@@ -9,7 +9,7 @@ import { deriveChallenge } from '@/features/sign/lib/hash';
 import {
   collectionOwnedByAccount,
   entityDetails,
-  findSignerSignature,
+  findSignerSignatures,
   ledgerTimestamp,
   resolveSealRequest,
   type SignerSignature,
@@ -291,7 +291,21 @@ export async function POST(req: NextRequest) {
       !!envelope.request &&
       requestOverride.requestId.trim() !== envelope.request.requestId.trim();
 
-    let requiredSigners: string[] = payload.signers;
+    /*
+     * With no on-ledger request to resolve, the certificate's OWN signature list
+     * is the required set.
+     *
+     * A single-signer document declares no signer set — there was nobody to
+     * invite — and treating that as "open" meant any account holding a signature
+     * for the same hash satisfied it, and that one valid signature made the
+     * whole certificate `complete`. Nothing was forgeable that way, but
+     * "complete" stopped meaning what a reader takes it to mean. Closing the set
+     * around whoever the certificate names says it plainly: these signed, and
+     * `complete` requires all of them.
+     */
+    let requiredSigners: string[] = payload.signers.length
+      ? payload.signers
+      : [...new Set(envelope.signatures.map((s) => s.signerAccount))];
     // A certificate measured against an on-ledger request stands or falls with
     // it: if the request cannot be resolved (bogus key, or an invitation was
     // burned on a legacy collection to shrink the quorum), completion is
@@ -313,11 +327,11 @@ export async function POST(req: NextRequest) {
      * the multi-party branch below, and each lookup is several Gateway round
      * trips over that account's whole NFT holdings.
      */
-    const lookups = new Map<string, Promise<SignerSignature | null>>();
-    const lookupSignature = (account: string): Promise<SignerSignature | null> => {
+    const lookups = new Map<string, Promise<SignerSignature[]>>();
+    const lookupSignatures = (account: string): Promise<SignerSignature[]> => {
       const cached = lookups.get(account);
       if (cached) return cached;
-      const pending = findSignerSignature(
+      const pending = findSignerSignatures(
         network,
         account,
         payload.docHash,
@@ -325,6 +339,34 @@ export async function POST(req: NextRequest) {
       );
       lookups.set(account, pending);
       return pending;
+    };
+
+    /*
+     * Which of an account's signature mints this certificate is talking about.
+     *
+     * Signing the same document twice is ordinary — a correction, a second
+     * round — and leaves several mints that all satisfy the chain of custody.
+     * Dating a certificate from an arbitrary one is how a signature made
+     * minutes ago gets reported against a mint from a fortnight back, and the
+     * certificate then called a liar for saying otherwise. So the mint that
+     * AGREES with the declared time wins; only when none does is the claim
+     * genuinely uncorroborated, and the earliest then stands as what the ledger
+     * does say.
+     */
+    const matchSignature = async (
+      candidates: SignerSignature[],
+      declaredAt: string,
+    ): Promise<{ record: SignerSignature; committedAt: string | null } | null> => {
+      let fallback: { record: SignerSignature; committedAt: string | null } | null =
+        null;
+      for (const record of candidates) {
+        const committedAt = await ledgerTimestamp(network, record.stateVersion);
+        if (!fallback) fallback = { record, committedAt };
+        if (committedAt && signedAtAgrees(declaredAt, committedAt)) {
+          return { record, committedAt };
+        }
+      }
+      return fallback;
     };
 
     const signatures: VerifiedSignature[] = await Promise.all(
@@ -336,7 +378,7 @@ export async function POST(req: NextRequest) {
         // (anyone can mint an NFT for any hash, so an uninvited one must not
         // count). Open sets (no required list) accept any valid signer.
         const invited = openSet || requiredSigners.includes(s.signerAccount);
-        const onLedger = s.proof ? null : await lookupSignature(s.signerAccount);
+        const onLedger = s.proof ? [] : await lookupSignatures(s.signerAccount);
         const valid = s.proof
           ? (
               await rola.verifySignedChallenge({
@@ -346,7 +388,7 @@ export async function POST(req: NextRequest) {
                 type: 'account',
               })
             ).isOk()
-          : invited && !!onLedger;
+          : invited && onLedger.length > 0;
 
         /*
          * When this signature happened, according to something other than the
@@ -361,7 +403,32 @@ export async function POST(req: NextRequest) {
         let timestampAuthority: string | null = null;
         let timestampUntrustedAnchor = false;
 
-        if (valid && s.proof && s.timeStampToken) {
+        // The LEDGER first whenever the signature lives there — including the
+        // anchored single-sign flow, whose signatures DO carry a ROLA proof.
+        // Both clocks are honest and seconds apart, but the ledger's is the one
+        // this product rests on, the one the signed PDF prints and the one a
+        // reader can check on any explorer, so the two never show two dates.
+        // Only asked for when the certificate claims an on-ledger side, so a
+        // purely off-ledger one costs no Gateway round trip.
+        let issuedAtAnchored: boolean | null = null;
+        if (valid && (onLedger.length > 0 || envelope.onChain || effectiveRequest)) {
+          const candidates =
+            onLedger.length > 0 ? onLedger : await lookupSignatures(s.signerAccount);
+          const matched = await matchSignature(candidates, s.signedAt);
+          if (matched?.committedAt) {
+            anchoredAt = matched.committedAt;
+            anchorSource = 'ledger';
+            // The NFT states its own date. It was written a moment before the
+            // transaction committed, so it should sit right beside the
+            // consensus time; a record whose `issued_at` says otherwise is
+            // contradicting the ledger it lives on.
+            issuedAtAnchored = issuedAtAgrees(
+              matched.record.issuedAt,
+              matched.committedAt,
+            );
+          }
+        }
+        if (!anchoredAt && valid && s.proof && s.timeStampToken) {
           const imprint = await sha256Hex(
             timestampImprintInput(s.signerAccount, challenge, s.proof.signature),
           );
@@ -371,29 +438,6 @@ export async function POST(req: NextRequest) {
             anchorSource = 'timestamp';
             timestampAuthority = check.authority;
             timestampUntrustedAnchor = !check.trusted;
-          }
-        }
-        // A certificate that also lives on the ledger has a clock there whether
-        // or not a token was ever obtained — including for older certificates,
-        // and for the anchored single-sign flow whose signatures DO carry a ROLA
-        // proof. Only asked for when the certificate claims an on-ledger side,
-        // so a purely off-ledger one costs no Gateway round trip.
-        let issuedAtAnchored: boolean | null = null;
-        if (valid && (onLedger || envelope.onChain || effectiveRequest)) {
-          const record = onLedger ?? (await lookupSignature(s.signerAccount));
-          if (record) {
-            const committedAt = await ledgerTimestamp(network, record.stateVersion);
-            if (committedAt) {
-              // The NFT states its own date. It was written a moment before the
-              // transaction committed, so it should sit right beside the
-              // consensus time; a record whose `issued_at` says otherwise is
-              // contradicting the ledger it lives on.
-              issuedAtAnchored = issuedAtAgrees(record.issuedAt, committedAt);
-              if (!anchoredAt) {
-                anchoredAt = committedAt;
-                anchorSource = 'ledger';
-              }
-            }
           }
         }
 
@@ -442,7 +486,7 @@ export async function POST(req: NextRequest) {
           // Unified model: a signature NFT lives in the signer's Seal-owned
           // collection (owner = the OFFICIAL Radix Seal, in the signer's
           // account). This is the strongest binding.
-          if (await lookupSignature(nft.signerAccount)) return true;
+          if ((await lookupSignatures(nft.signerAccount)).length > 0) return true;
           // Legacy attestation: collection owned by the signer's account
           // signature badge, with a matching document hash. Kept so previously
           // anchored certificates still verify during the migration.
@@ -473,7 +517,7 @@ export async function POST(req: NextRequest) {
       // chain of custody (owner = the OFFICIAL Radix Seal, in the signer's
       // account) — the same infalsifiable check as the anchored case.
       const anchored = await Promise.all(
-        [...validAccounts].map(async (acc) => !!(await lookupSignature(acc))),
+        [...validAccounts].map(async (acc) => (await lookupSignatures(acc)).length > 0),
       );
       onChainValid = anchored.length > 0 && anchored.every(Boolean);
       // The custody check above already requires the official Seal.

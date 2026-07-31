@@ -21,6 +21,8 @@ import {
 } from '../constants/seal';
 
 const MAX_CANDIDATE_RESOURCES = 30;
+/** How many of an account's signatures for one document we carry back. */
+const MAX_SIGNATURE_CANDIDATES = 12;
 const MAX_IDS_PER_COLLECTION = 60;
 const MAX_SIGNERS = 25;
 
@@ -357,20 +359,21 @@ export interface SignerSignature {
 }
 
 /**
- * Locates `signer`'s valid signature for `docHash` in a collection that provably
- * belongs to them (see chain of custody above), or null. Pass `officialSeal`
- * (the network's Radix Seal brand resource) to also require the owner seal be
- * the official brand.
+ * Every valid signature `signer` holds for `docHash`, in collections that
+ * provably belong to them (see chain of custody above), earliest first. Empty
+ * when they have not signed. Pass `officialSeal` (the network's Radix Seal brand
+ * resource) to also require the owner seal be the official brand.
  *
- * The state version comes back with it so callers can resolve WHEN the network
- * agreed the signature existed, rather than trusting a date someone typed.
+ * Each carries the state version of its mint, so callers can resolve WHEN the
+ * network agreed the signature existed rather than trusting a date someone
+ * typed — and, with several to choose from, which mint a claim refers to.
  */
-export async function findSignerSignature(
+export async function findSignerSignatures(
   network: Network,
   signer: string,
   docHash: string,
   officialSeal = '',
-): Promise<SignerSignature | null> {
+): Promise<SignerSignature[]> {
   const [accountItem] = await entityDetails(network, [signer], {
     non_fungible_include_nfids: true,
   });
@@ -393,19 +396,18 @@ export async function findSignerSignature(
   );
 
   /*
-   * The EARLIEST qualifying signature, not merely the first one stumbled upon.
+   * EVERY qualifying signature, not merely the first one stumbled upon.
    *
    * An account can hold many signature NFTs for the same document — several
    * collections under one insignia, or simply the same document signed again —
    * and the order collections come back in is not an order anybody promised. As
-   * a yes/no answer that made no difference, but this now reports WHEN, and
-   * "whichever the Gateway listed first" is not a date: two callers would get
-   * two different ones for the same account, and a certificate built from one
-   * would be contradicted by verification reading the other. The first moment
-   * the account committed to this hash is the defensible answer, and it is the
-   * same answer every time.
+   * a yes/no answer that made no difference. As a DATE it decides everything:
+   * picking one arbitrarily dates a signature made today from a mint two weeks
+   * old, and then calls the certificate a liar for disagreeing. So they all come
+   * back, and the caller — which knows what the certificate claims — decides
+   * which one is the evidence for it.
    */
-  let earliest: SignerSignature | null = null;
+  const found: SignerSignature[] = [];
   for (const collection of marked) {
     const address = collection.address ?? '';
     const ids =
@@ -429,13 +431,34 @@ export async function findSignerSignature(
       continue;
     }
     for (const match of matches) {
-      if (!earliest || match.stateVersion < earliest.stateVersion) {
-        earliest = {
-          stateVersion: match.stateVersion,
-          issuedAt: match.fields.issued_at ?? '',
-        };
-      }
+      found.push({
+        stateVersion: match.stateVersion,
+        issuedAt: match.fields.issued_at ?? '',
+      });
     }
   }
-  return earliest;
+
+  found.sort((a, b) => a.stateVersion - b.stateVersion);
+  if (found.length <= MAX_SIGNATURE_CANDIDATES) return found;
+  // Over the cap, keep the two ends: the first time this account committed to
+  // the hash, and the most recent mints, which is where a signature just made
+  // will be. Dropping the middle costs nothing a verifier can act on.
+  return [found[0], ...found.slice(-(MAX_SIGNATURE_CANDIDATES - 1))];
+}
+
+/**
+ * The account's EARLIEST valid signature for `docHash`, or null — the answer to
+ * "has this account signed, and when did it first do so". Callers holding a
+ * certificate should use {@link findSignerSignatures} instead and pick the mint
+ * that corroborates what it claims.
+ */
+export async function findSignerSignature(
+  network: Network,
+  signer: string,
+  docHash: string,
+  officialSeal = '',
+): Promise<SignerSignature | null> {
+  return (
+    (await findSignerSignatures(network, signer, docHash, officialSeal))[0] ?? null
+  );
 }

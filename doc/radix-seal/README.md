@@ -167,13 +167,18 @@ What this implies, and the tooling reflects it:
   scan of what an account holds until its first mint. Discovery accounts for
   this; a third party integrator scanning holdings should expect the same blind
   spot.
-- **The EARLIEST signature answers "when".** An account can hold several
-  signature NFTs for the same document — across collections, or from signing the
-  same file again — and the order a Gateway returns collections in is not an
-  order anybody promised. As a yes/no answer that made no difference; as a date
-  it does, so the first moment the account committed to that hash is the answer,
-  and it is the same answer for every caller. An integrator resolving a date
-  should take the minimum state version, not the first hit.
+- **The mint that CORROBORATES the claim answers "when".** An account can hold
+  several signature NFTs for the same document — across collections, or from
+  signing the same file again — and the order a Gateway returns collections in
+  is not an order anybody promised. As a yes/no answer that made no difference;
+  as a date it decides everything. Verification therefore compares the
+  certificate's declared time against each candidate mint and takes the one that
+  agrees; only when none does is the claim uncorroborated, and the earliest then
+  stands as what the ledger does say. Taking the first hit instead dates a
+  signature made minutes ago from a mint weeks old and then reports the
+  certificate as contradicting the ledger. With no certificate to corroborate
+  (`/api/sign/onchain-status`), the earliest mint is the answer: the first
+  moment that account committed to the hash.
 - **Only collections under the CURRENT brand count.** After a brand redeploy,
   collections created for the previous seal still exist and still hold their
   evidence, but they no longer satisfy the insignia check, so their signatures
@@ -458,7 +463,7 @@ whole contents of the `.radixsig.json`) and answers with:
 | `complete` | Every required signer has a valid signature. This is the field to gate on |
 | `allValid` | Every signature present is cryptographically valid |
 | `signatures` | Per signer: account, disclosed name and email, `valid`, `required`, plus the time fields below |
-| `requiredSigners` | The authoritative required set |
+| `requiredSigners` | The authoritative required set. With no on-ledger request, the certificate's own signature list — so `complete` means "these signed", never "somebody did" |
 | `requestSource` | Where that set came from: `typed`, `certificate` or `none` |
 | `requestMismatch` | The certificate points at a request other than the one you supplied |
 | `payloadBound` | A valid ROLA proof covers the payload, so message, file name and date are signed |

@@ -27,6 +27,43 @@ interface GatewayStatusResponse {
   ledger_state?: { proposer_round_timestamp?: string };
 }
 
+interface CommittedDetailsResponse {
+  transaction?: { confirmed_at?: string; round_timestamp?: string };
+}
+
+/**
+ * When the network agreed a transaction happened, by its intent hash.
+ *
+ * This is the date an anchored signature deserves: consensus, not the signer's
+ * browser and not a third-party authority. Reading it back right after the
+ * anchor lets the certificate — and the signature page printed into the PDF —
+ * show the very moment a verifier will find on the ledger, instead of two
+ * plausible dates a few seconds apart that a reader has to reconcile.
+ *
+ * Null when it cannot be resolved (the Gateway has yet to index the
+ * transaction, typically); callers keep whatever date they already had.
+ */
+export async function fetchTransactionTime(
+  networkId: number,
+  intentHash: string,
+): Promise<string | null> {
+  if (!intentHash) return null;
+  const net: Network =
+    networkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
+  try {
+    const data = await gatewayPost<CommittedDetailsResponse>(
+      net,
+      '/transaction/committed-details',
+      { intent_hash: intentHash },
+    );
+    const stamp =
+      data.transaction?.confirmed_at ?? data.transaction?.round_timestamp;
+    return stamp && !Number.isNaN(Date.parse(stamp)) ? stamp : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Current consensus time as ISO-8601, or the local clock when the Gateway
  * cannot be reached. The fallback never blocks a signature: by the time

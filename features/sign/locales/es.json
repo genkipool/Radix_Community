@@ -346,10 +346,13 @@
       "certSerial": "Número de serie del certificado",
       "certNote": "Este documento lleva además una firma digital de PDF estándar. Tu lector de PDF valida este certificado contra sus propias autoridades de confianza.",
       "verifyTitle": "Verifica esta firma",
-      "verifyInstruction": "Escanea el código o abre la dirección de abajo y suelta este PDF en el verificador. La verificación se ejecuta en tu navegador y lee el ledger público de Radix.",
+      "verifyInstruction": "Escanea el código o abre la dirección de abajo y suelta este PDF en el verificador. La verificación se ejecuta en tu navegador.",
       "disclaimerTitle": "Qué demuestra",
-      "disclaimer": "Una firma de Radix Seal prueba la integridad del documento, su fecha y el control de la cuenta firmante. Cualquier nombre revelado es auto-declarado por la wallet del firmante, así que no es una firma electrónica cualificada con identidad verificada (como eIDAS QES). Anclada en el ledger permanece verificable mientras exista la Red Radix.",
-      "generated": "Generado por Radix Seal"
+      "disclaimer": "Una firma de Radix Seal prueba la integridad del documento, su fecha y el control de la cuenta firmante. Cualquier nombre revelado es auto-declarado por la wallet del firmante, así que no es una firma electrónica cualificada con identidad verificada (como eIDAS QES).",
+      "generated": "Página generada el",
+      "disclaimerAnchored": "Anclada en el ledger, permanece verificable mientras exista la Red Radix.",
+      "verifyInstructionLedger": "Además lee el ledger público de Radix para comprobar el registro anclado.",
+      "generatedNote": "momento de impresión de esta página, no es la fecha de firma"
     },
     "pades": {
       "title": "Firma con certificado (PAdES / X.509)",
