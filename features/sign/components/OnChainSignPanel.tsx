@@ -336,6 +336,7 @@ export function OnChainSignPanel({
         .map((s) => ({ account: s.account, signedAt: s.signedAt })),
       nonce: randomNonceHex(),
       requestId: status?.requestId ?? requestId,
+      createdAt: status?.createdAt,
     });
 
   const downloadCert = () => downloadCertificate(onChainCertificate());

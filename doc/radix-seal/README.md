@@ -254,6 +254,18 @@ The **request key** is the first invitation's global id,
 `<initiator collection>:#<firstId>#`. From it alone anyone can reconstruct the
 immutable required signer set by reading the locked invitation batch.
 
+**Every date in a certificate, and what backs it.**
+
+| Date | Where it comes from | What backs it |
+| --- | --- | --- |
+| `payload.timestamp` ("created") | The Gateway's current ledger time when the document was put up for signing; for an on ledger request, the commit time of its first invitation | Bound by the ROLA proof, so no third party can alter it, and checked against the signatures: it cannot be later than the moment the network recorded one (`createdAtCoherent`) |
+| `signatures[].signedAt` | The commit time of the anchoring transaction when the signature is on ledger; otherwise the RFC 3161 authority's `genTime` | Re-resolved from the ledger or the token at verification (`anchoredAt`, `signedAtAnchored`) |
+| `issued_at` inside an NFT | Ledger time read just before the mint | Compared against its own transaction's commit time (`issuedAtAnchored`) |
+| The signature page footer | The moment the PDF page was rendered | Nothing, and it says so: it is a print artifact, not evidence |
+
+Nothing in that table comes from the signer's own clock any more, and nothing
+that is not evidence is presented as if it were.
+
 **On dates.** A mint cannot carry the consensus time of its own transaction:
 that time does not exist until the transaction commits, and a manifest has no way
 to pipe the result of `get_current_time` into the data of a `MINT` instruction.
@@ -467,6 +479,7 @@ whole contents of the `.radixsig.json`) and answers with:
 | `requestSource` | Where that set came from: `typed`, `certificate` or `none` |
 | `requestMismatch` | The certificate points at a request other than the one you supplied |
 | `payloadBound` | A valid ROLA proof covers the payload, so message, file name and date are signed |
+| `createdAtCoherent` | The declared creation time is not later than the moment the network recorded a signature |
 | `docHash`, `timestamp`, `message`, `networkId` | Payload data |
 | `onChainValid`, `sealValid` | On ledger anchor and official insignia |
 
@@ -509,8 +522,9 @@ jq '{envelope: .}' document.radixsig.json \
 **`/api/sign/onchain-status`** takes `networkId` plus a `requestId` (and
 optionally a `docHash`) and reports, straight from the ledger, who was required
 to sign, who has signed and when (`signedAt`, the consensus time of the earliest
-qualifying minting transaction), whether it is `complete`, whether the hash
-matches, and the issuer's published identity. It applies exactly the same chain
+qualifying minting transaction), when the request itself was created
+(`createdAt`, the commit time of its first invitation), whether it is
+`complete`, whether the hash matches, and the issuer's published identity. It applies exactly the same chain
 of custody as `/api/sign/verify`, official insignia included, so the two never
 disagree about who has signed or when. It needs neither the document nor the
 certificate, so it suits polling the state of a file being signed.

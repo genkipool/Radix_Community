@@ -17,8 +17,10 @@ import {
 import { MAX_ENVELOPE_BYTES } from '@/features/sign/constants/limits';
 import { radixSealAddress, RADIX_SEAL_STANDARD_KEY } from '@/features/sign/constants/seal';
 import {
+  instantOf,
   issuedAtAgrees,
   MAX_TOKEN_BASE64,
+  SIGNED_AT_TOLERANCE_MS,
   sha256Hex,
   signedAtAgrees,
   timestampImprintInput,
@@ -458,6 +460,27 @@ export async function POST(req: NextRequest) {
       }),
     );
 
+    /*
+     * A document cannot be created after it was signed.
+     *
+     * `payload.timestamp` is the one date a ROLA proof does commit to, which
+     * makes it unalterable by a third party but says nothing about whether the
+     * signer's own machine told the truth when it wrote it. It has one hard
+     * relation to something independent: it must not come AFTER the moment the
+     * network recorded the signature. Anything else is a spread a legitimate
+     * signing can produce (a document circulated for days before anyone signs).
+     */
+    const earliestAnchor = signatures
+      .filter((s) => s.valid && s.anchoredAt)
+      .map((s) => Date.parse(s.anchoredAt!))
+      .filter((t) => !Number.isNaN(t))
+      .sort((a, b) => a - b)[0];
+    const createdInstant = instantOf(payload.timestamp);
+    const createdAtCoherent =
+      earliestAnchor === undefined || createdInstant === null
+        ? null
+        : createdInstant <= earliestAnchor + SIGNED_AT_TOLERANCE_MS;
+
     const allValid = signatures.every((s) => s.valid);
     const validAccounts = new Set(
       signatures.filter((s) => s.valid).map((s) => s.signerAccount),
@@ -544,6 +567,7 @@ export async function POST(req: NextRequest) {
       ),
       requestSource,
       requestMismatch,
+      createdAtCoherent,
     });
   } catch {
     return NextResponse.json({ error: 'internal_error' }, { status: 500 });

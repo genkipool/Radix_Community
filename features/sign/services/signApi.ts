@@ -105,6 +105,8 @@ export interface OnChainStatus {
   collection?: string;
   docHash?: string;
   hashMismatch?: boolean;
+  /** Consensus time of the transaction that minted the first invitation. */
+  createdAt?: string | null;
   networkId?: number;
   requiredSigners?: string[];
   signatures?: OnChainSignatureStatus[];

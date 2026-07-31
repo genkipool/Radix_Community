@@ -66,15 +66,21 @@ describe('a certificate date is ours to define', () => {
   });
 
   it('does not depend on the timezone of the machine checking it', () => {
-    const original = process.env.TZ;
-    const results: Array<boolean | null> = [];
-    for (const tz of ['UTC', 'Europe/Madrid', 'Pacific/Auckland']) {
-      process.env.TZ = tz;
-      results.push(issuedAtAgrees(LEGACY_ISSUED_AT, COMMIT_TIME));
-      results.push(signedAtAgrees('2026-07-19T17:17:40.000Z', COMMIT_TIME));
-    }
-    process.env.TZ = original;
-    expect(new Set(results.filter((_, i) => i % 2 === 0)).size).toBe(1);
-    expect(new Set(results.filter((_, i) => i % 2 === 1)).size).toBe(1);
+    // Asserted on the property itself rather than by reassigning process.env.TZ:
+    // the reassignment does not reliably move Node's clock mid-process, and
+    // restoring an originally-unset TZ writes the string "undefined" and skews
+    // every test that runs afterwards in the same worker.
+    //
+    // The same instant written in three timezones must parse to one number, and
+    // an offset-less form must parse to none at all. That IS the independence:
+    // nothing is left for the reader's own timezone to decide.
+    const sameInstant = [
+      '2026-07-19T17:17:44.359Z',
+      '2026-07-19T19:17:44.359+02:00',
+      '2026-07-20T05:17:44.359+12:00',
+    ].map(instantOf);
+    expect(new Set(sameInstant).size).toBe(1);
+    expect(sameInstant[0]).toBe(Date.parse('2026-07-19T17:17:44.359Z'));
+    expect(instantOf('2026-07-19T17:17:44.359')).toBeNull();
   });
 });

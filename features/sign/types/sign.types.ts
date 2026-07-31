@@ -270,4 +270,10 @@ export interface VerifyResult {
    * measured against another yardstick.
    */
   requestMismatch: boolean;
+  /**
+   * Whether the document's declared creation time can be true: it must not come
+   * after the moment the network recorded a signature of it. Null when nothing
+   * independent dates any signature, or the declared time is unparseable.
+   */
+  createdAtCoherent: boolean | null;
 }

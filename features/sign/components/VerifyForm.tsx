@@ -489,6 +489,13 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                 <Row label={t.verify.message} value={outcome.message} />
                 <Row label={t.verify.timestamp} value={new Date(outcome.timestamp).toLocaleString()} />
               </dl>
+              {/* A creation date later than the signature is not a discrepancy
+                  to weigh up, it is an impossibility. */}
+              {outcome.createdAtCoherent === false && (
+                <p className="text-xs font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                  {t.verify.createdIncoherent}
+                </p>
+              )}
             </div>
           )}
         </ToolSection>

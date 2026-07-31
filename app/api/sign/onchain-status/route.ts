@@ -14,6 +14,7 @@ import {
   ledgerTimestamp,
   metadataString,
   nfData,
+  nfRecords,
   nfOwnerAccount,
   sealFromOwnerRule,
 } from '@/features/sign/lib/onchain-custody';
@@ -77,11 +78,17 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. The anchor invitation → doc hash + batch geometry (locked data).
-    const anchorData = await nfData(network, collection, [`#${match[2]}#`]);
-    const anchor = anchorData.get(`#${match[2]}#`);
+    const anchorData = await nfRecords(network, collection, [`#${match[2]}#`]);
+    const anchorRecord = anchorData.get(`#${match[2]}#`);
+    const anchor = anchorRecord?.fields;
     if (!anchor || anchor.kind !== 'invite' || !anchor.document_hash) {
       return NextResponse.json({ found: false });
     }
+    // When the request came into being: the consensus time of the transaction
+    // that minted its first invitation. A certificate built from this status
+    // reports that as the document's creation date — the alternative was the
+    // moment somebody pressed download, days later.
+    const createdAt = await ledgerTimestamp(network, anchorRecord.stateVersion);
     const reqDocHash = anchor.document_hash;
     // A mismatching file must not hide the request: the caller still gets the
     // full status plus the mismatch flag, so the UI can say WHY it fails.
@@ -160,6 +167,7 @@ export async function POST(req: NextRequest) {
       collection,
       docHash: reqDocHash,
       hashMismatch,
+      createdAt,
       networkId,
       requiredSigners: signatures.map((s) => s.account),
       signatures,

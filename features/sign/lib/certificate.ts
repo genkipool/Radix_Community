@@ -143,6 +143,13 @@ export function buildOnChainCertificate(input: {
   nonce: string;
   /** On-ledger request key, so verification re-resolves the required set. */
   requestId?: string;
+  /**
+   * Consensus time of the transaction that minted the request's first
+   * invitation — when the document was actually put up for signing. Falls back
+   * to now only when the ledger cannot say, because the alternative reads as
+   * "created" while being the moment somebody pressed download.
+   */
+  createdAt?: string | null;
 }): AttestationEnvelope {
   const now = new Date().toISOString();
   const payload: AttestationPayload = {
@@ -155,7 +162,7 @@ export function buildOnChainCertificate(input: {
     disclosure: 'none',
     email: false,
     signers: input.requiredSigners,
-    timestamp: now,
+    timestamp: input.createdAt || now,
     networkId: input.networkId,
     nonce: input.nonce,
   };

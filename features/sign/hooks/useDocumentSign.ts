@@ -291,7 +291,11 @@ export function useDocumentSign() {
       disclosure: input.disclosure,
       email: input.includeEmail,
       signers,
-      timestamp: new Date().toISOString(),
+      // The network's clock, not this browser's. It sits INSIDE the payload, so
+      // the ROLA proof commits to it — but a value the signer's own machine
+      // made up is only ever a signed assertion, and this one a verifier can
+      // hold against the ledger.
+      timestamp: await fetchLedgerNow(activeNetworkId),
       networkId: activeNetworkId,
       nonce: randomNonceHex(),
     };
