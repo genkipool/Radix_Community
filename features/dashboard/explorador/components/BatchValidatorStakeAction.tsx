@@ -19,6 +19,13 @@ interface BatchValidatorStakeActionProps {
     tt?: Partial<TranslationsT['dashboard']['transactions']>;
     children?: React.ReactNode;
     canDistribute?: boolean;
+    /**
+     * Drop the outer card and the title row because the host already provides
+     * them. Used where these controls get a box of their own (the console),
+     * so the result is one box with the operation boxed inside it, not three
+     * nested frames.
+     */
+    unstyled?: boolean;
 }
 
 export const BatchValidatorStakeAction = ({
@@ -35,7 +42,8 @@ export const BatchValidatorStakeAction = ({
     clearError,
     tt,
     children,
-    canDistribute = true
+    canDistribute = true,
+    unstyled = false
 }: BatchValidatorStakeActionProps) => {
     const { t: contextT } = useLanguage();
     const inputRef = useRef<HTMLInputElement>(null);
@@ -43,13 +51,38 @@ export const BatchValidatorStakeAction = ({
     const accT = tt?.account_summary || contextT?.dashboard?.transactions?.account_summary;
 
     return (
-        <div className="flex flex-col gap-3 mb-6">
-            <div className="text-[10px] font-bold text-[var(--color-text-main)] uppercase tracking-wider flex justify-between items-center px-1">
-                <span className="flex items-center gap-2">
-                    {accT?.global_batch_title_short || 'Distribuir XRD'}
-                </span>
-                <span className="text-[var(--color-text-muted)] tracking-normal normal-case">{selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}</span>
-            </div>
+        /*
+         * This panel never draws a box of its own.
+         *
+         * These controls act on ALL selected validators at once while the rows
+         * below act on one each, so the two zones have to read as separate.
+         * How that separation is drawn depends on the host:
+         *
+         *   console  the ToolSection wrapping this panel IS the box, and also
+         *            supplies the title, hint and count (hence `unstyled`).
+         *   modal    a compact stack with no boxes anywhere, so a card here
+         *            would look out of place. A closing rule does the job.
+         */
+        <div
+            className={`flex flex-col gap-3 ${unstyled ? '' : 'mb-6 pb-4 border-b border-[var(--color-card-border)]'}`}
+        >
+            {/* The console gets its title, hint and count from the ToolSection
+                wrapping this panel; here they have to be rendered inline. */}
+            {!unstyled && (
+                <div className="px-1">
+                    <div className="text-[10px] font-bold text-[var(--color-text-main)] uppercase tracking-wider flex justify-between items-center">
+                        <span className="flex items-center gap-2">
+                            {accT?.global_batch_title_short || 'Distribuir XRD'}
+                        </span>
+                        <span className="text-[var(--color-text-muted)] tracking-normal normal-case">
+                            {selectedValidatorsCount} {accT?.selected_validators || 'Selected Validators'}
+                        </span>
+                    </div>
+                    <p className="mt-1 text-[10px] leading-relaxed text-[var(--color-text-muted)]">
+                        {accT?.batch_select_hint || 'Select the validators you want to distribute an amount of XRD to.'}
+                    </p>
+                </div>
+            )}
 
             {children && (
                 <div className="mb-2">
@@ -57,7 +90,6 @@ export const BatchValidatorStakeAction = ({
                 </div>
             )}
 
-            {/* Input Row */}
             <div className="relative flex flex-col">
                 <div className="relative">
                     <input
@@ -76,7 +108,7 @@ export const BatchValidatorStakeAction = ({
                         onWheel={(e) => (e.target as HTMLElement).blur()}
                         placeholder={accT?.batch_amount_placeholder || 'Amount of XRD to distribute'}
                         disabled={isTransacting}
-                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 ${actionError ? 'border-red-500 text-red-500 focus:border-red-500 bg-[var(--color-bg)]' : 'border-[var(--color-border)] focus:border-[var(--color-primary)] bg-[var(--color-bg)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors pr-16 bg-[var(--color-bg)] ${actionError ? 'border-red-500 text-red-500 focus:border-red-500' : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'} ${isTransacting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     <button
                         type="button"

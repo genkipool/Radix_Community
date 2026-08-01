@@ -549,6 +549,7 @@
         "max": "MAX",
         "auto_placeholder": "Auto",
         "amount_xrd": "Amount of XRD",
+        "batch_select_hint": "Select the validators you want to distribute an amount of XRD to.",
         "global_batch_title_short": "XRD Distribution",
         "selected_validators": "Selected Validators",
         "validators_label": "Validators",

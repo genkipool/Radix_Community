@@ -58,6 +58,29 @@ export interface AccountStakingSectionProps {
      * column that follows the scroll (wide layouts like the console tool).
      */
     summaryPlacement?: 'inline' | 'side';
+    /**
+     * Lets the host wrap each zone in its own container.
+     *
+     * The batch controls act on ALL selected validators while the rows below
+     * act on one each, so they are two different things sharing one state.
+     * Given this slot the component emits them as SEPARATE boxes (the console
+     * puts each in its own `ToolSection`) instead of burying the batch panel
+     * inside the staking box. Without it nothing changes: the modal keeps the
+     * single compact block it has always had.
+     */
+    sectionWrapper?: (section: {
+        key: string;
+        title: string;
+        hint?: string;
+        action?: React.ReactNode;
+        children: React.ReactNode;
+    }) => React.ReactNode;
+    /**
+     * Heading for the validator list. Hosts that already name this zone keep
+     * their own wording (the console's box is "Account staking", not
+     * "Validators"); the delegation count is appended either way.
+     */
+    listTitle?: string;
 }
 
 type ValidatorSelections = { amountStr?: string; stake?: string; unstake?: string; claim?: boolean };
@@ -81,6 +104,8 @@ export function AccountStakingSection({
     onOpenCsvModal,
     alwaysShowControls = false,
     summaryPlacement = 'inline',
+    sectionWrapper,
+    listTitle,
 }: AccountStakingSectionProps) {
     const queryClient = useQueryClient();
     const { activeNetworkId, accounts } = useRadixWallet();
@@ -540,67 +565,65 @@ export function AccountStakingSection({
 
     const showBatchControls = isModal && !hideStakingControls && (stakingRows.length > 0 || alwaysShowControls);
 
-    return (
-        <div className="mb-8">
-            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center justify-between gap-2 ${isModal ? 'pb-2 mb-4 border-b border-[var(--color-card-border)] w-full' : 'mb-4'}`}>
-                <div className="flex items-center gap-2">
-                    {accT?.staking_validators_title || 'STAKING'} ({displayRows.length})
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
-                        className="hover:text-[var(--color-primary)] transition-colors p-1"
-                        title={accT?.info_tooltip || 'Information about global and mixed actions'}
-                    >
-                        <Info className="size-4" />
-                    </button>
-                </div>
-                {isModal && (
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setHideStakingControls(!hideStakingControls); }}
-                        title={hideStakingControls ? ((accT as any)?.show_staking_tooltip || (locale === 'es' ? 'Mostrar controles de staking' : 'Show staking controls')) : ((accT as any)?.hide_staking_tooltip || (locale === 'es' ? 'Ocultar controles de staking' : 'Hide staking controls'))}
-                        className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideStakingControls ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
-                    >
-                        {hideStakingControls ? ((accT as any)?.show_staking || (locale === 'es' ? 'Mostrar Staking' : 'Show Staking')) : ((accT as any)?.hide_staking || (locale === 'es' ? 'Ocultar Staking' : 'Hide Staking'))}
-                    </button>
-                )}
-            </h4>
+    const batchControls = showBatchControls ? (
+        <BatchValidatorStakeAction
+            selectedValidatorsCount={selectedValidatorAddresses.length}
+            xrdBalance={Number(xrdAmount) || 0}
+            totalStakedXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake || 0), 0)}
+            globalAmountStr={globalAmountStr}
+            setGlobalAmountStr={(val) => {
+                setValidatorSelections({});
+                setGlobalAmountStr(val);
+            }}
+            onBatchAction={handleBatchAction}
+            isTransacting={isTransacting}
+            transactingAction={transactingAction}
+            actionError={actionError || getStakingError(batchError || '')}
+            setActionError={setActionError}
+            clearError={clearError}
+            tt={tt}
+            canDistribute={canDistribute}
+            // The host's box already frames this zone, so the panel drops its
+            // own outer card rather than nesting a third one.
+            unstyled={!!sectionWrapper}
+        >
+            <ValidatorCarouselSelector
+                options={carouselOptions}
+                selectedValues={selectedValidatorAddresses}
+                onChange={setSelectedValidatorAddresses}
+                placeholder={accT?.validator_search_placeholder || 'Search validators to delegate...'}
+                headerTitle={accT?.select_validator_title || 'Select validator'}
+                footerActionText={accT?.add_validator_btn || 'Add'}
+            />
+        </BatchValidatorStakeAction>
+    ) : null;
 
-            {/* The side column only exists while there is a summary to show, so no blank gutter is reserved */}
-            <div className={summaryPlacement === 'side' && hasMixedSelections ? 'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_21rem] gap-6 items-start' : ''}>
-                <div className="min-w-0">
-            {showBatchControls && (
-                <div className="mb-6 space-y-4">
-                    <BatchValidatorStakeAction
-                        selectedValidatorsCount={selectedValidatorAddresses.length}
-                        xrdBalance={Number(xrdAmount) || 0}
-                        totalStakedXrdSelected={selectedValidatorAddresses.reduce((acc, addr) => acc + (stakingRows.find(row => row.validatorAddress === addr)?.xrdInStake || 0), 0)}
-                        globalAmountStr={globalAmountStr}
-                        setGlobalAmountStr={(val) => {
-                            setValidatorSelections({});
-                            setGlobalAmountStr(val);
-                        }}
-                        onBatchAction={handleBatchAction}
-                        isTransacting={isTransacting}
-                        transactingAction={transactingAction}
-                        actionError={actionError || getStakingError(batchError || '')}
-                        setActionError={setActionError}
-                        clearError={clearError}
-                        tt={tt}
-                        canDistribute={canDistribute}
-                    >
-                        <ValidatorCarouselSelector
-                            options={carouselOptions}
-                            selectedValues={selectedValidatorAddresses}
-                            onChange={setSelectedValidatorAddresses}
-                            placeholder={accT?.validator_search_placeholder || 'Search validators to delegate...'}
-                            headerTitle={accT?.select_validator_title || 'Select validator'}
-                            footerActionText={accT?.add_validator_btn || 'Add'}
-                        />
-                    </BatchValidatorStakeAction>
-                </div>
-            )}
+    const infoButton = (
+        <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setIsInfoModalOpen(true); }}
+            className="hover:text-[var(--color-primary)] transition-colors p-1"
+            title={accT?.info_tooltip || 'Information about global and mixed actions'}
+        >
+            <Info className="size-4" />
+        </button>
+    );
 
+    const hideToggle = isModal ? (
+        <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setHideStakingControls(!hideStakingControls); }}
+            title={hideStakingControls ? ((accT as any)?.show_staking_tooltip || (locale === 'es' ? 'Mostrar controles de staking' : 'Show staking controls')) : ((accT as any)?.hide_staking_tooltip || (locale === 'es' ? 'Ocultar controles de staking' : 'Hide staking controls'))}
+            className={`text-[10px] font-bold uppercase tracking-wider transition-opacity shrink-0 ${hideStakingControls ? 'text-[var(--color-text-muted)] hover:opacity-70' : 'text-[var(--color-primary)]'}`}
+        >
+            {hideStakingControls ? ((accT as any)?.show_staking || (locale === 'es' ? 'Mostrar Staking' : 'Show Staking')) : ((accT as any)?.hide_staking || (locale === 'es' ? 'Ocultar Staking' : 'Hide Staking'))}
+        </button>
+    ) : null;
+
+    const validatorList = (
+        /* The side column only exists while there is a summary to show, so no blank gutter is reserved */
+        <div className={summaryPlacement === 'side' && hasMixedSelections ? 'grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_21rem] gap-6 items-start' : ''}>
+            <div className="min-w-0">
             <div className="space-y-4">
                 {displayRows.map((row) => (
                     <ValidatorStakingRow
@@ -635,15 +658,20 @@ export function AccountStakingSection({
 
                 {summaryPlacement === 'inline' && hasMixedSelections && renderOperationsSummary('inline')}
             </div>
-                </div>
-
-                {summaryPlacement === 'side' && hasMixedSelections && (
-                    <aside className="min-w-0 xl:sticky xl:top-24">
-                        {renderOperationsSummary('side')}
-                    </aside>
-                )}
             </div>
 
+            {summaryPlacement === 'side' && hasMixedSelections && (
+                <aside className="min-w-0 xl:sticky xl:top-24">
+                    {renderOperationsSummary('side')}
+                </aside>
+            )}
+        </div>
+    );
+
+    const stakingTitle = `${listTitle || accT?.staking_validators_title || 'STAKING'} (${displayRows.length})`;
+
+    const infoModal = (
+        <>
             {/* Info Modal */}
             <Portal>
                 <AnimatePresence>
@@ -698,6 +726,58 @@ export function AccountStakingSection({
                     )}
                 </AnimatePresence>
             </Portal>
+        </>
+    );
+
+    // Hosted layout: the batch controls become a box of their own, a sibling of
+    // the staking box rather than something buried inside it.
+    if (sectionWrapper) {
+        return (
+            <>
+                {batchControls &&
+                    sectionWrapper({
+                        key: 'batch',
+                        title: accT?.global_batch_title_short || 'XRD Distribution',
+                        hint:
+                            accT?.batch_select_hint ||
+                            'Select the validators you want to distribute an amount of XRD to.',
+                        action: (
+                            <span className="shrink-0 rounded-full border border-[var(--color-card-border)] bg-[var(--color-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)]">
+                                {selectedValidatorAddresses.length} {accT?.selected_validators || 'Selected Validators'}
+                            </span>
+                        ),
+                        children: batchControls,
+                    })}
+                {sectionWrapper({
+                    key: 'validators',
+                    title: stakingTitle,
+                    action: (
+                        <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+                            {infoButton}
+                            {hideToggle}
+                        </div>
+                    ),
+                    children: validatorList,
+                })}
+                {infoModal}
+            </>
+        );
+    }
+
+    return (
+        <div className="mb-8">
+            <h4 className={`text-xs font-black uppercase text-[var(--color-text-muted)] tracking-wider flex items-center justify-between gap-2 ${isModal ? 'pb-2 mb-4 w-full' : 'mb-4'}`}>
+                <div className="flex items-center gap-2">
+                    {stakingTitle}
+                    {infoButton}
+                </div>
+                {hideToggle}
+            </h4>
+
+            {batchControls && <div className="mb-6 space-y-4">{batchControls}</div>}
+
+            {validatorList}
+            {infoModal}
         </div>
     );
 }
