@@ -146,9 +146,14 @@ function withSealMark(source: string): string {
     `<stop offset="0%" stop-color="${DARK_TOKENS['sidebar-primary']}"/>` +
     `<stop offset="100%" stop-color="${DARK_TOKENS['sidebar-secondary']}"/>` +
     `</linearGradient>` +
-    // Room to spare on every side, or the blur is clipped square.
+    // Two shadows, chained. The wide one gives the mark depth against the
+    // drawing, but at that blur the ring is the only thing that reads: the
+    // check and the lettering are thin strokes and their shadow spreads to
+    // nothing. The tight one is what makes those come forward. The filter
+    // region is opened well past the shape or the blur is clipped square.
     `<filter id="ogSealShadow" x="-30%" y="-30%" width="160%" height="160%">` +
-    `<feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="${DARK_TOKENS['sidebar-shadow']}" flood-opacity="0.9"/>` +
+    `<feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="${DARK_TOKENS['sidebar-shadow']}" flood-opacity="0.9" result="deep"/>` +
+    `<feDropShadow in="deep" dx="0" dy="4" stdDeviation="5" flood-color="${DARK_TOKENS['sidebar-shadow']}" flood-opacity="0.95"/>` +
     `</filter>` +
     `</defs>`;
 
