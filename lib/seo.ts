@@ -21,9 +21,6 @@ import type { Metadata } from 'next';
 export const BASE_URL = 'https://radix-community.genkipool.com';
 export const SITE_NAME = 'Radix Community';
 
-/** Absolute path (from the site root) of the 1200x630 social card. */
-export const OG_IMAGE_PATH = '/og-image.png';
-
 /** Radix DLT's account; the site is a community project around the network. */
 export const TWITTER_SITE = '@RadixDLT';
 
@@ -95,11 +92,6 @@ interface BuildMetadataOptions {
    */
   type?: 'website' | 'article';
   /**
-   * Overrides the default social card. Accepts a site-root path or an absolute
-   * URL; relative paths are resolved against `metadataBase`.
-   */
-  image?: string;
-  /**
    * Keeps a page out of the index while still letting crawlers follow its
    * links: `noindex, nofollow` would also strand every page it links to.
    */
@@ -117,7 +109,6 @@ export function buildMetadata({
   description,
   keywords,
   type = 'website',
-  image = OG_IMAGE_PATH,
   noIndex = false,
 }: BuildMetadataOptions): Metadata {
   const alternates = buildAlternates(locale, pathname);
@@ -141,21 +132,16 @@ export function buildMetadata({
       alternateLocale: Object.entries(OG_LOCALES)
         .filter(([loc]) => loc !== locale)
         .map(([, og]) => og),
-      images: [
-        {
-          url: image,
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
+      // No `images` here on purpose. Each route draws its own card through an
+      // `opengraph-image.tsx` sitting next to its page, and Next wires those
+      // in; naming an image here as well would fight that, and every page
+      // would be back to sharing one picture.
     },
     twitter: {
       card: 'summary_large_image',
       site: TWITTER_SITE,
       title,
       description,
-      images: [image],
     },
   };
 }

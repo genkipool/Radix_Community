@@ -43,17 +43,18 @@ describe('buildMetadata', () => {
         expect(meta.alternates?.canonical).toBe(`${BASE_URL}/en/seal`);
     });
 
-    it('ships a large-image Twitter card with an image', () => {
-        const twitter = buildMetadata(base).twitter;
-        expect(twitter).toMatchObject({ card: 'summary_large_image' });
-        expect(twitter && 'images' in twitter && twitter.images).toEqual(['/og-image.png']);
+    it('ships a large-image Twitter card', () => {
+        expect(buildMetadata(base).twitter).toMatchObject({ card: 'summary_large_image' });
     });
 
-    it('declares a 1200x630 og:image so platforms render the wide card', () => {
-        const images = buildMetadata(base).openGraph?.images;
-        expect(images).toEqual([
-            { url: '/og-image.png', width: 1200, height: 630, alt: base.title },
-        ]);
+    // Each route draws its own card in an `opengraph-image.tsx` next to its
+    // page and Next wires it in. Naming an image here as well would fight that
+    // and put every page back on one shared picture, so the absence is the
+    // contract worth guarding.
+    it('names no image, leaving that to each route opengraph-image', () => {
+        const meta = buildMetadata(base);
+        expect(meta.openGraph && 'images' in meta.openGraph && meta.openGraph.images).toBeFalsy();
+        expect(meta.twitter && 'images' in meta.twitter && meta.twitter.images).toBeFalsy();
     });
 
     it('maps the locale to a full Open Graph locale and lists the other one', () => {
