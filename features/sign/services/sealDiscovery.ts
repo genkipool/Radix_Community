@@ -41,7 +41,9 @@ export interface UserSignCollection {
 
 interface MetadataItem {
   key: string;
-  value?: { typed?: { value?: string; type?: string } };
+  value?: { typed?: { value?: string; type?: string; values?: string[] } };
+  /** Whether the ledger will refuse any further change to this key. */
+  is_locked?: boolean;
 }
 interface NonFungibleResourceItem {
   resource_address: string;
@@ -239,6 +241,14 @@ export async function findCollectionIssuer(
   return orgName || orgWebsite ? { orgName, orgWebsite, iconUrl } : null;
 }
 
+/** One metadata key of a collection, as the ledger holds it. */
+export interface CollectionMetadataEntry {
+  key: string;
+  value: string;
+  /** Locked keys can never change again, by anyone, including the owner. */
+  locked: boolean;
+}
+
 /** The editable face of a signing collection, as it stands on the ledger. */
 export interface CollectionProfile {
   name?: string;
@@ -247,12 +257,35 @@ export interface CollectionProfile {
   iconUrl?: string;
   orgName?: string;
   orgUrl?: string;
+  /**
+   * Every key the collection carries, including whatever the creator added by
+   * hand, each with whether it is locked.
+   *
+   * The five fields above are the ones with a form control; this is what the
+   * screen needs to show the rest, and to tell the user which of the lot can
+   * still be changed. Reading a collection and only reporting five known keys
+   * meant a creator's own metadata simply did not exist as far as the UI was
+   * concerned.
+   */
+  entries: CollectionMetadataEntry[];
+}
+
+/** Reads a metadata value whatever shape the gateway returned it in. */
+function metadataText(item: MetadataItem): string {
+  const typed = item.value?.typed;
+  if (!typed) return '';
+  if (typeof typed.value === 'string') return typed.value;
+  if (Array.isArray(typed.values)) return typed.values.join(', ');
+  return '';
 }
 
 /**
- * The unlocked display metadata of a collection, for pre-filling the edit form.
- * Everything else it carries (description, marker, seal reference, issuer
- * account, tags) was locked at creation and can never change.
+ * Everything a collection carries, for the identity screen.
+ *
+ * The five named fields pre-fill the form; `entries` is the whole set, lock
+ * state included, so the screen can show what was sealed at creation and
+ * whatever the creator added themselves rather than pretending a collection
+ * only ever has five keys.
  */
 export async function findCollectionProfile(
   networkId: number,
@@ -261,13 +294,18 @@ export async function findCollectionProfile(
   const [item] = await entityDetails(network(networkId), [resourceAddress]).catch(
     () => [],
   );
-  if (!item) return {};
+  if (!item) return { entries: [] };
   return {
     name: metadataValue(item, 'name'),
     symbol: metadataValue(item, 'symbol'),
     iconUrl: metadataValue(item, ICON_URL_KEY),
     orgName: metadataValue(item, ORG_NAME_KEY),
     orgUrl: metadataValue(item, ORG_URL_KEY),
+    entries: (item.metadata?.items ?? []).map((meta) => ({
+      key: meta.key,
+      value: metadataText(meta),
+      locked: meta.is_locked === true,
+    })),
   };
 }
 

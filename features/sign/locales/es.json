@@ -504,9 +504,14 @@
         "logoLabel": "Logo de la colección (URL)",
         "logoHint": "Icono de la colección; también se usa como logo del emisor",
         "lockedNote": "Solo estos campos son editables. La descripción, la referencia al seal, la cuenta emisora y los datos de cada firma se sellaron al crear la colección y no se pueden tocar nunca, ni por ti.",
-        "save": "Guardar cambios",
+        "save": "Firmar cambios con la wallet",
         "saving": "Confirma en tu wallet…",
-        "saved": "Identidad actualizada en la cadena."
+        "saved": "Identidad actualizada en la cadena.",
+        "lockedBadge": "Bloqueado",
+        "editableBadge": "Editable",
+        "otherTitle": "Resto de metadatos de la colección",
+        "otherHint": "Todo lo demás que lleva la colección en la cadena, incluido lo que añadiste tú al crearla. Lo bloqueado no se puede cambiar nunca, ni por ti.",
+        "saveHint": "Al pulsar recibirás una petición de firma en la wallet del móvil. Nada cambia en la cadena hasta que la apruebes."
       }
     }
   },

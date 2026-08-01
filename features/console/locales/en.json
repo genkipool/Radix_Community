@@ -2180,7 +2180,9 @@
         "unnamedResource": "Unnamed resource",
         "unnamedNft": "NFT",
         "nftDataAllLocked": "This resource declared no mutable field when it was created, so its NFTs' data can never be changed, not by its owner and not with any badge. That is the case for the Radix Seal insignia: its image is fixed at mint. The values below are read-only.",
-        "nftCustomFieldsNote": "This resource carries its own fields on its NFTs. In Radix a mint has to supply all of them, so no field is optional: whatever you leave empty is minted empty, but it is still sent. They are listed above in the order its schema fixed. The grey text in each one is the value an existing NFT carries, or its data type with a sample when it carries none. Fields whose type does not fit in a text box (lists, enums) are disabled. If the collection has no NFT yet there is nothing to read the schema from, and only the three standard fields are sent."
+        "nftCustomFieldsNote": "This resource carries its own fields on its NFTs. In Radix a mint has to supply all of them, so no field is optional: whatever you leave empty is minted empty, but it is still sent. They are listed above in the order its schema fixed. The grey text in each one is the value an existing NFT carries, or its data type with a sample when it carries none. Fields whose type does not fit in a text box (lists, enums) are disabled. If the collection has no NFT yet there is nothing to read the schema from, and only the three standard fields are sent.",
+        "lockedValueNote": "Locked on-ledger: this value can never change again, not even by you.",
+        "metadataLegend": "Fields marked editable can still be changed. Locked ones were sealed for good."
       }
     },
     "faucet": {

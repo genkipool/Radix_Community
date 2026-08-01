@@ -504,9 +504,14 @@
         "logoLabel": "Collection logo (URL)",
         "logoHint": "The collection icon; also used as the issuer logo",
         "lockedNote": "Only these fields are editable. The description, the seal reference, the issuing account and every signature's own data were sealed when the collection was created and can never be touched, not even by you.",
-        "save": "Save changes",
+        "save": "Sign changes with your wallet",
         "saving": "Confirm in your wallet…",
-        "saved": "Identity updated on-ledger."
+        "saved": "Identity updated on-ledger.",
+        "lockedBadge": "Locked",
+        "editableBadge": "Editable",
+        "otherTitle": "The collection’s other metadata",
+        "otherHint": "Everything else the collection carries on-ledger, including whatever you added yourself when you created it. Locked keys can never change, not even by you.",
+        "saveHint": "Pressing this sends a signature request to the wallet on your phone. Nothing changes on-ledger until you approve it."
       }
     }
   },
