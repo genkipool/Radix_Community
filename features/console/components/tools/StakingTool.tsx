@@ -56,21 +56,31 @@ export default function StakingTool({ t }: ConsoleToolProps) {
       </ToolSection>
 
       {account && (
-        <ToolSection title={labels.sectionTitle}>
-          <AccountStakingSection
-            address={account}
-            entityData={entityData ?? null}
-            network={activeNetwork}
-            locale={language}
-            tt={tt}
-            onCopy={copy}
-            copiedAddress={copiedText}
-            isModal
-            alwaysShowControls
-            summaryPlacement="side"
-            stakingErrors={stakingErrors}
-          />
-        </ToolSection>
+        <AccountStakingSection
+          address={account}
+          entityData={entityData ?? null}
+          network={activeNetwork}
+          locale={language}
+          tt={tt}
+          onCopy={copy}
+          copiedAddress={copiedText}
+          isModal
+          alwaysShowControls
+          summaryPlacement="side"
+          stakingErrors={stakingErrors}
+          listTitle={labels.sectionTitle}
+          /*
+           * Each zone gets its own ToolSection instead of one box holding
+           * both: the XRD distribution acts on every selected validator at
+           * once, and buried inside the staking box it read as part of the
+           * per-validator list underneath it.
+           */
+          sectionWrapper={({ key, title, hint, action, children }) => (
+            <ToolSection key={key} title={title} hint={hint} action={action}>
+              {children}
+            </ToolSection>
+          )}
+        />
       )}
     </div>
   );

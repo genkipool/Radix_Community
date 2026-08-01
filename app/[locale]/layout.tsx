@@ -4,10 +4,17 @@ import { Inter } from 'next/font/google';
 import '@/app/globals.css';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
-import { getFeatureDictionary, Locale } from '@/i18n/dictionaries';
+import { getFeatureDictionary, isSupportedLocale, Locale } from '@/i18n/dictionaries';
 import { BASE_URL, SITE_NAME, buildMetadata } from '@/lib/seo';
-import { buildSiteJsonLd, jsonLdScript } from '@/lib/structured-data';
-import { cookies } from 'next/headers';
+import {
+  PATHNAME_HEADER,
+  buildBreadcrumbJsonLd,
+  buildSiteJsonLd,
+  jsonLdScript,
+} from '@/lib/structured-data';
+import { resolveBreadcrumbs } from '@/lib/breadcrumbs';
+import { cookies, headers } from 'next/headers';
+import { notFound } from 'next/navigation';
 import Script from 'next/script';
 import type { Theme } from '@/context/ThemeContext';
 import { verifySessionJWT } from '@/lib/auth/session';
@@ -26,6 +33,11 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  // Unknown segments render the 404 below, which must not advertise itself as
+  // an indexable page while it does so.
+  if (!isSupportedLocale(locale)) {
+    return { title: SITE_NAME, robots: { index: false, follow: false } };
+  }
   const t = await getFeatureDictionary(locale as Locale, []);
   return {
     // Lets every page hand relative asset paths (og:image, icons) to the
@@ -83,9 +95,14 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }) {
   const p = await params;
+  // `/llms.txt`, `/ads.txt` and any other dotted path bypass proxy.ts and land
+  // here with the filename as the locale. Left unchecked they rendered the home
+  // page at a 200, canonical and all.
+  if (!isSupportedLocale(p.locale)) notFound();
   const locale = p.locale as Locale;
-  const [cookieStore, dictionary] = await Promise.all([
+  const [cookieStore, headerStore, dictionary] = await Promise.all([
     cookies(),
+    headers(),
     getFeatureDictionary(locale as Locale, [])
   ]);
   const theme = parseTheme(cookieStore.get('theme')?.value);
@@ -99,6 +116,10 @@ export default async function RootLayout({
     buildSiteJsonLd(locale, dictionary.seo.root.description as string)
   );
 
+  const breadcrumb = buildBreadcrumbJsonLd(
+    await resolveBreadcrumbs(locale, headerStore.get(PATHNAME_HEADER))
+  );
+
   return (
     <html lang={locale} className={`${inter.variable} ${theme}`} suppressHydrationWarning>
       <head>
@@ -110,6 +131,12 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: siteJsonLd }}
         />
+        {breadcrumb && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumb) }}
+          />
+        )}
         <Script
           id="theme-strategy"
           >{`(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`}</Script>

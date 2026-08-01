@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { PATHNAME_HEADER } from '@/lib/structured-data';
 
 const locales = ['en', 'es'];
 const defaultLocale = 'en';
@@ -32,7 +33,13 @@ export function proxy(request: NextRequest) {
     );
 
     if (pathnameHasLocale) {
-        return NextResponse.next();
+        // The layout builds the BreadcrumbList from the path, and a layout only
+        // receives its own segment (`[locale]`), never the rest. Passing the
+        // full pathname as a request header keeps the breadcrumb in ONE place
+        // instead of every page having to remember to render its own.
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set(PATHNAME_HEADER, pathname);
+        return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     const locale = getLocale(request);

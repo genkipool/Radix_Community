@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import en from '@/features/sign/locales/en.json';
 import {
@@ -45,6 +45,22 @@ function baseEnvelope(): AttestationEnvelope {
   };
 }
 
+/**
+ * Makes the issuer-logo download fail instantly instead of going out to the
+ * network. The behaviour under test is "a logo that cannot be fetched is
+ * dropped and the rest of the block still renders", which says nothing about
+ * how long a real DNS failure takes. Relying on the network for it made this
+ * file flaky: under parallel load the lookup plus the PDF work occasionally
+ * ran past the 5s test budget.
+ */
+function stubFailingImageFetch() {
+  vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network disabled in tests'));
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 async function emptyDoc(pages = 1): Promise<PDFDocument> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -68,14 +84,14 @@ describe('visible signature certificate page', () => {
   });
 
   it('renders the issuer organisation (with a brand accent) when supplied', async () => {
+    // The logo fetch fails and is dropped; the rest of the block still renders.
+    stubFailingImageFetch();
     const doc = await emptyDoc(1);
     await appendSignaturePage(doc, baseEnvelope(), {
       ...opts,
       issuer: {
         orgName: 'Enviogt',
         orgWebsite: 'https://enviogt.example',
-        // Unreachable in the test env: the logo fetch fails and is dropped,
-        // the rest of the block still renders.
         iconUrl: 'https://enviogt.example/logo.png',
       },
       accent: [0.83, 0.69, 0.22], // gold, exercises the light-band text path
