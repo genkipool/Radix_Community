@@ -19,13 +19,6 @@ interface ContentHeroProps {
     actions?: React.ReactNode;
     /** Content rendered directly below the hero section (replaces PageHeader wrapper) */
     children?: React.ReactNode;
-    /**
-     * Heading level for the hero title. Defaults to `h1`, which is right when
-     * the hero IS the page's topic. Pages that render a more specific heading
-     * above it (an entity page naming the entity, say) pass `h2` so the
-     * document is not left with two competing `h1`s.
-     */
-    headingLevel?: 'h1' | 'h2';
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
@@ -39,7 +32,6 @@ export function ContentHero({
     badge,
     actions,
     children,
-    headingLevel: Heading = 'h1',
 }: ContentHeroProps) {
     return (
         <div className="w-full flex flex-col">
@@ -57,12 +49,12 @@ export function ContentHero({
                             </div>
                         )}
 
-                        <Heading className="text-5xl md:text-7xl font-bold text-[var(--color-text-main)] mb-6 tracking-tight">
+                        <h1 className="text-5xl md:text-7xl font-bold text-[var(--color-text-main)] mb-6 tracking-tight">
                             {brandName}{brandName ? ' ' : ''}
                             <span className={`text-transparent bg-clip-text bg-gradient-to-r ${gradient}`}>
                                 {title}
                             </span>
-                        </Heading>
+                        </h1>
 
                         {subtitle && (
                             <div className="text-base md:text-lg text-[var(--color-text-muted)] max-w-4xl mx-auto leading-relaxed">

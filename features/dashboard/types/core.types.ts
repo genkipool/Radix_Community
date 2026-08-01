@@ -57,11 +57,6 @@ export interface DashboardInitialProps {
   initialDateRange?: { start: string | null; end: string | null };
   randomSeed: number;
   initialMarketData?: MarketData | null;
-  /**
-   * Heading level for the hero. Entity pages render their own `h1` naming the
-   * entity above the dashboard, so there the generic hero drops to `h2`.
-   */
-  heroHeadingLevel?: 'h1' | 'h2';
   dictionary?: Partial<Dictionary>;
   initialIsWalletConnected?: boolean;
   initialConnectedAccounts?: string[];
