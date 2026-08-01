@@ -45,6 +45,7 @@ const ENTITY_PREFIXES = [
 import type { NetworkStats } from '@/types/radix';
 import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
+import { useFocusedColumns } from './hooks/useFocusedColumns';
 
 /* React Query hooks */
 import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
@@ -250,7 +251,11 @@ export default function DashboardClient({
 
   // ── View-local derived values (validators vs transactions) ──
   const sortMode = activeView === 'staking' ? prefs.valSortMode : prefs.txSortMode;
-  const columns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
+
+  const storedColumns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
+  // One validator in focus collapses the grid to a single column; see the hook
+  // for why the stored preference is left alone while that lasts.
+  const { columns, releaseOverride } = useFocusedColumns(searchQuery, storedColumns);
   // Deferring the column count keeps the grid responsive while the user drags
   // the column slider. But a deferred value holds the PREVIOUS one for a
   // render, and each view has its own count, so on a view switch that painted
@@ -272,6 +277,9 @@ export default function DashboardClient({
   const setSortMode = (m: typeof sortMode) =>
     activeView === 'staking' ? prefs.setValSortMode(m) : prefs.setTxSortMode(m);
   const setColumns = (c: number) => {
+    // Touching the slider ends the single-column override: an explicit choice
+    // outranks the automatic one for as long as the focus lasts.
+    releaseOverride();
     if (activeView === 'staking') {
       prefs.setValColumns(c);
       if (c >= VALIDATOR_MODAL_THRESHOLD && !prefs.valReadingMode) {
