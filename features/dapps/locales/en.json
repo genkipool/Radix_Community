@@ -83,7 +83,7 @@
         "description": "Gas-efficient multi-token DEX. DefiPlaza allows swapping between any two tokens with a single contract and minimal gas costs. Available on Radix with a native Scrypto implementation."
       },
       "4": {
-        "description": "Decentralised lending and borrowing protocol on Radix. Deposit collateral, borrow assets and earn interest — all secured by Radix Engine's asset-oriented design that eliminates reentrancy vulnerabilities."
+        "description": "Decentralised lending and borrowing protocol on Radix. Deposit collateral, borrow assets and earn interest: all secured by Radix Engine's asset-oriented design that eliminates reentrancy vulnerabilities."
       },
       "5": {
         "description": "Aggregator and smart order router for the Radix DeFi ecosystem. Astrolescent automatically finds the best swap rate across all DEXes on Radix, splitting orders for optimal execution."
@@ -114,7 +114,7 @@
   "seo": {
     "dapps": {
       "title": "DApps | Radix Ecosystem Applications",
-      "description": "Discover decentralized applications built on Radix — DEXs, lending protocols, NFT platforms, and more."
+      "description": "Discover decentralized applications built on Radix: DEXs, lending protocols, NFT platforms, and more."
     }
   }
 }

@@ -42,7 +42,6 @@ export default async function Image({
 
   const t = await getFeatureDictionary(locale as Locale, ['dashboard', 'dashboardStaking']);
   const { card, details, status } = t.dashboard;
-  const eyebrow = details.validator;
 
   const validator = await (async () => {
     try {
@@ -57,7 +56,7 @@ export default async function Image({
 
   // Unknown or unreachable: still a valid card, just without the figures.
   if (!validator) {
-    return ogCard({ eyebrow, title: shorten(address) });
+    return ogCard({ title: shorten(address) });
   }
 
   const stats: OgStat[] = [
@@ -83,8 +82,13 @@ export default async function Image({
     },
   ];
 
+  // Rank used to sit on the line above the name. With that line gone it
+  // becomes a figure like the rest, rather than being dropped.
+  if (validator.registered) {
+    stats.push({ label: details.rank, value: `#${validator.rank}` });
+  }
+
   return ogCard({
-    eyebrow: validator.registered ? `${eyebrow} · #${validator.rank}` : eyebrow,
     badge: validator.registered ? undefined : status.inactive,
     title: validator.name || shorten(address),
     subtitle: validator.description || undefined,

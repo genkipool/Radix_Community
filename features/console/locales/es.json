@@ -699,7 +699,7 @@
         }
       },
       "convert-olympia-address": {
-        "title": "Convertir Dirección Olympia",
+        "title": "Dirección Olympia",
         "description": "Convierte una dirección Olympia en su equivalente Babylon (y viceversa), y genera el QR para importar la cuenta en la app Radix Wallet.",
         "guide": {
           "guideTitle": "Guía: Convertir Dirección Olympia",
@@ -741,7 +741,7 @@
         }
       },
       "sbor-decoder": {
-        "title": "Codificador / Decodificador SBOR",
+        "title": "SBOR",
         "description": "Pega cualquier payload SBOR en hexadecimal (estado, eventos, esquemas) y léelo decodificado, en formato legible.",
         "guide": {
           "guideTitle": "Guía: Decodificador SBOR",
@@ -951,7 +951,7 @@
       },
       "staking": {
         "title": "Staking",
-        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas — el mismo panel que usa el perfil de la billetera.",
+        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas. El mismo panel que usa el perfil de la billetera.",
         "guide": {
           "guideTitle": "Guía: Staking",
           "guideDescription": "Panel completo de staking de XRD. Delega en uno o varios validadores, retira stake y reclama tus XRD desbloqueados. Soporta acciones globales por lotes (repartir una cantidad entre varios validadores), modo carrito para combinar operaciones distintas en una sola transacción y modo propietario para validadores que controlas.",

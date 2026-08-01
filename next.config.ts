@@ -64,6 +64,14 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // The share cards read their Inter faces from disk at request time, and a
+  // path built with `process.cwd()` is not something the tracer can follow, so
+  // the files are named for it explicitly. Without this the deployed function
+  // renders every card in the fallback face.
+  outputFileTracingIncludes: {
+    '/[locale]/**/opengraph-image': ['./assets/fonts/**'],
+  },
+
   // Explicitly set the workspace root to this project's directory,
   // preventing Next.js from picking up stray lockfiles (e.g. from Trash).
   outputFileTracingRoot: path.join(__dirname),

@@ -45,6 +45,7 @@ const ENTITY_PREFIXES = [
 import type { NetworkStats } from '@/types/radix';
 import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
+import { useFocusedColumns } from './hooks/useFocusedColumns';
 
 /* React Query hooks */
 import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
@@ -250,7 +251,14 @@ export default function DashboardClient({
 
   // ── View-local derived values (validators vs transactions) ──
   const sortMode = activeView === 'staking' ? prefs.valSortMode : prefs.txSortMode;
-  const columns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
+
+  const storedColumns = activeView === 'staking' ? prefs.valColumns : prefs.txColumns;
+  // One validator in focus collapses the grid to a single column; see the hook
+  // for why the stored preference is left alone while that lasts.
+  const { columns, isOverridden, releaseOverride } = useFocusedColumns(
+    searchQuery,
+    storedColumns,
+  );
   // Deferring the column count keeps the grid responsive while the user drags
   // the column slider. But a deferred value holds the PREVIOUS one for a
   // render, and each view has its own count, so on a view switch that painted
@@ -259,10 +267,17 @@ export default function DashboardClient({
   // Tagging the value with the view it belongs to fixes it without losing the
   // benefit: while the deferred pair still refers to the view we just left, the
   // immediate count is used instead.
-  const columnsForView = { view: activeView, columns };
+  //
+  // The single-column override is tagged for the same reason. Clearing the
+  // search box lifts it, and deferring THAT repainted the grid at one column
+  // before snapping back to the configured count: the same flicker again, just
+  // triggered by the search box instead of the view switch.
+  const columnsForView = { view: activeView, overridden: isOverridden, columns };
   const deferredPair = useDeferredValue(columnsForView);
   const deferredColumns =
-    deferredPair.view === activeView ? deferredPair.columns : columns;
+    deferredPair.view === activeView && deferredPair.overridden === isOverridden
+      ? deferredPair.columns
+      : columns;
   const readingMode = activeView === 'staking' ? prefs.valReadingMode : prefs.txReadingMode;
   const autoCollapse = activeView === 'staking' ? prefs.valAutoCollapse : prefs.txAutoCollapse;
 
@@ -272,6 +287,9 @@ export default function DashboardClient({
   const setSortMode = (m: typeof sortMode) =>
     activeView === 'staking' ? prefs.setValSortMode(m) : prefs.setTxSortMode(m);
   const setColumns = (c: number) => {
+    // Touching the slider ends the single-column override: an explicit choice
+    // outranks the automatic one for as long as the focus lasts.
+    releaseOverride();
     if (activeView === 'staking') {
       prefs.setValColumns(c);
       if (c >= VALIDATOR_MODAL_THRESHOLD && !prefs.valReadingMode) {

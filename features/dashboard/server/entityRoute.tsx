@@ -17,7 +17,7 @@ import {
   type EntityKind,
   type RawSearchParams,
 } from '../lib/routes';
-import type { Network } from '@/features/dashboard/types';
+import type { DashboardView, Network } from '@/features/dashboard/types';
 
 const SITE_NAME = 'Radix Community';
 
@@ -37,9 +37,21 @@ export interface EntityRouteConfig {
    * `transactionintent_`.
    */
   extraKinds?: EntityKind[];
+  /**
+   * Dashboard view this entity belongs in. Defaults to the explorer, which is
+   * right for a transaction or a resource. A validator is a staking subject
+   * before it is a stream of transactions, so its route opens the staking view
+   * with that validator as the filter.
+   */
+  view?: DashboardView;
 }
 
-export function createEntityRoute({ kind, segment, extraKinds = [] }: EntityRouteConfig) {
+export function createEntityRoute({
+  kind,
+  segment,
+  extraKinds = [],
+  view = 'transactions',
+}: EntityRouteConfig) {
   const accepted = new Set<EntityKind>([kind, ...extraKinds]);
 
   /**
@@ -85,11 +97,12 @@ export function createEntityRoute({ kind, segment, extraKinds = [] }: EntityRout
     const value = decodeURIComponent(address);
     assertKind(value);
     // The entity lives in the PATH here, so it is injected into the query the
-    // shell understands; the shell keeps one way of focusing the explorer.
+    // shell understands; the shell keeps one way of focusing a view, whichever
+    // view the entity belongs to.
     return (
       <DashboardPageShell
         locale={locale}
-        view="transactions"
+        view={view}
         searchParams={{ ...search, entity: value }}
       />
     );
