@@ -12,14 +12,44 @@
  * Kept in sync with `scripts/gen-brand-assets.tsx`, which draws the static
  * fallback card and the icons from the same palette and the same mark.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { clampCardText, headline, trimToSentence } from './og-text';
-import { OG_BACKDROP_BASE, OG_BACKDROP_DATA_URI } from './generated/og-backdrop';
+import {
+  OG_BACKDROP_BASE,
+  OG_BACKDROP_DATA_URI,
+  OG_BACKDROP_SEAL_DATA_URI,
+} from './generated/og-backdrop';
 
 export { headline };
 
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = 'image/png';
+
+/**
+ * The card's own fonts.
+ *
+ * `@vercel/og` ships exactly one face, Geist Regular, so `fontWeight` had no
+ * bearing on anything: 400 and 900 rendered identically and the headline could
+ * not be made heavier by asking. Real weights have to be supplied.
+ *
+ * Inter because the site is already set in it. Two weights rather than the
+ * usual four: each file is ~320 KB, and the card needs a heavy face and a plain
+ * one, nothing between. Read once per server process; `next.config.ts` keeps
+ * them in the traced output so a deployed function can still find them.
+ */
+const FONT_DIR = join(process.cwd(), 'assets', 'fonts');
+
+let fonts: { name: string; data: Buffer; weight: 400 | 900; style: 'normal' }[] | null = null;
+
+function cardFonts() {
+  fonts ??= [
+    { name: 'Inter', data: readFileSync(join(FONT_DIR, 'Inter-Regular.ttf')), weight: 400, style: 'normal' },
+    { name: 'Inter', data: readFileSync(join(FONT_DIR, 'Inter-Black.ttf')), weight: 900, style: 'normal' },
+  ];
+  return fonts;
+}
 
 const SITE_DOMAIN = 'radix-community.genkipool.com';
 
@@ -85,8 +115,13 @@ export interface OgCardInput {
    * card: a name alone says nothing, while "3 XRD, 0 delegators" says plenty.
    */
   stats?: OgStat[];
-  /** Warning pill next to the eyebrow (an unregistered validator, say). */
+  /** Warning pill above the title (an unregistered validator, say). */
   badge?: string;
+  /**
+   * Which drawing sits behind the card. `seal` swaps the app tile the artwork
+   * puts on the right for the Radix Seal, for the page that is about it.
+   */
+  backdrop?: 'default' | 'seal';
 }
 
 
@@ -135,7 +170,7 @@ function titleSize(title: string): number {
   return 32;
 }
 
-export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
+export function ogCard({ title, subtitle, stats, badge, backdrop = 'default' }: OgCardInput) {
   const safeTitle = clampCardText(title, 90);
 
   return new ImageResponse(
@@ -148,13 +183,13 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
           height: '100%',
           background: OG_BACKDROP_BASE,
           color: '#ffffff',
-          fontFamily: 'sans-serif',
+          fontFamily: 'Inter',
         }}
       >
         {/* The sidebar artwork, rasterised. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={OG_BACKDROP_DATA_URI}
+          src={backdrop === 'seal' ? OG_BACKDROP_SEAL_DATA_URI : OG_BACKDROP_DATA_URI}
           width={OG_SIZE.width}
           height={OG_SIZE.height}
           alt=""
@@ -189,7 +224,7 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
                   style={{
                     display: 'flex',
                     fontSize: 20,
-                    fontWeight: 700,
+                    fontWeight: 900,
                     letterSpacing: 1,
                     textTransform: 'uppercase',
                     color: '#fecaca',
@@ -211,7 +246,7 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
             style={{
               display: 'flex',
               fontSize: titleSize(safeTitle),
-              fontWeight: 800,
+              fontWeight: 900,
               lineHeight: 1.24,
               letterSpacing: TITLE_TRACKING,
               // Shrink-wrapped, so the gradient runs across the words rather
@@ -230,7 +265,7 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
               style={{
                 display: 'flex',
                 fontSize: subtitleSize(trimToSentence(subtitle, SUBTITLE_MAX).length),
-                fontWeight: 500,
+                fontWeight: 400,
                 lineHeight: 1.35,
                 letterSpacing: 0.5,
                 textAlign: 'left',
@@ -264,7 +299,7 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
                 >
                   {stat.label}
                 </div>
-                <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, textShadow: TEXT_SHADOW }}>
+                <div style={{ display: 'flex', fontSize: 34, fontWeight: 900, textShadow: TEXT_SHADOW }}>
                   {stat.value}
                 </div>
               </div>
@@ -289,6 +324,6 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
         </div>
       </div>
     ),
-    OG_SIZE,
+    { ...OG_SIZE, fonts: cardFonts() },
   );
 }

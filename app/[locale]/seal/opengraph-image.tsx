@@ -21,5 +21,8 @@ export default async function Image({
   return ogCard({
     title: headline(t.seo.seal.title),
     subtitle: t.seo.seal.description,
+    // The page is about the seal, so the artwork shows the seal rather than
+    // the generic app tile.
+    backdrop: 'seal',
   });
 }
