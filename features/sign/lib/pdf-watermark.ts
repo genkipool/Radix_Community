@@ -60,13 +60,26 @@ function dataUrlToBytes(url: string): Uint8Array | null {
   }
 }
 
+/**
+ * How long to wait for a remote image before giving up on it.
+ *
+ * The image is decoration (an issuer logo); the document must be produced with
+ * or without it. Unbounded, an unreachable host holds the whole PDF hostage for
+ * as long as the platform's own connect timeout, which is tens of seconds and
+ * not something this code controls. It also made the signature-page test flaky:
+ * that test deliberately points at a dead host and, under parallel load, the
+ * failure took longer to arrive than the test's own 5s budget.
+ */
+const IMAGE_FETCH_TIMEOUT_MS = 4000;
+
 export async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
   if (url.startsWith('data:')) return dataUrlToBytes(url);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS) });
     if (!res.ok) return null;
     return new Uint8Array(await res.arrayBuffer());
   } catch {
+    // Includes the timeout abort: a missing logo is never a reason to fail.
     return null;
   }
 }
