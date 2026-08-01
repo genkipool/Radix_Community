@@ -149,7 +149,7 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
           </div>
 
           {subtitle && (
-            <div style={{ display: 'flex', fontSize: 28, lineHeight: 1.35, color: '#a9c0ff' }}>
+            <div style={{ display: 'flex', fontSize: 34, lineHeight: 1.35, color: '#a9c0ff' }}>
               {/* Meta descriptions are capped near 160 characters, so this fits
                   them whole; only free-form on-ledger text ever gets cut. */}
               {clampCardText(subtitle, 170)}

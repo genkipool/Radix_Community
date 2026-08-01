@@ -1,11 +1,12 @@
 /**
- * gen-brand-assets.tsx rasterises the brand mark into the icon and social-card
- * files that crawlers and mobile OSes need.
+ * gen-brand-assets.tsx rasterises the brand mark into the icon files that
+ * crawlers and mobile OSes need.
  *
  * `app/icon.svg` alone is not enough: Google Search does not render SVG
- * favicons, iOS screenshots the page when there is no apple-touch-icon, and
- * social platforms need a real bitmap for og:image. Everything here is derived
- * from that same SVG so the mark can only ever be changed in one place.
+ * favicons and iOS screenshots the page when there is no apple-touch-icon.
+ * Everything here is derived from that same SVG so the mark can only ever be
+ * changed in one place. Social cards are drawn per route at runtime instead,
+ * in `lib/og-card.tsx`.
  *
  * Run with:  pnpm gen:brand-assets
  * The output is committed: this is a design-time script, not a build step.
@@ -66,52 +67,6 @@ function iconElement(rounded: boolean) {
 }
 
 /**
- * 1200x630 social card. Kept deliberately plain: text on a gradient survives
- * the aggressive downscaling that timelines apply, illustration does not.
- */
-function socialCardElement() {
-    return (
-        <div
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                width: '100%',
-                height: '100%',
-                padding: '72px 80px',
-                background: `linear-gradient(135deg, #020617 0%, #0a1a4d 55%, ${BRAND_FROM} 100%)`,
-                color: '#ffffff',
-                fontFamily: 'sans-serif',
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={markDataUri(false)} width={104} height={104} alt="" />
-                <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, letterSpacing: -1 }}>
-                    Radix Community
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ display: 'flex', fontSize: 68, fontWeight: 700, lineHeight: 1.1, letterSpacing: -2 }}>
-                    Tokenized deposits, RWA and institutional DeFi
-                </div>
-                <div style={{ display: 'flex', fontSize: 34, color: '#a9c0ff' }}>
-                    Regulated blockchain solutions on Radix DLT
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-                <div style={{ display: 'flex', width: 56, height: 5, background: BRAND_TO, borderRadius: 3 }} />
-                <div style={{ display: 'flex', fontSize: 26, color: '#8ea6e8' }}>
-                    radix-community.genkipool.com
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/**
  * Wraps a PNG in an ICO container. The ICO format has allowed a raw PNG
  * payload since Vista, so no bitmap re-encoding is needed, just the 6-byte
  * header and the 16-byte directory entry pointing at the PNG.
@@ -143,12 +98,11 @@ async function write(file: string, data: Buffer) {
 async function main() {
     console.log('Generating brand assets…');
 
-    const [icon32, icon180, icon192, icon512, card] = await Promise.all([
+    const [icon32, icon180, icon192, icon512] = await Promise.all([
         render(iconElement(false), 32, 32),
         render(iconElement(true), 180, 180),
         render(iconElement(false), 192, 192),
         render(iconElement(false), 512, 512),
-        render(socialCardElement(), 1200, 630),
     ]);
 
     // app/ uses Next's file conventions, so these are wired into <head>
@@ -160,7 +114,6 @@ async function main() {
     // public/ holds what the web manifest and the metadata helper reference.
     await write(path.join(PUBLIC_DIR, 'icon-192.png'), icon192);
     await write(path.join(PUBLIC_DIR, 'icon-512.png'), icon512);
-    await write(path.join(PUBLIC_DIR, 'og-image.png'), card);
 }
 
 main().catch((error) => {
