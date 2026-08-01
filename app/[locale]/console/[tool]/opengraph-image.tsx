@@ -27,7 +27,6 @@ export default async function Image({
   const labels = (t.console.tools as Record<string, { title: string; description: string }>)[tool];
 
   return ogCard({
-    eyebrow: t.console.heroTitle,
     title: labels.title,
     subtitle: labels.description,
   });

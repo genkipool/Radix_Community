@@ -699,7 +699,7 @@
         }
       },
       "convert-olympia-address": {
-        "title": "Convert Olympia Address",
+        "title": "Olympia Address",
         "description": "Convert an Olympia address into its Babylon equivalent (and back), and generate the QR to import the account into the Radix Wallet app.",
         "guide": {
           "guideTitle": "Guide: Convert Olympia Address",
@@ -741,7 +741,7 @@
         }
       },
       "sbor-decoder": {
-        "title": "SBOR Encoder / Decoder",
+        "title": "SBOR",
         "description": "Paste any hex-encoded SBOR payload (state, events, schemas) and read it decoded, human-readable.",
         "guide": {
           "guideTitle": "Guide: SBOR Decoder",

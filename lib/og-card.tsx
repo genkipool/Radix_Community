@@ -13,7 +13,7 @@
  * fallback card and the icons from the same palette and the same mark.
  */
 import { ImageResponse } from 'next/og';
-import { clampCardText, headline } from './og-text';
+import { clampCardText, headline, trimToSentence } from './og-text';
 import { OG_BACKDROP_BASE, OG_BACKDROP_DATA_URI } from './generated/og-backdrop';
 
 export { headline };
@@ -30,7 +30,7 @@ const SITE_DOMAIN = 'radix-community.genkipool.com';
  * measured on the rendered artwork. Nothing may overlap it, so with 72 of
  * padding the text column stops well short.
  */
-const TEXT_COLUMN = 690;
+const TEXT_COLUMN = 715;
 
 /** The sidebar's headline gradient, `--sidebar-primary` to `--sidebar-secondary`. */
 const SIDEBAR_PRIMARY = '#3B9BFF';
@@ -56,8 +56,6 @@ export interface OgStat {
 }
 
 export interface OgCardInput {
-  /** Small line above the title: the section, or what kind of thing this is. */
-  eyebrow?: string;
   title: string;
   subtitle?: string;
   /**
@@ -71,20 +69,27 @@ export interface OgCardInput {
 
 
 /**
- * Long titles need to step down a size or they wrap to four lines.
+ * Picks a title size that keeps the headline to two lines at most.
  *
- * Sized to match the sidebar graphic's own headline: its glyphs measure 54px
- * tall on the rendered artwork, which these reproduce. The drawing sets 70px
- * in a 560-tall canvas that then scales up to the card, so copying its
- * `fontSize` directly came out a fifth too short.
+ * The largest step matches the sidebar graphic's own headline: its glyphs
+ * measure 54px tall on the rendered artwork, which 94px reproduces. The drawing
+ * sets 70px in a 560-tall canvas that then scales up to the card, so copying
+ * its `fontSize` straight across came out a fifth too short.
+ *
+ * The steps below it are not chosen by eye. A glyph averages about half its
+ * font size in width, so a line holds roughly `TEXT_COLUMN / (size * 0.5)`
+ * characters and two lines hold twice that. Each threshold is that figure for
+ * its size, which is what keeps a long name from spilling into a third line.
  */
 function titleSize(length: number): number {
-  if (length <= 28) return 94;
-  if (length <= 55) return 76;
-  return 62;
+  const twoLinesFit = (size: number) => length <= (2 * TEXT_COLUMN) / (size * 0.5);
+  for (const size of [94, 76, 62]) {
+    if (twoLinesFit(size)) return size;
+  }
+  return 52;
 }
 
-export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) {
+export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
   const safeTitle = clampCardText(title, 90);
 
   return new ImageResponse(
@@ -132,24 +137,8 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
             starts at x=805, and with 72 of padding 690 leaves a margin. Text
             must never cross it, in front or behind. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: TEXT_COLUMN }}>
-          {(eyebrow || badge) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {eyebrow && (
-                <div
-                  style={{
-                    display: 'flex',
-                    fontSize: 24,
-                    fontWeight: 600,
-                    letterSpacing: 2,
-                    textTransform: 'uppercase',
-                    color: '#c8d8ff',
-                    textShadow: TEXT_SHADOW,
-                  }}
-                >
-                  {clampCardText(eyebrow, 40)}
-                </div>
-              )}
-              {badge && (
+          {badge && (
+            <div style={{ display: 'flex' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -166,7 +155,6 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                 >
                   {clampCardText(badge, 24)}
                 </div>
-              )}
             </div>
           )}
 
@@ -178,7 +166,7 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
               display: 'flex',
               fontSize: titleSize(safeTitle.length),
               fontWeight: 800,
-              lineHeight: 1.1,
+              lineHeight: 1.24,
               letterSpacing: 1,
               // Shrink-wrapped, so the gradient runs across the words rather
               // than across the whole column and showing only its blue end.
@@ -203,17 +191,18 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                 textShadow: TEXT_SHADOW,
               }}
             >
-              {/* Shorter than the meta description it usually comes from. At
+              {/* Shorter than the meta description it usually comes from: at
                   full length this ran to five lines straight across the densest
-                  part of the artwork, and the backdrop is meant to be seen. */}
-              {clampCardText(subtitle, SUBTITLE_MAX)}
+                  part of the artwork, and the backdrop is meant to be seen.
+                  Ends on a full stop where one fits, and never on an ellipsis. */}
+              {trimToSentence(subtitle, SUBTITLE_MAX)}
             </div>
           )}
         </div>
 
         {/* Footer: figures when there are any, the domain otherwise */}
         {stats && stats.length > 0 ? (
-          <div style={{ display: 'flex', gap: 48, alignItems: 'flex-end', maxWidth: TEXT_COLUMN }}>
+          <div style={{ display: 'flex', gap: 38, alignItems: 'flex-end', maxWidth: TEXT_COLUMN }}>
             {stats.map((stat) => (
               <div key={stat.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampCardText, headline } from '@/lib/og-text';
+import { clampCardText, headline, trimToSentence } from '@/lib/og-text';
 
 describe('headline', () => {
     it('keeps only the part before the search-engine separator', () => {
@@ -31,26 +31,70 @@ describe('clampCardText', () => {
     it('cuts on a word boundary, not mid-word', () => {
         const source = 'An open self-custody trust standard. No server holds your keys.';
         const out = clampCardText(source, 40);
-        const body = out.slice(0, -1);
 
-        expect(out.endsWith('…')).toBe(true);
         // What was kept is a real prefix, and it stops exactly where a space
         // was, so no word is left cut in half.
-        expect(source.startsWith(body)).toBe(true);
-        expect(source[body.length]).toBe(' ');
-        expect(out.length).toBeLessThanOrEqual(41);
+        expect(source.startsWith(out)).toBe(true);
+        expect(source[out.length]).toBe(' ');
+        expect(out.length).toBeLessThanOrEqual(40);
+    });
+
+    // An ellipsis on a share card reads as a truncation bug, not as a promise
+    // of more text.
+    it('never marks the text as cut', () => {
+        expect(clampCardText('palabra '.repeat(60), 50)).not.toContain('…');
+        expect(clampCardText('x'.repeat(200), 50)).not.toContain('…');
     });
 
     // A single unbroken run has no boundary to cut on; it still must not run
     // past the limit and off the card.
     it('cuts mid-token when there is no word boundary to use', () => {
-        const out = clampCardText('x'.repeat(200), 50);
-        expect(out).toBe(`${'x'.repeat(50)}…`);
+        expect(clampCardText('x'.repeat(200), 50)).toBe('x'.repeat(50));
     });
 
     it('never exceeds the limit it was given', () => {
         for (const max of [24, 40, 90, 170]) {
-            expect(clampCardText('palabra '.repeat(80), max).length).toBeLessThanOrEqual(max + 1);
+            expect(clampCardText('palabra '.repeat(80), max).length).toBeLessThanOrEqual(max);
         }
+    });
+});
+
+describe('trimToSentence', () => {
+    const source =
+        'Estándar abierto de confianza en autocustodia sobre Radix: firma documentos. ' +
+        'Sin servidores que guarden tus claves.';
+
+    it('leaves a description that already fits', () => {
+        expect(trimToSentence('Corta y entera.', 105)).toBe('Corta y entera.');
+    });
+
+    it('ends on a full stop rather than mid-clause', () => {
+        const out = trimToSentence(source, 105);
+        expect(out.endsWith('.')).toBe(true);
+        expect(source.startsWith(out)).toBe(true);
+    });
+
+    it('never marks the text as cut', () => {
+        expect(trimToSentence(source, 105)).not.toContain('…');
+        expect(trimToSentence('sin puntuacion '.repeat(20), 60)).not.toContain('…');
+    });
+
+    // A sentence that leaves the card nearly empty is worse than a longer
+    // fragment ending on a word.
+    it('falls back past a sentence end that is too early', () => {
+        const out = trimToSentence('Hola. ' + 'palabra '.repeat(40), 100);
+        expect(out.startsWith('Hola. palabra')).toBe(true);
+        expect(out.length).toBeGreaterThan(50);
+    });
+
+    // Real case: one long sentence with no full stop in range. Ending on the
+    // clause reads as finished; ending mid-clause reads as broken.
+    it('ends on a clause and drops the comma when no sentence fits', () => {
+        const out = trimToSentence(
+            'Convierte una dirección Olympia en su equivalente Babylon (y viceversa), y genera el QR para importar la cuenta.',
+            105,
+        );
+        expect(out).toBe('Convierte una dirección Olympia en su equivalente Babylon (y viceversa)');
+        expect(out.endsWith(',')).toBe(false);
     });
 });
