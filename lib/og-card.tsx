@@ -36,17 +36,18 @@ export const OG_CONTENT_TYPE = 'image/png';
  *
  * Inter because the site is already set in it. Two weights rather than the
  * usual four: each file is ~320 KB, and the card needs a heavy face and a plain
- * one, nothing between. Read once per server process; `next.config.ts` keeps
+ * one, nothing between. ExtraBold rather than Black, which read as too dense at
+ * headline size. Read once per server process; `next.config.ts` keeps
  * them in the traced output so a deployed function can still find them.
  */
 const FONT_DIR = join(process.cwd(), 'assets', 'fonts');
 
-let fonts: { name: string; data: Buffer; weight: 400 | 900; style: 'normal' }[] | null = null;
+let fonts: { name: string; data: Buffer; weight: 400 | 800; style: 'normal' }[] | null = null;
 
 function cardFonts() {
   fonts ??= [
     { name: 'Inter', data: readFileSync(join(FONT_DIR, 'Inter-Regular.ttf')), weight: 400, style: 'normal' },
-    { name: 'Inter', data: readFileSync(join(FONT_DIR, 'Inter-Black.ttf')), weight: 900, style: 'normal' },
+    { name: 'Inter', data: readFileSync(join(FONT_DIR, 'Inter-ExtraBold.ttf')), weight: 800, style: 'normal' },
   ];
   return fonts;
 }
@@ -126,10 +127,11 @@ export interface OgCardInput {
 
 
 /**
- * Wider letterforms than the drawing's own, which sets 1 at a 70px face, so the
- * headline reads as spread rather than condensed.
+ * The drawing's own tracking. Opening it up read as spread rather than set:
+ * the reference has the letters close together, and the weight carry the
+ * emphasis instead of the spacing.
  */
-const TITLE_TRACKING = 4;
+const TITLE_TRACKING = 1;
 
 /**
  * Picks a title size that keeps the headline to two lines at most.
@@ -224,7 +226,7 @@ export function ogCard({ title, subtitle, stats, badge, backdrop = 'default' }: 
                   style={{
                     display: 'flex',
                     fontSize: 20,
-                    fontWeight: 900,
+                    fontWeight: 800,
                     letterSpacing: 1,
                     textTransform: 'uppercase',
                     color: '#fecaca',
@@ -246,7 +248,7 @@ export function ogCard({ title, subtitle, stats, badge, backdrop = 'default' }: 
             style={{
               display: 'flex',
               fontSize: titleSize(safeTitle),
-              fontWeight: 900,
+              fontWeight: 800,
               lineHeight: 1.24,
               letterSpacing: TITLE_TRACKING,
               // Shrink-wrapped, so the gradient runs across the words rather
@@ -299,7 +301,7 @@ export function ogCard({ title, subtitle, stats, badge, backdrop = 'default' }: 
                 >
                   {stat.label}
                 </div>
-                <div style={{ display: 'flex', fontSize: 34, fontWeight: 900, textShadow: TEXT_SHADOW }}>
+                <div style={{ display: 'flex', fontSize: 34, fontWeight: 800, textShadow: TEXT_SHADOW }}>
                   {stat.value}
                 </div>
               </div>

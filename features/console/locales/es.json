@@ -951,7 +951,7 @@
       },
       "staking": {
         "title": "Staking",
-        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas — el mismo panel que usa el perfil de la billetera.",
+        "description": "Gestiona el staking de tus cuentas: haz stake, unstake y claim en tus validadores con acciones individuales, por lotes o mixtas. El mismo panel que usa el perfil de la billetera.",
         "guide": {
           "guideTitle": "Guía: Staking",
           "guideDescription": "Panel completo de staking de XRD. Delega en uno o varios validadores, retira stake y reclama tus XRD desbloqueados. Soporta acciones globales por lotes (repartir una cantidad entre varios validadores), modo carrito para combinar operaciones distintas en una sola transacción y modo propietario para validadores que controlas.",

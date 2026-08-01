@@ -15,8 +15,11 @@
  *
  *   theme tokens   the SVG paints with `var(--sidebar-*)`, which nothing would
  *                  resolve, so `radix-dark` values are substituted literally
- *   aspect         the graphic is drawn 1200x560 and a card is 1200x630, so it
- *                  is cropped rather than stretched
+ *   aspect         the graphic is drawn 1200x560 and a card is 1200x630. The
+ *                  crop is expressed as a narrowed viewBox rather than through
+ *                  `preserveAspectRatio`, which the rasteriser ignored: it
+ *                  stretched the drawing to fill instead, and the seal came out
+ *                  302 wide by 376 tall where it should have been round
  *
  * Its own headline is left empty: the card lays type out in satori, which
  * wraps, clamps and has the fonts, none of which SVG text does.
@@ -30,6 +33,14 @@ import { radixSealSvg } from '../features/seal/lib/radix-seal-svg';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+
+/** The graphic's own canvas, as `SidebarGraphic` draws it. */
+const DRAWN_WIDTH = 1200;
+const DRAWN_HEIGHT = 560;
+
+/** Window on that canvas with the card's proportions, centred. */
+const CROP_W = Math.round(DRAWN_HEIGHT * (WIDTH / HEIGHT));
+const CROP_X = Math.round((DRAWN_WIDTH - CROP_W) / 2);
 
 /** `radix-dark` values of every token the graphic paints with. */
 const DARK_TOKENS: Record<string, string> = {
@@ -73,8 +84,11 @@ const svg = markup
     unresolved.add(token);
     return whole;
   })
-  // `slice` crops the 560-tall drawing to the card instead of squashing it.
-  .replace(/<svg /, `<svg width="${WIDTH}" height="${HEIGHT}" preserveAspectRatio="xMidYMid slice" `);
+  // Crop, not squash. Keeping the full 560 of height and narrowing the window
+  // to 560 * (WIDTH / HEIGHT) gives the card's own proportions, so the scale
+  // that follows is the same on both axes and a circle stays a circle.
+  .replace(/viewBox="[^"]*"/, `viewBox="${CROP_X} 0 ${CROP_W} ${DRAWN_HEIGHT}"`)
+  .replace(/<svg /, `<svg width="${WIDTH}" height="${HEIGHT}" `);
 
 if (unresolved.size > 0) {
   console.error(`Unresolved theme tokens: ${[...unresolved].join(', ')}`);
@@ -119,7 +133,6 @@ const TILE_OPEN = '<g transform="translate(960, 270) rotate(14) skewX(-12) scale
 function withSealMark(source: string): string {
   const seal = radixSealSvg({
     ink: 'url(#ogSealInk)',
-    plate: 'rgba(4, 9, 32, 0.78)',
     lettersAsPaths: true,
     fluid: false,
   })

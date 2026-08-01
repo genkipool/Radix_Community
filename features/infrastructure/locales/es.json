@@ -48,7 +48,7 @@
         "items": {
           "cerberus": {
             "title": "Cerberus (Consenso Entrelazado)",
-            "description": "El algoritmo de consenso nativo que permite transacciones atómicas a través de múltiples fragmentos al mismo tiempo. Una operación compleja se ejecuta completa o se cancela completamente — sin fallos parciales."
+            "description": "El algoritmo de consenso nativo que permite transacciones atómicas a través de múltiples fragmentos al mismo tiempo. Una operación compleja se ejecuta completa o se cancela completamente: sin fallos parciales."
           },
           "hyperscale": {
             "title": "Arquitectura Hyperscale",
@@ -80,7 +80,7 @@
           },
           "nft_catalog": {
             "title": "Catálogo de Recursos y NFTs Nativos",
-            "description": "Los NFTs son ciudadanos de primera clase en Radix — no un añadido. El motor soporta NFTs Mutables (atributos que evolucionan, ideal para juegos o identidades) gobernados por un sistema granular de Control de Acceso Basado en Roles: las reglas de acuñación, actualización y quema se establecen a nivel de protocolo, no en código personalizado."
+            "description": "Los NFTs son ciudadanos de primera clase en Radix: no un añadido. El motor soporta NFTs Mutables (atributos que evolucionan, ideal para juegos o identidades) gobernados por un sistema granular de Control de Acceso Basado en Roles: las reglas de acuñación, actualización y quema se establecen a nivel de protocolo, no en código personalizado."
           }
         }
       },
@@ -96,7 +96,7 @@
           },
           "atomic_composability": {
             "title": "Composabilidad Atómica Global",
-            "description": "Las dApps pueden interactuar entre sí simultáneamente a través de cualquier número de shards con plena atomicidad. Una transacción puede abarcar un swap en un DEX, un depósito en lending y una acuñación de NFT — y todo se ejecuta o nada se ejecuta."
+            "description": "Las dApps pueden interactuar entre sí simultáneamente a través de cualquier número de shards con plena atomicidad. Una transacción puede abarcar un swap en un DEX, un depósito en lending y una acuñación de NFT: y todo se ejecuta o nada se ejecuta."
           }
         }
       },
@@ -104,7 +104,7 @@
         "number": "05",
         "title": "Interoperabilidad y Puentes",
         "subtitle": "Las Puertas al Exterior",
-        "description": "Cómo el ecosistema Radix se conecta con el resto del mundo Web3 — moviendo activos y mensajes entre Radix y más de 150 otras blockchains.",
+        "description": "Cómo el ecosistema Radix se conecta con el resto del mundo Web3: moviendo activos y mensajes entre Radix y más de 150 otras blockchains.",
         "items": {
           "hyperlane": {
             "title": "Hyperlane",
@@ -148,7 +148,7 @@
           },
           "radix_wallet": {
             "title": "Radix Wallet y Personas",
-            "description": "La aplicación móvil oficial que sirve de bóveda y gestiona tus identidades digitales (Personas). Tú decides exactamente qué atributos personales compartir con cada dApp — identidad autosoberana completa."
+            "description": "La aplicación móvil oficial que sirve de bóveda y gestiona tus identidades digitales (Personas). Tú decides exactamente qué atributos personales compartir con cada dApp: identidad autosoberana completa."
           },
           "radix_connect": {
             "title": "Radix Connect",
@@ -160,7 +160,7 @@
         "number": "08",
         "title": "Datos, APIs y Herramientas",
         "subtitle": "El Taller y la Sala de Máquinas",
-        "description": "El kit de herramientas completo para desarrolladores — desde la Testnet pública y el simulador local hasta las APIs institucionales de bajo nivel y la Gateway pública utilizada por todas las dApps del ecosistema.",
+        "description": "El kit de herramientas completo para desarrolladores: desde la Testnet pública y el simulador local hasta las APIs institucionales de bajo nivel y la Gateway pública utilizada por todas las dApps del ecosistema.",
         "items": {
           "stokenet": {
             "title": "Stokenet",
@@ -189,7 +189,7 @@
   "seo": {
     "infrastructure": {
       "title": "Infraestructura | Ejecuta un Nodo Radix",
-      "description": "Todo lo que necesitas para ejecutar un nodo validador Radix — guías de configuración, requisitos de hardware y monitoreo."
+      "description": "Todo lo que necesitas para ejecutar un nodo validador Radix: guías de configuración, requisitos de hardware y monitoreo."
     }
   }
 }

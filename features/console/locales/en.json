@@ -951,7 +951,7 @@
       },
       "staking": {
         "title": "Staking",
-        "description": "Manage the staking of your accounts: stake, unstake and claim on your validators with individual, batch or mixed actions — the same panel the wallet profile uses.",
+        "description": "Manage the staking of your accounts: stake, unstake and claim on your validators with individual, batch or mixed actions. The same panel the wallet profile uses.",
         "guide": {
           "guideTitle": "Guide: Staking",
           "guideDescription": "Full XRD staking panel. Delegate to one or several validators, unstake and claim your unlocked XRD. Supports global batch actions (split an amount across validators), cart mode to combine different operations into a single transaction, and owner mode for validators you control.",

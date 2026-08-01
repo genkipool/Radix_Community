@@ -29,7 +29,7 @@
       },
       {
         "title": "Rust-Based",
-        "description": "Scrypto is an extension of Rust — one of the safest and most modern programming languages. If you already know Rust, Scrypto will feel natural. Coming from another language, the learning curve is smooth thanks to macros, strong types, and a compiler that guides you."
+        "description": "Scrypto is an extension of Rust: one of the safest and most modern programming languages. If you already know Rust, Scrypto will feel natural. Coming from another language, the learning curve is smooth thanks to macros, strong types, and a compiler that guides you."
       }
     ],
     "comparison": {
@@ -255,7 +255,7 @@
   "seo": {
     "academy": {
       "title": "Academy | Learn Radix",
-      "description": "Learn Radix from the ground up — DeFi fundamentals, Scrypto development, validator operations, and more."
+      "description": "Learn Radix from the ground up: DeFi fundamentals, Scrypto development, validator operations, and more."
     }
   }
 }

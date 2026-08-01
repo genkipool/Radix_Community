@@ -44,11 +44,11 @@
         "number": "02",
         "title": "Network & Consensus",
         "subtitle": "The Muscle and the Scalability",
-        "description": "This layer dictates how validator nodes agree on ledger updates. Cerberus and Hyperscale together deliver linear scalability — the more nodes, the more throughput — without bottlenecks.",
+        "description": "This layer dictates how validator nodes agree on ledger updates. Cerberus and Hyperscale together deliver linear scalability: the more nodes, the more throughput: without bottlenecks.",
         "items": {
           "cerberus": {
             "title": "Cerberus (Braided Consensus)",
-            "description": "The native consensus algorithm that enables atomic transactions spanning multiple shards simultaneously. A complex operation either executes in full or is rolled back entirely — no partial failures."
+            "description": "The native consensus algorithm that enables atomic transactions spanning multiple shards simultaneously. A complex operation either executes in full or is rolled back entirely: no partial failures."
           },
           "hyperscale": {
             "title": "Hyperscale Architecture",
@@ -64,7 +64,7 @@
         "number": "03",
         "title": "Execution & Programming",
         "subtitle": "The Brain",
-        "description": "The environment where smart logic is built and run. Radix Engine's asset-oriented model treats tokens as physical resources — they cannot disappear or be duplicated by a code bug.",
+        "description": "The environment where smart logic is built and run. Radix Engine's asset-oriented model treats tokens as physical resources: they cannot disappear or be duplicated by a code bug.",
         "items": {
           "radix_engine": {
             "title": "Radix Engine v2",
@@ -80,7 +80,7 @@
           },
           "nft_catalog": {
             "title": "Native Resource & NFT Catalog",
-            "description": "NFTs are first-class citizens on Radix — not an afterthought. The engine supports Mutable NFTs (attributes that evolve, ideal for games or identities) governed by a granular Role-Based Access Control system: mint, update, burn rules are set at protocol level, not in custom code."
+            "description": "NFTs are first-class citizens on Radix: not an afterthought. The engine supports Mutable NFTs (attributes that evolve, ideal for games or identities) governed by a granular Role-Based Access Control system: mint, update, burn rules are set at protocol level, not in custom code."
           }
         }
       },
@@ -96,7 +96,7 @@
           },
           "atomic_composability": {
             "title": "Global Atomic Composability",
-            "description": "dApps can interact with each other simultaneously across any number of shards with full atomicity. One transaction can span a DEX swap, a lending deposit and an NFT mint — and either all succeed or none do."
+            "description": "dApps can interact with each other simultaneously across any number of shards with full atomicity. One transaction can span a DEX swap, a lending deposit and an NFT mint: and either all succeed or none do."
           }
         }
       },
@@ -104,7 +104,7 @@
         "number": "05",
         "title": "Interoperability & Bridges",
         "subtitle": "The Doors to the Outside",
-        "description": "How the Radix ecosystem connects to the broader Web3 world — moving assets and messages between Radix and over 150 other blockchains.",
+        "description": "How the Radix ecosystem connects to the broader Web3 world: moving assets and messages between Radix and over 150 other blockchains.",
         "items": {
           "hyperlane": {
             "title": "Hyperlane",
@@ -124,7 +124,7 @@
         "items": {
           "rola": {
             "title": "ROLA (Radix Off-Ledger Authentication)",
-            "description": "A cryptographic protocol that lets users log in to dApps by proving they own a Radix account — without ever exposing a private key or seed phrase."
+            "description": "A cryptographic protocol that lets users log in to dApps by proving they own a Radix account: without ever exposing a private key or seed phrase."
           },
           "rdt": {
             "title": "Radix dApp Toolkit (RDT)",
@@ -148,7 +148,7 @@
           },
           "radix_wallet": {
             "title": "Radix Wallet & Personas",
-            "description": "The official mobile app that acts as your vault and manages your digital identities (Personas). You decide exactly which personal attributes to share with each dApp — full self-sovereign identity."
+            "description": "The official mobile app that acts as your vault and manages your digital identities (Personas). You decide exactly which personal attributes to share with each dApp: full self-sovereign identity."
           },
           "radix_connect": {
             "title": "Radix Connect",
@@ -160,7 +160,7 @@
         "number": "08",
         "title": "Data, APIs & Tooling",
         "subtitle": "The Workshop & Engine Room",
-        "description": "The complete developer toolkit — from the public Testnet and local simulator to low-level institutional APIs and the public Gateway used by every dApp in the ecosystem.",
+        "description": "The complete developer toolkit: from the public Testnet and local simulator to low-level institutional APIs and the public Gateway used by every dApp in the ecosystem.",
         "items": {
           "stokenet": {
             "title": "Stokenet",
@@ -176,11 +176,11 @@
           },
           "gateway": {
             "title": "Gateway API / Network Gateway",
-            "description": "The master indexing server that reads the entire blockchain (balances, histories, component states) and serves it to developers via an easy-to-use RESTful API — eliminating the costly need for every dApp to run and maintain its own node."
+            "description": "The master indexing server that reads the entire blockchain (balances, histories, component states) and serves it to developers via an easy-to-use RESTful API: eliminating the costly need for every dApp to run and maintain its own node."
           },
           "dashboard": {
             "title": "Radix Dashboard",
-            "description": "The official block explorer — the visual interface. It translates the entire complex infrastructure of substates and components into a clean, readable web page so any user can audit the network, view transactions and check validator status."
+            "description": "The official block explorer: the visual interface. It translates the entire complex infrastructure of substates and components into a clean, readable web page so any user can audit the network, view transactions and check validator status."
           }
         }
       }
@@ -189,7 +189,7 @@
   "seo": {
     "infrastructure": {
       "title": "Infrastructure | Run a Radix Node",
-      "description": "Everything you need to run a Radix validator node — setup guides, hardware requirements, and monitoring."
+      "description": "Everything you need to run a Radix validator node: setup guides, hardware requirements, and monitoring."
     }
   }
 }
