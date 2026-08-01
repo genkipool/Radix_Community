@@ -113,6 +113,7 @@ export default function DashboardClient({
   initialDateRange,
   randomSeed = 0,
   initialMarketData,
+  heroHeadingLevel = 'h1',
   dictionary,
   initialIsWalletConnected = false,
   initialConnectedAccounts = EMPTY_ACCOUNTS,
@@ -488,6 +489,7 @@ export default function DashboardClient({
         title={dt.hero?.title}
         subtitle={dt.hero?.subtitle}
         gradient="from-[var(--color-secondary)] to-[var(--color-accent)]"
+        headingLevel={heroHeadingLevel}
       />
 
       {/* ── Fixed-position loading bar (zero layout impact) ── */}

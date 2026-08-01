@@ -22,6 +22,16 @@ const nextConfig: NextConfig = {
   // ── React Compiler (stable in Next.js 16) ─────────────────────────────────
   reactCompiler: true,
 
+  // ── Deploy timestamp ───────────────────────────────────────────────────────
+  // Evaluated once when this config is read during `next build` and inlined
+  // into the bundle, so it is the deploy time rather than the time of whatever
+  // request happens to be running. app/sitemap.ts reports it as `lastmod` for
+  // the static pages; a per-request `new Date()` there claimed the whole site
+  // changed every single day.
+  env: {
+    BUILD_TIME: new Date().toISOString(),
+  },
+
   // ── LAN testing (dev only) ──────────────────────────────────────────────────
   // Allows opening the dev server from other devices on the local network
   // (e.g. testing the encrypt-document P2P flow phone ↔ laptop) without the

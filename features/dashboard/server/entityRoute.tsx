@@ -9,8 +9,9 @@
  */
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { DashboardPageShell } from './dashboardPage';
+import { DashboardPageShell, getDashboardDictionary } from './dashboardPage';
 import { buildEntityMetadata } from './entityMetadata';
+import { ValidatorSummary } from './ValidatorSummary';
 import {
   parseDashboardQuery,
   resolveEntityKind,
@@ -84,14 +85,32 @@ export function createEntityRoute({ kind, segment, extraKinds = [] }: EntityRout
     const [{ locale, address }, search] = await Promise.all([params, searchParams]);
     const value = decodeURIComponent(address);
     assertKind(value);
+
+    // Validators are the only entity kind listed in the sitemap, and the only
+    // one whose identity is known server-side without an extra lookup, so they
+    // get a real rendered header. Everything else keeps the client card alone.
+    const summary =
+      kind === 'validator' ? (
+        <ValidatorSummary
+          address={value}
+          network={networkOf(search)}
+          locale={locale}
+          t={await getDashboardDictionary(locale)}
+        />
+      ) : null;
+
     // The entity lives in the PATH here, so it is injected into the query the
     // shell understands; the shell keeps one way of focusing the explorer.
     return (
-      <DashboardPageShell
-        locale={locale}
-        view="transactions"
-        searchParams={{ ...search, entity: value }}
-      />
+      <>
+        {summary}
+        <DashboardPageShell
+          locale={locale}
+          view="transactions"
+          searchParams={{ ...search, entity: value }}
+          heroHeadingLevel={summary ? 'h2' : 'h1'}
+        />
+      </>
     );
   }
 

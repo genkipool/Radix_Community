@@ -57,6 +57,7 @@
       "jailed": "Jailed"
     },
     "details": {
+      "validator": "Radix Validator",
       "profile": "Staking Profile",
       "description": "Description",
       "vote": "Protocol Update Vote",

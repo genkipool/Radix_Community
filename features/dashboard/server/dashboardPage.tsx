@@ -119,12 +119,18 @@ export interface DashboardPageShellProps {
   /** Decided by the route, not by query params. */
   view: DashboardView;
   searchParams: RawSearchParams;
+  /**
+   * Set by routes that already rendered an `h1` above this shell, so the
+   * generic dashboard hero does not become a second competing one.
+   */
+  heroHeadingLevel?: 'h1' | 'h2';
 }
 
 export async function DashboardPageShell({
   locale,
   view,
   searchParams,
+  heroHeadingLevel = 'h1',
 }: DashboardPageShellProps) {
   const [cookieStore, headerStore, t] = await Promise.all([
     cookies(),
@@ -306,6 +312,7 @@ export async function DashboardPageShell({
         initialDateRange={dateRange}
         randomSeed={randomSeed}
         initialMarketData={marketData}
+        heroHeadingLevel={heroHeadingLevel}
         dictionary={t}
         initialIsWalletConnected={isServerWalletConnected}
         initialConnectedAccounts={initialConnectedAccounts}

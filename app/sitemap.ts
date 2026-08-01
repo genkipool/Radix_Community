@@ -4,6 +4,7 @@ import { getValidatorsCached } from '@/services/gateway/validators';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
 import { CONSOLE_TOOL_SLUGS } from '@/features/console/types/console.types';
 import { AREAS } from '@/features/community/data/communityData';
+import { selectIndexableValidators } from '@/features/dashboard/lib/validatorIndexing';
 import logger from '@/lib/logger';
 
 const BASE_URL = 'https://radix-community.genkipool.com';
@@ -16,6 +17,17 @@ const LOCALES = ['en', 'es'] as const;
  * layer caches the data, so the cost per crawl is negligible.
  */
 export const dynamic = 'force-dynamic';
+
+/**
+ * Deploy time, inlined by `next.config.ts`.
+ *
+ * `lastModified` used to be `new Date()`, evaluated per request, which told
+ * Google that every URL on the site had changed today, every day. A crawler
+ * that finds the claim false stops trusting the sitemap's dates altogether, so
+ * the signal was worse than useless. Static pages change when the site is
+ * deployed, and that is what this reports.
+ */
+const DEPLOYED_AT = process.env.BUILD_TIME ? new Date(process.env.BUILD_TIME) : undefined;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Base routes of the application (based on the [locale] folder structure)
@@ -46,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const fullSitemap = paths.flatMap((path) =>
         LOCALES.map((locale) => ({
             url: `${BASE_URL}/${locale}${path}`,
-            lastModified: new Date(),
+            ...(DEPLOYED_AT ? { lastModified: DEPLOYED_AT } : {}),
             changeFrequency: 'weekly' as const,
             priority: path === '' ? 1 : 0.8,
             alternates: {
@@ -67,24 +79,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // stay indexable through internal linking instead of being listed here.
     // Mainnet only — Stokenet pages are marked noindex, so listing them would
     // contradict the page's own robots directive.
+    //
+    // Not every validator makes the cut. `selectIndexableValidators` explains
+    // the rule; the ones it leaves out are still crawlable through the
+    // validator list, they are just not URLs worth spending crawl budget on.
     let validatorSitemap: MetadataRoute.Sitemap = [];
     try {
         const data = await getValidatorsCached('mainnet');
-        const addresses = (data?.validators ?? [])
-            .map((v) => v.address)
-            .filter((address): address is string => typeof address === 'string');
+        const validators = selectIndexableValidators(data?.validators ?? []);
 
-        validatorSitemap = addresses.flatMap((address) =>
+        // When the payload came from Redis it carries the moment the validator
+        // snapshot was refreshed, which is a real modification date for these
+        // pages. Only that branch of the cache carries the timestamp; without
+        // it no date is claimed at all, since an absent `lastmod` reads as
+        // "unknown", which is honest, whereas a made-up one is not.
+        const updatedAt = data && 'updatedAt' in data ? data.updatedAt : undefined;
+        const refreshedAt = typeof updatedAt === 'number' ? new Date(updatedAt) : undefined;
+
+        validatorSitemap = validators.flatMap((validator) =>
             LOCALES.map((locale) => ({
-                url: `${BASE_URL}${dashboardRoutes.entity(locale, address)}`,
-                lastModified: new Date(),
-                changeFrequency: 'daily' as const,
+                url: `${BASE_URL}${dashboardRoutes.entity(locale, validator.address)}`,
+                ...(refreshedAt ? { lastModified: refreshedAt } : {}),
+                changeFrequency: 'weekly' as const,
                 priority: 0.6,
                 alternates: {
                     languages: Object.fromEntries(
                         LOCALES.map((loc) => [
                             loc,
-                            `${BASE_URL}${dashboardRoutes.entity(loc, address)}`,
+                            `${BASE_URL}${dashboardRoutes.entity(loc, validator.address)}`,
                         ])
                     ),
                 },
