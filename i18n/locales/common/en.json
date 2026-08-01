@@ -1,4 +1,9 @@
 {
+  "breadcrumb": {
+    "home": "Home",
+    "staking": "Staking",
+    "explorer": "Explorer"
+  },
   "errors": {
     "not_found": {
       "title": "Page not found",

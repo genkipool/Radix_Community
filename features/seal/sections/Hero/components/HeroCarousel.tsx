@@ -96,6 +96,10 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
           const isEntering = targetIdx === idx;
           const animationClass = isExiting ? 'animate-hero-out' : isEntering ? 'animate-hero-in' : '';
           const hiddenClass = !isVisible ? 'opacity-0 invisible pointer-events-none' : '';
+          // Every slide is in the DOM at once, so an <h1> per slide left the
+          // page with three of them competing to be its topic. Only the slide
+          // that is shown first carries it; the styling is identical either way.
+          const Heading = idx === 0 ? 'h1' : 'h2';
 
           return (
             <div
@@ -104,12 +108,12 @@ export default function HeroCarousel({ t }: { t: Dictionary }) {
               onMouseEnter={() => dispatch({ type: 'SET_PAUSED', paused: true })}
               onMouseLeave={() => dispatch({ type: 'SET_PAUSED', paused: false })}
             >
-              <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--color-text-main)] tracking-tight leading-tight mb-6">
+              <Heading className="text-4xl md:text-6xl font-extrabold text-[var(--color-text-main)] tracking-tight leading-tight mb-6">
                 {slide.h1a}{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)]">
                   {slide.h1b}
                 </span>
-              </h1>
+              </Heading>
               <p className="text-xl text-[var(--color-text-muted)] leading-relaxed max-w-2xl">
                 {slide.p}
               </p>
