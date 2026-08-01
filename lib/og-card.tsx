@@ -36,8 +36,30 @@ const TEXT_COLUMN = 715;
 const SIDEBAR_PRIMARY = '#3B9BFF';
 const SIDEBAR_SECONDARY = '#2BDFAA';
 
-/** Roughly two lines at the size the subtitle is set. */
-const SUBTITLE_MAX = 105;
+/**
+ * Effectively no cut for anything this site writes.
+ *
+ * The longest description in the dictionaries is 217 characters, so at this
+ * cap a section or a tool always shows in full; `subtitleSize` gives back the
+ * room by stepping the face down. The limit still exists for on-ledger text,
+ * which is free-form and has no length anyone controls.
+ */
+const SUBTITLE_MAX = 240;
+
+/**
+ * Picks a subtitle size that leaves the card room for it.
+ *
+ * Same reasoning as `titleSize`: a line holds about `TEXT_COLUMN / (size *
+ * 0.5)` characters, and the space under a two-line headline fits four or five
+ * of them. A long description therefore steps down rather than being cut,
+ * because a description that stops mid-thought is worth less than one set
+ * slightly smaller.
+ */
+function subtitleSize(length: number): number {
+  if (length <= 110) return 34;
+  if (length <= 170) return 30;
+  return 27;
+}
 
 /**
  * Lifts small text off the artwork.
@@ -69,6 +91,12 @@ export interface OgCardInput {
 
 
 /**
+ * Wider letterforms than the drawing's own, which sets 1 at a 70px face, so the
+ * headline reads as spread rather than condensed.
+ */
+const TITLE_TRACKING = 4;
+
+/**
  * Picks a title size that keeps the headline to two lines at most.
  *
  * The largest step matches the sidebar graphic's own headline: its glyphs
@@ -76,17 +104,35 @@ export interface OgCardInput {
  * sets 70px in a 560-tall canvas that then scales up to the card, so copying
  * its `fontSize` straight across came out a fifth too short.
  *
- * The steps below it are not chosen by eye. A glyph averages about half its
- * font size in width, so a line holds roughly `TEXT_COLUMN / (size * 0.5)`
- * characters and two lines hold twice that. Each threshold is that figure for
- * its size, which is what keeps a long name from spilling into a third line.
+ * The steps below it are not chosen by eye, and not estimated from length
+ * either: dividing characters by an average width said a 48-character title
+ * would fit two lines when it actually took three, because words break where
+ * they break and a long one drags the whole line with it. So the wrap is
+ * simulated instead, word by word, and the largest size that really lands in
+ * two lines wins.
  */
-function titleSize(length: number): number {
-  const twoLinesFit = (size: number) => length <= (2 * TEXT_COLUMN) / (size * 0.5);
-  for (const size of [94, 76, 62]) {
-    if (twoLinesFit(size)) return size;
+function wrappedLines(text: string, size: number): number {
+  // A glyph averages about half its font size in width, and the tracking adds
+  // to every one of them.
+  const perLine = Math.floor(TEXT_COLUMN / (size * 0.5 + TITLE_TRACKING));
+  let lines = 1;
+  let used = 0;
+  for (const word of text.split(' ')) {
+    if (used === 0) used = word.length;
+    else if (used + 1 + word.length <= perLine) used += 1 + word.length;
+    else {
+      lines += 1;
+      used = word.length;
+    }
   }
-  return 52;
+  return lines;
+}
+
+function titleSize(title: string): number {
+  for (const size of [94, 76, 62, 52, 44, 38]) {
+    if (wrappedLines(title, size) <= 2) return size;
+  }
+  return 32;
 }
 
 export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
@@ -164,10 +210,10 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
           <div
             style={{
               display: 'flex',
-              fontSize: titleSize(safeTitle.length),
+              fontSize: titleSize(safeTitle),
               fontWeight: 800,
               lineHeight: 1.24,
-              letterSpacing: 1,
+              letterSpacing: TITLE_TRACKING,
               // Shrink-wrapped, so the gradient runs across the words rather
               // than across the whole column and showing only its blue end.
               alignSelf: 'flex-start',
@@ -183,10 +229,11 @@ export function ogCard({ title, subtitle, stats, badge }: OgCardInput) {
             <div
               style={{
                 display: 'flex',
-                fontSize: 34,
+                fontSize: subtitleSize(trimToSentence(subtitle, SUBTITLE_MAX).length),
                 fontWeight: 500,
                 lineHeight: 1.35,
                 letterSpacing: 0.5,
+                textAlign: 'left',
                 color: 'rgba(255,255,255,0.9)',
                 textShadow: TEXT_SHADOW,
               }}

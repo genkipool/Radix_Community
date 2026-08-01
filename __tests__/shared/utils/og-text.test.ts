@@ -9,8 +9,19 @@ describe('headline', () => {
             .toBe('Radix Community');
     });
 
+    it('handles the em dash the dictionaries also use as a separator', () => {
+        expect(headline('Consola Radix — Herramientas para desarrolladores'))
+            .toBe('Consola Radix');
+        expect(headline('Radix Console — Developer tools')).toBe('Radix Console');
+    });
+
     it('leaves a title that has no separator alone', () => {
         expect(headline('Build Manifest')).toBe('Build Manifest');
+    });
+
+    // A dash inside a word is not a separator.
+    it('ignores a hyphen that is part of a name', () => {
+        expect(headline('Self-Custody Signing')).toBe('Self-Custody Signing');
     });
 
     it('falls back to the whole title rather than returning nothing', () => {

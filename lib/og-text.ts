@@ -71,7 +71,13 @@ export function trimToSentence(text: string, max: number): string {
  * Document Signing, Encryption & Secure Chat" packs in the keywords. On a card
  * that reads as a run-on, and the subtitle below already carries the detail, so
  * only the part before the first separator is kept.
+ *
+ * Both separators the dictionaries actually use count. Handling only the pipe
+ * left "Consola Radix — Herramientas para desarrolladores" whole, and a title
+ * that long has to be set so small it stops looking like a headline.
  */
+const TITLE_SEPARATOR = /\s[|—]\s/;
+
 export function headline(pageTitle: string): string {
-  return pageTitle.split('|')[0].trim() || pageTitle.trim();
+  return pageTitle.split(TITLE_SEPARATOR)[0].trim() || pageTitle.trim();
 }
