@@ -8,7 +8,6 @@ import {
   Lock,
   LockOpen,
   Plus,
-  Save,
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
@@ -31,6 +30,7 @@ import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGat
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useNftData } from '../../hooks/useNftData';
 import { truncateAddress } from '@/utils/formatters';
+import { RadixIcon } from '@/components/shared/RadixIcon';
 import {
   ICON_URL_KEY,
   ORG_NAME_KEY,
@@ -1194,7 +1194,9 @@ function IdentityTab({
           {busy ? (
             <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
           ) : (
-            <Save className="size-4" />
+            // The Radix mark, not a floppy disk: what this button does is ask
+            // the wallet to sign, and the wallet is the thing being invoked.
+            <RadixIcon className="size-4" strokeColor="currentColor" animate={false} />
           )}
           {busy ? labels.identity.saving : labels.identity.save}
         </button>
