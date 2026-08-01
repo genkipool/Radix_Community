@@ -419,7 +419,7 @@
   "seo": {
     "googleWallet": {
       "title": "Google Wallet × Radix | Invisible digital ownership: NFT tickets with an NFC tap",
-      "description": "How Google Wallet could integrate Radix DLT accounts to issue tickets as NFTs with frictionless NFC validation: ROLA, fee delegation, selling to contacts with atomic swaps and royalties, and the business model for Google Cloud.",
+      "description": "How Google Wallet could use Radix DLT accounts to issue NFT tickets with frictionless NFC validation: ROLA, fee delegation, atomic resale and royalties.",
       "keywords": [
         "Google Wallet Radix",
         "NFT tickets NFC",

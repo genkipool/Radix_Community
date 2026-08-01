@@ -2,6 +2,8 @@
 import { MetadataRoute } from 'next'
 import { getValidatorsCached } from '@/services/gateway/validators';
 import { dashboardRoutes } from '@/features/dashboard/lib/routes';
+import { CONSOLE_TOOL_SLUGS } from '@/features/console/types/console.types';
+import { AREAS } from '@/features/community/data/communityData';
 import logger from '@/lib/logger';
 
 const BASE_URL = 'https://radix-community.genkipool.com';
@@ -31,7 +33,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/google-wallet',
         '/infrastructure',
         '/dashboard/staking',
-        '/dashboard/explorer'
+        '/dashboard/explorer',
+        '/console',
+        // Derived from the same lists the routes are generated from, so a new
+        // tool or area cannot silently drop out of the sitemap.
+        ...CONSOLE_TOOL_SLUGS.map((tool) => `/console/${tool}`),
+        // `/community/admin` is deliberately absent: it is noindex.
+        ...AREAS.map((area) => `/community/${area.id}`),
     ]
 
     // Generate all language + path combinations with hreflang alternates

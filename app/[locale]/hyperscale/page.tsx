@@ -11,7 +11,7 @@ import {
 } from '@/features/hyperscale';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -22,12 +22,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['hyperscale']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/hyperscale',
     title: t.seo.hyperscale.title,
     description: t.seo.hyperscale.description,
     keywords: t.seo.hyperscale.keywords,
-    alternates: buildAlternates(locale, '/hyperscale'),
-  };
+  });
 }
 
 

@@ -2,7 +2,7 @@ import DAppsClient from '@/features/dapps/DAppsClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import { dapps } from '@/features/dapps/data/dappsData';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -13,11 +13,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['dapps']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/dapps',
     title: t.seo.dapps.title,
     description: t.seo.dapps.description,
-    alternates: buildAlternates(locale, '/dapps'),
-  };
+  });
 }
 
 

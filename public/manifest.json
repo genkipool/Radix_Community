@@ -1,10 +1,10 @@
 {
-  "name": "Radix Wallet",
-  "short_name": "Radix Wallet",
-  "description": "La puerta de entrada a Radix Network",
+  "name": "Radix Community",
+  "short_name": "Radix",
+  "description": "Radix DLT community hub: asset tokenization, tokenized deposits and institutional DeFi.",
   "start_url": "/?source=pwa",
   "display": "standalone",
-  "background_color": "#000000",
+  "background_color": "#020617",
   "theme_color": "#052cc0",
   "icons": [
     {
@@ -13,14 +13,22 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

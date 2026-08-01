@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import GamesClient from '@/features/games/GamesClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
 
@@ -15,11 +15,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['games']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/games',
     title: t.seo.games.title,
     description: t.seo.games.description,
-    alternates: buildAlternates(locale, '/games'),
-  };
+  });
 }
 
 

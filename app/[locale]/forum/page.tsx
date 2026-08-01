@@ -3,7 +3,7 @@ import ForumClient from '@/features/forum/ForumClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import { forumPosts, users } from '@/features/forum/data/forumData';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -14,11 +14,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['forum', 'docs']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/forum',
     title: t.seo.forum.title,
     description: t.seo.forum.description,
-    alternates: buildAlternates(locale, '/forum'),
-  };
+  });
 }
 
 

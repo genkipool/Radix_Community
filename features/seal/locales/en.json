@@ -533,7 +533,7 @@
   "seo": {
     "seal": {
       "title": "Radix Seal | Self-Custody Document Signing, Encryption & Secure Chat",
-      "description": "Radix Seal is an open, self-custody trust standard on the Radix ledger: sign documents, encrypt files and chat with wallet-verified identities. No servers hold your files or keys; proofs are anchored on a public ledger anyone can verify.",
+      "description": "An open self-custody trust standard on the Radix ledger: sign documents, encrypt files and chat with wallet-verified identities. No server holds your keys.",
       "keywords": [
         "Radix Seal",
         "self-custody digital signature",

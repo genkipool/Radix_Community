@@ -533,7 +533,7 @@
   "seo": {
     "seal": {
       "title": "Radix Seal | Firma, cifrado y chat seguro en autocustodia",
-      "description": "Radix Seal es un estándar abierto de confianza en autocustodia sobre el ledger de Radix: firma documentos, cifra archivos y chatea con identidades verificadas por wallet. Ningún servidor guarda tus archivos ni tus claves; las pruebas se anclan en un ledger público que cualquiera puede verificar.",
+      "description": "Estándar abierto de confianza en autocustodia sobre Radix: firma documentos, cifra archivos y chatea con identidades verificadas por wallet. Sin servidores.",
       "keywords": [
         "Radix Seal",
         "firma digital en autocustodia",
