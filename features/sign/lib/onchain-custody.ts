@@ -21,6 +21,8 @@ import {
 } from '../constants/seal';
 
 const MAX_CANDIDATE_RESOURCES = 30;
+/** How many of an account's signatures for one document we carry back. */
+const MAX_SIGNATURE_CANDIDATES = 12;
 const MAX_IDS_PER_COLLECTION = 60;
 const MAX_SIGNERS = 25;
 
@@ -75,6 +77,9 @@ interface NfDataResponse {
   non_fungible_ids?: Array<{
     non_fungible_id?: string;
     data?: { programmatic_json?: { fields?: Array<{ field_name?: string; value?: unknown }> } };
+    /** Ledger point the NFT last changed at. Its data is locked at mint, so
+     *  for these collections this IS the moment it was minted. */
+    last_updated_at_state_version?: number;
   }>;
 }
 
@@ -146,12 +151,19 @@ export async function entityDetails(
   return out;
 }
 
-export async function nfData(
+/** One NFT's locked fields together with the ledger point it was minted at. */
+export interface NfRecord {
+  fields: Record<string, string>;
+  /** Ledger state version of the mint, or 0 when the Gateway omits it. */
+  stateVersion: number;
+}
+
+export async function nfRecords(
   network: Network,
   resource: string,
   ids: string[],
-): Promise<Map<string, Record<string, string>>> {
-  const out = new Map<string, Record<string, string>>();
+): Promise<Map<string, NfRecord>> {
+  const out = new Map<string, NfRecord>();
   for (let i = 0; i < ids.length; i += 50) {
     const data = await gatewayPost<NfDataResponse>(
       network,
@@ -159,10 +171,57 @@ export async function nfData(
       { resource_address: resource, non_fungible_ids: ids.slice(i, i + 50) },
     ).catch(() => ({}) as NfDataResponse);
     for (const nf of data.non_fungible_ids ?? []) {
-      if (nf.non_fungible_id) out.set(nf.non_fungible_id, nfFieldMap(nf));
+      if (!nf.non_fungible_id) continue;
+      out.set(nf.non_fungible_id, {
+        fields: nfFieldMap(nf),
+        stateVersion: nf.last_updated_at_state_version ?? 0,
+      });
     }
   }
   return out;
+}
+
+export async function nfData(
+  network: Network,
+  resource: string,
+  ids: string[],
+): Promise<Map<string, Record<string, string>>> {
+  const records = await nfRecords(network, resource, ids);
+  return new Map([...records].map(([id, record]) => [id, record.fields]));
+}
+
+interface TransactionStreamResponse {
+  items?: Array<{ state_version?: number; round_timestamp?: string; confirmed_at?: string }>;
+}
+
+/**
+ * The consensus time of a ledger state version — the clock behind an on-ledger
+ * signature. Unlike the date written into the NFT (supplied by whoever minted
+ * it) or the one in a certificate, this one is agreed by the whole network and
+ * cannot be chosen, which is what makes it worth reading back.
+ *
+ * Returns null when the Gateway cannot resolve it; a missing clock is reported
+ * as missing, never guessed at.
+ */
+export async function ledgerTimestamp(
+  network: Network,
+  stateVersion: number,
+): Promise<string | null> {
+  if (!Number.isInteger(stateVersion) || stateVersion <= 0) return null;
+  const data = await gatewayPost<TransactionStreamResponse>(
+    network,
+    '/stream/transactions',
+    {
+      from_ledger_state: { state_version: stateVersion },
+      limit_per_page: 1,
+      order: 'Asc',
+    },
+  ).catch(() => ({}) as TransactionStreamResponse);
+  const item = data.items?.[0];
+  // The stream starts AT the requested version, so a different one back means
+  // the transaction is no longer retrievable and we know nothing about its time.
+  if (!item || item.state_version !== stateVersion) return null;
+  return item.confirmed_at ?? item.round_timestamp ?? null;
 }
 
 /**
@@ -285,18 +344,36 @@ export async function resolveSealRequest(
   return { docHash, requiredSigners };
 }
 
+/** A located on-ledger signature, with the ledger point that minted it. */
+export interface SignerSignature {
+  /** Ledger state version of the mint, or 0 when the Gateway omits it. */
+  stateVersion: number;
+  /**
+   * The `issued_at` written into the NFT. A mint cannot carry the consensus
+   * time of its own transaction — that time does not exist yet — so this is
+   * always written before the fact and is a CLAIM, never evidence. It is
+   * returned so verification can hold it against the commit time and report a
+   * record that contradicts itself.
+   */
+  issuedAt: string;
+}
+
 /**
- * True when `signer` holds a valid signature for `docHash` in a collection that
- * provably belongs to them (see chain of custody above). Pass `officialSeal`
- * (the network's Radix Seal brand resource) to also require the owner seal be
- * the official brand.
+ * Every valid signature `signer` holds for `docHash`, in collections that
+ * provably belong to them (see chain of custody above), earliest first. Empty
+ * when they have not signed. Pass `officialSeal` (the network's Radix Seal brand
+ * resource) to also require the owner seal be the official brand.
+ *
+ * Each carries the state version of its mint, so callers can resolve WHEN the
+ * network agreed the signature existed rather than trusting a date someone
+ * typed — and, with several to choose from, which mint a claim refers to.
  */
-export async function signerHasSigned(
+export async function findSignerSignatures(
   network: Network,
   signer: string,
   docHash: string,
   officialSeal = '',
-): Promise<boolean> {
+): Promise<SignerSignature[]> {
   const [accountItem] = await entityDetails(network, [signer], {
     non_fungible_include_nfids: true,
   });
@@ -318,6 +395,19 @@ export async function signerHasSigned(
       SIGN_COLLECTION_MARKER_VALUE,
   );
 
+  /*
+   * EVERY qualifying signature, not merely the first one stumbled upon.
+   *
+   * An account can hold many signature NFTs for the same document — several
+   * collections under one insignia, or simply the same document signed again —
+   * and the order collections come back in is not an order anybody promised. As
+   * a yes/no answer that made no difference. As a DATE it decides everything:
+   * picking one arbitrarily dates a signature made today from a mint two weeks
+   * old, and then calls the certificate a liar for disagreeing. So they all come
+   * back, and the caller — which knows what the certificate claims — decides
+   * which one is the evidence for it.
+   */
+  const found: SignerSignature[] = [];
   for (const collection of marked) {
     const address = collection.address ?? '';
     const ids =
@@ -326,20 +416,49 @@ export async function signerHasSigned(
         ?.ids.slice(0, MAX_IDS_PER_COLLECTION) ?? [];
     if (ids.length === 0) continue;
 
-    const data = await nfData(network, address, ids);
-    const hasSignature = [...data.values()].some(
-      (fields) =>
+    const data = await nfRecords(network, address, ids);
+    const matches = [...data.values()].filter(
+      ({ fields }) =>
         fields.kind === 'signature' &&
         fields.document_hash === docHash &&
         fields.signer === signer,
     );
-    if (!hasSignature) continue;
+    if (matches.length === 0) continue;
 
     // Chain of custody: the collection's owner seal must live in `signer`
     // (and be the official brand when known).
-    if (await collectionSealBelongsTo(network, collection, signer, officialSeal)) {
-      return true;
+    if (!(await collectionSealBelongsTo(network, collection, signer, officialSeal))) {
+      continue;
+    }
+    for (const match of matches) {
+      found.push({
+        stateVersion: match.stateVersion,
+        issuedAt: match.fields.issued_at ?? '',
+      });
     }
   }
-  return false;
+
+  found.sort((a, b) => a.stateVersion - b.stateVersion);
+  if (found.length <= MAX_SIGNATURE_CANDIDATES) return found;
+  // Over the cap, keep the two ends: the first time this account committed to
+  // the hash, and the most recent mints, which is where a signature just made
+  // will be. Dropping the middle costs nothing a verifier can act on.
+  return [found[0], ...found.slice(-(MAX_SIGNATURE_CANDIDATES - 1))];
+}
+
+/**
+ * The account's EARLIEST valid signature for `docHash`, or null — the answer to
+ * "has this account signed, and when did it first do so". Callers holding a
+ * certificate should use {@link findSignerSignatures} instead and pick the mint
+ * that corroborates what it claims.
+ */
+export async function findSignerSignature(
+  network: Network,
+  signer: string,
+  docHash: string,
+  officialSeal = '',
+): Promise<SignerSignature | null> {
+  return (
+    (await findSignerSignatures(network, signer, docHash, officialSeal))[0] ?? null
+  );
 }

@@ -113,6 +113,15 @@ export interface SignatureEntry {
   signedAt: string;
   /** X.509 certificate this signer also signed the PDF with, if any. */
   certificate?: SignerCertificate;
+  /**
+   * OFF-ledger signatures: an RFC 3161 timestamp token (base64 DER) in which a
+   * Time Stamping Authority attests that this signature already existed at a
+   * given moment. It is what makes `signedAt` checkable — without it the date is
+   * whatever the signer's browser said, and a certificate could claim any.
+   * Absent when the authority was unreachable; on-ledger signatures do not carry
+   * one, their clock is the transaction that minted them.
+   */
+  timeStampToken?: string;
 }
 
 /** A single minted attestation NFT, tied to the signer that holds it. */
@@ -183,6 +192,32 @@ export interface VerifiedSignature {
   valid: boolean;
   /** This account is part of the required signer set (or the set is open). */
   required: boolean;
+  /**
+   * The independent clock for this signature, read back from the ledger (the
+   * transaction that minted it) or from its RFC 3161 token. Null when the
+   * signature offers neither, in which case its date rests on nothing.
+   */
+  anchoredAt: string | null;
+  /** Where `anchoredAt` came from, so the UI can say which clock it is. */
+  anchorSource: 'ledger' | 'timestamp' | null;
+  /**
+   * Whether the declared `signedAt` agrees with `anchoredAt`. Null when there
+   * is no anchor. False means the certificate states a time that the
+   * independent clock contradicts — a backdated date, typically.
+   */
+  signedAtAnchored: boolean | null;
+  /**
+   * Whether the `issued_at` written inside the on-ledger signature NFT agrees
+   * with the commit time of the transaction that minted it. A mint cannot carry
+   * its own consensus time, so that field is always a claim; this says whether
+   * the claim survives contact with the ledger. Null when there is no on-ledger
+   * NFT, or when it records no date at all.
+   */
+  issuedAtAnchored: boolean | null;
+  /** Authority that issued the timestamp token, for display. */
+  timestampAuthority?: string | null;
+  /** The token is valid but its anchor is not one this deployment knows. */
+  timestampUntrustedAnchor?: boolean;
 }
 
 /** Server verification response. */
@@ -213,4 +248,32 @@ export interface VerifyResult {
    */
   sealValid: boolean | null;
   onChain: OnChainAnchor | null;
+  /**
+   * Whether any valid ROLA proof commits to the payload. When true the message,
+   * file name and document timestamp are cryptographically bound to a signer.
+   * When false (a purely on-ledger certificate) the ledger binds the signer and
+   * the document hash and NOTHING else: those fields are then merely declared,
+   * and the UI must not present them as if the signature covered them.
+   */
+  payloadBound: boolean;
+  /**
+   * Where the authoritative required-signer set came from:
+   *  - 'typed'       → a request key the verifier supplied (the strongest: it
+   *                    cannot be chosen by whoever produced the certificate)
+   *  - 'certificate' → the request the certificate points at
+   *  - 'none'        → no on-ledger request; the payload's own signer list
+   */
+  requestSource: 'typed' | 'certificate' | 'none';
+  /**
+   * The certificate points at a DIFFERENT request than the one the verifier
+   * supplied. The supplied key wins, and this says the certificate tried to be
+   * measured against another yardstick.
+   */
+  requestMismatch: boolean;
+  /**
+   * Whether the document's declared creation time can be true: it must not come
+   * after the moment the network recorded a signature of it. Null when nothing
+   * independent dates any signature, or the declared time is unparseable.
+   */
+  createdAtCoherent: boolean | null;
 }

@@ -64,6 +64,7 @@
             "Attached certificate or embedded directly inside the PDF",
             "Visible signature page inside the PDF, readable in any viewer",
             "Optional signature with your own X.509 certificate (PAdES), recognised by Adobe and Foxit",
+            "A trusted RFC 3161 timestamp on every signature: the date does not come from your browser",
             "Optional on-ledger anchoring as a soulbound NFT",
             "Multi-party signing: several signers on one certificate",
             "Identity disclosure you control: name, email or signature only",
@@ -320,7 +321,7 @@
               "saas": "Attested by the vendor's own clock",
               "pki": "Paid timestamping authority (RFC 3161)",
               "pgp": "None by default, self-declared",
-              "seal": "Fixed by network consensus, immutable",
+              "seal": "Network consensus when anchored; free RFC 3161 stamp otherwise",
               "winner": "seal",
               "expKey": "timestamp"
             }
@@ -382,14 +383,14 @@
           ]
         }
       ],
-      "note": "A Radix Seal signature proves the integrity of a document, its consensus timestamp, and control of the signing account, with any disclosed name self-declared by the signer's wallet. Where regulation requires an identity-verified qualified signature (such as eIDAS QES), Radix Seal complements those schemes with stronger custody, confidentiality and longevity. When idOS (decentralized identity) is implemented on Radix, a Radix Seal signature could reach legal validity, by binding the signing account to a verified identity.",
+      "note": "A Radix Seal signature proves the integrity of a document, its timestamp against an independent clock (network consensus, or an RFC 3161 timestamping authority), and control of the signing account, with any disclosed name self-declared by the signer's wallet. Where regulation requires an identity-verified qualified signature (such as eIDAS QES), Radix Seal complements those schemes with stronger custody, confidentiality and longevity. When idOS (decentralized identity) is implemented on Radix, a Radix Seal signature could reach legal validity, by binding the signing account to a verified identity.",
       "explanations": {
         "custody": "True self-custody: the key never leaves your wallet or your device. PGP also keeps it local; the difference is the wallet adds recovery and guided signing without managing keyrings by hand.",
         "anchor": "A public, decentralized ledger does not depend on the honesty of a company or a CA: thousands of nodes validate every transaction and anyone can read it. There is no single point to compromise or that can disappear.",
         "confidential": "The document is hashed in your browser and only that hash gets signed. The content is never transmitted to any server, so nobody (not even this site) can see it.",
         "transfer": "The direct channel runs browser to browser with end-to-end encryption. No server stores or sees the file along the way.",
         "verify": "Verification only takes the file and a read of the public ledger: no accounts, no vendor API, and no dependence on this site still existing.",
-        "timestamp": "The timestamp is fixed by network consensus when the transaction confirms: no company controls it and it cannot be adjusted afterwards.",
+        "timestamp": "When anchored, the timestamp is fixed by network consensus and no company controls it. A signature made off the ledger carries an RFC 3161 token from a timestamping authority, at no cost and with no subscription. Either way verification holds the declared date against that independent clock and says so when they disagree.",
         "longevity": "The proof lives on a public ledger replicated by hundreds of nodes: it does not expire with a certificate or vanish if a vendor shuts down.",
         "cost": "No subscriptions or per-document pricing: just the network fee, a fraction of a cent. PGP is also free, but its operational cost in key management and training is high.",
         "identity": "Qualified PKI covers something Radix Seal does not yet: an authority validates the signer's legal identity and regulation (eIDAS QES) grants it the highest evidentiary status. Radix Seal proves control of the account, not who you legally are (once idOS lands on Radix, this gap narrows).",
@@ -441,7 +442,7 @@
         },
         {
           "title": "Public request key",
-          "desc": "Every signing request has a key (collection and id) that lets anyone query the ledger for who had to sign and who has signed already."
+          "desc": "Every signing request has a key (collection and id) that lets anyone query the ledger for who had to sign and who has signed already. When verifying, the key YOU supply outranks the one the certificate names, so the required-signer list is not chosen by whoever produced it."
         },
         {
           "title": "Chain of custody on-ledger",
@@ -532,7 +533,7 @@
   "seo": {
     "seal": {
       "title": "Radix Seal | Self-Custody Document Signing, Encryption & Secure Chat",
-      "description": "Radix Seal is an open, self-custody trust standard on the Radix ledger: sign documents, encrypt files and chat with wallet-verified identities. No servers hold your files or keys; proofs are anchored on a public ledger anyone can verify.",
+      "description": "An open self-custody trust standard on the Radix ledger: sign documents, encrypt files and chat with wallet-verified identities. No server holds your keys.",
       "keywords": [
         "Radix Seal",
         "self-custody digital signature",

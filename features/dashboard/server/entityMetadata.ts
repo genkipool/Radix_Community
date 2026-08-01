@@ -12,7 +12,7 @@
  */
 import type { Metadata } from 'next';
 import { fetchEntityDetails } from '@/services/radixApi';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import type { Network } from '@/features/dashboard/types';
 import type { EntityKind } from '../lib/routes';
 
@@ -38,6 +38,18 @@ function metadataValue(entity: EntityDetailsLike | null, key: string): string | 
 /** `resource_rdx1abc…xyz` → `resource_rdx1abc…xyz` shortened for a title. */
 function shorten(address: string): string {
   return address.length > 26 ? `${address.slice(0, 14)}…${address.slice(-6)}` : address;
+}
+
+/**
+ * On-ledger `description` metadata is free-form and often long. Google shows
+ * ~155 characters of a meta description, so anything past that is dead weight.
+ * Cut on a word boundary rather than mid-word.
+ */
+function truncateDescription(text: string, limit = 155): string {
+  if (text.length <= limit) return text;
+  const cut = text.slice(0, limit);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > limit * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 const KIND_LABEL: Record<EntityKind, string> = {
@@ -88,21 +100,19 @@ export async function buildEntityMetadata({
 
     if (name) {
       title = symbol ? `${name} (${symbol})` : name;
-      description = about?.slice(0, 300) ?? `${label} ${name} on the Radix Network.`;
+      description = about
+        ? truncateDescription(about)
+        : `${label} ${name} on the Radix Network.`;
     }
   }
 
   const indexable = network === 'mainnet';
 
-  return {
+  return buildMetadata({
+    locale,
+    pathname: path,
     title: `${title} · ${siteName}`,
     description,
-    alternates: buildAlternates(locale, path),
-    robots: indexable ? undefined : { index: false, follow: true },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-    },
-  };
+    noIndex: !indexable,
+  });
 }

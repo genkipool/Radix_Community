@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
 import { radixSealAddress } from '../constants/seal';
+import { fetchLedgerNow } from '../lib/ledger-time';
 import { buildSealMintManifest } from '../lib/radix-seal-manifest';
 import {
   buildCipherInviteManifest,
@@ -14,6 +15,7 @@ import {
   buildSignRequestManifest,
   buildSignatureMintManifest,
   requestKey,
+  type CollectionMetaField,
 } from '../lib/sign-request';
 import {
   findCollectionProfile,
@@ -205,6 +207,7 @@ export function useSealRequest() {
     symbol?: string;
     imageUrl: string;
     issuer?: IssuerMeta;
+    extraMetadata?: CollectionMetaField[];
   }): Promise<string | null> => {
     setError(null);
     if (!activeNetworkId) return fail('wallet_not_connected');
@@ -253,6 +256,7 @@ export function useSealRequest() {
       symbol: args.symbol,
       imageUrl: args.imageUrl,
       issuer: args.issuer,
+      extraMetadata: args.extraMetadata,
     });
     const tx = await sendTransaction(manifest);
     if (!tx) return fail('onchain_failed');
@@ -301,6 +305,7 @@ export function useSealRequest() {
     symbol?: string;
     imageUrl: string;
     issuer?: IssuerMeta;
+    extraMetadata?: CollectionMetaField[];
     firstSignature?: { docHash: string; request: string };
   }): Promise<string | null> => {
     setError(null);
@@ -315,8 +320,9 @@ export function useSealRequest() {
       symbol: args.symbol,
       imageUrl: args.imageUrl,
       issuer: args.issuer,
+      extraMetadata: args.extraMetadata,
       firstSignature: args.firstSignature
-        ? { ...args.firstSignature, signedAt: new Date().toISOString() }
+        ? { ...args.firstSignature, signedAt: await fetchLedgerNow(activeNetworkId) }
         : undefined,
     });
     const tx = await sendTransaction(manifest);
@@ -346,6 +352,7 @@ export function useSealRequest() {
     if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('creating');
     const manifest = buildSignRequestManifest({
+      issuedAt: await fetchLedgerNow(activeNetworkId),
       account: args.account,
       sealGlobalId: args.sealGlobalId,
       collection: args.collection,
@@ -376,6 +383,7 @@ export function useSealRequest() {
     if (!activeNetworkId) return !!fail('wallet_not_connected');
     setPhase('signing');
     const manifest = buildSignatureMintManifest({
+      issuedAt: await fetchLedgerNow(activeNetworkId),
       account: args.account,
       sealGlobalId: args.sealGlobalId,
       collection: args.collection,
@@ -408,6 +416,7 @@ export function useSealRequest() {
     if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('creating');
     const manifest = buildCipherInviteManifest({
+      issuedAt: await fetchLedgerNow(activeNetworkId),
       account: args.account,
       sealGlobalId: args.sealGlobalId,
       collection: args.collection,
@@ -437,6 +446,7 @@ export function useSealRequest() {
     if (!activeNetworkId) return !!fail('wallet_not_connected');
     setPhase('signing');
     const manifest = buildCipherReceiptManifest({
+      issuedAt: await fetchLedgerNow(activeNetworkId),
       account: args.account,
       sealGlobalId: args.sealGlobalId,
       collection: args.collection,

@@ -1,7 +1,7 @@
 import AcademyClient from '@/features/academy/AcademyClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -12,11 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['academy']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/academy',
     title: t.seo.academy.title,
     description: t.seo.academy.description,
-    alternates: buildAlternates(locale, '/academy'),
-  };
+  });
 }
 
 

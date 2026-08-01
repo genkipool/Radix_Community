@@ -4,16 +4,19 @@ import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { checkRateLimit, clientIp } from '@/services/mcp/rate-limit';
 import type { Network } from '@/services/gateway/client';
 import {
+  radixSealAddress,
   SIGN_COLLECTION_MARKER_KEY,
   SIGN_COLLECTION_MARKER_VALUE,
 } from '@/features/sign/constants/seal';
 import {
   entityDetails,
+  findSignerSignature,
+  ledgerTimestamp,
   metadataString,
   nfData,
+  nfRecords,
   nfOwnerAccount,
   sealFromOwnerRule,
-  signerHasSigned,
 } from '@/features/sign/lib/onchain-custody';
 
 /**
@@ -75,11 +78,17 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. The anchor invitation → doc hash + batch geometry (locked data).
-    const anchorData = await nfData(network, collection, [`#${match[2]}#`]);
-    const anchor = anchorData.get(`#${match[2]}#`);
+    const anchorData = await nfRecords(network, collection, [`#${match[2]}#`]);
+    const anchorRecord = anchorData.get(`#${match[2]}#`);
+    const anchor = anchorRecord?.fields;
     if (!anchor || anchor.kind !== 'invite' || !anchor.document_hash) {
       return NextResponse.json({ found: false });
     }
+    // When the request came into being: the consensus time of the transaction
+    // that minted its first invitation. A certificate built from this status
+    // reports that as the document's creation date — the alternative was the
+    // moment somebody pressed download, days later.
+    const createdAt = await ledgerTimestamp(network, anchorRecord.stateVersion);
     const reqDocHash = anchor.document_hash;
     // A mismatching file must not hide the request: the caller still gets the
     // full status plus the mismatch flag, so the UI can say WHY it fails.
@@ -126,12 +135,29 @@ export async function POST(req: NextRequest) {
       ? await nfOwnerAccount(network, seal.resource, seal.localId)
       : null;
 
-    // 4. Per-signer signature check (chain of custody).
+    // 4. Per-signer signature check (chain of custody), with the moment the
+    // network agreed each signature existed. That consensus time is the only
+    // defensible date for an on-ledger signature, so it is what the certificate
+    // built from this status records — never the clock of whoever builds it.
+    // The official brand is required here too. Without it this route would
+    // count a signature in a collection gated by a look-alike seal that the
+    // verify route rejects, and the two would disagree about who has signed —
+    // and, now that this reports WHEN, about the date a certificate records.
+    const officialSeal = radixSealAddress(networkId);
     const signatures = await Promise.all(
-      signers.map(async (s) => ({
-        account: s.account,
-        signed: await signerHasSigned(network, s.account, reqDocHash),
-      })),
+      signers.map(async (s) => {
+        const found = await findSignerSignature(
+          network,
+          s.account,
+          reqDocHash,
+          officialSeal,
+        );
+        return {
+          account: s.account,
+          signed: !!found,
+          signedAt: found ? await ledgerTimestamp(network, found.stateVersion) : null,
+        };
+      }),
     );
 
     return NextResponse.json({
@@ -141,6 +167,7 @@ export async function POST(req: NextRequest) {
       collection,
       docHash: reqDocHash,
       hashMismatch,
+      createdAt,
       networkId,
       requiredSigners: signatures.map((s) => s.account),
       signatures,

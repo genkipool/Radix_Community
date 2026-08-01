@@ -74,9 +74,15 @@ export interface CertificatePageLabels {
   certNote: string;
   verifyTitle: string;
   verifyInstruction: string;
+  /** Appended to the instruction ONLY when the certificate is on-ledger. */
+  verifyInstructionLedger: string;
   disclaimerTitle: string;
   disclaimer: string;
+  /** Appended to the disclaimer ONLY when the certificate is on-ledger. */
+  disclaimerAnchored: string;
   generated: string;
+  /** Says in as many words that the footer date is not a signing date. */
+  generatedNote: string;
 }
 
 export interface CertificatePageOptions {
@@ -533,6 +539,11 @@ export async function appendSignaturePage(
     cur.gap(6);
   }
   cur.field(L.file, payload.fileName || '—');
+  // Whether this certificate has a ledger side at all. Everything the page
+  // says about the ledger — the anchor block, the permanence claim, the "reads
+  // the public ledger" instruction — hangs off this and nothing else.
+  const anchored = !!envelope.onChain || !!envelope.request;
+
   cur.field(L.hash, payload.docHash, { mono: true });
   cur.field(L.network, opts.networkName);
   cur.field(L.created, fmtDate(payload.timestamp, locale));
@@ -601,7 +612,7 @@ export async function appendSignaturePage(
   // Both on-ledger shapes belong here: a stand-alone anchor (`onChain`) and a
   // multi-party signing request (`request`). Only the first was printed, so an
   // on-ledger multi-party signature showed nothing at all about the ledger.
-  if (envelope.onChain || envelope.request) {
+  if (anchored) {
     cur.sectionTitle(L.anchorSection);
     if (envelope.onChain) {
       cur.field(L.anchorResource, envelope.onChain.resourceAddress, { mono: true });
@@ -672,7 +683,13 @@ export async function appendSignaturePage(
   const textX = qrDrawn ? MARGIN + qrSize + 16 : MARGIN;
   const textW = PAGE_W - MARGIN - textX;
   const savedY = cur.y;
-  cur.text(L.verifyInstruction, { x: textX, maxWidth: textW, size: 9.5 });
+  // The ledger sentence belongs to certificates that HAVE a ledger side.
+  // Printing it on a purely off-ledger signature promised a public record that
+  // was never written, on the very page a reader trusts to be exact.
+  cur.text(
+    anchored ? `${L.verifyInstruction} ${L.verifyInstructionLedger}` : L.verifyInstruction,
+    { x: textX, maxWidth: textW, size: 9.5 },
+  );
   cur.gap(3);
   cur.text(opts.verifyUrl, { x: textX, maxWidth: textW, size: 9, color: accentInk });
   // Keep the cursor below the taller of the QR / text column.
@@ -684,10 +701,16 @@ export async function appendSignaturePage(
   cur.gap(6);
   cur.text(L.disclaimerTitle, { size: 8, bold: true, color: MUTED });
   cur.gap(2);
-  cur.text(L.disclaimer, { size: 8, color: MUTED });
-  cur.gap(6);
-  cur.text(`${L.generated} · ${fmtDate(new Date().toISOString(), locale)}`, {
-    size: 7.5,
+  cur.text(anchored ? `${L.disclaimer} ${L.disclaimerAnchored}` : L.disclaimer, {
+    size: 8,
     color: MUTED,
   });
+  cur.gap(6);
+  // This is when the PAGE was printed, which is neither a signing date nor
+  // anything the ledger knows about — and a bare date next to a signature gets
+  // read as one, so it says what it is.
+  cur.text(
+    `${L.generated} ${fmtDate(new Date().toISOString(), locale)} · ${L.generatedNote}`,
+    { size: 7.5, color: MUTED },
+  );
 }

@@ -419,7 +419,7 @@
   "seo": {
     "googleWallet": {
       "title": "Google Wallet × Radix | Propiedad digital invisible: entradas NFT con tap NFC",
-      "description": "Cómo Google Wallet podría integrar cuentas de Radix DLT para emitir entradas como NFTs con validación NFC sin fricción: ROLA, delegación de comisiones, venta a contactos con swaps atómicos y royalties, y el modelo de negocio para Google Cloud.",
+      "description": "Cómo Google Wallet podría usar cuentas de Radix DLT para emitir entradas NFT con validación NFC: ROLA, delegación de comisiones, reventa atómica y royalties.",
       "keywords": [
         "Google Wallet Radix",
         "entradas NFT NFC",

@@ -3,7 +3,7 @@ import BlogClient from '@/features/blog/BlogClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { BlogPost } from '@/features/blog/types';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({
@@ -13,11 +13,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['blog']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/blog',
     title: t.seo.blog.title,
     description: t.seo.blog.description,
-    alternates: buildAlternates(locale, '/blog'),
-  };
+  });
 }
 
 // ═══════ ISR + SSG — generateStaticParams ═══════

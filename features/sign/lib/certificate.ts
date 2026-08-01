@@ -133,11 +133,23 @@ export function buildOnChainCertificate(input: {
   networkId: number;
   /** The invited/required signers (from the on-ledger request). */
   requiredSigners: string[];
-  /** Accounts that have signed on-ledger so far. */
-  signedAccounts: string[];
+  /**
+   * Accounts that have signed on-ledger so far, each with the consensus time of
+   * the transaction that recorded it. That time is the signature's real date;
+   * the certificate is often downloaded days later, and stamping it with the
+   * moment of download would put a date on the page that the ledger contradicts.
+   */
+  signedAccounts: Array<{ account: string; signedAt?: string | null }>;
   nonce: string;
   /** On-ledger request key, so verification re-resolves the required set. */
   requestId?: string;
+  /**
+   * Consensus time of the transaction that minted the request's first
+   * invitation — when the document was actually put up for signing. Falls back
+   * to now only when the ledger cannot say, because the alternative reads as
+   * "created" while being the moment somebody pressed download.
+   */
+  createdAt?: string | null;
 }): AttestationEnvelope {
   const now = new Date().toISOString();
   const payload: AttestationPayload = {
@@ -150,18 +162,20 @@ export function buildOnChainCertificate(input: {
     disclosure: 'none',
     email: false,
     signers: input.requiredSigners,
-    timestamp: now,
+    timestamp: input.createdAt || now,
     networkId: input.networkId,
     nonce: input.nonce,
   };
   return {
     payload,
-    signatures: input.signedAccounts.map((account) => ({
+    signatures: input.signedAccounts.map(({ account, signedAt }) => ({
       signerAccount: account,
       disclosedName: null,
       disclosedEmail: null,
       proof: null,
-      signedAt: now,
+      // Falls back to now only when the ledger time could not be read, and
+      // verification then reports the date as uncorroborated.
+      signedAt: signedAt || now,
     })),
     onChain: null,
     request: input.requestId

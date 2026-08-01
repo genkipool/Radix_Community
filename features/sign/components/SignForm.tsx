@@ -46,6 +46,7 @@ import {
   buildSignRequestManifest,
   buildSignatureMintManifest,
 } from '../lib/sign-request';
+import { fetchLedgerNow } from '../lib/ledger-time';
 import { blake2b256Hex, randomNonceHex } from '../lib/hash';
 import type { SharedWatermark } from '../lib/share';
 import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
@@ -516,6 +517,7 @@ export function SignForm({
     if (cleanCoSigners.length === 0) return;
     invitePreview.simulate(
       buildSignRequestManifest({
+        issuedAt: await fetchLedgerNow(activeNetworkId),
         account: onchainAccount,
         sealGlobalId: setup.seal.globalId,
         collection: setup.collection.resourceAddress,
@@ -532,11 +534,12 @@ export function SignForm({
   // Preview the single on-ledger signature: the record NFT minted into the
   // signer's own Seal collection (the SAME manifest handleSign mints inline
   // when on-chain is selected without co-signers).
-  const onSimulateSign = () => {
+  const onSimulateSign = async () => {
     if (!docHash || activeNetworkId == null || !onchainAccount || !setup.seal || !setup.collection)
       return;
     invitePreview.simulate(
       buildSignatureMintManifest({
+        issuedAt: await fetchLedgerNow(activeNetworkId),
         account: onchainAccount,
         sealGlobalId: setup.seal.globalId,
         collection: setup.collection.resourceAddress,
@@ -1300,8 +1303,10 @@ export function ResultPanel({
     const imageUrl = sealImageUrl(window.location.origin);
     // Preview the SAME manifest the anchor will submit: a stand-alone signature
     // (`request=''`) minted into the signer's Seal-owned collection (model 1).
+    const issuedAt = await fetchLedgerNow(activeNetworkId);
     const manifest = setup.collection
       ? buildSignatureMintManifest({
+          issuedAt,
           account: anchorAccount,
           sealGlobalId: setup.seal.globalId,
           collection: setup.collection.resourceAddress,

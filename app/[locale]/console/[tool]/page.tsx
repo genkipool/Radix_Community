@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import ConsoleToolView from '@/features/console/components/ConsoleToolView';
 import { CONSOLE_TOOL_SLUGS, isConsoleToolSlug } from '@/features/console/types/console.types';
 import type { Metadata } from 'next';
@@ -22,11 +22,12 @@ export async function generateMetadata({ params }: ConsoleToolPageProps): Promis
 
   const t = await getFeatureDictionary(locale as Locale, ['console']);
   const labels = (t.console.tools as Record<string, { title: string; description: string }>)[tool];
-  return {
+  return buildMetadata({
+    locale,
+    pathname: `/console/${tool}`,
     title: `${labels.title} — ${t.console.heroTitle} Radix`,
     description: labels.description,
-    alternates: buildAlternates(locale, `/console/${tool}`),
-  };
+  });
 }
 
 export default async function ConsoleToolPage({ params }: ConsoleToolPageProps) {

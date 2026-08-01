@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import DocsClient from '@/features/docs/DocsClient';
 import { SuspenseSidebarFallback } from '@/components/ui/SuspenseSidebarFallback';
 import type { UserDocMeta } from '@/features/docs/types/components.types';
@@ -16,11 +16,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['docs']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/docs',
     title: t.seo.docs.title,
     description: t.seo.docs.description,
-    alternates: buildAlternates(locale, '/docs'),
-  };
+  });
 }
 
 

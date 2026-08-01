@@ -1,11 +1,12 @@
 // Vercel deployment test - minor change
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '@/app/globals.css';
 import { Providers } from '@/components/layout/Providers';
 import { AppShell } from '@/components/layout/AppShell';
 import { getFeatureDictionary, Locale } from '@/i18n/dictionaries';
-import { buildAlternates } from '@/lib/seo';
+import { BASE_URL, SITE_NAME, buildMetadata } from '@/lib/seo';
+import { buildSiteJsonLd, jsonLdScript } from '@/lib/structured-data';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import type { Theme } from '@/context/ThemeContext';
@@ -27,13 +28,32 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, []);
   return {
-    title: t.seo.root.title,
-    description: t.seo.root.description,
-    keywords: t.seo.root.keywords,
-    alternates: buildAlternates(locale, ''),
+    // Lets every page hand relative asset paths (og:image, icons) to the
+    // Metadata API and get absolute URLs in the output; crawlers reject
+    // relative ones.
+    metadataBase: new URL(BASE_URL),
+    applicationName: SITE_NAME,
+    ...buildMetadata({
+      locale,
+      pathname: '',
+      title: t.seo.root.title,
+      description: t.seo.root.description,
+      keywords: t.seo.root.keywords,
+    }),
     manifest: '/manifest.json',
   };
 }
+
+/**
+ * `theme-color` tints the browser chrome on mobile. Both schemes are declared
+ * so the bar doesn't stay dark-blue behind a light page (or vice versa).
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#052cc0' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
+  ],
+};
 
 export async function generateStaticParams() {
   return [{ locale: 'en' }, { locale: 'es' }];
@@ -75,9 +95,21 @@ export default async function RootLayout({
   const walletSession = sessionToken ? await verifySessionJWT(sessionToken) : null;
   const activeNetworkCookie = cookieStore.get('radix_active_network')?.value as 'mainnet' | 'stokenet' | undefined;
 
+  const siteJsonLd = jsonLdScript(
+    buildSiteJsonLd(locale, dictionary.seo.root.description as string)
+  );
+
   return (
     <html lang={locale} className={`${inter.variable} ${theme}`} suppressHydrationWarning>
       <head>
+        {/* Site identity for search engines and AI summarisers. Rendered as a
+            plain <script> rather than next/script: JSON-LD is data, and
+            deferring it past hydration hides it from crawlers that only read
+            the initial HTML. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: siteJsonLd }}
+        />
         <Script
           id="theme-strategy"
           >{`(function(){try{var c=document.cookie.match(/(^|;\\s*)theme=([^;]+)/);var t=c?decodeURIComponent(c[2]):'radix-light';var h=document.documentElement;h.className=h.className.replace(/radix-light|radix-dark|oro-light|oro-dark|radix-original-light|radix-original-dark/g,' ').replace(/\\s+/g,' ').trim()+' '+t;}catch(e){}})();`}</Script>

@@ -1,5 +1,5 @@
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 import ConsoleHome from '@/features/console/components/ConsoleHome';
 import type { Metadata } from 'next';
 
@@ -10,11 +10,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['console']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/console',
     title: t.seo.console.title,
     description: t.seo.console.description,
-    alternates: buildAlternates(locale, '/console'),
-  };
+  });
 }
 
 export async function generateStaticParams() {

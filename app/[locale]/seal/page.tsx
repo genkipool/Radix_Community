@@ -12,7 +12,7 @@ import {
 } from '@/features/seal';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -23,12 +23,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['seal']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/seal',
     title: t.seo.seal.title,
     description: t.seo.seal.description,
     keywords: t.seo.seal.keywords,
-    alternates: buildAlternates(locale, '/seal'),
-  };
+  });
 }
 
 // ═══════ SSG — generateStaticParams ═══════

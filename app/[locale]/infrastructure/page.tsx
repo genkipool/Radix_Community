@@ -1,7 +1,7 @@
 import InfrastructureClient from '@/features/infrastructure/InfrastructureClient';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
-import { buildAlternates } from '@/lib/seo';
+import { buildMetadata } from '@/lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -12,11 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getFeatureDictionary(locale as Locale, ['infrastructure']);
-  return {
+  return buildMetadata({
+    locale,
+    pathname: '/infrastructure',
     title: t.seo.infrastructure.title,
     description: t.seo.infrastructure.description,
-    alternates: buildAlternates(locale, '/infrastructure'),
-  };
+  });
 }
 
 

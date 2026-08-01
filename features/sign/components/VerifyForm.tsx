@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BadgeCheck, CheckCircle2, Circle, RefreshCw, ShieldCheck, ShieldX, XCircle } from 'lucide-react';
+import {
+  BadgeCheck,
+  CheckCircle2,
+  Circle,
+  Clock,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  TriangleAlert,
+  XCircle,
+} from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
@@ -12,7 +22,7 @@ import { networkIdFromResource, parseRequestKey } from '../lib/share';
 import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import type { SignDictionary } from '../types/dictionary';
-import type { AttestationEnvelope } from '../types/sign.types';
+import type { AttestationEnvelope, VerifiedSignature } from '../types/sign.types';
 
 function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   if (!v || typeof v !== 'object') return false;
@@ -118,6 +128,18 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
     ? `${parsedKey.collection}:#${parsedKey.id}#`
     : undefined;
   const invalidKey = !!typedKey && !parseRequestKey(typedKey);
+  /*
+   * A key the verifier TYPED is the one piece of the puzzle whoever produced
+   * the certificate did not choose, so it decides which on-ledger request the
+   * signatures are measured against. Without it a certificate is checked
+   * against the request it nominates itself — and anyone can mint a collection
+   * with a one-name invitation batch that its own signature satisfies.
+   */
+  const overrideRequestId =
+    typedKey && parsedKey ? `${parsedKey.collection}:#${parsedKey.id}#` : '';
+  const overrideNetworkId = parsedKey
+    ? networkIdFromResource(parsedKey.collection)
+    : null;
   // The network is read from the key itself (the resource address prefix), so
   // request verification needs NO connected wallet; the certificate, the PDF
   // pointer and the wallet are fallbacks.
@@ -169,7 +191,11 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
   // only on the (stable) file and certificate references, and calls verify via
   // its ref, so it fires exactly when the inputs change. The dedupe ref guards
   // against StrictMode's double-invoke firing the request twice.
-  const lastVerifiedRef = useRef<{ target: Uint8Array; env: AttestationEnvelope } | null>(null);
+  const lastVerifiedRef = useRef<{
+    target: Uint8Array;
+    env: AttestationEnvelope;
+    key: string;
+  } | null>(null);
   useEffect(() => {
     if (!verifyTarget || !envelope) {
       lastVerifiedRef.current = null;
@@ -177,13 +203,24 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
     }
     if (
       lastVerifiedRef.current?.target === verifyTarget &&
-      lastVerifiedRef.current?.env === envelope
+      lastVerifiedRef.current?.env === envelope &&
+      lastVerifiedRef.current?.key === overrideRequestId
     ) {
       return;
     }
-    lastVerifiedRef.current = { target: verifyTarget, env: envelope };
-    void verifyRef.current(verifyTarget, envelope);
-  }, [verifyTarget, envelope]);
+    lastVerifiedRef.current = {
+      target: verifyTarget,
+      env: envelope,
+      key: overrideRequestId,
+    };
+    void verifyRef.current(
+      verifyTarget,
+      envelope,
+      overrideRequestId && overrideNetworkId != null
+        ? { networkId: overrideNetworkId, requestId: overrideRequestId }
+        : null,
+    );
+  }, [verifyTarget, envelope, overrideRequestId, overrideNetworkId]);
 
   // Required signers with no valid signature yet in the certificate.
   const pendingSigners = outcome
@@ -352,6 +389,31 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
             )}
           </ul>
 
+          {/* Which request the required-signer set came from. A certificate
+              choosing its own yardstick is worth saying out loud. */}
+          {outcome.requestSource !== 'none' && (
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {outcome.requestSource === 'typed'
+                ? t.verify.requestFromKey
+                : t.verify.requestFromCert}
+            </p>
+          )}
+          {outcome.requestMismatch && (
+            <p
+              className="flex items-start gap-2 rounded-xl border px-3 py-2 text-xs"
+              style={{
+                borderColor: 'var(--color-warning, #eab308)',
+                color: 'var(--color-text-main)',
+              }}
+            >
+              <TriangleAlert
+                className="mt-0.5 size-3.5 shrink-0"
+                style={{ color: 'var(--color-warning, #eab308)' }}
+              />
+              {t.verify.requestMismatch}
+            </p>
+          )}
+
           <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--color-card-border)' }}>
             <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
               {t.verify.signersHeader}
@@ -378,9 +440,15 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
                       {s.disclosedEmail}
                     </p>
                   )}
+                  {s.valid && <SignatureClock t={t} signature={s} />}
                 </div>
               </div>
             ))}
+            {outcome.signatures.some((s) => s.valid && s.disclosedName) && (
+              <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                {t.verify.nameDeclared}
+              </p>
+            )}
           </div>
 
           {pendingSigners.length > 0 && (
@@ -400,14 +468,106 @@ export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile })
           )}
 
           {outcome.message && (
-            <dl className="grid gap-2 text-sm">
-              <Row label={t.verify.message} value={outcome.message} />
-              <Row label={t.verify.timestamp} value={new Date(outcome.timestamp).toLocaleString()} />
-            </dl>
+            <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--color-card-border)' }}>
+              {/* Without a ROLA proof nothing here is signed. Saying so beside
+                  the values is the difference between showing evidence and
+                  showing a form somebody filled in. */}
+              {!outcome.payloadBound && (
+                <>
+                  <p
+                    className="text-xs font-bold uppercase tracking-wider"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    {t.verify.declaredHeader}
+                  </p>
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                    {t.verify.declaredNote}
+                  </p>
+                </>
+              )}
+              <dl className="grid gap-2 text-sm">
+                <Row label={t.verify.message} value={outcome.message} />
+                <Row label={t.verify.timestamp} value={new Date(outcome.timestamp).toLocaleString()} />
+              </dl>
+              {/* A creation date later than the signature is not a discrepancy
+                  to weigh up, it is an impossibility. */}
+              {outcome.createdAtCoherent === false && (
+                <p className="text-xs font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+                  {t.verify.createdIncoherent}
+                </p>
+              )}
+            </div>
           )}
         </ToolSection>
       )}
     </div>
+  );
+}
+
+/**
+ * The one clock a signature can be held to.
+ *
+ * A certificate states when it was signed, and that statement is worth exactly
+ * as much as whatever corroborates it: the consensus time of the transaction
+ * that minted an on-ledger signature, or the genTime of a timestamp token for
+ * an off-ledger one. With neither, the date is shown as what it is — a claim.
+ * With one that contradicts it, the contradiction is the headline.
+ */
+function SignatureClock({
+  t,
+  signature,
+}: {
+  t: SignDictionary;
+  signature: VerifiedSignature;
+}) {
+  if (!signature.anchoredAt || !signature.anchorSource) {
+    return (
+      <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+        {t.verify.clockNone}
+      </p>
+    );
+  }
+
+  const disagrees = signature.signedAtAnchored === false;
+  const source =
+    signature.anchorSource === 'ledger'
+      ? t.verify.clockLedger
+      : t.verify.clockTimestamp.replace(
+          '{authority}',
+          signature.timestampAuthority || '—',
+        );
+
+  return (
+    <>
+      <p
+        className="flex items-center gap-1.5 text-[11px]"
+        style={{
+          color: disagrees ? 'var(--color-danger, #dc2626)' : 'var(--color-text-muted)',
+        }}
+      >
+        <Clock className="size-3 shrink-0" />
+        <span>
+          {source} · {new Date(signature.anchoredAt).toLocaleString()}
+        </span>
+      </p>
+      {disagrees && (
+        <p className="text-[11px] font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+          {t.verify.clockMismatch}
+        </p>
+      )}
+      {signature.timestampUntrustedAnchor && (
+        <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+          {t.verify.clockUntrusted}
+        </p>
+      )}
+      {/* The NFT's own `issued_at` is written before its transaction commits, so
+          it is a claim. Shown only when the ledger contradicts it. */}
+      {signature.issuedAtAnchored === false && (
+        <p className="text-[11px] font-semibold" style={{ color: 'var(--color-danger, #dc2626)' }}>
+          {t.verify.clockIssuedAtMismatch}
+        </p>
+      )}
+    </>
   );
 }
 

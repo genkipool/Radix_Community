@@ -14,7 +14,8 @@
     "update-votes": "npx tsx scripts/update-protocol-votes.ts",
     "pages:build": "npx @cloudflare/next-on-pages",
     "doctor": "npx react-doctor@latest",
-    "gen:seal-svg": "npx tsx scripts/gen-seal-svg.ts"
+    "gen:seal-svg": "npx tsx scripts/gen-seal-svg.ts",
+    "gen:brand-assets": "npx tsx scripts/gen-brand-assets.tsx"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
