@@ -15,7 +15,8 @@
     "pages:build": "npx @cloudflare/next-on-pages",
     "doctor": "npx react-doctor@latest",
     "gen:seal-svg": "npx tsx scripts/gen-seal-svg.ts",
-    "gen:brand-assets": "npx tsx scripts/gen-brand-assets.tsx"
+    "gen:brand-assets": "npx tsx scripts/gen-brand-assets.tsx",
+    "gen:og-backdrop": "npx tsx scripts/gen-og-backdrop.tsx"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
