@@ -140,13 +140,23 @@ function withSealMark(source: string): string {
     .replace(/<\/svg>\s*$/, '');
 
   const { before, after } = cutGroup(source, TILE_OPEN);
-  const gradient =
-    `<defs><linearGradient id="ogSealInk" x1="0%" y1="0%" x2="100%" y2="100%">` +
+  const defs =
+    `<defs>` +
+    `<linearGradient id="ogSealInk" x1="0%" y1="0%" x2="100%" y2="100%">` +
     `<stop offset="0%" stop-color="${DARK_TOKENS['sidebar-primary']}"/>` +
     `<stop offset="100%" stop-color="${DARK_TOKENS['sidebar-secondary']}"/>` +
-    `</linearGradient></defs>`;
+    `</linearGradient>` +
+    // Room to spare on every side, or the blur is clipped square.
+    `<filter id="ogSealShadow" x="-30%" y="-30%" width="160%" height="160%">` +
+    `<feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="${DARK_TOKENS['sidebar-shadow']}" flood-opacity="0.9"/>` +
+    `</filter>` +
+    `</defs>`;
 
-  return `${before}${gradient}<g transform="translate(805, 115) scale(0.62)">${seal}</g>${after}`;
+  return (
+    `${before}${defs}` +
+    `<g transform="translate(805, 115) scale(0.62)" filter="url(#ogSealShadow)">${seal}</g>` +
+    `${after}`
+  );
 }
 
 const uri = (markup: string) =>
