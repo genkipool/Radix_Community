@@ -48,6 +48,12 @@
   --sidebar-bg: #f0f4ff;
   --sidebar-primary: #4f46e5;
   --sidebar-secondary: #d946ef;
+  /* Two decorative accents the sidebar graphic paints with: the middle stroke
+     of the checkmark, between the primary halo and the white core, and the
+     orbital rings around the community node. Taken from each theme's own pair
+     so they cannot clash with it. */
+  --sidebar-check-glow: var(--sidebar-secondary);
+  --sidebar-atom-rings: var(--sidebar-primary);
   --sidebar-text-main: #0f172a;
   --sidebar-grad1: #2dd4bf;
   --sidebar-grad-mid: #3b82f6;
@@ -122,6 +128,12 @@
   --sidebar-bg: #060b26;
   --sidebar-primary: #00e5ff;
   --sidebar-secondary: #ff00aa;
+  /* Two decorative accents the sidebar graphic paints with: the middle stroke
+     of the checkmark, between the primary halo and the white core, and the
+     orbital rings around the community node. Taken from each theme's own pair
+     so they cannot clash with it. */
+  --sidebar-check-glow: var(--sidebar-secondary);
+  --sidebar-atom-rings: var(--sidebar-primary);
   --sidebar-text-main: #ffffff;
   --sidebar-grad1: #00e9bc;
   --sidebar-grad-mid: #1b41ab;

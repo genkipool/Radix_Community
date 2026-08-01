@@ -39,6 +39,15 @@ const SIDEBAR_SECONDARY = '#2BDFAA';
 /** Roughly two lines at the size the subtitle is set. */
 const SUBTITLE_MAX = 105;
 
+/**
+ * Lifts small text off the artwork.
+ *
+ * On the glyphs, not on the backdrop: the node mesh runs straight through this
+ * text, and a panel behind it hid the drawing the card exists to show. The
+ * headline is big enough not to need it.
+ */
+const TEXT_SHADOW = '0 2px 12px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.8)';
+
 
 
 export interface OgStat {
@@ -61,11 +70,18 @@ export interface OgCardInput {
 }
 
 
-/** Long titles need to step down a size or they wrap to four lines. */
+/**
+ * Long titles need to step down a size or they wrap to four lines.
+ *
+ * Sized to match the sidebar graphic's own headline: its glyphs measure 54px
+ * tall on the rendered artwork, which these reproduce. The drawing sets 70px
+ * in a 560-tall canvas that then scales up to the card, so copying its
+ * `fontSize` directly came out a fifth too short.
+ */
 function titleSize(length: number): number {
-  if (length <= 28) return 76;
-  if (length <= 55) return 62;
-  return 50;
+  if (length <= 28) return 94;
+  if (length <= 55) return 76;
+  return 62;
 }
 
 export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) {
@@ -105,12 +121,11 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
             padding: '64px 72px',
           }}
         >
-        {/* Masthead, set as the sidebar graphic sets its own: plain white, no
-            mark. The artwork already carries the logo as its app tile, and a
-            second one beside it read as a duplicate. */}
-        <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, letterSpacing: 0.5 }}>
-          Radix Community
-        </div>
+        {/* Spacer. With the wordmark gone the column holds only the subject and
+            the footer, and `space-between` pinned the title to the very top.
+            A third slot puts it back near the middle, where the sidebar
+            graphic sets its own headline. */}
+        <div style={{ display: 'flex' }} />
 
         {/* Subject. Width-capped so it stops clear of the app tile the artwork
             puts on the right: measured on the rendered backdrop, that tile
@@ -127,7 +142,8 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                     fontWeight: 600,
                     letterSpacing: 2,
                     textTransform: 'uppercase',
-                    color: '#8ea6e8',
+                    color: '#c8d8ff',
+                    textShadow: TEXT_SHADOW,
                   }}
                 >
                   {clampCardText(eyebrow, 40)}
@@ -184,6 +200,7 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                 lineHeight: 1.35,
                 letterSpacing: 0.5,
                 color: 'rgba(255,255,255,0.9)',
+                textShadow: TEXT_SHADOW,
               }}
             >
               {/* Shorter than the meta description it usually comes from. At
@@ -205,12 +222,15 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                     fontSize: 19,
                     letterSpacing: 1.5,
                     textTransform: 'uppercase',
-                    color: '#8ea6e8',
+                    color: '#c8d8ff',
+                    textShadow: TEXT_SHADOW,
                   }}
                 >
                   {stat.label}
                 </div>
-                <div style={{ display: 'flex', fontSize: 34, fontWeight: 700 }}>{stat.value}</div>
+                <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, textShadow: TEXT_SHADOW }}>
+                  {stat.value}
+                </div>
               </div>
             ))}
           </div>
@@ -225,7 +245,9 @@ export function ogCard({ eyebrow, title, subtitle, stats, badge }: OgCardInput) 
                 borderRadius: 3,
               }}
             />
-            <div style={{ display: 'flex', fontSize: 24, color: '#8ea6e8' }}>{SITE_DOMAIN}</div>
+            <div style={{ display: 'flex', fontSize: 24, color: '#c8d8ff', textShadow: TEXT_SHADOW }}>
+              {SITE_DOMAIN}
+            </div>
           </div>
         )}
         </div>

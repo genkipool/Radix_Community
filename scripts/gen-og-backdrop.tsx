@@ -54,11 +54,9 @@ const DARK_TOKENS: Record<string, string> = {
   'sidebar-card-base': '#000105',
   'sidebar-card-stroke': '#000000',
   'sidebar-card-mid-stroke': 'rgba(0,0,0,0.6)',
-  // Neither of these is declared in any theme, so on the site itself they
-  // resolve to nothing. Given a value here rather than left broken; drop them
-  // if the sidebar ever declares its own.
-  'sidebar-atom-rings': '#3B9BFF',
-  'sidebar-check-glow': '#2BDFAA',
+  // Both follow the theme's own pair, as declared in theme-radix.css.
+  'sidebar-atom-rings': '#3B9BFF', // var(--sidebar-primary)
+  'sidebar-check-glow': '#2BDFAA', // var(--sidebar-secondary)
 };
 
 const markup = renderToStaticMarkup(
