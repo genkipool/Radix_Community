@@ -77,6 +77,7 @@
       "provider": "Proveedor",
       "country": "País",
       "delegation": "Resumen de Delegación",
+      "validator": "Validador de Radix",
       "rank": "Rango",
       "delegators": "Delegadores",
       "delegated_stake": "Stake Delegado",

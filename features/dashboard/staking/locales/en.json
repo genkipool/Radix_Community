@@ -76,6 +76,7 @@
       "provider": "Provider",
       "country": "Country",
       "delegation": "Delegation Overview",
+      "validator": "Radix Validator",
       "rank": "Rank",
       "delegators": "Delegators",
       "delegated_stake": "Delegated Stake",
