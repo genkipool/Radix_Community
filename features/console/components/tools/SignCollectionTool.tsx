@@ -8,7 +8,6 @@ import {
   Lock,
   LockOpen,
   Plus,
-  Save,
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
@@ -31,7 +30,14 @@ import { WalletConnectGate } from '@/features/wallet/components/WalletConnectGat
 import { SafeImage } from '@/components/ui/SafeImage';
 import { useNftData } from '../../hooks/useNftData';
 import { truncateAddress } from '@/utils/formatters';
-import { radixSealAddress, sealImageUrl } from '@/features/sign/constants/seal';
+import { RadixIcon } from '@/components/shared/RadixIcon';
+import {
+  ICON_URL_KEY,
+  ORG_NAME_KEY,
+  ORG_URL_KEY,
+  radixSealAddress,
+  sealImageUrl,
+} from '@/features/sign/constants/seal';
 import {
   MAX_SYMBOL_LENGTH,
   sanitizeSymbol,
@@ -217,6 +223,34 @@ function errorText(t: SignDictionary, code: string): string {
 function shortLocalId(localId: string): string {
   const bare = localId.replace(/^[#<[{]|[#>\]}]$/g, '');
   return bare.length > 18 ? `${bare.slice(0, 8)}…${bare.slice(-6)}` : bare;
+}
+
+/**
+ * States, in one glance, whether the ledger will still accept a change to a key.
+ *
+ * A locked key is not "read-only for now": it can never change again, by
+ * anyone, the owner included. That is worth saying plainly next to each field
+ * rather than in a paragraph underneath, which is what the screen did before
+ * and which left the user to work out for themselves which of the values in
+ * front of them were already set in stone.
+ */
+function LockBadge({ locked, lockedLabel, editableLabel }: {
+  locked: boolean;
+  lockedLabel: string;
+  editableLabel: string;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-semibold"
+      style={{
+        borderColor: locked ? 'var(--color-card-border)' : 'var(--color-primary)',
+        color: locked ? 'var(--color-text-muted)' : 'var(--color-primary)',
+      }}
+    >
+      {locked ? <Lock className="size-3" /> : <LockOpen className="size-3" />}
+      {locked ? lockedLabel : editableLabel}
+    </span>
+  );
 }
 
 /* ─── Tab 1: what this account has ────────────────────────────────────────── */
@@ -950,6 +984,30 @@ function IdentityTab({
   const [saved, setSaved] = useState(false);
 
   const busy = phase === 'creating';
+
+  /** Ledger key behind each form field, so its lock state can be looked up. */
+  const LEDGER_KEY: Record<ProfileKey, string> = {
+    name: 'name',
+    symbol: 'symbol',
+    iconUrl: ICON_URL_KEY,
+    orgName: ORG_NAME_KEY,
+    orgUrl: ORG_URL_KEY,
+  };
+  const entries = profile?.entries ?? [];
+  const lockedKeys = new Set(entries.filter((e) => e.locked).map((e) => e.key));
+  const isLocked = (key: ProfileKey) => lockedKeys.has(LEDGER_KEY[key]);
+
+  /**
+   * Everything the collection carries beyond the five with a form control:
+   * what was sealed at creation, and whatever the creator added themselves
+   * with "add metadata". Read-only here, but shown, because a field the user
+   * typed in should not vanish from the screen that claims to be the issuer
+   * identity.
+   */
+  const otherEntries = entries
+    .filter((entry) => !Object.values(LEDGER_KEY).includes(entry.key))
+    .sort((a, b) => a.key.localeCompare(b.key));
+
   // Uncommitted edits win; everything else shows what the ledger holds.
   const value = (key: ProfileKey) => edits[key] ?? profile?.[key] ?? '';
   const setValue = (key: ProfileKey, next: string) => {
@@ -1026,42 +1084,81 @@ function IdentityTab({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TextField
-            label={labels.create.nameLabel}
-            value={value('name')}
-            onChange={(v) => setValue('name', v)}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.create.symbolLabel}
-            value={value('symbol')}
-            onChange={(v) => setValue('symbol', sanitizeSymbol(v))}
-            maxLength={MAX_SYMBOL_LENGTH}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.orgNameLabel}
-            hint={labels.identity.orgNameHint}
-            value={value('orgName')}
-            onChange={(v) => setValue('orgName', v)}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.orgUrlLabel}
-            placeholder="https://…"
-            value={value('orgUrl')}
-            onChange={(v) => setValue('orgUrl', v)}
-            disabled={busy}
-          />
-          <TextField
-            label={labels.identity.logoLabel}
-            hint={labels.identity.logoHint}
-            placeholder="https://…"
-            value={value('iconUrl')}
-            onChange={(v) => setValue('iconUrl', v)}
-            disabled={busy}
-          />
+          {([
+            ['name', labels.create.nameLabel, undefined, undefined],
+            ['symbol', labels.create.symbolLabel, undefined, undefined],
+            ['orgName', labels.identity.orgNameLabel, labels.identity.orgNameHint, undefined],
+            ['orgUrl', labels.identity.orgUrlLabel, undefined, 'https://…'],
+            ['iconUrl', labels.identity.logoLabel, labels.identity.logoHint, 'https://…'],
+          ] as [ProfileKey, string, string | undefined, string | undefined][]).map(
+            ([key, label, hint, placeholder]) => {
+              const locked = isLocked(key);
+              return (
+                <TextField
+                  key={key}
+                  label={label}
+                  hint={hint}
+                  placeholder={placeholder}
+                  value={value(key)}
+                  onChange={(v) => setValue(key, key === 'symbol' ? sanitizeSymbol(v) : v)}
+                  maxLength={key === 'symbol' ? MAX_SYMBOL_LENGTH : undefined}
+                  // A locked key is refused by the ledger, so the field is not
+                  // offered at all rather than letting the user type into
+                  // something that can only fail.
+                  disabled={busy || locked}
+                  labelEnd={
+                    <LockBadge
+                      locked={locked}
+                      lockedLabel={labels.identity.lockedBadge}
+                      editableLabel={labels.identity.editableBadge}
+                    />
+                  }
+                />
+              );
+            },
+          )}
         </div>
+
+        {otherEntries.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold" style={{ color: 'var(--color-text-main)' }}>
+              {labels.identity.otherTitle}
+            </p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              {labels.identity.otherHint}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {otherEntries.map((entry) => (
+                <div
+                  key={entry.key}
+                  className="rounded-xl border p-3 space-y-1"
+                  style={{ borderColor: 'var(--color-card-border)' }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className="font-mono text-[11px] truncate"
+                      style={{ color: 'var(--color-text-muted)' }}
+                      title={entry.key}
+                    >
+                      {entry.key}
+                    </span>
+                    <LockBadge
+                      locked={entry.locked}
+                      lockedLabel={labels.identity.lockedBadge}
+                      editableLabel={labels.identity.editableBadge}
+                    />
+                  </div>
+                  <p
+                    className="text-sm break-words"
+                    style={{ color: 'var(--color-text-main)' }}
+                  >
+                    {entry.value || '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           {labels.identity.lockedNote}
@@ -1081,6 +1178,12 @@ function IdentityTab({
         )}
       </ToolSection>
 
+      {/* Said before the button, not after: the point is that pressing it
+          reaches for the phone, which "Save changes" gave no hint of. */}
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+        {labels.identity.saveHint}
+      </p>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           type="button"
@@ -1091,7 +1194,9 @@ function IdentityTab({
           {busy ? (
             <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
           ) : (
-            <Save className="size-4" />
+            // The Radix mark, not a floppy disk: what this button does is ask
+            // the wallet to sign, and the wallet is the thing being invoked.
+            <RadixIcon className="size-4" strokeColor="currentColor" animate={false} />
           )}
           {busy ? labels.identity.saving : labels.identity.save}
         </button>

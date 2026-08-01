@@ -2181,7 +2181,9 @@
         "unnamedResource": "Recurso sin nombre",
         "unnamedNft": "NFT",
         "nftDataAllLocked": "Este recurso no declaró ningún campo mutable al crearse, así que los datos de sus NFT no se pueden cambiar nunca, ni por su propietario ni con ningún badge. Es el caso de la insignia Radix Seal: su imagen se fija al acuñarla. Abajo puedes ver los valores, solo de lectura.",
-        "nftCustomFieldsNote": "Este recurso lleva campos propios en sus NFT. En Radix una acuñación tiene que enviarlos todos, así que no hay campos opcionales: los que dejes vacíos se acuñan vacíos, pero se envían igual. Aparecen arriba en el orden que fijó su esquema. El texto gris de cada uno es el valor que lleva un NFT que ya existe y, si no lleva ninguno, el tipo de dato con un ejemplo. Los campos de tipos que no caben en una caja de texto (listas, enumerados) aparecen desactivados. Si la colección todavía no tiene ningún NFT no hay de dónde leer el esquema, y solo se enviarán los tres campos estándar."
+        "nftCustomFieldsNote": "Este recurso lleva campos propios en sus NFT. En Radix una acuñación tiene que enviarlos todos, así que no hay campos opcionales: los que dejes vacíos se acuñan vacíos, pero se envían igual. Aparecen arriba en el orden que fijó su esquema. El texto gris de cada uno es el valor que lleva un NFT que ya existe y, si no lleva ninguno, el tipo de dato con un ejemplo. Los campos de tipos que no caben en una caja de texto (listas, enumerados) aparecen desactivados. Si la colección todavía no tiene ningún NFT no hay de dónde leer el esquema, y solo se enviarán los tres campos estándar.",
+        "lockedValueNote": "Bloqueado en la cadena: este valor ya no puede cambiar nunca, ni por ti.",
+        "metadataLegend": "Los campos marcados como editables aún se pueden cambiar. Los bloqueados quedaron sellados para siempre."
       }
     },
     "faucet": {

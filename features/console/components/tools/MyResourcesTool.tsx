@@ -1270,7 +1270,15 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                 )}
 
                 {activeAction === 'lockMetadata' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {/* Which of these can still be changed is the whole question
+                        on this screen, so it is stated once up front and then
+                        marked on every field, rather than left to be inferred
+                        from a toggle being greyed out. */}
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                      {labels.fields.metadataLegend}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(rolesData?.details?.metadata?.items as MetadataItem[] | undefined)?.map((item) => {
                       const alreadyLocked = item.is_locked;
                       const markedToLock = lockedMetaKeys.has(item.key);
@@ -1287,7 +1295,13 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                         <TextField
                           key={item.key}
                           label={item.key}
-                          hint={editable ? labels.fields.editMetadataHint : undefined}
+                          hint={
+                            editable
+                              ? labels.fields.editMetadataHint
+                              : alreadyLocked
+                                ? labels.fields.lockedValueNote
+                                : undefined
+                          }
                           labelEnd={
                             <LockToggle
                               locked={alreadyLocked || markedToLock}
@@ -1313,6 +1327,7 @@ export default function MyResourcesTool({ t }: ConsoleToolProps) {
                         />
                       );
                     })}
+                    </div>
                   </div>
                 )}
 
