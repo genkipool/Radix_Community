@@ -103,6 +103,25 @@ const TEXT_SHADOW = '0 2px 12px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.8)';
 
 
 
+/**
+ * One of the wireframe cubes the artwork is scattered with, for the footer.
+ *
+ * Same three faces and the same fill opacities `SidebarGraphic` gives them, so
+ * the mark beside the domain reads as having come off the drawing rather than
+ * being a rule someone drew. Its box is 36 by 40 units, x from -18 and y
+ * from -16, which the viewBox pads slightly so the stroke is not clipped.
+ */
+function cubeDataUri(): string {
+  const primary = '#3B9BFF';
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -18 40 44" width="40" height="44">` +
+    `<polygon points="0,-16 18,-6 0,4 -18,-6" fill="${primary}" fill-opacity="0.12" stroke="#ffffff" stroke-width="0.8"/>` +
+    `<polygon points="18,-6 18,14 0,24 0,4" fill="${primary}" fill-opacity="0.08" stroke="${primary}" stroke-width="0.8"/>` +
+    `<polygon points="-18,-6 0,4 0,24 -18,14" fill="${primary}" fill-opacity="0.22" stroke="${primary}" stroke-width="0.8"/>` +
+    `</svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 export interface OgStat {
   label: string;
   value: string;
@@ -309,15 +328,8 @@ export function ogCard({ title, subtitle, stats, badge, backdrop = 'default' }: 
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div
-              style={{
-                display: 'flex',
-                width: 48,
-                height: 5,
-                background: '#3B9BFF',
-                borderRadius: 3,
-              }}
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cubeDataUri()} width={31} height={34} alt="" />
             <div style={{ display: 'flex', fontSize: 24, color: '#c8d8ff', textShadow: TEXT_SHADOW }}>
               {SITE_DOMAIN}
             </div>
