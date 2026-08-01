@@ -195,6 +195,27 @@ export const dashboardRoutes = {
       ? `${base(locale)}/${segment}/${value}${serializeDashboardQuery(query)}`
       : dashboardRoutes.explorer(locale, { ...query, entity: value });
   },
+
+  /**
+   * Where the search box should go when it is handed a complete address.
+   *
+   * Focusing something must never move you to a different view. A validator's
+   * own page opens the staking view, which is right for a link arriving cold
+   * but wrong as the destination of a search typed in the explorer: it swapped
+   * the view out from under the user, who was asking to see that validator's
+   * card where they already were. So a validator stays on the current view,
+   * carried as `?entity=`; every other kind keeps its dedicated page, whose
+   * view matches the explorer they were searching from anyway.
+   */
+  entityFocus: (
+    locale: string,
+    view: DashboardView,
+    value: string,
+    query: DashboardQuery = {},
+  ) =>
+    resolveEntityKind(value) === 'validator'
+      ? dashboardRoutes.view(locale, view, { ...query, entity: value })
+      : dashboardRoutes.entity(locale, value, query),
 } as const;
 
 /* ── Legacy compatibility ─────────────────────────────────────────────────── */

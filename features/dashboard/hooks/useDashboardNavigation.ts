@@ -25,7 +25,6 @@ import type { DashboardView, Network } from '../types';
 import {
   dashboardRoutes,
   parseDashboardQuery,
-  resolveEntityKind,
   serializeDashboardQuery,
   type DashboardQuery,
   type TxTag,
@@ -161,13 +160,7 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
         return;
       }
 
-      const staysInStaking = view === 'staking' && resolveEntityKind(value) === 'validator';
-      navigate(
-        staysInStaking
-          ? dashboardRoutes.staking(locale, { network, entity: value })
-          : dashboardRoutes.entity(locale, value, { network }),
-        'replace',
-      );
+      navigate(dashboardRoutes.entityFocus(locale, view, value, { network }), 'replace');
     },
   };
 }
