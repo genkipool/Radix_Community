@@ -4,8 +4,7 @@ import { Activity } from 'lucide-react';
 import { XPBar } from '@/components/ui/XPBar';
 import { Pill } from '@/components/ui/Pill';
 import { type Validator } from '@/types/radix';
-import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
-import { formatPercent } from '@/utils/formatters';
+import { getStatusColor } from '@/utils/validators';
 import { useLiveProposals } from './LiveProposals';
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
@@ -15,26 +14,6 @@ import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
    (exported so ValidatorCard & ValidatorDetailView
     can import without circular dependency)
 ───────────────────────────────────────── */
-
-/** Animated uptime progress bar */
-export const UptimeBar = ({ percent, size = 'md', t, locale = 'en' }: { percent: number; size?: 'sm' | 'md' | 'lg'; t?: Partial<TranslationsT>; locale?: string }) => {
-    const color = getUptimeColor(percent);
-    const label = formatPercent(percent, 1, locale);
-    const title = getUptimeTooltipText(percent, false, t?.dashboard?.details);
-
-    return (
-        <XPBar
-            progress={percent}
-            color={color}
-            size={size}
-            label={label}
-            title={title}
-            className="w-full"
-            showDots={size !== 'sm'}
-        />
-    );
-};
-UptimeBar.displayName = 'UptimeBar';
 
 /** Glowing status pill badge */
 export const StatusLabel = ({ status, t, compact = false }: { status: Validator['status']; t?: Partial<TranslationsT>; compact?: boolean }) => {

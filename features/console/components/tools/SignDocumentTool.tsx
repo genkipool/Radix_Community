@@ -120,12 +120,16 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
   }, []);
   // A shared request forces the advanced tab; otherwise an optional `?tab=`
   // param can deep-link into a specific tab (e.g. verify from the seal page).
+  // An explicit `?tab=` wins over the request's own pull towards the advanced
+  // tab: the link printed on a signed PDF carries the request AND asks for the
+  // verify tab, precisely so it lands on the check instead of on the signing UI.
   const tabParam = searchParams.get('tab');
-  const initialTab: Tab = hasRequestParam
-    ? 'sign'
-    : tabParam === 'verify' || tabParam === 'sign' || tabParam === 'basic'
+  const initialTab: Tab =
+    tabParam === 'verify' || tabParam === 'sign' || tabParam === 'basic'
       ? tabParam
-      : 'basic';
+      : hasRequestParam
+        ? 'sign'
+        : 'basic';
   const [tab, setTab] = useState<Tab>(initialTab);
   const doc = useDocumentFile(t);
   // The room fragment alone is enough: document-delivery links (no on-ledger
@@ -408,7 +412,7 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
           />
         </SignGate>
       ) : (
-        <VerifyForm t={t} doc={doc} />
+        <VerifyForm t={t} doc={doc} initialRequestKey={sharedRequestKey} />
       )}
 
       {receivedSigned && (

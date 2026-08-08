@@ -69,9 +69,11 @@ export default async function Image({
       value: new Intl.NumberFormat(locale).format(validator.delegators),
     },
     {
+      // The fee, not the effective fee: the card says "Fee", and the figure
+      // people compare validators by is the commission itself.
       label: card.fee,
       value: `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
-        validator.effectiveFee ?? validator.nominalFee,
+        validator.nominalFee,
       )}%`,
     },
     {

@@ -28,6 +28,7 @@
       "status": "Status",
       "copy": "Copy",
       "copied": "Copied!",
+      "copy_link": "Copy the validator's link",
       "tooltips": {
         "stake": "Total XRD value delegated to this validator by all users.",
         "share": "Percentage of the total network stake represented by this validator.",
@@ -36,6 +37,7 @@
         "apy": "Estimated annual return for delegators after deducting the commission.",
         "uptime": "Percentage of successfully completed block proposals in the last 14 days.",
         "pending_fee": "This validator has a scheduled fee change that will take effect soon.",
+        "effective_fee": "What the commission costs you in yield: the validator's fee applied to the projected APY, that is, the annual percentage of your stake the validator keeps.",
         "delegators": "Total number of unique accounts that have delegated XRD to this validator."
       },
       "stake_button": "Stake",

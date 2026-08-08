@@ -9,6 +9,10 @@
  *    with `radix_sign_collection = v1`), plus its next free integer id
  *    (`totalSupply + 1`; ids are contiguous for practical purposes).
  *
+ * "The user's" means OWNED, never merely held: an invitation NFT puts the
+ * issuer's collection into the signer's account, and only the locked owner rule
+ * says whose collection it is. Every read here is filtered on that rule.
+ *
  * Results are cached in localStorage per (network, account) but always
  * re-verified against the ledger.
  */
@@ -37,6 +41,12 @@ export interface UserSignCollection {
   /** Display metadata, so a human can tell two collections apart. */
   name?: string;
   iconUrl?: string;
+  /**
+   * Global id of the seal named by the collection's locked owner rule — the
+   * ONLY key that can mint into it. Read here so the caller never has to guess
+   * which of the account's seals to build the mint proof from.
+   */
+  ownerSealGlobalId?: string;
 }
 
 interface MetadataItem {
@@ -175,28 +185,6 @@ function ownerRuleGlobalId(roleAssignments: unknown): string | null {
   } catch {
     return null;
   }
-}
-
-/**
- * Which of the account's seals actually commands `collection`.
- *
- * The collection's owner rule names ONE seal by global id, so with two seals in
- * the wallet, picking whichever the Gateway listed first builds the mint proof
- * from the wrong NFT and the transaction fails the auth check with nothing to
- * explain it. With a single seal (the normal case) this costs no extra request.
- */
-export async function pickSealForCollection(
-  networkId: number,
-  seals: UserSeal[],
-  collectionAddress: string | null,
-): Promise<UserSeal | null> {
-  if (seals.length <= 1 || !collectionAddress) return seals[0] ?? null;
-  const [item] = await entityDetails(network(networkId), [collectionAddress]).catch(
-    () => [],
-  );
-  const owner = ownerRuleGlobalId(item?.details?.role_assignments);
-  // No readable owner rule: keep the previous behaviour rather than guess.
-  return seals.find((seal) => seal.globalId === owner) ?? seals[0] ?? null;
 }
 
 /* ─── Signing collection ──────────────────────────────────────────────────── */
@@ -342,7 +330,27 @@ function toCollection(item: EntityDetailsItem): UserSignCollection {
     totalSupply: toSupply(item),
     name: metadataValue(item, 'name'),
     iconUrl: metadataValue(item, ICON_URL_KEY),
+    ownerSealGlobalId: ownerRuleGlobalId(item.details?.role_assignments) ?? undefined,
   };
+}
+
+/**
+ * Whether the collection is THIS account's own — i.e. its locked owner rule
+ * names a seal the account holds, so this account (and nobody else) can mint
+ * into it.
+ *
+ * Holding an NFT of a collection is NOT ownership, and conflating the two is
+ * what made a co-signer's very first signature fail. An invitation is minted by
+ * the ISSUER into the ISSUER's collection and then deposited into the signer's
+ * account, so from the signer's holdings that collection looks exactly like one
+ * of their own: same marker, same brand. Discovery then handed it back as "your
+ * signing collection", the mint was built against it with a proof of the
+ * signer's own seal, and the ledger — correctly — refused the transaction, with
+ * nothing on screen to explain why.
+ */
+function ownedBySeals(item: EntityDetailsItem, sealIds: Set<string>): boolean {
+  const owner = ownerRuleGlobalId(item.details?.role_assignments);
+  return !!owner && sealIds.has(owner);
 }
 
 const cacheKey = (networkId: number, account: string) =>
@@ -397,24 +405,47 @@ export function rememberSignCollection(
   }
 }
 
+const sealIdSet = (seals: UserSeal[]): Set<string> =>
+  new Set(seals.map((s) => s.globalId));
+
 /** The account's signing collection, or null if not created yet. */
 export async function findSignCollection(
   networkId: number,
   account: string,
+): Promise<UserSignCollection | null> {
+  return collectionForSeals(
+    networkId,
+    account,
+    sealIdSet(await findUserSeals(networkId, account)),
+  );
+}
+
+/** {@link findSignCollection} once the account's seals are already in hand. */
+async function collectionForSeals(
+  networkId: number,
+  account: string,
+  sealIds: Set<string>,
 ): Promise<UserSignCollection | null> {
   const net = network(networkId);
 
   const cached = readCache(networkId, account);
   if (cached) {
     const [item] = await entityDetails(net, [cached]).catch(() => []);
-    if (item && isSignCollection(item) && belongsToCurrentSeal(item, networkId)) {
+    if (
+      item &&
+      isSignCollection(item) &&
+      belongsToCurrentSeal(item, networkId) &&
+      ownedBySeals(item, sealIds)
+    ) {
       return toCollection(item);
     }
-    // Stale (e.g. a collection from a previous seal deploy): drop it.
+    // Stale (a collection from a previous seal deploy) or never ours (a pinned
+    // address, or an issuer's collection an invitation once made look like one
+    // of the account's own): drop it.
     forgetSignCollection(networkId, account);
   }
 
-  const best = (await findSignCollections(networkId, account))[0] ?? null;
+  const best = (await collectionsForSeals(networkId, account, sealIds))[0] ?? null;
   if (best) rememberSignCollection(networkId, account, best.resourceAddress);
   return best;
 }
@@ -429,20 +460,24 @@ export async function findSealAndCollection(
   networkId: number,
   account: string,
 ): Promise<{ seal: UserSeal | null; collection: UserSignCollection | null }> {
-  const [seals, collection] = await Promise.all([
-    findUserSeals(networkId, account),
-    findSignCollection(networkId, account),
-  ]);
-  const seal = await pickSealForCollection(
+  const seals = await findUserSeals(networkId, account);
+  const collection = await collectionForSeals(
     networkId,
-    seals,
-    collection?.resourceAddress ?? null,
+    account,
+    sealIdSet(seals),
   );
+  // Discovery already read the owner rule, so the seal that commands THIS
+  // collection is known without a second lookup.
+  const seal =
+    seals.find((s) => s.globalId === collection?.ownerSealGlobalId) ??
+    seals[0] ??
+    null;
   return { seal, collection };
 }
 
 /**
- * EVERY signing collection the account holds, best first.
+ * EVERY signing collection the account OWNS (its seal commands them), best
+ * first.
  *
  * An account can end up with more than one: created in two tabs, created by
  * hand, or created again because a discovery miss re-offered the onboarding.
@@ -461,6 +496,23 @@ export async function findSignCollections(
   networkId: number,
   account: string,
 ): Promise<UserSignCollection[]> {
+  return collectionsForSeals(
+    networkId,
+    account,
+    sealIdSet(await findUserSeals(networkId, account)),
+  );
+}
+
+/** {@link findSignCollections} once the account's seals are already in hand. */
+async function collectionsForSeals(
+  networkId: number,
+  account: string,
+  sealIds: Set<string>,
+): Promise<UserSignCollection[]> {
+  // Without a seal the account owns nothing that can mint, so there is no
+  // collection of its own to find — and every candidate below would be
+  // somebody else's.
+  if (sealIds.size === 0) return [];
   const net = network(networkId);
   const held = (await allNonFungibleResources(net, account)).map(
     (r) => r.resource_address,
@@ -474,6 +526,8 @@ export async function findSignCollections(
     const details = await entityDetails(net, candidates.slice(i, i + 20));
     for (const item of details) {
       if (!isSignCollection(item) || !belongsToCurrentSeal(item, networkId)) continue;
+      // Held ≠ owned: an invitation puts the ISSUER's collection among these.
+      if (!ownedBySeals(item, sealIds)) continue;
       found.push(toCollection(item));
     }
   }

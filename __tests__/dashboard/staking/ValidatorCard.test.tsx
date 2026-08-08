@@ -42,6 +42,7 @@ vi.mock('lucide-react', () => ({
   Cable: () => <div data-testid="cable" />,
   Landmark: () => <div data-testid="landmark" />,
   Download: () => <div data-testid="download" />,
+  Share2: () => <div data-testid="share2" />,
 }));
 
 // Mock custom hooks and context
@@ -68,7 +69,6 @@ vi.mock('@/features/dashboard/staking/hooks/usePrefetchValidator', () => ({
 
 vi.mock('@/features/dashboard/staking/components/ValidatorDetailComponents', () => ({
   StatusLabel: () => <div data-testid="status-label" />,
-  UptimeBar: () => <div data-testid="uptime-bar" />,
   ProposalsBar: () => <div data-testid="proposals-bar" />,
 }));
 

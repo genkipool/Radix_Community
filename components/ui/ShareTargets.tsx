@@ -1,12 +1,15 @@
 'use client';
 
 /**
- * Send a link straight to WhatsApp or Telegram, next to the copy control.
+ * Send a link straight to WhatsApp or Telegram, optionally next to a control
+ * that copies it.
  *
  * Both are plain share URLs opened in a new tab: no SDK, no tracking script and
  * no third-party code running on the page. On phones the OS hands them to the
  * installed app; on desktop they open the web client.
  */
+import { useState } from 'react';
+import { Check, Share2 } from 'lucide-react';
 const WhatsappIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
     <path
@@ -31,16 +34,40 @@ const TelegramIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+/**
+ * `inline` keeps the glyph the weight of the controls it sits beside. The card
+ * sizes drop the box instead and let the glyph be the button: they go under a
+ * validator's photo, in a column narrow enough that the padding was all that
+ * stood between the three icons.
+ */
+const SIZES = {
+  inline: { box: 'size-9', icon: 'size-4', row: 'gap-0.5' },
+  // Spread rather than spaced by a fixed gap: given the width of the photo
+  // above them, the outer two icons line up with its edges and the gap is
+  // whatever the width leaves over.
+  card: { box: '', icon: 'size-6', row: 'w-full justify-between' },
+  cardWide: { box: '', icon: 'size-8', row: 'w-full justify-between' },
+} as const;
+
 export function ShareTargets({
   url,
   /** Optional line sent before the link (WhatsApp) or as its caption (Telegram). */
   text,
+  /** Adds a third target that puts the link on the clipboard. */
+  copyLabel,
+  copiedLabel,
+  size = 'inline',
   className = '',
 }: {
   url: string;
   text?: string;
+  copyLabel?: string;
+  copiedLabel?: string;
+  size?: keyof typeof SIZES;
   className?: string;
 }) {
+  const [copied, setCopied] = useState(false);
+
   if (!url) return null;
 
   const whatsapp = `https://wa.me/?text=${encodeURIComponent(text ? `${text} ${url}` : url)}`;
@@ -48,11 +75,19 @@ export function ShareTargets({
     text ? `&text=${encodeURIComponent(text)}` : ''
   }`;
 
-  const style =
-    'flex size-9 shrink-0 items-center justify-center rounded-lg border border-transparent text-[var(--color-text-muted)] opacity-60 transition-all hover:opacity-100 hover:text-[var(--color-primary)]';
+  const { box, icon, row } = SIZES[size];
+  const style = `flex ${box} shrink-0 items-center justify-center rounded-lg border border-transparent text-[var(--color-text-muted)] opacity-60 transition-all hover:opacity-100 hover:text-[var(--color-primary)]`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard denied: nothing to report */ }
+  };
 
   return (
-    <div className={`flex items-center gap-0.5 ${className}`}>
+    <div className={`flex items-center ${row} ${className}`}>
       <a
         href={whatsapp}
         target="_blank"
@@ -61,7 +96,7 @@ export function ShareTargets({
         title="WhatsApp"
         className={style}
       >
-        <WhatsappIcon className="size-4" />
+        <WhatsappIcon className={icon} />
       </a>
       <a
         href={telegram}
@@ -71,8 +106,19 @@ export function ShareTargets({
         title="Telegram"
         className={style}
       >
-        <TelegramIcon className="size-4" />
+        <TelegramIcon className={icon} />
       </a>
+      {copyLabel && (
+        <button
+          type="button"
+          onClick={copyLink}
+          aria-label={copyLabel}
+          title={copied ? (copiedLabel ?? copyLabel) : copyLabel}
+          className={`${style} ${copied ? 'text-green-500 opacity-100' : ''}`}
+        >
+          {copied ? <Check className={icon} /> : <Share2 className={icon} />}
+        </button>
+      )}
     </div>
   );
 }

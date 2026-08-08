@@ -1,3 +1,31 @@
+/**
+ * Paths that open a modal instead of going anywhere. Their click handler calls
+ * `preventDefault`, so they are the one kind of link `localizeHref` must leave
+ * alone.
+ */
+export const MODAL_PATHS = ['#pilot', '#under-construction'] as const;
+
+export type ModalPath = (typeof MODAL_PATHS)[number];
+
+export const isModalPath = (path: string): path is ModalPath =>
+  (MODAL_PATHS as readonly string[]).includes(path);
+
+/**
+ * Turns a link declared here into an href for the current language.
+ *
+ * A bare `#section` is an anchor of the home page, not of whichever page is
+ * showing the link: written as-is it pointed at an element that only exists on
+ * the home page, so from /docs or /dashboard the footer's section links did
+ * nothing at all. They are resolved against the localized home instead.
+ */
+export const localizeHref = (path: string, language: string): string => {
+  if (path.startsWith('http') || path === '#' || isModalPath(path)) return path;
+  const home = `/${language}`;
+  if (path.startsWith('#')) return `${home}/${path}`;
+  const route = path.startsWith('/') ? path : `/${path}`;
+  return `${home}${route === '/' ? '' : route}`;
+};
+
 export const NAV_LINKS = [
   {
     key: 'ecosystem',

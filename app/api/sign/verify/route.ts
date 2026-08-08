@@ -77,6 +77,12 @@ const signatureSchema = z
     /** RFC 3161 timestamp token (base64 DER) attesting when this signature
      *  existed. Verified below against this signature's own imprint. */
     timeStampToken: z.string().max(MAX_TOKEN_BASE64).optional(),
+    /**
+     * Pointer to the transaction that minted an on-ledger signature. Accepted
+     * so certificates carrying it validate; never read here — the signature is
+     * re-found through the chain of custody, which no pointer can influence.
+     */
+    transactionIntentHash: z.string().max(256).optional(),
   })
   .strict();
 
@@ -122,6 +128,8 @@ const requestSchema = z
   .object({
     networkId: z.number().int(),
     requestId: z.string().max(600),
+    /** Informational pointer to the transaction that created the request. */
+    transactionIntentHash: z.string().max(256).optional(),
   })
   .strict()
   .nullable()

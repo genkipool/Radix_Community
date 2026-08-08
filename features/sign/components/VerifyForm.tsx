@@ -35,14 +35,29 @@ function looksLikeEnvelope(v: unknown): v is AttestationEnvelope {
   );
 }
 
-export function VerifyForm({ t, doc }: { t: SignDictionary; doc: DocumentFile }) {
+export function VerifyForm({
+  t,
+  doc,
+  initialRequestKey,
+}: {
+  t: SignDictionary;
+  doc: DocumentFile;
+  /**
+   * Request key carried by the link that opened this page — the one printed on
+   * a signed PDF. Seeding it means the ledger check runs on arrival: who has
+   * signed, and when, is answered without the visitor uploading anything or
+   * even connecting a wallet. (The file-matches-the-hash half still needs the
+   * document, which never leaves their browser.)
+   */
+  initialRequestKey?: string;
+}) {
   const { bytes, docHash } = doc;
   const { activeNetworkId } = useRadixWallet();
 
   const [certFile, setCertFile] = useState<File | null>(null);
   const [envelope, setEnvelope] = useState<AttestationEnvelope | null>(null);
   const [certError, setCertError] = useState('');
-  const [keyInput, setKeyInput] = useState('');
+  const [keyInput, setKeyInput] = useState(initialRequestKey ?? '');
   // When a signed PDF is dropped, the certificate + original are read from it.
   const [embedded, setEmbedded] = useState(false);
   // Bytes to hash for the file-match check (extracted original, or the file itself).

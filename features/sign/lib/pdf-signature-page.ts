@@ -24,7 +24,8 @@ import type { SignDictionary } from '../types/dictionary';
 import { NETWORKS } from '@/features/wallet/constants/network';
 import { SEAL_IMAGE_PATH } from '../constants/seal';
 import { findCollectionIssuer } from '../services/sealDiscovery';
-import { parseRequestKey } from './share';
+import { explorerTxUrl } from './explorer';
+import { buildShareUrl, parseRequestKey } from './share';
 import { svgUrlToPngBytes, fetchImageBytes } from './pdf-watermark';
 import { pdfSafeText } from './pdf-text';
 
@@ -33,6 +34,16 @@ type Rgb01 = [number, number, number];
 
 /** pdf-lib's `rgb(r,g,b)` helper, injected so the Cursor stays synchronous. */
 type RgbFn = (r: number, g: number, b: number) => RGB;
+
+/**
+ * Registers a clickable URI annotation over a rectangle of a page, injected for
+ * the same reason as `RgbFn` (pdf-lib is imported dynamically).
+ */
+type LinkFn = (
+  page: PDFPage,
+  rect: [number, number, number, number],
+  url: string,
+) => void;
 
 /** Localised strings for the page (supplied by the caller's dictionary). */
 export interface CertificatePageLabels {
@@ -63,6 +74,12 @@ export interface CertificatePageLabels {
   anchorResource: string;
   anchorTx: string;
   anchorRequest: string;
+  /** Transaction that created the on-ledger signing request. */
+  anchorRequestTx: string;
+  /** Per-signature transaction (multi-party on-ledger). */
+  signatureTx: string;
+  /** Says, once, that the transaction ids on the page are clickable. */
+  txLinkNote: string;
   anchorNote: string;
   /* Certificate (PAdES / X.509) section — one entry per signer that used one. */
   certSection: string;
@@ -95,6 +112,13 @@ export interface CertificatePageOptions {
   locale: string;
   /** Same-origin path/URL of the seal SVG, rasterised for the header logo. */
   sealImageUrl?: string;
+  /**
+   * Absolute origin of this deployment, so every transaction id on the page can
+   * be a working link into ITS OWN explorer. Without it the ids are still
+   * printed, just not clickable (a PDF opened anywhere must not carry a
+   * relative URL that resolves against whatever the reader has open).
+   */
+  origin?: string;
   /** Issuer identity read from the on-ledger collection (org name/site/logo). */
   issuer?: { orgName?: string; orgWebsite?: string; iconUrl?: string };
   /** Brand accent (0..1 RGB) read from the active theme; falls back to indigo. */
@@ -116,6 +140,38 @@ export interface CertificatePageOptions {
 function issuerCollection(env: AttestationEnvelope): string | null {
   if (env.request) return parseRequestKey(env.request.requestId)?.collection ?? null;
   return env.onChain?.resourceAddress ?? null;
+}
+
+/**
+ * The address printed on the page (and encoded into its QR).
+ *
+ * For an on-ledger certificate it carries the request itself, so opening it —
+ * from a phone, with no wallet and no upload — lands on the verifier with the
+ * ledger check ALREADY running: who signed, when, and whether the set is
+ * complete. It used to be the bare verify tab, which showed an empty dropzone
+ * and left whoever scanned the QR with nothing verified.
+ *
+ * Off-ledger certificates keep the plain tab: nothing can be checked about them
+ * until the document itself is dropped in, and promising otherwise would be a
+ * worse link, not a better one.
+ */
+function verifyUrlFor(
+  env: AttestationEnvelope,
+  origin: string,
+  locale: string,
+): string {
+  const base = `/${locale}/console/sign-document`;
+  // No `net=`: a request link names its network in the resource prefix of the
+  // key it carries, and this address is printed on paper and re-typed by hand,
+  // so every character it does not need is one that can be got wrong.
+  return env.request?.requestId
+    ? buildShareUrl({
+        origin,
+        pathname: base,
+        requestKey: env.request.requestId,
+        tab: 'verify',
+      })
+    : `${origin}${base}?tab=verify`;
 }
 
 /**
@@ -143,11 +199,12 @@ export async function signaturePageOptions(
     : undefined;
   return {
     labels: t.certificatePage,
-    verifyUrl: `${origin}/${locale}/console/sign-document?tab=verify`,
+    verifyUrl: verifyUrlFor(env, origin, locale),
     networkName:
       NETWORKS[env.payload.networkId]?.networkName ?? `#${env.payload.networkId}`,
     locale,
     sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
+    origin: origin || undefined,
     issuer,
     accent: readBrandAccent(),
     padesSigned,
@@ -333,6 +390,7 @@ class Cursor {
     private rgbFn: RgbFn,
     /** Accent already darkened to stay readable on the white page. */
     private accentInk: Rgb01,
+    private linkFn: LinkFn,
   ) {
     this.page = doc.addPage([PAGE_W, PAGE_H]);
     this.y = PAGE_H - MARGIN;
@@ -363,6 +421,8 @@ class Cursor {
       x?: number;
       maxWidth?: number;
       lineGap?: number;
+      /** Makes every line of this text a clickable link to `url`. */
+      link?: string;
     } = {},
   ) {
     const size = opts.size ?? 10;
@@ -384,16 +444,34 @@ class Cursor {
         font,
         color: this.rgb(opts.color ?? INK),
       });
+      // One annotation per LINE: a long hash wraps, and a single rectangle
+      // around the block would swallow the whitespace beside the short line.
+      if (opts.link) {
+        const width = font.widthOfTextAtSize(line, size);
+        this.linkFn(
+          this.page,
+          [x, this.y - size - size * 0.2, x + width, this.y + size * 0.15],
+          opts.link,
+        );
+      }
       this.y -= lineHeight;
     }
     if (opts.lineGap) this.y -= opts.lineGap;
   }
 
   /** A "Label: value" field where the label is muted and value wraps below. */
-  field(label: string, value: string, opts: { mono?: boolean } = {}) {
+  field(
+    label: string,
+    value: string,
+    opts: { mono?: boolean; link?: string; color?: Rgb01 } = {},
+  ) {
     this.text(label.toUpperCase(), { size: 7.5, bold: true, color: MUTED });
     this.gap(1);
-    this.text(value, { size: opts.mono ? 9 : 10.5 });
+    this.text(value, {
+      size: opts.mono ? 9 : 10.5,
+      link: opts.link,
+      color: opts.color,
+    });
     this.gap(6);
   }
 
@@ -428,11 +506,36 @@ export async function appendSignaturePage(
   envelope: AttestationEnvelope,
   opts: CertificatePageOptions,
 ): Promise<void> {
-  const { StandardFonts, rgb } = await import('pdf-lib');
+  const { PDFName, PDFString, StandardFonts, rgb } = await import('pdf-lib');
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const { labels: L, locale } = opts;
   const { payload } = envelope;
+
+  /** Adds a bare (border-less) URI link over a rectangle of a page. */
+  const addLink: LinkFn = (page, rect, url) => {
+    const ref = pdfDoc.context.register(
+      pdfDoc.context.obj({
+        Type: 'Annot',
+        Subtype: 'Link',
+        Rect: rect,
+        // No visible frame: the accent-coloured text is the affordance.
+        Border: [0, 0, 0],
+        A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+      }),
+    );
+    const annots = page.node.Annots();
+    if (annots) annots.push(ref);
+    else page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([ref]));
+  };
+
+  /**
+   * This deployment's explorer page for a transaction, or undefined when the
+   * origin is unknown — an unlinked id is still a complete record, a link to
+   * nowhere is not.
+   */
+  const txLink = (hash?: string | null): string | undefined =>
+    hash && opts.origin ? explorerTxUrl(locale, hash, opts.origin) : undefined;
 
   // Brand accent (from the active theme) tints the band, section titles and
   // links; the page stays white with dark ink, so it prints cleanly whatever
@@ -444,7 +547,7 @@ export async function appendSignaturePage(
   const bandText: Rgb01 = lightBand ? INK : WHITE;
   const bandSubText: Rgb01 = lightBand ? MUTED : [0.9, 0.91, 0.98];
 
-  const cur = new Cursor(pdfDoc, { regular, bold }, rgb, accentInk);
+  const cur = new Cursor(pdfDoc, { regular, bold }, rgb, accentInk, addLink);
 
   // ── Header band ──
   const bandH = 74;
@@ -587,6 +690,15 @@ export async function appendSignaturePage(
     cur.field(L.account, s.signerAccount, { mono: true });
     if (s.disclosedEmail?.trim()) cur.field(L.email, s.disclosedEmail.trim());
     cur.field(L.signedAt, fmtDate(s.signedAt, locale));
+    // The transaction that recorded THIS signature on the ledger: the one
+    // thing a reader can open and check for themselves.
+    if (s.transactionIntentHash) {
+      cur.field(L.signatureTx, s.transactionIntentHash, {
+        mono: true,
+        link: txLink(s.transactionIntentHash),
+        color: txLink(s.transactionIntentHash) ? accentInk : undefined,
+      });
+    }
     if (i < envelope.signatures.length - 1) {
       cur.rule();
       cur.gap(6);
@@ -614,12 +726,33 @@ export async function appendSignaturePage(
   // on-ledger multi-party signature showed nothing at all about the ledger.
   if (anchored) {
     cur.sectionTitle(L.anchorSection);
+    let linked = false;
     if (envelope.onChain) {
+      const url = txLink(envelope.onChain.transactionIntentHash);
       cur.field(L.anchorResource, envelope.onChain.resourceAddress, { mono: true });
-      cur.field(L.anchorTx, envelope.onChain.transactionIntentHash, { mono: true });
+      cur.field(L.anchorTx, envelope.onChain.transactionIntentHash, {
+        mono: true,
+        link: url,
+        color: url ? accentInk : undefined,
+      });
+      linked ||= !!url;
     }
     if (envelope.request) {
       cur.field(L.anchorRequest, envelope.request.requestId, { mono: true });
+      const url = txLink(envelope.request.transactionIntentHash);
+      if (envelope.request.transactionIntentHash) {
+        cur.field(L.anchorRequestTx, envelope.request.transactionIntentHash, {
+          mono: true,
+          link: url,
+          color: url ? accentInk : undefined,
+        });
+        linked ||= !!url;
+      }
+    }
+    // Only claimed when something on the page actually IS a link.
+    if (linked || envelope.signatures.some((s) => txLink(s.transactionIntentHash))) {
+      cur.text(L.txLinkNote, { size: 7.5, color: MUTED });
+      cur.gap(2);
     }
     cur.text(L.anchorNote, { size: 7.5, color: MUTED });
     cur.gap(4);
@@ -691,7 +824,16 @@ export async function appendSignaturePage(
     { x: textX, maxWidth: textW, size: 9.5 },
   );
   cur.gap(3);
-  cur.text(opts.verifyUrl, { x: textX, maxWidth: textW, size: 9, color: accentInk });
+  // Clickable, every line of it. The address is long (it carries the request,
+  // so the check runs on arrival) and wraps over two or three lines, which is
+  // exactly where copying it by hand goes wrong: half a URL opens nothing.
+  cur.text(opts.verifyUrl, {
+    x: textX,
+    maxWidth: textW,
+    size: 9,
+    color: accentInk,
+    link: opts.verifyUrl,
+  });
   // Keep the cursor below the taller of the QR / text column.
   cur.y = Math.min(cur.y, savedY - qrSize);
   cur.gap(10);

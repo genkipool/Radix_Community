@@ -139,10 +139,17 @@ export function buildOnChainCertificate(input: {
    * the certificate is often downloaded days later, and stamping it with the
    * moment of download would put a date on the page that the ledger contradicts.
    */
-  signedAccounts: Array<{ account: string; signedAt?: string | null }>;
+  signedAccounts: Array<{
+    account: string;
+    signedAt?: string | null;
+    /** Transaction that minted this signature, read back from the ledger. */
+    txId?: string | null;
+  }>;
   nonce: string;
   /** On-ledger request key, so verification re-resolves the required set. */
   requestId?: string;
+  /** Transaction that created the request, read back from the ledger. */
+  requestTxId?: string | null;
   /**
    * Consensus time of the transaction that minted the request's first
    * invitation — when the document was actually put up for signing. Falls back
@@ -168,7 +175,7 @@ export function buildOnChainCertificate(input: {
   };
   return {
     payload,
-    signatures: input.signedAccounts.map(({ account, signedAt }) => ({
+    signatures: input.signedAccounts.map(({ account, signedAt, txId }) => ({
       signerAccount: account,
       disclosedName: null,
       disclosedEmail: null,
@@ -176,10 +183,17 @@ export function buildOnChainCertificate(input: {
       // Falls back to now only when the ledger time could not be read, and
       // verification then reports the date as uncorroborated.
       signedAt: signedAt || now,
+      ...(txId ? { transactionIntentHash: txId } : {}),
     })),
     onChain: null,
     request: input.requestId
-      ? { networkId: input.networkId, requestId: input.requestId }
+      ? {
+          networkId: input.networkId,
+          requestId: input.requestId,
+          ...(input.requestTxId
+            ? { transactionIntentHash: input.requestTxId }
+            : {}),
+        }
       : null,
   };
 }

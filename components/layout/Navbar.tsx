@@ -39,7 +39,7 @@ const XIcon = ({ className }: { className?: string }) => (
 import { UnderConstructionModal } from '@/components/shared/UnderConstructionModal';
 import { setCookie } from '@/utils/cookies';
 import { useLayout } from '@/context/LayoutContext';
-import { NAV_LINKS } from '@/constants/navigation';
+import { NAV_LINKS, localizeHref } from '@/constants/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NavPopup from '@/components/layout/NavPopup';
@@ -279,11 +279,7 @@ function NavLinkList({
   language: string;
 }) {
   const pathname = usePathname();
-  const localize = (href: string) => {
-    if (href.startsWith('http') || href === '#') return href;
-    const path = href.startsWith('/') ? href : `/${href}`;
-    return `/${language}${path === '/' ? '' : path}`;
-  };
+  const localize = (href: string) => localizeHref(href, language);
 
   return (
     <div className="p-2 flex flex-col gap-0.5">
@@ -782,10 +778,7 @@ export default function Navbar() {
   const iconBtnClass = 'hover:bg-[var(--color-surface)] hover:text-[var(--color-primary)] text-[var(--color-text-muted)] transition-colors cursor-pointer flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold';
 
   // Build localized href for a nav link
-  const localizeNavHref = (path: string, isHashLink: boolean) =>
-    isHashLink
-      ? `/${language}${path.slice(1)}`
-      : path.startsWith('/') ? `/${language}${path === '/' ? '' : path}` : path;
+  const localizeNavHref = (path: string) => localizeHref(path, language);
 
   // Collect internal hrefs from a popup group for prefetching
   const getPopupPrefetchHrefs = (items: PopupItem[], lang: string) =>
@@ -828,7 +821,7 @@ export default function Navbar() {
                 );
                 const label = (t.nav as Record<string, string>)[link.key] ?? link.key;
                 const isHashLink = link.path.startsWith('/#');
-                const linkHref = localizeNavHref(link.path, isHashLink);
+                const linkHref = localizeNavHref(link.path);
 
                 const triggerText = <span className={`${linkClass} px-3`}>{label}</span>;
 
@@ -1129,7 +1122,7 @@ export default function Navbar() {
                     : item
                 );
                 const isHashLink = link.path.startsWith('/#');
-                const linkHref = localizeNavHref(link.path, isHashLink);
+                const linkHref = localizeNavHref(link.path);
 
                 return (
                   <div key={link.key}>

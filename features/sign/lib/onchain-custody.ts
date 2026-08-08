@@ -191,23 +191,38 @@ export async function nfData(
 }
 
 interface TransactionStreamResponse {
-  items?: Array<{ state_version?: number; round_timestamp?: string; confirmed_at?: string }>;
+  items?: Array<{
+    state_version?: number;
+    round_timestamp?: string;
+    confirmed_at?: string;
+    intent_hash?: string;
+  }>;
+}
+
+/** The transaction behind a ledger state version: when, and which one. */
+export interface LedgerCommit {
+  /** Consensus time, or null when the Gateway cannot resolve it. */
+  confirmedAt: string | null;
+  /** `txid_…` intent hash, so a reader can open it in an explorer. */
+  intentHash: string | null;
 }
 
 /**
- * The consensus time of a ledger state version — the clock behind an on-ledger
- * signature. Unlike the date written into the NFT (supplied by whoever minted
- * it) or the one in a certificate, this one is agreed by the whole network and
- * cannot be chosen, which is what makes it worth reading back.
+ * The transaction that produced a ledger state version — the clock behind an
+ * on-ledger signature, and its identity. Unlike the date written into the NFT
+ * (supplied by whoever minted it) or the one in a certificate, the consensus
+ * time is agreed by the whole network and cannot be chosen, which is what makes
+ * it worth reading back; the intent hash is what lets anyone go and look at the
+ * transaction for themselves.
  *
- * Returns null when the Gateway cannot resolve it; a missing clock is reported
- * as missing, never guessed at.
+ * Fields the Gateway cannot resolve come back null; nothing is guessed at.
  */
-export async function ledgerTimestamp(
+export async function ledgerCommit(
   network: Network,
   stateVersion: number,
-): Promise<string | null> {
-  if (!Number.isInteger(stateVersion) || stateVersion <= 0) return null;
+): Promise<LedgerCommit> {
+  const empty: LedgerCommit = { confirmedAt: null, intentHash: null };
+  if (!Number.isInteger(stateVersion) || stateVersion <= 0) return empty;
   const data = await gatewayPost<TransactionStreamResponse>(
     network,
     '/stream/transactions',
@@ -219,9 +234,20 @@ export async function ledgerTimestamp(
   ).catch(() => ({}) as TransactionStreamResponse);
   const item = data.items?.[0];
   // The stream starts AT the requested version, so a different one back means
-  // the transaction is no longer retrievable and we know nothing about its time.
-  if (!item || item.state_version !== stateVersion) return null;
-  return item.confirmed_at ?? item.round_timestamp ?? null;
+  // the transaction is no longer retrievable and we know nothing about it.
+  if (!item || item.state_version !== stateVersion) return empty;
+  return {
+    confirmedAt: item.confirmed_at ?? item.round_timestamp ?? null,
+    intentHash: item.intent_hash ?? null,
+  };
+}
+
+/** {@link ledgerCommit}'s consensus time alone. */
+export async function ledgerTimestamp(
+  network: Network,
+  stateVersion: number,
+): Promise<string | null> {
+  return (await ledgerCommit(network, stateVersion)).confirmedAt;
 }
 
 /**

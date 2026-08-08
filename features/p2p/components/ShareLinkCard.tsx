@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { CopyButton } from '@/components/ui/CopyButton';
 import { ShareTargets } from '@/components/ui/ShareTargets';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
 import { QrCode } from './QrCode';
@@ -11,14 +10,21 @@ import { QrCode } from './QrCode';
  * so all three look identical.
  *
  * The link is presented flat on purpose: it is text to read and copy, not a
- * form field, so it carries no box of its own and the copy control is the bare
- * icon. Nesting boxes inside the surrounding panel only added visual noise.
+ * form field, so it carries no box of its own. It gets a line to itself and the
+ * ways of sending it — WhatsApp, Telegram, clipboard — sit on the next one:
+ * a share URL carries a long fragment, so anything beside it was competing with
+ * text that wraps to three lines anyway.
+ *
+ * The share controls are {@link ShareTargets}, the same component the validator
+ * cards use under their photo, so a link is sent the same way everywhere.
  */
 export function ShareLinkCard({
   title,
   hint,
   url,
   qrAlt,
+  copyLabel = 'Copy link',
+  copiedLabel = 'Copied',
   bare = false,
   children,
 }: {
@@ -26,6 +32,9 @@ export function ShareLinkCard({
   hint: string;
   url: string;
   qrAlt: string;
+  /** Tooltip of the clipboard target (and its confirmation). */
+  copyLabel?: string;
+  copiedLabel?: string;
   /** Render without the card box (plain heading + content), e.g. when already
    *  inside another section, to avoid a nested box. */
   bare?: boolean;
@@ -36,17 +45,19 @@ export function ShareLinkCard({
     <>
       <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
         <QrCode value={url} alt={qrAlt} size={160} />
-        <div className="flex-1 min-w-0 w-full flex items-center gap-2">
+        <div className="flex-1 min-w-0 w-full space-y-2">
           <span
-            className="flex-1 min-w-0 font-mono text-xs break-all leading-relaxed"
+            className="block min-w-0 font-mono text-xs break-all leading-relaxed"
             style={{ color: 'var(--color-text-main)' }}
           >
             {url}
           </span>
-          <div className="flex shrink-0 items-center">
-            <CopyButton value={url} variant="minimal" size="md" />
-            <ShareTargets url={url} />
-          </div>
+          <ShareTargets
+            url={url}
+            copyLabel={copyLabel}
+            copiedLabel={copiedLabel}
+            className="-ml-2"
+          />
         </div>
       </div>
       {children}

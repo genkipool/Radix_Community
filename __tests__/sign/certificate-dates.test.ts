@@ -59,3 +59,42 @@ describe('on-ledger certificate dates', () => {
     expect(envelope.signatures[0].timeStampToken).toBeUndefined();
   });
 });
+
+/**
+ * The transactions behind the record. A reader holding the PDF should not have
+ * to search a ledger to find the mint it is talking about, so the certificate
+ * names it — the request's transaction and each signature's — and the visible
+ * page turns both into links.
+ */
+describe('on-ledger certificate transactions', () => {
+  const REQUEST_TX = 'txid_tdx_2_1request000000000000000000000000';
+  const SIGNATURE_TX = 'txid_tdx_2_1signature00000000000000000000';
+
+  it('records the transaction that minted each signature', () => {
+    const envelope = buildOnChainCertificate({
+      ...base,
+      signedAccounts: [
+        { account: SIGNER_A, signedAt: '2026-07-20T09:15:00.000Z', txId: SIGNATURE_TX },
+      ],
+      requestId: 'resource_tdx_2_1coll:#1#',
+      requestTxId: REQUEST_TX,
+    });
+    expect(envelope.signatures[0].transactionIntentHash).toBe(SIGNATURE_TX);
+    expect(envelope.request?.transactionIntentHash).toBe(REQUEST_TX);
+  });
+
+  it('omits the field entirely when the ledger could not resolve it', () => {
+    // Absent, never an empty string: the certificate says nothing rather than
+    // pointing the reader at a transaction that does not exist.
+    const envelope = buildOnChainCertificate({
+      ...base,
+      signedAccounts: [{ account: SIGNER_A, txId: null }],
+      requestId: 'resource_tdx_2_1coll:#1#',
+    });
+    expect('transactionIntentHash' in envelope.signatures[0]).toBe(false);
+    expect(envelope.request).toEqual({
+      networkId: 2,
+      requestId: 'resource_tdx_2_1coll:#1#',
+    });
+  });
+});

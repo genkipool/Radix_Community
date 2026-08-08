@@ -6,6 +6,7 @@ import React from 'react';
    StatDivider — horizontal stat row separated by faint vertical lines
 ───────────────────────────────────────── */
 import {
+    type StatItem,
     type StatDividerProps,
     type BizRowProps,
     type PremiumStatProps,
@@ -32,6 +33,23 @@ export const StatDivider = ({ items, textCenter = false }: StatDividerProps) => 
                 </span>
             </div>
         ))}
+    </div>
+);
+
+/* ─────────────────────────────────────────
+   StatCell — label above value, for the dense grid layout
+───────────────────────────────────────── */
+export const StatCell = ({ label, value, accent, tooltip }: StatItem) => (
+    <div className="flex flex-col gap-0.5 group" title={tooltip}>
+        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1 group-hover:text-[var(--color-primary)] transition-colors">
+            {label}
+        </span>
+        <span
+            className="text-[12px] font-black truncate"
+            style={accent ? { color: accent } : { color: 'var(--color-text-main)' }}
+        >
+            {value}
+        </span>
     </div>
 );
 

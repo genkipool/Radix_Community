@@ -38,3 +38,25 @@ describe('share link network', () => {
     expect(parseNetworkParam('9')).toBeNull();
   });
 });
+
+/**
+ * The address printed on a signed PDF (and encoded into its QR). It has to open
+ * the verifier with the on-ledger check already running: whoever scans it holds
+ * the paper, not the file, and a link to an empty dropzone verified nothing.
+ */
+describe('the verify link on a signed PDF', () => {
+  it('opens the verify tab carrying the request', () => {
+    const url = buildShareUrl({
+      origin: 'https://app.test',
+      pathname: '/es/console/sign-document',
+      requestKey: 'resource_tdx_2_1abc:#3#',
+      networkId: 2,
+      tab: 'verify',
+    });
+    expect(url).toContain('/es/console/sign-document/r/resource_tdx_2_1abc/3');
+    expect(new URL(url).searchParams.get('tab')).toBe('verify');
+    // The network travels too: the check must read the right ledger with no
+    // wallet connected.
+    expect(new URL(url).searchParams.get('net')).toBe('2');
+  });
+});

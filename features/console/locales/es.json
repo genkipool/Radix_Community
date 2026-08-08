@@ -1034,7 +1034,12 @@
         "rejected": "La transacción fue rechazada o cancelada en la billetera.",
         "rejectedByUser": "La transacción fue rechazada o cancelada por el usuario.",
         "unknown": "Algo salió mal al enviar la transacción.",
-        "failedToPrepareTransaction": "Error al preparar la transacción. Comprueba que todo esté bien rellenado."
+        "failedToPrepareTransaction": "Error al preparar la transacción. Comprueba que todo esté bien rellenado.",
+        "CommittedFailure": "La transacción llegó al ledger pero falló, así que no se registró nada. Compruébala en tu wallet e inténtalo de nuevo.",
+        "Rejected": "La red rechazó la transacción, así que no se registró nada.",
+        "Pending": "La transacción todavía no está confirmada en el ledger. Compruébala en tu wallet antes de volver a intentarlo.",
+        "Unknown": "No se pudo confirmar la transacción en el ledger.",
+        "not_committed": "La transacción no se confirmó en el ledger, así que no se registró nada."
       }
     },
     "createToken": {
