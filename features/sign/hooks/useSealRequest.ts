@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConsoleTransaction } from '@/features/console/hooks/useConsoleTransaction';
 import { radixSealAddress } from '../constants/seal';
@@ -79,6 +79,45 @@ export function useSealSetup(account: string | null) {
       rememberSignCollection(activeNetworkId, account, resourceAddress);
       void query.refetch().finally(() => setPendingCollection(null));
     },
+  };
+}
+
+/**
+ * The same prerequisites for SEVERAL accounts at once, keyed by account.
+ *
+ * Holding a collection is per account, and the account that matters is the one
+ * the invitation was sent to. A wallet with three accounts, two of them with
+ * collections, says nothing about whether the invited one can sign — so the
+ * question has to be asked of each candidate rather than of "the wallet".
+ *
+ * Every entry shares its cache with {@link useSealSetup}, so a collection
+ * created through the onboarding box refreshes this list too.
+ */
+export function useSealSetups(accounts: string[], enabled = true) {
+  const { activeNetworkId } = useRadixWallet();
+  const results = useQueries({
+    queries: accounts.map((account) => ({
+      queryKey: ['seal-setup', activeNetworkId, account],
+      enabled: enabled && !!activeNetworkId,
+      queryFn: () => findSealAndCollection(activeNetworkId!, account),
+    })),
+  });
+  const setups = new Map<
+    string,
+    { seal: UserSeal | null; collection: UserSignCollection | null }
+  >();
+  accounts.forEach((account, i) => {
+    const data = results[i]?.data;
+    if (data) setups.set(account, data);
+  });
+  return {
+    /** Accounts that can record a signature right now (seal + collection). */
+    ready: accounts.filter(
+      (a) => !!setups.get(a)?.seal && !!setups.get(a)?.collection,
+    ),
+    /** True once every account has an answer, so "none can sign" is not a guess. */
+    resolved: accounts.length > 0 && accounts.every((a) => setups.has(a)),
+    loading: results.some((r) => r.isFetching),
   };
 }
 
@@ -336,7 +375,10 @@ export function useSealRequest() {
 
   /**
    * Mints + distributes the invitation batch (and optionally the
-   * initiator's own signature). Returns the shareable request key.
+   * initiator's own signature). Returns the shareable request key together with
+   * the transaction that created it, so the certificate and the share box can
+   * point at the very transaction a reader can look up. Null if the ledger did
+   * not commit it.
    */
   const createRequest = async (args: {
     account: string;
@@ -347,7 +389,7 @@ export function useSealRequest() {
     requiredSigners: string[];
     alsoSign: boolean;
     imageUrl: string;
-  }): Promise<string | null> => {
+  }): Promise<{ key: string; transactionIntentHash: string } | null> => {
     setError(null);
     if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('creating');
@@ -366,10 +408,16 @@ export function useSealRequest() {
     const tx = await sendTransaction(manifest);
     if (!tx) return fail('onchain_failed');
     setPhase('done');
-    return requestKey(args.collection, args.nextId);
+    return {
+      key: requestKey(args.collection, args.nextId),
+      transactionIntentHash: tx.transactionIntentHash,
+    };
   };
 
-  /** Mints the signer's signature into their OWN collection. */
+  /**
+   * Mints the signer's signature into their OWN collection. Returns the
+   * transaction that recorded it, or null when the ledger did not commit it.
+   */
   const signRequest = async (args: {
     account: string;
     sealGlobalId: string;
@@ -378,9 +426,9 @@ export function useSealRequest() {
     docHash: string;
     request: string;
     imageUrl: string;
-  }): Promise<boolean> => {
+  }): Promise<string | null> => {
     setError(null);
-    if (!activeNetworkId) return !!fail('wallet_not_connected');
+    if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('signing');
     const manifest = buildSignatureMintManifest({
       issuedAt: await fetchLedgerNow(activeNetworkId),
@@ -394,9 +442,9 @@ export function useSealRequest() {
       imageUrl: args.imageUrl,
     });
     const tx = await sendTransaction(manifest);
-    if (!tx) return !!fail('onchain_failed');
+    if (!tx) return fail('onchain_failed');
     setPhase('done');
-    return true;
+    return tx.transactionIntentHash;
   };
 
   /**

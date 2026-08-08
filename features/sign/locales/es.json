@@ -86,7 +86,9 @@
       "requiredSigners": "Firmantes requeridos",
       "pending": "Pendientes",
       "openSet": "Abierto (cualquier firmante)",
-      "addSignature": "Añadir mi firma"
+      "addSignature": "Añadir mi firma",
+      "needsCollection": "Una firma en el ledger es un NFT acuñado en la colección de firma del propio firmante, y es ahí donde la busca el verificador. La cuenta invitada {account} aún no tiene colección. Si firmases solo con la wallet, te llevarías un certificado sin nada detrás: la verificación daría el documento por NO FIRMADO. Crea abajo el sello y la colección de esa misma cuenta. Es un paso único por cuenta, y las colecciones de tus otras cuentas no sirven para esta.",
+      "needsCollectionTitle": "Esta cuenta todavía no puede firmar en el ledger"
     },
     "pdfInfo": {
       "title": "Contenido Radix embebido en el PDF",
@@ -178,6 +180,11 @@
       "shareDocTitle": "Comparte el documento firmado",
       "shareDocHint": "Quien abra este enlace mientras esta pestaña siga abierta recibe el documento firmado directamente, de navegador a navegador y cifrado de extremo a extremo. Puede verificarlo o añadir su firma.",
       "qrAlt": "Código QR del enlace para compartir",
+      "requestTx": "Transacción de la solicitud",
+      "viewManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "manifestLoading": "Leyendo la transacción en el ledger…",
+      "manifestError": "No se pudo leer el manifiesto en el ledger.",
       "statusError": "No se pudo consultar el estado de la solicitud en el ledger. Pulsa Actualizar para reintentar.",
       "sendToggle": "Enviar el documento en directo",
       "sendToggleHint": "Mientras esta pestaña siga abierta, quien abra el enlace recibirá el documento automáticamente, de navegador a navegador y cifrado de extremo a extremo. No pasa por ningún servidor.",
@@ -294,7 +301,8 @@
       "timestamp": "Firmado el",
       "hash": "Hash del documento",
       "onchain": "NFT en la cadena",
-      "offchainOnly": "Solo certificado fuera de cadena"
+      "offchainOnly": "Solo certificado fuera de cadena",
+      "nameMissing": "Tu wallet no ha divulgado un nombre completo para esta firma, así que el certificado usa la etiqueta de la persona con la que has firmado. Rellena el nombre y los apellidos de esa persona en tu Radix Wallet si quieres que aparezcan en el documento."
     },
     "errors": {
       "wallet_not_connected": "Conecta primero tu wallet.",
@@ -308,10 +316,11 @@
       "onchain_no_resource": "No se encontró el recurso NFT acuñado.",
       "account_mismatch": "Firma con una de las cuentas que listaste como firmante.",
       "not_required_signer": "Tu cuenta no está entre los firmantes requeridos de este documento.",
-      "seal_required": "Necesitas tu Seal y tu colección de firma antes de anclar. Créalos en los pasos de arriba.",
+      "seal_required": "Necesitas tu Seal y tu colección de firma antes de registrar la firma en el ledger. Crea tu NFT Seal y tu Colección de autocustodia en la {collectionLink}.",
       "already_signed": "Esta cuenta ya firmó el certificado.",
       "network_mismatch": "Cambia la red de tu wallet a la del certificado para anclarlo.",
-      "generic": "Algo salió mal. Inténtalo de nuevo."
+      "generic": "Algo salió mal. Inténtalo de nuevo.",
+      "collectionSectionLink": "sección de colección"
     },
     "certificatePage": {
       "title": "Certificado de firma",
@@ -337,6 +346,9 @@
       "anchorResource": "Colección (recurso)",
       "anchorTx": "Transacción",
       "anchorRequest": "Solicitud de firma (id de invitación)",
+      "anchorRequestTx": "Transacción de la solicitud",
+      "signatureTx": "Transacción de la firma",
+      "txLinkNote": "Los identificadores de transacción de arriba son enlaces: ábrelos para ver el registro en el explorador de este proyecto.",
       "anchorNote": "Registro público y permanente en la Red Radix. En el ledger solo constan el hash del documento y las cuentas — nunca el archivo, el mensaje ni un nombre.",
       "certSection": "Firma con certificado (PAdES / X.509)",
       "certSubject": "Firmado por (certificado)",

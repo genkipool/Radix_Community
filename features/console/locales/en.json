@@ -1034,7 +1034,12 @@
         "rejected": "The transaction was rejected or cancelled in the wallet.",
         "rejectedByUser": "The transaction was rejected or cancelled by the user.",
         "unknown": "Something went wrong while sending the transaction.",
-        "failedToPrepareTransaction": "Failed to prepare transaction. Check that all fields are filled correctly."
+        "failedToPrepareTransaction": "Failed to prepare transaction. Check that all fields are filled correctly.",
+        "CommittedFailure": "The transaction reached the ledger but failed, so nothing was recorded. Check it in your wallet and try again.",
+        "Rejected": "The network rejected the transaction, so nothing was recorded.",
+        "Pending": "The transaction has not been confirmed on the ledger yet. Check it in your wallet before trying again.",
+        "Unknown": "The transaction could not be confirmed on the ledger.",
+        "not_committed": "The transaction was not confirmed on the ledger, so nothing was recorded."
       }
     },
     "createToken": {

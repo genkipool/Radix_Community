@@ -11,7 +11,7 @@ import {
 import {
   entityDetails,
   findSignerSignature,
-  ledgerTimestamp,
+  ledgerCommit,
   metadataString,
   nfData,
   nfRecords,
@@ -87,8 +87,11 @@ export async function POST(req: NextRequest) {
     // When the request came into being: the consensus time of the transaction
     // that minted its first invitation. A certificate built from this status
     // reports that as the document's creation date — the alternative was the
-    // moment somebody pressed download, days later.
-    const createdAt = await ledgerTimestamp(network, anchorRecord.stateVersion);
+    // moment somebody pressed download, days later. Its intent hash travels
+    // too: it is THE transaction that put this request on the ledger, so the
+    // share box and the signed PDF can point a reader straight at it.
+    const created = await ledgerCommit(network, anchorRecord.stateVersion);
+    const createdAt = created.confirmedAt;
     const reqDocHash = anchor.document_hash;
     // A mismatching file must not hide the request: the caller still gets the
     // full status plus the mismatch flag, so the UI can say WHY it fails.
@@ -152,10 +155,16 @@ export async function POST(req: NextRequest) {
           reqDocHash,
           officialSeal,
         );
+        const commit = found
+          ? await ledgerCommit(network, found.stateVersion)
+          : null;
         return {
           account: s.account,
           signed: !!found,
-          signedAt: found ? await ledgerTimestamp(network, found.stateVersion) : null,
+          signedAt: commit?.confirmedAt ?? null,
+          // The transaction that minted this signature: the certificate prints
+          // it, and anyone can open it in an explorer and see the mint.
+          txId: commit?.intentHash ?? null,
         };
       }),
     );
@@ -168,6 +177,7 @@ export async function POST(req: NextRequest) {
       docHash: reqDocHash,
       hashMismatch,
       createdAt,
+      createdTxId: created.intentHash,
       networkId,
       requiredSigners: signatures.map((s) => s.account),
       signatures,

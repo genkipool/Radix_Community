@@ -131,6 +131,78 @@ describe('visible signature certificate page', () => {
     expect(reloaded.getPageCount()).toBe(doc.getPageCount());
   });
 
+  /**
+   * A signature that lives on the ledger is only checkable if the reader can
+   * reach the transaction that recorded it. Printing the id is half of that;
+   * the other half is that it opens THIS deployment's explorer from inside the
+   * PDF, on whatever machine the document ends up on — which is why the link
+   * has to be absolute and only exists when the origin is known.
+   */
+  describe('on-ledger transaction links', () => {
+    const ORIGIN = 'https://radix.example';
+    const REQUEST_TX = 'txid_rdx1request00000000000000000000000000000000';
+    const SIGNATURE_TX = 'txid_rdx1signature000000000000000000000000000000';
+
+    function ledgerEnvelope(): AttestationEnvelope {
+      const env = baseEnvelope();
+      env.request = {
+        networkId: 1,
+        requestId: 'resource_rdx1collection000000000000000000000:#1#',
+        transactionIntentHash: REQUEST_TX,
+      };
+      env.signatures[0].transactionIntentHash = SIGNATURE_TX;
+      return env;
+    }
+
+    /**
+     * Every URI an annotation points at, read back from the SAVED bytes — the
+     * only thing a PDF reader ever sees. Object streams are off so the
+     * annotations stay legible to the regex; they change nothing about what is
+     * written, only how it is packed.
+     */
+    async function annotationUris(doc: PDFDocument): Promise<string[]> {
+      const raw = new TextDecoder('latin1').decode(
+        await doc.save({ useObjectStreams: false }),
+      );
+      return [...raw.matchAll(/\/URI\s*\(([^)]*)\)/g)].map((m) => m[1]);
+    }
+
+    it("links both transactions into this deployment's explorer", async () => {
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, ledgerEnvelope(), { ...opts, origin: ORIGIN });
+      const uris = await annotationUris(doc);
+      expect(uris).toContain(`${ORIGIN}/en-US/dashboard/tx/${REQUEST_TX}`);
+      expect(uris).toContain(`${ORIGIN}/en-US/dashboard/tx/${SIGNATURE_TX}`);
+    });
+
+    it('still prints the ids when the origin is unknown, with no dead links', async () => {
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, ledgerEnvelope(), opts);
+      const uris = await annotationUris(doc);
+      expect(uris.some((u) => u.includes(REQUEST_TX))).toBe(false);
+      expect(uris.some((u) => u.includes(SIGNATURE_TX))).toBe(false);
+      // The page itself is unaffected: it renders and reloads as always.
+      const reloaded = await PDFDocument.load(await doc.save());
+      expect(reloaded.getPageCount()).toBe(doc.getPageCount());
+    });
+
+    it('adds no transaction link to a certificate that has none', async () => {
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, baseEnvelope(), { ...opts, origin: ORIGIN });
+      const uris = await annotationUris(doc);
+      expect(uris.some((u) => u.includes('/dashboard/tx/'))).toBe(false);
+    });
+
+    it('makes the verify address itself clickable, whole', async () => {
+      // It wraps over several lines, and half a URL copied by hand opens
+      // nothing — so every line of it carries the complete address.
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, ledgerEnvelope(), { ...opts, origin: ORIGIN });
+      const uris = await annotationUris(doc);
+      expect(uris).toContain(opts.verifyUrl);
+    });
+  });
+
   it('parses theme colours (#hex and rgb())', () => {
     expect(parseColor('#4f46e5')).toEqual([0x4f / 255, 0x46 / 255, 0xe5 / 255]);
     expect(parseColor('#fff')).toEqual([1, 1, 1]);

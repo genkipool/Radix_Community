@@ -114,6 +114,16 @@ export interface SignatureEntry {
   /** X.509 certificate this signer also signed the PDF with, if any. */
   certificate?: SignerCertificate;
   /**
+   * ON-ledger signatures: the intent hash of the transaction that minted this
+   * signature NFT, so the certificate (and the visible page) can point at the
+   * exact transaction instead of asking a reader to go looking for it.
+   *
+   * Informational — it is a pointer, not evidence: verification re-finds the
+   * signature through the chain of custody and reads its date from the ledger,
+   * never from this field.
+   */
+  transactionIntentHash?: string;
+  /**
    * OFF-ledger signatures: an RFC 3161 timestamp token (base64 DER) in which a
    * Time Stamping Authority attests that this signature already existed at a
    * given moment. It is what makes `signedAt` checkable — without it the date is
@@ -158,6 +168,12 @@ export interface OnChainRequestRef {
   networkId: number;
   /** Request key: `<initiator collection>:#<firstId>#`. */
   requestId: string;
+  /**
+   * Intent hash of the transaction that created the request (minted the
+   * invitation batch). Informational: the request key alone resolves everything
+   * verification needs; this is the link a human follows.
+   */
+  transactionIntentHash?: string;
 }
 
 export interface AttestationEnvelope {

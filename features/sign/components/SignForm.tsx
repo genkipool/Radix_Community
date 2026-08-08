@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FileSignature,
   RotateCcw,
+  TriangleAlert,
   UsersRound,
 } from 'lucide-react';
 import { FileDropzone } from '@/features/console/components/shared/FileDropzone';
@@ -23,12 +24,14 @@ import type { ConsoleDictionary } from '@/features/console/types/i18n.types';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useDocumentSign } from '../hooks/useDocumentSign';
-import { useSealRequest, useSealSetup } from '../hooks/useSealRequest';
+import { useSealRequest, useSealSetup, useSealSetups } from '../hooks/useSealRequest';
 import { findSealAndCollection } from '../services/sealDiscovery';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { OnChainSignPanel } from './OnChainSignPanel';
 import { ShareLinkSection } from './ShareLinkSection';
+import { RequestTransactionLinks } from './RequestTransactionLinks';
 import { SealOnboarding } from './SealOnboarding';
+import { SignErrorText } from './SignErrorText';
 import { stripExtension } from '../lib/file';
 import { downloadBytes, downloadCertificate } from '../lib/certificate';
 import { signaturePageOptions } from '../lib/pdf-signature-page';
@@ -46,7 +49,12 @@ import {
   buildSignRequestManifest,
   buildSignatureMintManifest,
 } from '../lib/sign-request';
-import { fetchLedgerNow } from '../lib/ledger-time';
+import { fetchLedgerNow, fetchTransactionTime } from '../lib/ledger-time';
+import {
+  identitySelection,
+  nextIdentityChoice,
+  type IdentityOption,
+} from '../lib/identity-options';
 import { blake2b256Hex, randomNonceHex } from '../lib/hash';
 import type { SharedWatermark } from '../lib/share';
 import { extractRadixAttachments, isPdfBytes } from '../lib/pdf-extract';
@@ -60,7 +68,7 @@ import type {
   SignResult,
 } from '../types/sign.types';
 
-type IdentityOpt = DisclosurePolicy | 'email';
+type IdentityOpt = IdentityOption;
 
 const isPdfResult = (r: { fileType: string; fileName: string }) =>
   r.fileType === 'application/pdf' || r.fileName.toLowerCase().endsWith('.pdf');
@@ -206,11 +214,29 @@ export function SignForm({
   const [padesChecking, setPadesChecking] = useState(false);
   // Certificate identity from the validated .p12, printed on the visible page.
   const [padesCert, setPadesCert] = useState<P12Info | null>(null);
+  /**
+   * On-ledger prerequisite the signing account turned out to be missing. It
+   * cannot come from a hook's error state: it is decided here, between the
+   * wallet's proof and the mint.
+   */
+  const [setupError, setSetupError] = useState('');
+  /**
+   * The account the wallet actually signed with when it turned out to have no
+   * collection of its own. It is not necessarily the one checked beforehand:
+   * the signer picks the account in the wallet, and several of theirs may be
+   * invited. Kept so the setup box below is offered for THAT account.
+   */
+  const [blockedAccount, setBlockedAccount] = useState<string | null>(null);
 
   const { sign, coSign, phase, error, reset } = useDocumentSign();
-  const { createRequest, signRequest } = useSealRequest();
+  const {
+    createRequest,
+    signRequest,
+    phase: ledgerPhase,
+    error: ledgerError,
+  } = useSealRequest();
   const invitePreview = useTransactionPreview();
-  const { activeNetworkId } = useRadixWallet();
+  const { activeNetworkId, accounts } = useRadixWallet();
   const { language } = useLanguage();
 
   // A dropped signed PDF carries the certificate + original inside, so a
@@ -255,7 +281,11 @@ export function SignForm({
     };
   }, [bytes, docHash]);
 
-  const busy = phase === 'signing' || phase === 'anchoring';
+  // The ledger leg counts as busy too: the wallet is holding a transaction the
+  // whole time, and leaving the button live invited a second one on top of it.
+  const ledgerBusy =
+    ledgerPhase !== 'idle' && ledgerPhase !== 'done' && ledgerPhase !== 'error';
+  const busy = phase === 'signing' || phase === 'anchoring' || ledgerBusy;
   const coSignMode = !!loadedCert;
   // A dropped certificate/PDF whose whole required-signer set has ALREADY
   // signed: nothing left to add, so the primary action becomes downloading the
@@ -276,6 +306,51 @@ export function SignForm({
   // "On-chain" applies equally to single and multi signing — the only
   // difference downstream is whether the co-signer address list is shown.
   const onchainMode = onchain || forcedOnchain;
+
+  /*
+   * Co-signing a certificate that points at an ON-LEDGER request.
+   *
+   * The signature that counts for such a document is the NFT minted into the
+   * signer's own collection: the verifier re-finds it through the chain of
+   * custody and reports the document as unsigned without it. So the account
+   * about to sign needs its seal AND its collection BEFORE the wallet is
+   * opened. It used to be checked after signing and silently skipped when
+   * missing, which produced the worst possible outcome: the wallet asked for a
+   * ROLA proof, the PDF came out with the signature printed on its last page,
+   * and the verify tab then said the document was not signed.
+   *
+   * The acting account is resolved the same way the on-ledger panel does it:
+   * whichever connected account the certificate requires (any of them when the
+   * set is open).
+   */
+  const cosignRequest = coSignMode ? (loadedCert!.request ?? null) : null;
+  const cosignRequired = coSignMode ? loadedCert!.payload.signers : [];
+  // The accounts that could sign this document from this wallet: the invited
+  // ones it holds (all of them when the request is open).
+  const cosignCandidates = accounts
+    .map((a) => a.address)
+    .filter((a) => cosignRequired.length === 0 || cosignRequired.includes(a))
+    // Each candidate costs a ledger scan. A request always names its signers,
+    // so this only bites on an open one shared with a many-account wallet.
+    .slice(0, 8);
+  // Asked of EVERY candidate, because the collection is per account: a wallet
+  // whose other accounts have collections does not help the invited address
+  // that has none, and that address is the only one whose signature counts.
+  const cosignEligible = useSealSetups(cosignCandidates, !!cosignRequest);
+  /**
+   * The account the setup box works on: one that can already sign if there is
+   * one, otherwise the account that has to create its collection — the one the
+   * wallet just signed with, when it turned out to be a different one.
+   */
+  const cosignAccount =
+    blockedAccount ?? cosignEligible.ready[0] ?? cosignCandidates[0] ?? null;
+  const cosignSetup = useSealSetup(cosignRequest ? cosignAccount : null);
+  /** No invited account in this wallet can record a signature yet. */
+  const cosignNeedsSetup =
+    !!cosignRequest &&
+    !!cosignAccount &&
+    cosignEligible.resolved &&
+    cosignEligible.ready.length === 0;
 
   // Validate the PAdES certificate + password the moment both are present, so
   // signing is blocked (and an error shown) BEFORE the wallet signs — never
@@ -328,15 +403,13 @@ export function SignForm({
   const padesActive = pades.enabled && pdfOk;
   const padesBlocking = padesActive && padesStatus !== 'valid';
 
-  const identityValue: IdentityOpt[] = includeEmail
-    ? [disclosure, 'email']
-    : [disclosure];
-  const onIdentityChange = (v: IdentityOpt[]) => {
-    const addedName = v.filter(
-      (x) => x !== 'email' && x !== disclosure,
-    ) as DisclosurePolicy[];
-    if (addedName.length > 0) setDisclosure(addedName[addedName.length - 1]);
-    setIncludeEmail(v.includes('email'));
+  // "Signature only" is the ABSENCE of the other two, not a third switch to
+  // tick alongside them — see lib/identity-options for the rule.
+  const identityValue = identitySelection({ disclosure, includeEmail });
+  const onIdentityChange = (next: IdentityOpt[]) => {
+    const choice = nextIdentityChoice({ disclosure, includeEmail }, next);
+    setDisclosure(choice.disclosure);
+    setIncludeEmail(choice.includeEmail);
   };
 
   // The image is read into a data URL and stamped in the browser only; it is
@@ -483,8 +556,9 @@ export function SignForm({
     // initiator also signs, mint their own record NFT in the same transaction.
     // The request key is stored in the certificate so co-signers know where to
     // mint their records.
-    if (multiLedger && setup.seal && setup.collection && onchainAccount) {
-      const requestId = await createRequest({
+    if (multiLedger) {
+      if (!setup.seal || !setup.collection || !onchainAccount) return;
+      const created = await createRequest({
         account: onchainAccount,
         sealGlobalId: setup.seal.globalId,
         collection: setup.collection.resourceAddress,
@@ -494,15 +568,43 @@ export function SignForm({
         alsoSign: !sendOnly,
         imageUrl: sealImageUrl(window.location.origin),
       });
-      if (requestId) {
-        finalRes = {
-          ...finalRes,
-          envelope: {
-            ...finalRes.envelope,
-            request: { networkId: finalRes.envelope.payload.networkId, requestId },
+      // NOTHING is produced when the ledger did not accept it. The document is
+      // signed on-ledger or it is not, and handing over a certificate — or a
+      // PDF whose last page reads "signed" — for a transaction that failed
+      // states as fact something the ledger will contradict. The error is
+      // already on screen; the signer retries.
+      if (!created) return;
+      // The date the certificate prints must be the date the transaction was
+      // committed — the one a reader finds when they open the txid. The wallet
+      // signature carries a timestamp-authority time seconds earlier, and
+      // printing that left the page and the ledger disagreeing about when the
+      // document was signed.
+      const committedAt = await fetchTransactionTime(
+        finalRes.envelope.payload.networkId,
+        created.transactionIntentHash,
+      );
+      finalRes = {
+        ...finalRes,
+        envelope: {
+          ...finalRes.envelope,
+          request: {
+            networkId: finalRes.envelope.payload.networkId,
+            requestId: created.key,
+            transactionIntentHash: created.transactionIntentHash,
           },
-        };
-      }
+          // The initiator's own signature was minted in that same transaction,
+          // so it is the transaction that recorded it.
+          signatures: finalRes.envelope.signatures.map((entry) =>
+            entry.signerAccount === onchainAccount && !sendOnly
+              ? {
+                  ...entry,
+                  transactionIntentHash: created.transactionIntentHash,
+                  signedAt: committedAt ?? entry.signedAt,
+                }
+              : entry,
+          ),
+        },
+      };
     }
 
     setResult(finalRes);
@@ -552,17 +654,39 @@ export function SignForm({
     );
   };
 
+  // Preview the signature a co-signer is about to mint into their own
+  // collection — the very manifest handleCoSign sends after the ROLA proof.
+  const onSimulateCoSign = async () => {
+    if (!cosignRequest || !cosignAccount || !cosignSetup.seal || !cosignSetup.collection)
+      return;
+    invitePreview.simulate(
+      buildSignatureMintManifest({
+        issuedAt: await fetchLedgerNow(cosignRequest.networkId),
+        account: cosignAccount,
+        sealGlobalId: cosignSetup.seal.globalId,
+        collection: cosignSetup.collection.resourceAddress,
+        nextId: cosignSetup.collection.totalSupply + 1,
+        docHash: loadedCert!.payload.docHash,
+        networkId: cosignRequest.networkId,
+        request: cosignRequest.requestId,
+        imageUrl: sealImageUrl(window.location.origin),
+      }),
+    );
+  };
+
   const handleCoSign = async () => {
-    if (!coSignBytes || !file || !loadedCert) return;
+    if (!coSignBytes || !file || !loadedCert || cosignNeedsSetup) return;
+    setSetupError('');
+    setBlockedAccount(null);
     const signed = await coSign(loadedCert, coSignBytes, file.name, file.type);
     if (!signed) return;
     // This co-signer's own certificate, recorded alongside the earlier ones.
-    const res = padesActive ? withSignerCertificate(signed, padesCert) : signed;
+    let res = padesActive ? withSignerCertificate(signed, padesCert) : signed;
 
     // On-ledger multi: the co-signer's signature is ROLA (above); we also mint
-    // their OWN signature NFT (record) into their Seal collection, so the
-    // signing is verifiable on-ledger too. Skipped if they have no Seal yet
-    // (their ROLA signature still counts; the NFT is only the on-chain record).
+    // their OWN signature NFT (record) into their Seal collection — for a
+    // document signed on the ledger that NFT is the signature, so without it
+    // there is nothing to hand over.
     const request = loadedCert.request;
     const cosigner =
       res.envelope.signatures[res.envelope.signatures.length - 1]?.signerAccount;
@@ -571,8 +695,19 @@ export function SignForm({
         request.networkId,
         cosigner,
       );
-      if (seal && collection) {
-        await signRequest({
+      if (!seal || !collection) {
+        // The wallet signed with an account that has no collection of its own.
+        // The gate before the button watches the invited accounts this wallet
+        // holds, but the signer chooses inside the wallet and may pick another
+        // one. Nothing is delivered: a certificate whose signature the ledger
+        // does not carry verifies as unsigned. The account is remembered so the
+        // setup box below is offered for it.
+        setBlockedAccount(cosigner);
+        setSetupError('seal_required');
+        return;
+      }
+      {
+        const txId = await signRequest({
           account: cosigner,
           sealGlobalId: seal.globalId,
           collection: collection.resourceAddress,
@@ -581,6 +716,27 @@ export function SignForm({
           request: request.requestId,
           imageUrl: sealImageUrl(window.location.origin),
         });
+        // The mint was attempted and the ledger refused it: hand over nothing.
+        // A certificate whose signature has no on-ledger record, for a document
+        // that is signed ON the ledger, is a document that is not signed.
+        if (!txId) return;
+        // Same clock as the txid printed beside it (see handleSign).
+        const committedAt = await fetchTransactionTime(request.networkId, txId);
+        res = {
+          ...res,
+          envelope: {
+            ...res.envelope,
+            signatures: res.envelope.signatures.map((entry, i) =>
+              i === res.envelope.signatures.length - 1
+                ? {
+                    ...entry,
+                    transactionIntentHash: txId,
+                    signedAt: committedAt ?? entry.signedAt,
+                  }
+                : entry,
+            ),
+          },
+        };
       }
     }
 
@@ -651,9 +807,7 @@ export function SignForm({
     );
   }
 
-  const errorMsg = error
-    ? (t.errors as Record<string, string>)[error] ?? t.errors.generic
-    : '';
+  const failure = error ?? ledgerError ?? (setupError || null);
   const hashMismatch =
     coSignMode && !!coSignHash && coSignHash !== loadedCert!.payload.docHash;
 
@@ -811,7 +965,7 @@ export function SignForm({
               {t.cosign.fileMismatch}
             </p>
           )}
-          {errorMsg && (
+          {failure && (
             <p
               className="rounded-xl border px-4 py-3 text-sm"
               style={{
@@ -819,7 +973,7 @@ export function SignForm({
                 color: 'var(--color-danger, #dc2626)',
               }}
             >
-              {errorMsg}
+              <SignErrorText t={t} code={failure} />
             </p>
           )}
           {/* A co-signer gets the same PDF options as the initiator: their own
@@ -838,19 +992,120 @@ export function SignForm({
               {t.actions.downloadSigned}
             </button>
           ) : (
-            <button
-              type="button"
-              disabled={!coSignBytes || hashMismatch || busy || padesBlocking}
-              onClick={handleCoSign}
-              className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {busy ? (
-                <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-              ) : (
-                <FileSignature className="size-4" />
+            <>
+              {/* An invited account with no collection cannot record anything
+                  on the ledger, so it must not be asked for a signature: it
+                  would get a certificate the verifier reads as unsigned. Say
+                  which account is missing what, and offer the one-time setup
+                  right here.
+
+                  Shown both when NO invited account of this wallet can sign and
+                  when the signer picked, inside the wallet, an invited account
+                  that cannot — the button stays live in that second case, since
+                  another of their accounts still can. */}
+              {(cosignNeedsSetup || (!!blockedAccount && !!setupError)) &&
+                cosignAccount && (
+                  <>
+                    <div
+                      className="space-y-2 rounded-xl border px-4 py-3"
+                      style={{
+                        borderColor: 'var(--color-warning, #b45309)',
+                        background: 'var(--color-surface)',
+                      }}
+                    >
+                      <p
+                        className="flex items-center gap-2 text-sm font-bold"
+                        style={{ color: 'var(--color-text-main)' }}
+                      >
+                        <TriangleAlert
+                          className="size-4 shrink-0"
+                          style={{ color: 'var(--color-warning, #b45309)' }}
+                        />
+                        {t.cosign.needsCollectionTitle}
+                      </p>
+                      {/* The address is a line of its own: it is the one piece
+                          the reader has to compare against their wallet, and
+                          inside a paragraph it was unreadable. */}
+                      {t.cosign.needsCollection
+                        .split('{account}')
+                        .map((part, i) => (
+                          <span key={i}>
+                            {i > 0 && (
+                              <span
+                                className="mb-1 block font-mono text-[11px] break-all"
+                                style={{ color: 'var(--color-text-main)' }}
+                              >
+                                {cosignAccount}
+                              </span>
+                            )}
+                            <span
+                              className="block text-sm leading-relaxed"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
+                              {part.trim()}
+                            </span>
+                          </span>
+                        ))}
+                    </div>
+                    <SealOnboarding
+                      t={t}
+                      account={cosignAccount}
+                      onAccountChange={() => {}}
+                      setup={cosignSetup}
+                      lockedAccount
+                      consoleT={consoleT}
+                    />
+                  </>
+                )}
+              <div
+                className={
+                  cosignRequest ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''
+                }
+              >
+                <button
+                  type="button"
+                  disabled={
+                    !coSignBytes ||
+                    hashMismatch ||
+                    busy ||
+                    padesBlocking ||
+                    cosignNeedsSetup ||
+                    // Held shut while the ledger is still being asked whether
+                    // the invited account can record a signature at all.
+                    (!!cosignRequest &&
+                      cosignCandidates.length > 0 &&
+                      !cosignEligible.resolved)
+                  }
+                  onClick={handleCoSign}
+                  className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {busy ? (
+                    <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  ) : (
+                    <FileSignature className="size-4" />
+                  )}
+                  {busy ? t.actions.signing : t.cosign.addSignature}
+                </button>
+                {/* Co-signing an on-ledger certificate mints a signature NFT,
+                    so it gets the same dry run as every other transaction. */}
+                {cosignRequest && (
+                  <SimulateButton
+                    t={consoleT.simulate}
+                    onClick={onSimulateCoSign}
+                    disabled={busy || cosignNeedsSetup || !cosignSetup.collection}
+                    loading={invitePreview.isSimulating}
+                  />
+                )}
+              </div>
+              {cosignRequest && (
+                <SimulateResultCard
+                  t={consoleT.simulate}
+                  preview={invitePreview.preview}
+                  error={invitePreview.error}
+                  onClose={invitePreview.reset}
+                />
               )}
-              {busy ? t.actions.signing : t.cosign.addSignature}
-            </button>
+            </>
           )}
         </>
       ) : sharedRequestId ? (
@@ -1066,7 +1321,7 @@ export function SignForm({
             )}
           </ToolSection>
 
-          {errorMsg && (
+          {failure && (
             <p
               className="rounded-xl border px-4 py-3 text-sm"
               style={{
@@ -1074,14 +1329,25 @@ export function SignForm({
                 color: 'var(--color-danger, #dc2626)',
               }}
             >
-              {errorMsg}
+              <SignErrorText t={t} code={failure} />
             </p>
           )}
 
           <div className={onchainMode ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
             <button
               type="button"
-              disabled={!docHash || hashing || busy || padesBlocking}
+              // Signing on-ledger with several people needs the seal and the
+              // collection to mint the invitations into. The onboarding above
+              // normally guarantees both; without them the wallet must not be
+              // opened at all, or the signer signs for a request that cannot
+              // be created.
+              disabled={
+                !docHash ||
+                hashing ||
+                busy ||
+                padesBlocking ||
+                (multiLedger && (!setup.seal || !setup.collection || !onchainAccount))
+              }
               onClick={handleSign}
               className="flex w-full items-center justify-center gap-2.5 px-7 h-12 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-primary)] to-[var(--color-secondary)] shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >
@@ -1268,6 +1534,8 @@ export function ResultPanel({
   }, [envelope, result, language, t, pades, watermark]);
 
   const { payload } = envelope;
+  /** The signature this session just produced (the last one appended). */
+  const lastSignature = envelope.signatures[envelope.signatures.length - 1];
   const padesErrorMsg = padesError
     ? (t.pades.errors as Record<string, string>)[padesError] ?? t.pades.errors.generic
     : '';
@@ -1294,9 +1562,6 @@ export function ResultPanel({
   // onboarding inline before the anchor button.
   const setup = useSealSetup(anchorAccount);
   const needsSetup = canAnchor && setup.ready && (!setup.seal || !setup.collection);
-  const anchorErrorMsg = error
-    ? (t.errors as Record<string, string>)[error] ?? t.errors.generic
-    : '';
 
   const onSimulate = async () => {
     if (!anchorAccount || activeNetworkId == null || !setup.seal) return;
@@ -1397,14 +1662,36 @@ export function ResultPanel({
           {payload.message && (
             <Row label={t.result.message} value={payload.message} />
           )}
+          {/* What the wallet actually disclosed for the signature just made —
+              the same text the certificate page prints. Shown here because a
+              certificate is read long after the wallet prompt, and "the name
+              is not the one I expected" is otherwise only discoverable by
+              opening the PDF. */}
+          {lastSignature?.disclosedName && (
+            <Row label={t.result.name} value={lastSignature.disclosedName} />
+          )}
+          {lastSignature?.disclosedEmail && (
+            <Row label={t.result.email} value={lastSignature.disclosedEmail} />
+          )}
         </dl>
+        {payload.disclosure !== 'none' && !lastSignature?.disclosedName && (
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            {t.result.nameMissing}
+          </p>
+        )}
       </ToolSection>
 
       <SignerProgress t={t} envelope={envelope} />
 
-      {envelope.request ? (
-        // Multi-party on-ledger: the link co-signers open to see the request
-        // and co-sign, with the direct document channel available by default.
+      {envelope.request && !complete ? (
+        // Multi-party on-ledger, still missing signatures: the link co-signers
+        // open to see the request and co-sign, with the direct document channel
+        // available by default.
+        //
+        // Once the last signature lands there is nobody left to invite, so the
+        // box below takes over and shares the finished document instead. It
+        // used to keep offering "share this link with the signers" on a
+        // document nobody could still sign.
         // It carries the SIGNED PDF once we have it (it holds the certificate,
         // the signatures so far and the intact original in one file, and the
         // receiver's dropzone recovers the original from it), falling back to
@@ -1418,7 +1705,17 @@ export function ResultPanel({
           bytes={shareArtifact?.bytes ?? result.fileBytes}
           outputs={outputs}
           networkId={envelope.request.networkId}
-        />
+        >
+          {/* The transaction that put this request on the ledger, beside the
+              link that points at it. */}
+          {envelope.request.transactionIntentHash && (
+            <RequestTransactionLinks
+              t={t}
+              txId={envelope.request.transactionIntentHash}
+              networkId={envelope.request.networkId}
+            />
+          )}
+        </ShareLinkSection>
       ) : (
         shareArtifact && (
           // Every other signing still gets a share link + QR: it delivers the
@@ -1434,7 +1731,18 @@ export function ResultPanel({
             tab="sign"
             title={t.onchain.shareDocTitle}
             hint={t.onchain.shareDocHint}
-          />
+          >
+            {/* A completed on-ledger document still points at the transaction
+                that opened it: the record does not stop being useful once the
+                invitations are spent. */}
+            {envelope.request?.transactionIntentHash && (
+              <RequestTransactionLinks
+                t={t}
+                txId={envelope.request.transactionIntentHash}
+                networkId={envelope.request.networkId}
+              />
+            )}
+          </ShareLinkSection>
         )
       )}
 
@@ -1454,9 +1762,9 @@ export function ResultPanel({
           <p className="text-xs" style={{ color: 'var(--color-warning, #b45309)' }}>
             ⚠ {t.options.anchorWarning}
           </p>
-          {anchorErrorMsg && (
+          {error && (
             <p className="text-sm" style={{ color: 'var(--color-danger, #dc2626)' }}>
-              {anchorErrorMsg}
+              <SignErrorText t={t} code={error} />
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

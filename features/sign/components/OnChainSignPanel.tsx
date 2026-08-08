@@ -44,6 +44,7 @@ import { NETWORKS } from '@/features/wallet/constants/network';
 import { randomNonceHex } from '../lib/hash';
 import { networkIdFromResource } from '../lib/share';
 import { ShareLinkSection } from './ShareLinkSection';
+import { RequestTransactionLinks } from './RequestTransactionLinks';
 import { stripExtension } from '../lib/file';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import { fetchLedgerNow } from '../lib/ledger-time';
@@ -173,7 +174,7 @@ export function OnChainSignPanel({
 
   const onCreate = async () => {
     if (!canCreate || !setup.seal || !setup.collection) return;
-    const key = await createRequest({
+    const created = await createRequest({
       account: account!,
       sealGlobalId: setup.seal.globalId,
       collection: setup.collection.resourceAddress,
@@ -183,8 +184,11 @@ export function OnChainSignPanel({
       alsoSign,
       imageUrl: nftImage,
     });
-    if (key) {
-      setRequestId(key);
+    // Only a committed transaction produces a request: a failed one leaves the
+    // form as it was, with the error above the button, rather than moving on to
+    // a share screen for something that does not exist on the ledger.
+    if (created) {
+      setRequestId(created.key);
       setup.refetch();
     }
   };
@@ -226,7 +230,7 @@ export function OnChainSignPanel({
     if (!canSign || !status?.docHash || !setup.seal || !signerAccount) return;
     let ok: boolean;
     if (setup.collection) {
-      ok = await signRequest({
+      ok = !!(await signRequest({
         account: signerAccount,
         sealGlobalId: setup.seal.globalId,
         collection: setup.collection.resourceAddress,
@@ -234,7 +238,7 @@ export function OnChainSignPanel({
         docHash: status.docHash,
         request: status.requestId ?? requestId,
         imageUrl: nftImage,
-      });
+      }));
     } else {
       // First signature ever: the collection is created WITH the signature
       // bundled — one transaction less for first-time signers.
@@ -333,11 +337,21 @@ export function OnChainSignPanel({
       requiredSigners: status?.requiredSigners ?? [],
       signedAccounts: (status?.signatures ?? [])
         .filter((s) => s.signed)
-        .map((s) => ({ account: s.account, signedAt: s.signedAt })),
+        .map((s) => ({ account: s.account, signedAt: s.signedAt, txId: s.txId })),
       nonce: randomNonceHex(),
       requestId: status?.requestId ?? requestId,
       createdAt: status?.createdAt,
+      requestTxId: status?.createdTxId,
     });
+
+  /**
+   * A signed artifact is only ever built from a settled ledger state: never
+   * while a transaction is in flight (its outcome is unknown), and never while
+   * the status is being re-read (the signature list on screen is the previous
+   * answer). A failed transaction leaves `status.complete` false, so this
+   * section does not appear at all until the ledger says otherwise.
+   */
+  const downloadsBlocked = busy || statusQuery.isFetching;
 
   const downloadCert = () => downloadCertificate(onChainCertificate());
 
@@ -477,6 +491,13 @@ export function OnChainSignPanel({
           watermark={{ kind: watermark.kind, text: watermark.text }}
           networkId={statusNetworkId ?? undefined}
         >
+          {status.createdTxId && (
+            <RequestTransactionLinks
+              t={t}
+              txId={status.createdTxId}
+              networkId={statusNetworkId ?? undefined}
+            />
+          )}
           {canShareAsPdf && (
             <>
               <button
@@ -568,13 +589,24 @@ export function OnChainSignPanel({
               </p>
             </div>
           </div>
+          {status.createdTxId && (
+            <RequestTransactionLinks
+              t={t}
+              txId={status.createdTxId}
+              networkId={statusNetworkId ?? undefined}
+            />
+          )}
+          {/* Nothing is downloadable while a transaction is still in flight or
+              the ledger status is being re-read: whatever came out then would
+              be built from a state the ledger has not settled. */}
           <div className="flex flex-col sm:flex-row gap-3">
             {(outputs.includes('detached') ||
               !(outputs.includes('embedded') && doc.pdf)) && (
               <button
                 type="button"
+                disabled={downloadsBlocked}
                 onClick={downloadCert}
-                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95"
+                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm text-white bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-primary)] shadow transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Download className="size-4" />
                 {t.actions.downloadCert}
@@ -583,8 +615,9 @@ export function OnChainSignPanel({
             {outputs.includes('embedded') && doc.pdf && (
               <button
                 type="button"
+                disabled={downloadsBlocked}
                 onClick={downloadSignedPdf}
-                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95"
+                className="flex flex-1 items-center justify-center gap-2 px-6 h-11 rounded-full font-bold text-sm border transition-all hover:opacity-80 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
                 style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
               >
                 <Download className="size-4" />

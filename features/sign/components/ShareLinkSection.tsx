@@ -98,6 +98,8 @@ export function ShareLinkSection({
       hint={hint ?? t.onchain.shareHint}
       url={shareUrl}
       qrAlt={t.onchain.qrAlt}
+      copyLabel={t.onchain.copy}
+      copiedLabel={t.onchain.copied}
     >
 
       {bytes && (

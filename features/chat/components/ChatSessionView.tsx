@@ -152,6 +152,7 @@ export function ChatSessionView({
             hint={t.share.hint}
             url={session.shareUrl}
             qrAlt={t.share.qrAlt}
+            copyLabel={t.share.copy}
           />
           <ProgressRow label={t.status.waiting} />
           <CancelButton label={t.status.cancel} onClick={onRestart} />

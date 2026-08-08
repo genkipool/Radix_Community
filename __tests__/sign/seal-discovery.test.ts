@@ -8,6 +8,11 @@
  * Gateway listed first" made the answer arbitrary — it could walk away from the
  * collection holding the account's history, and it could build a mint proof
  * from a seal that does not command the collection, which the engine refuses.
+ *
+ * And holding is not owning: an invitation NFT is minted by the ISSUER into the
+ * ISSUER's collection and deposited into the signer's account, so it arrives
+ * looking exactly like one of the signer's own. Only the locked owner rule says
+ * whose it is.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,17 +27,16 @@ vi.mock('@/features/sign/constants/seal', async (importOriginal) => {
   return { ...actual, radixSealAddress: () => SEAL_RESOURCE };
 });
 
-const {
-  findSealAndCollection,
-  findSignCollections,
-  findUserSeals,
-  pickSealForCollection,
-} = await import('@/features/sign/services/sealDiscovery');
+const { findSealAndCollection, findSignCollections, findUserSeals } = await import(
+  '@/features/sign/services/sealDiscovery'
+);
 const { SIGN_COLLECTION_MARKER_KEY, SIGN_COLLECTION_MARKER_VALUE, RADIX_SEAL_STANDARD_KEY } =
   await import('@/features/sign/constants/seal');
 
 const NETWORK_ID = 2;
 const ACCOUNT = 'account_tdx_2_1user';
+/** The seal this account holds in most of these tests. */
+const OWN_SEAL = '{aaaa}';
 
 /** A signing collection as the Gateway reports it. */
 function collection(address: string, supply: number, owner?: string) {
@@ -139,11 +143,12 @@ beforeEach(() => {
 describe('signing collection ranking', () => {
   it('prefers the collection holding the history over an empty duplicate', async () => {
     mockGateway({
+      sealIds: [OWN_SEAL],
       heldResources: ['resource_tdx_2_1newer', 'resource_tdx_2_1older'],
       details: {
         // The duplicate sorts first alphabetically and would win on listing order.
-        resource_tdx_2_1newer: collection('resource_tdx_2_1newer', 0),
-        resource_tdx_2_1older: collection('resource_tdx_2_1older', 9),
+        resource_tdx_2_1newer: collection('resource_tdx_2_1newer', 0, OWN_SEAL),
+        resource_tdx_2_1older: collection('resource_tdx_2_1older', 9, OWN_SEAL),
       },
     });
     const found = await findSignCollections(NETWORK_ID, ACCOUNT);
@@ -156,10 +161,11 @@ describe('signing collection ranking', () => {
 
   it('breaks ties on the address, so the answer never wobbles', async () => {
     mockGateway({
+      sealIds: [OWN_SEAL],
       heldResources: ['resource_tdx_2_1b', 'resource_tdx_2_1a'],
       details: {
-        resource_tdx_2_1b: collection('resource_tdx_2_1b', 3),
-        resource_tdx_2_1a: collection('resource_tdx_2_1a', 3),
+        resource_tdx_2_1b: collection('resource_tdx_2_1b', 3, OWN_SEAL),
+        resource_tdx_2_1a: collection('resource_tdx_2_1a', 3, OWN_SEAL),
       },
     });
     const first = await findSignCollections(NETWORK_ID, ACCOUNT);
@@ -172,6 +178,7 @@ describe('signing collection ranking', () => {
 
   it('ignores resources that are not signing collections', async () => {
     mockGateway({
+      sealIds: [OWN_SEAL],
       heldResources: ['resource_tdx_2_1random'],
       details: {
         resource_tdx_2_1random: {
@@ -179,6 +186,59 @@ describe('signing collection ranking', () => {
           metadata: { items: [] },
           details: { total_supply: '100' },
         } as ReturnType<typeof collection>,
+      },
+    });
+    expect(await findSignCollections(NETWORK_ID, ACCOUNT)).toEqual([]);
+  });
+});
+
+/**
+ * The bug this guards: an invited co-signer opens the shared link holding the
+ * ISSUER's invitation. That collection is a genuine signing collection of the
+ * official brand, so every check except ownership passed, and it ranks FIRST
+ * (it carries the issuer's whole history, while the signer's own may be empty
+ * or not exist yet). The signature was then built against it with a proof of
+ * the signer's own seal, and the wallet showed a failed transaction.
+ */
+describe('held is not owned', () => {
+  const ISSUER_COLLECTION = 'resource_tdx_2_1issuer';
+
+  it("never reports the issuer's collection as the signer's own", async () => {
+    mockGateway({
+      sealIds: [OWN_SEAL],
+      // The signer holds the invitation, so the issuer's collection is among
+      // the account's non-fungible resources.
+      heldResources: [ISSUER_COLLECTION, 'resource_tdx_2_1mine'],
+      details: {
+        [ISSUER_COLLECTION]: collection(ISSUER_COLLECTION, 40, '{zzzz}'),
+        resource_tdx_2_1mine: collection('resource_tdx_2_1mine', 1, OWN_SEAL),
+      },
+    });
+    const found = await findSignCollections(NETWORK_ID, ACCOUNT);
+    expect(found.map((c) => c.resourceAddress)).toEqual(['resource_tdx_2_1mine']);
+
+    const { collection: chosen, seal } = await findSealAndCollection(NETWORK_ID, ACCOUNT);
+    expect(chosen?.resourceAddress).toBe('resource_tdx_2_1mine');
+    expect(seal?.localId).toBe(OWN_SEAL);
+  });
+
+  it('reports no collection at all when the signer only holds an invitation', async () => {
+    mockGateway({
+      sealIds: [OWN_SEAL],
+      heldResources: [ISSUER_COLLECTION],
+      details: { [ISSUER_COLLECTION]: collection(ISSUER_COLLECTION, 40, '{zzzz}') },
+    });
+    // Null is what tells the UI to create the collection WITH the first
+    // signature bundled — the path that actually works for a first-timer.
+    expect((await findSealAndCollection(NETWORK_ID, ACCOUNT)).collection).toBeNull();
+  });
+
+  it('drops a collection whose owner rule cannot be read', async () => {
+    mockGateway({
+      sealIds: [OWN_SEAL],
+      heldResources: ['resource_tdx_2_1opaque'],
+      details: {
+        resource_tdx_2_1opaque: collection('resource_tdx_2_1opaque', 5),
       },
     });
     expect(await findSignCollections(NETWORK_ID, ACCOUNT)).toEqual([]);
@@ -195,33 +255,19 @@ describe('seal selection', () => {
 
   it('picks the seal the collection owner rule names, not the first held', async () => {
     mockGateway({
-      details: { 'resource_tdx_2_1coll': collection('resource_tdx_2_1coll', 4, '{bbbb}') },
+      sealIds: ['{aaaa}', '{bbbb}'],
+      heldResources: ['resource_tdx_2_1coll'],
+      details: { resource_tdx_2_1coll: collection('resource_tdx_2_1coll', 4, '{bbbb}') },
     });
-    const seals = [
-      { globalId: `${SEAL_RESOURCE}:{aaaa}`, localId: '{aaaa}' },
-      { globalId: `${SEAL_RESOURCE}:{bbbb}`, localId: '{bbbb}' },
-    ];
-    const picked = await pickSealForCollection(NETWORK_ID, seals, 'resource_tdx_2_1coll');
-    expect(picked?.localId).toBe('{bbbb}');
+    const { seal } = await findSealAndCollection(NETWORK_ID, ACCOUNT);
+    expect(seal?.localId).toBe('{bbbb}');
   });
 
-  it('costs no extra lookup when there is only one seal', async () => {
-    const seals = [{ globalId: `${SEAL_RESOURCE}:{aaaa}`, localId: '{aaaa}' }];
-    const picked = await pickSealForCollection(NETWORK_ID, seals, 'resource_tdx_2_1coll');
-    expect(picked?.localId).toBe('{aaaa}');
-    expect(gatewayPost).not.toHaveBeenCalled();
-  });
-
-  it('falls back to the first seal when the owner rule cannot be read', async () => {
-    mockGateway({
-      details: { 'resource_tdx_2_1coll': collection('resource_tdx_2_1coll', 4) },
-    });
-    const seals = [
-      { globalId: `${SEAL_RESOURCE}:{aaaa}`, localId: '{aaaa}' },
-      { globalId: `${SEAL_RESOURCE}:{bbbb}`, localId: '{bbbb}' },
-    ];
-    const picked = await pickSealForCollection(NETWORK_ID, seals, 'resource_tdx_2_1coll');
-    expect(picked?.localId).toBe('{aaaa}');
+  it('still answers with a seal when the account owns no collection yet', async () => {
+    mockGateway({ sealIds: ['{aaaa}', '{bbbb}'] });
+    const { seal, collection: chosen } = await findSealAndCollection(NETWORK_ID, ACCOUNT);
+    expect(seal?.localId).toBe('{aaaa}');
+    expect(chosen).toBeNull();
   });
 });
 
@@ -235,6 +281,7 @@ describe('the pair used by every mint', () => {
         resource_tdx_2_1busy: collection('resource_tdx_2_1busy', 12, '{bbbb}'),
       },
     });
+    // Both are this account's own: two seals, one collection each.
     const { seal, collection: chosen } = await findSealAndCollection(NETWORK_ID, ACCOUNT);
     expect(chosen?.resourceAddress).toBe('resource_tdx_2_1busy');
     expect(seal?.localId).toBe('{bbbb}');
@@ -252,10 +299,11 @@ describe('collections with nothing minted yet', () => {
       '@/features/sign/services/sealDiscovery'
     );
     mockGateway({
+      sealIds: [OWN_SEAL],
       // Nothing held: the ledger scan returns no resources at all.
       heldResources: [],
       details: {
-        resource_tdx_2_1fresh: collection('resource_tdx_2_1fresh', 0),
+        resource_tdx_2_1fresh: collection('resource_tdx_2_1fresh', 0, OWN_SEAL),
       },
     });
     rememberSignCollection(NETWORK_ID, ACCOUNT, 'resource_tdx_2_1fresh');
@@ -268,6 +316,7 @@ describe('collections with nothing minted yet', () => {
       '@/features/sign/services/sealDiscovery'
     );
     mockGateway({
+      sealIds: [OWN_SEAL],
       heldResources: [],
       details: {
         resource_tdx_2_1bogus: {

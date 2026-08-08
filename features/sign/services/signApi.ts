@@ -85,6 +85,11 @@ export interface OnChainSignatureStatus {
    * cannot be established is reported as absent rather than filled in locally.
    */
   signedAt?: string | null;
+  /**
+   * Intent hash of that same transaction, so the signature can be looked up in
+   * the explorer. Null under the same conditions as `signedAt`.
+   */
+  txId?: string | null;
 }
 
 /** Issuer identity read from the locked on-ledger collection metadata. */
@@ -107,6 +112,8 @@ export interface OnChainStatus {
   hashMismatch?: boolean;
   /** Consensus time of the transaction that minted the first invitation. */
   createdAt?: string | null;
+  /** Intent hash of that transaction — the request's own record on the ledger. */
+  createdTxId?: string | null;
   networkId?: number;
   requiredSigners?: string[];
   signatures?: OnChainSignatureStatus[];

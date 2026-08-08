@@ -86,7 +86,9 @@
       "requiredSigners": "Required signers",
       "pending": "Pending",
       "openSet": "Open (any signer)",
-      "addSignature": "Add my signature"
+      "addSignature": "Add my signature",
+      "needsCollection": "A signature on the ledger is an NFT minted into the signer's own signing collection, and that collection is where the verifier goes looking for it. The invited account {account} does not have one yet. Signing with the wallet alone would hand you a certificate with nothing behind it: verification would report the document as NOT SIGNED. Create the Seal and the collection of that same account below. It is a one time step per account, and the collections of your other accounts do not count for this one.",
+      "needsCollectionTitle": "This account cannot sign on the ledger yet"
     },
     "pdfInfo": {
       "title": "Radix content embedded in the PDF",
@@ -178,6 +180,11 @@
       "shareDocTitle": "Share the signed document",
       "shareDocHint": "Whoever opens this link while this tab stays open receives the signed document directly, browser to browser, end-to-end encrypted. They can verify it or add their signature.",
       "qrAlt": "QR code of the share link",
+      "requestTx": "Request transaction",
+      "viewManifest": "View manifest",
+      "hideManifest": "Hide manifest",
+      "manifestLoading": "Reading the transaction from the ledger…",
+      "manifestError": "The manifest could not be read from the ledger.",
       "statusError": "Could not read the request status from the ledger. Press Refresh to retry.",
       "sendToggle": "Send the document live",
       "sendToggleHint": "While this tab stays open, whoever opens the link receives the document automatically, browser to browser, end-to-end encrypted. It never touches a server.",
@@ -294,7 +301,8 @@
       "timestamp": "Signed at",
       "hash": "Document hash",
       "onchain": "On-ledger NFT",
-      "offchainOnly": "Off-chain certificate only"
+      "offchainOnly": "Off-chain certificate only",
+      "nameMissing": "Your wallet did not disclose a full name for this signature, so the certificate falls back to the label of the persona you signed with. Fill in the given names and surname of that persona in your Radix Wallet if you want them printed on the document."
     },
     "errors": {
       "wallet_not_connected": "Connect your wallet first.",
@@ -308,10 +316,11 @@
       "onchain_no_resource": "Could not find the minted NFT resource.",
       "account_mismatch": "Please sign with one of the accounts you listed as a signer.",
       "not_required_signer": "Your account is not among this document's required signers.",
-      "seal_required": "You need your Seal and signing collection before anchoring. Create them in the steps above.",
+      "seal_required": "You need your Seal and your signing collection before a signature can be recorded on the ledger. Create your Seal NFT and your self custody collection in the {collectionLink}.",
       "already_signed": "This account has already signed the certificate.",
       "network_mismatch": "Switch your wallet to the certificate's network to anchor it.",
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "collectionSectionLink": "collection section"
     },
     "certificatePage": {
       "title": "Signature Certificate",
@@ -337,6 +346,9 @@
       "anchorResource": "Collection (resource)",
       "anchorTx": "Transaction",
       "anchorRequest": "Signing request (invitation id)",
+      "anchorRequestTx": "Request transaction",
+      "signatureTx": "Signature transaction",
+      "txLinkNote": "The transaction ids above are links: open one to see the record on this deployment's explorer.",
       "anchorNote": "Public, permanent record on the Radix Network. Only the document hash and the accounts are on the ledger — never the file, the message or a name.",
       "certSection": "Certificate signature (PAdES / X.509)",
       "certSubject": "Signed by (certificate)",

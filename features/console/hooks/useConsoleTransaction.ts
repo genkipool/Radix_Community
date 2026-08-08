@@ -21,6 +21,14 @@ interface TxState {
 
 const INITIAL_STATE: TxState = { isSending: false, result: null, error: null };
 
+/**
+ * Statuses that mean the ledger accepted AND executed the transaction. The
+ * Gateway has answered `Committed` as well as `CommittedSuccess` over the
+ * years, and the rest of this app treats both as success (see the staking and
+ * builder flows), so this does too.
+ */
+const SUCCESS_STATUSES = new Set(['CommittedSuccess', 'Committed']);
+
 function extractCreatedEntities(details: Record<string, unknown>): string[] {
   const receipt = details.receipt as
     | { state_updates?: { new_global_entities?: Array<{ entity_address?: string }> } }
@@ -30,8 +38,23 @@ function extractCreatedEntities(details: Record<string, unknown>): string[] {
 }
 
 /**
+ * What the LEDGER says happened, read back from the committed-details response
+ * (`CommittedSuccess`, `CommittedFailure`, `Rejected`…). Empty when the Gateway
+ * does not say, in which case the wallet's own status stands.
+ */
+function ledgerStatus(details: Record<string, unknown>): string {
+  const status = details.transaction_status;
+  return typeof status === 'string' ? status : '';
+}
+
+/**
  * Sends a raw transaction manifest to the connected Radix Wallet and resolves
  * the committed result, including any entities the transaction created.
+ *
+ * A result is returned ONLY for a transaction the ledger committed
+ * successfully; anything else (rejected, committed failure, still pending)
+ * resolves to null with the status as the error code. Callers can therefore
+ * treat a non-null result as proof the work happened on-ledger.
  */
 export function useConsoleTransaction() {
   const { activeNetworkId, activeNetwork } = useRadixWallet();
@@ -73,14 +96,33 @@ export function useConsoleTransaction() {
       const { transactionIntentHash, status } = response.value;
 
       let createdEntities: string[] = [];
+      /*
+       * The wallet's own status is not the last word. It reports what the
+       * connector saw, and a transaction can come back `Pending` or `Unknown`
+       * from a poll that gave up — so callers that took a non-null result as
+       * "signed" went on to build certificates and PDFs for a transaction the
+       * ledger never committed. The committed details settle it.
+       */
+      let committedStatus = status as string;
       try {
         const details = await apiFetchTransactionDetails(transactionIntentHash, activeNetwork);
         createdEntities = extractCreatedEntities(details);
+        committedStatus = ledgerStatus(details) || committedStatus;
       } catch {
-        // Created entities are informational only — the tx itself succeeded.
+        // The Gateway could not be read: fall back to the wallet's status,
+        // which is still checked below.
       }
 
-      const result: ConsoleTxResult = { transactionIntentHash, status, createdEntities };
+      if (!SUCCESS_STATUSES.has(committedStatus)) {
+        setState({ isSending: false, result: null, error: committedStatus || 'not_committed' });
+        return null;
+      }
+
+      const result: ConsoleTxResult = {
+        transactionIntentHash,
+        status: committedStatus,
+        createdEntities,
+      };
       setState({ isSending: false, result, error: null });
       return result;
     } catch (err) {
