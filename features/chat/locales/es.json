@@ -24,6 +24,7 @@
       "title": "Comparte este enlace",
       "hint": "Envía este enlace a la persona con la que quieres chatear. Cuando lo abra y firme con su wallet, la sala quedará asegurada.",
       "copy": "Copiar enlace",
+      "shareNative": "Compartir",
       "qrAlt": "Código QR con el enlace de invitación al chat"
     },
     "status": {

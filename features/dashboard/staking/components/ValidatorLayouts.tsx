@@ -11,7 +11,8 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
-import { ValidatorShareActions } from './ValidatorShareActions';
+import { ValidatorShareActions, validatorPageUrl } from './ValidatorShareActions';
+import { QrPopover } from '@/components/ui/QrPopover';
 import { buildValidatorStats } from '../lib/validatorStats';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
@@ -47,30 +48,21 @@ const PHOTO_1COL = 'w-32 sm:w-36';
 const photo2Col = (columns: number) => (columns === 3 ? 'w-16 sm:w-20' : 'w-24 sm:w-28');
 
 /**
- * Sharing at the top-right of a compact card.
+ * Sharing at the top-right corner of a compact card, phone included.
  *
- * One element, two presentations, chosen by the breakpoint rather than by a
- * prop: the compact layouts are rendered inside `block sm:hidden` (the phone)
- * AND inside `hidden sm:flex` (the 4-column grid and denser), so each branch
- * only ever paints the half that is visible at its own width.
+ * The phone used to get the three glyphs laid out across the header. They ended
+ * up a fingertip apart, where hitting the intended one takes aim: the menu
+ * gives each target a whole row with its name beside it, which is also the only
+ * way to say that the third one opens the phone's own share sheet.
  */
 const ShareCorner = ({
     validator, dt, locale, network,
 }: Pick<LayoutProps, 'validator' | 'locale'> & { dt?: Partial<DashboardDict>; network?: Network }) => (
-    <>
-        {/* Centred on the row, like the photo and the name beside it. */}
-        <ValidatorShareActions
-            validator={validator} dt={dt} locale={locale} network={network}
-            size="cardSmall"
-            className="ml-auto flex w-14 shrink-0 items-center justify-between sm:hidden"
-        />
-        {/* A card menu belongs at the corner, so this one hugs the top. */}
-        <ValidatorShareActions
-            validator={validator} dt={dt} locale={locale} network={network}
-            variant="menu"
-            className="ml-auto hidden shrink-0 items-center self-start sm:flex"
-        />
-    </>
+    <ValidatorShareActions
+        validator={validator} dt={dt} locale={locale} network={network}
+        variant="menu"
+        className="ml-auto flex shrink-0 items-center self-start"
+    />
 );
 
 /* ==============================═══════════
@@ -101,7 +93,7 @@ export const Layout1Col = ({
                     </div>
                     {/* Same width as the photo, so the outer icons sit on its edges */}
                     <div className={`${PHOTO_1COL} mt-auto pt-2`}>
-                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} size="cardWide" />
+                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} />
                     </div>
                 </div>
 
@@ -150,6 +142,12 @@ export const Layout1Col = ({
                             <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
+                                <QrPopover
+                                    url={validatorPageUrl(validator.address, locale ?? 'en', network)}
+                                    label={dt?.card?.qr ?? 'Show QR'}
+                                    hint={dt?.card?.qr_hint}
+                                    className="hidden sm:flex"
+                                />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -195,9 +193,14 @@ export const Layout2Col = ({
                             className={`${photo2Col(columns)} ${columns === 3 ? 'h-16 sm:h-20' : 'h-24 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
                     </div>
-                    {/* Same width as the photo, so the outer icons sit on its edges */}
+                    {/* Same width as the photo, so the outer icons sit on its edges.
+                        At three columns that width is 64px, and full-size glyphs
+                        filled it end to end: smaller ones leave a gap to aim at. */}
                     <div className={`${photo2Col(columns)} mt-auto pt-1.5`}>
-                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} />
+                        <ValidatorShareActions
+                            validator={validator} dt={dt} locale={locale} network={network}
+                            size={columns === 3 ? 'cardSmall' : 'card'}
+                        />
                     </div>
                 </div>
 
@@ -225,10 +228,12 @@ export const Layout2Col = ({
                         onPointerDown={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
-                            <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
-                                <Globe className="size-3 shrink-0" />
-                                <span className="truncate">{sanitizeText(validator.country)}</span>
-                            </span>
+                            {sanitizeText(validator.country) && (
+                                <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
+                                    <Globe className="size-3 shrink-0" />
+                                    <span className="truncate">{sanitizeText(validator.country)}</span>
+                                </span>
+                            )}
                             <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton
                                     address={validator.address}
@@ -241,6 +246,12 @@ export const Layout2Col = ({
                                     end={columns === 3 ? 6 : 12}
                                 />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={columns !== 3} title={dt?.details?.download_rewards_tooltip} />}
+                                <QrPopover
+                                    url={validatorPageUrl(validator.address, locale ?? 'en', network)}
+                                    label={dt?.card?.qr ?? 'Show QR'}
+                                    hint={dt?.card?.qr_hint}
+                                    className="hidden sm:flex"
+                                />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -312,9 +323,11 @@ export const Layout4Col = ({
                 onPointerDown={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
-                    <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
-                        <Globe className="size-3.5" />
-                    </span>
+                    {sanitizeText(validator.country) && (
+                        <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
+                            <Globe className="size-3.5" />
+                        </span>
+                    )}
                     <div className="flex items-center gap-2 min-w-0">
                         <CopyAddressButton
                             address={validator.address}
@@ -402,11 +415,11 @@ export const Layout6Col = ({
                         <a href={validator.website} target="_blank" rel="noopener noreferrer" title={formatDisplayUrl(validator.website)}>
                             <Globe className="size-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
                         </a>
-                    ) : (
+                    ) : sanitizeText(validator.country) ? (
                         <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
                             <Globe className="size-3.5 text-[var(--color-text-muted)]" />
                         </span>
-                    )}
+                    ) : null}
                     <CopyStampIcon
                         address={validator.address}
                         onCopy={onCopy}

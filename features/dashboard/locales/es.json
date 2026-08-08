@@ -451,7 +451,12 @@
       "copy": "Copiar",
       "copied": "¡Copiado!",
       "copy_link": "Copiar el enlace del validador",
+      "copy_link_short": "Copiar enlace",
       "share_actions": "Compartir este validador",
+      "share_native": "Compartir",
+      "qr": "Mostrar QR",
+      "qr_hint": "Escanéalo con el móvil para abrir la página de este validador.",
+      "qr_close": "Cerrar",
       "tooltips": {
         "stake": "Valor total en XRD delegado a este validador por todos los usuarios.",
         "share": "Porcentaje del stake total de la red que representa este validador.",

@@ -214,7 +214,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                 dt={dt}
                                 locale={language}
                                 network={network}
-                                size="panel"
+                                size="touch"
                                 className="flex items-center sm:hidden"
                             />
                             <StakingPopup validator={validator} t={t}>

@@ -92,6 +92,7 @@
       "hintUnlock": "Envía este enlace a la persona que cifró el archivo (p. ej. por WhatsApp). Cuando lo abra y firme con su wallet, tu archivo se descifrará aquí.",
       "copy": "Copiar enlace",
       "copied": "¡Copiado!",
+      "shareNative": "Compartir",
       "qrAlt": "Código QR con el enlace para compartir",
       "cancel": "Cancelar conexión"
     },

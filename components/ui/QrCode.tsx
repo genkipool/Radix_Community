@@ -12,6 +12,7 @@ export function QrCode({
   size = 220,
   downloadName,
   downloadLabel,
+  framed = true,
 }: {
   value: string;
   alt: string;
@@ -20,6 +21,12 @@ export function QrCode({
   downloadName?: string;
   /** Label of the save button; defaults to "Save". */
   downloadLabel?: string;
+  /**
+   * Draws the hairline around the code. Off when the code already sits inside
+   * a panel of its own, where the frame is a second border over the first. The
+   * white padding stays either way: that quiet zone is what a camera reads.
+   */
+  framed?: boolean;
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
@@ -55,8 +62,8 @@ export function QrCode({
       alt={alt}
       width={size}
       height={size}
-      className="rounded-2xl border bg-white p-2"
-      style={{ borderColor: 'var(--color-card-border)' }}
+      className={`rounded-2xl bg-white p-2 ${framed ? 'border' : ''}`}
+      style={framed ? { borderColor: 'var(--color-card-border)' } : undefined}
     />
   );
 

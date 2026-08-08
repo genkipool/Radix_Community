@@ -100,6 +100,7 @@ export function ShareLinkSection({
       qrAlt={t.onchain.qrAlt}
       copyLabel={t.onchain.copy}
       copiedLabel={t.onchain.copied}
+      shareLabel={t.onchain.shareNative}
     >
 
       {bytes && (

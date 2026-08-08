@@ -37,7 +37,7 @@ export const ValidatorShareActions = ({
     locale?: string;
     network?: Network;
     /** Icon size of the row (ignored by the menu, whose popup is always inline). */
-    size?: 'inline' | 'panel' | 'cardSmall' | 'card' | 'cardWide';
+    size?: 'inline' | 'panel' | 'touch' | 'cardSmall' | 'card';
     /** `row` shows the three icons; `menu` hides them behind the dots button. */
     variant?: 'row' | 'menu';
     className?: string;
@@ -46,6 +46,7 @@ export const ValidatorShareActions = ({
     const text = sanitizeText(validator.name);
     const copyLabel = dt?.card?.copy_link ?? 'Copy link';
     const copiedLabel = dt?.card?.copied ?? 'Copied';
+    const shareLabel = dt?.card?.share_native ?? 'Share';
 
     return (
         // The card expands on click; these controls are not that click.
@@ -58,8 +59,14 @@ export const ValidatorShareActions = ({
                 <ShareMenu
                     url={url}
                     text={text}
-                    copyLabel={copyLabel}
+                    // A menu row spells the action out; the icon-only rows keep
+                    // the longer wording, which is a tooltip and has the space.
+                    copyLabel={dt?.card?.copy_link_short ?? 'Copy link'}
                     copiedLabel={copiedLabel}
+                    shareLabel={shareLabel}
+                    qrLabel={dt?.card?.qr ?? 'Show QR'}
+                    qrHint={dt?.card?.qr_hint}
+                    closeLabel={dt?.card?.qr_close}
                     label={dt?.card?.share_actions ?? 'Share this validator'}
                 />
             ) : (
@@ -68,6 +75,7 @@ export const ValidatorShareActions = ({
                     text={text}
                     copyLabel={copyLabel}
                     copiedLabel={copiedLabel}
+                    shareLabel={shareLabel}
                     size={size}
                 />
             )}

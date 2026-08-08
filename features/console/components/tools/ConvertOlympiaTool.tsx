@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowRight, Info, Smartphone } from 'lucide-react';
 import { CopyButton } from '@/components/ui/CopyButton';
-import { QrCode } from '@/features/p2p/components/QrCode';
+import { QrCode } from '@/components/ui/QrCode';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { convertOlympiaAddress, olympiaAddressFromBabylon } from '../../services/retClient';
 import {

@@ -204,6 +204,7 @@
       "recvHint": "The document arrives straight from the sender, end-to-end encrypted. You can sign it once it finishes.",
       "copy": "Copy link",
       "copied": "Copied",
+      "shareNative": "Share",
       "downloadRequestPdf": "Download PDF with the request embedded",
       "downloadRequestPdfHint": "A single self-describing file: it contains the original document and the request key. Anyone dropping it here sees the request loaded automatically.",
       "keyLabel": "Request key (or open a shared link)",

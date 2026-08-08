@@ -68,6 +68,7 @@
       "hintUnlock": "Send this link to the person who encrypted the file (e.g. via WhatsApp). When they open it and sign with their wallet, your file will be decrypted here.",
       "copy": "Copy link",
       "copied": "Copied!",
+      "shareNative": "Share",
       "qrAlt": "QR code with the share link",
       "cancel": "Cancel connection"
     },

@@ -204,6 +204,7 @@
       "recvHint": "El documento llega directo del emisor, cifrado de extremo a extremo. Cuando termine podrás firmarlo.",
       "copy": "Copiar enlace",
       "copied": "Copiado",
+      "shareNative": "Compartir",
       "downloadRequestPdf": "Descargar PDF con la solicitud embebida",
       "downloadRequestPdfHint": "Un único archivo autodescriptivo: contiene el documento original y la clave de la solicitud. Quien lo suelte aquí verá la solicitud cargada automáticamente.",
       "keyLabel": "Clave de la solicitud (o abre un enlace compartido)",
