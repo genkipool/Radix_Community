@@ -451,6 +451,7 @@
       "copy": "Copiar",
       "copied": "¡Copiado!",
       "copy_link": "Copiar el enlace del validador",
+      "share_actions": "Compartir este validador",
       "tooltips": {
         "stake": "Valor total en XRD delegado a este validador por todos los usuarios.",
         "share": "Porcentaje del stake total de la red que representa este validador.",
