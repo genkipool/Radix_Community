@@ -9,7 +9,7 @@
  * installed app; on desktop they open the web client.
  */
 import { useState } from 'react';
-import { Check, Share2 } from 'lucide-react';
+import { Check, MoreVertical, Share2 } from 'lucide-react';
 const WhatsappIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
     <path
@@ -42,11 +42,14 @@ const TelegramIcon = ({ className }: { className?: string }) => (
  */
 const SIZES = {
   inline: { box: 'size-9', icon: 'size-4', row: 'gap-0.5' },
+  /** Beside a button in a panel or a modal: no box, but real space between. */
+  panel: { box: '', icon: 'size-5', row: 'gap-3' },
   // Spread rather than spaced by a fixed gap: given the width of the photo
   // above them, the outer two icons line up with its edges and the gap is
   // whatever the width leaves over.
+  cardSmall: { box: '', icon: 'size-4', row: 'w-full justify-between' },
   card: { box: '', icon: 'size-6', row: 'w-full justify-between' },
-  cardWide: { box: '', icon: 'size-8', row: 'w-full justify-between' },
+  cardWide: { box: '', icon: 'size-7', row: 'w-full justify-between' },
 } as const;
 
 export function ShareTargets({
@@ -118,6 +121,78 @@ export function ShareTargets({
         >
           {copied ? <Check className={icon} /> : <Share2 className={icon} />}
         </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The same three targets behind a menu button, for cards too narrow to spend
+ * a row on them: the dots open the row on hover (and on click, for touch and
+ * keyboard).
+ *
+ * The gap between the button and the popup is padding ON the popup, not empty
+ * space beside it — the "invisible bridge". Without it the pointer leaves the
+ * hover area on its way down and the menu closes under the cursor, which is
+ * the single most common way a hover menu becomes unusable.
+ */
+export function ShareMenu({
+  url,
+  text,
+  copyLabel,
+  copiedLabel,
+  label,
+  className = '',
+}: {
+  url: string;
+  text?: string;
+  copyLabel?: string;
+  copiedLabel?: string;
+  /** Accessible name of the button (and its tooltip). */
+  label: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!url) return null;
+
+  return (
+    <div
+      className={`relative ${className}`}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
+          open ? 'text-[var(--color-primary)]' : 'opacity-70'
+        }`}
+      >
+        <MoreVertical className="size-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-30 pt-1.5">
+          <div
+            className="flex items-center gap-0.5 rounded-xl border px-1 shadow-lg"
+            style={{
+              background: 'var(--color-card-bg, var(--color-surface))',
+              borderColor: 'var(--color-card-border)',
+            }}
+          >
+            <ShareTargets
+              url={url}
+              text={text}
+              copyLabel={copyLabel}
+              copiedLabel={copiedLabel}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

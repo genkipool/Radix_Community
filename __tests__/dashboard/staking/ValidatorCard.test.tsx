@@ -43,6 +43,7 @@ vi.mock('lucide-react', () => ({
   Landmark: () => <div data-testid="landmark" />,
   Download: () => <div data-testid="download" />,
   Share2: () => <div data-testid="share2" />,
+  MoreVertical: () => <div data-testid="more-vertical" />,
 }));
 
 // Mock custom hooks and context

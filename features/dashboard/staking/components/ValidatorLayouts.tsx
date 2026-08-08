@@ -19,6 +19,7 @@ import { StakingPopup } from './StakingPopup';
 
 /* ─── Shared expand animation config ─────────── */
 const EXPAND_TRANSITION = { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const };
+import type { DashboardDict, Network } from '../../types';
 import {
     type LayoutProps,
     type ExpandPanelProps,
@@ -45,6 +46,33 @@ const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; s
 const PHOTO_1COL = 'w-32 sm:w-36';
 const photo2Col = (columns: number) => (columns === 3 ? 'w-16 sm:w-20' : 'w-24 sm:w-28');
 
+/**
+ * Sharing at the top-right of a compact card.
+ *
+ * One element, two presentations, chosen by the breakpoint rather than by a
+ * prop: the compact layouts are rendered inside `block sm:hidden` (the phone)
+ * AND inside `hidden sm:flex` (the 4-column grid and denser), so each branch
+ * only ever paints the half that is visible at its own width.
+ */
+const ShareCorner = ({
+    validator, dt, locale, network,
+}: Pick<LayoutProps, 'validator' | 'locale'> & { dt?: Partial<DashboardDict>; network?: Network }) => (
+    <>
+        {/* Centred on the row, like the photo and the name beside it. */}
+        <ValidatorShareActions
+            validator={validator} dt={dt} locale={locale} network={network}
+            size="cardSmall"
+            className="ml-auto flex w-14 shrink-0 items-center justify-between sm:hidden"
+        />
+        {/* A card menu belongs at the corner, so this one hugs the top. */}
+        <ValidatorShareActions
+            validator={validator} dt={dt} locale={locale} network={network}
+            variant="menu"
+            className="ml-auto hidden shrink-0 items-center self-start sm:flex"
+        />
+    </>
+);
+
 /* ==============================═══════════
    LAYOUT 1 — Full width, big photo left sidebar
 ==============================═══════════ */
@@ -62,7 +90,7 @@ export const Layout1Col = ({
             <div className="flex">
                 {/* Sidebar: large photo + share */}
                 <div
-                    className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 sm:p-5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch"
+                    className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 pb-2 sm:p-5 sm:pb-2.5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch"
                 >
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
@@ -73,7 +101,7 @@ export const Layout1Col = ({
                     </div>
                     {/* Same width as the photo, so the outer icons sit on its edges */}
                     <div className={`${PHOTO_1COL} mt-auto pt-2`}>
-                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} wide />
+                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} size="cardWide" />
                     </div>
                 </div>
 
@@ -174,7 +202,7 @@ export const Layout2Col = ({
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
-                    <div className={`flex flex-col gap-1.5 ${columns === 3 ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'} ${!isExpanded ? 'flex-1' : ''}`}>
+                    <div className={`flex flex-col gap-1.5 ${columns === 3 ? 'p-2.5 sm:p-3.5' : 'p-2 sm:p-3'} ${!isExpanded ? 'flex-1' : ''}`}>
                         <div className={`flex gap-1.5 min-w-0 ${columns === 2 ? 'flex-col items-start' : 'items-center flex-nowrap'}`}>
                             <h3 className="text-sm font-black text-[var(--color-text-main)] group-hover:text-[var(--color-primary)] transition-colors truncate min-w-0 flex-1">
                                 <HighlightText text={safeName} query={searchQuery} />
@@ -212,7 +240,7 @@ export const Layout2Col = ({
                                     start={columns === 3 ? 6 : 12}
                                     end={columns === 3 ? 6 : 12}
                                 />
-                                {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
+                                {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={columns !== 3} title={dt?.details?.download_rewards_tooltip} />}
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -265,6 +293,11 @@ export const Layout4Col = ({
                         <VoteBadge vote={validator.protocolUpdateVote} label="" compact />
                     </div>
                 </div>
+                {/* Sharing, at the far end of the header. This layout serves
+                    both the phone and the 4/5-column grid, and each gets what
+                    fits: the three icons where there is width to spare, the
+                    dots menu where a row of them would crowd the name. */}
+                <ShareCorner validator={validator} dt={dt} locale={locale} network={network} />
             </div>
 
             {/* Row 2: Grid of 6 statistics */}
@@ -292,7 +325,7 @@ export const Layout4Col = ({
                             start={columns === 5 ? 6 : 12}
                             end={columns === 5 ? 6 : 6}
                         />
-                        {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={columns < 5} title={dt?.details?.download_rewards_tooltip} />}
+                        {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={false} title={dt?.details?.download_rewards_tooltip} />}
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -335,6 +368,13 @@ export const Layout6Col = ({
                 <h3 className="text-[11px] font-black text-[var(--color-text-main)] truncate leading-tight flex-1">
                     <HighlightText text={safeName} query={searchQuery} />
                 </h3>
+                {/* Only the dots: this list is dense enough that the name is
+                    already truncating. */}
+                <ValidatorShareActions
+                    validator={validator} dt={dt} locale={locale} network={network}
+                    variant="menu"
+                    className="flex shrink-0 items-center"
+                />
             </div>
 
             {/* Row 2: Labels */}

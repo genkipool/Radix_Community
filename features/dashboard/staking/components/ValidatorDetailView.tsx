@@ -13,6 +13,8 @@ import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './Validato
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { StakingPopup } from './StakingPopup';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { ValidatorShareActions } from './ValidatorShareActions';
+import { useLanguage } from '@/context/LanguageContext';
 import { type ValidatorDetailViewProps } from '../types';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
 
@@ -30,6 +32,10 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
     setDirection,
     marketData,
 }) => {
+    // The share link points at the validator's own page in the reader's
+    // language; the modal is opened from a view that has no locale prop of its
+    // own to pass down.
+    const { language } = useLanguage();
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const isAddrCopied = !!copiedAddress && copiedAddress === validator.address;
@@ -125,11 +131,11 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                 {/* Validator address */}
                                 <div className="flex flex-col sm:flex-row sm:items-center items-start gap-[6px] sm:gap-[10px] min-w-0">
                                     <div role="button" tabIndex={0}
-                                        className="flex items-center gap-[6px] cursor-pointer min-w-0 group/addr text-left"
+                                        className="flex min-w-0 items-center gap-[6px] overflow-hidden cursor-pointer group/addr text-left"
                                         onClick={e => { e.stopPropagation(); copyAddress(validator.address); }}
                                         onKeyDown={e => { if (e.key === 'Enter') copyAddress(validator.address); }}
                                     >
-                                        <code className={`text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors min-w-0 ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
+                                        <code className={`min-w-0 truncate text-[11px] font-mono text-[var(--color-text-muted)] group-hover/addr:text-[var(--color-primary)] transition-colors ${isAddrCopied ? '!text-[#16a34a]' : ''}`}>
                                             <span className="hidden sm:inline">{validator.address || '...'}</span>
                                             <span className="inline sm:hidden">
                                                 {validator.address ? (
@@ -145,15 +151,28 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                                             className="pointer-events-none shrink-0"
                                         />
                                     </div>
-                                    <StakingPopup validator={validator} t={t}>
-                                        <button
-                                            type="button"
-                                            className="self-start sm:self-auto shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
-                                            style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
-                                        >
-                                            {dt?.card?.stake_button ?? 'Stake'}
-                                        </button>
-                                    </StakingPopup>
+                                    {/* Sharing sits beside the call to action, on
+                                        its left: this window is where someone
+                                        decides a validator is worth passing on. */}
+                                    <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
+                                        <ValidatorShareActions
+                                            validator={validator}
+                                            dt={dt}
+                                            locale={language}
+                                            network={network}
+                                            size="panel"
+                                            className="flex items-center"
+                                        />
+                                        <StakingPopup validator={validator} t={t}>
+                                            <button
+                                                type="button"
+                                                className="shrink-0 px-[18px] py-[6px] rounded-[10px] text-xs font-bold text-white border-none cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_4px_12px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:opacity-90 active:scale-[0.96]"
+                                                style={{ background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))` }}
+                                            >
+                                                {dt?.card?.stake_button ?? 'Stake'}
+                                            </button>
+                                        </StakingPopup>
+                                    </div>
                                 </div>
 
                             </div>
@@ -186,6 +205,18 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                         </p>
                         <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                             <EntityTagsGrid tags={validator.tags} t={t} />
+                            {/* On a phone the header scrolls out of reach long
+                                before this button does, so the footer carries
+                                its own copy. On a desktop both are on screen at
+                                once and one is enough. */}
+                            <ValidatorShareActions
+                                validator={validator}
+                                dt={dt}
+                                locale={language}
+                                network={network}
+                                size="panel"
+                                className="flex items-center sm:hidden"
+                            />
                             <StakingPopup validator={validator} t={t}>
                                 <Button
                                     variant="primary"
