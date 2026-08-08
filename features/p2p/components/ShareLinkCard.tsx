@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { ShareTargets } from '@/components/ui/ShareTargets';
 import { ToolSection } from '@/features/console/components/shared/ToolSection';
-import { QrCode } from './QrCode';
+import { QrCode } from '@/components/ui/QrCode';
 
 /**
  * Share URL + QR code, shared by every P2P flow (signing, file transfer, chat)
@@ -25,6 +25,7 @@ export function ShareLinkCard({
   qrAlt,
   copyLabel = 'Copy link',
   copiedLabel = 'Copied',
+  shareLabel,
   bare = false,
   children,
 }: {
@@ -35,6 +36,8 @@ export function ShareLinkCard({
   /** Tooltip of the clipboard target (and its confirmation). */
   copyLabel?: string;
   copiedLabel?: string;
+  /** What that target is called on a phone, where it opens the share sheet. */
+  shareLabel?: string;
   /** Render without the card box (plain heading + content), e.g. when already
    *  inside another section, to avoid a nested box. */
   bare?: boolean;
@@ -56,6 +59,7 @@ export function ShareLinkCard({
             url={url}
             copyLabel={copyLabel}
             copiedLabel={copiedLabel}
+            shareLabel={shareLabel}
             className="-ml-2"
           />
         </div>

@@ -1,15 +1,24 @@
 'use client';
 
 /**
- * Send a link straight to WhatsApp or Telegram, optionally next to a control
- * that copies it.
+ * Send a link straight to WhatsApp or Telegram, plus a third target that hands
+ * it to whatever the device can share with.
  *
- * Both are plain share URLs opened in a new tab: no SDK, no tracking script and
- * no third-party code running on the page. On phones the OS hands them to the
- * installed app; on desktop they open the web client.
+ * WhatsApp and Telegram are plain share URLs opened in a new tab: no SDK, no
+ * tracking script and no third-party code running on the page. On phones the OS
+ * hands them to the installed app; on desktop they open the web client.
+ *
+ * The third one adapts. On a touch device it calls the Web Share API, so the
+ * phone opens its own sheet and the user picks from every app they have
+ * installed rather than from the two we thought to list. Everywhere else it
+ * copies the link, which is what a pointer-driven browser can actually do.
  */
-import { useState } from 'react';
-import { Check, MoreVertical, Share2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy, MoreVertical, QrCode as QrIcon, Share2, X } from 'lucide-react';
+import { useMounted } from '@/hooks/useMounted';
+import { Portal } from '@/components/ui/Portal';
+import { QrCode } from '@/components/ui/QrCode';
+
 const WhatsappIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
     <path
@@ -34,6 +43,79 @@ const TelegramIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const whatsappUrl = (url: string, text?: string) =>
+  `https://wa.me/?text=${encodeURIComponent(text ? `${text} ${url}` : url)}`;
+
+const telegramUrl = (url: string, text?: string) =>
+  `https://t.me/share/url?url=${encodeURIComponent(url)}${
+    text ? `&text=${encodeURIComponent(text)}` : ''
+  }`;
+
+/**
+ * Whether this device shares through the system rather than the clipboard: it
+ * has the Web Share API AND a coarse pointer, i.e. a finger. Resolved after
+ * mount, never during render, so the server and the client agree on the first
+ * paint.
+ *
+ * The pointer check is deliberate. Some desktop browsers expose `navigator.
+ * share` too, and there a share sheet is a surprise where a copied link is the
+ * expected outcome; on a phone it is the opposite.
+ */
+function useSystemShare(): boolean {
+  const mounted = useMounted();
+  return (
+    mounted &&
+    typeof navigator.share === 'function' &&
+    window.matchMedia?.('(pointer: coarse)').matches === true
+  );
+}
+
+/**
+ * Hands the link to the system sheet, or to the clipboard. Reports which of
+ * the two happened so the caller can confirm a copy (a share sheet needs no
+ * confirmation: the user watched it open).
+ */
+async function shareOrCopy(
+  url: string,
+  text: string | undefined,
+  useSystem: boolean,
+): Promise<'shared' | 'copied' | 'failed'> {
+  if (useSystem) {
+    try {
+      await navigator.share({ title: text, text, url });
+      return 'shared';
+    } catch {
+      // Cancelled or refused: fall through to the clipboard rather than
+      // leaving the button dead.
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    return 'copied';
+  } catch {
+    return 'failed';
+  }
+}
+
+/**
+ * The glyph of the third target names the act, not the intention: the share
+ * mark when the device will open its own sheet, the clipboard when the link is
+ * going to be copied, and the tick once it has been. A share mark on a button
+ * that copies is a small lie, and the user finds out by pressing it.
+ */
+const ThirdIcon = ({
+  copied,
+  systemShare,
+  className,
+}: {
+  copied: boolean;
+  systemShare: boolean;
+  className: string;
+}) => {
+  if (copied) return <Check className={className} />;
+  return systemShare ? <Share2 className={className} /> : <Copy className={className} />;
+};
+
 /**
  * `inline` keeps the glyph the weight of the controls it sits beside. The card
  * sizes drop the box instead and let the glyph be the button: they go under a
@@ -44,21 +126,24 @@ const SIZES = {
   inline: { box: 'size-9', icon: 'size-4', row: 'gap-0.5' },
   /** Beside a button in a panel or a modal: no box, but real space between. */
   panel: { box: '', icon: 'size-5', row: 'gap-3' },
+  /** The same row where a finger is doing the pressing: bigger, further apart. */
+  touch: { box: '', icon: 'size-6', row: 'gap-4' },
   // Spread rather than spaced by a fixed gap: given the width of the photo
   // above them, the outer two icons line up with its edges and the gap is
   // whatever the width leaves over.
   cardSmall: { box: '', icon: 'size-4', row: 'w-full justify-between' },
   card: { box: '', icon: 'size-6', row: 'w-full justify-between' },
-  cardWide: { box: '', icon: 'size-7', row: 'w-full justify-between' },
 } as const;
 
 export function ShareTargets({
   url,
   /** Optional line sent before the link (WhatsApp) or as its caption (Telegram). */
   text,
-  /** Adds a third target that puts the link on the clipboard. */
+  /** Adds a third target: the system sheet on a phone, the clipboard elsewhere. */
   copyLabel,
   copiedLabel,
+  /** What that third target is called when it opens the system sheet. */
+  shareLabel,
   size = 'inline',
   className = '',
 }: {
@@ -66,33 +151,29 @@ export function ShareTargets({
   text?: string;
   copyLabel?: string;
   copiedLabel?: string;
+  shareLabel?: string;
   size?: keyof typeof SIZES;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const systemShare = useSystemShare();
 
   if (!url) return null;
 
-  const whatsapp = `https://wa.me/?text=${encodeURIComponent(text ? `${text} ${url}` : url)}`;
-  const telegram = `https://t.me/share/url?url=${encodeURIComponent(url)}${
-    text ? `&text=${encodeURIComponent(text)}` : ''
-  }`;
-
   const { box, icon, row } = SIZES[size];
   const style = `flex ${box} shrink-0 items-center justify-center rounded-lg border border-transparent text-[var(--color-text-muted)] opacity-60 transition-all hover:opacity-100 hover:text-[var(--color-primary)]`;
+  const thirdLabel = (systemShare ? shareLabel : undefined) ?? copyLabel ?? '';
 
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard denied: nothing to report */ }
+  const onShare = async () => {
+    if ((await shareOrCopy(url, text, systemShare)) !== 'copied') return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className={`flex items-center ${row} ${className}`}>
       <a
-        href={whatsapp}
+        href={whatsappUrl(url, text)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="WhatsApp"
@@ -102,7 +183,7 @@ export function ShareTargets({
         <WhatsappIcon className={icon} />
       </a>
       <a
-        href={telegram}
+        href={telegramUrl(url, text)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Telegram"
@@ -114,12 +195,12 @@ export function ShareTargets({
       {copyLabel && (
         <button
           type="button"
-          onClick={copyLink}
-          aria-label={copyLabel}
-          title={copied ? (copiedLabel ?? copyLabel) : copyLabel}
+          onClick={onShare}
+          aria-label={thirdLabel}
+          title={copied ? (copiedLabel ?? thirdLabel) : thirdLabel}
           className={`${style} ${copied ? 'text-green-500 opacity-100' : ''}`}
         >
-          {copied ? <Check className={icon} /> : <Share2 className={icon} />}
+          <ThirdIcon copied={copied} systemShare={systemShare} className={icon} />
         </button>
       )}
     </div>
@@ -127,20 +208,29 @@ export function ShareTargets({
 }
 
 /**
- * The same three targets behind a menu button, for cards too narrow to spend
- * a row on them: the dots open the row on hover (and on click, for touch and
- * keyboard).
+ * The same three targets behind a menu button, for cards with no room for a row
+ * of them.
  *
- * The gap between the button and the popup is padding ON the popup, not empty
- * space beside it — the "invisible bridge". Without it the pointer leaves the
- * hover area on its way down and the menu closes under the cursor, which is
- * the single most common way a hover menu becomes unusable.
+ * The menu lists them as full rows — icon on the left, name on the right —
+ * rather than as three bare glyphs. Bare glyphs are a fingertip apart on a
+ * phone, where hitting the wrong one is the default outcome, and a name is also
+ * the only thing that says what the third target will do on this device.
+ *
+ * Opening: hover with a mouse, tap with a finger. The gap between the button
+ * and the popup is padding ON the popup, not empty space beside it — the
+ * "invisible bridge" — so the pointer never leaves the hover area on its way
+ * down. A touch menu has no pointer to leave, so it closes on the next tap
+ * outside it.
  */
 export function ShareMenu({
   url,
   text,
   copyLabel,
   copiedLabel,
+  shareLabel,
+  qrLabel,
+  qrHint,
+  closeLabel,
   label,
   className = '',
 }: {
@@ -148,16 +238,51 @@ export function ShareMenu({
   text?: string;
   copyLabel?: string;
   copiedLabel?: string;
+  shareLabel?: string;
+  /** Adds a row that shows the link as a QR for a phone to scan. */
+  qrLabel?: string;
+  /** Line under the QR saying what it is for. */
+  qrHint?: string;
+  closeLabel?: string;
   /** Accessible name of the button (and its tooltip). */
   label: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const systemShare = useSystemShare();
+  const wrapper = useRef<HTMLDivElement>(null);
+
+  // A tap opens the menu and there is no pointer to leave it with, so the next
+  // one anywhere else closes it. Bound only while open.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [open]);
 
   if (!url) return null;
 
+  const rowStyle =
+    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--color-text-main)] transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]';
+  const thirdLabel = (systemShare ? shareLabel : undefined) ?? copyLabel ?? '';
+
+  const onShare = async () => {
+    const outcome = await shareOrCopy(url, text, systemShare);
+    if (outcome === 'copied') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    if (outcome !== 'copied') setOpen(false);
+  };
+
   return (
     <div
+      ref={wrapper}
       className={`relative ${className}`}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -170,7 +295,7 @@ export function ShareMenu({
         title={label}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
+        className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
           open ? 'text-[var(--color-primary)]' : 'opacity-70'
         }`}
       >
@@ -179,20 +304,113 @@ export function ShareMenu({
       {open && (
         <div className="absolute right-0 top-full z-30 pt-1.5">
           <div
-            className="flex items-center gap-0.5 rounded-xl border px-1 shadow-lg"
+            role="menu"
+            className="min-w-[168px] rounded-xl border p-1 shadow-lg"
             style={{
               background: 'var(--color-card-bg, var(--color-surface))',
               borderColor: 'var(--color-card-border)',
             }}
           >
-            <ShareTargets
-              url={url}
-              text={text}
-              copyLabel={copyLabel}
-              copiedLabel={copiedLabel}
-            />
+            <a
+              role="menuitem"
+              href={whatsappUrl(url, text)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className={rowStyle}
+            >
+              <WhatsappIcon className="size-4 shrink-0" />
+              WhatsApp
+            </a>
+            <a
+              role="menuitem"
+              href={telegramUrl(url, text)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className={rowStyle}
+            >
+              <TelegramIcon className="size-4 shrink-0" />
+              Telegram
+            </a>
+            {copyLabel && (
+              <button
+                role="menuitem"
+                type="button"
+                onClick={onShare}
+                className={`${rowStyle} ${copied ? 'text-green-500' : ''}`}
+              >
+                <ThirdIcon
+                  copied={copied}
+                  systemShare={systemShare}
+                  className="size-4 shrink-0"
+                />
+                {copied ? (copiedLabel ?? thirdLabel) : thirdLabel}
+              </button>
+            )}
+            {qrLabel && (
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setQrOpen(true);
+                  setOpen(false);
+                }}
+                className={rowStyle}
+              >
+                <QrIcon className="size-4 shrink-0" />
+                {qrLabel}
+              </button>
+            )}
           </div>
         </div>
+      )}
+      {qrOpen && qrLabel && (
+        // Through a portal: the card that holds this menu clips its own
+        // overflow, and a code meant to be read by a camera cannot be the one
+        // thing on the page that gets cut off.
+        <Portal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+            onClick={() => setQrOpen(false)}
+          >
+            <div
+              className="relative flex flex-col items-center gap-4 rounded-2xl border p-6 shadow-2xl"
+              style={{
+                background: 'var(--color-card-bg, var(--color-surface))',
+                borderColor: 'var(--color-card-border)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setQrOpen(false)}
+                aria-label={closeLabel ?? 'Close'}
+                title={closeLabel ?? 'Close'}
+                className="absolute right-3 top-3 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-main)]"
+              >
+                <X className="size-4" />
+              </button>
+              {text && (
+                <p
+                  className="max-w-[240px] truncate text-sm font-bold"
+                  style={{ color: 'var(--color-text-main)' }}
+                >
+                  {text}
+                </p>
+              )}
+              <QrCode value={url} alt={qrLabel} size={200} framed={false} />
+              {qrHint && (
+                <p
+                  className="max-w-[240px] text-center text-[11px] leading-relaxed"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  {qrHint}
+                </p>
+              )}
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

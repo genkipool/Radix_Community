@@ -21,6 +21,7 @@ export function SharePanel({
       qrAlt={t.share.qrAlt}
       copyLabel={t.share.copy}
       copiedLabel={t.share.copied}
+      shareLabel={t.share.shareNative}
     />
   );
 }

@@ -24,6 +24,7 @@
       "title": "Share this link",
       "hint": "Send this link to the person you want to chat with. When they open it and sign with their wallet, the room becomes secure.",
       "copy": "Copy link",
+      "shareNative": "Share",
       "qrAlt": "QR code with the chat invitation link"
     },
     "status": {
