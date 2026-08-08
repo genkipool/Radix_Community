@@ -5,7 +5,7 @@ import { Activity, ShieldCheck, Users, Shield, Globe, Server, ExternalLink } fro
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { formatXRD, formatPercent, formatDisplayUrl } from '@/utils/formatters';
+import { formatXRDFull, formatXRDExact, formatPercent, formatDisplayUrl } from '@/utils/formatters';
 
 export interface MetricRowProps {
     label: string;
@@ -186,7 +186,7 @@ function ValidatorPositionMetrics({
                 {stakeAmount !== undefined && (
                     <Row
                         label={as?.stake_xrd || 'Stake XRD'}
-                        value={`${formatXRD(stakeAmount, locale)} XRD`}
+                        value={formatXRDFull(stakeAmount, locale)}
                         mono
                         accentValue
                     />
@@ -195,7 +195,7 @@ function ValidatorPositionMetrics({
                     <div className="flex flex-col gap-1">
                         <Row
                             label={as?.unstake_xrd || 'Unstake XRD'}
-                            value={`${formatXRD(unstakeAmount, locale)} XRD`}
+                            value={formatXRDFull(unstakeAmount, locale)}
                             mono
                             isDanger
                         />
@@ -203,7 +203,7 @@ function ValidatorPositionMetrics({
                             <div className="pl-4 pr-1 mt-1 flex flex-col gap-1.5 border-l-2 border-[var(--color-card-border)]/50 ml-1">
                                 {unstakes.map((u, i) => (
                                     <div key={`${u.epoch}-${u.amount}-${i}`} className="flex justify-between items-center text-[10px]">
-                                        <span className="text-[var(--color-text-muted)] font-mono">{formatXRD(u.amount, locale)} XRD</span>
+                                        <span className="text-[var(--color-text-muted)] font-mono">{formatXRDFull(u.amount, locale)}</span>
                                         <span className="text-[var(--color-warning)]/80 text-[9px] font-medium tracking-wide">
                                             {formatRemainingTime(u.epoch, currentEpoch)}
                                         </span>
@@ -216,7 +216,7 @@ function ValidatorPositionMetrics({
                 {claimAmount !== undefined && (
                     <Row
                         label={as?.claim_xrd || 'Claim XRD'}
-                        value={`${formatXRD(claimAmount, locale)} XRD`}
+                        value={formatXRDFull(claimAmount, locale)}
                         mono
                         isSuccess
                     />
@@ -362,6 +362,7 @@ export function ValidatorDelegationMetrics({
 }: Partial<ValidatorMetricsProps> & { hideHeader?: boolean }) {
     if (!validator) return null;
     const dd: Partial<DashboardDict['details']> = dt?.details || {};
+    const tips = dt?.card?.tooltips;
     const Row = renderRow || SummaryInlineRow;
 
     const delegationLabel = dd.validator_staking_summary || dd.delegation || 'Delegation Overview';
@@ -373,8 +374,9 @@ export function ValidatorDelegationMetrics({
                 {validator.delegatedStake != null && (
                     <Row
                         label={dd.validator_delegated_stake || dd.delegated_stake || 'Delegated Stake'}
-                        value={`${formatXRD(validator.delegatedStake, locale)} XRD`}
+                        value={formatXRDFull(validator.delegatedStake, locale)}
                         secondaryValue={validator.delegatedStakePercent != null ? `${formatPercent(validator.delegatedStakePercent, 2, locale)} ${dd.of_the_network || 'of the network'}` : undefined}
+                        tooltip={formatXRDExact(validator.delegatedStake, locale)}
                         mono
                     />
                 )}
@@ -387,7 +389,7 @@ export function ValidatorDelegationMetrics({
                 {validator.ownerStake != null && (
                     <Row
                         label={dd.validator_owner_stake || dd.owner_delegation || 'Owner Stake'}
-                        value={`${formatXRD(validator.ownerStake, locale)} XRD`}
+                        value={formatXRDFull(validator.ownerStake, locale)}
                         mono
                     />
                 )}
@@ -401,8 +403,9 @@ export function ValidatorDelegationMetrics({
                 {validator.nominalFee != null && (
                     <Row
                         label={dd.validator_nominal_fee || dd.nominal_fee || 'Fee'}
-                        value={formatPercent(validator.nominalFee, 1, locale)}
-                        secondaryValue={validator.effectiveFee != null ? `${formatPercent(validator.effectiveFee, 1, locale)} ${dd.effective || 'effective'}` : undefined}
+                        value={formatPercent(validator.nominalFee, 2, locale)}
+                        secondaryValue={validator.effectiveFee != null ? `${formatPercent(validator.effectiveFee, 2, locale)} ${dd.effective || 'effective'}` : undefined}
+                        tooltip={validator.effectiveFee != null ? tips?.effective_fee : tips?.fee}
                     />
                 )}
                 {validator.lsu2xrdFactor != null && (

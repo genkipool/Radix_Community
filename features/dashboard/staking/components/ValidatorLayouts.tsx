@@ -2,15 +2,17 @@
 
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { Globe, ExternalLink, Server, AlertCircle, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
-import { getStatusColor, getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
-import { formatXRD, formatNumber, truncateAddress, formatPercent, formatDisplayUrl } from '@/utils/formatters';
+import { Globe, ExternalLink, Server, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
+import { getStatusColor } from '@/utils/validators';
+import { truncateAddress, formatDisplayUrl } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { StatusLabel, UptimeBar } from './ValidatorDetailComponents';
+import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
-import { StatDivider, BizRow } from './ValidatorLayoutPrimitives';
+import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
+import { ValidatorShareActions } from './ValidatorShareActions';
+import { buildValidatorStats } from '../lib/validatorStats';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { StakingPopup } from './StakingPopup';
@@ -39,6 +41,10 @@ const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; s
     );
 };
 
+/* ─── Photo widths, shared with the share row under each photo ─── */
+const PHOTO_1COL = 'w-32 sm:w-36';
+const photo2Col = (columns: number) => (columns === 3 ? 'w-16 sm:w-20' : 'w-24 sm:w-28');
+
 /* ==============================═══════════
    LAYOUT 1 — Full width, big photo left sidebar
 ==============================═══════════ */
@@ -49,11 +55,12 @@ export const Layout1Col = ({
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
+    const stats = buildValidatorStats(validator, dt, locale);
 
     return (
         <div className="flex flex-col h-full">
             <div className="flex">
-                {/* Sidebar: large photo + uptime */}
+                {/* Sidebar: large photo + share */}
                 <div
                     className="w-44 sm:w-52 shrink-0 flex flex-col items-center p-4 sm:p-5 border-r border-[var(--color-card-border)] bg-[var(--color-surface)] relative overflow-hidden cursor-pointer self-stretch"
                 >
@@ -61,10 +68,13 @@ export const Layout1Col = ({
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
                     <div className="relative z-10 flex-1 flex items-center">
                         <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
-                            className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl object-cover shadow-xl transition-transform duration-300"
+                            className={`${PHOTO_1COL} h-32 sm:h-36 rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2.5px solid ${statusColor}` }} />
                     </div>
-                    <div className="w-full mt-auto pt-2"><UptimeBar percent={validator.uptimePercent} t={t} /></div>
+                    {/* Same width as the photo, so the outer icons sit on its edges */}
+                    <div className={`${PHOTO_1COL} mt-auto pt-2`}>
+                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} wide />
+                    </div>
                 </div>
 
                 {/* Body */}
@@ -81,49 +91,7 @@ export const Layout1Col = ({
                             <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
                         </div>
 
-                        <StatDivider items={[
-                            {
-                                label: dt?.card?.stake ?? 'Total Stake',
-                                tooltip: dt?.card?.tooltips?.stake,
-                                value: (
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
-                                            title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
-                                        >
-                                            {formatXRD(validator.delegatedStake, locale)}
-                                        </span>
-                                        <span
-                                            className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
-                                            title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
-                                        >
-                                            ({formatPercent(validator.delegatedStakePercent, 2, locale)})
-                                        </span>
-                                    </div>
-                                )
-                            },
-                            {
-                                label: dt?.card?.fee ?? 'Fee',
-                                tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
-                                value: (
-                                    <div className="flex items-center gap-1">
-                                        <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
-                                        {validator.hasPendingFeeChange && (
-                                            <AlertCircle className="size-3 text-amber-500 animate-pulse" />
-                                        )}
-                                    </div>
-                                )
-                            },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: formatPercent(validator.apyProjection, 2, locale) },
-                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: formatPercent(validator.effectiveFee, 2, locale) },
-                            {
-                                label: dt?.card?.uptime_14d ?? 'Uptime 14d',
-                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
-                                value: formatPercent(validator.recentUptime, 2, locale),
-                                accent: getUptimeColor(validator.recentUptime)
-                            },
-                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
-                        ]} />
+                        <StatDivider items={stats} />
 
                         <p className="text-xs text-[var(--color-text-muted)] italic leading-relaxed line-clamp-1">
                             &ldquo;{sanitizeText(validator.description) || (dt?.details?.no_description ?? 'No description provided.')}&rdquo;
@@ -184,6 +152,7 @@ export const Layout2Col = ({
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
+    const stats = buildValidatorStats(validator, dt, locale, { compact: columns === 3 });
 
     return (
         <div className={`flex flex-col h-full ${!isExpanded ? 'min-h-[200px]' : ''}`}>
@@ -195,10 +164,13 @@ export const Layout2Col = ({
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
                     <div className="relative z-10 py-4 sm:py-6">
                         <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
-                            className={`${columns === 3 ? 'size-16 sm:w-20 sm:h-20' : 'size-24 sm:w-28 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
+                            className={`${photo2Col(columns)} ${columns === 3 ? 'h-16 sm:h-20' : 'h-24 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
                     </div>
-                    <div className="w-full mt-auto pt-1.5"><UptimeBar percent={validator.uptimePercent} t={t} size="md" locale={locale} /></div>
+                    {/* Same width as the photo, so the outer icons sit on its edges */}
+                    <div className={`${photo2Col(columns)} mt-auto pt-1.5`}>
+                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} />
+                    </div>
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
@@ -215,51 +187,8 @@ export const Layout2Col = ({
                                 <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} />
                             </div>
                         </div>
-                        <StatDivider items={[
-                            {
-                                label: dt?.card?.stake ?? 'Stake',
-                                tooltip: dt?.card?.tooltips?.stake,
-                                value: (
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span
-                                            className={`transition-colors duration-300 ${validator.delegatedStakePercent > 2 ? 'text-red-500 font-bold' : 'text-[var(--color-text-main)] font-semibold'}`}
-                                            title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.stake}
-                                        >
-                                            {formatXRD(validator.delegatedStake, locale)}
-                                        </span>
-                                        <span
-                                            className={`text-[10px] font-medium transition-colors ${validator.delegatedStakePercent > 2 ? 'text-red-500 opacity-100 font-bold' : 'opacity-50 hover:text-[var(--color-primary)]'}`}
-                                            title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
-                                        >
-                                            ({formatPercent(validator.delegatedStakePercent, 2, locale)})
-                                        </span>
-                                    </div>
-                                )
-                            },
-                            {
-                                label: dt?.card?.fee ?? 'Fee',
-                                tooltip: validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee,
-                                value: (
-                                    <div className="flex items-center gap-1">
-                                        <span>{formatPercent(validator.nominalFee, 2, locale)}</span>
-                                        {validator.hasPendingFeeChange && (
-                                            <AlertCircle className="size-3 text-amber-500 animate-pulse" />
-                                        )}
-                                    </div>
-                                )
-                            },
-                            { label: dt?.card?.apy ?? 'APY', tooltip: dt?.card?.tooltips?.apy, value: formatPercent(validator.apyProjection, 2, locale) },
-                        ]} />
-                        <StatDivider items={[
-                            { label: dt?.details?.effective_fee ?? 'Effective Fee', tooltip: dt?.details?.effective_fee, value: formatPercent(validator.effectiveFee, 2, locale) },
-                            {
-                                label: dt?.card?.uptime_14d ?? 'Uptime 14d',
-                                tooltip: getUptimeTooltipText(validator.recentUptime, true, dt?.details),
-                                value: formatPercent(validator.recentUptime, 2, locale),
-                                accent: getUptimeColor(validator.recentUptime)
-                            },
-                            { label: dt?.details?.delegators ?? 'Delegators', tooltip: dt?.card?.tooltips?.delegators, value: formatNumber(validator.delegators, 0, locale) },
-                        ]} />
+                        <StatDivider items={stats.slice(0, 3)} />
+                        <StatDivider items={stats.slice(3)} />
                     </div>
 
                     <div
@@ -315,6 +244,7 @@ export const Layout4Col = ({
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
+    const stats = buildValidatorStats(validator, dt, locale, { compact: true });
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
@@ -339,35 +269,7 @@ export const Layout4Col = ({
 
             {/* Row 2: Grid of 6 statistics */}
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 border-y border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/30">
-                <div className="flex flex-col gap-0.5" title={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.stake ?? 'Total Stake'}</span>
-                    <span className={`text-[12px] font-black truncate ${validator.delegatedStakePercent > 2 ? 'text-red-500' : 'text-[var(--color-text-main)]'}`}>
-                        {formatXRD(validator.delegatedStake, locale)} {validator.delegatedStakePercent > 2 && `(${formatPercent(validator.delegatedStakePercent, 1, locale)})`}
-                    </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.fee ?? 'Fee'}</span>
-                    <div className="flex items-center gap-1 text-[12px] font-black text-[var(--color-text-main)] truncate">
-                        <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
-                        {validator.hasPendingFeeChange && <AlertCircle className="size-2.5 text-amber-500 animate-pulse shrink-0" />}
-                    </div>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.apy ?? 'APY'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatPercent(validator.apyProjection, 2, locale)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.effective_fee ?? 'Effective Fee'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatPercent(validator.effectiveFee, 1, locale)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.card?.uptime_14d ?? 'Uptime 14d'}</span>
-                    <span className="text-[12px] font-black" style={{ color: getUptimeColor(validator.recentUptime) }}>{formatPercent(validator.recentUptime, 1, locale)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] line-clamp-1">{dt?.details?.delegators ?? 'Delegators'}</span>
-                    <span className="text-[12px] font-black text-[var(--color-text-main)] truncate">{formatNumber(validator.delegators, 0, locale)}</span>
-                </div>
+                {stats.map(({ key, ...stat }) => <StatCell key={key} {...stat} />)}
             </div>
 
             {/* Row 3: Footer */}
@@ -421,6 +323,7 @@ export const Layout6Col = ({
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
+    const stats = buildValidatorStats(validator, dt, locale, { compact: true });
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
@@ -445,37 +348,7 @@ export const Layout6Col = ({
 
             {/* Row 3: Single-column info */}
             <div className={`px-2 py-1 border-t border-[var(--color-card-border)] bg-[var(--color-surface-hover)]/20 ${!isExpanded ? 'flex-1' : ''}`}>
-                <BizRow
-                    label={dt?.card?.stake ?? 'Stake'}
-                    value={validator.delegatedStakePercent > 2
-                        ? `${formatXRD(validator.delegatedStake, locale)} (${formatPercent(validator.delegatedStakePercent, 1, locale)})`
-                        : formatXRD(validator.delegatedStake, locale)
-                    }
-                    accent={validator.delegatedStakePercent > 2 ? '#dc2626' : 'var(--color-text-main)'}
-                    tooltip={validator.delegatedStakePercent > 2 ? dt?.card?.tooltips?.share_warning : dt?.card?.tooltips?.share}
-                    vertical={columns >= 8}
-                />
-                <BizRow label={dt?.card?.apy ?? 'APY'} value={formatPercent(validator.apyProjection, 1, locale)} vertical={columns >= 8} />
-                <BizRow
-                    label={dt?.card?.fee ?? 'Fee'}
-                    value={
-                        <div className="flex items-center gap-1">
-                            <span>{formatPercent(validator.nominalFee, 1, locale)}</span>
-                            {validator.hasPendingFeeChange && <AlertCircle className="size-2.5 text-amber-500 animate-pulse shrink-0" />}
-                        </div>
-                    }
-                    tooltip={validator.hasPendingFeeChange ? `${dt?.card?.tooltips?.pending_fee} (-> ${validator.upcomingFee}%)` : dt?.card?.tooltips?.fee}
-                    vertical={columns >= 8}
-                />
-                <BizRow label={dt?.details?.effective_fee ?? 'Eff. Fee'} value={formatPercent(validator.effectiveFee, 1, locale)} vertical={columns >= 8} />
-                <BizRow
-                    label={dt?.card?.uptime_14d ?? 'Uptime'}
-                    value={formatPercent(validator.recentUptime, 1, locale)}
-                    accent={getUptimeColor(validator.recentUptime)}
-                    tooltip={getUptimeTooltipText(validator.recentUptime, true, dt?.details)}
-                    vertical={columns >= 8}
-                />
-                <BizRow label={dt?.details?.delegators ?? 'Del.'} value={formatNumber(validator.delegators, 0, locale)} vertical={columns >= 8} />
+                {stats.map(({ key, ...stat }) => <BizRow key={key} {...stat} vertical={columns >= 8} />)}
             </div>
 
             {/* Row 4: Footer — SVG Web, SVG Address, Button */}

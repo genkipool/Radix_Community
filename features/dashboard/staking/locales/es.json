@@ -28,6 +28,7 @@
       "status": "Estado",
       "copy": "Copiar",
       "copied": "¡Copiado!",
+      "copy_link": "Copiar el enlace del validador",
       "tooltips": {
         "stake": "Valor total en XRD delegado a este validador por todos los usuarios.",
         "share": "Porcentaje del stake total de la red que representa este validador.",
@@ -36,6 +37,7 @@
         "apy": "Rentabilidad anual estimada para los delegadores tras descontar la comisión.",
         "uptime": "Porcentaje de propuestas de bloque realizadas con éxito en los últimos 14 días.",
         "pending_fee": "Este validador tiene un cambio de comisión programado que entrará en vigor próximamente.",
+        "effective_fee": "Lo que la comisión te cuesta en rentabilidad: la comisión del validador aplicada al APY previsto, es decir, el porcentaje anual de tu stake que se queda el validador.",
         "delegators": "Número total de cuentas únicas que han delegado XRD a este validador."
       },
       "stake_button": "Delegar",

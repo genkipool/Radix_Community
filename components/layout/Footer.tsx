@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLayout } from "@/context/LayoutContext";
 import { Github, HeartHandshake } from "lucide-react";
-import { FOOTER_LINKS, SOCIAL_LINKS } from "@/constants/navigation";
+import { FOOTER_LINKS, SOCIAL_LINKS, isModalPath, localizeHref, type ModalPath } from "@/constants/navigation";
 import { RadixLogo } from "@/components/shared/RadixLogo";
 
 const XIcon = ({ className }: { className?: string }) => (
@@ -52,20 +52,17 @@ export default function Footer() {
   const { setShowUnderConstruction, setShowInstitutionalPilot } = useLayout();
   const isMounted = useMounted();
 
-  const localize = (href: string) => {
-    if (href.startsWith('http') || href === '#' || href.startsWith('#')) return href;
-    const path = href.startsWith('/') ? href : `/${href}`;
-    return `/${language}${path === '/' ? '' : path}`;
+  const localize = (href: string) => localizeHref(href, language);
+
+  const openModal: Record<ModalPath, (open: boolean) => void> = {
+    '#pilot': setShowInstitutionalPilot,
+    '#under-construction': setShowUnderConstruction,
   };
 
   const handleLinkClick = (e: React.MouseEvent, path: string) => {
-    if (path === '#under-construction') {
-      e.preventDefault();
-      setShowUnderConstruction(true);
-    } else if (path === '#pilot') {
-      e.preventDefault();
-      setShowInstitutionalPilot(true);
-    }
+    if (!isModalPath(path)) return;
+    e.preventDefault();
+    openModal[path](true);
   };
 
   return (
@@ -106,7 +103,7 @@ export default function Footer() {
                 </a>
               ))}
               <Link
-                href="#donate"
+                href="#under-construction"
                 aria-label={t.community?.donate || 'Donate'}
                 title={t.community?.donate || 'Donate'}
                 onClick={(e) => handleLinkClick(e, '#under-construction')}

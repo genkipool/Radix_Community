@@ -14,7 +14,7 @@ import {
 } from './EntityPanelShared';
 import { getConfigEntries } from '../../utils/resourceUtils';
 import { useValidatorsQuery } from '@/features/dashboard/staking/hooks/useValidatorsQuery';
-import { formatNumber } from '@/utils/formatters';
+import { formatPercent, formatXRD, formatXRDExact } from '@/utils/formatters';
 
 import { Box } from 'lucide-react';
 import { AnimatePresence, m } from 'motion/react';
@@ -146,8 +146,8 @@ export function SystemCard({
                                         Stake
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-primary)] font-mono truncate">
-                                            {formatNumber(validator.totalStakeXRD)} XRD
+                                        <span className="text-sm font-bold text-[var(--color-primary)] font-mono truncate" title={formatXRDExact(validator.totalStakeXRD, locale)}>
+                                            {formatXRD(validator.totalStakeXRD, locale)} XRD
                                         </span>
                                     </div>
                                 </div>
@@ -157,7 +157,7 @@ export function SystemCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-blue-500 font-mono truncate">
-                                            {formatNumber(validator.feePercent)}%
+                                            {formatPercent(validator.feePercent, 2, locale)}
                                         </span>
                                     </div>
                                 </div>
@@ -167,7 +167,7 @@ export function SystemCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-bold text-green-500 font-mono truncate">
-                                            {formatNumber(validator.uptimePercent)}%
+                                            {formatPercent(validator.uptimePercent, 2, locale)}
                                         </span>
                                     </div>
                                 </div>
