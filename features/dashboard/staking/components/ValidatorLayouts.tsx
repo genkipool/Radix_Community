@@ -61,7 +61,7 @@ const ShareCorner = ({
     <ValidatorShareActions
         validator={validator} dt={dt} locale={locale} network={network}
         variant="menu"
-        className="ml-auto flex shrink-0 items-center self-start"
+        className="-mr-1.5 ml-auto flex shrink-0 items-center self-start sm:mr-0"
     />
 );
 

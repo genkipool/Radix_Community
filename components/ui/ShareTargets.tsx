@@ -18,6 +18,7 @@ import { Check, Copy, MoreVertical, QrCode as QrIcon, Share2, X } from 'lucide-r
 import { useMounted } from '@/hooks/useMounted';
 import { Portal } from '@/components/ui/Portal';
 import { QrCode } from '@/components/ui/QrCode';
+import { useAnchoredPosition } from '@/hooks/useAnchoredPosition';
 
 const WhatsappIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
@@ -216,11 +217,15 @@ export function ShareTargets({
  * phone, where hitting the wrong one is the default outcome, and a name is also
  * the only thing that says what the third target will do on this device.
  *
- * Opening: hover with a mouse, tap with a finger. The gap between the button
- * and the popup is padding ON the popup, not empty space beside it — the
- * "invisible bridge" — so the pointer never leaves the hover area on its way
- * down. A touch menu has no pointer to leave, so it closes on the next tap
- * outside it.
+ * Opening: hover with a mouse, tap with a finger, and closing on the next tap
+ * outside for the finger, which has no pointer to leave with. Leaving the
+ * button does not close it at once — the pointer may be on its way to the rows,
+ * which cancels the timer when it arrives — so there is no dead gap to cross.
+ *
+ * It is drawn through a portal in coordinates worked out from the button (see
+ * useAnchoredPosition): the cards it hangs off clip their own overflow, and a
+ * menu that opens downward from a header would be cut in half by the bottom of
+ * its own card. It opens upward instead whenever that is where the room is.
  */
 export function ShareMenu({
   url,
@@ -248,27 +253,54 @@ export function ShareMenu({
   label: string;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const systemShare = useSystemShare();
-  const wrapper = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Rows are 48px on a phone and 40px on a desktop; the menu is sized for the
+  // taller of the two, so a wrong guess only ever leaves it lower than needed
+  // and never off the screen.
+  const rowCount = 2 + (copyLabel ? 1 : 0) + (qrLabel ? 1 : 0);
+  const {
+    anchorRef,
+    position,
+    open,
+    place,
+    close: closeMenu,
+  } = useAnchoredPosition({ width: 216, height: rowCount * 48 + 12 });
 
   // A tap opens the menu and there is no pointer to leave it with, so the next
   // one anywhere else closes it. Bound only while open.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
-      if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (!menu.current?.contains(target) && !anchorRef.current?.contains(target)) {
+        closeMenu();
+      }
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
-  }, [open]);
+  }, [open, anchorRef, closeMenu]);
+
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
 
   if (!url) return null;
 
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(closeMenu, 120);
+  };
+
   const rowStyle =
-    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--color-text-main)] transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]';
+    'flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold text-[var(--color-text-main)] transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-[13px]';
   const thirdLabel = (systemShare ? shareLabel : undefined) ?? copyLabel ?? '';
 
   const onShare = async () => {
@@ -277,49 +309,55 @@ export function ShareMenu({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-    if (outcome !== 'copied') setOpen(false);
+    if (outcome !== 'copied') closeMenu();
   };
 
   return (
-    <div
-      ref={wrapper}
-      className={`relative ${className}`}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <div className={className}>
       <button
+        ref={anchorRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}
         title={label}
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
+        onMouseEnter={() => {
+          cancelClose();
+          place();
+        }}
+        onMouseLeave={scheduleClose}
+        onClick={() => (open ? closeMenu() : place())}
+        onKeyDown={(e) => e.key === 'Escape' && closeMenu()}
+        className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-[var(--color-text-muted)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] sm:size-8 sm:rounded-lg ${
           open ? 'text-[var(--color-primary)]' : 'opacity-70'
         }`}
       >
-        <MoreVertical className="size-4" />
+        <MoreVertical className="size-6 sm:size-4" />
       </button>
-      {open && (
-        <div className="absolute right-0 top-full z-30 pt-1.5">
+      {open && position && (
+        <Portal>
           <div
+            ref={menu}
             role="menu"
-            className="min-w-[168px] rounded-xl border p-1 shadow-lg"
+            className="fixed z-[100] min-w-[216px] rounded-2xl border p-1.5 shadow-lg sm:min-w-[168px] sm:rounded-xl sm:p-1"
             style={{
+              top: position.top,
+              left: position.left,
               background: 'var(--color-card-bg, var(--color-surface))',
               borderColor: 'var(--color-card-border)',
             }}
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
           >
             <a
               role="menuitem"
               href={whatsappUrl(url, text)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setOpen(false)}
+              onClick={closeMenu}
               className={rowStyle}
             >
-              <WhatsappIcon className="size-4 shrink-0" />
+              <WhatsappIcon className="size-5 shrink-0 sm:size-4" />
               WhatsApp
             </a>
             <a
@@ -327,10 +365,10 @@ export function ShareMenu({
               href={telegramUrl(url, text)}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setOpen(false)}
+              onClick={closeMenu}
               className={rowStyle}
             >
-              <TelegramIcon className="size-4 shrink-0" />
+              <TelegramIcon className="size-5 shrink-0 sm:size-4" />
               Telegram
             </a>
             {copyLabel && (
@@ -343,7 +381,7 @@ export function ShareMenu({
                 <ThirdIcon
                   copied={copied}
                   systemShare={systemShare}
-                  className="size-4 shrink-0"
+                  className="size-5 shrink-0 sm:size-4"
                 />
                 {copied ? (copiedLabel ?? thirdLabel) : thirdLabel}
               </button>
@@ -354,16 +392,16 @@ export function ShareMenu({
                 type="button"
                 onClick={() => {
                   setQrOpen(true);
-                  setOpen(false);
+                  closeMenu();
                 }}
                 className={rowStyle}
               >
-                <QrIcon className="size-4 shrink-0" />
+                <QrIcon className="size-5 shrink-0 sm:size-4" />
                 {qrLabel}
               </button>
             )}
           </div>
-        </div>
+        </Portal>
       )}
       {qrOpen && qrLabel && (
         // Through a portal: the card that holds this menu clips its own
