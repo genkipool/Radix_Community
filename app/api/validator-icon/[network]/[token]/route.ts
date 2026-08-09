@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import sharp from 'sharp';
 import { getValidatorsCached } from '@/services/radixApi';
 import logger from '@/lib/logger';
 import { validateNetwork } from '@/utils/apiValidation';
@@ -44,6 +43,31 @@ interface CachedIcon {
 
 const memory = new Map<string, CachedIcon>();
 
+type Shrinker = (typeof import('sharp'))['default'];
+/** `undefined` while untried, `null` once this host is known not to have it. */
+let shrinker: Shrinker | null | undefined;
+
+/**
+ * sharp, if this host can run it.
+ *
+ * It is a native module, and whether its binary survives into a deployment is
+ * the host's business, not ours. Imported at the top of the file a host without
+ * it takes the whole route down and every card loses its logo to a 500; loaded
+ * here, the worst case is the branch this route already had for an image sharp
+ * cannot read — the original bytes, served from our origin with the same
+ * immutable cache header. Bigger, but on screen.
+ */
+async function loadShrinker(): Promise<Shrinker | null> {
+    if (shrinker !== undefined) return shrinker;
+    try {
+        shrinker = (await import('sharp')).default;
+    } catch (error) {
+        logger.warn({ err: error }, '[ValidatorIcon] No sharp here; serving logos at full size');
+        shrinker = null;
+    }
+    return shrinker;
+}
+
 function remember(key: string, icon: CachedIcon) {
     memory.delete(key);
     memory.set(key, icon);
@@ -60,7 +84,6 @@ function respond({ body, type }: CachedIcon) {
     return new NextResponse(new Uint8Array(body), {
         headers: {
             'Content-Type': type,
-            'Content-Length': String(body.byteLength),
             // A validator changing its logo changes the URL it publishes, and
             // with it this path, so this answer never becomes the wrong one.
             'Cache-Control': 'public, max-age=31536000, immutable',
@@ -80,8 +103,27 @@ function isPublicHost(hostname: string): boolean {
     return true;
 }
 
+/**
+ * Nothing here is allowed to answer with a 500.
+ *
+ * A logo is decoration: a card without one falls back to its initials and the
+ * page is whole. An unhandled throw instead paints a broken image into every
+ * card and fills the reader's console with errors, which is how a missing
+ * native module on one host turned into a grid with no logos at all.
+ */
 export async function GET(
-    _request: Request,
+    request: Request,
+    context: { params: Promise<{ network: string; token: string }> },
+) {
+    try {
+        return await serveIcon(context);
+    } catch (error) {
+        logger.error({ err: error, url: request.url }, '[ValidatorIcon] Unhandled failure');
+        return notFound();
+    }
+}
+
+async function serveIcon(
     { params }: { params: Promise<{ network: string; token: string }> },
 ) {
     const { network: rawNetwork, token } = await params;
@@ -128,19 +170,21 @@ export async function GET(
         return notFound();
     }
 
-    let icon: CachedIcon;
-    try {
-        const body = await sharp(original)
-            .rotate() // honour the EXIF orientation before it is stripped
-            .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toBuffer();
-        icon = { body, type: 'image/webp' };
-    } catch (error) {
-        // Something sharp will not read — an animated format, an odd SVG. The
-        // original still works, and is still worth serving with a cache header.
-        logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Serving the original');
-        icon = { body: original, type: originalType };
+    let icon: CachedIcon = { body: original, type: originalType };
+    const sharp = await loadShrinker();
+    if (sharp) {
+        try {
+            const body = await sharp(original)
+                .rotate() // honour the EXIF orientation before it is stripped
+                .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
+            icon = { body, type: 'image/webp' };
+        } catch (error) {
+            // Something sharp will not read — an animated format, an odd SVG. The
+            // original still works, and is still worth serving with a cache header.
+            logger.warn({ err: error, host: target.hostname }, '[ValidatorIcon] Serving the original');
+        }
     }
 
     remember(token, icon);
