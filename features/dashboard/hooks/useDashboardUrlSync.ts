@@ -123,6 +123,8 @@ export function useDashboardUrlSync({
     committedEntity: nav.committedEntity,
     /** Query-only URL writes, for state owned elsewhere (e.g. the tag filter). */
     setTagInUrl: nav.setTag,
+    /** Warms the other ledger's page, for the toolbar to call before the tap. */
+    prefetchNetwork: nav.prefetchNetwork,
   };
 }
 

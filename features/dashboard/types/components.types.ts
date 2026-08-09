@@ -35,6 +35,8 @@ export interface DashboardToolbarProps {
     onViewChange: (view: 'staking' | 'transactions') => void;
     network: Network;
     onNetworkChange: (net: Network) => void;
+    /** Warms the other ledger's page before the user commits to the switch. */
+    onPrefetchNetwork?: (net: Network) => void;
     activeTags: string[];
     onActiveTagChange: (tag: string) => void;
     transactionActiveTag: string;

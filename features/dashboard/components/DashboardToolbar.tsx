@@ -39,6 +39,7 @@ export const DashboardToolbar = ({
     activeRanking, onRankingChange,
     isReadingModeManual,
     isWalletFilterActive, onWalletFilterChange,
+    onPrefetchNetwork,
     dt,
 }: DashboardToolbarProps) => {
     const queryClient = useQueryClient();
@@ -78,19 +79,36 @@ export const DashboardToolbar = ({
         });
     };
 
+    /**
+     * Warms the other ledger so the switch has nothing left to wait for.
+     *
+     * Called on hover AND on pointer-down: a finger never hovers, so on a phone
+     * the hover-only version prefetched exactly nothing and every switch paid
+     * full price. Pointer-down still buys the time between touch and release,
+     * which is most of what a hover would have given.
+     */
     const handlePrefetchNetwork = (net: 'mainnet' | 'stokenet') => {
-        // Prefetch validators
+        // The page itself, so a later real navigation to this URL is warm too.
+        onPrefetchNetwork?.(net);
+
         queryClient.prefetchQuery({
             queryKey: ['validators', net],
             queryFn: () => apiFetchValidators(net),
             staleTime: 300_000,
         });
 
-        // Prefetch first page of transactions
+        // Switching ledger resets the search and the date range, so the key is
+        // the plain one for the active tag — the SAME shape the real query uses.
+        // Without the tag and the range it warmed an entry nobody ever read.
         if (activeView === 'transactions') {
             queryClient.prefetchInfiniteQuery({
-                queryKey: ['transactions', net, undefined],
-                queryFn: () => apiFetchTransactions({ cursor: undefined, limit: 15, address: undefined, network: net }),
+                queryKey: [
+                    'transactions', net, undefined, transactionActiveTag,
+                    { start: null, end: null },
+                ],
+                queryFn: () => apiFetchTransactions({
+                    cursor: undefined, limit: 15, address: undefined, network: net,
+                }),
                 initialPageParam: undefined,
                 staleTime: 30_000,
             });
@@ -128,6 +146,7 @@ export const DashboardToolbar = ({
                             type="button"
                             onClick={() => onNetworkChange('mainnet')}
                             onMouseEnter={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
+                            onPointerDown={() => network !== 'mainnet' && handlePrefetchNetwork('mainnet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'mainnet'
                                 ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
                                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'
@@ -139,6 +158,7 @@ export const DashboardToolbar = ({
                             type="button"
                             onClick={() => onNetworkChange('stokenet')}
                             onMouseEnter={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
+                            onPointerDown={() => network !== 'stokenet' && handlePrefetchNetwork('stokenet')}
                             className={`px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 border border-transparent ${network === 'stokenet'
                                 ? 'bg-[var(--color-accent)] text-white shadow-md border-[var(--color-accent)]/20'
                                 : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]'

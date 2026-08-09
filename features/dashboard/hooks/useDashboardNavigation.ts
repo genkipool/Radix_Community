@@ -123,9 +123,33 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
      * Switches ledger. Always lands on the current view's LIST: an entity from
      * one network does not exist on the other, so staying on its page would
      * show an address that cannot resolve.
+     *
+     * Through the router, NOT the History API.
+     *
+     * `goToView` gets away with `pushState` because it moves to a different
+     * ROUTE. The network lives in the query string of the route already on
+     * screen, and rewriting that under the router's feet leaves `useSearchParams`
+     * — which `currentHref()` is built from — reporting the old address. The
+     * next switch then compares against a stale value and skips writing the URL
+     * altogether, so the address said one ledger while the grid showed the
+     * other; React also reported a hydration mismatch (#418) each time, from
+     * reconciling a server tree that no longer matched the DOM.
+     *
+     * What made the switch slow was never this call: it was the grid waiting on
+     * the transition to commit. That is fixed where it belongs, in what the
+     * grid reads (see `useCommittedNetwork`), and the server round trip stays —
+     * it is what keeps a reload of this URL correct.
      */
     setNetwork: (network: Network) => {
       navigate(dashboardRoutes.view(locale, view, { network }), 'replace');
+    },
+
+    /**
+     * Warms the other ledger's page so a cold switch has nothing to wait for.
+     * Cheap and idempotent: Next keeps the payload briefly and drops it.
+     */
+    prefetchNetwork: (network: Network) => {
+      router.prefetch(dashboardRoutes.view(locale, view, { network }));
     },
 
     setDateRange: (range: { start: string | null; end: string | null }) => {
