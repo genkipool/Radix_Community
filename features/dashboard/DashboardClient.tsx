@@ -150,7 +150,7 @@ export default function DashboardClient({
   const [direction, setDirection] = useState(0);
   const [activeRanking, setActiveRanking] = useState<string | null>(null);
   
-  const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses } = useRadixWallet();
+  const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses, sessions } = useRadixWallet();
 
 
   // Last network the WALLET reported. The trigger below has to be an actual
@@ -414,6 +414,9 @@ export default function DashboardClient({
   const walletPinsReady = useStakesReady(
     deferredConnectedAccountAddresses,
     network as 'mainnet' | 'stokenet',
+    // A session on the ledger being asked for means there ARE accounts, so an
+    // empty list is "not told yet", not "none".
+    !!sessions?.[network as 'mainnet' | 'stokenet'],
   );
 
   // The ledger the cards on screen belong to. See the hook for why the two can

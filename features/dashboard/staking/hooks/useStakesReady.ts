@@ -22,6 +22,11 @@ import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 export function useStakesReady(
   accountAddresses: string[],
   network: 'mainnet' | 'stokenet',
+  /**
+   * Whether the wallet HAS a session on this ledger, and therefore accounts we
+   * have simply not been handed yet.
+   */
+  expectsAccounts = false,
 ): boolean {
   const results = useQueries({
     queries: accountAddresses.map((address) => ({
@@ -33,6 +38,17 @@ export function useStakesReady(
       select: () => true as const,
     })),
   });
+
+  /*
+   * An empty list of accounts is only "nothing to wait for" when there really
+   * is nothing: `[].every(...)` is true by vacuity, and that answered "ready"
+   * during the window where the wallet's accounts had not arrived yet. The
+   * server seeds them per ledger, from the session cookie, so a switch briefly
+   * has none — the grid committed with nothing pinned, and the wallet's own
+   * validators jumped to the top a moment later. Whether that window is even
+   * open depends on when the navigation lands, which is why it came and went.
+   */
+  if (expectsAccounts && accountAddresses.length === 0) return false;
 
   /*
    * `isPending`, not `isLoading`. In React Query v5 `isLoading` is
