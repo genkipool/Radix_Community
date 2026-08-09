@@ -45,6 +45,7 @@ const ENTITY_PREFIXES = [
 import type { NetworkStats } from '@/types/radix';
 import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
+import type { Network } from '@/features/dashboard/types';
 import { useFocusedColumns } from './hooks/useFocusedColumns';
 
 /* React Query hooks */
@@ -67,6 +68,12 @@ import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConnectedStakes } from './staking/hooks/useConnectedStakes';
+import { useStakesReady } from './staking/hooks/useStakesReady';
+import { useSettledPins } from './staking/hooks/useSettledPins';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
+import { dashboardKeys } from '@/features/dashboard/utils/entityCache';
+import { CACHE_TIMES } from '@/features/dashboard/utils/queryCache';
 
 /* Context */
 import { useLanguage } from '@/context/LanguageContext';
@@ -102,7 +109,6 @@ export default function DashboardClient({
   initialTransactionActiveTag = 'All',
   initialWalletFilter = true,
   initialNetworkStats = null,
-  initialNetworkFromUrl = false,
   initialValSortMode = 'random',
   initialTxSortMode = 'newest',
   initialValColumns = 2,
@@ -176,21 +182,21 @@ export default function DashboardClient({
       return;
     }
 
-    // A link that names its network PINS the page, and the wallet never drags
-    // it elsewhere. This is not a nicety: the wallet provider restores its own
-    // network from a cookie in a `setTimeout(0)` right after mount, and when
-    // there is no session for the requested ledger it forces its own choice
-    // outright. Following that would yank a shared Stokenet link onto Mainnet a
-    // blink after opening it, and re-asserting instead would just loop against
-    // a provider that is behaving correctly. The dashboard can perfectly well
-    // display one ledger while the wallet is connected to another.
-    if (initialNetworkFromUrl) return;
-
-    // No network in the URL, so the wallet leads: follow a real switch.
+    // Past the wake-up, a change in the wallet is a DELIBERATE one: someone
+    // opened the connect popover or the profile modal and picked a ledger. That
+    // is the same intent as using the toggle in the toolbar, so it moves the
+    // page the same way.
+    //
+    // The load-time protection above is what a shared link needs — the provider
+    // restores its own network from a cookie right after mount and would
+    // otherwise yank a Stokenet link onto Mainnet — and it still stands. What
+    // does not stand any more is extending that protection to every later
+    // choice: it left the two controls disagreeing for the rest of the session,
+    // with the wallet's own buttons apparently doing nothing.
     if (activeNetwork !== previouslyKnown && activeNetwork !== network) {
       handleNetworkChange(activeNetwork as 'mainnet' | 'stokenet');
     }
-  }, [activeNetwork, network, switchNetwork, handleNetworkChange, initialNetworkFromUrl]);
+  }, [activeNetwork, network, switchNetwork, handleNetworkChange]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {
     setPendingRange(range);
@@ -369,23 +375,73 @@ export default function DashboardClient({
   /* ══ React Query — Validators ============================== */
   // Only the staking view needs the validator list; the explorer gets the
   // aggregates it displays from the server instead of 287 full objects.
+  /*
+   * TWO reads of the same query, and the difference matters.
+   *
+   * The REQUESTED ledger is what the user just asked for; its arrival is what
+   * allows the page to move. The SHOWN ledger is the one whose cards are on
+   * screen. Reading the list from the requested one put 287 Mainnet validators
+   * in front of a grid still pinned and labelled Stokenet, so the wallet filter
+   * matched nothing and announced that no staking nodes were found until the
+   * rest caught up. They share a cache entry whenever they agree, which is
+   * almost always, so this is one query in practice.
+   */
   const {
-    data: validatorsData,
+    data: requestedValidators,
     isFetching: isValFetching,
     isPending: isValPending,
     isPlaceholderData: isValPlaceholder,
     isError: isValError,
     refetch: refetchValidators,
   } = useValidatorsQuery(network, activeView === 'staking');
-  const realValidators = validatorsData?.validators ?? [];
+
+  /* Which accounts the wallet is showing, needed both to read its stakes and to
+     decide when the grid may adopt a new ledger. */
+  const connectedAccountAddresses = (isConnected && accounts.length > 0) 
+    ? (selectedAccountAddresses.length > 0 ? selectedAccountAddresses : accounts.map(a => a.address))
+    : (initialIsWalletConnected ? initialConnectedAccounts : []);
+    
+  const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
+
+  // Asked for the REQUESTED ledger, not the committed one, so the read starts
+  // with the click and the answer is in hand by the time the grid may show it.
+  const walletPinsReady = useStakesReady(
+    deferredConnectedAccountAddresses,
+    network as 'mainnet' | 'stokenet',
+  );
 
   // The ledger the cards on screen belong to. See the hook for why the two can
   // legitimately disagree for a moment, and why nothing is torn down meanwhile.
   const stakingNetwork = useCommittedNetwork(initialNetwork, {
     requested: network,
     isStakingView: activeView === 'staking',
-    hasOwnList: !isValPlaceholder && !!validatorsData,
+    hasOwnList: !isValPlaceholder && !!requestedValidators,
+    walletPinsReady,
   });
+
+  /**
+   * Warms the other ledger before the user commits to it.
+   *
+   * The validator list is only half of what the grid needs: with a wallet
+   * connected, which of its validators go FIRST comes from a separate read, and
+   * the switch waits for it — showing the previous ledger's cards meanwhile, not
+   * skeletons. Warming both is what makes that wait nothing.
+   */
+  const queryClient = useQueryClient();
+  const warmNetwork = (net: Network) => {
+    prefetchNetwork(net);
+    for (const address of deferredConnectedAccountAddresses) {
+      if (!address) continue;
+      queryClient.prefetchQuery({
+        queryKey: dashboardKeys.entities.detail(address, net as 'mainnet' | 'stokenet'),
+        queryFn: () => apiFetchEntityDetails(address, net as 'mainnet' | 'stokenet'),
+        staleTime: CACHE_TIMES.MEDIUM,
+      });
+    }
+  };
+
+  const { data: validatorsData } = useValidatorsQuery(stakingNetwork, activeView === 'staking');
+  const realValidators = validatorsData?.validators ?? [];
 
   /** What the staking half of the page reads; the explorer keeps its own. */
   const viewNetwork = activeView === 'staking' ? stakingNetwork : deferredNetwork;
@@ -452,20 +508,33 @@ export default function DashboardClient({
   const txsFailed = activeView === 'transactions' && isTxError && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
-  const connectedAccountAddresses = (isConnected && accounts.length > 0) 
-    ? (selectedAccountAddresses.length > 0 ? selectedAccountAddresses : accounts.map(a => a.address))
-    : (initialIsWalletConnected ? initialConnectedAccounts : []);
-    
-  const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
     
   const {
-    pinnedValidatorAddresses,
-    ownerValidatorAddresses,
+    pinnedValidatorAddresses: freshPins,
+    ownerValidatorAddresses: freshOwners,
     isLoading: isStakesLoading,
   } = useConnectedStakes(
     deferredConnectedAccountAddresses,
     stakingNetwork as 'mainnet' | 'stokenet',
     realValidators,
+  );
+
+  /*
+   * Held steady while they are re-read. Every wallet-side move re-reads them —
+   * the toolbar's ledger toggle, the one in the connect popover, the one in the
+   * profile modal (which swaps the whole account list), picking accounts — and
+   * raw, each of those passes through "nothing is pinned" for a moment. The
+   * grid believed it and painted skeletons, or announced that no staking nodes
+   * were found. See the hook.
+   */
+  const {
+    pinnedValidatorAddresses,
+    ownerValidatorAddresses,
+  } = useSettledPins(
+    { pinnedValidatorAddresses: freshPins, ownerValidatorAddresses: freshOwners },
+    // Same reason `useStakesReady` avoids `isLoading`: it is false on the render
+    // an observer mounts, which is exactly when nothing has been read yet.
+    isStakesLoading || !walletPinsReady,
   );
 
   /*
@@ -719,7 +788,7 @@ export default function DashboardClient({
           // writing the derived value back turned the filter ON instead of
           // off, and it then snapped on as soon as the search was cleared.
           onWalletFilterChange={() => setWalletFilterToggled((on: boolean) => !on)}
-          onPrefetchNetwork={prefetchNetwork}
+          onPrefetchNetwork={warmNetwork}
           dt={dt}
         />
 
