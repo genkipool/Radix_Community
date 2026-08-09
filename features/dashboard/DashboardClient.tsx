@@ -69,6 +69,7 @@ import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConnectedStakes } from './staking/hooks/useConnectedStakes';
 import { useStakesReady } from './staking/hooks/useStakesReady';
+import { walletAccountsForNetwork } from './staking/lib/walletAccounts';
 import { useSettledPins } from './staking/hooks/useSettledPins';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetchEntityDetails } from '@/features/dashboard/services/apiClient';
@@ -403,16 +404,37 @@ export default function DashboardClient({
 
   /* Which accounts the wallet is showing, needed both to read its stakes and to
      decide when the grid may adopt a new ledger. */
-  const connectedAccountAddresses = (isConnected && accounts.length > 0) 
-    ? (selectedAccountAddresses.length > 0 ? selectedAccountAddresses : accounts.map(a => a.address))
-    : (initialIsWalletConnected ? initialConnectedAccounts : []);
-    
-  const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
+  /**
+   * The wallet's accounts on a given ledger — read straight from the sessions,
+   * which hold both at once, rather than from `accounts` (whichever ledger the
+   * wallet happens to be pointed at).
+   *
+   * That is what took the wallet out of the critical path: the stakes for the
+   * ledger being switched to can be read on the click, instead of after the
+   * provider has finished changing its own network, and they can be warmed
+   * before the click at all. See the helper for why the two differ.
+   */
+  const accountsOn = (net: Network) => walletAccountsForNetwork({
+    network: net,
+    sessions,
+    activeNetwork,
+    selectedAccountAddresses,
+    pageNetwork: initialNetwork,
+    initialIsWalletConnected,
+    initialConnectedAccounts,
+  });
+
+  /*
+   * Not deferred. Deferring is for smoothing what is PAINTED; here it only
+   * delayed the moment a request could go out, which is the opposite of what
+   * this value is for.
+   */
+  const requestedNetworkAccounts = accountsOn(network);
 
   // Asked for the REQUESTED ledger, not the committed one, so the read starts
   // with the click and the answer is in hand by the time the grid may show it.
   const walletPinsReady = useStakesReady(
-    deferredConnectedAccountAddresses,
+    requestedNetworkAccounts,
     network as 'mainnet' | 'stokenet',
     // A session on the ledger being asked for means there ARE accounts, so an
     // empty list is "not told yet", not "none".
@@ -448,7 +470,7 @@ export default function DashboardClient({
    */
   const queryClient = useQueryClient();
   const warmNetwork = (net: Network) => {
-    for (const address of deferredConnectedAccountAddresses) {
+    for (const address of accountsOn(net)) {
       if (!address) continue;
       queryClient.prefetchQuery({
         queryKey: dashboardKeys.entities.detail(address, net as 'mainnet' | 'stokenet'),
@@ -532,7 +554,8 @@ export default function DashboardClient({
     ownerValidatorAddresses: freshOwners,
     isLoading: isStakesLoading,
   } = useConnectedStakes(
-    deferredConnectedAccountAddresses,
+    // The ledger ON SCREEN, so the pins always describe the cards beside them.
+    accountsOn(stakingNetwork),
     stakingNetwork as 'mainnet' | 'stokenet',
     realValidators,
   );
