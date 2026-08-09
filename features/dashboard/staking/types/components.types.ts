@@ -30,6 +30,8 @@ export interface LayoutProps {
     marketData?: MarketData | null;
     locale?: string;
     onDownloadCsv?: (address: string) => void;
+    /** Whether this card's logo is requested with the document or on scroll. */
+    imageLoading?: 'eager' | 'lazy';
 }
 
 /**
@@ -113,6 +115,9 @@ export interface ValidatorDetailViewProps {
     onClose: () => void;
     onPrev?: () => void;
     onNext?: () => void;
+    /** Neighbours in the list, so a swipe drags their real detail into view. */
+    prevValidator?: Validator | null;
+    nextValidator?: Validator | null;
     t?: Partial<TranslationsT>;
     dt?: Partial<DashboardDict>;
     copiedAddress: string | null;

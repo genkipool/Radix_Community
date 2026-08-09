@@ -246,8 +246,39 @@ export default function DashboardClient({
   // change is a real navigation, so anything kept only in memory would reset.
   const walletFilterToggled = prefs.walletFilter;
   const setWalletFilterToggled = prefs.setWalletFilter;
-  const hasActiveSearch = searchQuery.trim().length > 0;
-  const isWalletFilterActive = !hasActiveSearch && walletFilterToggled && isConnected && accounts.length > 0;
+  /*
+   * A search wins over the wallet filter, and the two are read from the SAME
+   * snapshot of the search box — the deferred one, which is what the list is
+   * actually filtered by.
+   *
+   * Reading this from the immediate value put the pair out of step for a
+   * render, and that render showed EVERY validator: clearing the box lifted
+   * the search at once while the wallet filter was still one frame behind, so
+   * the whole network flashed before the wallet's own validators came back.
+   * Typing an address had the mirror problem. Sharing the snapshot means there
+   * is no frame in which neither filter applies.
+   */
+  const hasActiveSearch = deferredSearch.trim().length > 0;
+  /*
+   * Whether a wallet is connected, as this page can know it RIGHT NOW.
+   *
+   * The wallet context restores its session after mount, so for the first
+   * renders — including the ones a navigation produces — it reports "not
+   * connected" while the browser plainly is. The server already knew: it read
+   * the connection from the cookie and sent it down, which is why every other
+   * wallet-dependent value here falls back to it (see the address lists below).
+   *
+   * The filter did not, and THAT is the flash. Clearing the search box
+   * navigates, and for the renders where the context had not caught up the
+   * filter evaluated to "off" with no search left to narrow anything — so the
+   * entire network appeared for an instant before the wallet's own validators
+   * came back.
+   */
+  const walletHasAccounts =
+    isConnected && accounts.length > 0
+      ? true
+      : initialIsWalletConnected && initialConnectedAccounts.length > 0;
+  const isWalletFilterActive = !hasActiveSearch && walletFilterToggled && walletHasAccounts;
 
   // ── View-local derived values (validators vs transactions) ──
   const sortMode = activeView === 'staking' ? prefs.valSortMode : prefs.txSortMode;
@@ -340,11 +371,22 @@ export default function DashboardClient({
   /* ══ React Query — Validators ============================== */
   // Only the staking view needs the validator list; the explorer gets the
   // aggregates it displays from the server instead of 287 full objects.
-  const { data: validatorsData, isFetching: isValFetching } = useValidatorsQuery(
-    deferredNetwork,
-    activeView === 'staking',
-  );
+  const {
+    data: validatorsData,
+    isFetching: isValFetching,
+    isPending: isValPending,
+    isError: isValError,
+    refetch: refetchValidators,
+  } = useValidatorsQuery(deferredNetwork, activeView === 'staking');
   const realValidators = validatorsData?.validators ?? [];
+  // Nothing in hand and something on its way: the grid shows skeletons rather
+  // than claiming the network has no validators.
+  const listIsLoading =
+    activeView === 'staking' && realValidators.length === 0 && (isValPending || isValFetching);
+  // Out of retries with nothing to show. A failed refetch that still has a
+  // list keeps the list: stale validators beat an error page.
+  const validatorsFailed =
+    activeView === 'staking' && isValError && realValidators.length === 0;
   const networkStats = validatorsData?.networkStats ?? initialNetworkStats ?? null;
 
   /* ══ React Query — Transactions (Infinite Query) ═══════════ */
@@ -353,7 +395,7 @@ export default function DashboardClient({
     : (initialIsWalletConnected ? initialConnectedAccounts : undefined);
     
   const deferredConnectedAddresses = useDeferredValue(connectedAddresses);
-  const deferredIsWalletFilterActive = useDeferredValue(isWalletFilterActive);
+  const deferredIsWalletFilterActive = isWalletFilterActive;
 
   const txAddresses = deferredIsWalletFilterActive && deferredConnectedAddresses && deferredConnectedAddresses.length > 0 ? deferredConnectedAddresses : undefined;
 
@@ -362,6 +404,8 @@ export default function DashboardClient({
     isFetchingNextPage,
     isFetching: _isTxFetching,
     isLoading: isTxLoading,
+    isError: isTxError,
+    refetch: refetchTxs,
     hasNextPage,
     fetchNextPage,
     status: txStatus,
@@ -384,6 +428,7 @@ export default function DashboardClient({
   // isFetching (true even during background refetches) so the skeleton only
   // appears when there is genuinely no data — not when hydrated data exists.
   const loadingTxs = isTxLoading && txs.length === 0;
+  const txsFailed = activeView === 'transactions' && isTxError && txs.length === 0;
 
   /* ── Validator filters ───────────────────────────────────── */
   const connectedAccountAddresses = (isConnected && accounts.length > 0) 
@@ -392,7 +437,31 @@ export default function DashboardClient({
     
   const deferredConnectedAccountAddresses = useDeferredValue(connectedAccountAddresses);
     
-  const { pinnedValidatorAddresses, ownerValidatorAddresses } = useConnectedStakes(deferredConnectedAccountAddresses, deferredNetwork as 'mainnet' | 'stokenet', realValidators);
+  const {
+    pinnedValidatorAddresses,
+    ownerValidatorAddresses,
+    isLoading: isStakesLoading,
+  } = useConnectedStakes(
+    deferredConnectedAccountAddresses,
+    deferredNetwork as 'mainnet' | 'stokenet',
+    realValidators,
+  );
+
+  /*
+   * The grid is waiting whenever it has nothing to show AND something to wait
+   * for: the list itself, or — with the wallet filter on — the stakes that say
+   * which validators are the wallet's. Without the second half the filter
+   * answers "none" while it has nothing to filter by, and that reads on screen
+   * as "no staking nodes found" a moment before they appear. The server
+   * prefetches those stakes so this is rare; a wallet connected after load
+   * still comes through here.
+   */
+  const loadingValidators =
+    listIsLoading ||
+    (activeView === 'staking' &&
+      isWalletFilterActive &&
+      isStakesLoading &&
+      pinnedValidatorAddresses.length === 0);
 
   const { filtered, visibleValCount, sentinelRef } = useValidatorFilters({
     validators: realValidators,
@@ -646,6 +715,11 @@ export default function DashboardClient({
             filteredTxs={visibleTxs}
             loadingTxs={loadingTxs}
             txsInitialized={txsInitialized}
+            loadingValidators={loadingValidators}
+            validatorsFailed={validatorsFailed}
+            onRetryValidators={() => void refetchValidators()}
+            txsFailed={txsFailed}
+            onRetryTxs={() => void refetchTxs()}
             columns={deferredColumns}
             expandedPosts={expanded.expandedPosts}
             readingMode={readingMode}

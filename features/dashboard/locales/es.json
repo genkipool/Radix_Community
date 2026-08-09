@@ -11,6 +11,8 @@
     "error": {
       "title": "Error de Red",
       "subtitle": "No pudimos conectar con el Gateway de Radix. Mostrando datos sin conexión/caché.",
+      "unavailable_title": "No hemos podido leer la red",
+      "unavailable_hint": "El Gateway de Radix no ha respondido a tiempo. Suele ser momentáneo.",
       "retry": "Reintentar Conexión"
     },
     "network": {

@@ -12,6 +12,7 @@ import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
 import { ValidatorShareActions, validatorPageUrl } from './ValidatorShareActions';
+import { validatorIconSrc } from '../lib/validatorIcon';
 import { QrPopover } from '@/components/ui/QrPopover';
 import { buildValidatorStats } from '../lib/validatorStats';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
@@ -71,6 +72,7 @@ const ShareCorner = ({
 export const Layout1Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    imageLoading = 'lazy',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -87,7 +89,7 @@ export const Layout1Col = ({
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
                     <div className="relative z-10 flex-1 flex items-center">
-                        <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
+                        <SafeImage src={validatorIconSrc(validator.iconUrl, network)} zoomSrc={validator.iconUrl} alt={safeName} fallbackName={safeName} loading={imageLoading}
                             className={`${PHOTO_1COL} h-32 sm:h-36 rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2.5px solid ${statusColor}` }} />
                     </div>
@@ -173,7 +175,8 @@ export const Layout1Col = ({
 ==============================═══════════ */
 export const Layout2Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    imageLoading = 'lazy',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -189,7 +192,7 @@ export const Layout2Col = ({
                     <div className="absolute top-0 inset-x-0 h-1/2 opacity-10 pointer-events-none"
                         style={{ background: `radial-gradient(ellipse at top, ${statusColor}, transparent 80%)` }} />
                     <div className="relative z-10 py-4 sm:py-6">
-                        <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
+                        <SafeImage src={validatorIconSrc(validator.iconUrl, network)} zoomSrc={validator.iconUrl} alt={safeName} fallbackName={safeName} loading={imageLoading}
                             className={`${photo2Col(columns)} ${columns === 3 ? 'h-16 sm:h-20' : 'h-24 sm:h-28'} rounded-2xl object-cover shadow-xl transition-transform duration-300`}
                             style={{ border: `2px solid ${statusColor}` }} />
                     </div>
@@ -278,7 +281,8 @@ export const Layout2Col = ({
 ==============================═══════════ */
 export const Layout4Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
-    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv
+    onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    imageLoading = 'lazy',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -289,7 +293,7 @@ export const Layout4Col = ({
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
             {/* Row 1: Image and Name with Labels */}
             <div className="flex gap-2.5 p-3 items-center">
-                <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
+                <SafeImage src={validatorIconSrc(validator.iconUrl, network)} zoomSrc={validator.iconUrl} alt={safeName} fallbackName={safeName} loading={imageLoading}
                     className="size-12 rounded-xl object-cover shadow-md shrink-0 transition-transform duration-300"
                     style={{ border: `1.5px solid ${statusColor}90` }} />
                 <div className="flex-1 min-w-0">
@@ -365,6 +369,7 @@ export const Layout4Col = ({
 export const Layout6Col = ({
     validator, searchQuery, isExpanded, t, onExpand: _onExpand,
     onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
+    imageLoading = 'lazy',
 }: LayoutProps) => {
     const dt = t?.dashboard;
     const statusColor = getStatusColor(validator.status);
@@ -375,7 +380,7 @@ export const Layout6Col = ({
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
             {/* Row 1: Photo and Name (2 columns) */}
             <div className="flex gap-2 p-2 items-center">
-                <SafeImage src={validator.iconUrl} alt={safeName} fallbackName={safeName}
+                <SafeImage src={validatorIconSrc(validator.iconUrl, network)} zoomSrc={validator.iconUrl} alt={safeName} fallbackName={safeName} loading={imageLoading}
                     className="size-8 rounded-lg object-cover shrink-0 transition-transform duration-300"
                     style={{ border: `1px solid ${statusColor}80` }} />
                 <h3 className="text-[11px] font-black text-[var(--color-text-main)] truncate leading-tight flex-1">

@@ -13,6 +13,7 @@ import { FloatingNav } from '@/components/ui/FloatingNav';
 import { CloseButton } from '@/components/ui/CloseButton';
 import { LabelBadge } from '@/components/ui/LabelBadge';
 import { SwipeableContainer } from '@/components/ui/SwipeableContainer';
+import type { ForumPost } from '../types/data.types';
 
 export function ForumReadingMode() {
     const {
@@ -32,6 +33,195 @@ export function ForumReadingMode() {
     const currentIdx = filteredPosts.findIndex(p => p.id === expandedPost.id);
     const prevPost = currentIdx > 0 ? filteredPosts[currentIdx - 1] : null;
     const nextPost = currentIdx < filteredPosts.length - 1 ? filteredPosts[currentIdx + 1] : null;
+
+    /**
+     * One thread, rendered as the body of the modal. Used three times: for the
+     * thread being read and, while a finger is swiping, for the two neighbours
+     * the gesture uncovers, so the reader drags real posts into view instead of
+     * an empty panel.
+     */
+    const renderPost = (p: ForumPost) => (
+        <>
+            {/* Header */}
+            <div className="flex items-start gap-6 p-8 pb-6 border-b border-[var(--color-card-border)] bg-[var(--color-surface)]">
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-2xl md:text-3xl font-black text-[var(--color-text-main)] leading-tight mb-4 tracking-tight">
+                        {p.title}
+                    </h2>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                            <div className="flex items-center gap-2">
+                                {/* Standardized navigation handled by FloatingNav */}
+                            </div>
+                            <span className="flex items-center gap-1.5" title={t.forum.post.date}>
+                                <Calendar className="size-3.5" />
+                                {new Date(p.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span className="flex items-center gap-1.5" title={t.forum.post.views}>
+                                <Eye className="size-3.5" />
+                                {p.views}
+                            </span>
+                            <span className="flex items-center gap-1.5" title={t.forum.post.replies}>
+                                <MessageSquare className="size-3.5" />
+                                {p.replies.length}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {p.tags.map(tag => (
+                                <LabelBadge
+                                    key={tag}
+                                    value={(t.forum.tags as Record<string, string>)[tag] || tag}
+                                    title={tag}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <CloseButton
+                    onClose={closeExpanded}
+                    title={t.forum.reading.close}
+                    className="bg-[var(--color-bg)]/50 sm:w-12 sm:h-12"
+                    iconSize={24}
+                />
+            </div>
+
+            {/* Messages Body */}
+            <div className="p-8 pt-0 space-y-6 overflow-y-auto touch-pan-y custom-scrollbar">
+                <div className="py-8">
+                    <ForumMessage
+                        authorId={p.authorId}
+                        content={p.content || ''}
+                        date={p.date}
+                        likes={getPostLikes(p)}
+                        liked={likedPosts.has(p.id)}
+                        onLike={() => toggleLikePost(p.id)}
+                        dislikes={getPostDislikes(p)}
+                        disliked={dislikedPosts.has(p.id)}
+                        onDislike={() => toggleDislikePost(p.id)}
+                        post={p}
+                        messageId={p.id.toString()}
+                    />
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4 pb-4">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-card-border)] to-transparent" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-text-muted)] px-4">
+                            {t.forum.post.replies}
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-card-border)] to-transparent" />
+                    </div>
+
+                    <div className="space-y-6">
+                        {(() => {
+                            const pivotId = replyFilterPivotId;
+                            const pivotUser = replyFilterUser;
+
+                            // If no pivot is active, show all replies normally
+                            if (!pivotId) {
+                                return p.replies.map((reply) => (
+                                    <div key={reply.id} className="relative pl-6 md:pl-10">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                        <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                        <ForumMessage
+                                            authorId={reply.authorId}
+                                            content={reply.content || ''}
+                                            date={reply.date}
+                                            likes={getReplyLikes(p.id, reply)}
+                                            liked={likedReplies.has(`${p.id}-${reply.id}`)}
+                                            onLike={() => toggleLikeReply(p.id, reply.id)}
+                                            dislikes={getReplyDislikes(p.id, reply)}
+                                            disliked={dislikedReplies.has(`${p.id}-${reply.id}`)}
+                                            onDislike={() => toggleDislikeReply(p.id, reply.id)}
+                                            replyTo={reply.replyTo}
+                                            replyToContent={reply.replyToContent}
+                                            post={p}
+                                            isReply={true}
+                                            messageId={reply.id.toString()}
+                                        />
+                                    </div>
+                                ));
+                            }
+
+                            // We have a pivot. 
+                            const replies = p.replies;
+
+                            // 1. Find pivot message index
+                            // The pivot ID is in format "[authorId]-[messageId]"
+                            // If pivot is the original post, pivotId might start with "root-"
+                            const pivotMsgId = pivotId.split('-')[1];
+                            const isRootPivot = pivotId.startsWith('root-');
+                            const pivotIndex = isRootPivot ? -1 : replies.findIndex(r => r.id.toString() === pivotMsgId);
+
+                            // Pre-calculate childrenMap for consistent tree-based filtering
+                            const childrenMap = getReplyChildrenMap(p, users);
+                            const pivotParentId: number | 'root' = isRootPivot ? 'root' : Number(pivotMsgId);
+                            const pivotChildren = childrenMap.get(pivotParentId) || [];
+                            const pivotChildrenSet = new Set(pivotChildren.map(c => c.id));
+
+                            return replies.map((reply, idx) => {
+                                // Messages above or at pivot index are always shown
+                                if (idx <= pivotIndex) {
+                                    return (
+                                        <div key={reply.id} className="relative pl-6 md:pl-10">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                            <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                            <ForumMessage
+                                                authorId={reply.authorId}
+                                                content={reply.content || ''}
+                                                date={reply.date}
+                                                likes={getReplyLikes(p.id, reply)}
+                                                liked={likedReplies.has(`${p.id}-${reply.id}`)}
+                                                onLike={() => toggleLikeReply(p.id, reply.id)}
+                                                dislikes={getReplyDislikes(p.id, reply)}
+                                                disliked={dislikedReplies.has(`${p.id}-${reply.id}`)}
+                                                onDislike={() => toggleDislikeReply(p.id, reply.id)}
+                                                replyTo={reply.replyTo}
+                                                replyToContent={reply.replyToContent}
+                                                post={p}
+                                                isReply={true}
+                                                messageId={reply.id.toString()}
+                                            />
+                                        </div>
+                                    );
+                                }
+
+                                // Filter logic: Check if message is a direct child of the pivot in our tree
+                                const isDirectChild = pivotChildrenSet.has(reply.id);
+                                const matchesUser = !pivotUser || reply.authorId === pivotUser;
+
+                                if (matchesUser && isDirectChild) {
+                                    return (
+                                        <div key={reply.id} className="relative pl-6 md:pl-10">
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                            <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
+                                            <ForumMessage
+                                                authorId={reply.authorId}
+                                                content={reply.content || ''}
+                                                date={reply.date}
+                                                likes={getReplyLikes(p.id, reply)}
+                                                liked={likedReplies.has(`${p.id}-${reply.id}`)}
+                                                onLike={() => toggleLikeReply(p.id, reply.id)}
+                                                dislikes={getReplyDislikes(p.id, reply)}
+                                                disliked={dislikedReplies.has(`${p.id}-${reply.id}`)}
+                                                onDislike={() => toggleDislikeReply(p.id, reply.id)}
+                                                replyTo={reply.replyTo}
+                                                post={p}
+                                                isReply={true}
+                                                messageId={reply.id.toString()}
+                                            />
+                                        </div>
+                                    );
+                                }
+
+                                return null;
+                            });
+                        })()}
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 
     return (
         <AnimatePresence>
@@ -73,196 +263,18 @@ export function ForumReadingMode() {
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Inner content — swipeable, only THIS slides on next/prev */}
-                    <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-                        <SwipeableContainer
-                            key={expandedPost.id}
-                            itemKey={expandedPost.id}
-                            direction={direction}
-                            setDirection={setDirection}
-                            onPrev={prevPost ? () => { setDirection(-1); handleExpandPost(prevPost.id); } : undefined}
-                            onNext={nextPost ? () => { setDirection(1); handleExpandPost(nextPost.id); } : undefined}
-                            className="flex flex-col min-h-0 bg-[var(--color-surface)]"
-                        >
-                            {/* Header */}
-                            <div className="flex items-start gap-6 p-8 pb-6 border-b border-[var(--color-card-border)] bg-[var(--color-surface)]">
-                                <div className="flex-1 min-w-0">
-                                    <h2 className="text-2xl md:text-3xl font-black text-[var(--color-text-main)] leading-tight mb-4 tracking-tight">
-                                        {expandedPost.title}
-                                    </h2>
-                                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
-                                            <div className="flex items-center gap-2">
-                                                {/* Standardized navigation handled by FloatingNav */}
-                                            </div>
-                                            <span className="flex items-center gap-1.5" title={t.forum.post.date}>
-                                                <Calendar className="size-3.5" />
-                                                {new Date(expandedPost.date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                            </span>
-                                            <span className="flex items-center gap-1.5" title={t.forum.post.views}>
-                                                <Eye className="size-3.5" />
-                                                {expandedPost.views}
-                                            </span>
-                                            <span className="flex items-center gap-1.5" title={t.forum.post.replies}>
-                                                <MessageSquare className="size-3.5" />
-                                                {expandedPost.replies.length}
-                                            </span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {expandedPost.tags.map(tag => (
-                                                <LabelBadge
-                                                    key={tag}
-                                                    value={(t.forum.tags as Record<string, string>)[tag] || tag}
-                                                    title={tag}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <CloseButton
-                                    onClose={closeExpanded}
-                                    title={t.forum.reading.close}
-                                    className="bg-[var(--color-bg)]/50 sm:w-12 sm:h-12"
-                                    iconSize={24}
-                                />
-                            </div>
-
-                            {/* Messages Body */}
-                            <div className="p-8 pt-0 space-y-6 overflow-y-auto touch-pan-y custom-scrollbar">
-                                <div className="py-8">
-                                    <ForumMessage
-                                        authorId={expandedPost.authorId}
-                                        content={expandedPost.content || ''}
-                                        date={expandedPost.date}
-                                        likes={getPostLikes(expandedPost)}
-                                        liked={likedPosts.has(expandedPost.id)}
-                                        onLike={() => toggleLikePost(expandedPost.id)}
-                                        dislikes={getPostDislikes(expandedPost)}
-                                        disliked={dislikedPosts.has(expandedPost.id)}
-                                        onDislike={() => toggleDislikePost(expandedPost.id)}
-                                        post={expandedPost}
-                                        messageId={expandedPost.id.toString()}
-                                    />
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-4 pb-4">
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-card-border)] to-transparent" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-text-muted)] px-4">
-                                            {t.forum.post.replies}
-                                        </span>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--color-card-border)] to-transparent" />
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        {(() => {
-                                            const pivotId = replyFilterPivotId;
-                                            const pivotUser = replyFilterUser;
-
-                                            // If no pivot is active, show all replies normally
-                                            if (!pivotId) {
-                                                return expandedPost.replies.map((reply) => (
-                                                    <div key={reply.id} className="relative pl-6 md:pl-10">
-                                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                        <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                        <ForumMessage
-                                                            authorId={reply.authorId}
-                                                            content={reply.content || ''}
-                                                            date={reply.date}
-                                                            likes={getReplyLikes(expandedPost.id, reply)}
-                                                            liked={likedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                            onLike={() => toggleLikeReply(expandedPost.id, reply.id)}
-                                                            dislikes={getReplyDislikes(expandedPost.id, reply)}
-                                                            disliked={dislikedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                            onDislike={() => toggleDislikeReply(expandedPost.id, reply.id)}
-                                                            replyTo={reply.replyTo}
-                                                            replyToContent={reply.replyToContent}
-                                                            post={expandedPost}
-                                                            isReply={true}
-                                                            messageId={reply.id.toString()}
-                                                        />
-                                                    </div>
-                                                ));
-                                            }
-
-                                            // We have a pivot. 
-                                            const replies = expandedPost.replies;
-
-                                            // 1. Find pivot message index
-                                            // The pivot ID is in format "[authorId]-[messageId]"
-                                            // If pivot is the original post, pivotId might start with "root-"
-                                            const pivotMsgId = pivotId.split('-')[1];
-                                            const isRootPivot = pivotId.startsWith('root-');
-                                            const pivotIndex = isRootPivot ? -1 : replies.findIndex(r => r.id.toString() === pivotMsgId);
-
-                                            // Pre-calculate childrenMap for consistent tree-based filtering
-                                            const childrenMap = getReplyChildrenMap(expandedPost, users);
-                                            const pivotParentId: number | 'root' = isRootPivot ? 'root' : Number(pivotMsgId);
-                                            const pivotChildren = childrenMap.get(pivotParentId) || [];
-                                            const pivotChildrenSet = new Set(pivotChildren.map(c => c.id));
-
-                                            return replies.map((reply, idx) => {
-                                                // Messages above or at pivot index are always shown
-                                                if (idx <= pivotIndex) {
-                                                    return (
-                                                        <div key={reply.id} className="relative pl-6 md:pl-10">
-                                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                            <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                            <ForumMessage
-                                                                authorId={reply.authorId}
-                                                                content={reply.content || ''}
-                                                                date={reply.date}
-                                                                likes={getReplyLikes(expandedPost.id, reply)}
-                                                                liked={likedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                                onLike={() => toggleLikeReply(expandedPost.id, reply.id)}
-                                                                dislikes={getReplyDislikes(expandedPost.id, reply)}
-                                                                disliked={dislikedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                                onDislike={() => toggleDislikeReply(expandedPost.id, reply.id)}
-                                                                replyTo={reply.replyTo}
-                                                                replyToContent={reply.replyToContent}
-                                                                post={expandedPost}
-                                                                isReply={true}
-                                                                messageId={reply.id.toString()}
-                                                            />
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Filter logic: Check if message is a direct child of the pivot in our tree
-                                                const isDirectChild = pivotChildrenSet.has(reply.id);
-                                                const matchesUser = !pivotUser || reply.authorId === pivotUser;
-
-                                                if (matchesUser && isDirectChild) {
-                                                    return (
-                                                        <div key={reply.id} className="relative pl-6 md:pl-10">
-                                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                            <div className="absolute left-0 top-8 w-6 md:w-10 h-1.5 rounded-full bg-[var(--color-card-border)]/30" />
-                                                            <ForumMessage
-                                                                authorId={reply.authorId}
-                                                                content={reply.content || ''}
-                                                                date={reply.date}
-                                                                likes={getReplyLikes(expandedPost.id, reply)}
-                                                                liked={likedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                                onLike={() => toggleLikeReply(expandedPost.id, reply.id)}
-                                                                dislikes={getReplyDislikes(expandedPost.id, reply)}
-                                                                disliked={dislikedReplies.has(`${expandedPost.id}-${reply.id}`)}
-                                                                onDislike={() => toggleDislikeReply(expandedPost.id, reply.id)}
-                                                                replyTo={reply.replyTo}
-                                                                post={expandedPost}
-                                                                isReply={true}
-                                                                messageId={reply.id.toString()}
-                                                            />
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return null;
-                                            });
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                        </SwipeableContainer>
-                    </AnimatePresence>
+                    <SwipeableContainer
+                        itemKey={expandedPost.id}
+                        direction={direction}
+                        setDirection={setDirection}
+                        onPrev={prevPost ? () => { setDirection(-1); handleExpandPost(prevPost.id); } : undefined}
+                        onNext={nextPost ? () => { setDirection(1); handleExpandPost(nextPost.id); } : undefined}
+                        prevContent={prevPost ? renderPost(prevPost) : null}
+                        nextContent={nextPost ? renderPost(nextPost) : null}
+                        className="flex flex-col min-h-0 bg-[var(--color-surface)]"
+                    >
+                        {renderPost(expandedPost)}
+                    </SwipeableContainer>
                 </div>
             </m.div>
         </AnimatePresence>

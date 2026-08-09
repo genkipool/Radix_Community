@@ -124,8 +124,9 @@ export interface TransactionDetailModalProps {
     copiedAddress: string | null;
     copyAddress: (addr: string) => void;
     network: Network;
-    prevTxHash?: string;
-    nextTxHash?: string;
+    /** Neighbours in the list, so a swipe drags their real detail into view. */
+    prevTx?: TransactionInfo | null;
+    nextTx?: TransactionInfo | null;
     direction?: number;
     setDirection?: React.Dispatch<React.SetStateAction<number>>;
     timezone: string;

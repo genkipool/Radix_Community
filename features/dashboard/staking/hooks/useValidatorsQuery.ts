@@ -32,5 +32,14 @@ export function useValidatorsQuery(network: Network, enabled = true) {
     refetchInterval:         300_000,
     refetchIntervalInBackground: false,
     placeholderData:         (prev) => prev,
+    /*
+     * The Gateway has bad seconds — a rate limit, a slow round — and the API
+     * now says so with a 503 instead of an empty list. Retrying is what turns
+     * that back into a page: four attempts backing off from a quarter second
+     * to four, which outlives a hiccup without hammering a service that is
+     * already struggling.
+     */
+    retry:                   4,
+    retryDelay:              (attempt) => Math.min(250 * 2 ** attempt, 4_000),
   });
 }

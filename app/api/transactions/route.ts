@@ -7,6 +7,19 @@ import {
     fetchFilteredTransactions,
 } from '@/services/radixApi';
 
+/** Never cached, and asks the caller to come back: this is a hiccup, not an answer. */
+const unavailable = (message: string) =>
+    NextResponse.json(
+        { error: message },
+        {
+            status: 503,
+            headers: {
+                'Cache-Control': 'no-store',
+                'Retry-After': '5',
+            },
+        },
+    );
+
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const cursor = validateCursor(searchParams.get('cursor'));
@@ -54,8 +67,18 @@ export async function GET(request: NextRequest) {
             result = await getRecentTransactionsCached(cursor, limit, network);
         }
 
+        // An empty page is a real answer for a filter, an address or a page
+        // past the end: those can legitimately have nothing. The unfiltered tip
+        // of mainnet cannot — there is always a last transaction — so an empty
+        // one means the read failed, and saying so lets the browser retry
+        // instead of printing "no transactions found" over a Gateway hiccup.
         if (result.transactions.length === 0) {
-            logger.warn({ network, tag, address, cursor: !!cursor }, 'SERVED EMPTY TRANSACTIONS');
+            const isUnfilteredTip = !cursor && !address && tag === 'All' && !start && !end;
+            if (isUnfilteredTip) {
+                logger.warn({ network }, '[TransactionsAPI] Empty tip — answering 503');
+                return unavailable('transactions_unavailable');
+            }
+            logger.info({ network, tag, address, cursor: !!cursor }, 'No transactions for this query');
             return NextResponse.json(result, {
                 headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' },
             });
@@ -79,12 +102,6 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         logger.error({ err: error }, 'Transaction API error: %s', message);
-        return NextResponse.json(
-            { error: message },
-            {
-                status: 500,
-                headers: { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' }
-            },
-        );
+        return unavailable(message);
     }
 }
