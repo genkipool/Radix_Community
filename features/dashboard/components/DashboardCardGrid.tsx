@@ -63,6 +63,7 @@ export const DashboardCardGrid = ({
   loadingTxs,
   txsInitialized,
   loadingValidators = false,
+  pinsPending = false,
   validatorsFailed = false,
   onRetryValidators,
   txsFailed = false,
@@ -268,9 +269,15 @@ export const DashboardCardGrid = ({
         />
       )}
 
+      {/* `pinsPending`: with the wallet filter on, "nothing found" is a claim
+          about which validators are the wallet's — and that is still being
+          read. Made early it was simply false, and it was made on every switch
+          in production, where the read is slower than the grid. Nothing is said
+          until there is something to say; the cards already on screen stay. */}
       {activeView === 'staking' &&
         !validatorsFailed &&
         !loadingValidators &&
+        !pinsPending &&
         filteredValidators.length === 0 && (
           <div className="text-center py-20 text-[var(--color-text-muted)]">
             <Shield className="size-16 mx-auto mb-4 opacity-30" />

@@ -144,13 +144,6 @@ export function useDashboardNavigation({ locale, view }: UseDashboardNavigationO
       navigate(dashboardRoutes.view(locale, view, { network }), 'replace');
     },
 
-    /**
-     * Warms the other ledger's page so a cold switch has nothing to wait for.
-     * Cheap and idempotent: Next keeps the payload briefly and drops it.
-     */
-    prefetchNetwork: (network: Network) => {
-      router.prefetch(dashboardRoutes.view(locale, view, { network }));
-    },
 
     setDateRange: (range: { start: string | null; end: string | null }) => {
       replaceQuery({ start: range.start ?? undefined, end: range.end ?? undefined });

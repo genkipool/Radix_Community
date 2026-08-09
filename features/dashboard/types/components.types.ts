@@ -77,6 +77,9 @@ export interface DashboardCardGridProps {
     txsInitialized: boolean;
     /** No validator list yet and one is on its way (first load, or a retry). */
     loadingValidators?: boolean;
+    /** The wallet's pinned validators are still being read, so an empty
+     *  filtered list means "not known yet", not "none". */
+    pinsPending?: boolean;
     /** The list could not be read, retries included. */
     validatorsFailed?: boolean;
     /** Asks for it again, for the button that says so. */

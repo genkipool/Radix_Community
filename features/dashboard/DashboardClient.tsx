@@ -136,7 +136,7 @@ export default function DashboardClient({
     activeView, network, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
     dateRange, handleDateRangeChange,
-    handleViewChange, handleNetworkChange, setTagInUrl, prefetchNetwork,
+    handleViewChange, handleNetworkChange, setTagInUrl,
     isNavigating, committedEntity,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
@@ -182,17 +182,23 @@ export default function DashboardClient({
       return;
     }
 
-    // Past the wake-up, a change in the wallet is a DELIBERATE one: someone
-    // opened the connect popover or the profile modal and picked a ledger. That
-    // is the same intent as using the toggle in the toolbar, so it moves the
-    // page the same way.
+    // Past the wake-up, a change in the wallet is treated as a DELIBERATE one:
+    // someone opened the connect popover or the profile modal and picked a
+    // ledger. That is the same intent as using the toggle in the toolbar, so it
+    // moves the page the same way, and the three controls agree.
     //
-    // The load-time protection above is what a shared link needs — the provider
-    // restores its own network from a cookie right after mount and would
-    // otherwise yank a Stokenet link onto Mainnet — and it still stands. What
-    // does not stand any more is extending that protection to every later
-    // choice: it left the two controls disagreeing for the rest of the session,
-    // with the wallet's own buttons apparently doing nothing.
+    // The load-time protection above still stands: the first thing this effect
+    // does is make the WALLET follow the URL, so a shared link opens on the
+    // ledger it names.
+    //
+    // The known trade-off: from here, "the user picked a ledger" and "the
+    // provider asserted its own because it has no session for the one we asked
+    // for" look identical — both arrive as a changed `activeNetwork`. So a
+    // wallet with no session on a link's ledger will pull the page to the one
+    // it does have. Guarding against that instead is what left the popover and
+    // the profile modal apparently dead for the rest of the session, which is
+    // the worse of the two. Telling them apart needs the wallet UI to say
+    // outright that a person clicked, which is a change in those components.
     if (activeNetwork !== previouslyKnown && activeNetwork !== network) {
       handleNetworkChange(activeNetwork as 'mainnet' | 'stokenet');
     }
@@ -420,16 +426,25 @@ export default function DashboardClient({
   });
 
   /**
-   * Warms the other ledger before the user commits to it.
+   * Warms the other ledger's DATA before the user commits to it.
    *
    * The validator list is only half of what the grid needs: with a wallet
    * connected, which of its validators go FIRST comes from a separate read, and
    * the switch waits for it — showing the previous ledger's cards meanwhile, not
    * skeletons. Warming both is what makes that wait nothing.
+   *
+   * Data only. There was a `router.prefetch` of the other ledger's PAGE here
+   * too, and it broke the switch outright in production: the navigation was
+   * then served from that prefetched RSC payload, applying it raised a
+   * hydration mismatch (React #418), and the transition was discarded — the
+   * toolbar button lit up, the URL never moved, no request was made and the
+   * grid stayed where it was. It never showed up in testing because a
+   * programmatic `.click()` fires neither hover nor pointer-down, so the
+   * prefetch never ran. It bought nothing either: the grid stopped waiting on
+   * that navigation two commits ago.
    */
   const queryClient = useQueryClient();
   const warmNetwork = (net: Network) => {
-    prefetchNetwork(net);
     for (const address of deferredConnectedAccountAddresses) {
       if (!address) continue;
       queryClient.prefetchQuery({
@@ -807,6 +822,7 @@ export default function DashboardClient({
             loadingTxs={loadingTxs}
             txsInitialized={txsInitialized}
             loadingValidators={loadingValidators}
+            pinsPending={activeView === 'staking' && isWalletFilterActive && !walletPinsReady}
             validatorsFailed={validatorsFailed}
             onRetryValidators={() => void refetchValidators()}
             txsFailed={txsFailed}

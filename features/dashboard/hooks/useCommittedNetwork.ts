@@ -48,12 +48,19 @@ export interface CommitNetworkInput {
 /**
  * How long the grid will wait for a tidy switch before taking a scruffy one.
  *
- * The wait is a courtesy, never a condition. A read that hangs — a wallet whose
- * accounts belong to the other ledger and are retried against this one, a
- * Gateway having a bad minute — must not leave the page stuck on a network the
- * user did not ask for. Past this, it switches with whatever it has.
+ * A LAST RESORT, not a pacing knob. It exists so a read that never comes back —
+ * a wallet whose accounts belong to the other ledger and are retried against
+ * this one — cannot leave the page stuck on a network nobody asked for.
+ *
+ * It was 700 ms, which is fine on a developer's machine where every read lands
+ * in tens of milliseconds, and wrong everywhere else: in production the reads
+ * are slower than that by default, so the deadline fired on ordinary switches
+ * and committed half a view — the new ledger's list against the old ledger's
+ * pins, which the wallet filter then matched down to nothing and reported as
+ * "no staking nodes found". Slow is not stuck. This has to be long enough that
+ * only genuinely stuck qualifies.
  */
-const PATIENCE_MS = 700;
+const PATIENCE_MS = 6_000;
 
 /**
  * Whether the page may now say it is on the requested ledger.
