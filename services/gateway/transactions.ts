@@ -1539,19 +1539,13 @@ export async function getRecentTransactionsCached(
     }
 
     // ── Step 3: Use Next.js Data Cache (with blocking fetch on miss) ───────
-    try {
-        return await getRecentTransactionsFromDataCache(cursor, actualLimit, network);
-    } catch (error) {
-        if (isTip) {
-            logger.error(
-                { network, error: String(error) },
-                '[TransactionsService] All data sources exhausted for tip. Returning empty state.',
-            );
-            return { transactions: [] as TransactionInfo[], nextCursor: undefined };
-        }
-        // Paginated queries: propagate error so React Query can retry
-        throw error;
-    }
+    //
+    // Reported, not flattened. The tip used to answer with an empty list when
+    // every source was exhausted, which the explorer then rendered as "no
+    // transactions found" — a statement about the ledger, made from a failure
+    // to read it. Pagination always propagated; now the tip does too, and the
+    // callers decide (the API answers 503 so React Query retries).
+    return await getRecentTransactionsFromDataCache(cursor, actualLimit, network);
 }
 
 

@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Shield } from 'lucide-react';
+import { RefreshCw, Shield, TriangleAlert } from 'lucide-react';
 import { ValidatorCard } from '../staking/components/ValidatorCard';
 import { TransactionCard } from '../explorador/components/TransactionCard';
 import { AccountCard } from '../explorador/components/AccountCard';
@@ -23,6 +23,36 @@ import type { DashboardCardGridProps } from '../types';
 
 const EMPTY_ACCOUNTS: string[] = [];
 
+/** A read that did not happen, and the offer to try it again. */
+const UnavailableState = ({
+  message,
+  hint,
+  retryLabel,
+  onRetry,
+}: {
+  message: string;
+  hint?: string;
+  retryLabel?: string;
+  onRetry?: () => void;
+}) => (
+  <div className="text-center py-20 text-[var(--color-text-muted)]">
+    <TriangleAlert className="size-12 mx-auto mb-4 opacity-40" />
+    <p className="text-lg font-bold text-[var(--color-text-main)]">{message}</p>
+    {hint && <p className="mt-1 text-sm">{hint}</p>}
+    {onRetry && (
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-5 inline-flex items-center gap-2 rounded-full border px-5 h-10 text-sm font-bold transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+        style={{ borderColor: 'var(--color-card-border)', color: 'var(--color-text-main)' }}
+      >
+        <RefreshCw className="size-4" />
+        {retryLabel ?? 'Retry'}
+      </button>
+    )}
+  </div>
+);
+
 export const DashboardCardGrid = ({
   activeView,
   gridClass,
@@ -32,6 +62,11 @@ export const DashboardCardGrid = ({
   filteredTxs,
   loadingTxs,
   txsInitialized,
+  loadingValidators = false,
+  validatorsFailed = false,
+  onRetryValidators,
+  txsFailed = false,
+  onRetryTxs,
   columns,
   expandedPosts,
   readingMode,
@@ -57,6 +92,13 @@ export const DashboardCardGrid = ({
       <div className={`grid gap-4 w-full mb-8 ${gridClass}`}>
         {activeView === 'staking' ? (
           <>
+            {loadingValidators &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`val-skeleton-${i}`}
+                  className="h-32 bg-[var(--color-card-bg)] border border-[var(--color-card-border)] rounded-2xl animate-pulse"
+                />
+              ))}
             {filteredValidators.slice(0, visibleValCount).map((val, index) => (
               <ValidatorCard
                 key={val.address}
@@ -212,25 +254,54 @@ export const DashboardCardGrid = ({
         )}
       </div>
 
-      {/* ── Empty states ── */}
-      {activeView === 'staking' && filteredValidators.length === 0 && (
-        <div className="text-center py-20 text-[var(--color-text-muted)]">
-          <Shield className="size-16 mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-bold">
-            {searchQuery
-              ? dt?.search?.no_results ?? 'No results found'
-              : dt?.search?.no_validators ?? 'No validators found'}
-          </p>
-        </div>
+      {/* ── Empty and unavailable states ──
+          "Nothing found" is a statement about the ledger, so it is only made
+          when the ledger actually answered. While a list is loading or being
+          retried nothing is said at all, and a read that failed says THAT,
+          with a way to try again. */}
+      {activeView === 'staking' && validatorsFailed && (
+        <UnavailableState
+          message={dt?.error?.unavailable_title ?? 'Could not read the network'}
+          hint={dt?.error?.unavailable_hint}
+          retryLabel={dt?.error?.retry}
+          onRetry={onRetryValidators}
+        />
       )}
 
-      {activeView === 'transactions' && txsInitialized && filteredTxs.length === 0 && !loadingTxs && (
-        <div className="text-center py-20 text-[var(--color-text-muted)]">
-          <p className="text-lg font-bold">
-            {dt?.transactions?.no_transactions ?? 'No transactions found'}
-          </p>
-        </div>
+      {activeView === 'staking' &&
+        !validatorsFailed &&
+        !loadingValidators &&
+        filteredValidators.length === 0 && (
+          <div className="text-center py-20 text-[var(--color-text-muted)]">
+            <Shield className="size-16 mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-bold">
+              {searchQuery
+                ? dt?.search?.no_results ?? 'No results found'
+                : dt?.search?.no_validators ?? 'No validators found'}
+            </p>
+          </div>
+        )}
+
+      {activeView === 'transactions' && txsFailed && (
+        <UnavailableState
+          message={dt?.error?.unavailable_title ?? 'Could not read the network'}
+          hint={dt?.error?.unavailable_hint}
+          retryLabel={dt?.error?.retry}
+          onRetry={onRetryTxs}
+        />
       )}
+
+      {activeView === 'transactions' &&
+        !txsFailed &&
+        txsInitialized &&
+        filteredTxs.length === 0 &&
+        !loadingTxs && (
+          <div className="text-center py-20 text-[var(--color-text-muted)]">
+            <p className="text-lg font-bold">
+              {dt?.transactions?.no_transactions ?? 'No transactions found'}
+            </p>
+          </div>
+        )}
     </>
   );
 };

@@ -119,4 +119,54 @@ describe('useValidatorFilters', () => {
     expect(result.current.filtered[1].id).toBe('1');
     expect(result.current.filtered[2].id).toBe('2');
   });
+
+  /**
+   * The wallet filter and the search are two halves of one answer, and the
+   * grid renders whatever pair it is handed. Handing it a pair from two
+   * different moments — the search already cleared, the wallet filter not yet
+   * back on — is what flashed the whole network for a frame between clearing
+   * the box and the wallet's own validators returning. These pin down what
+   * each pair means, so the caller has something to be consistent WITH.
+   */
+  describe('the wallet filter', () => {
+    it('keeps only the wallet\'s validators', () => {
+      const { result } = renderHook(() => useValidatorFilters({
+        ...baseOptions,
+        isWalletFilterActive: true,
+        pinnedValidatorAddresses: ['validator_rdx2'],
+      }));
+      expect(result.current.filtered.map(v => v.id)).toEqual(['2']);
+    });
+
+    it('shows nothing rather than everything when the wallet stakes nowhere', () => {
+      const { result } = renderHook(() => useValidatorFilters({
+        ...baseOptions,
+        isWalletFilterActive: true,
+        pinnedValidatorAddresses: [],
+      }));
+      expect(result.current.filtered).toHaveLength(0);
+    });
+
+    it('is what a cleared search must come back to, in the same pass', () => {
+      // The state right after the x is pressed: no search term, filter on.
+      const { result } = renderHook(() => useValidatorFilters({
+        ...baseOptions,
+        searchQuery: '',
+        isWalletFilterActive: true,
+        pinnedValidatorAddresses: ['validator_rdx2'],
+      }));
+      expect(result.current.filtered.map(v => v.id)).toEqual(['2']);
+
+      // The pair that used to appear for one render in between: search gone,
+      // filter still off. It shows the whole network, which is why the two
+      // values must never be read from different renders.
+      const { result: mismatched } = renderHook(() => useValidatorFilters({
+        ...baseOptions,
+        searchQuery: '',
+        isWalletFilterActive: false,
+        pinnedValidatorAddresses: ['validator_rdx2'],
+      }));
+      expect(mismatched.current.filtered.length).toBeGreaterThan(1);
+    });
+  });
 });

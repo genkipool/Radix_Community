@@ -73,6 +73,15 @@ export interface DashboardCardGridProps {
     filteredTxs: TransactionInfo[];
     loadingTxs: boolean;
     txsInitialized: boolean;
+    /** No validator list yet and one is on its way (first load, or a retry). */
+    loadingValidators?: boolean;
+    /** The list could not be read, retries included. */
+    validatorsFailed?: boolean;
+    /** Asks for it again, for the button that says so. */
+    onRetryValidators?: () => void;
+    /** Same three, for the transaction list. */
+    txsFailed?: boolean;
+    onRetryTxs?: () => void;
     columns: number;
     expandedPosts: Set<string>;
     readingMode: boolean;

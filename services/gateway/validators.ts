@@ -207,23 +207,40 @@ export async function fetchValidatorsWithLedger(
                 },
             };
             if (cursor) body.cursor = cursor;
-            const res = await fetch(`${restBase}/state/validators/list`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            if (!res.ok) break;
             try {
-                const data = await res.json() as {
-                    validators?: { items?: GatewayValidator[]; next_cursor?: string };
-                    items?: GatewayValidator[];
-                    next_cursor?: string;
-                };
+                // Retried: a rate limit or a 5xx on ONE page used to end the
+                // whole walk, and the caller could not tell the difference
+                // between "the read broke" and "this network has no
+                // validators".
+                const data = await withRetry(async () => {
+                    const res = await fetch(`${restBase}/state/validators/list`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    if (!res.ok) {
+                        throw Object.assign(new Error(`Gateway ${res.status}`), {
+                            status: res.status,
+                        });
+                    }
+                    return res.json() as Promise<{
+                        validators?: { items?: GatewayValidator[]; next_cursor?: string };
+                        items?: GatewayValidator[];
+                        next_cursor?: string;
+                    }>;
+                });
                 const page = data?.validators?.items ?? data?.items ?? [];
                 items.push(...page);
                 cursor = data?.validators?.next_cursor ?? data?.next_cursor ?? undefined;
             } catch (err) {
-                logger.error({ err }, '[fetchAllValidatorsRest] JSON parse failed');
+                // Nothing read at all: report it. A later page failing is
+                // different — the list we have is real and worth keeping, it
+                // is just short, and saying nothing about it would be worse.
+                if (items.length === 0) throw err;
+                logger.error(
+                    { err, network, gathered: items.length },
+                    '[fetchAllValidatorsRest] Page failed; continuing with what was read',
+                );
                 break;
             }
         } while (cursor);
@@ -878,7 +895,11 @@ const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
  *      immediately and triggers a background API refresh via after().
  *   2. Vercel Data Cache ("use cache") — instant if warm.
  *   3. Radix Gateway API (blocking cold-start) — only when Redis is empty.
- *   4. Absolute Fallback — returns empty state ([]) to prevent UI crash.
+ *
+ * Throws when all three are exhausted. There is no fourth step returning an
+ * empty list: "we could not read the network" and "the network has no
+ * validators" are different answers and the caller must be able to tell them
+ * apart.
  */
 export async function getValidatorsCached(network: Network = 'mainnet') {
     const redis = getRedis();
@@ -931,15 +952,16 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
     }
 
     // ── Step 3: Use Next.js Data Cache (with blocking fetch on miss) ───────
-    try {
-        return await getValidatorsFromDataCache(network);
-    } catch (cacheError) {
-        logger.error(
-            { network, error: String(cacheError) },
-            '[ValidatorsService] All data sources exhausted. Returning empty state to prevent UI crash.',
-        );
-        return { validators: [], networkStats: null };
-    }
+    //
+    // A failure here is REPORTED, not flattened into an empty list. It used to
+    // return `{ validators: [] }` so nothing would crash, and the price was
+    // paid by the reader: an empty list is indistinguishable from a network of
+    // no validators, so a Gateway hiccup on reload was rendered as "no staking
+    // nodes found" and cached client-side for five minutes. Callers decide what
+    // to do about it — the API answers 503 so the browser retries, the page
+    // skips its prefetch and lets the client try again, the sitemap and the
+    // share cards carry on without it.
+    return await getValidatorsFromDataCache(network);
 }
 
 

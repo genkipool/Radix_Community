@@ -102,6 +102,14 @@ export const DashboardModals = ({
                   const nextPost = idx < filteredValidators.length - 1 ? filteredValidators[idx + 1] : null;
                   return nextPost ? () => { setDirection(1); setExpandedPosts(new Set([nextPost.id])); } : undefined;
                 })()}
+                prevValidator={(() => {
+                  const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
+                  return idx > 0 ? filteredValidators[idx - 1] : null;
+                })()}
+                nextValidator={(() => {
+                  const idx = filteredValidators.findIndex(v => v.id === expandedPost.id);
+                  return idx < filteredValidators.length - 1 ? filteredValidators[idx + 1] : null;
+                })()}
                 t={t}
                 dt={dt}
                 copiedAddress={copiedAddress}
@@ -134,13 +142,13 @@ export const DashboardModals = ({
               const nextTx = idx < filteredTxs.length - 1 ? filteredTxs[idx + 1] : null;
               return nextTx ? () => { setDirection(1); setExpandedPosts(new Set([nextTx.intentHash])); } : undefined;
             })()}
-            prevTxHash={(() => {
+            prevTx={(() => {
               const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
-              return idx > 0 ? filteredTxs[idx - 1].intentHash : undefined;
+              return idx > 0 ? filteredTxs[idx - 1] : null;
             })()}
-            nextTxHash={(() => {
+            nextTx={(() => {
               const idx = filteredTxs.findIndex(tx => tx.intentHash === expandedTx.intentHash);
-              return idx < filteredTxs.length - 1 ? filteredTxs[idx + 1].intentHash : undefined;
+              return idx < filteredTxs.length - 1 ? filteredTxs[idx + 1] : null;
             })()}
             t={t}
             dt={dt}

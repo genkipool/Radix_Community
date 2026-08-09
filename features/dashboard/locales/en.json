@@ -11,6 +11,8 @@
     "error": {
       "title": "Network Error",
       "subtitle": "We couldn't reach the Radix Gateway. Showing offline/cached data.",
+      "unavailable_title": "Could not read the network",
+      "unavailable_hint": "The Radix Gateway did not answer in time. This is usually momentary.",
       "retry": "Retry Connection"
     },
     "network": {

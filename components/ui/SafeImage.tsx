@@ -15,6 +15,12 @@ interface SafeImageProps {
     title?: string;
     loading?: 'lazy' | 'eager';
     zoomable?: boolean;
+    /**
+     * What the zoom shows, when `src` is a version cut down for its place on
+     * the page. Blowing a card-sized image up to fill the screen is what the
+     * zoom is there to avoid.
+     */
+    zoomSrc?: string;
 }
 
 function resolveSrc(src: string | undefined, fallback: string): string {
@@ -30,12 +36,19 @@ export function SafeImage({
     title,
     loading = 'lazy',
     zoomable = true,
+    zoomSrc,
 }: SafeImageProps) {
     const fallback = buildFallbackAvatar(fallbackName);
     const [errored, setErrored] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
     const imgSrc = errored ? fallback : resolveSrc(src, fallback);
+    /**
+     * Whether the initials avatar IS the image, rather than something shown
+     * while the real one arrives. It is a data URL, so it paints immediately
+     * and never flickers.
+     */
+    const showingInitials = errored || !(src && src.trim());
     const imgRef = useRef<HTMLImageElement>(null);
 
     useLayoutEffect(() => {
@@ -82,15 +95,28 @@ export function SafeImage({
             style={{
                 ...style,
                 color: 'transparent', // Hide alt text while loading
-                backgroundImage: !loaded && !errored ? `url('${fallback}')` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                /*
+                 * A quiet surface while a real logo is on its way, not the
+                 * initials avatar.
+                 *
+                 * Painting the initials first meant every load of the grid
+                 * flashed a coloured letter into each card and then replaced it
+                 * with the logo a moment later — the same information twice,
+                 * announced as a change. The placeholder now matches the card
+                 * it sits in, so what the reader sees is an image arriving,
+                 * which is what is actually happening.
+                 */
+                backgroundColor:
+                    loaded || showingInitials ? undefined : 'var(--color-surface)',
             }}
             title={title}
             onLoad={() => setLoaded(true)}
             onError={handleError}
             loading={loading}
-            unoptimized={true} // External avatars can be from any domain
+            // These come from any domain the ledger happens to name, so Next's
+            // optimiser is not involved: the ones that needed shrinking are
+            // already served shrunk (see /api/validator-icon).
+            unoptimized={true}
             width={100} // Default placeholder resolution
             height={100}
             onClick={zoomable ? handleClick : undefined}
@@ -112,7 +138,7 @@ export function SafeImage({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Image
-                            src={imgSrc}
+                            src={errored ? imgSrc : (zoomSrc?.trim() || imgSrc)}
                             alt={alt}
                             fill
                             className="object-contain drop-shadow-2xl rounded-lg"

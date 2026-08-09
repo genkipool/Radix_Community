@@ -42,12 +42,21 @@ describe('useValidatorsQuery', () => {
     expect(result.current.data).toEqual(mockData);
   });
 
-  it('handles API errors correctly', async () => {
+  /**
+   * A failed read is retried before it is called a failure. The API answers 503
+   * when the Gateway cannot be reached — rather than 200 with an empty list —
+   * precisely so this happens, and only when the attempts run out does the view
+   * say it could not read the network.
+   */
+  it('retries a failing fetch, and reports the error once it runs out', async () => {
     vi.mocked(apiClient.apiFetchValidators).mockRejectedValue(new Error('Fetch failed'));
 
     const { result } = renderHook(() => useValidatorsQuery('mainnet'), { wrapper });
 
-    await waitFor(() => expect(result.current.isError).toBe(true));
+    // 250 + 500 + 1000 + 2000 ms of backoff, so this is given room to finish.
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 10_000 });
     expect(result.current.error).toBeDefined();
+    // The first call plus four retries.
+    expect(apiClient.apiFetchValidators).toHaveBeenCalledTimes(5);
   });
 });

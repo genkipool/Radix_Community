@@ -19,7 +19,7 @@ import { type ValidatorCardProps } from '../types/components.types';
 
 export const ValidatorCard: React.FC<ValidatorCardProps> = ({
     validator,
-    index: _index,
+    index,
     searchQuery,
     isExpanded,
     columns,
@@ -68,6 +68,13 @@ export const ValidatorCard: React.FC<ValidatorCardProps> = ({
         marketData,
         locale,
         onDownloadCsv: network !== 'stokenet' ? handleDownloadCsv : undefined,
+        /*
+         * The logos of the first cards are requested with the document instead
+         * of when they scroll into view. Lazy is right for a list of 287, but
+         * for the handful that are on screen at first paint it meant the grid
+         * appeared and the images arrived after it, one pop each.
+         */
+        imageLoading: (index < 8 ? 'eager' : 'lazy') as 'eager' | 'lazy',
     };
 
     return (

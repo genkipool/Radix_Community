@@ -35,7 +35,7 @@ import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
 import { parseDashboardQuery, type RawSearchParams } from '../lib/routes';
 import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
-import { entityKeys } from '@/features/dashboard/utils/entityCache';
+import { dashboardKeys, entityKeys } from '@/features/dashboard/utils/entityCache';
 
 /**
  * Ceiling on how many wallet account cards are resolved server-side. A wallet
@@ -176,19 +176,35 @@ export async function DashboardPageShell({
   const showsTransactions = view === 'transactions';
   let networkStats: NetworkStats = EMPTY_NETWORK_STATS;
 
+  /*
+   * The prefetch seeds the client's cache, and a seed is taken as an answer:
+   * React Query treats hydrated data as fresh and will not go and ask again
+   * for minutes. So NOTHING is seeded unless it is real. A Gateway that
+   * cannot be read leaves the cache untouched, the client fetches on mount,
+   * shows its skeleton and retries — instead of rendering the empty list this
+   * used to hand it as if the network had no validators.
+   *
+   * Validators are fetched in their own try/catch for the same reason: a
+   * transaction failure must not cost the staking view its data.
+   */
   try {
     // Aggregates are needed by BOTH views (the header shows them), but only the
     // staking view needs the list behind them in its cache.
     const validatorsData = await getValidatorsCached(network);
     networkStats = validatorsData?.networkStats ?? EMPTY_NETWORK_STATS;
 
-    if (!showsTransactions) {
+    if (!showsTransactions && (validatorsData?.validators?.length ?? 0) > 0) {
       serverQueryClient.setQueryData(['validators', network], {
-        validators: validatorsData?.validators ?? ([] as Validator[]),
+        validators: validatorsData.validators as Validator[],
         networkStats,
       });
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error({ err: error }, '[DashboardPage] Failed to prefetch validators: %s', message);
+  }
 
+  try {
     if (showsTransactions) {
       // First page of transactions, by decreasing specificity.
       const txData = await (async () => {
@@ -225,10 +241,19 @@ export async function DashboardPageShell({
 
       // Seed the infinite query with what we just fetched. Proposer display data
       // is enriched at the service layer, so no per-request lookup map is needed.
-      serverQueryClient.setQueryData(
-        ['transactions', network, entity ?? undefined, activeTxTag, dateRange],
-        { pages: [txData], pageParams: [undefined] },
-      );
+      //
+      // An empty first page is only seeded when the query could legitimately
+      // have none — a filter, an address, a tag. The unfiltered tip always has
+      // transactions, so an empty one means the read failed and the client is
+      // left to ask for itself.
+      const isUnfilteredTip =
+        !entity && !dateRange.start && !dateRange.end && activeTxTag === 'All';
+      if (txData.transactions.length > 0 || !isUnfilteredTip) {
+        serverQueryClient.setQueryData(
+          ['transactions', network, entity ?? undefined, activeTxTag, dateRange],
+          { pages: [txData], pageParams: [undefined] },
+        );
+      }
     }
 
     // Deep entity metadata is still NOT hydrated for the cards in the list:
@@ -252,20 +277,46 @@ export async function DashboardPageShell({
         ? initialConnectedAccounts.slice(0, MAX_PREFETCHED_ACCOUNTS)
         : [];
 
+    /*
+     * The staking view needs the SAME lookups for a different reason: which
+     * validators the connected accounts stake with. That answer decides the
+     * order of the grid (the wallet's own are pinned to the top) and, with the
+     * wallet filter on, decides the entire contents of it.
+     *
+     * Resolved on the client it arrived after the first paint, and the reader
+     * watched the list rebuild itself: every validator in default order, then
+     * a jump as the wallet's rose to the top — or, with the filter on, "no
+     * staking nodes found" for an instant, because a filter with nothing to
+     * filter by matches nothing. The server already knows the accounts from
+     * the session, so it can answer before painting.
+     */
+    const stakingAccounts =
+      !showsTransactions ? initialConnectedAccounts.slice(0, MAX_PREFETCHED_ACCOUNTS) : [];
     const cardAddresses = entity ? [entity] : walletAccounts;
 
     // In parallel: these are independent lookups and each is cached for hours,
     // so this must not become a serial chain in front of TTFB.
+    const lookups = [...new Set([...cardAddresses, ...stakingAccounts])];
     const cards = await Promise.all(
-      cardAddresses.map(async (address) => ({
+      lookups.map(async (address) => ({
         address,
         details: await fetchEntityDetailsForCard(address, network),
       })),
     );
 
     for (const { address, details } of cards) {
-      if (details) {
+      if (!details) continue;
+      // Two keys, one payload: the entity CARD reads one and the connected
+      // stakes read the other, and the card fetcher deliberately produces the
+      // shape the client fetcher would have (see fetchEntityDetailsForCard).
+      if (cardAddresses.includes(address)) {
         serverQueryClient.setQueryData(entityKeys.detail(address, network), details);
+      }
+      if (stakingAccounts.includes(address)) {
+        serverQueryClient.setQueryData(
+          dashboardKeys.entities.detail(address, network),
+          details,
+        );
       }
     }
   } catch (error) {

@@ -76,6 +76,11 @@ export function useTransactionsQuery({ network, searchQuery, tag, dateRange, add
     refetchOnMount:       hasDateFilter ? 'always' : enabled,
     staleTime:            hasDateFilter ? 0 : 30_000,
     refetchOnWindowFocus: false,
+    // Same reasoning as the validator list: the tip answers 503 when it cannot
+    // be read, and a few backed-off attempts turn that into a page rather than
+    // into "no transactions found".
+    retry:                4,
+    retryDelay:           (attempt) => Math.min(250 * 2 ** attempt, 4_000),
   });
 }
 
