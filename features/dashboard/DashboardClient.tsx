@@ -61,6 +61,7 @@ import { useDashboardPreferences } from './hooks/useDashboardPreferences';
 import { useExpandedCards } from './hooks/useExpandedCards';
 import { useCopyToClipboard } from './hooks/useCopyToClipboard';
 import { useDashboardUrlSync, useDashboardUrlEffects } from './hooks/useDashboardUrlSync';
+import { useCommittedNetwork } from './hooks/useCommittedNetwork';
 import { useFocusedEntity, useReadyEntities } from './hooks/useEntityReadiness';
 import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
@@ -129,7 +130,7 @@ export default function DashboardClient({
     activeView, network, deferredNetwork,
     searchQuery, setSearchQuery, deferredSearch,
     dateRange, handleDateRangeChange,
-    handleViewChange, handleNetworkChange, setTagInUrl,
+    handleViewChange, handleNetworkChange, setTagInUrl, prefetchNetwork,
     isNavigating, committedEntity,
   } = useDashboardUrlSync({
     initialView, initialNetwork, initialSearchQuery,
@@ -238,9 +239,6 @@ export default function DashboardClient({
     setLiveNetwork(initialNetwork);
     return null;
   });
-  useEffect(() => {
-    setLiveNetwork(network);
-  }, [network]);
 
   // The toggle is a persisted preference (see useDashboardPreferences): a view
   // change is a real navigation, so anything kept only in memory would reset.
@@ -375,10 +373,33 @@ export default function DashboardClient({
     data: validatorsData,
     isFetching: isValFetching,
     isPending: isValPending,
+    isPlaceholderData: isValPlaceholder,
     isError: isValError,
     refetch: refetchValidators,
-  } = useValidatorsQuery(deferredNetwork, activeView === 'staking');
+  } = useValidatorsQuery(network, activeView === 'staking');
   const realValidators = validatorsData?.validators ?? [];
+
+  // The ledger the cards on screen belong to. See the hook for why the two can
+  // legitimately disagree for a moment, and why nothing is torn down meanwhile.
+  const stakingNetwork = useCommittedNetwork(initialNetwork, {
+    requested: network,
+    isStakingView: activeView === 'staking',
+    hasOwnList: !isValPlaceholder && !!validatorsData,
+  });
+
+  /** What the staking half of the page reads; the explorer keeps its own. */
+  const viewNetwork = activeView === 'staking' ? stakingNetwork : deferredNetwork;
+
+  /*
+   * Follows the ledger the CARDS are on, not the one the button highlights.
+   * This wipes the store — an epoch number from one network means nothing on
+   * the other — so doing it before the new list is on screen left the previous
+   * ledger's cards showing their live counters fall back to the server
+   * snapshot for as long as the switch took.
+   */
+  useEffect(() => {
+    setLiveNetwork(stakingNetwork);
+  }, [stakingNetwork]);
   // Nothing in hand and something on its way: the grid shows skeletons rather
   // than claiming the network has no validators.
   const listIsLoading =
@@ -443,7 +464,7 @@ export default function DashboardClient({
     isLoading: isStakesLoading,
   } = useConnectedStakes(
     deferredConnectedAccountAddresses,
-    deferredNetwork as 'mainnet' | 'stokenet',
+    stakingNetwork as 'mainnet' | 'stokenet',
     realValidators,
   );
 
@@ -468,7 +489,7 @@ export default function DashboardClient({
     activeTags: deferredActiveTag,
     searchQuery: deferredSearch,
     sortMode: prefs.valSortMode,
-    network: deferredNetwork,
+    network: stakingNetwork,
     activeView: 'staking',
     randomSeed,
     pinnedValidatorAddresses,
@@ -698,6 +719,7 @@ export default function DashboardClient({
           // writing the derived value back turned the filter ON instead of
           // off, and it then snapped on as soon as the search was cleared.
           onWalletFilterChange={() => setWalletFilterToggled((on: boolean) => !on)}
+          onPrefetchNetwork={prefetchNetwork}
           dt={dt}
         />
 
@@ -725,7 +747,7 @@ export default function DashboardClient({
             readingMode={readingMode}
             copiedAddress={copiedAddress}
             searchQuery={deferredSearch}
-            network={deferredNetwork}
+            network={viewNetwork}
             accountsToShow={accountsToShow}
             packagesToShow={packagesToShow}
             componentsToShow={componentsToShow}
@@ -757,7 +779,7 @@ export default function DashboardClient({
         dt={dt}
         copiedAddress={copiedAddress}
         copyAddress={copyAddress}
-        network={deferredNetwork}
+        network={viewNetwork}
         direction={direction}
         setDirection={setDirection}
         timezone={timezone}
