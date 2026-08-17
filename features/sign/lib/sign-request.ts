@@ -66,8 +66,21 @@ export const SIGN_NFT_FIELDS = [
   { id: 'issued_at', key: 'issued_at', locked: true },
 ] as const;
 
+/** One NFT's address: `<collection resource>:#<id>#`. */
+export const nftGlobalId = (collection: string, id: number) =>
+  `${collection}:#${id}#`;
+
 export const requestKey = (collection: string, firstId: number) =>
-  `${collection}:#${firstId}#`;
+  nftGlobalId(collection, firstId);
+
+/**
+ * Where the initiator's OWN signature lands in a request batch: the invitations
+ * take `nextId … nextId + signers - 1` and the signature is minted right after
+ * them (see `buildSignRequestManifest`, which names these ids in the manifest —
+ * so a committed transaction is proof the signature has exactly this id).
+ */
+export const requestOwnSignatureId = (nextId: number, signerCount: number) =>
+  nextId + signerCount;
 
 /* ─── Owner-supplied collection metadata ──────────────────────────────────── */
 

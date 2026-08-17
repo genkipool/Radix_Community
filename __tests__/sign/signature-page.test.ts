@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { inflateSync } from 'node:zlib';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import en from '@/features/sign/locales/en.json';
 import {
@@ -60,6 +61,37 @@ function stubFailingImageFetch() {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+/**
+ * Every string the saved PDF actually SHOWS, in draw order. pdf-lib compresses
+ * its content streams and writes text as hex, so reading the bytes for a word
+ * finds nothing; this inflates each stream and decodes the `<hex> Tj` operands,
+ * which is as close as a test gets to what a reader sees on the page.
+ */
+async function pageText(doc: PDFDocument): Promise<string> {
+  const raw = Buffer.from(await doc.save({ useObjectStreams: false }));
+  const out: string[] = [];
+  for (let i = 0; ; ) {
+    const open = raw.indexOf('stream', i);
+    if (open < 0) break;
+    let start = open + 'stream'.length;
+    if (raw[start] === 0x0d) start += 1;
+    if (raw[start] === 0x0a) start += 1;
+    const end = raw.indexOf('endstream', start);
+    if (end < 0) break;
+    i = end + 'endstream'.length;
+    let content: string;
+    try {
+      content = inflateSync(raw.subarray(start, end)).toString('latin1');
+    } catch {
+      continue; // Fonts, images and the QR: not text operators.
+    }
+    for (const [, hex] of content.matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)) {
+      out.push(Buffer.from(hex, 'hex').toString('latin1'));
+    }
+  }
+  return out.join('\n');
+}
 
 async function emptyDoc(pages = 1): Promise<PDFDocument> {
   const doc = await PDFDocument.create();
@@ -200,6 +232,70 @@ describe('visible signature certificate page', () => {
       await appendSignaturePage(doc, ledgerEnvelope(), { ...opts, origin: ORIGIN });
       const uris = await annotationUris(doc);
       expect(uris).toContain(opts.verifyUrl);
+    });
+  });
+
+  /**
+   * A signature's own evidence is the NFT minted for it. The page named the
+   * signer and the mint transaction but never that token, so a reader had no
+   * address to look the signature up by.
+   */
+  describe("each signature's NFT", () => {
+    const NFT = 'resource_rdx1signcollection00000000000000000:#7#';
+
+    it('prints the NFT the signature carries', async () => {
+      const env = baseEnvelope();
+      env.signatures[0].signatureNft = NFT;
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, env, opts);
+      const text = await pageText(doc);
+      expect(text).toContain(en.sign.certificatePage.signatureNft.toUpperCase());
+      expect(text).toContain(NFT);
+    });
+
+    it('falls back to the anchor, which mints every signer at once', async () => {
+      // A stand-alone anchor records the NFTs on itself rather than on each
+      // signature, and the page must find them there too.
+      const env = baseEnvelope();
+      env.onChain = {
+        networkId: 1,
+        transactionIntentHash: 'txid_rdx1anchor0000000000000000000000000000',
+        resourceAddress: 'resource_rdx1signcollection00000000000000000',
+        sealAddress: '',
+        nfts: [
+          {
+            signerAccount: env.signatures[0].signerAccount,
+            nftGlobalId: NFT,
+            localId: '#7#',
+          },
+        ],
+      };
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, env, opts);
+      expect(await pageText(doc)).toContain(NFT);
+    });
+
+    it("names the collection above the address when the ledger has a name", async () => {
+      const env = baseEnvelope();
+      env.signatures[0].signatureNft = NFT;
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, env, {
+        ...opts,
+        nftNames: { [NFT.split(':')[0]]: 'Firmas de Pruebas' },
+      });
+      const text = await pageText(doc);
+      // Name first, address under it: the address identifies the token, the
+      // name is what a reader recognises.
+      expect(text).toContain('Firmas de Pruebas');
+      expect(text.indexOf('Firmas de Pruebas')).toBeLessThan(text.indexOf(NFT));
+    });
+
+    it('prints no NFT line for an off-ledger signature', async () => {
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, baseEnvelope(), opts);
+      expect(await pageText(doc)).not.toContain(
+        en.sign.certificatePage.signatureNft.toUpperCase(),
+      );
     });
   });
 

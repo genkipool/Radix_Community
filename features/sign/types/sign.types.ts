@@ -124,6 +124,14 @@ export interface SignatureEntry {
    */
   transactionIntentHash?: string;
   /**
+   * ON-ledger signatures: the global id of the signature NFT that IS this
+   * signature (`resource_…:#7#`), minted into the signer's own Seal-owned
+   * collection. Informational for the same reason as `transactionIntentHash`:
+   * verification re-finds the NFT through the chain of custody and never trusts
+   * an address the certificate points at.
+   */
+  signatureNft?: string;
+  /**
    * OFF-ledger signatures: an RFC 3161 timestamp token (base64 DER) in which a
    * Time Stamping Authority attests that this signature already existed at a
    * given moment. It is what makes `signedAt` checkable — without it the date is

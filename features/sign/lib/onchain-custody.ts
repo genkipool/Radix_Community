@@ -382,6 +382,16 @@ export interface SignerSignature {
    * record that contradicts itself.
    */
   issuedAt: string;
+  /** Collection this signature NFT lives in: the signer's own, Seal-owned. */
+  resourceAddress: string;
+  /** Its id inside that collection, e.g. `#7#`. */
+  localId: string;
+  /**
+   * The two above as one address (`resource_…:#7#`) — the NFT that IS this
+   * signature, so a certificate can name the exact evidence instead of only
+   * the transaction that minted it.
+   */
+  nftGlobalId: string;
 }
 
 /**
@@ -443,8 +453,8 @@ export async function findSignerSignatures(
     if (ids.length === 0) continue;
 
     const data = await nfRecords(network, address, ids);
-    const matches = [...data.values()].filter(
-      ({ fields }) =>
+    const matches = [...data.entries()].filter(
+      ([, { fields }]) =>
         fields.kind === 'signature' &&
         fields.document_hash === docHash &&
         fields.signer === signer,
@@ -456,10 +466,13 @@ export async function findSignerSignatures(
     if (!(await collectionSealBelongsTo(network, collection, signer, officialSeal))) {
       continue;
     }
-    for (const match of matches) {
+    for (const [localId, match] of matches) {
       found.push({
         stateVersion: match.stateVersion,
         issuedAt: match.fields.issued_at ?? '',
+        resourceAddress: address,
+        localId,
+        nftGlobalId: `${address}:${localId}`,
       });
     }
   }

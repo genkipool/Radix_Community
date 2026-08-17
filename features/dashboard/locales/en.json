@@ -673,6 +673,14 @@
     "dashboard": {
       "title": "Dashboard | Radix Validators & Explorer",
       "description": "Real-time Radix validator stats, staking data, epoch performance, and transaction explorer."
+    },
+    "staking": {
+      "title": "Staking | Radix Validators",
+      "description": "Compare the Radix Network validators: delegated stake, fee, uptime, rank and per-epoch performance. Manage your own staking straight from your wallet."
+    },
+    "explorer": {
+      "title": "Explorer | Radix Transactions",
+      "description": "Explore the Radix Network in real time: transactions, accounts, tokens and NFTs, epoch and consensus round, and the detail behind every intent hash."
     }
   }
 }

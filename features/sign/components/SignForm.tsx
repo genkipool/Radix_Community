@@ -32,8 +32,12 @@ import { ShareLinkSection } from './ShareLinkSection';
 import { RequestTransactionLinks } from './RequestTransactionLinks';
 import { SealOnboarding } from './SealOnboarding';
 import { SignErrorText } from './SignErrorText';
-import { stripExtension } from '../lib/file';
-import { downloadBytes, downloadCertificate } from '../lib/certificate';
+import { signedPdfName } from '../lib/file';
+import {
+  downloadBytes,
+  downloadCertificate,
+  isFullySigned,
+} from '../lib/certificate';
 import { signaturePageOptions } from '../lib/pdf-signature-page';
 import { buildDeliverablePdf } from '../lib/signed-pdf';
 import { readP12Info, type P12Info } from '../lib/pdf-pades';
@@ -48,6 +52,7 @@ import {
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
+  nftGlobalId,
 } from '../lib/sign-request';
 import { fetchLedgerNow, fetchTransactionTime } from '../lib/ledger-time';
 import {
@@ -468,7 +473,7 @@ export function SignForm({
         });
         downloadBytes(
           pdf,
-          `${stripExtension(res.fileName)}-signed.pdf`,
+          signedPdfName(res.fileName, isFullySigned(res.envelope)),
           'application/pdf',
         );
         delivered = true;
@@ -593,13 +598,17 @@ export function SignForm({
             transactionIntentHash: created.transactionIntentHash,
           },
           // The initiator's own signature was minted in that same transaction,
-          // so it is the transaction that recorded it.
+          // so it is the transaction that recorded it — and `signatureNft` is
+          // the token it minted, which the certificate page prints.
           signatures: finalRes.envelope.signatures.map((entry) =>
             entry.signerAccount === onchainAccount && !sendOnly
               ? {
                   ...entry,
                   transactionIntentHash: created.transactionIntentHash,
                   signedAt: committedAt ?? entry.signedAt,
+                  ...(created.signatureNft
+                    ? { signatureNft: created.signatureNft }
+                    : {}),
                 }
               : entry,
           ),
@@ -707,11 +716,15 @@ export function SignForm({
         return;
       }
       {
+        // The manifest names this id, so a committed transaction is proof the
+        // signature NFT is exactly this one — worth recording, because it is
+        // the evidence the certificate points a reader at.
+        const nextId = collection.totalSupply + 1;
         const txId = await signRequest({
           account: cosigner,
           sealGlobalId: seal.globalId,
           collection: collection.resourceAddress,
-          nextId: collection.totalSupply + 1,
+          nextId,
           docHash: loadedCert.payload.docHash,
           request: request.requestId,
           imageUrl: sealImageUrl(window.location.origin),
@@ -732,6 +745,7 @@ export function SignForm({
                     ...entry,
                     transactionIntentHash: txId,
                     signedAt: committedAt ?? entry.signedAt,
+                    signatureNft: nftGlobalId(collection.resourceAddress, nextId),
                   }
                 : entry,
             ),
@@ -769,7 +783,11 @@ export function SignForm({
           ),
           pades: padesActive ? pades : null,
         });
-        downloadBytes(pdf, `${stripExtension(file.name)}-signed.pdf`, 'application/pdf');
+        downloadBytes(
+          pdf,
+          signedPdfName(file.name, isFullySigned(loadedCert)),
+          'application/pdf',
+        );
         return;
       } catch (err) {
         if (padesActive) {
@@ -1511,7 +1529,7 @@ export function ResultPanel({
           if (!cancelled) {
             setShareArtifact({
               bytes: pdf,
-              name: `${stripExtension(result.fileName)}-signed.pdf`,
+              name: signedPdfName(result.fileName, isFullySigned(envelope)),
               type: 'application/pdf',
             });
           }
@@ -1546,10 +1564,7 @@ export function ResultPanel({
   const certBtn = true;
 
   const signed = new Set(envelope.signatures.map((s) => s.signerAccount));
-  const complete =
-    payload.signers.length === 0
-      ? signed.size > 0
-      : payload.signers.every((a) => signed.has(a));
+  const complete = isFullySigned(envelope);
   // A request-based (multi on-ledger) certificate records each signer's NFT as
   // they sign, so it never needs the stand-alone anchor step.
   const canAnchor =
@@ -1629,7 +1644,7 @@ export function ResultPanel({
       });
       downloadBytes(
         pdf,
-        `${stripExtension(result.fileName)}-signed.pdf`,
+        signedPdfName(result.fileName, complete),
         'application/pdf',
       );
     } catch (err) {

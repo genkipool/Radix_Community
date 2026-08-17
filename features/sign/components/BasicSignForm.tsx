@@ -10,8 +10,12 @@ import { useDocumentSign } from '../hooks/useDocumentSign';
 import type { DocumentFile } from '../hooks/useDocumentFile';
 import { looksLikeEnvelope, ResultPanel } from './SignForm';
 import { useLanguage } from '@/context/LanguageContext';
-import { stripExtension } from '../lib/file';
-import { downloadBytes, downloadCertificate } from '../lib/certificate';
+import { signedPdfName } from '../lib/file';
+import {
+  downloadBytes,
+  downloadCertificate,
+  isFullySigned,
+} from '../lib/certificate';
 import { buildDeliverablePdf } from '../lib/signed-pdf';
 import { signaturePageOptions } from '../lib/pdf-signature-page';
 import type { SignDictionary } from '../types/dictionary';
@@ -102,7 +106,7 @@ export function BasicSignForm({
         });
         downloadBytes(
           pdf,
-          `${stripExtension(res.fileName)}-signed.pdf`,
+          signedPdfName(res.fileName, isFullySigned(res.envelope)),
           'application/pdf',
         );
         delivered = true;
