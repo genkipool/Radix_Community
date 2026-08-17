@@ -19,8 +19,10 @@ export async function generateMetadata({
   return buildMetadata({
     locale,
     pathname: '/dashboard/staking',
-    title: t.seo.dashboard.title,
-    description: t.seo.dashboard.description,
+    // Its own words, not the dashboard's: staking and the explorer are two
+    // indexed pages, and one shared title left them competing as duplicates.
+    title: t.seo.staking.title,
+    description: t.seo.staking.description,
   });
 }
 
