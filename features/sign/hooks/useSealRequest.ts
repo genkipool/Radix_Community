@@ -14,7 +14,9 @@ import {
   buildSignCollectionCreateManifest,
   buildSignRequestManifest,
   buildSignatureMintManifest,
+  nftGlobalId,
   requestKey,
+  requestOwnSignatureId,
   type CollectionMetaField,
 } from '../lib/sign-request';
 import {
@@ -377,8 +379,9 @@ export function useSealRequest() {
    * Mints + distributes the invitation batch (and optionally the
    * initiator's own signature). Returns the shareable request key together with
    * the transaction that created it, so the certificate and the share box can
-   * point at the very transaction a reader can look up. Null if the ledger did
-   * not commit it.
+   * point at the very transaction a reader can look up — plus, when the
+   * initiator signed too, the address of their own signature NFT, which the
+   * certificate prints. Null if the ledger did not commit it.
    */
   const createRequest = async (args: {
     account: string;
@@ -389,7 +392,11 @@ export function useSealRequest() {
     requiredSigners: string[];
     alsoSign: boolean;
     imageUrl: string;
-  }): Promise<{ key: string; transactionIntentHash: string } | null> => {
+  }): Promise<{
+    key: string;
+    transactionIntentHash: string;
+    signatureNft: string | null;
+  } | null> => {
     setError(null);
     if (!activeNetworkId) return fail('wallet_not_connected');
     setPhase('creating');
@@ -411,6 +418,12 @@ export function useSealRequest() {
     return {
       key: requestKey(args.collection, args.nextId),
       transactionIntentHash: tx.transactionIntentHash,
+      signatureNft: args.alsoSign
+        ? nftGlobalId(
+            args.collection,
+            requestOwnSignatureId(args.nextId, args.requiredSigners.length),
+          )
+        : null,
     };
   };
 

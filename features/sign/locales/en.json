@@ -349,6 +349,7 @@
       "anchorRequest": "Signing request (invitation id)",
       "anchorRequestTx": "Request transaction",
       "signatureTx": "Signature transaction",
+      "signatureNft": "Signature NFT (resource)",
       "txLinkNote": "The transaction ids above are links: open one to see the record on this deployment's explorer.",
       "anchorNote": "Public, permanent record on the Radix Network. Only the document hash and the accounts are on the ledger — never the file, the message or a name.",
       "certSection": "Certificate signature (PAdES / X.509)",

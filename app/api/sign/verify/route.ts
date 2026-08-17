@@ -83,6 +83,12 @@ const signatureSchema = z
      * re-found through the chain of custody, which no pointer can influence.
      */
     transactionIntentHash: z.string().max(256).optional(),
+    /**
+     * Pointer to the signature NFT of an on-ledger signature. Accepted for the
+     * same reason as the intent hash above, and read for the same reason not at
+     * all: the NFT is re-found through the chain of custody.
+     */
+    signatureNft: z.string().max(512).optional(),
   })
   .strict();
 

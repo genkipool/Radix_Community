@@ -90,6 +90,12 @@ export interface OnChainSignatureStatus {
    * the explorer. Null under the same conditions as `signedAt`.
    */
   txId?: string | null;
+  /**
+   * Global id of the signature NFT that proves this signature
+   * (`resource_…:#7#`), in the signer's own Seal-owned collection. Null when
+   * they have not signed.
+   */
+  nftGlobalId?: string | null;
 }
 
 /** Issuer identity read from the locked on-ledger collection metadata. */

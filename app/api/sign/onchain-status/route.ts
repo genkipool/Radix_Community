@@ -165,6 +165,10 @@ export async function POST(req: NextRequest) {
           // The transaction that minted this signature: the certificate prints
           // it, and anyone can open it in an explorer and see the mint.
           txId: commit?.intentHash ?? null,
+          // The signature NFT itself (`resource_…:#7#`) — the evidence the
+          // chain-of-custody check just accepted. The certificate prints it so
+          // a reader can look up the token, not only the mint transaction.
+          nftGlobalId: found?.nftGlobalId ?? null,
         };
       }),
     );

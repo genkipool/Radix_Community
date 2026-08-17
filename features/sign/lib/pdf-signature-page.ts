@@ -19,11 +19,11 @@
  * a qualified (eIDAS QES) signature appearance.
  */
 import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
-import type { AttestationEnvelope } from '../types/sign.types';
+import type { AttestationEnvelope, SignatureEntry } from '../types/sign.types';
 import type { SignDictionary } from '../types/dictionary';
 import { NETWORKS } from '@/features/wallet/constants/network';
 import { SEAL_IMAGE_PATH } from '../constants/seal';
-import { findCollectionIssuer } from '../services/sealDiscovery';
+import { findCollectionIssuer, findCollectionProfile } from '../services/sealDiscovery';
 import { explorerTxUrl } from './explorer';
 import { buildShareUrl, parseRequestKey } from './share';
 import { svgUrlToPngBytes, fetchImageBytes } from './pdf-watermark';
@@ -78,6 +78,8 @@ export interface CertificatePageLabels {
   anchorRequestTx: string;
   /** Per-signature transaction (multi-party on-ledger). */
   signatureTx: string;
+  /** The signature NFT itself (per-signature, on-ledger). */
+  signatureNft: string;
   /** Says, once, that the transaction ids on the page are clickable. */
   txLinkNote: string;
   anchorNote: string;
@@ -121,6 +123,14 @@ export interface CertificatePageOptions {
   origin?: string;
   /** Issuer identity read from the on-ledger collection (org name/site/logo). */
   issuer?: { orgName?: string; orgWebsite?: string; iconUrl?: string };
+  /**
+   * Name of each signing collection, keyed by its resource address, as the
+   * ledger holds it. Printed above the signature NFT so a reader sees whose
+   * collection minted the signature and not only a 60-character address. Read
+   * from the ledger, never from the certificate: it is somebody's display name,
+   * and the address beside it is what identifies the token.
+   */
+  nftNames?: Record<string, string>;
   /** Brand accent (0..1 RGB) read from the active theme; falls back to indigo. */
   accent?: Rgb01;
   /**
@@ -130,6 +140,30 @@ export interface CertificatePageOptions {
    * `SignerCertificate`), which is what makes them survive co-signing.
    */
   padesSigned?: boolean;
+}
+
+/**
+ * The signature NFT backing one signature: an on-ledger request records it on
+ * the signature itself (each signer mints into their OWN collection), while a
+ * stand-alone anchor mints every signer's NFT in one transaction and lists them
+ * on the anchor, so that is where it is looked up instead. Undefined for a
+ * purely off-ledger signature, which has no token behind it.
+ */
+export function signatureNftOf(
+  env: AttestationEnvelope,
+  signature: SignatureEntry,
+): string | undefined {
+  return (
+    signature.signatureNft ||
+    env.onChain?.nfts.find((n) => n.signerAccount === signature.signerAccount)
+      ?.nftGlobalId ||
+    undefined
+  );
+}
+
+/** The collection out of an NFT address: `resource_…:#7#` → `resource_…`. */
+function nftResource(globalId: string): string {
+  return globalId.split(':')[0] || globalId;
 }
 
 /**
@@ -175,6 +209,35 @@ function verifyUrlFor(
 }
 
 /**
+ * The ledger's own name for every collection that minted a signature here, one
+ * read per distinct collection (several signers can share none — each has their
+ * own). Best-effort: a collection that cannot be read simply prints its address
+ * alone, which is the part that identifies it anyway.
+ */
+async function signatureNftNames(
+  env: AttestationEnvelope,
+): Promise<Record<string, string>> {
+  const resources = [
+    ...new Set(
+      env.signatures
+        .map((s) => signatureNftOf(env, s))
+        .filter((id): id is string => !!id)
+        .map(nftResource),
+    ),
+  ];
+  const named = await Promise.all(
+    resources.map(async (resource) => {
+      const profile = await findCollectionProfile(
+        env.payload.networkId,
+        resource,
+      ).catch(() => null);
+      return [resource, profile?.name?.trim() ?? ''] as const;
+    }),
+  );
+  return Object.fromEntries(named.filter(([, name]) => name));
+}
+
+/**
  * Builds the visible signature-certificate page options for an embedded PDF:
  * localised labels, the certificate's own network name, a verify URL (also
  * encoded into the page's QR), and — when the certificate is on-ledger — the
@@ -198,6 +261,7 @@ export async function signaturePageOptions(
       )) ?? undefined
     : undefined;
   return {
+    nftNames: await signatureNftNames(env),
     labels: t.certificatePage,
     verifyUrl: verifyUrlFor(env, origin, locale),
     networkName:
@@ -463,10 +527,24 @@ class Cursor {
   field(
     label: string,
     value: string,
-    opts: { mono?: boolean; link?: string; color?: Rgb01 } = {},
+    opts: {
+      mono?: boolean;
+      link?: string;
+      color?: Rgb01;
+      /**
+       * A readable line drawn between the label and the value — a resource's
+       * name above its address. Skipped when empty, so the field looks exactly
+       * as it always did whenever there is no name to show.
+       */
+      lead?: string;
+    } = {},
   ) {
     this.text(label.toUpperCase(), { size: 7.5, bold: true, color: MUTED });
     this.gap(1);
+    if (opts.lead) {
+      this.text(opts.lead, { size: 10.5 });
+      this.gap(1);
+    }
     this.text(value, {
       size: opts.mono ? 9 : 10.5,
       link: opts.link,
@@ -536,6 +614,7 @@ export async function appendSignaturePage(
    */
   const txLink = (hash?: string | null): string | undefined =>
     hash && opts.origin ? explorerTxUrl(locale, hash, opts.origin) : undefined;
+
 
   // Brand accent (from the active theme) tints the band, section titles and
   // links; the page stays white with dark ink, so it prints cleanly whatever
@@ -690,6 +769,17 @@ export async function appendSignaturePage(
     cur.field(L.account, s.signerAccount, { mono: true });
     if (s.disclosedEmail?.trim()) cur.field(L.email, s.disclosedEmail.trim());
     cur.field(L.signedAt, fmtDate(s.signedAt, locale));
+    // The token that IS this signature. The section already names the account
+    // and the mint transaction; without this the reader had no way to go from
+    // the page to the piece of evidence itself. The collection's ledger name
+    // rides above the address so it can be read by a human.
+    const nft = signatureNftOf(envelope, s);
+    if (nft) {
+      cur.field(L.signatureNft, nft, {
+        mono: true,
+        lead: opts.nftNames?.[nftResource(nft)],
+      });
+    }
     // The transaction that recorded THIS signature on the ledger: the one
     // thing a reader can open and check for themselves.
     if (s.transactionIntentHash) {

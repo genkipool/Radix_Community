@@ -349,6 +349,7 @@
       "anchorRequest": "Solicitud de firma (id de invitación)",
       "anchorRequestTx": "Transacción de la solicitud",
       "signatureTx": "Transacción de la firma",
+      "signatureNft": "NFT de la firma (recurso)",
       "txLinkNote": "Los identificadores de transacción de arriba son enlaces: ábrelos para ver el registro en el explorador de este proyecto.",
       "anchorNote": "Registro público y permanente en la Red Radix. En el ledger solo constan el hash del documento y las cuentas — nunca el archivo, el mensaje ni un nombre.",
       "certSection": "Firma con certificado (PAdES / X.509)",

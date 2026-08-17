@@ -39,13 +39,14 @@ import {
   buildOnChainCertificate,
   downloadBytes,
   downloadCertificate,
+  isFullySigned,
 } from '../lib/certificate';
 import { NETWORKS } from '@/features/wallet/constants/network';
 import { randomNonceHex } from '../lib/hash';
 import { networkIdFromResource } from '../lib/share';
 import { ShareLinkSection } from './ShareLinkSection';
 import { RequestTransactionLinks } from './RequestTransactionLinks';
-import { stripExtension } from '../lib/file';
+import { requestPdfName, signedPdfName } from '../lib/file';
 import { radixSealAddress, sealImageUrl } from '../constants/seal';
 import { fetchLedgerNow } from '../lib/ledger-time';
 import { fetchOnChainStatus, type OnChainStatus } from '../services/signApi';
@@ -315,11 +316,7 @@ export function OnChainSignPanel({
         doc.bytes!,
         doc.file!.name,
       );
-      downloadBytes(
-        pdf,
-        `${stripExtension(doc.file!.name)}-request.pdf`,
-        'application/pdf',
-      );
+      downloadBytes(pdf, requestPdfName(doc.file!.name), 'application/pdf');
     } catch {
       /* the share link keeps working */
     }
@@ -337,7 +334,12 @@ export function OnChainSignPanel({
       requiredSigners: status?.requiredSigners ?? [],
       signedAccounts: (status?.signatures ?? [])
         .filter((s) => s.signed)
-        .map((s) => ({ account: s.account, signedAt: s.signedAt, txId: s.txId })),
+        .map((s) => ({
+          account: s.account,
+          signedAt: s.signedAt,
+          txId: s.txId,
+          nft: s.nftGlobalId,
+        })),
       nonce: randomNonceHex(),
       requestId: status?.requestId ?? requestId,
       createdAt: status?.createdAt,
@@ -368,7 +370,11 @@ export function OnChainSignPanel({
         doc.bytes,
         await signaturePageOptions(cert, t, language),
       );
-      downloadBytes(pdf, `${stripExtension(doc.file.name)}-signed.pdf`, 'application/pdf');
+      downloadBytes(
+        pdf,
+        signedPdfName(doc.file.name, isFullySigned(cert)),
+        'application/pdf',
+      );
     } catch {
       downloadCertificate(cert);
     }

@@ -144,6 +144,8 @@ export function buildOnChainCertificate(input: {
     signedAt?: string | null;
     /** Transaction that minted this signature, read back from the ledger. */
     txId?: string | null;
+    /** The signature NFT itself (`resource_…:#7#`), read back from the ledger. */
+    nft?: string | null;
   }>;
   nonce: string;
   /** On-ledger request key, so verification re-resolves the required set. */
@@ -175,7 +177,7 @@ export function buildOnChainCertificate(input: {
   };
   return {
     payload,
-    signatures: input.signedAccounts.map(({ account, signedAt, txId }) => ({
+    signatures: input.signedAccounts.map(({ account, signedAt, txId, nft }) => ({
       signerAccount: account,
       disclosedName: null,
       disclosedEmail: null,
@@ -184,6 +186,7 @@ export function buildOnChainCertificate(input: {
       // verification then reports the date as uncorroborated.
       signedAt: signedAt || now,
       ...(txId ? { transactionIntentHash: txId } : {}),
+      ...(nft ? { signatureNft: nft } : {}),
     })),
     onChain: null,
     request: input.requestId
@@ -215,6 +218,16 @@ export function signedAccounts(envelope: AttestationEnvelope): string[] {
 export function pendingSigners(envelope: AttestationEnvelope): string[] {
   const signed = new Set(signedAccounts(envelope));
   return envelope.payload.signers.filter((a) => !signed.has(a));
+}
+
+/**
+ * Nobody else has to sign: every required signer has signed (or, for an open
+ * certificate, somebody has). This is what decides whether a delivered PDF is
+ * named `<doc>-signed.pdf` — a half-signed file carrying that name travels on
+ * to the next signer and comes back named `-signed-signed`.
+ */
+export function isFullySigned(envelope: AttestationEnvelope): boolean {
+  return envelope.signatures.length > 0 && pendingSigners(envelope).length === 0;
 }
 
 /** `report.pdf` → `report.pdf.radixsig.json` */
