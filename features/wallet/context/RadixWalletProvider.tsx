@@ -126,12 +126,32 @@ export function RadixWalletProvider({
     return JSON.parse(initialSessionStr) as typeof initialSession;
   }, [initialSessionStr]);
 
+  /**
+   * A ledger somebody (or some page) has actually CHOSEN, as opposed to the one
+   * the last visit happened to leave behind in the cookie.
+   *
+   * The restore below runs in a `setTimeout(0)`, so it lands AFTER the effects
+   * of every component beneath this provider — including a page that opens on
+   * the ledger its own URL names. Without this flag the cookie arrived last and
+   * won, which is what dragged `?network=stokenet` links onto Mainnet: the page
+   * asked for Stokenet on mount, the cookie asserted Mainnet a tick later, and
+   * the dashboard read that as a deliberate switch and navigated to it.
+   *
+   * Once a choice exists the cookie has nothing left to say: it is written from
+   * this very state (see the effect below), so it can only ever repeat an older
+   * answer to a question that has already been answered.
+   */
+  const networkChosenRef = React.useRef(false);
+
   // Restore preferred network from cookie on mount (client-side)
   React.useEffect(() => {
     const stored = getCookie('radix_active_network');
     const initial = sessionsFromPayload(stableInitialSession);
 
     const timer = setTimeout(() => {
+      // A deliberate choice already landed; the cookie is stale by definition.
+      if (networkChosenRef.current) return;
+
       if (stored === 'mainnet' || stored === 'stokenet') {
         if (stored === 'mainnet' && initial.mainnet) {
           setActiveNetwork('mainnet');
@@ -207,6 +227,7 @@ export function RadixWalletProvider({
     setIsLoading(true);
     setError(null);
     const netName = networkNameFromId(networkId);
+    networkChosenRef.current = true;
     setActiveNetwork(netName);
 
     // Small delay to allow React state to settle before RDT init
@@ -374,9 +395,15 @@ export function RadixWalletProvider({
 
   // ── Switch network (UI only, no reconnection) ─────────────────────────────
 
-  function switchNetwork(network: 'mainnet' | 'stokenet') {
+  // Stable identity: consumers keep this in effect dependency lists, and a new
+  // function every render made those effects re-run for no reason.
+  const switchNetwork = React.useCallback((network: 'mainnet' | 'stokenet') => {
+    // Every caller is a choice: the toolbar toggle, the wallet popover, the
+    // profile modal, or a page whose URL names the ledger it is showing. From
+    // here the cookie restore must not undo it.
+    networkChosenRef.current = true;
     setActiveNetwork(network);
-  }
+  }, []);
 
   // ── Derive backward-compatible values from active session ─────────────────
 

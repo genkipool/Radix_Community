@@ -203,8 +203,38 @@ describe('visible signature certificate page', () => {
       const doc = await emptyDoc(1);
       await appendSignaturePage(doc, ledgerEnvelope(), { ...opts, origin: ORIGIN });
       const uris = await annotationUris(doc);
-      expect(uris).toContain(`${ORIGIN}/en-US/dashboard/tx/${REQUEST_TX}`);
-      expect(uris).toContain(`${ORIGIN}/en-US/dashboard/tx/${SIGNATURE_TX}`);
+      // Each link names the ledger: a certificate is read on somebody else's
+      // machine, where the last-used network is anybody's guess.
+      expect(uris).toContain(
+        `${ORIGIN}/en-US/dashboard/tx/${REQUEST_TX}?network=mainnet`,
+      );
+      expect(uris).toContain(
+        `${ORIGIN}/en-US/dashboard/tx/${SIGNATURE_TX}?network=mainnet`,
+      );
+    });
+
+    it('links a Stokenet certificate into Stokenet', async () => {
+      // The one that used to break: a test-ledger hash opened on Mainnet, where
+      // it does not exist. The certificate's own network decides.
+      const env = ledgerEnvelope();
+      env.payload.networkId = 2;
+      const stokenetTx = 'txid_tdx_2_1request0000000000000000000000000000';
+      env.request!.networkId = 2;
+      env.request!.transactionIntentHash = stokenetTx;
+      env.signatures[0].transactionIntentHash = stokenetTx;
+
+      const doc = await emptyDoc(1);
+      await appendSignaturePage(doc, env, {
+        ...opts,
+        origin: ORIGIN,
+        networkName: 'Stokenet',
+        network: 'stokenet',
+      });
+      const uris = await annotationUris(doc);
+      expect(uris).toContain(
+        `${ORIGIN}/en-US/dashboard/tx/${stokenetTx}?network=stokenet`,
+      );
+      expect(uris.some((u) => u.includes('network=mainnet'))).toBe(false);
     });
 
     it('still prints the ids when the origin is unknown, with no dead links', async () => {

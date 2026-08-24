@@ -12,6 +12,7 @@ import type { Metadata } from 'next';
 import { DashboardPageShell } from './dashboardPage';
 import { buildEntityMetadata } from './entityMetadata';
 import {
+  networkOfAddress,
   parseDashboardQuery,
   resolveEntityKind,
   type EntityKind,
@@ -63,8 +64,14 @@ export function createEntityRoute({
     if (!actual || !accepted.has(actual)) notFound();
   };
 
-  const networkOf = (searchParams: RawSearchParams): Network =>
-    parseDashboardQuery(searchParams).network ?? 'mainnet';
+  /**
+   * The ledger this page is about: `?network=` if the link says so, otherwise
+   * the one the ADDRESS itself names — a Radix address carries its network in
+   * its prefix, so `/resource/resource_tdx_2_1…` is a Stokenet page even with a
+   * bare URL. Only a value neither source supplies falls back to mainnet.
+   */
+  const networkOf = (address: string, searchParams: RawSearchParams): Network =>
+    parseDashboardQuery(searchParams).network ?? networkOfAddress(address) ?? 'mainnet';
 
   async function generateMetadata({
     params,
@@ -80,7 +87,7 @@ export function createEntityRoute({
       locale,
       kind,
       address: value,
-      network: networkOf(search),
+      network: networkOf(value, search),
       path: `/dashboard/${segment}/${value}`,
       siteName: SITE_NAME,
     });

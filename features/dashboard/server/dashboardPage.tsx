@@ -33,7 +33,7 @@ import { getSessionFromCookies } from '@/lib/auth/session';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { DictionaryEnricher } from '@/context/LanguageContext';
 import type { Network, SortMode, DashboardView } from '@/features/dashboard/types';
-import { parseDashboardQuery, type RawSearchParams } from '../lib/routes';
+import { networkOfAddress, parseDashboardQuery, type RawSearchParams } from '../lib/routes';
 import { fetchEntityDetailsForCard } from '@/services/gateway/entities';
 import { dashboardKeys, entityKeys } from '@/features/dashboard/utils/entityCache';
 
@@ -89,6 +89,13 @@ function makeCookieReader(cookieStore: Awaited<ReturnType<typeof cookies>>) {
 /**
  * Active network: an explicit choice in the URL wins, then the wallet session,
  * then the last-used cookie, then mainnet.
+ *
+ * "An explicit choice in the URL" includes the ADDRESS the page is about, not
+ * only `?network=`: a Radix address names its own ledger, so
+ * `/dashboard/tx/txid_tdx_2_1…` is a Stokenet page whether or not the link
+ * carries the parameter. Without that, such a link fell back to the reader's
+ * last-used cookie and looked up a Stokenet hash on Mainnet, where it does not
+ * exist — the page simply came up empty.
  */
 function resolveNetwork(
   fromUrl: Network | undefined,
@@ -135,7 +142,11 @@ export async function DashboardPageShell({
   const query = parseDashboardQuery(searchParams);
   const c = makeCookieReader(cookieStore);
   const session = await getSessionFromCookies();
-  const network = resolveNetwork(query.network, c.get('radix_active_network'), session);
+  const network = resolveNetwork(
+    query.network ?? networkOfAddress(query.entity) ?? undefined,
+    c.get('radix_active_network'),
+    session,
+  );
 
   const isServerWalletConnected = !!session?.[network];
   const initialConnectedAccounts =

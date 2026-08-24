@@ -84,15 +84,15 @@ export default function SignDocumentTool({ t: consoleT }: ConsoleToolProps) {
 
   // Opening a shared link switches the app to the request's network once, so
   // the page loads pointed at the right ledger (the user can still switch).
-  // Deferred past the wallet provider's own cookie-restore tick (setTimeout 0
-  // on mount) so the link's network wins the initial selection.
+  // No delay is needed to outrun the wallet provider's cookie restore: a
+  // deliberate `switchNetwork` now outranks it whenever it lands.
   const networkForced = useRef(false);
   useEffect(() => {
     if (requestNetworkId == null || networkForced.current) return;
     networkForced.current = true;
-    const wanted =
-      requestNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-    setTimeout(() => switchNetwork(wanted), 150);
+    switchNetwork(
+      requestNetworkId === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet',
+    );
   }, [requestNetworkId, switchNetwork]);
 
   // Direct document delivery: the share link may carry a P2P room id in the

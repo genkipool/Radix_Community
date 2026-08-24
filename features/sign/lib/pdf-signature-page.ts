@@ -21,7 +21,8 @@
 import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
 import type { AttestationEnvelope, SignatureEntry } from '../types/sign.types';
 import type { SignDictionary } from '../types/dictionary';
-import { NETWORKS } from '@/features/wallet/constants/network';
+import { NETWORKS, RadixNetworkId } from '@/features/wallet/constants/network';
+import type { Network } from '@/features/dashboard/types';
 import { SEAL_IMAGE_PATH } from '../constants/seal';
 import { findCollectionIssuer, findCollectionProfile } from '../services/sealDiscovery';
 import { explorerTxUrl } from './explorer';
@@ -110,6 +111,15 @@ export interface CertificatePageOptions {
   verifyUrl: string;
   /** Human-readable network name (e.g. "Mainnet"). */
   networkName: string;
+  /**
+   * Ledger this certificate is anchored on, so every transaction link on the
+   * page opens the explorer THERE. A PDF is read on somebody else's machine,
+   * months later: without it the explorer falls back to their own last-used
+   * network and a Stokenet transaction id opened on Mainnet, where it does not
+   * exist. Undefined for a network with no explorer of its own, and the link
+   * then falls back to what the hash itself names.
+   */
+  network?: Network;
   /** BCP-47 locale for date formatting. */
   locale: string;
   /** Same-origin path/URL of the seal SVG, rasterised for the header logo. */
@@ -237,6 +247,13 @@ async function signatureNftNames(
   return Object.fromEntries(named.filter(([, name]) => name));
 }
 
+/** The explorer's name for a network id, or undefined when it has no page. */
+function explorerNetworkOf(networkId: number): Network | undefined {
+  if (networkId === RadixNetworkId.Mainnet) return 'mainnet';
+  if (networkId === RadixNetworkId.Stokenet) return 'stokenet';
+  return undefined;
+}
+
 /**
  * Builds the visible signature-certificate page options for an embedded PDF:
  * localised labels, the certificate's own network name, a verify URL (also
@@ -266,6 +283,7 @@ export async function signaturePageOptions(
     verifyUrl: verifyUrlFor(env, origin, locale),
     networkName:
       NETWORKS[env.payload.networkId]?.networkName ?? `#${env.payload.networkId}`,
+    network: explorerNetworkOf(env.payload.networkId),
     locale,
     sealImageUrl: origin ? `${origin}${SEAL_IMAGE_PATH}` : undefined,
     origin: origin || undefined,
@@ -613,7 +631,9 @@ export async function appendSignaturePage(
    * nowhere is not.
    */
   const txLink = (hash?: string | null): string | undefined =>
-    hash && opts.origin ? explorerTxUrl(locale, hash, opts.origin) : undefined;
+    hash && opts.origin
+      ? explorerTxUrl(locale, hash, { origin: opts.origin, network: opts.network })
+      : undefined;
 
 
   // Brand accent (from the active theme) tints the band, section titles and
