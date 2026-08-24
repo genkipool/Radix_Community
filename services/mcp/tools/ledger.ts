@@ -107,7 +107,7 @@ export const lookupEntityTool = defineMcpTool({
       `${cliSection('Metadata')}\n${cliKeyValues(metadataRows(details))}`,
       `${cliSection('Raw details')}\n${cliCode(rawJson(typed ?? details), 'json')}`,
       cliNext([
-        `Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', address)}`,
+        `Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', address, { network })}`,
         inspection.entityType === 'account'
           ? 'Call get_account_balances for its token and NFT holdings.'
           : 'Call search_radix_docs to learn about this entity kind.',
@@ -208,7 +208,9 @@ export const getTransactionTool = defineMcpTool({
       tx.manifest_instructions
         ? `${cliSection('Manifest')}\n${cliCode(String(tx.manifest_instructions).slice(0, 3_000))}`
         : undefined,
-      cliNext([`Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', intentHash)}`]),
+      cliNext([
+        `Explore it visually: ${ctx.origin}${dashboardRoutes.entity('en', intentHash, { network })}`,
+      ]),
     );
     return {
       text,

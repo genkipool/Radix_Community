@@ -46,15 +46,16 @@ export default function ChatTool({}: ConsoleToolProps) {
     setLinkNetwork(params.get('n'));
   }
 
-  // Switch to the inviter's network once, before the guest signs in.
+  // Switch to the inviter's network once, before the guest signs in. A
+  // deliberate `switchNetwork` outranks the provider's cookie restore, so this
+  // no longer has to be delayed past it.
   const networkForced = useRef(false);
   useEffect(() => {
     if (!linkNetwork || networkForced.current) return;
     networkForced.current = true;
-    const wanted =
-      Number(linkNetwork) === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
-    const timer = setTimeout(() => switchNetwork(wanted), 150);
-    return () => clearTimeout(timer);
+    switchNetwork(
+      Number(linkNetwork) === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet',
+    );
   }, [linkNetwork, switchNetwork]);
 
   useEffect(() => {

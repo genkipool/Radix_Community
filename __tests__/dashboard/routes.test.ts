@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   dashboardRoutes,
   legacyDashboardRedirect,
+  networkOfAddress,
   parseDashboardQuery,
   resolveEntityKind,
   segmentToView,
@@ -36,6 +37,33 @@ describe('resolveEntityKind', () => {
     expect(resolveEntityKind('')).toBeNull();
     expect(resolveEntityKind(null)).toBeNull();
     expect(resolveEntityKind(undefined)).toBeNull();
+  });
+});
+
+describe('networkOfAddress', () => {
+  it('reads the ledger out of the address itself', () => {
+    // Which is what lets a bare link — no `?network=` — still open on the right
+    // ledger, in the PDF certificate above all.
+    expect(networkOfAddress('txid_rdx1abc')).toBe('mainnet');
+    expect(networkOfAddress('txid_tdx_2_1abc')).toBe('stokenet');
+    expect(networkOfAddress('resource_tdx_2_1n20d5q2y9p46zrjaw')).toBe('stokenet');
+    expect(networkOfAddress('validator_tdx_2_1s0wluv529800cm8un')).toBe('stokenet');
+    expect(
+      networkOfAddress('account_rdx12yy8p2v6z9k3xqe4m7c5n8w0r1t2u3i4o5p6a7s8d9f0'),
+    ).toBe('mainnet');
+  });
+
+  it('is not fooled by the data part, which cannot hold an underscore', () => {
+    // Only the human-readable prefix has underscores; `tdx` inside the body is
+    // just bech32 data.
+    expect(networkOfAddress('txid_rdx1tdx2qqq')).toBe('mainnet');
+  });
+
+  it('returns null when nothing says', () => {
+    expect(networkOfAddress('hello')).toBeNull();
+    expect(networkOfAddress('')).toBeNull();
+    expect(networkOfAddress(null)).toBeNull();
+    expect(networkOfAddress(undefined)).toBeNull();
   });
 });
 

@@ -43,10 +43,16 @@ describe('Radix Seal brand-resource links', () => {
 });
 
 describe('links built by other features', () => {
-  it('the signing feature links to the transaction page', () => {
+  it('the signing feature links to the transaction page, on its own ledger', () => {
+    // The hash names its network, so the link says so too: opened elsewhere,
+    // the page would otherwise fall back to the reader's last-used ledger.
     const href = explorerTxUrl('es', 'txid_rdx1abc');
-    expect(href).toBe('/es/dashboard/tx/txid_rdx1abc');
+    expect(href).toBe('/es/dashboard/tx/txid_rdx1abc?network=mainnet');
     assertCanonical(href);
+
+    const stokenet = explorerTxUrl('es', 'txid_tdx_2_1abc');
+    expect(stokenet).toBe('/es/dashboard/tx/txid_tdx_2_1abc?network=stokenet');
+    assertCanonical(stokenet);
   });
 
   it('the MCP deep link is canonical for a real hash', () => {

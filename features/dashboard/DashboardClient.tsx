@@ -47,6 +47,10 @@ import type { Dictionary } from '@/i18n';
 import type { DashboardInitialProps } from '@/features/dashboard/types/core.types';
 import type { Network } from '@/features/dashboard/types';
 import { useFocusedColumns } from './hooks/useFocusedColumns';
+import {
+  reconcileNetwork,
+  initialNetworkReconcileState,
+} from './lib/networkReconcile';
 
 /* React Query hooks */
 import { useValidatorsQuery } from './staking/hooks/useValidatorsQuery';
@@ -154,55 +158,25 @@ export default function DashboardClient({
   const { isConnected, accounts, activeNetwork, switchNetwork, selectedAccountAddresses, sessions } = useRadixWallet();
 
 
-  // Last network the WALLET reported. The trigger below has to be an actual
-  // wallet-side change, not merely "the wallet differs from the URL": the URL
-  // is the source of truth, and while `switchNetwork` is in flight the two
-  // legitimately disagree. Reacting to the difference navigated away from a
-  // freshly opened entity link before its wallet switch had landed.
-  const lastWalletNetwork = useRef<string | null>(null);
+  /*
+   * The page's ledger and the wallet's, kept in step by a small state machine
+   * that lives in `lib/networkReconcile` — pure, and tested there, because
+   * every bug this has had came from reading an innocent disagreement between
+   * the two as a decision somebody made. See that file for the history.
+   */
+  const reconcileState = useRef(initialNetworkReconcileState);
 
-  // Synchronize dashboard network with wallet activeNetwork
   useEffect(() => {
-    // Nothing to reconcile until the wallet reports a network.
-    if (!activeNetwork) return;
+    const { state, action } = reconcileNetwork(reconcileState.current, {
+      pageNetwork: network as Network,
+      walletNetwork: (activeNetwork as Network | null) ?? null,
+    });
+    reconcileState.current = state;
 
-    const previouslyKnown = lastWalletNetwork.current;
-    lastWalletNetwork.current = activeNetwork;
-
-    // FIRST time we learn the wallet's network. That is hydration, not a choice
-    // the user just made: the wallet connects a moment after the page mounts and
-    // reports its default. Treating it as a switch is what dragged a Stokenet
-    // link onto Mainnet the instant the wallet woke up.
-    //
-    // The URL is the source of truth, so the WALLET follows it, never the other
-    // way round, or a shared link would open on the wrong ledger.
-    if (previouslyKnown === null) {
-      if (activeNetwork !== network) {
-        switchNetwork(network as 'mainnet' | 'stokenet');
-      }
-      return;
-    }
-
-    // Past the wake-up, a change in the wallet is treated as a DELIBERATE one:
-    // someone opened the connect popover or the profile modal and picked a
-    // ledger. That is the same intent as using the toggle in the toolbar, so it
-    // moves the page the same way, and the three controls agree.
-    //
-    // The load-time protection above still stands: the first thing this effect
-    // does is make the WALLET follow the URL, so a shared link opens on the
-    // ledger it names.
-    //
-    // The known trade-off: from here, "the user picked a ledger" and "the
-    // provider asserted its own because it has no session for the one we asked
-    // for" look identical — both arrive as a changed `activeNetwork`. So a
-    // wallet with no session on a link's ledger will pull the page to the one
-    // it does have. Guarding against that instead is what left the popover and
-    // the profile modal apparently dead for the rest of the session, which is
-    // the worse of the two. Telling them apart needs the wallet UI to say
-    // outright that a person clicked, which is a change in those components.
-    if (activeNetwork !== previouslyKnown && activeNetwork !== network) {
-      handleNetworkChange(activeNetwork as 'mainnet' | 'stokenet');
-    }
+    // The wallet follows the URL; only a choice made IN the wallet moves the
+    // page, and by then the machine has already ruled out everything else.
+    if (action.type === 'askWallet') switchNetwork(action.to);
+    else if (action.type === 'moveDashboard') handleNetworkChange(action.to);
   }, [activeNetwork, network, switchNetwork, handleNetworkChange]);
 
   const handleSelectRange = (range: { start: string | null; end: string | null }) => {

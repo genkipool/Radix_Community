@@ -84,6 +84,24 @@ export function resolveEntityKind(value: string | null | undefined): EntityKind 
   return match ? match[1] : null;
 }
 
+/**
+ * The ledger an address or transaction hash belongs to, read from the address
+ * itself: Radix writes the network into the human-readable part, `…_rdx1…` for
+ * mainnet and `…_tdx_2_1…` for Stokenet. Only the prefix can hold underscores
+ * (the rest is bech32 data), so anchoring on it cannot be fooled by the body.
+ *
+ * This is what lets a link name its own ledger without the caller having to
+ * know one: a Stokenet transaction printed in a PDF is still a Stokenet
+ * transaction when it is opened months later on somebody else's machine, whose
+ * last-used-network cookie says otherwise.
+ */
+export function networkOfAddress(value: string | null | undefined): Network | null {
+  if (!value || typeof value !== 'string') return null;
+  if (/^[a-z]+_rdx1/.test(value)) return 'mainnet';
+  if (/^[a-z]+_tdx_2_1/.test(value)) return 'stokenet';
+  return null;
+}
+
 /* ── View state carried in the query ──────────────────────────────────────── */
 
 const NETWORKS: readonly Network[] = ['mainnet', 'stokenet'];
