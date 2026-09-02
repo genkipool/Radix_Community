@@ -535,6 +535,7 @@
       "profile": "Staking Profile",
       "description": "Description",
       "vote": "Protocol Update Vote",
+      "vote_action": "Vote",
       "vote_status": "Protocol update readiness signal",
       "network_vote": "Network Approval",
       "technical": "Technical Info",

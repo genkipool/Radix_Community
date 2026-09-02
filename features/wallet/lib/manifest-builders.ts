@@ -481,6 +481,38 @@ CALL_METHOD
 `;
 };
 
+/**
+ * Builds a manifest for a validator owner to signal protocol-update readiness
+ * (the on-ledger "vote"). Requires a proof of the validator owner badge; the
+ * `protocolVersionName` must be exactly 32 characters or the ledger rejects it.
+ */
+export const buildSignalProtocolUpdateManifest = (
+  accountAddress: string,
+  validatorAddress: string,
+  ownerBadgeId: string,
+  ownerBadgeResourceAddress: string,
+  protocolVersionName: string
+): string => {
+  // The version name is an ops-controlled 32-char value; escape defensively so
+  // it can never break out of the string literal in the manifest.
+  const safeVersion = protocolVersionName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `
+CALL_METHOD
+    Address("${accountAddress}")
+    "create_proof_of_non_fungibles"
+    Address("${ownerBadgeResourceAddress}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("${ownerBadgeId}")
+    )
+;
+CALL_METHOD
+    Address("${validatorAddress}")
+    "signal_protocol_update_readiness"
+    "${safeVersion}"
+;
+`;
+};
+
 export interface TransferItem {
   type: 'fungible' | 'non_fungible';
   resourceAddress: string;

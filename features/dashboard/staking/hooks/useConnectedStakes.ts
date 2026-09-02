@@ -24,6 +24,9 @@ export function useConnectedStakes(accountAddresses: string[], network: 'mainnet
 
   const validatorAddresses = new Set<string>();
   const ownerValidatorAddresses = new Set<string>();
+  // validator address → the connected account that owns it (holds its owner
+  // badge, or is its owner address). Used to authorise the protocol-update vote.
+  const ownerValidatorMap: Record<string, string> = {};
   let isLoading = false;
 
   queryResults.forEach((result) => {
@@ -62,6 +65,7 @@ export function useConnectedStakes(accountAddresses: string[], network: 'mainnet
                 if (v.ownerBadge && allIds.includes(v.ownerBadge)) {
                     validatorAddresses.add(v.address);
                     ownerValidatorAddresses.add(v.address);
+                    if (entityData.address) ownerValidatorMap[v.address] = entityData.address;
                 }
             });
         }
@@ -74,6 +78,7 @@ export function useConnectedStakes(accountAddresses: string[], network: 'mainnet
               if (v.ownerAddress === address) {
                   validatorAddresses.add(v.address);
                   ownerValidatorAddresses.add(v.address);
+                  if (!ownerValidatorMap[v.address]) ownerValidatorMap[v.address] = address;
               }
           });
       }
@@ -83,6 +88,7 @@ export function useConnectedStakes(accountAddresses: string[], network: 'mainnet
   return {
     pinnedValidatorAddresses: Array.from(validatorAddresses),
     ownerValidatorAddresses: Array.from(ownerValidatorAddresses),
+    ownerValidatorMap,
     isLoading,
   };
 }
