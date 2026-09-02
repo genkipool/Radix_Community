@@ -39,17 +39,27 @@ export const isNoneProtocolVote = (vote?: string | null): boolean => {
     return v === '' || v.toLowerCase() === 'none';
 };
 
-/** Has this validator already signalled the configured target version? */
-export const hasVotedTarget = (vote?: string | null): boolean =>
-    PROTOCOL_UPDATE_TARGET_ENABLED && (vote ?? '').trim() === PROTOCOL_UPDATE_SIGNAL;
+/**
+ * Has this validator signalled the configured target? The env vars are the
+ * source of truth: a vote matches the target when it equals the raw signal
+ * (Gateway returned it unmapped) OR the friendly name (Gateway's own lookup
+ * already mapped it to the same label the env declares).
+ */
+export const hasVotedTarget = (vote?: string | null): boolean => {
+    if (!PROTOCOL_UPDATE_TARGET_ENABLED) return false;
+    const v = (vote ?? '').trim();
+    return v === PROTOCOL_UPDATE_SIGNAL || (!!PROTOCOL_UPDATE_NAME && v === PROTOCOL_UPDATE_NAME);
+};
 
 /**
- * Friendly text for the badge: the human label when the vote matches the
- * configured target, otherwise the raw signalled value ('' when none).
+ * Text for the badge. The env vars are the source of truth: when the vote is
+ * the configured target it always renders the env name (falling back to the
+ * signal only if no name is set), regardless of what the Gateway returned.
+ * A non-target vote shows its raw value.
  */
 export const protocolVoteDisplayName = (vote?: string | null): string => {
     if (isNoneProtocolVote(vote)) return '';
     const v = (vote as string).trim();
-    if (hasVotedTarget(v) && PROTOCOL_UPDATE_NAME) return PROTOCOL_UPDATE_NAME;
+    if (hasVotedTarget(v)) return PROTOCOL_UPDATE_NAME || PROTOCOL_UPDATE_SIGNAL;
     return v;
 };

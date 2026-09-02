@@ -63,13 +63,15 @@ export const ConnectBadge = ({
    VoteBadge
 ───────────────────────────────────────── */
 export const VoteBadge = ({
-    vote, label, compact = false, validator, actionLabel = 'Vote',
+    vote, label, compact = false, validator, actionLabel = 'Vote', namedAction,
 }: {
     vote: string; label: string; compact?: boolean;
     /** When provided (and the connected wallet owns it) the badge can vote. */
     validator?: { address: string; ownerBadge?: string };
     /** Localised text for the actionable state, e.g. "Votar". */
     actionLabel?: string;
+    /** Localised "Vote {name}" template for roomy placements (expanded card). */
+    namedAction?: string;
 }) => {
     const protocolVote = useProtocolVote();
     const safeVote = sanitizeText(vote);
@@ -89,6 +91,12 @@ export const VoteBadge = ({
     if (isOwner && !voted) {
         const color = 'var(--color-primary)';
         const disabled = isVotingThis || !canSend;
+        // Roomy placements (expanded card) show "Vote <name>"; tight ones just
+        // "Vote". The name is the env target — the source of truth.
+        const targetName = protocolVote?.name ?? '';
+        const buttonLabel = (namedAction && targetName)
+            ? namedAction.replace('{name}', targetName)
+            : actionLabel;
         return (
             <button
                 type="button"
@@ -98,14 +106,12 @@ export const VoteBadge = ({
                 onPointerUp={(e) => e.stopPropagation()}
                 className={`${baseCls(compact)} overflow-hidden cursor-pointer transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60`}
                 style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
-                title={canSend
-                    ? `${label}: ${actionLabel}${protocolVote?.name ? ` — ${protocolVote.name}` : ''}`
-                    : `${label}: ${actionLabel} (—)`}
+                title={canSend ? `${label}: ${buttonLabel}` : `${label}: ${actionLabel} (—)`}
             >
                 {isVotingThis
                     ? <Loader2 className={`shrink-0 animate-spin ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />
                     : <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />}
-                <span className={`mt-[1px] truncate max-w-[80px] ${compact ? '' : 'hidden sm:inline'}`}>{actionLabel}</span>
+                <span className={`mt-[1px] truncate ${namedAction ? 'max-w-[160px]' : 'max-w-[80px]'} ${compact ? '' : 'hidden sm:inline'}`}>{buttonLabel}</span>
             </button>
         );
     }
