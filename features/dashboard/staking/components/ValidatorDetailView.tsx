@@ -106,7 +106,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                             labelYes={dt?.details?.accepts_connect ?? 'Accepts Connection'}
                             labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'}
                         />
-                        <VoteBadge vote={v.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
+                        <VoteBadge vote={v.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={v} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                     </div>
 
                     {/* Website */}

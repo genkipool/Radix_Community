@@ -51,7 +51,10 @@ export const ProtocolVoteProvider = ({
     const [votingAddress, setVotingAddress] = useState<string | null>(null);
     const [justVoted, setJustVoted] = useState<Set<string>>(() => new Set());
 
-    const canVote = (addr: string) => PROTOCOL_UPDATE_TARGET_ENABLED && !!ownerValidatorMap[addr];
+    // Ownership only: whether the connected wallet owns this validator (holds
+    // its owner badge). Whether a target is configured is a separate concern
+    // (`enabled`) that gates sending, not showing the "Vote" state.
+    const canVote = (addr: string) => !!ownerValidatorMap[addr];
 
     const vote = async (validator: VoteTargetValidator) => {
         if (!PROTOCOL_UPDATE_TARGET_ENABLED || isTransacting) return;

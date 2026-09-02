@@ -5,7 +5,7 @@ import {
 import { sanitizeText } from '@/utils/sanitize';
 import type { TranslationsT } from '@/features/dashboard/types';
 import { useProtocolVote } from '../context/ProtocolVoteContext';
-import { protocolVoteDisplayName, hasVotedTarget } from '../constants/protocolUpdate';
+import { protocolVoteDisplayName, isNoneProtocolVote } from '../constants/protocolUpdate';
 
 /**
  * All badge components use the py-1 + leading-none + mt-[1px] pattern
@@ -77,23 +77,30 @@ export const VoteBadge = ({
 
     const justVoted = !!address && !!protocolVote?.hasJustVoted(address);
     const isVotingThis = !!address && protocolVote?.votingAddress === address;
-    const canVoteThis = !!validator && !!address && !!protocolVote?.canVote(address);
-    // "Voted" for the actionable state means signalled the CURRENT target, so an
-    // owner still on an older version can re-signal the new one.
-    const votedTarget = justVoted || hasVotedTarget(safeVote);
+    // The connected wallet owns this validator (holds its owner badge).
+    const isOwner = !!validator && !!address && !!protocolVote?.canVote(address);
+    // A protocol-update target is configured (env) so the vote can be sent.
+    const canSend = !!protocolVote?.enabled;
+    const voted = justVoted || !isNoneProtocolVote(safeVote);
 
-    /* ── Actionable state: owner + not yet on target → clickable "Vote" ── */
-    if (canVoteThis && !votedTarget) {
+    /* ── Owner + not voted → the actionable "Vote" button. ──
+       Same control as the one in the expanded card: it just lives in two
+       places. Stops pointer/click propagation so the card never expands. */
+    if (isOwner && !voted) {
         const color = 'var(--color-primary)';
+        const disabled = isVotingThis || !canSend;
         return (
             <button
                 type="button"
-                disabled={isVotingThis}
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (validator) protocolVote?.vote(validator); }}
+                disabled={disabled}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (validator && canSend) protocolVote?.vote(validator); }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className={`${baseCls(compact)} overflow-hidden cursor-pointer transition-colors hover:brightness-110 disabled:opacity-70 disabled:cursor-wait`}
+                onPointerUp={(e) => e.stopPropagation()}
+                className={`${baseCls(compact)} overflow-hidden cursor-pointer transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60`}
                 style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
-                title={`${label}: ${actionLabel}`}
+                title={canSend
+                    ? `${label}: ${actionLabel}${protocolVote?.name ? ` — ${protocolVote.name}` : ''}`
+                    : `${label}: ${actionLabel} (—)`}
             >
                 {isVotingThis
                     ? <Loader2 className={`shrink-0 animate-spin ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />
@@ -103,20 +110,21 @@ export const VoteBadge = ({
         );
     }
 
-    /* ── Display state: show the friendly name (or raw signal) ── */
-    const displayText = justVoted
-        ? (protocolVote?.name || protocolVoteDisplayName(safeVote) || safeVote)
-        : protocolVoteDisplayName(safeVote);
-    const isSignaled = justVoted || (safeVote && safeVote.toLowerCase() !== 'none');
-    const color = isSignaled ? 'var(--color-primary)' : '#71717a';
+    /* ── Display state: voted → the signal name; otherwise → "None". ── */
+    const displayText = voted
+        ? (justVoted
+            ? (protocolVote?.name || protocolVoteDisplayName(safeVote) || safeVote)
+            : (protocolVoteDisplayName(safeVote) || safeVote))
+        : 'None';
+    const color = voted ? 'var(--color-primary)' : '#71717a';
     return (
         <span
             className={`${baseCls(compact)} overflow-hidden`}
             style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
-            title={`${label}: ${displayText || safeVote}`}
+            title={`${label}: ${displayText}`}
         >
             <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />
-            {!compact && <span className="mt-[1px] truncate max-w-[80px] hidden sm:inline">{displayText || '—'}</span>}
+            {!compact && <span className="mt-[1px] truncate max-w-[80px] hidden sm:inline">{displayText}</span>}
         </span>
     );
 };
