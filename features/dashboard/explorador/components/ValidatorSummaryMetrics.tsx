@@ -1,10 +1,11 @@
 'use client';
 import React, { useEffect } from 'react';
 import { registerAddressForPolling, unregisterAddressForPolling } from '@/services/liveDataStore';
-import { Activity, ShieldCheck, Users, Shield, Globe, Server, ExternalLink } from 'lucide-react';
+import { Activity, ShieldCheck, Users, Globe, Server, ExternalLink } from 'lucide-react';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { SummaryInlineRow } from './EntityPanelShared';
+import { VoteBadge } from '@/features/dashboard/staking/components/ValidatorBadges';
 import { formatXRDFull, formatXRDExact, formatPercent, formatDisplayUrl } from '@/utils/formatters';
 
 export interface MetricRowProps {
@@ -268,12 +269,9 @@ export function ValidatorProfileMetrics({
     // Design Colors from Staking Primitives
     const colorSuccess = '#16a34a';
     const colorWarning = '#d97706';
-    const colorPrimary = 'var(--color-primary)';
-    const colorMuted = '#71717a';
 
-    // Vote Logic
+    // The protocol-update vote is rendered by the shared VoteBadge below.
     const voteValue = validator.protocolUpdateVote;
-    const isSignaled = voteValue && voteValue.toLowerCase() !== 'none';
 
     return (
         <div className={`flex-1 flex flex-col ${className}`}>
@@ -341,13 +339,15 @@ export function ValidatorProfileMetrics({
                         label={validator.acceptsConnect ? (dd.accepts_connect || 'Acepta Conexión') : (dd.no_accepts_connect || 'Privado')}
                         color={validator.acceptsConnect ? colorSuccess : colorWarning}
                     />
-                    {voteValue && (
-                        <StatusPill
-                            icon={Shield}
-                            label={voteValue}
-                            color={isSignaled ? colorPrimary : colorMuted}
-                        />
-                    )}
+                    {/* Same control as the collapsed card: display for anyone,
+                        an actionable "Vote <name>" for the validator's owner. */}
+                    <VoteBadge
+                        vote={voteValue}
+                        label={dd.vote ?? 'Vote'}
+                        validator={validator}
+                        actionLabel={dd.vote_action ?? 'Votar'}
+                        namedAction={dd.vote_action_named ?? 'Votar {name}'}
+                    />
                 </div>
             </div>
         </div>
