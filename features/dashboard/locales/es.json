@@ -536,6 +536,7 @@
       "description": "Descripción",
       "vote": "Voto del Protocolo",
       "vote_action": "Votar",
+      "vote_action_named": "Votar {name}",
       "vote_status": "Señal de actualización del protocolo",
       "network_vote": "Aprobación de la Red",
       "protocol_update": "Voto de Actualización del Protocolo",

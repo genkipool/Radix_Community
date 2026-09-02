@@ -675,6 +675,7 @@ export default function DashboardClient({
   /* ===============═══════════ RENDER ===============═════════ */
   return (
     <EntityBadgeContext.Provider value={EntityBadgeAdapter}>
+    <ProtocolVoteProvider ownerValidatorMap={ownerValidatorMap}>
     <div className="pb-20">
       {/* ── Hero ── */}
       <ContentHero
@@ -811,7 +812,6 @@ export default function DashboardClient({
 
         <div className="w-full min-w-0">
           {/* ── Card grid + empty states ── */}
-          <ProtocolVoteProvider ownerValidatorMap={ownerValidatorMap}>
           <DashboardCardGrid
             activeView={activeView}
             gridClass={getGridClass(deferredColumns)}
@@ -850,7 +850,6 @@ export default function DashboardClient({
             locale={language}
             marketData={initialMarketData}
           />
-          </ProtocolVoteProvider>
         </div>
       </div>
 
@@ -877,6 +876,7 @@ export default function DashboardClient({
         expandedAccount={expandedEntity}
       />
     </div>
+    </ProtocolVoteProvider>
     </EntityBadgeContext.Provider>
   );
 }
