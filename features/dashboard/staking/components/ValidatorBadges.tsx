@@ -130,7 +130,7 @@ export const VoteBadge = ({
             title={`${label}: ${displayText}`}
         >
             <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />
-            {!compact && <span className="mt-[1px] truncate max-w-[80px] hidden sm:inline">{displayText}</span>}
+            {!compact && <span className={`mt-[1px] truncate ${namedAction ? 'max-w-[160px]' : 'max-w-[80px] hidden sm:inline'}`}>{displayText}</span>}
         </span>
     );
 };
