@@ -20,6 +20,7 @@ export type BlockType =
   | 'comment'
   // Invoke
   | 'callMethod'
+  | 'signalProtocolUpdate'
   // Bucket
   | 'takeFromWorktop'
   | 'takeAllFromWorktop'
@@ -195,6 +196,18 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
       { key: 'component', kind: 'address' },
       { key: 'method', kind: 'text' },
       { key: 'args', kind: 'multiline', optional: true },
+    ],
+  },
+  signalProtocolUpdate: {
+    type: 'signalProtocolUpdate',
+    icon: 'shield',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.invoke,
+    // The validator owner-badge proof is composed separately with an Account
+    // "proof" block placed before this one.
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'version', kind: 'text' },
     ],
   },
 
@@ -501,7 +514,7 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
     blocks: ['withdraw', 'withdrawNfts', 'depositBucket', 'depositAll', 'proof'],
   },
   { id: 'annotation', blocks: ['comment'] },
-  { id: 'invoke', blocks: ['callMethod'] },
+  { id: 'invoke', blocks: ['callMethod', 'signalProtocolUpdate'] },
   {
     id: 'bucket',
     blocks: ['takeFromWorktop', 'takeAllFromWorktop', 'takeNonFungiblesFromWorktop', 'returnToWorktop'],
@@ -715,6 +728,15 @@ CALL_METHOD
 ;
 `;
     }
+
+    case 'signalProtocolUpdate':
+      return `
+CALL_METHOD
+    Address("${value(block, 'validator')}")
+    "signal_protocol_update_readiness"
+    "${escape(value(block, 'version'))}"
+;
+`;
 
     case 'takeFromWorktop':
       return `

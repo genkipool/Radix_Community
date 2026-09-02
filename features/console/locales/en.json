@@ -1763,6 +1763,14 @@
             "args": "Arguments (manifest syntax, one per line)"
           }
         },
+        "signalProtocolUpdate": {
+          "name": "Protocol update vote",
+          "description": "Signals your validator readiness for a protocol update (signal_protocol_update_readiness). Add an Account \"proof\" block for the owner badge before this one.",
+          "fields": {
+            "validator": "Validator address",
+            "version": "Protocol version (32-character string)"
+          }
+        },
         "raw": {
           "name": "Raw instruction",
           "description": "Inserts raw manifest instructions verbatim — the escape hatch for anything else.",

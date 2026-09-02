@@ -1764,6 +1764,14 @@
             "args": "Argumentos (sintaxis de manifiesto, uno por línea)"
           }
         },
+        "signalProtocolUpdate": {
+          "name": "Voto de actualización de protocolo",
+          "description": "Señala la disposición de tu validador para una actualización de protocolo (signal_protocol_update_readiness). Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "version": "Versión del protocolo (cadena de 32 caracteres)"
+          }
+        },
         "raw": {
           "name": "Instrucción en crudo",
           "description": "Inserta instrucciones de manifiesto tal cual — la vía de escape para todo lo demás.",

@@ -136,6 +136,19 @@ describe('manifest blocks', () => {
     expect(nonFungible).toContain('NonFungibleLocalId("#0#")');
   });
 
+  it('builds a protocol-update vote after an owner-badge proof block', () => {
+    const blocks = [
+      block('proof', { account: 'account_rdx1a', resource: 'resource_rdx1owner', nftId: '#1#' }, 'p'),
+      block('signalProtocolUpdate', { validator: 'validator_rdx1v', version: 'cuttlefish-v1-name-32-characters!' }, 'v'),
+    ];
+    const { manifest, incompleteIds } = buildManifestFromBlocks(blocks);
+    expect(incompleteIds).toEqual([]);
+    expect(manifest).toContain('"create_proof_of_non_fungibles"');
+    expect(manifest).toContain('Address("validator_rdx1v")');
+    expect(manifest).toContain('"signal_protocol_update_readiness"');
+    expect(manifest).toContain('"cuttlefish-v1-name-32-characters!"');
+  });
+
   it('escapes quotes in metadata blocks and appends ; to raw blocks', () => {
     const blocks = [
       block('setMetadata', { entity: 'account_rdx1a', metadataKey: 'name', value: 'My "dApp"' }),
