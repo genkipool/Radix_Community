@@ -535,6 +535,7 @@
       "profile": "Perfil de Staking",
       "description": "Descripción",
       "vote": "Voto del Protocolo",
+      "vote_action": "Votar",
       "vote_status": "Señal de actualización del protocolo",
       "network_vote": "Aprobación de la Red",
       "protocol_update": "Voto de Actualización del Protocolo",

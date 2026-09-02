@@ -16,7 +16,8 @@ import {
     BatchUnstakeItem,
     BatchClaimItem,
     MixedBatchItem,
-    buildMixedBatchManifest
+    buildMixedBatchManifest,
+    buildSignalProtocolUpdateManifest
 } from '@/features/wallet/lib/manifest-builders';
 import { StakingAction, StakingTab } from '../types/staking-operations.types';
 
@@ -122,6 +123,64 @@ export const useStakingTransaction = () => {
                 return null;
             }
         };
+
+    const submitProtocolVote = async (
+        accountAddress: string,
+        validatorAddress: string,
+        ownerBadgeId: string,
+        protocolVersionName: string
+    ) => {
+        if (!activeNetworkId) {
+            setError('No active network');
+            return null;
+        }
+
+        const rdt = getOrCreateToolkit(activeNetworkId);
+        if (!rdt) {
+            setError('Radix Dapp Toolkit not initialized');
+            return null;
+        }
+
+        const ownerBadgeResourceAddress = RADIX_TOKEN_ADDRESSES[activeNetworkId]?.OWNER_BADGE;
+        if (!ownerBadgeResourceAddress) {
+            setError('Owner badge resource not found for network');
+            return null;
+        }
+        if (!ownerBadgeId) {
+            setError('Missing owner badge information');
+            return null;
+        }
+
+        setIsTransacting(true);
+        setError(null);
+
+        try {
+            const manifest = buildSignalProtocolUpdateManifest(
+                accountAddress,
+                validatorAddress,
+                ownerBadgeId,
+                ownerBadgeResourceAddress,
+                protocolVersionName
+            );
+
+            const result = await sendWithTimeout(rdt, manifest);
+
+            if (result.isErr()) {
+                const errMsg = result.error.error || result.error.message || 'Transaction rejected by wallet';
+                setError(errMsg);
+                setIsTransacting(false);
+                return null;
+            }
+
+            setIsTransacting(false);
+            return result.value.transactionIntentHash;
+        } catch (err: unknown) {
+            console.error('Protocol vote transaction error:', err);
+            setError(err instanceof Error ? err.message : 'An error occurred during the transaction');
+            setIsTransacting(false);
+            return null;
+        }
+    };
 
     const submitBatchTransaction = async (
         accountAddress: string,
@@ -245,6 +304,7 @@ export const useStakingTransaction = () => {
 
     return {
         submitTransaction,
+        submitProtocolVote,
         submitBatchTransaction,
         submitMixedBatchTransaction,
         isTransacting,

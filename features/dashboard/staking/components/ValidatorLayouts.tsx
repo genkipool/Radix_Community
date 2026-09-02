@@ -110,7 +110,7 @@ export const Layout1Col = ({
                             <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} />
                             <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} icon={Users} />
                             <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} icon={Cable} />
-                            <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} />
+                            <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                         </div>
 
                         <StatDivider items={stats} />
@@ -218,7 +218,7 @@ export const Layout2Col = ({
                                 <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} compact={columns === 3} />
                                 <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} compact={columns === 3} icon={Users} />
                                 <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} compact={columns === 3} icon={Cable} />
-                                <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} />
+                                <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                             </div>
                         </div>
                         <StatDivider items={stats.slice(0, 3)} />
@@ -305,7 +305,7 @@ export const Layout4Col = ({
                         <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
                         <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
                         <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
-                        <VoteBadge vote={validator.protocolUpdateVote} label="" compact />
+                        <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                     </div>
                 </div>
                 {/* Sharing, at the far end of the header. This layout serves
@@ -401,7 +401,7 @@ export const Layout6Col = ({
                 <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
                 <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
                 <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
-                <VoteBadge vote={validator.protocolUpdateVote} label="" compact />
+                <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
             </div>
 
             {/* Row 3: Single-column info */}

@@ -72,6 +72,7 @@ import { setLiveNetwork } from '@/services/liveDataStore';
 import { useExploradorFilters } from './explorador/hooks/useExploradorFilters';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { useConnectedStakes } from './staking/hooks/useConnectedStakes';
+import { ProtocolVoteProvider } from './staking/context/ProtocolVoteContext';
 import { useStakesReady } from './staking/hooks/useStakesReady';
 import { walletAccountsForNetwork } from './staking/lib/walletAccounts';
 import { useSettledPins } from './staking/hooks/useSettledPins';
@@ -526,6 +527,7 @@ export default function DashboardClient({
   const {
     pinnedValidatorAddresses: freshPins,
     ownerValidatorAddresses: freshOwners,
+    ownerValidatorMap,
     isLoading: isStakesLoading,
   } = useConnectedStakes(
     // The ledger ON SCREEN, so the pins always describe the cards beside them.
@@ -809,6 +811,7 @@ export default function DashboardClient({
 
         <div className="w-full min-w-0">
           {/* ── Card grid + empty states ── */}
+          <ProtocolVoteProvider ownerValidatorMap={ownerValidatorMap}>
           <DashboardCardGrid
             activeView={activeView}
             gridClass={getGridClass(deferredColumns)}
@@ -847,6 +850,7 @@ export default function DashboardClient({
             locale={language}
             marketData={initialMarketData}
           />
+          </ProtocolVoteProvider>
         </div>
       </div>
 
