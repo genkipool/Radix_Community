@@ -4,6 +4,10 @@
 
 export const CONSOLE_TOOL_SLUGS = [
   'mcp',
+  'validator-registration',
+  'validator-profile',
+  'validator-staking',
+  'validator-create',
   'send-transaction',
   'staking',
   'create-token',

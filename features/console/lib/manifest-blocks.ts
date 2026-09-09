@@ -9,6 +9,24 @@
  * console.buildManifest.
  */
 
+import { escapeManifestString as escape } from './manifest-escape';
+import { defaultFieldValues } from './field-defaults';
+import {
+  claimXrdInstruction,
+  createValidatorInstruction,
+  finishUnlockOwnerStakeUnitsInstruction,
+  lockOwnerStakeUnitsInstruction,
+  registerValidatorInstruction,
+  signalProtocolUpdateReadinessInstruction,
+  stakeAsOwnerInstruction,
+  stakeInstruction,
+  startUnlockOwnerStakeUnitsInstruction,
+  unregisterValidatorInstruction,
+  unstakeInstruction,
+  updateAcceptDelegatedStakeInstruction,
+  updateValidatorFeeInstruction,
+  updateValidatorKeyInstruction,
+} from './validator-manifests';
 export type BlockType =
   // Account
   | 'withdraw'
@@ -20,7 +38,21 @@ export type BlockType =
   | 'comment'
   // Invoke
   | 'callMethod'
+  // Validator
+  | 'createValidator'
+  | 'validatorRegister'
+  | 'validatorUnregister'
+  | 'validatorUpdateFee'
+  | 'validatorUpdateKey'
+  | 'validatorAcceptDelegatedStake'
   | 'signalProtocolUpdate'
+  | 'validatorStake'
+  | 'validatorStakeAsOwner'
+  | 'validatorUnstake'
+  | 'validatorClaimXrd'
+  | 'validatorLockOwnerStakeUnits'
+  | 'validatorStartUnlockOwnerStakeUnits'
+  | 'validatorFinishUnlockOwnerStakeUnits'
   // Bucket
   | 'takeFromWorktop'
   | 'takeAllFromWorktop'
@@ -62,6 +94,7 @@ export type BlockType =
 
 export type BlockFieldKind =
   | 'account'
+  | 'choice'
   | 'address'
   | 'resource'
   | 'decimal'
@@ -74,6 +107,8 @@ export interface BlockField {
   key: string;
   kind: BlockFieldKind;
   optional?: boolean;
+  /** Options for the 'choice' kind (labels come from the locales) */
+  options?: string[];
 }
 
 export type BlockIcon =
@@ -114,6 +149,7 @@ const ACCENTS = {
   account: '59,130,246',
   annotation: '100,116,139',
   invoke: '139,92,246',
+  validator: '168,85,247',
   bucket: '99,102,241',
   asserts: '14,165,233',
   resource: '245,158,11',
@@ -198,17 +234,141 @@ export const BLOCK_DEFS: Record<BlockType, BlockDef> = {
       { key: 'args', kind: 'multiline', optional: true },
     ],
   },
+  /* ── Validator ───────────────────────────────────────────────────────────
+   * Owner-gated blocks expect an Account "proof" block carrying the validator
+   * owner badge earlier in the manifest; the engine rejects them otherwise.
+   */
+  createValidator: {
+    type: 'createValidator',
+    icon: 'shield',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'publicKey', kind: 'text' },
+      { key: 'feeFactor', kind: 'decimal' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorRegister: {
+    type: 'validatorRegister',
+    icon: 'shield',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [{ key: 'validator', kind: 'address' }],
+  },
+  validatorUnregister: {
+    type: 'validatorUnregister',
+    icon: 'shield',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [{ key: 'validator', kind: 'address' }],
+  },
+  validatorUpdateFee: {
+    type: 'validatorUpdateFee',
+    icon: 'coins',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'feeFactor', kind: 'decimal' },
+    ],
+  },
+  validatorUpdateKey: {
+    type: 'validatorUpdateKey',
+    icon: 'key',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'publicKey', kind: 'text' },
+    ],
+  },
+  validatorAcceptDelegatedStake: {
+    type: 'validatorAcceptDelegatedStake',
+    icon: 'globe',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'accept', kind: 'choice', options: ['true', 'false'] },
+    ],
+  },
   signalProtocolUpdate: {
     type: 'signalProtocolUpdate',
     icon: 'shield',
     gradient: GRADIENT,
-    accentRgb: ACCENTS.invoke,
-    // The validator owner-badge proof is composed separately with an Account
-    // "proof" block placed before this one.
+    accentRgb: ACCENTS.validator,
     fields: [
       { key: 'validator', kind: 'address' },
       { key: 'version', kind: 'text' },
     ],
+  },
+  validatorStake: {
+    type: 'validatorStake',
+    icon: 'coins',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorStakeAsOwner: {
+    type: 'validatorStakeAsOwner',
+    icon: 'coins',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorUnstake: {
+    type: 'validatorUnstake',
+    icon: 'download',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorClaimXrd: {
+    type: 'validatorClaimXrd',
+    icon: 'coins',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorLockOwnerStakeUnits: {
+    type: 'validatorLockOwnerStakeUnits',
+    icon: 'badge',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'bucket', kind: 'bucket' },
+    ],
+  },
+  validatorStartUnlockOwnerStakeUnits: {
+    type: 'validatorStartUnlockOwnerStakeUnits',
+    icon: 'badge',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [
+      { key: 'validator', kind: 'address' },
+      { key: 'amount', kind: 'decimal' },
+    ],
+  },
+  validatorFinishUnlockOwnerStakeUnits: {
+    type: 'validatorFinishUnlockOwnerStakeUnits',
+    icon: 'badge',
+    gradient: GRADIENT,
+    accentRgb: ACCENTS.validator,
+    fields: [{ key: 'validator', kind: 'address' }],
   },
 
   /* ── Bucket ──────────────────────────────────────────────────────────── */
@@ -514,7 +674,26 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
     blocks: ['withdraw', 'withdrawNfts', 'depositBucket', 'depositAll', 'proof'],
   },
   { id: 'annotation', blocks: ['comment'] },
-  { id: 'invoke', blocks: ['callMethod', 'signalProtocolUpdate'] },
+  { id: 'invoke', blocks: ['callMethod'] },
+  {
+    id: 'validator',
+    blocks: [
+      'createValidator',
+      'validatorRegister',
+      'validatorUnregister',
+      'validatorUpdateFee',
+      'validatorUpdateKey',
+      'validatorAcceptDelegatedStake',
+      'signalProtocolUpdate',
+      'validatorStake',
+      'validatorStakeAsOwner',
+      'validatorUnstake',
+      'validatorClaimXrd',
+      'validatorLockOwnerStakeUnits',
+      'validatorStartUnlockOwnerStakeUnits',
+      'validatorFinishUnlockOwnerStakeUnits',
+    ],
+  },
   {
     id: 'bucket',
     blocks: ['takeFromWorktop', 'takeAllFromWorktop', 'takeNonFungiblesFromWorktop', 'returnToWorktop'],
@@ -566,8 +745,9 @@ export interface BlockInstance {
 export const createBlock = (type: BlockType): BlockInstance => ({
   id: crypto.randomUUID(),
   type,
-  values: {},
+  values: defaultFieldValues(BLOCK_DEFS[type].fields),
 });
+
 
 const value = (block: BlockInstance, key: string) => (block.values[key] ?? '').trim();
 
@@ -641,7 +821,6 @@ function collectEarlierNames(
   return found;
 }
 
-const escape = (text: string) => text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 /** Comma-separated ids → `NonFungibleLocalId("…"), …` list. */
 const nftIdList = (raw: string) =>
@@ -729,14 +908,51 @@ CALL_METHOD
 `;
     }
 
+    /* ── Validator ────────────────────────────────────────────────────────
+     * Every instruction comes from validator-manifests, the same module the
+     * templates use, so the two builders can never drift apart.
+     */
+    case 'createValidator':
+      return createValidatorInstruction({
+        publicKeyHex: value(block, 'publicKey'),
+        feeFactor: value(block, 'feeFactor'),
+        paymentBucket: value(block, 'bucket'),
+      });
+    case 'validatorRegister':
+      return registerValidatorInstruction(value(block, 'validator'));
+    case 'validatorUnregister':
+      return unregisterValidatorInstruction(value(block, 'validator'));
+    case 'validatorUpdateFee':
+      return updateValidatorFeeInstruction(value(block, 'validator'), value(block, 'feeFactor'));
+    case 'validatorUpdateKey':
+      return updateValidatorKeyInstruction(value(block, 'validator'), value(block, 'publicKey'));
+    case 'validatorAcceptDelegatedStake':
+      return updateAcceptDelegatedStakeInstruction(
+        value(block, 'validator'),
+        value(block, 'accept') !== 'false',
+      );
     case 'signalProtocolUpdate':
-      return `
-CALL_METHOD
-    Address("${value(block, 'validator')}")
-    "signal_protocol_update_readiness"
-    "${escape(value(block, 'version'))}"
-;
-`;
+      return signalProtocolUpdateReadinessInstruction(
+        value(block, 'validator'),
+        value(block, 'version'),
+      );
+    case 'validatorStake':
+      return stakeInstruction(value(block, 'validator'), value(block, 'bucket'));
+    case 'validatorStakeAsOwner':
+      return stakeAsOwnerInstruction(value(block, 'validator'), value(block, 'bucket'));
+    case 'validatorUnstake':
+      return unstakeInstruction(value(block, 'validator'), value(block, 'bucket'));
+    case 'validatorClaimXrd':
+      return claimXrdInstruction(value(block, 'validator'), value(block, 'bucket'));
+    case 'validatorLockOwnerStakeUnits':
+      return lockOwnerStakeUnitsInstruction(value(block, 'validator'), value(block, 'bucket'));
+    case 'validatorStartUnlockOwnerStakeUnits':
+      return startUnlockOwnerStakeUnitsInstruction(
+        value(block, 'validator'),
+        value(block, 'amount'),
+      );
+    case 'validatorFinishUnlockOwnerStakeUnits':
+      return finishUnlockOwnerStakeUnitsInstruction(value(block, 'validator'));
 
     case 'takeFromWorktop':
       return `
