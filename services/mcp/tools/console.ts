@@ -38,12 +38,20 @@ import {
   type MnemonicWordCount,
 } from '@/features/console/lib/olympia-export';
 import { fetchEntityDetails } from '@/services/gateway/entities';
+import { fetchNonFungibleLocations } from '@/services/gateway/state';
+import {
+  NotAnAccountError,
+  probeAccountSecurity,
+  type AccountSecurityReport,
+  type SecurityProbe,
+} from '@/features/console/services/accountSecurity';
+import type { RuleSummary, SecurityNote, SecurityVerdict } from '@/features/console/lib/account-security';
 import { mapHoldings } from '@/features/console/lib/account-holdings';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
 import { RADIX_COMMUNITY_ORIGIN, dappDefinitionFor, signingSteps } from '../dapp';
-import { cliBanner, cliCode, cliKeyValues, cliNext, cliRender, cliSection, cliTable } from '../cli';
+import { cliBanner, cliCode, cliKeyValues, cliList, cliNext, cliRender, cliSection, cliTable } from '../cli';
 
 const networkSchema = z
   .enum(['mainnet', 'stokenet'])
@@ -821,6 +829,163 @@ export const getKnownAddressesTool = defineMcpTool({
   },
 });
 
+/* ─── Account security ───────────────────────────────────────────────────── */
+
+/** The Node half of the probe: the same reads, through the cached services. */
+const serverProbe = (network: 'mainnet' | 'stokenet'): SecurityProbe => ({
+  entityDetails: (address) => fetchEntityDetails(address, network),
+  wellKnownAddresses: () => fetchKnownAddresses(network),
+  badgeLocation: async (resource, localId) => {
+    const located = await fetchNonFungibleLocations(resource, [localId], network);
+    return located[localId] ?? null;
+  },
+});
+
+const VERDICT_HEADLINE: Record<SecurityVerdict, string> = {
+  key: 'Controlled by its key — no Access Controller',
+  accessController: 'Shielded by an Access Controller',
+  badgeInAccount: 'Securified, but the owner badge is loose in an account',
+  badgeElsewhere: 'Securified, and the owner badge is held by another entity',
+  badgeUnknown: 'Securified, but the owner badge could not be located',
+  open: 'Open: the owner role is AllowAll',
+  other: 'Governed by a rule this check does not model',
+  unknown: 'Could not be determined',
+};
+
+const VERDICT_MEANING: Record<SecurityVerdict, string> = {
+  key: 'Whoever holds the seed phrase holds the account. There is no second factor and no recovery: lose the phrase and the account is gone.',
+  accessController: 'The account is owned by a badge held in an Access Controller, so control follows the controller\'s roles and its recovery can replace a lost factor.',
+  badgeInAccount: 'The account is owned by a single transferable NFT sitting in an ordinary account. Whoever moves that NFT takes the account, and there is no recovery path.',
+  badgeElsewhere: 'A single transferable NFT owns the account and it lives outside any Access Controller.',
+  badgeUnknown: 'The owner rule names the account owner badge, but the Gateway did not report where that badge is.',
+  open: 'Anyone can act as the owner of this account.',
+  other: 'The owner rule is neither a signature badge nor the account owner badge.',
+  unknown: 'The owner role could not be read from the ledger state.',
+};
+
+const NOTE_TEXT: Record<SecurityNote, string> = {
+  addressRuleMismatch:
+    'The public key hash in the owner rule is NOT the one this address encodes — inspect this account before trusting it.',
+  badgeHeldBySelf: 'The owner badge is held by the very account it governs.',
+  singleTransferableBadge:
+    'One transferable NFT is the account: no second factor, no recovery, and a transfer is final.',
+  olympiaDerived:
+    'Olympia-derived address (secp256k1): it is recovered with the Olympia seed phrase, not the Babylon one.',
+  holderUnresolved: 'The badge was found in a vault whose owning entity the Gateway did not report.',
+};
+
+const ACCOUNT_KIND_TEXT: Record<string, string> = {
+  'preallocated-secp256k1': 'preallocated, secp256k1 key (Olympia-derived)',
+  'preallocated-ed25519': 'preallocated, ed25519 key (Babylon-native)',
+  allocated: 'allocated on ledger (create_advanced or securified)',
+};
+
+/** "1 of 3 badges" — how many factors a controller role actually needs. */
+const ruleText = (rule: RuleSummary | null): string => {
+  if (!rule) return '—';
+  if (rule.kind === 'allowAll') return 'anyone';
+  if (rule.kind === 'denyAll') return 'nobody';
+  if (rule.badges.length === 0) return 'unreadable rule';
+  const need = rule.threshold ?? rule.badges.length;
+  return `${need} of ${rule.badges.length} badge${rule.badges.length === 1 ? '' : 's'}`;
+};
+
+function controllerBlock(report: AccountSecurityReport): string | false {
+  const config = report.controllerConfig;
+  if (!config) return false;
+  return `${cliSection('Access Controller')}\n${cliKeyValues([
+    ['Controller', config.address],
+    ['Primary role', ruleText(config.roles.primary)],
+    ['Recovery role', ruleText(config.roles.recovery)],
+    ['Confirmation role', ruleText(config.roles.confirmation)],
+    [
+      'Timed recovery delay',
+      config.timedRecoveryDelayMinutes === null
+        ? 'disabled'
+        : `${config.timedRecoveryDelayMinutes} minutes`,
+    ],
+    ['Recovery in progress', config.recoveryInProgress ? 'YES' : 'no'],
+    ['Badge withdrawal attempt', config.badgeWithdrawAttempt ? 'YES' : 'no'],
+    ['Primary role locked', config.primaryRoleLocked ? 'yes' : 'no'],
+    ['Pays its own recovery fees', config.hasFeeVault ? 'yes' : 'no'],
+  ])}`;
+}
+
+export const verifyAccountSecurityTool = defineMcpTool({
+  name: 'verify_account_security',
+  title: 'Verify how an account is protected',
+  description:
+    'Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge — and if so, whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller\'s roles, its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.',
+  category: 'console',
+  readOnly: true,
+  inputSchema: z.object({
+    address: z
+      .string()
+      .min(10)
+      .max(120)
+      .describe('Account address (account_rdx1… / account_tdx_2_1…)'),
+    network: networkSchema,
+  }),
+  handler: async ({ address, network }) => {
+    let report: AccountSecurityReport;
+    try {
+      report = await probeAccountSecurity(address, serverProbe(network));
+    } catch (error) {
+      if (error instanceof NotAnAccountError) throw new Error(error.message);
+      throw error;
+    }
+
+    const control = report.ownerControl;
+    const controlRows: Array<[string, string]> = [];
+    if (control.kind === 'signature') {
+      controlRows.push(['Owner rule', `signature badge (${control.curve})`]);
+      controlRows.push(['Public key hash', control.publicKeyHash]);
+      controlRows.push([
+        'Matches the address',
+        control.matchesAddress ? 'yes' : 'NO — the address and the rule disagree',
+      ]);
+    } else if (control.kind === 'ownerBadge') {
+      controlRows.push(['Owner rule', 'account owner badge']);
+      controlRows.push(['Badge', `${control.resource} ${control.localId}`]);
+      controlRows.push(['Badge holder', report.badgeLocation?.holder ?? 'not reported']);
+    } else {
+      controlRows.push(['Owner rule', control.kind]);
+    }
+
+    return {
+      text: cliRender(
+        cliBanner(`Account security · ${VERDICT_HEADLINE[report.verdict]}`),
+        cliKeyValues([
+          ['Account', report.address],
+          ['Network', network],
+          ['Address kind', report.accountKind ? ACCOUNT_KIND_TEXT[report.accountKind] : 'unknown'],
+          ['Verdict', report.verdict],
+        ]),
+        VERDICT_MEANING[report.verdict],
+        `${cliSection('What controls it')}\n${cliKeyValues(controlRows)}`,
+        report.notes.length > 0 &&
+          `${cliSection('Findings')}\n${cliList(report.notes.map((note) => NOTE_TEXT[note]))}`,
+        controllerBlock(report),
+        cliNext([
+          report.verdict === 'key'
+            ? 'This account has no recovery path. Securifying it and putting the badge in an Access Controller is what changes that.'
+            : 'Call lookup_entity on the controller for its full on-ledger state.',
+          'This check is read-only: it never proposes a transaction.',
+        ]),
+      ),
+      structured: {
+        address: report.address,
+        network,
+        verdict: report.verdict,
+        accountKind: report.accountKind,
+        controller: report.controller,
+        notes: report.notes,
+        ownerRuleKind: control.kind,
+      },
+    };
+  },
+});
+
 export const consoleTools = [
   listConsoleToolsTool,
   listManifestTemplatesTool,
@@ -836,5 +1001,6 @@ export const consoleTools = [
   convertOlympiaAddressTool,
   resolveVaultAddressTool,
   inspectAddressTool,
+  verifyAccountSecurityTool,
   getKnownAddressesTool,
 ];

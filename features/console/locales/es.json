@@ -840,6 +840,62 @@
           ]
         }
       },
+      "account-security": {
+        "title": "Seguridad de la cuenta",
+        "description": "Comprueba en el ledger si una cuenta cuelga de una sola frase semilla o está protegida por un Access Controller, y dónde está de verdad su insignia de dueño.",
+        "guide": {
+          "guideTitle": "Guía: Seguridad de la cuenta",
+          "guideDescription": "Toda cuenta de Radix la gobierna su rol de dueño, y solo hay dos respuestas: la cuenta es su clave (una frase semilla, sin recuperación) o la gobierna una insignia de dueño. Cuando es una insignia, toda la pregunta pasa a ser dónde vive esa insignia — dentro de un Access Controller, con multifactor y recuperación, o suelta en alguna cuenta, a una transferencia de perderse. Esta herramienta lo lee del ledger y te dice cuál de esos casos tienes delante.",
+          "guideSteps": [
+            "1. Pega una dirección de cuenta de la red en la que esté la consola. No se firma nada ni se envía nada: la herramienta solo lee estado público del ledger.",
+            "2. Lee el veredicto. 'La gobierna su clave' es el estado en el que nace toda cuenta de la cartera — no es un fallo, pero significa que una sola frase semilla es toda la seguridad de la cuenta.",
+            "3. Mira 'Qué la gobierna'. En una cuenta gobernada por su clave, la herramienta comprueba además que el hash de clave de la regla sea el que codifica la propia dirección; no pueden discrepar por casualidad.",
+            "4. Si hay Access Controller, lee sus roles: '1 de 3 insignias' es cuántos factores necesita cada rol. Vigila las dos alertas — una recuperación o una retirada de insignia en marcha es alguien llevándose la cuenta ahora mismo.",
+            "5. Los hallazgos reúnen lo que merece atención: una dirección que viene de Olympia (se recupera con la frase de Olympia, no con la de Babylon), o una insignia de dueño suelta sin ninguna recuperación detrás."
+          ],
+          "glossary": [
+            {
+              "term": "Rol de dueño",
+              "definition": "La regla que comprueba el ledger antes de dejar que algo actúe como la cuenta: retirar, cambiar ajustes, todo."
+            },
+            {
+              "term": "Insignia virtual de firma",
+              "definition": "La insignia que una transacción obtiene gratis por ir firmada con una clave. Cuando el rol de dueño la exige, la cuenta ES su clave."
+            },
+            {
+              "term": "Insignia de dueño de cuenta",
+              "definition": "Un NFT que se acuña al securificar una cuenta y cuyo id es la propia dirección de la cuenta. Quien lo tenga, es dueño de la cuenta."
+            },
+            {
+              "term": "Access Controller",
+              "definition": "Un componente que guarda una insignia de dueño tras tres roles — primario, recuperación y confirmación — para que el control sea multifactor y un factor perdido se pueda sustituir."
+            }
+          ],
+          "example": [
+            {
+              "field": "Dirección de cuenta",
+              "type": "input",
+              "value": "account_rdx12y…",
+              "isAddress": true
+            },
+            {
+              "field": "Veredicto",
+              "type": "input",
+              "value": "Protegida por un Access Controller"
+            },
+            {
+              "field": "Rol primario",
+              "type": "input",
+              "value": "1 de 3 insignias"
+            },
+            {
+              "field": "Retraso de recuperación temporizada",
+              "type": "input",
+              "value": "1440 minutos"
+            }
+          ]
+        }
+      },
       "faucet": {
         "title": "Faucet de Pruebas",
         "description": "Fondea una cuenta de Stokenet con 10.000 XRD de prueba en un clic, directamente desde el faucet de la red.",
@@ -2797,6 +2853,112 @@
       "derivedIdentity": "Identidad",
       "knownTitle": "Direcciones conocidas",
       "knownHint": "Direcciones nativas de la red activa (XRD, paquetes del sistema, faucet, paquete de pools, …)."
+    },
+    "accountSecurity": {
+      "checkTitle": "Comprobar una cuenta",
+      "checkHint": "Lee del ledger quién controla la cuenta: su clave, o una insignia de dueño — y si es una insignia, dónde vive. Solo lectura: no firma nada ni envía nada.",
+      "placeholder": "account_rdx1… / account_tdx_2_1…",
+      "states": {
+        "malformed": "La suma de control bech32m no cuadra. Revisa si hay una errata antes de fiarte de cualquier respuesta sobre esta dirección.",
+        "notAccount": "Es una dirección válida, pero no es una cuenta. La comprobación solo aplica a cuentas.",
+        "wrongNetwork": "Esa dirección es de otra red. Cambia la consola a {network} o pega una dirección de esa red."
+      },
+      "checking": "Leyendo el ledger…",
+      "error": "No se ha podido leer el estado. Puede que la cuenta aún no exista en esta red, o que el Gateway no esté disponible.",
+      "verdicts": {
+        "key": {
+          "label": "La gobierna su clave",
+          "meaning": "Quien tenga la frase semilla tiene la cuenta. No hay segundo factor ni recuperación: si se pierde la frase, se pierde la cuenta. Es el estado en el que nace toda cuenta de la cartera."
+        },
+        "accessController": {
+          "label": "Protegida por un Access Controller",
+          "meaning": "La cuenta la gobierna una insignia de dueño que vive dentro de un Access Controller, así que el control sigue sus roles y un factor perdido se puede sustituir por recuperación."
+        },
+        "badgeInAccount": {
+          "label": "Securificada, insignia suelta en una cuenta",
+          "meaning": "La cuenta la gobierna una insignia de dueño que está en una cuenta corriente, no en un controller. La cuenta es un NFT transferible: quien lo mueva se lleva la cuenta, y no hay recuperación posible."
+        },
+        "badgeElsewhere": {
+          "label": "Securificada, insignia en otra entidad",
+          "meaning": "La cuenta la gobierna una insignia de dueño que vive fuera de cualquier Access Controller, en una entidad que no es una cuenta. Lo que la tenga, tiene la cuenta."
+        },
+        "badgeUnknown": {
+          "label": "Securificada, insignia sin localizar",
+          "meaning": "La regla de dueño nombra la insignia de dueño de cuenta, pero el Gateway no ha informado de dónde está ahora mismo."
+        },
+        "open": {
+          "label": "Abierta a cualquiera",
+          "meaning": "El rol de dueño es AllowAll: cualquier transacción puede actuar como dueña de esta cuenta."
+        },
+        "other": {
+          "label": "La gobierna otra regla",
+          "meaning": "La regla de dueño no es ni una insignia de firma ni la insignia de dueño de cuenta. Lee la regla antes de sacar conclusiones."
+        },
+        "unknown": {
+          "label": "No se ha podido determinar",
+          "meaning": "No se ha podido leer el rol de dueño del estado de esta cuenta."
+        }
+      },
+      "controlTitle": "Qué la gobierna",
+      "controlHint": "El rol de dueño de la cuenta, tal y como lo guarda el ledger.",
+      "control": {
+        "addressKind": "Tipo de dirección",
+        "ownerRule": "Regla de dueño",
+        "signature": {
+          "secp256k1": "Insignia de firma (secp256k1)",
+          "ed25519": "Insignia de firma (ed25519)"
+        },
+        "publicKeyHash": "Hash de la clave pública",
+        "matchesAddress": "Coincide con la dirección",
+        "mismatch": "NO — dirección y regla no coinciden",
+        "ownerBadge": "Insignia de dueño de cuenta",
+        "badgeId": "Id de la insignia",
+        "holder": "La tiene",
+        "notReported": "el Gateway no lo informa",
+        "other": {
+          "custom": "Una regla propia, con insignias que esta comprobación no modela",
+          "allowAll": "AllowAll — no se exige ninguna prueba",
+          "denyAll": "DenyAll — nadie puede actuar como dueño",
+          "unknown": "Ilegible"
+        }
+      },
+      "addressKind": {
+        "preallocated-secp256k1": "Preasignada, clave secp256k1 (viene de Olympia)",
+        "preallocated-ed25519": "Preasignada, clave ed25519 (nativa de Babylon)",
+        "allocated": "Creada en el ledger",
+        "unknown": "Desconocido"
+      },
+      "common": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "notesTitle": "Hallazgos",
+      "notes": {
+        "addressRuleMismatch": "El hash de clave pública de la regla de dueño no es el que codifica esta dirección. Una dirección preasignada es el hash de su clave, así que no pueden discrepar por casualidad.",
+        "badgeHeldBySelf": "La insignia de dueño la tiene la propia cuenta que gobierna.",
+        "singleTransferableBadge": "Un NFT transferible es la cuenta: sin segundo factor, sin recuperación, y una transferencia no se deshace.",
+        "olympiaDerived": "Dirección que viene de Olympia: se recupera con la frase semilla de Olympia, no con la de Babylon.",
+        "holderUnresolved": "La insignia está en una bóveda cuya entidad propietaria no ha informado el Gateway."
+      },
+      "controllerTitle": "Access Controller",
+      "controllerHint": "Los roles que pueden actuar sobre la cuenta, y si hay algo en marcha ahora mismo.",
+      "controller": {
+        "address": "Controller",
+        "primary": "Rol primario",
+        "recovery": "Rol de recuperación",
+        "confirmation": "Rol de confirmación",
+        "delay": "Retraso de recuperación temporizada",
+        "delayDisabled": "Desactivado",
+        "delayValue": "{minutes} minutos",
+        "primaryLocked": "Rol primario bloqueado",
+        "feeVault": "Paga sus propias fees de recuperación",
+        "factors": "{need} de {total} insignias",
+        "anyone": "Cualquiera",
+        "nobody": "Nadie",
+        "unreadable": "Regla ilegible",
+        "recoveryInProgress": "Hay una propuesta de recuperación en marcha en este controller ahora mismo.",
+        "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller."
+      }
     },
     "walletPlayground": {
       "configTitle": "Solicitud de datos",
