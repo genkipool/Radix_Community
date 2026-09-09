@@ -5,7 +5,7 @@
  * to talk to a Gateway, and it is written against three injected reads instead
  * of a client. The console runs it in the browser through the dashboard's API
  * routes, the MCP server runs it in Node through the cached gateway services,
- * and both get the same verdict from the same code — which is the point: an
+ * and both get the same verdict from the same code. That is the point: an
  * agent must not be able to answer this question differently from the UI.
  *
  * It also keeps the reads to the minimum the answer needs: the owner rule
@@ -55,8 +55,8 @@ function ownerRuleOf(item: unknown): unknown {
 /**
  * Runs the whole check for one account address.
  *
- * Throws `NotAnAccountError` for input that is not a valid account address —
- * a typo must never come back as a reassuring verdict.
+ * Throws `NotAnAccountError` for input that is not a valid account address.
+ * A typo must never come back as a reassuring verdict.
  */
 export async function probeAccountSecurity(
   rawAddress: string,

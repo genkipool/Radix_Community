@@ -845,12 +845,12 @@
         "description": "Comprueba en el ledger si una cuenta cuelga de una sola frase semilla o está protegida por un Access Controller, y dónde está de verdad su insignia de dueño.",
         "guide": {
           "guideTitle": "Guía: Seguridad de la cuenta",
-          "guideDescription": "Toda cuenta de Radix la gobierna su rol de dueño, y solo hay dos respuestas: la cuenta es su clave (una frase semilla, sin recuperación) o la gobierna una insignia de dueño. Cuando es una insignia, toda la pregunta pasa a ser dónde vive esa insignia — dentro de un Access Controller, con multifactor y recuperación, o suelta en alguna cuenta, a una transferencia de perderse. Esta herramienta lo lee del ledger y te dice cuál de esos casos tienes delante.",
+          "guideDescription": "Toda cuenta de Radix la gobierna su rol de dueño, y solo hay dos respuestas: la cuenta es su clave (una frase semilla, sin recuperación) o la gobierna una insignia de dueño. Cuando es una insignia, toda la pregunta pasa a ser dónde vive esa insignia: dentro de un Access Controller, con multifactor y recuperación, o suelta en alguna cuenta, a una transferencia de perderse. Esta herramienta lo lee del ledger y te dice cuál de esos casos tienes delante.",
           "guideSteps": [
             "1. Pega una dirección de cuenta de la red en la que esté la consola. No se firma nada ni se envía nada: la herramienta solo lee estado público del ledger.",
-            "2. Lee el veredicto. 'La gobierna su clave' es el estado en el que nace toda cuenta de la cartera — no es un fallo, pero significa que una sola frase semilla es toda la seguridad de la cuenta.",
+            "2. Lee el veredicto. 'La gobierna su clave' es el estado en el que nace toda cuenta de la cartera. No es un fallo, pero significa que una sola frase semilla es toda la seguridad de la cuenta.",
             "3. Mira 'Qué la gobierna'. En una cuenta gobernada por su clave, la herramienta comprueba además que el hash de clave de la regla sea el que codifica la propia dirección; no pueden discrepar por casualidad.",
-            "4. Si hay Access Controller, lee sus roles: '1 de 3 insignias' es cuántos factores necesita cada rol. Vigila las dos alertas — una recuperación o una retirada de insignia en marcha es alguien llevándose la cuenta ahora mismo.",
+            "4. Si hay Access Controller, lee sus roles: '1 de 3 insignias' es cuántos factores necesita cada rol. Vigila las dos alertas: una recuperación o una retirada de insignia en marcha es alguien llevándose la cuenta ahora mismo.",
             "5. Los hallazgos reúnen lo que merece atención: una dirección que viene de Olympia (se recupera con la frase de Olympia, no con la de Babylon), o una insignia de dueño suelta sin ninguna recuperación detrás."
           ],
           "glossary": [
@@ -868,7 +868,7 @@
             },
             {
               "term": "Access Controller",
-              "definition": "Un componente que guarda una insignia de dueño tras tres roles — primario, recuperación y confirmación — para que el control sea multifactor y un factor perdido se pueda sustituir."
+              "definition": "Un componente que guarda una insignia de dueño tras tres roles (primario, recuperación y confirmación) para que el control sea multifactor y un factor perdido se pueda sustituir."
             }
           ],
           "example": [
@@ -2856,7 +2856,7 @@
     },
     "accountSecurity": {
       "checkTitle": "Comprobar una cuenta",
-      "checkHint": "Lee del ledger quién controla la cuenta: su clave, o una insignia de dueño — y si es una insignia, dónde vive. Solo lectura: no firma nada ni envía nada.",
+      "checkHint": "Lee del ledger quién controla la cuenta: su clave, o una insignia de dueño. Y si es una insignia, dónde vive. Solo lectura: no firma nada ni envía nada.",
       "placeholder": "account_rdx1… / account_tdx_2_1…",
       "states": {
         "malformed": "La suma de control bech32m no cuadra. Revisa si hay una errata antes de fiarte de cualquier respuesta sobre esta dirección.",
@@ -2910,15 +2910,15 @@
         },
         "publicKeyHash": "Hash de la clave pública",
         "matchesAddress": "Coincide con la dirección",
-        "mismatch": "NO — dirección y regla no coinciden",
+        "mismatch": "NO: dirección y regla no coinciden",
         "ownerBadge": "Insignia de dueño de cuenta",
         "badgeId": "Id de la insignia",
         "holder": "La tiene",
         "notReported": "el Gateway no lo informa",
         "other": {
           "custom": "Una regla propia, con insignias que esta comprobación no modela",
-          "allowAll": "AllowAll — no se exige ninguna prueba",
-          "denyAll": "DenyAll — nadie puede actuar como dueño",
+          "allowAll": "AllowAll: no se exige ninguna prueba",
+          "denyAll": "DenyAll: nadie puede actuar como dueño",
           "unknown": "Ilegible"
         }
       },

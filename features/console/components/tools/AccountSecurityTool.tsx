@@ -133,12 +133,13 @@ function ControlDetails({ report, labels }: { report: AccountSecurityReport; lab
   );
 }
 
-/** "1 / 3" — how many of the badges a controller role actually needs. */
+/** "1 of 3": how many of the badges a controller role actually needs. */
 function ruleText(rule: RuleSummary | null, labels: Labels): string {
-  if (!rule) return '—';
-  if (rule.kind === 'allowAll') return labels.controller.anyone;
-  if (rule.kind === 'denyAll') return labels.controller.nobody;
-  if (rule.badges.length === 0) return labels.controller.unreadable;
+  if (rule?.kind === 'allowAll') return labels.controller.anyone;
+  if (rule?.kind === 'denyAll') return labels.controller.nobody;
+  // A role the response did not carry reads the same as one whose rule made no
+  // sense: either way the console could not tell you who holds it.
+  if (!rule || rule.badges.length === 0) return labels.controller.unreadable;
   const need = rule.threshold ?? rule.badges.length;
   return labels.controller.factors.replace('{need}', String(need)).replace('{total}', String(rule.badges.length));
 }

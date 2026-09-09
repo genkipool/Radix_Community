@@ -68,7 +68,7 @@ describe('what an address says by itself', () => {
 
   /*
    * The engine mints the account owner badge with the account's own node id
-   * (`NonFungibleLocalId::bytes`), so the id is arithmetic, not a lookup — which
+   * (`NonFungibleLocalId::bytes`), so the id is arithmetic, not a lookup. That
    * is what lets the check ask the Gateway one direct question.
    */
   it('derives the owner badge id from the address', () => {

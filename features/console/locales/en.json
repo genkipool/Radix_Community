@@ -845,12 +845,12 @@
         "description": "Check from the ledger whether an account hangs from a single seed phrase or is shielded by an Access Controller, and where its owner badge actually is.",
         "guide": {
           "guideTitle": "Guide: Account Security",
-          "guideDescription": "Every Radix account is governed by its owner role, and there are only two answers: the account is its key (one seed phrase, no recovery) or an owner badge governs it. When it is a badge, the whole question becomes where that badge lives — inside an Access Controller with multi-factor and recovery, or loose in some account, one transfer away from being lost. This tool reads that from the ledger and says which of those you are looking at.",
+          "guideDescription": "Every Radix account is governed by its owner role, and there are only two answers: the account is its key (one seed phrase, no recovery) or an owner badge governs it. When it is a badge, the whole question becomes where that badge lives: inside an Access Controller with multi-factor and recovery, or loose in some account, one transfer away from being lost. This tool reads that from the ledger and says which of those you are looking at.",
           "guideSteps": [
             "1. Paste an account address of the network the console is on. Nothing is signed and nothing is sent: the tool only reads public ledger state.",
-            "2. Read the verdict. 'Controlled by its key' is the state every wallet account starts in — it is not a fault, but it means one seed phrase is the whole security of the account.",
+            "2. Read the verdict. 'Controlled by its key' is the state every wallet account starts in. It is not a fault, but it means one seed phrase is the whole security of the account.",
             "3. Check 'What controls it'. For a key-controlled account the tool also verifies that the key hash in the owner rule is the one the address itself encodes; they cannot disagree by accident.",
-            "4. If there is an Access Controller, read its roles: '1 of 3 badges' is how many factors each role needs. Watch the two alerts — a recovery proposal or a badge withdrawal in flight is someone taking the account away right now.",
+            "4. If there is an Access Controller, read its roles: '1 of 3 badges' is how many factors each role needs. Watch the two alerts: a recovery proposal or a badge withdrawal in flight is someone taking the account away right now.",
             "5. Findings collect what deserves attention: an Olympia-derived address (recovered with the Olympia phrase, not the Babylon one), or an owner badge sitting loose with no recovery behind it."
           ],
           "glossary": [
@@ -868,7 +868,7 @@
             },
             {
               "term": "Access Controller",
-              "definition": "A component that holds an owner badge behind three roles — primary, recovery and confirmation — so control can be multi-factor and a lost factor can be replaced."
+              "definition": "A component that holds an owner badge behind three roles (primary, recovery and confirmation) so control can be multi-factor and a lost factor can be replaced."
             }
           ],
           "example": [
@@ -2855,7 +2855,7 @@
     },
     "accountSecurity": {
       "checkTitle": "Check an account",
-      "checkHint": "Reads from the ledger who controls the account: its key, or an owner badge — and if it is a badge, where that badge lives. Read-only: nothing is signed and nothing is sent.",
+      "checkHint": "Reads from the ledger who controls the account: its key, or an owner badge. If it is a badge, it also says where that badge lives. Read-only: nothing is signed and nothing is sent.",
       "placeholder": "account_rdx1… / account_tdx_2_1…",
       "states": {
         "malformed": "The bech32m checksum does not add up. Check for a typo before trusting any answer about this address.",
@@ -2909,15 +2909,15 @@
         },
         "publicKeyHash": "Public key hash",
         "matchesAddress": "Matches the address",
-        "mismatch": "NO — address and rule disagree",
+        "mismatch": "NO: address and rule disagree",
         "ownerBadge": "Account owner badge",
         "badgeId": "Badge id",
         "holder": "Badge held by",
         "notReported": "not reported by the Gateway",
         "other": {
           "custom": "A custom rule, with badges this check does not model",
-          "allowAll": "AllowAll — no proof required",
-          "denyAll": "DenyAll — nobody can act as owner",
+          "allowAll": "AllowAll: no proof required",
+          "denyAll": "DenyAll: nobody can act as owner",
           "unknown": "Unreadable"
         }
       },
