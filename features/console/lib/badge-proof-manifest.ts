@@ -39,16 +39,24 @@ export const buildNonFungibleBadgeProof = (
   accountAddress: string,
   resourceAddress: string,
   nonFungibleIds: string[],
-): string =>
-  nonFungibleIds.length === 0
-    ? ''
-    : `
+): string => {
+  if (nonFungibleIds.length === 0) return '';
+
+  /*
+   * One id stays inline; several go one per line. A batch across four
+   * validators otherwise puts a ~500-character array on a single line, which
+   * the manifest preview can only show by scrolling sideways.
+   */
+  const ids = nonFungibleIds.map((id) => `NonFungibleLocalId("${id}")`);
+  const list =
+    ids.length === 1 ? ids[0] : `\n        ${ids.join(',\n        ')}\n    `;
+
+  return `
 CALL_METHOD
     Address("${accountAddress}")
     "create_proof_of_non_fungibles"
     Address("${resourceAddress}")
-    Array<NonFungibleLocalId>(${nonFungibleIds
-      .map((id) => `NonFungibleLocalId("${id}")`)
-      .join(', ')})
+    Array<NonFungibleLocalId>(${list})
 ;
 `;
+};

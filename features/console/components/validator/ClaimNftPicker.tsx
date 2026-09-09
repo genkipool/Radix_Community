@@ -12,8 +12,8 @@ interface ClaimNftPickerProps {
   /** `${resourceAddress}:${localId}` of the picked NFTs. */
   selected: string[];
   onToggle: (key: string) => void;
-  /** Validator whose NFTs cannot be picked right now, and why. */
-  lockedValidator?: { address: string; reason: string };
+  /** Validators whose NFTs cannot be picked right now (an unstake is on). */
+  lockedValidators?: string[];
   disabled?: boolean;
 }
 
@@ -34,7 +34,7 @@ export function ClaimNftPicker({
   isLoading,
   selected,
   onToggle,
-  lockedValidator,
+  lockedValidators = [],
   disabled,
 }: ClaimNftPickerProps) {
   const labels = t.validator.forms.staking.claim;
@@ -65,10 +65,10 @@ export function ClaimNftPicker({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       {nfts.map((nft) => {
         const key = claimNftKey(nft);
-        const locked = lockedValidator?.address === nft.validatorAddress;
+        const locked = lockedValidators.includes(nft.validatorAddress);
         const blocked = !nft.isClaimable || locked;
         const reason = locked
-          ? lockedValidator!.reason
+          ? labels.lockedByUnstake
           : !nft.isClaimable
             ? labels.notYet.replace('{epoch}', String(nft.claimEpoch))
             : undefined;

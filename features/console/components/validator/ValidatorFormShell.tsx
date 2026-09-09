@@ -66,17 +66,7 @@ export function ValidatorFormShell({
   return (
     <div className="space-y-5">
       <ToolSection title={labels.contextTitle}>
-        <ValidatorContextPanel
-          t={t}
-          account={ctx.account}
-          onAccountChange={ctx.setAccount}
-          validators={ctx.validators}
-          isLoading={ctx.isLoadingValidators}
-          selected={ctx.validator}
-          onSelect={ctx.setValidator}
-          hideValidator={withoutValidator}
-          disabled={isSending}
-        />
+        <ValidatorContextPanel t={t} ctx={ctx} hideValidator={withoutValidator} disabled={isSending} />
       </ToolSection>
 
       <ToolSection title={title} hint={hint}>

@@ -9,7 +9,6 @@ import {
   PROTOCOL_VERSION_NAME_LEN,
 } from '@/features/dashboard/staking/constants/protocolUpdate';
 import { useValidatorFormContext } from '../../hooks/useValidatorFormContext';
-import { useValidatorState } from '../../hooks/useValidatorState';
 import { createValidatorOperation, type ValidatorOperation } from '../../lib/validator-operations';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { OptionButtons } from '../shared/OptionButtons';
@@ -65,8 +64,24 @@ export default function ValidatorRegistrationTool({ t }: ConsoleToolProps) {
   const labels = t.validator;
   const form = labels.forms.registration;
   const ctx = useValidatorFormContext();
-  const { data: onLedger } = useValidatorState(ctx.validator);
   const [state, setState] = useState<FormState>(INITIAL);
+
+  /*
+   * With several validators switched on, a two-position control can only speak
+   * for them when they agree. Where they differ the labels stay neutral rather
+   * than claiming a state half of them are not in.
+   */
+  const agreedState = <K extends 'isRegistered' | 'acceptsDelegatedStake'>(key: K) => {
+    const values = ctx.validators.map((address) => ctx.states[address]?.[key]);
+    if (!values.length || values.some((value) => value === undefined)) return undefined;
+    return values.every((value) => value === values[0]) ? values[0] : undefined;
+  };
+  const isRegistered = agreedState('isRegistered');
+  const acceptsDelegated = agreedState('acceptsDelegatedStake');
+
+  /** The current fee, shown only when every selected validator shares it. */
+  const fees = [...new Set(ctx.validators.map((address) => ctx.states[address]?.feeFactor))];
+  const currentFee = fees.length === 1 && fees[0] ? fees[0] : undefined;
 
   /*
    * A two-position control names a STATE, and the position the validator is
@@ -91,8 +106,8 @@ export default function ValidatorRegistrationTool({ t }: ConsoleToolProps) {
   const voteInvalid = state.vote.on && voteLength > 0 && voteLength !== PROTOCOL_VERSION_NAME_LEN;
 
   const operations: ValidatorOperation[] = [];
-  if (ctx.validator) {
-    const target = { validator: ctx.validator };
+  for (const validator of ctx.validators) {
+    const target = { validator };
     if (state.registration.on) operations.push(createValidatorOperation(state.registration.choice, target));
     if (state.fee.on) {
       operations.push(createValidatorOperation('update-fee', { ...target, feeFactor: state.fee.value }));
@@ -141,8 +156,8 @@ export default function ValidatorRegistrationTool({ t }: ConsoleToolProps) {
               value={state.registration.choice}
               onChange={(choice) => patch('registration', { choice, on: true })}
               options={[
-                { value: 'register', ...stateOption(form.registration, onLedger?.isRegistered, true) },
-                { value: 'unregister', ...stateOption(form.registration, onLedger?.isRegistered, false) },
+                { value: 'register', ...stateOption(form.registration, isRegistered, true) },
+                { value: 'unregister', ...stateOption(form.registration, isRegistered, false) },
               ]}
             />
           </div>
@@ -160,7 +175,7 @@ export default function ValidatorRegistrationTool({ t }: ConsoleToolProps) {
             onChange={(value) => patch('fee', { value, on: true })}
             placeholder="0.05"
             type="number"
-            hint={onLedger?.feeFactor ? form.fee.current.replace('{value}', onLedger.feeFactor) : undefined}
+            hint={currentFee ? form.fee.current.replace('{value}', currentFee) : undefined}
           />
         </FormBlock>
 
@@ -193,8 +208,8 @@ export default function ValidatorRegistrationTool({ t }: ConsoleToolProps) {
               value={state.delegation.choice}
               onChange={(choice) => patch('delegation', { choice, on: true })}
               options={[
-                { value: 'true', ...stateOption(form.delegation, onLedger?.acceptsDelegatedStake, true) },
-                { value: 'false', ...stateOption(form.delegation, onLedger?.acceptsDelegatedStake, false) },
+                { value: 'true', ...stateOption(form.delegation, acceptsDelegated, true) },
+                { value: 'false', ...stateOption(form.delegation, acceptsDelegated, false) },
               ]}
             />
           </div>
