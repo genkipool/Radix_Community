@@ -27,7 +27,8 @@
       "deploy": "Construir y Desplegar",
       "radix-seal": "Radix Seal",
       "utilities": "Utilidades",
-      "ai": "IA y Automatización"
+      "ai": "IA y Automatización",
+      "validator": "Validador"
     },
     "tools": {
       "sign-collection": {
@@ -993,6 +994,364 @@
             "5. Firma con seguridad: MCP nunca toca tus fondos. Cualquier transacción que prepare la IA debe pegarse en la herramienta Manifiesto de Transacción y firmarse con tu propia wallet."
           ]
         }
+      },
+      "validator-registration": {
+        "title": "Registro y ajustes",
+        "description": "Registra o da de baja el validador, cambia la comisión y la clave de consenso, ábrelo o ciérralo a delegación y vota una actualización de protocolo, todo en una sola transacción.",
+        "guide": {
+          "guideTitle": "Guía: registro y ajustes",
+          "guideDescription": "Todos los ajustes de propietario de un validador menos el perfil público, en un formulario y por tanto en una sola transacción. Activa solo lo que quieras cambiar; lo que dejes apagado no se toca. Cada ajuste es un único control, así que este formulario no puede expresar las contradicciones que el ledger aceptaría en silencio: pedir registrar y dar de baja en la misma transacción confirma las dos y deja ganar a la última sin avisar.",
+          "guideSteps": [
+            "1. Cuenta: elige la que tiene la insignia de propietario. Tus validadores se detectan solos a partir de las insignias que tenga.",
+            "2. Validador: elígelo de la lista detectada, o pega una dirección (el botón \"+\" te ofrece la agenda) para operar sobre uno cuya insignia esté en otro sitio.",
+            "3. Activa los ajustes que quieras cambiar. Los controles de dos posiciones muestran el estado actual del ledger en un lado y el cambio en el otro, así que \"Registrado / Darlo de baja\" significa que ahora mismo está registrado.",
+            "4. Todo lo activado va en una sola transacción con una única prueba de insignia, por muchos ajustes que toques.",
+            "5. Lee el manifiesto con \"Ver manifiesto\", pulsa Simular para ver comisiones y efectos, y luego Enviar transacción y firma en tu cartera."
+          ],
+          "fields": [
+            {
+              "label": "Cuenta que firma y paga",
+              "description": "Presenta la insignia de propietario y paga la comisión de red. Si no tiene la insignia del validador elegido, el ledger rechaza todas las llamadas de este formulario.",
+              "example": "account_tdx_2_12xned60hq…"
+            },
+            {
+              "label": "Dirección del validador",
+              "description": "Sobre qué validador actúa todo el formulario. Se rellena solo cuando la cuenta posee exactamente uno; el botón \"+\" abre tus direcciones guardadas.",
+              "example": "validator_tdx_2_1sdtnujyn3720ymg8lakydkvc5tw4q3zecdj95akdwt9de362mvtd94"
+            },
+            {
+              "label": "Registro",
+              "description": "Si el validador es elegible para el conjunto activo. Se aplica en el cambio de época, y solo te mete en el conjunto si tu stake llega al top 100. Dar de baja NO hace unstake: el stake se queda exactamente donde está y volver a registrar te devuelve.",
+              "example": "Registrado → Darlo de baja"
+            },
+            {
+              "label": "Factor de comisión (0–1)",
+              "description": "La parte de las emisiones que se queda el operador: 0.05 es un 5%. El cambio queda encolado y se aplica tras el retardo del protocolo, no al momento; la ayuda del campo te dice cuál es ahora mismo.",
+              "example": "0.05"
+            },
+            {
+              "label": "Clave pública (hex)",
+              "description": "Apunta el validador a otra clave de nodo, 66 caracteres hex. El nodo TIENE que tener ya la clave privada correspondiente. El ledger no lo verifica, así que un desajuste deja al validador sin validar sin dar ningún error.",
+              "example": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "label": "Delegación",
+              "description": "Si terceros pueden hacer staking en este validador. Es totalmente independiente del registro: un validador registrado puede estar cerrado a delegación, y uno dado de baja puede estar abierto.",
+              "example": "Abierto a todos → Cerrarlo"
+            },
+            {
+              "label": "Identificador de la versión de protocolo",
+              "description": "El identificador exacto de la actualización de protocolo para la que este validador vota estar preparado. Se anuncia para toda la red, no lo compone cada validador, así que el campo llega relleno cuando hay una actualización sobre la mesa. El motor exige EXACTAMENTE 32 caracteres y rechaza cualquier otra longitud, así que el campo los cuenta y bloquea el envío hasta que cuadre.",
+              "example": "cuttlefish----------------------"
+            }
+          ],
+          "example": [
+            {
+              "field": "Dirección del validador",
+              "type": "input",
+              "value": "validator_tdx_2_1sdtnujyn3720ymg8lakydkvc5tw4q3zecdj95akdwt9de362mvtd94",
+              "isAddress": true
+            },
+            {
+              "field": "Registro",
+              "type": "button-group",
+              "options": [
+                "Registrado",
+                "Darlo de baja"
+              ],
+              "selected": "Registrado"
+            },
+            {
+              "field": "Factor de comisión (0–1)",
+              "type": "input",
+              "value": "0.05",
+              "isNumeric": true
+            },
+            {
+              "field": "Delegación",
+              "type": "button-group",
+              "options": [
+                "Abierto a todos",
+                "Cerrarlo"
+              ],
+              "selected": "Abierto a todos"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Época",
+              "definition": "El turno en el que avanza la red, unos cinco minutos. Los cambios de registro se aplican en el siguiente cambio, nunca a mitad de época."
+            },
+            {
+              "term": "Conjunto activo",
+              "definition": "Los 100 validadores registrados con más stake. Estar registrado te hace elegible; solo el stake te mete."
+            },
+            {
+              "term": "Prueba única",
+              "definition": "Un solo create_proof_of_non_fungibles cubre todas las llamadas de propietario de la transacción, así que cambiar cinco ajustes a la vez cuesta una prueba, no cinco."
+            },
+            {
+              "term": "Pisado silencioso",
+              "definition": "El ledger acepta llamadas contradictorias en una transacción y aplica la última sin dar error. Este formulario las hace inexpresables, por eso no necesita avisos de conflicto."
+            }
+          ]
+        }
+      },
+      "validator-profile": {
+        "title": "Perfil público",
+        "description": "Nombre, descripción, icono y web que carteras y exploradores muestran de tu validador.",
+        "guide": {
+          "guideTitle": "Guía: perfil público",
+          "guideDescription": "La identidad que carteras y exploradores muestran de tu validador en la lista de staking. Nada de esto se pone al crear el validador, así que uno recién creado aparece como una dirección pelada hasta que rellenas esto, y eso importa porque los stakers eligen de esa lista. Son metadatos del componente validador, protegidos por la misma insignia de propietario, y el formulario entero es una sola transacción.",
+          "guideSteps": [
+            "1. Cuenta: la que tiene la insignia de propietario; de ahí se detectan tus validadores.",
+            "2. Validador: elige el que quieres describir.",
+            "3. Rellena solo lo que quieras cambiar. Un campo vacío no se escribe, así que conserva lo que tuviera: esto es una actualización, no un reemplazo.",
+            "4. Revisa el manifiesto, simula, y luego envía y firma."
+          ],
+          "fields": [
+            {
+              "label": "Nombre",
+              "description": "El titular que sale en las listas de staking de las carteras y en los exploradores. Que sea corto y reconocible: es lo único que la mayoría de stakers va a leer de ti.",
+              "example": "GenkiPool"
+            },
+            {
+              "label": "Descripción",
+              "description": "Un párrafo corto en la página del validador: quién lo lleva, desde dónde y con qué hardware. Se guarda como texto plano.",
+              "example": "Validador comunitario operado desde Lisboa en hierro propio, 99,9% de disponibilidad desde 2024."
+            },
+            {
+              "label": "URL del icono",
+              "description": "Una imagen cuadrada que se muestra junto al nombre. Se guarda como Url, así que tiene que ser una dirección completa con su esquema: un dominio a secas no vale.",
+              "example": "https://guepi.example/icon.png"
+            },
+            {
+              "label": "Web",
+              "description": "Tu página pública sobre el validador, para quien quiera saber más. También se guarda como Url.",
+              "example": "https://guepi.example"
+            }
+          ],
+          "example": [
+            {
+              "field": "Nombre",
+              "type": "input",
+              "value": "GenkiPool"
+            },
+            {
+              "field": "Descripción",
+              "type": "textarea",
+              "value": "Validador comunitario operado desde Lisboa en hierro propio."
+            },
+            {
+              "field": "URL del icono",
+              "type": "input",
+              "value": "https://guepi.example/icon.png"
+            },
+            {
+              "field": "Web",
+              "type": "input",
+              "value": "https://guepi.example"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Metadatos",
+              "definition": "Entradas clave/valor asociadas a una entidad del ledger. Las del validador las lee cualquiera y solo las escribe quien tenga la insignia de propietario."
+            },
+            {
+              "term": "Tipo Url",
+              "definition": "Radix guarda icon_url e info_url como Url tipada, no como cadena, y por eso rechaza un valor sin esquema."
+            },
+            {
+              "term": "Actualización parcial",
+              "definition": "Solo los campos que rellenas emiten instrucción, así que puedes cambiar únicamente el icono sin reescribir el resto."
+            }
+          ]
+        }
+      },
+      "validator-staking": {
+        "title": "Staking del validador",
+        "description": "Stake, unstake, reclamación y gestión de las unidades de stake bloqueadas del propietario.",
+        "guide": {
+          "guideTitle": "Guía: staking del validador",
+          "guideDescription": "Staking sobre un validador, por el lado del propietario y por el público, en el orden en que las cosas pasan de verdad. Activa lo que quieras y todo va en una sola transacción, con una excepción que impone el ledger: reclamar queda bloqueado mientras esté activo un unstake del mismo validador, porque canjear un NFT de reclamación minteado antes dentro de la misma transacción la aborta entera.",
+          "guideSteps": [
+            "1. Cuenta: la que pone los XRD y tiene las unidades de stake. Los bloques de propietario necesitan además su insignia.",
+            "2. Validador: elígelo y se te rellenan solos los recursos de unidades de stake y de NFT de reclamación que él mintea.",
+            "3. Activa las operaciones que quieras. Cada bloque gasta lo que la cuenta YA tiene: las unidades de stake creadas por un stake de esta misma transacción no llegan hasta el final, así que no se pueden deshacer en el mismo acto.",
+            "4. Para Reclamar XRD, elige los NFT en las tarjetas. Cada tarjeta dice de qué validador viene, y las que aún no han vencido salen deshabilitadas con la época en la que maduran.",
+            "5. Revisa el manifiesto, simula, y luego envía y firma."
+          ],
+          "fields": [
+            {
+              "label": "Stake — Como propietario / Público",
+              "description": "Como propietario usa la insignia y funciona aunque el validador esté cerrado a delegación. Público no necesita insignia, pero el validador debe aceptar stake delegado.",
+              "example": "Como propietario"
+            },
+            {
+              "label": "XRD a stakear",
+              "description": "Se retiran de la cuenta y se stakean. Recibes unidades de stake (LSU) que representan tu parte del pool y cuyo valor de rescate sube según se acumulan las emisiones.",
+              "example": "1000"
+            },
+            {
+              "label": "Recurso de unidades de stake (LSU)",
+              "description": "El recurso pool_unit del validador, que se lee del propio validador. La cuenta ya debe tener alguna: es lo que quema el unstake.",
+              "example": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t"
+            },
+            {
+              "label": "Unidades de stake (unstake)",
+              "description": "Cuántas unidades de stake quemar. Recibes un NFT de reclamación, canjeable por XRD cuando termine el plazo, no los XRD directamente.",
+              "example": "100"
+            },
+            {
+              "label": "Reclamar XRD (selector de NFT)",
+              "description": "Tus NFT de reclamación como tarjetas seleccionables, cada una atribuida al validador que la minteó. Si no, son indistinguibles —mismo tipo de recurso, id opaco— y canjear uno contra el validador equivocado falla; de ahí que la atribución sea lo importante.",
+              "example": "250 XRD · GenkiPool"
+            },
+            {
+              "label": "Bloquear unidades de propietario",
+              "description": "Mete unidades de stake en la bóveda bloqueada del propietario. Algunas redes exigen que el operador mantenga stake bloqueado como compromiso; así es como se pone ahí.",
+              "example": "500"
+            },
+            {
+              "label": "Iniciar desbloqueo",
+              "description": "Arranca el temporizador de desbloqueo de parte de la bóveda. Todavía no sale nada: esto solo pone el reloj en marcha.",
+              "example": "100"
+            },
+            {
+              "label": "Terminar desbloqueo",
+              "description": "Recoge lo que ya haya terminado de desbloquearse. Se puede dejar activado siempre: si el plazo no ha vencido, la llamada se confirma y simplemente no devuelve nada.",
+              "example": "(sin valor)"
+            }
+          ],
+          "example": [
+            {
+              "field": "Stake",
+              "type": "button-group",
+              "options": [
+                "Como propietario",
+                "Público"
+              ],
+              "selected": "Como propietario"
+            },
+            {
+              "field": "XRD a stakear",
+              "type": "input",
+              "value": "1000",
+              "isNumeric": true
+            },
+            {
+              "field": "Recurso de unidades de stake (LSU)",
+              "type": "input",
+              "value": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t",
+              "isAddress": true
+            },
+            {
+              "field": "Unidades de stake",
+              "type": "input",
+              "value": "100",
+              "isNumeric": true
+            }
+          ],
+          "glossary": [
+            {
+              "term": "LSU (unidad de stake)",
+              "definition": "El token fungible que recibes al hacer staking. Representa una parte del pool del validador, así que lo que sube con las emisiones es su valor en XRD, no su cantidad."
+            },
+            {
+              "term": "NFT de reclamación",
+              "definition": "Lo que devuelve el unstake. Registra una cantidad de XRD y la época a partir de la cual se puede canjear; antes de esa época no vale nada en el ledger."
+            },
+            {
+              "term": "Plazo de desvinculación",
+              "definition": "La espera entre hacer unstake y poder reclamar, alrededor de una semana en mainnet. Es la razón de que unstake y reclamar no puedan ir en la misma transacción."
+            },
+            {
+              "term": "Bóveda bloqueada del propietario",
+              "definition": "Una bóveda aparte para las unidades de stake del propio operador, con su desbloqueo en dos pasos: arrancar el temporizador y luego recoger."
+            }
+          ]
+        }
+      },
+      "validator-create": {
+        "title": "Crear validador",
+        "description": "Crea el componente validador y mintea su insignia de propietario. Va en transacción propia.",
+        "guide": {
+          "guideTitle": "Guía: crear un validador",
+          "guideDescription": "Crea el componente validador en el ledger y mintea su insignia de propietario en tu cuenta. Esa insignia es la autoridad sobre el validador a partir de entonces: quien la tenga puede registrarlo y cambiar su comisión, su clave de consenso y su perfil público. No es el nodo: el nodo es la máquina que instalaste aparte; esto solo crea la identidad on-ledger que apunta a la clave de tu nodo.",
+          "guideSteps": [
+            "1. Instala y arranca el nodo primero. Este formulario necesita la clave pública que imprime al arrancar, y un validador que apunte a una clave que ningún nodo tiene sencillamente no valida nunca.",
+            "2. Cuenta: elige la que paga la tasa de creación y recibirá la insignia de propietario. Custódiala bien: perderla es perder el control del validador.",
+            "3. Clave pública: pega la clave de consenso del nodo. Léela con `curl http://127.0.0.1:3336/system/identity` (el puerto es el que hayas puesto en `api.system.port`).",
+            "4. Factor de comisión: tu parte de las emisiones. Se puede cambiar después, así que no es una decisión irreversible.",
+            "5. Revisa el manifiesto con \"Ver manifiesto\", pulsa Simular para ver el coste real, y luego Enviar transacción y firma en tu Radix Wallet.",
+            "6. Saca la dirección validator_… nueva del recibo y termina de configurarlo con Registro y ajustes, Perfil público y Staking."
+          ],
+          "fields": [
+            {
+              "label": "Cuenta que firma y paga",
+              "description": "Paga la tasa de creación y recibe el NFT de insignia de propietario. Todos los cambios posteriores que exijan propietario los firma quien tenga esa insignia, así que usa una cuenta que controles a largo plazo.",
+              "example": "account_tdx_2_12xned60hq…"
+            },
+            {
+              "label": "Clave pública de consenso del nodo",
+              "description": "La clave secp256k1 comprimida con la que tu nodo firma en consenso, en 66 caracteres hex. El ledger no comprueba que ningún nodo tenga la clave privada correspondiente, así que una errata aquí da un validador que parece correcto y nunca valida.",
+              "example": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "label": "Factor de comisión (0–1)",
+              "description": "La parte de las emisiones de staking que se queda el operador, en fracción: 0.05 es un 5% y el resto va a tus stakers. Se puede cambiar luego, con el retardo del protocolo.",
+              "example": "0.05"
+            },
+            {
+              "label": "XRD a retirar para la tasa de creación",
+              "description": "No es el precio, es un techo. El ledger coge de aquí la tasa exacta (tarifada en unos 100 USD en XRD) y te devuelve el cambio a la cuenta. Súbelo solo si la creación falla por fondos.",
+              "example": "2000"
+            }
+          ],
+          "example": [
+            {
+              "field": "Cuenta que firma y paga",
+              "type": "button-group",
+              "options": [
+                "Operador de nodo",
+                "Ahorro"
+              ],
+              "selected": "Operador de nodo"
+            },
+            {
+              "field": "Clave pública de consenso del nodo",
+              "type": "textarea",
+              "value": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "field": "Factor de comisión (0–1)",
+              "type": "input",
+              "value": "0.05",
+              "isNumeric": true
+            },
+            {
+              "field": "XRD a retirar para la tasa de creación",
+              "type": "input",
+              "value": "2000",
+              "isNumeric": true
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Insignia de propietario",
+              "definition": "El NFT que mintea esta transacción. Lleva la dirección del validador en su propio dato y es lo único que autoriza registrar y cambiar comisión, clave y perfil. Si se pierde, el validador queda ingobernable."
+            },
+            {
+              "term": "Clave de consenso",
+              "definition": "El par de claves con el que el nodo firma propuestas y votos. La mitad pública vive en el ledger; la privada se queda en el keystore del nodo y no sale de la máquina."
+            },
+            {
+              "term": "Transacción propia",
+              "definition": "Crear un validador no puede compartir transacción con nada: su dirección y su insignia no existen hasta que esta transacción se confirma, así que ninguna instrucción posterior podría nombrarlas."
+            }
+          ]
+        }
       }
     },
     "common": {
@@ -1519,7 +1878,6 @@
           "fields": {
             "account": "Cuenta (con la insignia y los XRD)",
             "validator": "Dirección del validador",
-            "ownerBadge": "Insignia de propietario (recurso)",
             "ownerBadgeId": "Id de la insignia",
             "amount": "Cantidad de XRD"
           }
@@ -1530,7 +1888,6 @@
           "fields": {
             "account": "Cuenta (con la insignia y las LSU)",
             "validator": "Dirección del validador",
-            "ownerBadge": "Insignia de propietario (recurso)",
             "ownerBadgeId": "Id de la insignia",
             "lsuResource": "LSU (unidades de stake, recurso)",
             "amount": "Cantidad de LSU"
@@ -1552,7 +1909,6 @@
           "fields": {
             "account": "Cuenta (con la insignia y las LSU)",
             "validator": "Dirección del validador",
-            "ownerBadge": "Insignia de propietario (recurso)",
             "ownerBadgeId": "Id de la insignia",
             "lsuResource": "LSU (unidades de stake, recurso)",
             "amount": "Cantidad de LSU"
@@ -1564,7 +1920,6 @@
           "fields": {
             "account": "Cuenta (con la insignia)",
             "validator": "Dirección del validador",
-            "ownerBadge": "Insignia de propietario (recurso)",
             "ownerBadgeId": "Id de la insignia",
             "amount": "Cantidad de LSU"
           }
@@ -1575,7 +1930,6 @@
           "fields": {
             "account": "Cuenta (con la insignia)",
             "validator": "Dirección del validador",
-            "ownerBadge": "Insignia de propietario (recurso)",
             "ownerBadgeId": "Id de la insignia"
           }
         },
@@ -1686,6 +2040,77 @@
             "ownerBadgeId": "Id de la insignia de propietario",
             "version": "Versión del protocolo (cadena de 32 caracteres)"
           }
+        },
+        "create-validator": {
+          "name": "Crear validador",
+          "description": "Da de alta un componente validador nuevo en el consensus manager y mintea su insignia de propietario en tu cuenta (CREATE_VALIDATOR). Cuesta unos 100 USD en XRD.",
+          "fields": {
+            "account": "Cuenta (paga la tasa y recibe la insignia)",
+            "publicKey": "Clave pública de consenso del nodo (hex de 33 bytes, de /system/identity)",
+            "feeFactor": "Factor de comisión 0–1 (tu parte de las emisiones)",
+            "payment": "XRD a retirar para la tasa de creación"
+          }
+        },
+        "register-validator": {
+          "name": "Registrar validador",
+          "description": "Mete tu validador en el conjunto elegible para el conjunto activo desde la siguiente época (register). Necesita stake suficiente para entrar en la lista.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario"
+          }
+        },
+        "unregister-validator": {
+          "name": "Dar de baja el validador",
+          "description": "Saca tu validador del conjunto activo en la siguiente época (unregister). El stake se queda donde está: esto no es hacer unstake, y register lo vuelve a meter.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario"
+          }
+        },
+        "update-validator-fee": {
+          "name": "Cambiar la comisión",
+          "description": "Fija la parte de las emisiones que se queda el operador (update_fee). El cambio se aplica tras el retardo del protocolo, no al momento.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario",
+            "feeFactor": "Nuevo factor de comisión 0–1"
+          }
+        },
+        "update-validator-key": {
+          "name": "Cambiar la clave de consenso",
+          "description": "Apunta el validador a otra clave de nodo (update_key). El nodo tiene que tener ya la clave privada correspondiente: el ledger no lo comprueba y un desajuste deja de validar en silencio.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario",
+            "publicKey": "Nueva clave pública (hex de 33 bytes)"
+          }
+        },
+        "accept-delegated-stake": {
+          "name": "Abrir o cerrar a delegación",
+          "description": "Permite que cualquiera haga staking en tu validador, o lo restringe al propietario (update_accept_delegated_stake). Es independiente de que el validador esté registrado.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario",
+            "accept": "Aceptar stake delegado"
+          }
+        },
+        "validator-profile": {
+          "name": "Perfil del validador",
+          "description": "Fija el nombre, la descripción, el icono y la web que carteras y exploradores muestran de tu validador. Nada de esto se pone al crearlo; rellena solo lo que quieras cambiar.",
+          "fields": {
+            "account": "Cuenta (con la insignia de propietario)",
+            "validator": "Dirección del validador",
+            "ownerBadgeId": "Id de la insignia de propietario",
+            "name": "Nombre",
+            "description": "Descripción",
+            "iconUrl": "URL del icono",
+            "infoUrl": "Web"
+          }
         }
       },
       "blocks": {
@@ -1766,7 +2191,7 @@
         },
         "signalProtocolUpdate": {
           "name": "Voto de actualización de protocolo",
-          "description": "Señala la disposición de tu validador para una actualización de protocolo (signal_protocol_update_readiness). Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "description": "signal_protocol_update_readiness — señala la disposición para una actualización de protocolo. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
           "fields": {
             "validator": "Dirección del validador",
             "version": "Versión del protocolo (cadena de 32 caracteres)"
@@ -1976,6 +2401,108 @@
             "nftDescription": "Descripción del primer NFT",
             "nftImageUrl": "URL de la imagen del primer NFT"
           }
+        },
+        "createValidator": {
+          "name": "Crear validador",
+          "description": "CREATE_VALIDATOR — mintea un validador y su insignia de propietario al worktop, pagando del bucket indicado.",
+          "fields": {
+            "publicKey": "Clave pública del nodo (hex)",
+            "feeFactor": "Factor de comisión 0–1",
+            "bucket": "Bucket de XRD para la tasa"
+          }
+        },
+        "validatorRegister": {
+          "name": "Registrar validador",
+          "description": "register — entra en el conjunto elegible para el conjunto activo. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador"
+          }
+        },
+        "validatorUnregister": {
+          "name": "Dar de baja el validador",
+          "description": "unregister — sale del conjunto activo en la siguiente época; el stake no se toca. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador"
+          }
+        },
+        "validatorUpdateFee": {
+          "name": "Cambiar la comisión",
+          "description": "update_fee — fija la parte de las emisiones del operador. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "feeFactor": "Nuevo factor de comisión 0–1"
+          }
+        },
+        "validatorUpdateKey": {
+          "name": "Cambiar la clave de consenso",
+          "description": "update_key — el nodo tiene que tener ya la clave privada correspondiente. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "publicKey": "Nueva clave pública (hex)"
+          }
+        },
+        "validatorAcceptDelegatedStake": {
+          "name": "Aceptar stake delegado",
+          "description": "update_accept_delegated_stake — abre o cierra el validador al staking de terceros. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "accept": "Aceptar delegación"
+          }
+        },
+        "validatorStake": {
+          "name": "Stake",
+          "description": "stake — staking público; el validador debe aceptar delegación. Las unidades de stake van al worktop.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "bucket": "Bucket de XRD"
+          }
+        },
+        "validatorStakeAsOwner": {
+          "name": "Stake de propietario",
+          "description": "stake_as_owner — funciona aunque el validador esté cerrado a delegación. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "bucket": "Bucket de XRD"
+          }
+        },
+        "validatorUnstake": {
+          "name": "Unstake",
+          "description": "unstake — quema unidades de stake y devuelve un NFT de reclamación al worktop.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "bucket": "Bucket de unidades de stake"
+          }
+        },
+        "validatorClaimXrd": {
+          "name": "Reclamar XRD",
+          "description": "claim_xrd — canjea por XRD un NFT de reclamación ya vencido.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "bucket": "Bucket del NFT de reclamación"
+          }
+        },
+        "validatorLockOwnerStakeUnits": {
+          "name": "Bloquear unidades de propietario",
+          "description": "lock_owner_stake_units — mete unidades de stake del propietario en la bóveda bloqueada. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "bucket": "Bucket de unidades de stake"
+          }
+        },
+        "validatorStartUnlockOwnerStakeUnits": {
+          "name": "Iniciar desbloqueo",
+          "description": "start_unlock_owner_stake_units — arranca el temporizador de desbloqueo de parte de la bóveda. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador",
+            "amount": "Unidades de stake a desbloquear"
+          }
+        },
+        "validatorFinishUnlockOwnerStakeUnits": {
+          "name": "Terminar desbloqueo",
+          "description": "finish_unlock_owner_stake_units — recoge lo que ya haya terminado de desbloquearse. Añade antes un bloque \"prueba\" de cuenta con la insignia de propietario.",
+          "fields": {
+            "validator": "Dirección del validador"
+          }
         }
       },
       "blockCategories": {
@@ -1989,7 +2516,16 @@
         "address": "Direcciones",
         "metadata": "Metadatos",
         "escape": "Escape",
-        "snippets": "Snippets"
+        "snippets": "Snippets",
+        "validator": "Validador"
+      },
+      "validatorOwner": {
+        "detectedOne": "Tu validador",
+        "detectedMany": "Tus validadores",
+        "hint": "Detectado a partir de las insignias de propietario de esta cuenta. La dirección y el id de abajo se rellenan solos: edítalos para operar sobre un validador cuya insignia esté en otro sitio.",
+        "detecting": "Buscando tus validadores…",
+        "detectedNone": "Aquí no hay insignia de propietario",
+        "hintNone": "Esta cuenta no tiene ninguna insignia de propietario. Rellena los campos a mano para operar sobre un validador cuya insignia esté en otro sitio."
       }
     },
     "componentPanel": {
@@ -2292,7 +2828,11 @@
     },
     "staking": {
       "accountTitle": "Cuenta",
-      "sectionTitle": "Staking de la cuenta"
+      "sectionTitle": "Staking de la cuenta",
+      "tabDistributed": "Staking distribuido",
+      "tabDistributedHint": "Una cantidad repartida a partes iguales entre los validadores que selecciones.",
+      "tabMultiple": "Multiple staking",
+      "tabMultipleHint": "Una cantidad distinta por validador, combinadas en una sola transacción."
     },
     "mcp": {
       "endpoint": {
@@ -2402,6 +2942,155 @@
           "body": "Todas las herramientas de ledger y consola aceptan un parámetro opcional \"network\" (\"mainnet\" o \"stokenet\") que por defecto es mainnet. Basta con mencionar la red en tu pregunta — \"lista los validadores en stokenet\" — y la IA rellena el parámetro por ti. Además, las direcciones llevan la red en su prefijo: mainnet usa …rdx1 (account_rdx1…) y stokenet usa …tdx_2_1 (account_tdx_2_1…), de modo que la IA puede detectar la red correcta con la herramienta inspect_address y nunca mezclará redes en una misma transacción."
         }
       }
+    },
+    "validator": {
+      "contextTitle": "Cuenta y validador",
+      "accountLabel": "Cuenta que firma y paga",
+      "pickAccountFirst": "Elige una cuenta para continuar.",
+      "ownedOne": "Tu validador",
+      "ownedMany": "Tus validadores",
+      "noneOwned": "Esta cuenta no tiene ninguna insignia de propietario",
+      "noneOwnedHint": "El ledger rechazará las llamadas que exijan la insignia. Escribe una dirección abajo para operar sobre un validador cuya insignia esté en otro sitio.",
+      "manualValidator": "Dirección del validador",
+      "detecting": "Buscando tus validadores…",
+      "showManifest": "Ver manifiesto",
+      "hideManifest": "Ocultar manifiesto",
+      "forms": {
+        "registration": {
+          "title": "Ajustes a cambiar",
+          "hint": "Activa lo que quieras cambiar. Todo lo activado va en una sola transacción, y cada ajuste es un único control, así que aquí ninguna combinación puede contradecirse.",
+          "voteLengthError": "El nombre de versión de protocolo debe tener exactamente {length} caracteres: el ledger rechaza cualquier otra longitud.",
+          "registration": {
+            "title": "Registro",
+            "description": "Si el validador es elegible para el conjunto activo. Se aplica en la siguiente época; el stake no se toca en ningún caso.",
+            "stateOn": "Registrado",
+            "stateOff": "No registrado",
+            "actionOn": "Registrarlo",
+            "actionOff": "Darlo de baja",
+            "titleCurrent": "Es el estado actual del validador en el ledger.",
+            "titleChange": "Pasa el validador a este estado en la siguiente época."
+          },
+          "fee": {
+            "title": "Comisión",
+            "description": "La parte de las emisiones que se queda el operador. Se aplica tras el retardo del protocolo, no al momento.",
+            "label": "Factor de comisión (0–1)",
+            "current": "Ahora mismo {value}."
+          },
+          "key": {
+            "title": "Clave de consenso",
+            "description": "Qué clave de nodo firma por este validador.",
+            "label": "Clave pública (hex)",
+            "hint": "El nodo tiene que tener ya la clave privada correspondiente. El ledger no lo comprueba, y un desajuste deja al validador sin validar sin dar ningún error."
+          },
+          "delegation": {
+            "title": "Delegación",
+            "description": "Si terceros pueden hacer staking en este validador. Es independiente del registro.",
+            "stateOn": "Abierto a todos",
+            "stateOff": "Solo el propietario",
+            "actionOn": "Abrirlo",
+            "actionOff": "Cerrarlo",
+            "titleCurrent": "Es el estado actual del validador en el ledger.",
+            "titleChange": "Pasa el validador a este estado."
+          },
+          "vote": {
+            "title": "Voto de actualización de protocolo",
+            "description": "Señala este validador como preparado para una actualización de protocolo anunciada.",
+            "label": "Identificador de la versión de protocolo",
+            "hintTarget": "Relleno con el identificador anunciado para {name}. Cámbialo solo si vas a votar otra actualización.",
+            "hintNone": "Ahora mismo no hay ninguna actualización de protocolo anunciada, así que no hay nada que señalar. Pega el identificador si lo tienes."
+          }
+        },
+        "profile": {
+          "title": "Perfil público",
+          "hint": "Lo que carteras y exploradores muestran de tu validador. Nada de esto se pone al crearlo. Deja un campo vacío para no tocarlo; el formulario entero es una sola transacción.",
+          "fields": {
+            "name": {
+              "label": "Nombre",
+              "placeholder": "Mi Nodo",
+              "hint": "Es lo que sale en la lista de staking de la cartera."
+            },
+            "description": {
+              "label": "Descripción",
+              "placeholder": "Quién lleva este validador y desde dónde.",
+              "hint": "Un párrafo corto que se muestra en la página del validador."
+            },
+            "iconUrl": {
+              "label": "URL del icono",
+              "placeholder": "https://…/icon.png",
+              "hint": "Una imagen cuadrada. Se guarda como Url, así que tiene que ser una dirección completa."
+            },
+            "infoUrl": {
+              "label": "Web",
+              "placeholder": "https://…",
+              "hint": "Tu página pública sobre el validador."
+            }
+          }
+        },
+        "staking": {
+          "title": "Operaciones de staking",
+          "hint": "Activa lo que quieras hacer. Todo lo activado va en una sola transacción, y cada bloque gasta lo que la cuenta ya tiene.",
+          "stake": {
+            "title": "Stake",
+            "description": "Retira XRD de la cuenta y hace staking. Las unidades de stake vuelven a la cuenta.",
+            "optionOwner": "Como propietario",
+            "optionOwnerHint": "Usa la insignia de propietario; funciona aunque el validador esté cerrado a delegación.",
+            "optionPublic": "Público",
+            "optionPublicHint": "No necesita insignia, pero el validador debe aceptar stake delegado.",
+            "amountLabel": "XRD a stakear",
+            "optionPublicClosed": "Este validador está cerrado a delegación ahora mismo, así que un stake público sería rechazado."
+          },
+          "unstake": {
+            "title": "Unstake",
+            "description": "Quema unidades de stake y devuelve un NFT de reclamación, canjeable cuando termine el plazo.",
+            "resourceLabel": "Recurso de unidades de stake (LSU)",
+            "resourceHint": "El recurso pool_unit del validador, que la cuenta ya debe tener.",
+            "amountLabel": "Unidades de stake"
+          },
+          "lock": {
+            "title": "Bloquear unidades de propietario",
+            "description": "Mete unidades de stake en la bóveda bloqueada del propietario.",
+            "resourceLabel": "Recurso de unidades de stake (LSU)",
+            "amountLabel": "Unidades de stake"
+          },
+          "startUnlock": {
+            "title": "Iniciar desbloqueo",
+            "description": "Arranca el temporizador de desbloqueo de parte de la bóveda.",
+            "amountLabel": "Unidades de stake a desbloquear"
+          },
+          "finishUnlock": {
+            "title": "Terminar desbloqueo",
+            "description": "Recoge lo que ya haya terminado de desbloquearse.",
+            "note": "Se puede incluir siempre: si el plazo no ha vencido la llamada se confirma y simplemente no devuelve nada."
+          },
+          "claim": {
+            "title": "Reclamar XRD",
+            "description": "Canjea por XRD los NFT de reclamación ya vencidos.",
+            "lockedByUnstake": "No disponible mientras Unstake esté activo: el ledger aborta la transacción entera al canjear un NFT minteado antes dentro de ella. Manda la reclamación por separado.",
+            "noneFound": "Esta cuenta no tiene ningún NFT de reclamación.",
+            "notYet": "Todavía no se puede canjear: vence en la época {epoch}."
+          },
+          "resourceAutofilled": "Leído del validador; cámbialo solo si sabes por qué."
+        },
+        "create": {
+          "title": "Validador nuevo",
+          "hint": "Crea el componente validador y mintea su insignia de propietario en la cuenta elegida.",
+          "standaloneNote": "Esta transacción no puede hacer nada más. La dirección del validador y su insignia no existen hasta que se confirma, así que ninguna otra instrucción del mismo manifiesto podría referirse a ellas. La comisión, el perfil y el registro se ponen después con las otras herramientas de esta sección.",
+          "keyLabel": "Clave pública de consenso del nodo",
+          "keyHint": "El nodo la imprime al arrancar; también está en /system/identity de su API de sistema. 66 caracteres hex.",
+          "keyError": "Una clave pública comprimida tiene exactamente {length} caracteres hex.",
+          "feeLabel": "Factor de comisión (0–1)",
+          "feeHint": "Tu parte de las emisiones. Se puede cambiar después.",
+          "paymentLabel": "XRD a retirar para la tasa de creación",
+          "paymentHint": "No es el precio: el ledger coge de aquí la tasa exacta (unos 100 USD en XRD) y te devuelve el resto a la cuenta. Deja el valor por defecto salvo que la creación falle por fondos."
+        }
+      }
+    },
+    "toolGuide": {
+      "steps": "Instrucciones de uso",
+      "fields": "Para qué sirve cada campo",
+      "example": "Ejemplo práctico",
+      "glossary": "Glosario",
+      "exampleTag": "Ej."
     }
   }
 }

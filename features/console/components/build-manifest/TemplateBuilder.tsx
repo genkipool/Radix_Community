@@ -7,8 +7,11 @@ import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-address
 import { RadixNetworkId } from '@/features/wallet/constants/network';
 import { useKnownAddresses } from '../../hooks/useKnownAddresses';
 import { MANIFEST_TEMPLATES } from '../../lib/manifest-templates';
+import { defaultFieldValues } from '../../lib/field-defaults';
+import type { OwnedValidator } from '../../hooks/useOwnedValidators';
 import type { ConsoleDictionary } from '../../types/i18n.types';
 import { BuilderFieldInput, type BuilderFieldKind } from './BuilderFieldInput';
+import { ValidatorOwnerPicker } from './ValidatorOwnerPicker';
 
 
 
@@ -36,7 +39,15 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
   const [valuesById, setValuesById] = useState<Record<string, Record<string, string>>>({});
 
   const template = MANIFEST_TEMPLATES.find((candidate) => candidate.id === selectedId) ?? null;
-  const values = (selectedId && valuesById[selectedId]) || {};
+  /*
+   * Choice defaults are layered under the stored values rather than written
+   * into state: the manifest commits to a branch from the first render, so
+   * the control has to show one without a round-trip through setState.
+   */
+  const values = {
+    ...(template ? defaultFieldValues(template.fields) : {}),
+    ...((selectedId && valuesById[selectedId]) || {}),
+  };
 
   const networkAddresses = RADIX_TOKEN_ADDRESSES[activeNetworkId ?? RadixNetworkId.Mainnet];
   const ctx = {
@@ -51,9 +62,22 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
     onManifestChange(manifest);
   }, [manifest, onManifestChange]);
 
-  const setValue = (key: string, value: string) => {
+  /** One write per change: two setValue calls would drop the first patch. */
+  const patchValues = (patch: Record<string, string>) => {
     if (!selectedId) return;
-    setValuesById((prev) => ({ ...prev, [selectedId]: { ...prev[selectedId], [key]: value } }));
+    setValuesById((prev) => ({ ...prev, [selectedId]: { ...prev[selectedId], ...patch } }));
+  };
+
+  const setValue = (key: string, value: string) => patchValues({ [key]: value });
+
+  /** Fills the address and the badge id the binding names, together. */
+  const applyOwnedValidator = (validator: OwnedValidator) => {
+    const binding = template?.validatorOwner;
+    if (!binding) return;
+    patchValues({
+      [binding.validatorField]: validator.address,
+      [binding.badgeIdField]: validator.badgeLocalId,
+    });
   };
 
   return (
@@ -109,6 +133,15 @@ export function TemplateBuilder({ t, onManifestChange, disabled }: TemplateBuild
               {labels.templateFields}
             </h3>
           </div>
+          {template.validatorOwner && values[template.validatorOwner.accountField] && (
+            <ValidatorOwnerPicker
+              t={t}
+              accountAddress={values[template.validatorOwner.accountField]}
+              selectedValidator={values[template.validatorOwner.validatorField] ?? ''}
+              onSelect={applyOwnedValidator}
+              disabled={disabled}
+            />
+          )}
           {template.fields.map((field) => (
             <BuilderFieldInput
               key={`${template.id}-${field.key}`}

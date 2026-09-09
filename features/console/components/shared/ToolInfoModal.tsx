@@ -13,9 +13,17 @@ interface ToolInfoModalProps {
   t: Dictionary;
 }
 
+/** One input of the tool, explained: what it is for and what goes in it. */
+interface GuideField {
+  label: string;
+  description: string;
+  example?: string;
+}
+
 export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) {
   const toolT = slug ? (t.console?.tools as Record<string, Record<string, unknown>>)?.[slug] : null;
   const guide = toolT?.guide as Record<string, unknown> | undefined;
+  const headings = (t.console?.toolGuide ?? {}) as Record<string, string>;
 
   const {
     isPinned,
@@ -86,7 +94,7 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
             {Array.isArray(guide?.guideSteps) && guide.guideSteps.length > 0 && (
             <div className="space-y-6">
               <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
-                Instrucciones de uso
+                {headings.steps || 'Instrucciones de uso'}
               </h3>
 
               <div className="space-y-6 mt-6">
@@ -116,10 +124,42 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
             </div>
             )}
 
+            {Array.isArray(guide?.fields) && guide.fields.length > 0 && (
+              <div className="space-y-6 pt-4">
+                <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
+                  {headings.fields || 'Campos'}
+                </h3>
+
+                <div className="grid grid-cols-1 gap-3 mt-6">
+                  {(guide.fields as GuideField[]).map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-card-border)]/50 hover:border-[var(--color-primary)]/30 transition-colors flex flex-col gap-1.5 min-w-0"
+                    >
+                      <p className="text-[13px] font-bold text-[var(--color-text-main)]">{item.label}</p>
+                      <p className="text-[13px] leading-relaxed text-[var(--color-text-muted)]">
+                        {item.description}
+                      </p>
+                      {item.example && (
+                        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-1 min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">
+                            {headings.exampleTag || 'Ejemplo'}
+                          </span>
+                          <code className="font-mono text-[12px] text-[var(--color-primary)] break-all min-w-0">
+                            {item.example}
+                          </code>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {Array.isArray(guide?.example) && guide.example.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
-                  Ejemplo Práctico
+                  {headings.example || 'Ejemplo Práctico'}
                 </h3>
 
                 <div className="mt-6 flex flex-col gap-5 max-w-sm">
@@ -213,7 +253,7 @@ export function ToolInfoModal({ isOpen, onClose, slug, t }: ToolInfoModalProps) 
             {Array.isArray(guide?.glossary) && guide.glossary.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h3 className="text-sm font-bold tracking-wide text-[var(--color-text-main)] border-b border-[var(--color-card-border)] pb-2 flex items-center gap-2">
-                  Glosario de Términos
+                  {headings.glossary || 'Glosario de Términos'}
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4 mt-6">

@@ -5,10 +5,26 @@
 
 
 import { buildBadgeProofManifest } from './badge-proof-manifest';
+import { escapeManifestString as escapeStr } from './manifest-escape';
 import { setStringMetadata } from './metadata-manifests';
 import { freezeVaultManifest, lockMetadataManifest, type FreezeFlag } from './resource-actions';
+import {
+  claimXrdInstruction,
+  createValidatorInstruction,
+  finishUnlockOwnerStakeUnitsInstruction,
+  lockOwnerStakeUnitsInstruction,
+  registerValidatorInstruction,
+  signalProtocolUpdateReadinessInstruction,
+  stakeAsOwnerInstruction,
+  startUnlockOwnerStakeUnitsInstruction,
+  unregisterValidatorInstruction,
+  unstakeInstruction,
+  updateAcceptDelegatedStakeInstruction,
+  updateValidatorFeeInstruction,
+  updateValidatorKeyInstruction,
+  validatorProfileInstructions,
+} from './validator-manifests';
 
-const escapeStr = (text: string) => text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 export type TemplateFieldKind =
   | 'account'
@@ -25,6 +41,20 @@ export interface TemplateField {
   optional?: boolean;
   /** Options for the 'choice' kind (labels come from the locales) */
   options?: string[];
+}
+
+/**
+ * Binding used by templates that act on a validator the signer owns. The
+ * builder reads the picked account's validator owner badges and prefills both
+ * fields, so the operator never has to paste an address or a badge id.
+ */
+export interface ValidatorOwnerBinding {
+  /** Field that receives the validator component address. */
+  validatorField: string;
+  /** Field that receives the owner badge non-fungible local id. */
+  badgeIdField: string;
+  /** Field holding the account that must present the badge. */
+  accountField: string;
 }
 
 export interface TemplateContext {
@@ -51,8 +81,17 @@ export interface ManifestTemplate {
     | 'crown';
   gradient: string;
   fields: TemplateField[];
+  /** Present when the template operates on a validator owned by the signer. */
+  validatorOwner?: ValidatorOwnerBinding;
   build: (values: Record<string, string>, ctx: TemplateContext) => string;
 }
+
+/** The binding every validator-owner template uses; field keys are shared. */
+const VALIDATOR_OWNER: ValidatorOwnerBinding = {
+  validatorField: 'validator',
+  badgeIdField: 'ownerBadgeId',
+  accountField: 'account',
+};
 
 const v = (values: Record<string, string>, key: string) => (values[key] ?? '').trim();
 
@@ -64,6 +103,16 @@ CALL_METHOD
     Enum<0u8>()
 ;
 `;
+
+/** The owner-badge proof every validator-owner template starts with. */
+const validatorOwnerProof = (values: Record<string, string>, ctx: TemplateContext) =>
+  buildBadgeProofManifest([
+    {
+      accountAddress: v(values, 'account'),
+      resourceAddress: ctx.validatorOwnerBadge,
+      nonFungibleId: v(values, 'ownerBadgeId'),
+    },
+  ]);
 
 export const MANIFEST_TEMPLATES: ManifestTemplate[] = [
   {
@@ -200,23 +249,17 @@ CALL_METHOD
   },
   {
     id: 'stake-owner',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
-      { key: 'ownerBadge', kind: 'resource' },
       { key: 'ownerBadgeId', kind: 'nonFungibleId' },
       { key: 'amount', kind: 'decimal' },
     ],
     build: (values, ctx) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: v(values, 'ownerBadge'),
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
+      validatorOwnerProof(values, ctx) +
       `
 CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
@@ -227,13 +270,9 @@ CALL_METHOD
 TAKE_ALL_FROM_WORKTOP
     Address("${ctx.xrdAddress}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "stake_as_owner"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;` +
+      stakeAsOwnerInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
+      `CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -242,24 +281,18 @@ CALL_METHOD
   },
   {
     id: 'unstake-owner',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
-      { key: 'ownerBadge', kind: 'resource' },
       { key: 'ownerBadgeId', kind: 'nonFungibleId' },
       { key: 'lsuResource', kind: 'resource' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: v(values, 'ownerBadge'),
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
       `
 CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
@@ -270,13 +303,9 @@ CALL_METHOD
 TAKE_ALL_FROM_WORKTOP
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "unstake"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;` +
+      unstakeInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
+      `CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -306,13 +335,9 @@ CALL_METHOD
 TAKE_ALL_FROM_WORKTOP
     Address("${v(values, 'claimNft') || '{claimNft}'}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "claim_xrd"
-    Bucket("bucket1")
-;
-CALL_METHOD
+;` +
+      claimXrdInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
+      `CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
@@ -321,24 +346,18 @@ CALL_METHOD
   },
   {
     id: 'lock-owner-stake',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
-      { key: 'ownerBadge', kind: 'resource' },
       { key: 'ownerBadgeId', kind: 'nonFungibleId' },
       { key: 'lsuResource', kind: 'resource' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: v(values, 'ownerBadge'),
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
       `
 CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
@@ -349,64 +368,41 @@ CALL_METHOD
 TAKE_ALL_FROM_WORKTOP
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
     Bucket("bucket1")
-;
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "lock_owner_stake_units"
-    Bucket("bucket1")
-;
-`,
+;` +
+      lockOwnerStakeUnitsInstruction(v(values, 'validator') || '{validator}', 'bucket1'),
   },
   {
     id: 'start-unlock-owner-stake',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
-      { key: 'ownerBadge', kind: 'resource' },
       { key: 'ownerBadgeId', kind: 'nonFungibleId' },
       { key: 'amount', kind: 'decimal' },
     ],
-    build: (values) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: v(values, 'ownerBadge'),
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
-      `
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "start_unlock_owner_stake_units"
-    Decimal("${v(values, 'amount') || '{amount}'}")
-;
-`,
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      startUnlockOwnerStakeUnitsInstruction(
+        v(values, 'validator') || '{validator}',
+        v(values, 'amount') || '{amount}',
+      ),
   },
   {
     id: 'finish-unlock-owner-stake',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
       { key: 'account', kind: 'account' },
       { key: 'validator', kind: 'address' },
-      { key: 'ownerBadge', kind: 'resource' },
       { key: 'ownerBadgeId', kind: 'nonFungibleId' },
     ],
-    build: (values) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: v(values, 'ownerBadge'),
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      finishUnlockOwnerStakeUnitsInstruction(v(values, 'validator') || '{validator}') +
       `
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "finish_unlock_owner_stake_units"
-;
 CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "deposit_batch"
@@ -416,6 +412,7 @@ CALL_METHOD
   },
   {
     id: 'signal-protocol-update',
+    validatorOwner: VALIDATOR_OWNER,
     icon: 'crown',
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     fields: [
@@ -425,20 +422,11 @@ CALL_METHOD
       { key: 'version', kind: 'text' },
     ],
     build: (values, ctx) =>
-      buildBadgeProofManifest([
-        {
-          accountAddress: v(values, 'account'),
-          resourceAddress: ctx.validatorOwnerBadge,
-          nonFungibleId: v(values, 'ownerBadgeId'),
-        },
-      ]) +
-      `
-CALL_METHOD
-    Address("${v(values, 'validator') || '{validator}'}")
-    "signal_protocol_update_readiness"
-    "${escapeStr(v(values, 'version'))}"
-;
-`,
+      validatorOwnerProof(values, ctx) +
+      signalProtocolUpdateReadinessInstruction(
+        v(values, 'validator') || '{validator}',
+        v(values, 'version'),
+      ),
   },
   {
     id: 'mint-fungible',
@@ -912,6 +900,147 @@ CLAIM_COMPONENT_ROYALTIES
     Address("${v(values, 'component')}")
 ;
 ${DEPOSIT_ALL(v(values, 'account'))}`,
+  },
+  /* ── Validator lifecycle ───────────────────────────────────────────────
+   * Everything the Validator blueprint exposes to its owner. All of it is
+   * ordinary manifest work signed with the validator owner badge — none of
+   * it needs access to the machine running the node. The one coupling is
+   * `update-validator-key`, which must name a key the node already holds.
+   */
+  {
+    id: 'create-validator',
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'publicKey', kind: 'text' },
+      { key: 'feeFactor', kind: 'decimal' },
+      { key: 'payment', kind: 'decimal' },
+    ],
+    build: (values, ctx) =>
+      `
+CALL_METHOD
+    Address("${v(values, 'account') || '{account}'}")
+    "withdraw"
+    Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'payment') || '{payment}'}")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${ctx.xrdAddress}")
+    Bucket("validator_creation_fee")
+;
+` +
+      createValidatorInstruction({
+        publicKeyHex: v(values, 'publicKey') || '{publicKey}',
+        feeFactor: v(values, 'feeFactor') || '{feeFactor}',
+        paymentBucket: 'validator_creation_fee',
+      }) +
+      DEPOSIT_ALL(v(values, 'account') || '{account}'),
+  },
+  {
+    id: 'register-validator',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      registerValidatorInstruction(v(values, 'validator') || '{validator}'),
+  },
+  {
+    id: 'unregister-validator',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      unregisterValidatorInstruction(v(values, 'validator') || '{validator}'),
+  },
+  {
+    id: 'update-validator-fee',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'feeFactor', kind: 'decimal' },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      updateValidatorFeeInstruction(
+        v(values, 'validator') || '{validator}',
+        v(values, 'feeFactor') || '{feeFactor}',
+      ),
+  },
+  {
+    id: 'update-validator-key',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'publicKey', kind: 'text' },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      updateValidatorKeyInstruction(
+        v(values, 'validator') || '{validator}',
+        v(values, 'publicKey') || '{publicKey}',
+      ),
+  },
+  {
+    id: 'accept-delegated-stake',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'crown',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'accept', kind: 'choice', options: ['true', 'false'] },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      updateAcceptDelegatedStakeInstruction(
+        v(values, 'validator') || '{validator}',
+        v(values, 'accept') !== 'false',
+      ),
+  },
+  {
+    id: 'validator-profile',
+    validatorOwner: VALIDATOR_OWNER,
+    icon: 'tags',
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    fields: [
+      { key: 'account', kind: 'account' },
+      { key: 'validator', kind: 'address' },
+      { key: 'ownerBadgeId', kind: 'nonFungibleId' },
+      { key: 'name', kind: 'text', optional: true },
+      { key: 'description', kind: 'text', optional: true },
+      { key: 'iconUrl', kind: 'text', optional: true },
+      { key: 'infoUrl', kind: 'text', optional: true },
+    ],
+    build: (values, ctx) =>
+      validatorOwnerProof(values, ctx) +
+      validatorProfileInstructions(v(values, 'validator') || '{validator}', {
+        name: v(values, 'name'),
+        description: v(values, 'description'),
+        iconUrl: v(values, 'iconUrl'),
+        infoUrl: v(values, 'infoUrl'),
+      }),
   },
 ];
 

@@ -254,6 +254,7 @@ export function BlockBuilder({ t, onManifestChange, disabled }: BlockBuilderProp
                           onChange={(value) => setValue(block.id, field.key, value)}
                           bucketOptions={availableBuckets(blocks, block.id)}
                           proofOptions={availableProofs(blocks, block.id)}
+                          choiceOptions={field.options}
                           optional={field.optional}
                           disabled={disabled}
                         />

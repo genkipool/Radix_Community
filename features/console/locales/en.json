@@ -27,7 +27,8 @@
       "deploy": "Build & Deploy",
       "radix-seal": "Radix Seal",
       "utilities": "Utilities",
-      "ai": "AI & Automation"
+      "ai": "AI & Automation",
+      "validator": "Validator"
     },
     "tools": {
       "sign-collection": {
@@ -993,6 +994,364 @@
             "5. Sign safely: MCP never touches your funds. Any transaction the AI prepares must be pasted in the Transaction Manifest tool and signed with your own wallet."
           ]
         }
+      },
+      "validator-registration": {
+        "title": "Registration and settings",
+        "description": "Register or unregister the validator, change the fee and the consensus key, open or close it to delegation, and vote a protocol update — all in one transaction.",
+        "guide": {
+          "guideTitle": "Guide: registration and settings",
+          "guideDescription": "Every owner setting of a validator except its public profile, in one form and therefore one transaction. Switch on only what you want to change; anything left off is not touched. Each setting is a single control, so this form cannot express the contradictions the ledger would accept in silence — asking to register and unregister in one transaction commits both and lets the last one quietly win.",
+          "guideSteps": [
+            "1. Account: pick the one holding the validator owner badge. Your validators are detected automatically from the badges it holds.",
+            "2. Validator: choose it from the detected list, or paste an address (the \"+\" button offers your address book) to act on one whose badge lives elsewhere.",
+            "3. Switch on the settings you want to change. The two-position controls show the current on-ledger state on one side and the change on the other, so \"Registered / Unregister it\" means it is registered right now.",
+            "4. Everything switched on travels in a single transaction with one badge proof, however many settings you touch.",
+            "5. Read the manifest with \"Show manifest\", press Simulate to see fees and effects, then Send transaction and sign in your wallet."
+          ],
+          "fields": [
+            {
+              "label": "Account that signs and pays",
+              "description": "Presents the owner badge and pays the network fee. If it holds no badge for the chosen validator the ledger rejects every call in this form.",
+              "example": "account_tdx_2_12xned60hq…"
+            },
+            {
+              "label": "Validator address",
+              "description": "Which validator the whole form acts on. Filled in for you when the account owns exactly one; the \"+\" button opens your saved addresses.",
+              "example": "validator_tdx_2_1sdtnujyn3720ymg8lakydkvc5tw4q3zecdj95akdwt9de362mvtd94"
+            },
+            {
+              "label": "Registration",
+              "description": "Whether the validator is eligible for the active set. Takes effect at the next epoch boundary, and only puts you in the set if your stake reaches the top 100. Unregistering does NOT unstake: the stake stays exactly where it is and registering again puts you back.",
+              "example": "Registered → Unregister it"
+            },
+            {
+              "label": "Fee factor (0–1)",
+              "description": "The share of emissions the operator keeps: 0.05 is 5%. The change is queued and applies after the protocol delay, not immediately — the field hint shows what it is right now.",
+              "example": "0.05"
+            },
+            {
+              "label": "Public key (hex)",
+              "description": "Points the validator at a different node key, 66 hex characters. The node must ALREADY hold the matching private key. Nothing on-ledger verifies this, so a mismatch stops the validator from validating without producing any error.",
+              "example": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "label": "Delegation",
+              "description": "Whether third parties may stake to this validator. Completely independent of registration: a registered validator can be closed to delegation, and an unregistered one can be open.",
+              "example": "Open to everyone → Close it"
+            },
+            {
+              "label": "Protocol version identifier",
+              "description": "The exact identifier of the protocol update this validator votes ready for. It is announced network-wide, not composed per validator, so the field arrives filled in when an update is on the table. The engine requires EXACTLY 32 characters and rejects any other length, so the field counts them and blocks sending until it matches.",
+              "example": "cuttlefish----------------------"
+            }
+          ],
+          "example": [
+            {
+              "field": "Validator address",
+              "type": "input",
+              "value": "validator_tdx_2_1sdtnujyn3720ymg8lakydkvc5tw4q3zecdj95akdwt9de362mvtd94",
+              "isAddress": true
+            },
+            {
+              "field": "Registration",
+              "type": "button-group",
+              "options": [
+                "Registered",
+                "Unregister it"
+              ],
+              "selected": "Registered"
+            },
+            {
+              "field": "Fee factor (0–1)",
+              "type": "input",
+              "value": "0.05",
+              "isNumeric": true
+            },
+            {
+              "field": "Delegation",
+              "type": "button-group",
+              "options": [
+                "Open to everyone",
+                "Close it"
+              ],
+              "selected": "Open to everyone"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Epoch",
+              "definition": "The round the network advances in, roughly five minutes. Registration changes take effect at the next boundary, never mid-epoch."
+            },
+            {
+              "term": "Active set",
+              "definition": "The top 100 registered validators by stake. Being registered makes you eligible; only stake gets you in."
+            },
+            {
+              "term": "Single proof",
+              "definition": "One create_proof_of_non_fungibles covers every owner call in the transaction, so changing five settings at once costs one proof, not five."
+            },
+            {
+              "term": "Silent overwrite",
+              "definition": "The ledger accepts contradictory calls in one transaction and applies the last one without an error. This form makes them impossible to express, which is why it has no conflict warnings."
+            }
+          ]
+        }
+      },
+      "validator-profile": {
+        "title": "Public profile",
+        "description": "Name, description, icon and website shown for your validator by wallets and explorers.",
+        "guide": {
+          "guideTitle": "Guide: public profile",
+          "guideDescription": "The identity wallets and explorers show for your validator in the staking list. None of it is set when the validator is created, so a fresh validator appears as a bare address until you fill this in — which matters, because stakers pick from that list. It is plain metadata on the validator component, gated by the same owner badge, and the whole form is one transaction.",
+          "guideSteps": [
+            "1. Account: the one holding the owner badge; your validators are detected from it.",
+            "2. Validator: pick the one to describe.",
+            "3. Fill in only what you want to change. A field left blank is not written, so it keeps whatever it had — this is an update, not a replacement.",
+            "4. Check the manifest, simulate, then send and sign."
+          ],
+          "fields": [
+            {
+              "label": "Name",
+              "description": "The headline shown in wallet staking lists and explorers. Keep it short and recognisable; it is the only thing most stakers ever read about you.",
+              "example": "GenkiPool"
+            },
+            {
+              "label": "Description",
+              "description": "A short paragraph on the validator page: who runs it, from where, on what hardware. Stored as plain text.",
+              "example": "Community validator run from Lisbon on bare metal, 99.9% uptime since 2024."
+            },
+            {
+              "label": "Icon URL",
+              "description": "A square image shown next to the name. Stored as a Url, so it has to be a complete address including the scheme — a bare domain will not do.",
+              "example": "https://guepi.example/icon.png"
+            },
+            {
+              "label": "Website",
+              "description": "Your public page about the validator, for stakers who want to know more. Also stored as a Url.",
+              "example": "https://guepi.example"
+            }
+          ],
+          "example": [
+            {
+              "field": "Name",
+              "type": "input",
+              "value": "GenkiPool"
+            },
+            {
+              "field": "Description",
+              "type": "textarea",
+              "value": "Community validator run from Lisbon on bare metal."
+            },
+            {
+              "field": "Icon URL",
+              "type": "input",
+              "value": "https://guepi.example/icon.png"
+            },
+            {
+              "field": "Website",
+              "type": "input",
+              "value": "https://guepi.example"
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Metadata",
+              "definition": "Key/value entries attached to an on-ledger entity. The validator ones are readable by anyone and writable only with the owner badge."
+            },
+            {
+              "term": "Url type",
+              "definition": "Radix stores icon_url and info_url as a typed Url rather than a string, which is why a scheme-less value is rejected."
+            },
+            {
+              "term": "Partial update",
+              "definition": "Only the fields you fill in emit an instruction, so you can change just the icon without retyping the rest."
+            }
+          ]
+        }
+      },
+      "validator-staking": {
+        "title": "Validator staking",
+        "description": "Stake, unstake, claim, and manage the owner locked stake units of one validator.",
+        "guide": {
+          "guideTitle": "Guide: validator staking",
+          "guideDescription": "Staking against one validator, both the owner side and the public side, in the order things actually happen. Switch on what you want and it all travels in a single transaction — with one exception the ledger enforces: claiming is locked while an unstake of the same validator is on, because redeeming a claim NFT minted earlier in the same transaction aborts the whole thing.",
+          "guideSteps": [
+            "1. Account: the one that puts up the XRD and holds the stake units. Owner-side blocks also need its owner badge.",
+            "2. Validator: pick it; the stake unit and claim NFT resources it mints are then filled in for you.",
+            "3. Switch on the operations you want. Each block spends what the account ALREADY holds — stake units created by a stake in this same transaction only land at the end, so they cannot be unstaked in the same breath.",
+            "4. For Claim XRD, pick the NFTs from the cards. Each card names the validator it came from, and the ones still unbonding are disabled with the epoch they mature at.",
+            "5. Check the manifest, simulate, then send and sign."
+          ],
+          "fields": [
+            {
+              "label": "Stake — As owner / Public",
+              "description": "As owner uses the owner badge and works even when the validator is closed to delegation. Public needs no badge but the validator must accept delegated stake.",
+              "example": "As owner"
+            },
+            {
+              "label": "XRD to stake",
+              "description": "Withdrawn from the account and staked. You get stake units (LSU) back representing your share of the pool, which grow in redemption value as emissions accrue.",
+              "example": "1000"
+            },
+            {
+              "label": "Stake unit resource (LSU)",
+              "description": "The validator's pool_unit resource, read from the validator for you. The account must already hold some — this is what unstaking burns.",
+              "example": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t"
+            },
+            {
+              "label": "Stake units (unstake)",
+              "description": "How many stake units to burn. You get a claim NFT back, redeemable for XRD once the unbonding period ends — not the XRD itself.",
+              "example": "100"
+            },
+            {
+              "label": "Claim XRD (NFT picker)",
+              "description": "Your stake claim NFTs as selectable cards, each attributed to the validator that minted it. They are otherwise indistinguishable — same resource shape, opaque id — and redeeming one against the wrong validator fails, so the attribution is the point.",
+              "example": "250 XRD · GenkiPool"
+            },
+            {
+              "label": "Lock owner stake units",
+              "description": "Moves stake units into the owner locked vault. Some networks require owners to keep stake locked as skin in the game; this is how you put it there.",
+              "example": "500"
+            },
+            {
+              "label": "Start owner unlock",
+              "description": "Begins the unlock timer for part of the locked vault. Nothing comes out yet — this only starts the clock.",
+              "example": "100"
+            },
+            {
+              "label": "Finish owner unlock",
+              "description": "Collects whatever has finished unlocking. Safe to leave switched on at any time: if the timer has not elapsed the call commits and simply returns nothing.",
+              "example": "(no value)"
+            }
+          ],
+          "example": [
+            {
+              "field": "Stake",
+              "type": "button-group",
+              "options": [
+                "As owner",
+                "Public"
+              ],
+              "selected": "As owner"
+            },
+            {
+              "field": "XRD to stake",
+              "type": "input",
+              "value": "1000",
+              "isNumeric": true
+            },
+            {
+              "field": "Stake unit resource (LSU)",
+              "type": "input",
+              "value": "resource_tdx_2_1t45l9ku3r5mwxazht2qutmhhk3660hqqvxkkyl8rxs20n9k2zv0w7t",
+              "isAddress": true
+            },
+            {
+              "field": "Stake units",
+              "type": "input",
+              "value": "100",
+              "isNumeric": true
+            }
+          ],
+          "glossary": [
+            {
+              "term": "LSU (stake unit)",
+              "definition": "The fungible token you receive when staking. It represents a share of the validator pool, so its XRD value rises as emissions accrue rather than its quantity."
+            },
+            {
+              "term": "Claim NFT",
+              "definition": "What unstaking returns. It records an XRD amount and the epoch from which it can be redeemed; before that epoch it is worth nothing on-ledger."
+            },
+            {
+              "term": "Unbonding period",
+              "definition": "The wait between unstaking and claiming, roughly a week on mainnet. It is why unstake and claim cannot share a transaction."
+            },
+            {
+              "term": "Owner locked vault",
+              "definition": "A separate vault for the operator's own stake units, with its own two-step unlock: start the timer, then collect."
+            }
+          ]
+        }
+      },
+      "validator-create": {
+        "title": "Create validator",
+        "description": "Create the validator component and mint its owner badge. Goes in a transaction of its own.",
+        "guide": {
+          "guideTitle": "Guide: create a validator",
+          "guideDescription": "Creates the validator component on-ledger and mints its owner badge into your account. The badge is the authority over that validator from then on: whoever holds it can register it, change its fee, its consensus key and its public profile. It is not the node — the node is the machine you installed separately; this only creates the on-ledger identity that points at your node's key.",
+          "guideSteps": [
+            "1. Install and start your node first. This form needs the public key it prints at startup, and a validator pointing at a key no node holds simply never validates.",
+            "2. Account: pick the account that pays the creation fee and will receive the owner badge. Guard that account — losing it means losing control of the validator.",
+            "3. Public key: paste the node's consensus key. Read it from the node with `curl http://127.0.0.1:3336/system/identity` (the port is whatever you set in `api.system.port`).",
+            "4. Fee factor: your cut of the emissions. It can be changed later, so it is not a decision you are locked into.",
+            "5. Check the manifest with \"Show manifest\", press Simulate to see the real cost, then Send transaction and sign in your Radix Wallet.",
+            "6. Read the new validator_… address out of the receipt, then use Registration and settings, Public profile and Staking to finish setting it up."
+          ],
+          "fields": [
+            {
+              "label": "Account that signs and pays",
+              "description": "Pays the creation fee and receives the owner badge NFT. Every later owner-gated change has to be signed by whoever holds that badge, so use an account you control long-term.",
+              "example": "account_tdx_2_12xned60hq…"
+            },
+            {
+              "label": "Node consensus public key",
+              "description": "The compressed secp256k1 key your node signs consensus with, as 66 hex characters. Nothing on-ledger checks that a node actually holds the matching private key, so a typo here produces a validator that looks fine and never validates.",
+              "example": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "label": "Fee factor (0–1)",
+              "description": "The share of staking emissions the operator keeps, as a fraction: 0.05 is 5%, the rest goes to your stakers. Changeable afterwards, with the protocol delay.",
+              "example": "0.05"
+            },
+            {
+              "label": "XRD to withdraw for the creation fee",
+              "description": "Not the price — a ceiling. The ledger takes the exact fee (priced at about 100 USD worth of XRD) out of this and returns the change to your account. Raise it only if creation fails for want of funds.",
+              "example": "2000"
+            }
+          ],
+          "example": [
+            {
+              "field": "Account that signs and pays",
+              "type": "button-group",
+              "options": [
+                "Node operator",
+                "Savings"
+              ],
+              "selected": "Node operator"
+            },
+            {
+              "field": "Node consensus public key",
+              "type": "textarea",
+              "value": "0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784"
+            },
+            {
+              "field": "Fee factor (0–1)",
+              "type": "input",
+              "value": "0.05",
+              "isNumeric": true
+            },
+            {
+              "field": "XRD to withdraw for the creation fee",
+              "type": "input",
+              "value": "2000",
+              "isNumeric": true
+            }
+          ],
+          "glossary": [
+            {
+              "term": "Owner badge",
+              "definition": "The NFT minted by this transaction. It carries the validator address in its own data and is the only thing that authorises register, fee, key and profile changes. Lose it and the validator is unmanageable."
+            },
+            {
+              "term": "Consensus key",
+              "definition": "The key pair the node signs proposals and votes with. The public half lives on-ledger; the private half stays in the node keystore and never leaves the machine."
+            },
+            {
+              "term": "Own transaction",
+              "definition": "Creating a validator cannot share a transaction with anything else: its address and its badge do not exist until this transaction commits, so no later instruction could name them."
+            }
+          ]
+        }
       }
     },
     "common": {
@@ -1518,7 +1877,6 @@
           "fields": {
             "account": "Account (holds badge and XRD)",
             "validator": "Validator address",
-            "ownerBadge": "Owner badge (resource)",
             "ownerBadgeId": "Badge id",
             "amount": "XRD amount"
           }
@@ -1529,7 +1887,6 @@
           "fields": {
             "account": "Account (holds badge and LSU)",
             "validator": "Validator address",
-            "ownerBadge": "Owner badge (resource)",
             "ownerBadgeId": "Badge id",
             "lsuResource": "LSU (liquid stake units, resource)",
             "amount": "LSU amount"
@@ -1551,7 +1908,6 @@
           "fields": {
             "account": "Account (holds badge and LSU)",
             "validator": "Validator address",
-            "ownerBadge": "Owner badge (resource)",
             "ownerBadgeId": "Badge id",
             "lsuResource": "LSU (liquid stake units, resource)",
             "amount": "LSU amount"
@@ -1563,7 +1919,6 @@
           "fields": {
             "account": "Account (holds badge)",
             "validator": "Validator address",
-            "ownerBadge": "Owner badge (resource)",
             "ownerBadgeId": "Badge id",
             "amount": "LSU amount"
           }
@@ -1574,7 +1929,6 @@
           "fields": {
             "account": "Account (holds badge)",
             "validator": "Validator address",
-            "ownerBadge": "Owner badge (resource)",
             "ownerBadgeId": "Badge id"
           }
         },
@@ -1685,6 +2039,77 @@
             "ownerBadgeId": "Owner badge id",
             "version": "Protocol version (32-character string)"
           }
+        },
+        "create-validator": {
+          "name": "Create validator",
+          "description": "Registers a new validator component on the consensus manager and mints its owner badge into your account (CREATE_VALIDATOR). Costs roughly 100 USD worth of XRD.",
+          "fields": {
+            "account": "Account (pays the fee, receives the owner badge)",
+            "publicKey": "Node consensus public key (33-byte hex, from the node's /system/identity)",
+            "feeFactor": "Fee factor 0–1 (your cut of emissions)",
+            "payment": "XRD to withdraw for the creation fee"
+          }
+        },
+        "register-validator": {
+          "name": "Register validator",
+          "description": "Puts your validator into the pool eligible for the active set from the next epoch (register). Needs enough stake to reach the top of the list.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id"
+          }
+        },
+        "unregister-validator": {
+          "name": "Unregister validator",
+          "description": "Takes your validator out of the active set at the next epoch (unregister). The stake stays where it is — this is not unstaking, and register puts it back.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id"
+          }
+        },
+        "update-validator-fee": {
+          "name": "Change validator fee",
+          "description": "Sets the share of emissions the operator keeps (update_fee). The change takes effect after the protocol delay, not immediately.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id",
+            "feeFactor": "New fee factor 0–1"
+          }
+        },
+        "update-validator-key": {
+          "name": "Change consensus key",
+          "description": "Points the validator at a different node key (update_key). The node must already hold the matching private key — nothing on-ledger checks it, and a mismatch silently stops validation.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id",
+            "publicKey": "New public key (33-byte hex)"
+          }
+        },
+        "accept-delegated-stake": {
+          "name": "Open or close to delegation",
+          "description": "Lets anyone stake to your validator, or restricts staking to the owner (update_accept_delegated_stake). Independent of whether the validator is registered.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id",
+            "accept": "Accept delegated stake"
+          }
+        },
+        "validator-profile": {
+          "name": "Validator profile",
+          "description": "Sets the name, description, icon and website wallets and explorers show for your validator. None of it is set at creation; fill in only what you want to change.",
+          "fields": {
+            "account": "Account (holds the owner badge)",
+            "validator": "Validator address",
+            "ownerBadgeId": "Owner badge id",
+            "name": "Name",
+            "description": "Description",
+            "iconUrl": "Icon URL",
+            "infoUrl": "Website"
+          }
         }
       },
       "blocks": {
@@ -1765,7 +2190,7 @@
         },
         "signalProtocolUpdate": {
           "name": "Protocol update vote",
-          "description": "Signals your validator readiness for a protocol update (signal_protocol_update_readiness). Add an Account \"proof\" block for the owner badge before this one.",
+          "description": "signal_protocol_update_readiness — votes readiness for a named protocol update. Add an Account \"proof\" block with the validator owner badge before it.",
           "fields": {
             "validator": "Validator address",
             "version": "Protocol version (32-character string)"
@@ -1975,6 +2400,108 @@
             "nftDescription": "First NFT description",
             "nftImageUrl": "First NFT image URL"
           }
+        },
+        "createValidator": {
+          "name": "Create validator",
+          "description": "CREATE_VALIDATOR — mints a validator and its owner badge onto the worktop, paying from the given bucket.",
+          "fields": {
+            "publicKey": "Node public key (hex)",
+            "feeFactor": "Fee factor 0–1",
+            "bucket": "XRD bucket for the fee"
+          }
+        },
+        "validatorRegister": {
+          "name": "Register validator",
+          "description": "register — enters the pool eligible for the active set. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address"
+          }
+        },
+        "validatorUnregister": {
+          "name": "Unregister validator",
+          "description": "unregister — leaves the active set at the next epoch; the stake is untouched. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address"
+          }
+        },
+        "validatorUpdateFee": {
+          "name": "Change validator fee",
+          "description": "update_fee — sets the operator cut of emissions. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "feeFactor": "New fee factor 0–1"
+          }
+        },
+        "validatorUpdateKey": {
+          "name": "Change consensus key",
+          "description": "update_key — the node must already hold the matching private key. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "publicKey": "New public key (hex)"
+          }
+        },
+        "validatorAcceptDelegatedStake": {
+          "name": "Accept delegated stake",
+          "description": "update_accept_delegated_stake — opens or closes the validator to third-party staking. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "accept": "Accept delegation"
+          }
+        },
+        "validatorStake": {
+          "name": "Stake",
+          "description": "stake — public staking; the validator must accept delegation. Stake units go to the worktop.",
+          "fields": {
+            "validator": "Validator address",
+            "bucket": "XRD bucket"
+          }
+        },
+        "validatorStakeAsOwner": {
+          "name": "Stake as owner",
+          "description": "stake_as_owner — works even when the validator is closed to delegation. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "bucket": "XRD bucket"
+          }
+        },
+        "validatorUnstake": {
+          "name": "Unstake",
+          "description": "unstake — burns stake units and returns a claim NFT to the worktop.",
+          "fields": {
+            "validator": "Validator address",
+            "bucket": "Stake unit bucket"
+          }
+        },
+        "validatorClaimXrd": {
+          "name": "Claim XRD",
+          "description": "claim_xrd — redeems a matured claim NFT for XRD.",
+          "fields": {
+            "validator": "Validator address",
+            "bucket": "Claim NFT bucket"
+          }
+        },
+        "validatorLockOwnerStakeUnits": {
+          "name": "Lock owner stake units",
+          "description": "lock_owner_stake_units — moves owner stake units into the locked vault. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "bucket": "Stake unit bucket"
+          }
+        },
+        "validatorStartUnlockOwnerStakeUnits": {
+          "name": "Start owner unlock",
+          "description": "start_unlock_owner_stake_units — starts the unlock timer for part of the locked vault. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address",
+            "amount": "Stake units to unlock"
+          }
+        },
+        "validatorFinishUnlockOwnerStakeUnits": {
+          "name": "Finish owner unlock",
+          "description": "finish_unlock_owner_stake_units — collects whatever has finished unlocking. Add an Account \"proof\" block with the validator owner badge before it.",
+          "fields": {
+            "validator": "Validator address"
+          }
         }
       },
       "blockCategories": {
@@ -1988,7 +2515,16 @@
         "address": "Addresses",
         "metadata": "Metadata",
         "escape": "Escape",
-        "snippets": "Snippets"
+        "snippets": "Snippets",
+        "validator": "Validator"
+      },
+      "validatorOwner": {
+        "detectedOne": "Your validator",
+        "detectedMany": "Your validators",
+        "hint": "Picked from the validator owner badges this account holds. The address and badge id below are filled in for you — edit them to act on a validator whose badge lives elsewhere.",
+        "detecting": "Looking up your validators…",
+        "detectedNone": "No validator owner badge here",
+        "hintNone": "This account holds no validator owner badge. Fill the fields in by hand to act on a validator whose badge lives elsewhere."
       }
     },
     "componentPanel": {
@@ -2291,7 +2827,11 @@
     },
     "staking": {
       "accountTitle": "Account",
-      "sectionTitle": "Account staking"
+      "sectionTitle": "Account staking",
+      "tabDistributed": "Distributed staking",
+      "tabDistributedHint": "One amount split equally across every validator you select.",
+      "tabMultiple": "Multiple staking",
+      "tabMultipleHint": "A different amount per validator, combined into a single transaction."
     },
     "mcp": {
       "endpoint": {
@@ -2401,6 +2941,155 @@
           "body": "Every ledger and console tool accepts an optional \"network\" parameter (\"mainnet\" or \"stokenet\") that defaults to mainnet. Just mention the network in your question — \"list the validators on stokenet\" — and the AI fills the parameter for you. Addresses also carry their network in the prefix: mainnet uses …rdx1 (account_rdx1…) and stokenet uses …tdx_2_1 (account_tdx_2_1…), so the AI can detect the right network with the inspect_address tool and will never mix networks in one transaction."
         }
       }
+    },
+    "validator": {
+      "contextTitle": "Account and validator",
+      "accountLabel": "Account that signs and pays",
+      "pickAccountFirst": "Pick an account to continue.",
+      "ownedOne": "Your validator",
+      "ownedMany": "Your validators",
+      "noneOwned": "No validator owner badge in this account",
+      "noneOwnedHint": "Owner-gated calls will be rejected by the ledger. Enter an address below to act on a validator whose badge lives elsewhere.",
+      "manualValidator": "Validator address",
+      "detecting": "Looking up your validators…",
+      "showManifest": "Show manifest",
+      "hideManifest": "Hide manifest",
+      "forms": {
+        "registration": {
+          "title": "Settings to change",
+          "hint": "Switch on what you want to change. Everything switched on travels in a single transaction, and each setting is a single control, so no combination here can contradict itself.",
+          "voteLengthError": "The protocol version name must be exactly {length} characters — the ledger rejects any other length.",
+          "registration": {
+            "title": "Registration",
+            "description": "Whether the validator is eligible for the active set. Takes effect at the next epoch; the stake is untouched either way.",
+            "stateOn": "Registered",
+            "stateOff": "Unregistered",
+            "actionOn": "Register it",
+            "actionOff": "Unregister it",
+            "titleCurrent": "This is the validator’s current state on-ledger.",
+            "titleChange": "Switches the validator to this state at the next epoch."
+          },
+          "fee": {
+            "title": "Fee",
+            "description": "The share of emissions the operator keeps. Applies after the protocol delay, not immediately.",
+            "label": "Fee factor (0–1)",
+            "current": "Currently {value}."
+          },
+          "key": {
+            "title": "Consensus key",
+            "description": "Which node key signs for this validator.",
+            "label": "Public key (hex)",
+            "hint": "The node must already hold the matching private key. Nothing on-ledger checks this, and a mismatch stops the validator from validating without any error."
+          },
+          "delegation": {
+            "title": "Delegation",
+            "description": "Whether third parties may stake to this validator. Independent of registration.",
+            "stateOn": "Open to everyone",
+            "stateOff": "Owner only",
+            "actionOn": "Open it",
+            "actionOff": "Close it",
+            "titleCurrent": "This is the validator’s current state on-ledger.",
+            "titleChange": "Switches the validator to this state."
+          },
+          "vote": {
+            "title": "Protocol update vote",
+            "description": "Signals this validator as ready for an announced protocol update.",
+            "label": "Protocol version identifier",
+            "hintTarget": "Filled in with the identifier announced for {name}. Only change it if you are voting a different update.",
+            "hintNone": "No protocol update is announced right now, so there is nothing to signal. Paste the identifier if you have one."
+          }
+        },
+        "profile": {
+          "title": "Public profile",
+          "hint": "What wallets and explorers show for your validator. None of it is set when the validator is created. Leave a field blank to leave it as it is; the whole form is one transaction.",
+          "fields": {
+            "name": {
+              "label": "Name",
+              "placeholder": "My Node",
+              "hint": "Shown in the wallet staking list."
+            },
+            "description": {
+              "label": "Description",
+              "placeholder": "Who runs this validator and where.",
+              "hint": "A short paragraph shown on the validator page."
+            },
+            "iconUrl": {
+              "label": "Icon URL",
+              "placeholder": "https://…/icon.png",
+              "hint": "A square image. Stored as a Url, so it must be a full address."
+            },
+            "infoUrl": {
+              "label": "Website",
+              "placeholder": "https://…",
+              "hint": "Your public page about the validator."
+            }
+          }
+        },
+        "staking": {
+          "title": "Staking operations",
+          "hint": "Switch on what you want to do. Everything switched on travels in a single transaction, and each block spends what the account already holds.",
+          "stake": {
+            "title": "Stake",
+            "description": "Withdraws XRD from the account and stakes it. The stake units come back to the account.",
+            "optionOwner": "As owner",
+            "optionOwnerHint": "Uses the owner badge; works even when the validator is closed to delegation.",
+            "optionPublic": "Public",
+            "optionPublicHint": "Needs no badge, but the validator must accept delegated stake.",
+            "amountLabel": "XRD to stake",
+            "optionPublicClosed": "This validator is closed to delegation right now, so a public stake would be rejected."
+          },
+          "unstake": {
+            "title": "Unstake",
+            "description": "Burns stake units and returns a claim NFT, redeemable once the unbonding period ends.",
+            "resourceLabel": "Stake unit resource (LSU)",
+            "resourceHint": "The validator's pool_unit resource, which the account must already hold.",
+            "amountLabel": "Stake units"
+          },
+          "lock": {
+            "title": "Lock owner stake units",
+            "description": "Moves stake units into the owner locked vault.",
+            "resourceLabel": "Stake unit resource (LSU)",
+            "amountLabel": "Stake units"
+          },
+          "startUnlock": {
+            "title": "Start owner unlock",
+            "description": "Starts the unlock timer for part of the locked vault.",
+            "amountLabel": "Stake units to unlock"
+          },
+          "finishUnlock": {
+            "title": "Finish owner unlock",
+            "description": "Collects whatever has finished unlocking.",
+            "note": "Safe to include at any time: if the timer has not elapsed the call commits and simply returns nothing."
+          },
+          "claim": {
+            "title": "Claim XRD",
+            "description": "Redeems matured claim NFTs for XRD.",
+            "lockedByUnstake": "Not available while Unstake is on: the ledger aborts the whole transaction when a claim NFT minted earlier in it is redeemed. Send the claim separately.",
+            "noneFound": "This account holds no stake claim NFTs.",
+            "notYet": "Not redeemable yet — matures at epoch {epoch}."
+          },
+          "resourceAutofilled": "Read from the validator; change it only if you know why."
+        },
+        "create": {
+          "title": "New validator",
+          "hint": "Creates the validator component and mints its owner badge into the chosen account.",
+          "standaloneNote": "This transaction can do nothing else. The validator address and its owner badge do not exist until it commits, so no other instruction in the same manifest could refer to them. Set the fee, profile and registration afterwards with the other tools in this section.",
+          "keyLabel": "Node consensus public key",
+          "keyHint": "The node prints it at startup; it is also at /system/identity on the node's system API. 66 hex characters.",
+          "keyError": "A compressed public key is exactly {length} hex characters.",
+          "feeLabel": "Fee factor (0–1)",
+          "feeHint": "Your cut of the emissions. Can be changed later.",
+          "paymentLabel": "XRD to withdraw for the creation fee",
+          "paymentHint": "Not the price — the ledger takes the exact fee (about 100 USD worth of XRD) out of this and returns the rest to your account. Leave the default unless creation fails for want of funds."
+        }
+      }
+    },
+    "toolGuide": {
+      "steps": "How to use it",
+      "fields": "What each field is for",
+      "example": "Worked example",
+      "glossary": "Glossary",
+      "exampleTag": "e.g."
     }
   }
 }

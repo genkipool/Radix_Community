@@ -41,6 +41,10 @@ export interface ConsoleToolProps {
 
 import SendTransactionTool from './tools/SendTransactionTool';
 import StakingTool from './tools/StakingTool';
+import ValidatorRegistrationTool from './tools/ValidatorRegistrationTool';
+import ValidatorProfileTool from './tools/ValidatorProfileTool';
+import ValidatorStakingTool from './tools/ValidatorStakingTool';
+import ValidatorCreateTool from './tools/ValidatorCreateTool';
 import CreateTokenTool from './tools/CreateTokenTool';
 import BuildManifestTool from './tools/BuildManifestTool';
 import ComponentPanelTool from './tools/ComponentPanelTool';
@@ -64,6 +68,10 @@ import AddressBookTool from './tools/AddressBookTool';
 const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> = {
   'send-transaction': SendTransactionTool,
   staking: StakingTool,
+  'validator-registration': ValidatorRegistrationTool,
+  'validator-profile': ValidatorProfileTool,
+  'validator-staking': ValidatorStakingTool,
+  'validator-create': ValidatorCreateTool,
   'create-token': CreateTokenTool,
   'build-manifest': BuildManifestTool,
   'component-panel': ComponentPanelTool,

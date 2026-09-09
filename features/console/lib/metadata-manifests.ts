@@ -5,6 +5,7 @@
  * Ported from the official Radix Console (dapps-monorepo).
  */
 
+import { escapeManifestString as escape } from './manifest-escape';
 export const MetadataType = {
   String: 'Metadata::String',
   StringArray: 'Metadata::StringArray',
@@ -16,7 +17,6 @@ export const MetadataType = {
 
 export type MetadataTypeValue = (typeof MetadataType)[keyof typeof MetadataType];
 
-const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 /* ─── Initial metadata entries (`"key" => Tuple(Some(...), locked)`) ──────── */
 
