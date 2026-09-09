@@ -842,7 +842,7 @@ const serverProbe = (network: 'mainnet' | 'stokenet'): SecurityProbe => ({
 });
 
 const VERDICT_HEADLINE: Record<SecurityVerdict, string> = {
-  key: 'Controlled by its key — no Access Controller',
+  key: 'Controlled by its key, with no Access Controller',
   accessController: 'Shielded by an Access Controller',
   badgeInAccount: 'Securified, but the owner badge is loose in an account',
   badgeElsewhere: 'Securified, and the owner badge is held by another entity',
@@ -865,7 +865,7 @@ const VERDICT_MEANING: Record<SecurityVerdict, string> = {
 
 const NOTE_TEXT: Record<SecurityNote, string> = {
   addressRuleMismatch:
-    'The public key hash in the owner rule is NOT the one this address encodes — inspect this account before trusting it.',
+    'The public key hash in the owner rule is NOT the one this address encodes. Inspect this account before trusting it.',
   badgeHeldBySelf: 'The owner badge is held by the very account it governs.',
   singleTransferableBadge:
     'One transferable NFT is the account: no second factor, no recovery, and a transfer is final.',
@@ -880,9 +880,9 @@ const ACCOUNT_KIND_TEXT: Record<string, string> = {
   allocated: 'allocated on ledger (create_advanced or securified)',
 };
 
-/** "1 of 3 badges" — how many factors a controller role actually needs. */
+/** "1 of 3 badges": how many factors a controller role actually needs. */
 const ruleText = (rule: RuleSummary | null): string => {
-  if (!rule) return '—';
+  if (!rule) return 'unreadable rule';
   if (rule.kind === 'allowAll') return 'anyone';
   if (rule.kind === 'denyAll') return 'nobody';
   if (rule.badges.length === 0) return 'unreadable rule';
@@ -915,7 +915,7 @@ export const verifyAccountSecurityTool = defineMcpTool({
   name: 'verify_account_security',
   title: 'Verify how an account is protected',
   description:
-    'Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge — and if so, whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller\'s roles, its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.',
+    'Reads from the ledger who actually controls a Radix account: its key (one seed phrase, no recovery), or an account owner badge. When it is a badge, it also says whether that badge sits in an Access Controller (multi-factor with recovery) or loose in an account. Reports the controller\'s roles, its timed-recovery delay and any recovery or badge-withdrawal attempt in flight. Read-only.',
   category: 'console',
   readOnly: true,
   inputSchema: z.object({
@@ -942,7 +942,7 @@ export const verifyAccountSecurityTool = defineMcpTool({
       controlRows.push(['Public key hash', control.publicKeyHash]);
       controlRows.push([
         'Matches the address',
-        control.matchesAddress ? 'yes' : 'NO — the address and the rule disagree',
+        control.matchesAddress ? 'yes' : 'NO, the address and the rule disagree',
       ]);
     } else if (control.kind === 'ownerBadge') {
       controlRows.push(['Owner rule', 'account owner badge']);

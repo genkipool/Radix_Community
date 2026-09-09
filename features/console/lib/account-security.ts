@@ -4,10 +4,10 @@
  * A Radix account is governed by its owner role, and there are only two
  * answers the ledger ever gives:
  *
- *   · the rule requires a **signature virtual badge** — the account is its
+ *   · the rule requires a **signature virtual badge**: the account is its
  *     key. Whoever holds the seed phrase holds the account, and nothing can
  *     be recovered without it.
- *   · the rule requires the **account owner badge** — the account has been
+ *   · the rule requires the **account owner badge**: the account has been
  *     securified. The badge is an ordinary NFT, so the real question moves to
  *     where that NFT lives: inside an Access Controller (multi-factor, with
  *     recovery) or loose in some account (one transferable object away from
@@ -66,8 +66,8 @@ export interface BadgeRequirement {
  * An access rule, flattened to what a reader needs to judge it: how many of
  * the badges it lists are needed, and which badges those are.
  *
- * Composite rules are the normal case for a shield — the wallet writes its
- * factors as `CountOf(1, [factor, factor, factor])` — so a reader that only
+ * Composite rules are the normal case for a shield: the wallet writes its
+ * factors as `CountOf(1, [factor, factor, factor])`, so a reader that only
  * understood a single `Require` would report a 1-of-3 shield as unreadable.
  */
 export interface RuleSummary {
@@ -209,9 +209,9 @@ const stripBrackets = (localId: string) => localId.replace(/^\[|\]$/g, '');
 /* ─── The owner badge an account would use ───────────────────────────────── */
 
 /**
- * The local id of the account owner badge for this account — computable from
- * the address, because the engine mints it as the bytes of the account's node
- * id. Lets a caller ask the Gateway where the badge is without first having to
+ * The local id of the account owner badge for this account. It is computable
+ * from the address, because the engine mints it as the bytes of the account's
+ * node id. Lets a caller ask the Gateway where the badge is without first having to
  * find out that the badge exists.
  */
 export function ownerBadgeLocalId(address: string): string | null {
@@ -307,8 +307,8 @@ export interface AssessInput {
 
 /**
  * The whole decision, in one place: owner rule plus badge location in, verdict
- * out. Callers fetch in two steps — rule first, and the badge location only
- * when `ownerBadgeLocalId` turns out to be what the rule names — so this
+ * out. Callers fetch in two steps (rule first, and the badge location only when
+ * `ownerBadgeLocalId` turns out to be what the rule names), so this
  * tolerates `badgeLocation` being absent.
  */
 export function assessAccountSecurity({
