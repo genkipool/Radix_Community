@@ -51,6 +51,7 @@ import ComponentPanelTool from './tools/ComponentPanelTool';
 import MyResourcesTool from './tools/MyResourcesTool';
 import SborDecoderTool from './tools/SborDecoderTool';
 import AddressUtilsTool from './tools/AddressUtilsTool';
+import AccountSecurityTool from './tools/AccountSecurityTool';
 import FaucetTool from './tools/FaucetTool';
 import WalletPlaygroundTool from './tools/WalletPlaygroundTool';
 import DeployPackageTool from './tools/DeployPackageTool';
@@ -78,6 +79,7 @@ const TOOL_COMPONENTS: Record<ConsoleToolSlug, ComponentType<ConsoleToolProps>> 
   'my-resources': MyResourcesTool,
   'sbor-decoder': SborDecoderTool,
   'address-utils': AddressUtilsTool,
+  'account-security': AccountSecurityTool,
   'address-book': AddressBookTool,
   faucet: FaucetTool,
   'wallet-playground': WalletPlaygroundTool,

@@ -18,6 +18,7 @@ import {
   Rocket,
   ScanSearch,
   ShieldCheck,
+  ShieldQuestion,
   Settings2,
   Sparkles,
   Stamp,
@@ -163,6 +164,13 @@ export const CONSOLE_TOOLS: Record<ConsoleToolSlug, ConsoleToolMeta> = {
     accentRgb: '100,116,139',
     requiresWallet: false,
   },
+  'account-security': {
+    slug: 'account-security',
+    icon: <ShieldQuestion className="size-5" />,
+    gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
+    accentRgb: '16,185,129',
+    requiresWallet: false,
+  },
   'address-utils': {
     slug: 'address-utils',
     icon: <ScanSearch className="size-5" />,
@@ -285,6 +293,7 @@ export const CONSOLE_GROUPS: ConsoleGroup[] = [
     gradient: 'from-[var(--color-gradient-start)] to-[var(--color-gradient-end)]',
     tools: [
       'configure-metadata',
+      'account-security',
       'address-utils',
       'address-book',
       'sbor-decoder',

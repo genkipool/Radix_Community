@@ -10,7 +10,29 @@ export interface AddressInspection {
   entityType: string;
   network: 'mainnet' | 'stokenet' | 'other';
   checksumValid: boolean;
+  /** The 30 node-id bytes the address encodes, hex. Null if undecodable. */
+  nodeIdHex: string | null;
+  /** How an account address is controlled, from its entity-type byte. */
+  accountKind: AccountAddressKind | null;
 }
+
+/**
+ * The three shapes an account address comes in.
+ *
+ * A *preallocated* account (what the wallets create) has no ledger state until
+ * its first use: the address is the entity-type byte followed by the hash of
+ * the public key that controls it, and the curve is written into that first
+ * byte. Olympia accounts migrated into Babylon are the secp256k1 flavour;
+ * accounts created by the Babylon wallet are the ed25519 one.
+ *
+ * An *allocated* account was instantiated on ledger by `create_advanced`, so
+ * its address says nothing about who controls it — only its role assignment
+ * does.
+ */
+export type AccountAddressKind =
+  | 'preallocated-secp256k1'
+  | 'preallocated-ed25519'
+  | 'allocated';
 
 /* ─── bech32m checksum ────────────────────────────────────────────────────── */
 
@@ -52,6 +74,60 @@ export function verifyBech32mChecksum(address: string): boolean {
   return polymod(hrpExpand(hrp).concat(data)) === BECH32M_CONST;
 }
 
+/* ─── Payload decoding ────────────────────────────────────────────────────── */
+
+/**
+ * The bytes a Radix address carries: its node id. The checksum verifies the
+ * whole string, this reads what the string is *about* — 30 bytes whose first
+ * one is the entity type.
+ *
+ * Returns null when the address is malformed or the checksum fails, so a
+ * caller can never derive anything from a typo.
+ */
+export function decodeAddressNodeId(address: string): Uint8Array | null {
+  const lower = address.trim().toLowerCase();
+  if (!verifyBech32mChecksum(lower)) return null;
+
+  const separator = lower.lastIndexOf('1');
+  const payload = lower.slice(separator + 1, -6); // the last 6 chars are checksum
+  const bytes: number[] = [];
+  let accumulator = 0;
+  let bits = 0;
+  for (const char of payload) {
+    const value = CHARSET.indexOf(char);
+    if (value === -1) return null;
+    accumulator = (accumulator << 5) | value;
+    bits += 5;
+    while (bits >= 8) {
+      bits -= 8;
+      bytes.push((accumulator >> bits) & 0xff);
+    }
+  }
+  return bytes.length === 30 ? Uint8Array.from(bytes) : null;
+}
+
+const toHex = (bytes: Uint8Array) =>
+  Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+
+/** Hex of `decodeAddressNodeId`, the form the ledger prints in local ids. */
+export function addressNodeIdHex(address: string): string | null {
+  const bytes = decodeAddressNodeId(address);
+  return bytes && toHex(bytes);
+}
+
+/** Entity-type byte → account flavour. Values from the engine's EntityType. */
+const ACCOUNT_ENTITY_BYTES = new Map<number, AccountAddressKind>([
+  [0b11010001, 'preallocated-secp256k1'],
+  [0b01010001, 'preallocated-ed25519'],
+  [0b11000001, 'allocated'],
+]);
+
+/** The account flavour an address encodes, or null if it is not an account. */
+export function accountAddressKind(address: string): AccountAddressKind | null {
+  const bytes = decodeAddressNodeId(address);
+  return bytes ? (ACCOUNT_ENTITY_BYTES.get(bytes[0]) ?? null) : null;
+}
+
 /* ─── Entity classification ───────────────────────────────────────────────── */
 
 const ENTITY_PREFIXES: Array<[string, string]> = [
@@ -88,10 +164,14 @@ export function inspectAddress(rawAddress: string): AddressInspection | null {
       ? 'stokenet'
       : 'other';
 
+  const nodeId = decodeAddressNodeId(address);
+
   return {
     hrp,
     entityType,
     network,
     checksumValid: verifyBech32mChecksum(address),
+    nodeIdHex: nodeId && toHex(nodeId),
+    accountKind: nodeId ? (ACCOUNT_ENTITY_BYTES.get(nodeId[0]) ?? null) : null,
   };
 }

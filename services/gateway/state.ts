@@ -10,6 +10,53 @@ import { cacheLife, cacheTag } from 'next/cache';
 import { withRetry, type Network } from './client';
 import { gatewayPost } from './bases';
 
+/* ─── Where a non-fungible lives ──────────────────────────────────────────── */
+
+export interface NonFungibleHolder {
+  /** Vault holding the NFT. */
+  vault: string;
+  /** Global entity owning that vault: an account, an access controller, … */
+  holder?: string;
+}
+
+/**
+ * Locates non-fungibles by id. Server-side counterpart of
+ * `apiFetchNonFungibleLocation` in the dashboard's api client.
+ *
+ * Not cached: an NFT's whereabouts is exactly the thing that changes when
+ * someone moves it, and the security check exists to notice that.
+ */
+export async function fetchNonFungibleLocations(
+  resourceAddress: string,
+  localIds: string[],
+  network: Network = 'mainnet',
+): Promise<Record<string, NonFungibleHolder>> {
+  if (localIds.length === 0) return {};
+
+  const res = await withRetry(() =>
+    gatewayPost<{
+      non_fungible_ids?: Array<{
+        non_fungible_id: string;
+        owning_vault_address?: string;
+        owning_vault_global_ancestor_address?: string;
+      }>;
+    }>(network, '/state/non-fungible/location', {
+      resource_address: resourceAddress,
+      non_fungible_ids: localIds.slice(0, 100),
+    }),
+  );
+
+  const located: Record<string, NonFungibleHolder> = {};
+  for (const item of res.non_fungible_ids ?? []) {
+    if (!item.owning_vault_address) continue;
+    located[item.non_fungible_id] = {
+      vault: item.owning_vault_address,
+      holder: item.owning_vault_global_ancestor_address,
+    };
+  }
+  return located;
+}
+
 /* ─── Non-fungible ids of a collection ────────────────────────────────────── */
 
 export async function fetchNonFungibleIds(

@@ -327,7 +327,9 @@ export async function apiFetchAllNonFungibleIds(resourceAddress: string, network
 export interface NonFungibleLocation {
     /** Vault holding the NFT. */
     vault: string;
-    /** Global ancestor of the vault, i.e. the account that owns it (when any). */
+    /** Global entity owning that vault, whatever its kind (account, access controller, component…). */
+    holder?: string;
+    /** `holder` when it is an account. Kept for callers that only display accounts. */
     account?: string;
 }
 
@@ -351,6 +353,7 @@ export async function apiFetchNonFungibleLocation(resourceAddress: string, local
             const ancestor = item.owning_vault_global_ancestor_address as string | undefined;
             locationMap[item.non_fungible_id] = {
                 vault: item.owning_vault_address,
+                holder: ancestor,
                 account: ancestor && ancestor.startsWith('account_') ? ancestor : undefined,
             };
         }

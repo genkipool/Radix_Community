@@ -840,6 +840,62 @@
           ]
         }
       },
+      "account-security": {
+        "title": "Account Security",
+        "description": "Check from the ledger whether an account hangs from a single seed phrase or is shielded by an Access Controller, and where its owner badge actually is.",
+        "guide": {
+          "guideTitle": "Guide: Account Security",
+          "guideDescription": "Every Radix account is governed by its owner role, and there are only two answers: the account is its key (one seed phrase, no recovery) or an owner badge governs it. When it is a badge, the whole question becomes where that badge lives — inside an Access Controller with multi-factor and recovery, or loose in some account, one transfer away from being lost. This tool reads that from the ledger and says which of those you are looking at.",
+          "guideSteps": [
+            "1. Paste an account address of the network the console is on. Nothing is signed and nothing is sent: the tool only reads public ledger state.",
+            "2. Read the verdict. 'Controlled by its key' is the state every wallet account starts in — it is not a fault, but it means one seed phrase is the whole security of the account.",
+            "3. Check 'What controls it'. For a key-controlled account the tool also verifies that the key hash in the owner rule is the one the address itself encodes; they cannot disagree by accident.",
+            "4. If there is an Access Controller, read its roles: '1 of 3 badges' is how many factors each role needs. Watch the two alerts — a recovery proposal or a badge withdrawal in flight is someone taking the account away right now.",
+            "5. Findings collect what deserves attention: an Olympia-derived address (recovered with the Olympia phrase, not the Babylon one), or an owner badge sitting loose with no recovery behind it."
+          ],
+          "glossary": [
+            {
+              "term": "Owner role",
+              "definition": "The rule the ledger checks before letting anything act as the account: withdrawing, changing settings, everything."
+            },
+            {
+              "term": "Signature virtual badge",
+              "definition": "The badge a transaction gets for free by being signed with a given key. When the owner role requires it, the account IS its key."
+            },
+            {
+              "term": "Account owner badge",
+              "definition": "An NFT minted when an account is securified, whose id is the account's own address. Whoever holds it owns the account."
+            },
+            {
+              "term": "Access Controller",
+              "definition": "A component that holds an owner badge behind three roles — primary, recovery and confirmation — so control can be multi-factor and a lost factor can be replaced."
+            }
+          ],
+          "example": [
+            {
+              "field": "Account address",
+              "type": "input",
+              "value": "account_rdx12y…",
+              "isAddress": true
+            },
+            {
+              "field": "Verdict",
+              "type": "input",
+              "value": "Shielded by an Access Controller"
+            },
+            {
+              "field": "Primary role",
+              "type": "input",
+              "value": "1 of 3 badges"
+            },
+            {
+              "field": "Timed recovery delay",
+              "type": "input",
+              "value": "1440 minutes"
+            }
+          ]
+        }
+      },
       "faucet": {
         "title": "Test Faucet",
         "description": "Fund a Stokenet account with 10,000 test XRD in one click, straight from the network faucet.",
@@ -2796,6 +2852,112 @@
       "derivedIdentity": "Identity",
       "knownTitle": "Well-known addresses",
       "knownHint": "Native addresses of the active network (XRD, system packages, faucet, pool package, …)."
+    },
+    "accountSecurity": {
+      "checkTitle": "Check an account",
+      "checkHint": "Reads from the ledger who controls the account: its key, or an owner badge — and if it is a badge, where that badge lives. Read-only: nothing is signed and nothing is sent.",
+      "placeholder": "account_rdx1… / account_tdx_2_1…",
+      "states": {
+        "malformed": "The bech32m checksum does not add up. Check for a typo before trusting any answer about this address.",
+        "notAccount": "This is a valid address, but not an account. The check only applies to accounts.",
+        "wrongNetwork": "That address belongs to another network. Switch the console to {network} or paste an address from it."
+      },
+      "checking": "Reading the ledger…",
+      "error": "The ledger state could not be read. The account may not exist yet on this network, or the Gateway is unavailable.",
+      "verdicts": {
+        "key": {
+          "label": "Controlled by its key",
+          "meaning": "Whoever holds the seed phrase holds the account. There is no second factor and no recovery: if the phrase is lost, the account goes with it. This is the state every wallet account starts in."
+        },
+        "accessController": {
+          "label": "Shielded by an Access Controller",
+          "meaning": "An owner badge governs the account and that badge is held inside an Access Controller, so control follows its roles and a lost factor can be replaced through recovery."
+        },
+        "badgeInAccount": {
+          "label": "Securified, badge loose in an account",
+          "meaning": "An owner badge governs the account, and it is sitting in an ordinary account instead of a controller. The account is one transferable NFT: whoever moves it takes the account, and there is no recovery path."
+        },
+        "badgeElsewhere": {
+          "label": "Securified, badge held elsewhere",
+          "meaning": "An owner badge governs the account and it lives outside any Access Controller, in an entity that is not an account. Whatever holds it holds the account."
+        },
+        "badgeUnknown": {
+          "label": "Securified, badge not located",
+          "meaning": "The owner rule names the account owner badge, but the Gateway did not report where that badge currently is."
+        },
+        "open": {
+          "label": "Open to anyone",
+          "meaning": "The owner role is AllowAll: any transaction can act as the owner of this account."
+        },
+        "other": {
+          "label": "Governed by another rule",
+          "meaning": "The owner rule is neither a signature badge nor the account owner badge. Read the rule itself before drawing conclusions."
+        },
+        "unknown": {
+          "label": "Could not be determined",
+          "meaning": "The owner role could not be read from this account's ledger state."
+        }
+      },
+      "controlTitle": "What controls it",
+      "controlHint": "The account's owner role, as the ledger holds it.",
+      "control": {
+        "addressKind": "Address kind",
+        "ownerRule": "Owner rule",
+        "signature": {
+          "secp256k1": "Signature badge (secp256k1)",
+          "ed25519": "Signature badge (ed25519)"
+        },
+        "publicKeyHash": "Public key hash",
+        "matchesAddress": "Matches the address",
+        "mismatch": "NO — address and rule disagree",
+        "ownerBadge": "Account owner badge",
+        "badgeId": "Badge id",
+        "holder": "Badge held by",
+        "notReported": "not reported by the Gateway",
+        "other": {
+          "custom": "A custom rule, with badges this check does not model",
+          "allowAll": "AllowAll — no proof required",
+          "denyAll": "DenyAll — nobody can act as owner",
+          "unknown": "Unreadable"
+        }
+      },
+      "addressKind": {
+        "preallocated-secp256k1": "Preallocated, secp256k1 key (Olympia-derived)",
+        "preallocated-ed25519": "Preallocated, ed25519 key (Babylon-native)",
+        "allocated": "Allocated on ledger",
+        "unknown": "Unknown"
+      },
+      "common": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "notesTitle": "Findings",
+      "notes": {
+        "addressRuleMismatch": "The public key hash in the owner rule is not the one this address encodes. A preallocated address is the hash of its key, so the two cannot disagree by accident.",
+        "badgeHeldBySelf": "The owner badge is held by the very account it governs.",
+        "singleTransferableBadge": "One transferable NFT is the account: no second factor, no recovery, and a transfer is final.",
+        "olympiaDerived": "Olympia-derived address: it is recovered with the Olympia seed phrase, not the Babylon one.",
+        "holderUnresolved": "The badge was found in a vault whose owning entity the Gateway did not report."
+      },
+      "controllerTitle": "Access Controller",
+      "controllerHint": "The roles that can act on the account, and whether anything is in flight right now.",
+      "controller": {
+        "address": "Controller",
+        "primary": "Primary role",
+        "recovery": "Recovery role",
+        "confirmation": "Confirmation role",
+        "delay": "Timed recovery delay",
+        "delayDisabled": "Disabled",
+        "delayValue": "{minutes} minutes",
+        "primaryLocked": "Primary role locked",
+        "feeVault": "Pays its own recovery fees",
+        "factors": "{need} of {total} badges",
+        "anyone": "Anyone",
+        "nobody": "Nobody",
+        "unreadable": "Unreadable rule",
+        "recoveryInProgress": "A recovery proposal is in flight on this controller right now.",
+        "withdrawAttempt": "Someone is attempting to withdraw the owner badge out of this controller."
+      }
     },
     "walletPlayground": {
       "configTitle": "Data request",
