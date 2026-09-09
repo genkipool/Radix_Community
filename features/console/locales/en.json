@@ -997,7 +997,7 @@
       },
       "validator-registration": {
         "title": "Registration and settings",
-        "description": "Register or unregister the validator, change the fee and the consensus key, open or close it to delegation, and vote a protocol update — all in one transaction.",
+        "description": "Register or unregister, change the fee and the consensus key, open or close delegation, and vote a protocol update — on one validator or on several, in a single transaction.",
         "guide": {
           "guideTitle": "Guide: registration and settings",
           "guideDescription": "Every owner setting of a validator except its public profile, in one form and therefore one transaction. Switch on only what you want to change; anything left off is not touched. Each setting is a single control, so this form cannot express the contradictions the ledger would accept in silence — asking to register and unregister in one transaction commits both and lets the last one quietly win.",
@@ -1099,7 +1099,7 @@
       },
       "validator-profile": {
         "title": "Public profile",
-        "description": "Name, description, icon and website shown for your validator by wallets and explorers.",
+        "description": "Name, description, icon and website that wallets and explorers show for your validators.",
         "guide": {
           "guideTitle": "Guide: public profile",
           "guideDescription": "The identity wallets and explorers show for your validator in the staking list. None of it is set when the validator is created, so a fresh validator appears as a bare address until you fill this in — which matters, because stakers pick from that list. It is plain metadata on the validator component, gated by the same owner badge, and the whole form is one transaction.",
@@ -1171,7 +1171,7 @@
       },
       "validator-staking": {
         "title": "Validator staking",
-        "description": "Stake, unstake, claim, and manage the owner locked stake units of one validator.",
+        "description": "Stake, unstake, claim matured NFTs, and manage the owner locked stake units of the validators you pick.",
         "guide": {
           "guideTitle": "Guide: validator staking",
           "guideDescription": "Staking against one validator, both the owner side and the public side, in the order things actually happen. Switch on what you want and it all travels in a single transaction — with one exception the ledger enforces: claiming is locked while an unstake of the same validator is on, because redeeming a claim NFT minted earlier in the same transaction aborts the whole thing.",

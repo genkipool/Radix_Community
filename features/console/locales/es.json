@@ -997,7 +997,7 @@
       },
       "validator-registration": {
         "title": "Registro y ajustes",
-        "description": "Registra o da de baja el validador, cambia la comisión y la clave de consenso, ábrelo o ciérralo a delegación y vota una actualización de protocolo, todo en una sola transacción.",
+        "description": "Registra o da de baja, cambia la comisión y la clave de consenso, abre o cierra la delegación y vota una actualización de protocolo, sobre uno o varios validadores en una sola transacción.",
         "guide": {
           "guideTitle": "Guía: registro y ajustes",
           "guideDescription": "Todos los ajustes de propietario de un validador menos el perfil público, en un formulario y por tanto en una sola transacción. Activa solo lo que quieras cambiar; lo que dejes apagado no se toca. Cada ajuste es un único control, así que este formulario no puede expresar las contradicciones que el ledger aceptaría en silencio: pedir registrar y dar de baja en la misma transacción confirma las dos y deja ganar a la última sin avisar.",
@@ -1099,7 +1099,7 @@
       },
       "validator-profile": {
         "title": "Perfil público",
-        "description": "Nombre, descripción, icono y web que carteras y exploradores muestran de tu validador.",
+        "description": "Nombre, descripción, icono y web que carteras y exploradores muestran de tus validadores.",
         "guide": {
           "guideTitle": "Guía: perfil público",
           "guideDescription": "La identidad que carteras y exploradores muestran de tu validador en la lista de staking. Nada de esto se pone al crear el validador, así que uno recién creado aparece como una dirección pelada hasta que rellenas esto, y eso importa porque los stakers eligen de esa lista. Son metadatos del componente validador, protegidos por la misma insignia de propietario, y el formulario entero es una sola transacción.",
@@ -1171,7 +1171,7 @@
       },
       "validator-staking": {
         "title": "Staking del validador",
-        "description": "Stake, unstake, reclamación y gestión de las unidades de stake bloqueadas del propietario.",
+        "description": "Stake, unstake, reclamación de NFT vencidos y gestión de las unidades de stake bloqueadas de los validadores que elijas.",
         "guide": {
           "guideTitle": "Guía: staking del validador",
           "guideDescription": "Staking sobre un validador, por el lado del propietario y por el público, en el orden en que las cosas pasan de verdad. Activa lo que quieras y todo va en una sola transacción, con una excepción que impone el ledger: reclamar queda bloqueado mientras esté activo un unstake del mismo validador, porque canjear un NFT de reclamación minteado antes dentro de la misma transacción la aborta entera.",
