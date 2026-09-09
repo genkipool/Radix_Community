@@ -450,9 +450,29 @@ CALL_METHOD
 ;
 `;
 
-const takeAll = (resource: string, bucket: string) => `
-TAKE_ALL_FROM_WORKTOP
+/**
+ * An exact take, never TAKE_ALL_FROM_WORKTOP. The worktop is shared by the
+ * whole batch: `claim_xrd` drops its XRD there and `finish_unlock_owner_stake_units`
+ * its stake units, so a TAKE_ALL for a later operation on the same resource
+ * sweeps that up too and hands the validator far more than the operator typed.
+ * Measured on resim 1.3.1: claim_xrd of 500 XRD batched with a stake of 100 XRD
+ * staked 600 with TAKE_ALL, and exactly 100 with the amount named here.
+ */
+const take = (resource: string, amount: string, bucket: string) => `
+TAKE_FROM_WORKTOP
     Address("${resource}")
+    Decimal("${escapeManifestString(amount)}")
+    Bucket("${bucket}")
+;
+`;
+
+/** The non-fungible counterpart: the claim NFTs this operation withdrew, by id. */
+const takeNonFungibles = (resource: string, ids: string[], bucket: string) => `
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${resource}")
+    Array<NonFungibleLocalId>(${ids
+      .map((id) => `NonFungibleLocalId("${escapeManifestString(id)}")`)
+      .join(', ')})
     Bucket("${bucket}")
 ;
 `;
@@ -490,36 +510,39 @@ function fundedOperation(
   switch (operation.kind) {
     case 'stake':
     case 'stake-as-owner': {
+      const amount = val(operation, 'amount');
       const call = operation.kind === 'stake' ? stakeInstruction : stakeAsOwnerInstruction;
       return (
-        withdraw(ctx.account, ctx.xrdAddress, val(operation, 'amount')) +
-        takeAll(ctx.xrdAddress, bucket) +
+        withdraw(ctx.account, ctx.xrdAddress, amount) +
+        take(ctx.xrdAddress, amount, bucket) +
         call(validator, bucket)
       );
     }
     case 'unstake':
     case 'lock-owner-stake-units': {
       const resource = val(operation, 'stakeUnitResource');
+      const amount = val(operation, 'amount');
       const call =
         operation.kind === 'unstake' ? unstakeInstruction : lockOwnerStakeUnitsInstruction;
       return (
-        withdraw(ctx.account, resource, val(operation, 'amount')) +
-        takeAll(resource, bucket) +
+        withdraw(ctx.account, resource, amount) +
+        take(resource, amount, bucket) +
         call(validator, bucket)
       );
     }
     case 'claim-xrd': {
       const resource = val(operation, 'claimNftResource');
+      const ids = parseIds(val(operation, 'claimNftIds'));
       return (
-        withdrawNonFungibles(ctx.account, resource, parseIds(val(operation, 'claimNftIds'))) +
-        takeAll(resource, bucket) +
+        withdrawNonFungibles(ctx.account, resource, ids) +
+        takeNonFungibles(resource, ids, bucket) +
         claimXrdInstruction(validator, bucket)
       );
     }
     case 'create-validator':
       return (
         withdraw(ctx.account, ctx.xrdAddress, val(operation, 'payment')) +
-        takeAll(ctx.xrdAddress, bucket) +
+        take(ctx.xrdAddress, val(operation, 'payment'), bucket) +
         createValidatorInstruction({
           publicKeyHex: val(operation, 'publicKey'),
           feeFactor: val(operation, 'feeFactor'),

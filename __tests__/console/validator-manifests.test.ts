@@ -25,6 +25,7 @@ const ACCOUNT = 'account_rdx1283u6e8r2jnz4a3jwv0hnrqfr8aq7kapg7q8h9d4f560g2f8wq7
 const OWNER_BADGE = 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
 const XRD = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
 const KEY = '0333f9189597447e1530aef81747778f683d9a04d55445374de95d364e48c2e784';
+const LSU = 'resource_rdx1thnhmstrn255f3g5fmqm2rlnvxc9lhu6vhpsnkyc75dpfnkyuk8t8n';
 
 const CTX = { xrdAddress: XRD, poolPackage: '', validatorOwnerBadge: OWNER_BADGE };
 
@@ -116,10 +117,47 @@ describe('validator templates', () => {
       { account: ACCOUNT, publicKey: KEY, feeFactor: '0.05', payment: '2000' },
       CTX,
     );
-    const order = ['"withdraw"', 'TAKE_ALL_FROM_WORKTOP', 'CREATE_VALIDATOR', '"try_deposit_batch_or_abort"'];
+    const order = [
+      '"withdraw"',
+      'TAKE_FROM_WORKTOP',
+      'CREATE_VALIDATOR',
+      '"try_deposit_batch_or_abort"',
+    ];
     const positions = order.map((needle) => manifest.indexOf(needle));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    // The payment is named in the take, so the bucket holds exactly what the
+    // form asked for even if something else left XRD on the worktop.
+    expect(manifest).toContain('Decimal("2000")');
+    expect(manifest).not.toContain('TAKE_ALL_FROM_WORKTOP');
+  });
+
+  it('names the amount in every staking template take', () => {
+    const staking = ['stake', 'unstake', 'stake-owner', 'unstake-owner', 'lock-owner-stake'];
+    for (const id of staking) {
+      const built = template(id).build(
+        {
+          account: ACCOUNT,
+          validator: VALIDATOR,
+          ownerBadgeId: '[ab]',
+          lsuResource: LSU,
+          amount: '42',
+        },
+        CTX,
+      );
+      expect(built, id).not.toContain('TAKE_ALL_FROM_WORKTOP');
+      expect(built, id).toMatch(/TAKE_FROM_WORKTOP\n {4}Address\("[^"]+"\)\n {4}Decimal\("42"\)/);
+    }
+  });
+
+  it('takes the claim NFTs by id in the claim template', () => {
+    const built = template('claim-stake').build(
+      { account: ACCOUNT, validator: VALIDATOR, claimNft: LSU, claimNftId: '#7#' },
+      CTX,
+    );
+    expect(built).toContain('TAKE_NON_FUNGIBLES_FROM_WORKTOP');
+    expect(built).toContain('NonFungibleLocalId("#7#")');
+    expect(built).not.toContain('TAKE_ALL_FROM_WORKTOP');
   });
 
   it('treats the delegation toggle as false only when explicitly false', () => {

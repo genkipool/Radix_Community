@@ -22,6 +22,7 @@ const V2 = 'validator_rdx1sd5368vqdmjk0y2w7ymdts02cz9c52858gpyny56xdvzuheafey2yq
 const XRD = 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd';
 const BADGE = 'resource_rdx1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxvdrwnr';
 const LSU = 'resource_rdx1thnhmstrn255f3g5fmqm2rlnvxc9lhu6vhpsnkyc75dpfnkyuk8t8n';
+const CLAIM = 'resource_rdx1ngekvyag42r0xkhy2ds08fcl7f2ncgc0g74yg6wpeeyc4vtj03sa9f';
 
 const BADGES = { [V1]: '[aa]', [V2]: '[bb]' };
 const CTX = {
@@ -105,6 +106,36 @@ describe('batch assembly', () => {
     ]);
     expect(manifest).toContain('Bucket("bucket1")');
     expect(manifest).toContain('Bucket("bucket2")');
+  });
+
+  it('takes the exact amount it withdrew, never everything on the worktop', () => {
+    const manifest = build([op('stake-as-owner', { validator: V1, amount: '10' })]);
+    expect(manifest).not.toContain('TAKE_ALL_FROM_WORKTOP');
+    expect(manifest).toContain(`TAKE_FROM_WORKTOP\n    Address("${XRD}")\n    Decimal("10")`);
+  });
+
+  /*
+   * resim 1.3.1: with TAKE_ALL_FROM_WORKTOP this batch staked 600 XRD — the 100
+   * withdrawn plus the 500 the claim had just dropped on the worktop. With the
+   * amount named it stakes 100 and the claimed 500 goes home in the deposit.
+   */
+  it('does not sweep a claim\u2019s XRD into a stake sharing the batch', () => {
+    const manifest = build([
+      op('claim-xrd', { validator: V1, claimNftResource: CLAIM, claimNftIds: '#1#' }),
+      op('stake', { validator: V2, amount: '100' }),
+    ]);
+    expect(manifest).not.toContain('TAKE_ALL_FROM_WORKTOP');
+    expect(manifest).toContain('TAKE_NON_FUNGIBLES_FROM_WORKTOP');
+    expect(manifest).toContain('Decimal("100")');
+  });
+
+  it('takes the claim NFTs by id, not the whole worktop', () => {
+    const manifest = build([
+      op('claim-xrd', { validator: V1, claimNftResource: CLAIM, claimNftIds: '#1#, #2#' }),
+    ]);
+    expect(manifest).toContain(
+      'Array<NonFungibleLocalId>(NonFungibleLocalId("#1#"), NonFungibleLocalId("#2#"))',
+    );
   });
 
   it('keeps the operator order', () => {

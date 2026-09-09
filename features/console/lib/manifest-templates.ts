@@ -198,8 +198,9 @@ CALL_METHOD
     Address("${ctx.xrdAddress}")
     Decimal("${v(values, 'amount') || '{amount}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -231,8 +232,9 @@ CALL_METHOD
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
     Decimal("${v(values, 'amount') || '{amount}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -267,8 +269,9 @@ CALL_METHOD
     Address("${ctx.xrdAddress}")
     Decimal("${v(values, 'amount') || '{amount}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
     Bucket("bucket1")
 ;` +
       stakeAsOwnerInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
@@ -300,8 +303,9 @@ CALL_METHOD
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
     Decimal("${v(values, 'amount') || '{amount}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
     Bucket("bucket1")
 ;` +
       unstakeInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
@@ -322,27 +326,34 @@ TAKE_ALL_FROM_WORKTOP
       { key: 'claimNft', kind: 'resource' },
       { key: 'claimNftId', kind: 'nonFungibleId' },
     ],
-    build: (values) => `
+    build: (values) => {
+      const claimNft = v(values, 'claimNft') || '{claimNft}';
+      // Named ids in both places: the take then holds the claims this form
+      // asked for, not whatever else is sitting on the worktop.
+      const ids = (v(values, 'claimNftId') || '{claimNftId}')
+        .split(',')
+        .map((id) => `NonFungibleLocalId("${id.trim()}")`)
+        .join(', ');
+      return `
 CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "withdraw_non_fungibles"
-    Address("${v(values, 'claimNft') || '{claimNft}'}")
-    Array<NonFungibleLocalId>(${(v(values, 'claimNftId') || '{claimNftId}')
-      .split(',')
-      .map((id) => `NonFungibleLocalId("${id.trim()}")`)
-      .join(', ')})
+    Address("${claimNft}")
+    Array<NonFungibleLocalId>(${ids})
 ;
-TAKE_ALL_FROM_WORKTOP
-    Address("${v(values, 'claimNft') || '{claimNft}'}")
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${claimNft}")
+    Array<NonFungibleLocalId>(${ids})
     Bucket("bucket1")
 ;` +
-      claimXrdInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
-      `CALL_METHOD
+        claimXrdInstruction(v(values, 'validator') || '{validator}', 'bucket1') +
+        `CALL_METHOD
     Address("${v(values, 'account') || '{account}'}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
 ;
-`,
+`;
+    },
   },
   {
     id: 'lock-owner-stake',
@@ -365,8 +376,9 @@ CALL_METHOD
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
     Decimal("${v(values, 'amount') || '{amount}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${v(values, 'lsuResource') || '{lsuResource}'}")
+    Decimal("${v(values, 'amount') || '{amount}'}")
     Bucket("bucket1")
 ;` +
       lockOwnerStakeUnitsInstruction(v(values, 'validator') || '{validator}', 'bucket1'),
@@ -472,8 +484,9 @@ CALL_METHOD
     Address("${v(values, 'resource')}")
     Decimal("${v(values, 'amount')}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${v(values, 'resource')}")
+    Decimal("${v(values, 'amount')}")
     Bucket("bucket1")
 ;
 BURN_RESOURCE
@@ -802,8 +815,9 @@ CALL_METHOD
     Address("${c.resource}")
     Decimal("${c.amount}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${c.resource}")
+    Decimal("${c.amount}")
     Bucket("bucket${i + 1}")
 ;`,
         )
@@ -838,8 +852,9 @@ CALL_METHOD
     Address("${v(values, 'poolUnit')}")
     Decimal("${v(values, 'amount')}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${v(values, 'poolUnit')}")
+    Decimal("${v(values, 'amount')}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -925,8 +940,9 @@ CALL_METHOD
     Address("${ctx.xrdAddress}")
     Decimal("${v(values, 'payment') || '{payment}'}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${ctx.xrdAddress}")
+    Decimal("${v(values, 'payment') || '{payment}'}")
     Bucket("validator_creation_fee")
 ;
 ` +
