@@ -287,6 +287,11 @@ UPDATE_NON_FUNGIBLE_DATA
 ;
 `;
 
+/**
+ * The take names the amount rather than emptying the worktop: a burn is
+ * irreversible, so the bucket must hold what this form withdrew and nothing
+ * that happened to be lying there.
+ */
 export const burnManifest = (account: string, resource: string, amount: string) => `
 CALL_METHOD
     Address("${account}")
@@ -294,8 +299,9 @@ CALL_METHOD
     Address("${resource}")
     Decimal("${amount}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${resource}")
+    Decimal("${amount}")
     Bucket("bucket1")
 ;
 BURN_RESOURCE
@@ -316,8 +322,11 @@ CALL_METHOD
 ${idsArray}
     )
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${resource}")
+    Array<NonFungibleLocalId>(
+${idsArray}
+    )
     Bucket("bucket1")
 ;
 BURN_RESOURCE

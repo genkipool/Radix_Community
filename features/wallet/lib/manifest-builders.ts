@@ -14,8 +14,9 @@ CALL_METHOD
     Address("${xrdResourceAddress}")
     Decimal("${amountXrd}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
+    Decimal("${amountXrd}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -47,8 +48,9 @@ CALL_METHOD
     Address("${lsuResourceAddress}")
     Decimal("${amountLsu}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${lsuResourceAddress}")
+    Decimal("${amountLsu}")
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -86,8 +88,9 @@ CALL_METHOD
     Address("${claimNftResourceAddress}")
     Array<NonFungibleLocalId>(${idsString})
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${claimNftResourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
     Bucket("bucket1")
 ;
 CALL_METHOD
@@ -179,8 +182,9 @@ CALL_METHOD
 
   items.forEach((item, index) => {
     manifest += `
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountLsu}")
     Bucket("bucket${index + 1}")
 ;
 CALL_METHOD
@@ -228,9 +232,11 @@ CALL_METHOD
 
   items.forEach((item, index) => {
     if (item.claimNftLocalIds.length === 0) return;
+    const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
     manifest += `
-TAKE_ALL_FROM_WORKTOP
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${item.claimNftResourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
     Bucket("bucket${index + 1}")
 ;
 CALL_METHOD
@@ -325,8 +331,9 @@ CALL_METHOD
 
   unstakeItems.forEach(item => {
     manifest += `
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${item.lsuResourceAddress}")
+    Decimal("${item.amountLsu}")
     Bucket("bucket${bucketIndex}")
 ;
 CALL_METHOD
@@ -340,9 +347,11 @@ CALL_METHOD
 
   claimItems.forEach(item => {
     if (item.claimNftLocalIds.length === 0) return;
+    const idsString = item.claimNftLocalIds.map((id) => `NonFungibleLocalId("${id}")`).join(', ');
     manifest += `
-TAKE_ALL_FROM_WORKTOP
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
     Address("${item.claimNftResourceAddress}")
+    Array<NonFungibleLocalId>(${idsString})
     Bucket("bucket${bucketIndex}")
 ;
 CALL_METHOD
@@ -368,6 +377,12 @@ CALL_METHOD
 
 /**
  * Builds a manifest for an owner to stake XRD (stakes to LSU, then locks LSU).
+ *
+ * Every other take in this file names its amount, so a bucket can only ever
+ * hold what its own withdrawal put on the worktop. The LSU take here is the
+ * one exception and has to stay TAKE_ALL_FROM_WORKTOP: those stake units come
+ * out of `stake_as_owner`, and how many the validator returns depends on its
+ * exchange rate at execution time, so there is no amount to name.
  */
 export const buildOwnerStakeManifest = (
   accountAddress: string,
@@ -393,8 +408,9 @@ CALL_METHOD
     Address("${xrdResourceAddress}")
     Decimal("${amountXrd}")
 ;
-TAKE_ALL_FROM_WORKTOP
+TAKE_FROM_WORKTOP
     Address("${xrdResourceAddress}")
+    Decimal("${amountXrd}")
     Bucket("bucket1")
 ;
 CALL_METHOD

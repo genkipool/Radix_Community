@@ -46,6 +46,9 @@ describe('resource action manifests', () => {
     expect(manifest).toContain('"withdraw"');
     expect(manifest).toContain('BURN_RESOURCE');
     expect(manifest).toContain('Bucket("bucket1")');
+    expect(manifest).toContain('TAKE_FROM_WORKTOP');
+    expect(manifest).not.toContain('TAKE_ALL_FROM_WORKTOP');
+    expect(manifest.match(/Decimal\("5"\)/g)).toHaveLength(2);
   });
 
   it('burns multiple NFTs in a single manifest', () => {
@@ -57,13 +60,14 @@ describe('resource action manifests', () => {
     expect(manifest).toContain('BURN_RESOURCE');
   });
 
-  it('burns a single NFT via array', () => {
+  it('names the same single NFT in the withdrawal and in the take', () => {
     const manifest = burnNonFungibleManifest(ACC, RES, ['#7#']);
-    expect(manifest).toContain('NonFungibleLocalId("#7#")');
     expect(manifest).toContain('BURN_RESOURCE');
-    // Should only contain one NonFungibleLocalId(...)  call (not the Array type)
-    const matches = manifest.match(/NonFungibleLocalId\(/g);
-    expect(matches).toHaveLength(1);
+    // Once in withdraw_non_fungibles and once in the take: a burn is
+    // irreversible, so the bucket holds that NFT and nothing else the
+    // worktop happens to be carrying.
+    expect(manifest.match(/NonFungibleLocalId\("#7#"\)/g)).toHaveLength(2);
+    expect(manifest).not.toContain('TAKE_ALL_FROM_WORKTOP');
   });
 
   it('locks metadata keys', () => {

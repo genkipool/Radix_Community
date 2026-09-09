@@ -164,8 +164,9 @@ export function DevTab2({ t }: { t: Dictionary }) {
           &nbsp;&nbsp;<span className="text-[var(--code-type)]">Address</span>(<span className="text-[var(--code-string)]">&quot;resource_rdx1_CBDC_EUR&quot;</span>)<br />
           &nbsp;&nbsp;<span className="text-[var(--code-type)]">Decimal</span>(<span className="text-[var(--code-string)]">&quot;10000000&quot;</span>);<br /><br />
 
-          <span className="text-[var(--code-keyword)] font-bold">TAKE_ALL_FROM_WORKTOP</span><br />
+          <span className="text-[var(--code-keyword)] font-bold">TAKE_FROM_WORKTOP</span><br />
           &nbsp;&nbsp;<span className="text-[var(--code-type)]">Address</span>(<span className="text-[var(--code-string)]">&quot;resource_rdx1_CBDC_EUR&quot;</span>)<br />
+          &nbsp;&nbsp;<span className="text-[var(--code-type)]">Decimal</span>(<span className="text-[var(--code-string)]">&quot;10000000&quot;</span>)<br />
           &nbsp;&nbsp;<span className="text-[var(--code-type)]">Bucket</span>(<span className="text-[var(--code-string)]">&quot;payment_bucket&quot;</span>);<br /><br />
 
           <span className="text-[var(--code-keyword)] font-bold">CALL_METHOD</span><br />
