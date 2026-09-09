@@ -2955,6 +2955,10 @@
       "detecting": "Buscando tus validadores…",
       "showManifest": "Ver manifiesto",
       "hideManifest": "Ocultar manifiesto",
+      "detectedValidator": "Validador detectado",
+      "selectedCount": "{count} seleccionados",
+      "addValidator": "Añadir otra dirección de validador",
+      "removeValidator": "Quitar esta dirección",
       "forms": {
         "registration": {
           "title": "Ajustes a cambiar",
@@ -3069,7 +3073,8 @@
             "noneFound": "Esta cuenta no tiene ningún NFT de reclamación.",
             "notYet": "Todavía no se puede canjear: vence en la época {epoch}."
           },
-          "resourceAutofilled": "Leído del validador; cámbialo solo si sabes por qué."
+          "resourceAutofilled": "Leído del validador; cámbialo solo si sabes por qué.",
+          "resourcePerValidator": "Se resuelve por validador desde el ledger, porque cada uno mintea el suyo."
         },
         "create": {
           "title": "Validador nuevo",

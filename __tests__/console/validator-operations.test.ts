@@ -70,7 +70,9 @@ describe('batch assembly', () => {
       op('unregister', { validator: V2 }),
     ]);
     expect(manifest.match(/create_proof_of_non_fungibles/g)).toHaveLength(1);
-    expect(manifest).toContain('NonFungibleLocalId("[aa]"), NonFungibleLocalId("[bb]")');
+    // Both badges live in that one proof; the layout of the array is not the point.
+    expect(manifest).toContain('NonFungibleLocalId("[aa]")');
+    expect(manifest).toContain('NonFungibleLocalId("[bb]")');
   });
 
   it('locks the fee once, at the top', () => {

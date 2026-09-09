@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 import { useClaimableNfts } from '../../hooks/useClaimableNfts';
 import { useValidatorFormContext } from '../../hooks/useValidatorFormContext';
-import { useValidatorState } from '../../hooks/useValidatorState';
 import { createValidatorOperation, type ValidatorOperation } from '../../lib/validator-operations';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { OptionButtons } from '../shared/OptionButtons';
@@ -52,27 +51,35 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
   const labels = t.validator;
   const form = labels.forms.staking;
   const ctx = useValidatorFormContext();
-  const { data: onLedger } = useValidatorState(ctx.validator);
   const { data: claimable, isLoading: isLoadingClaims } = useClaimableNfts(ctx.account);
   const [state, setState] = useState<FormState>(INITIAL);
 
   const patch = <K extends keyof FormState>(key: K, value: Partial<FormState[K]>) =>
     setState((prev) => ({ ...prev, [key]: { ...prev[key], ...value } }));
 
-  /* The validator mints both resources, so they are read rather than typed. */
-  const stakeUnitResource = state.unstake.resource || onLedger?.stakeUnitResource || '';
-  const lockResource = state.lock.resource || onLedger?.stakeUnitResource || '';
+  /*
+   * Each validator mints its OWN stake unit resource, so with several selected
+   * the field cannot hold one address: it is resolved per validator and the
+   * input only acts as an override for a single selection.
+   */
+  const soleValidator = ctx.validators.length === 1 ? ctx.validators[0] : undefined;
+  const resourceOf = (override: string, validator: string) =>
+    (soleValidator ? override : '') || ctx.states[validator]?.stakeUnitResource || '';
+  const soleStakeUnitResource = soleValidator
+    ? resourceOf(state.unstake.resource, soleValidator)
+    : '';
+  const soleLockResource = soleValidator ? resourceOf(state.lock.resource, soleValidator) : '';
 
-  const claimLock = state.unstake.on
-    ? { address: ctx.validator, reason: form.claim.lockedByUnstake }
-    : undefined;
+  /* Claiming aborts only against a validator being unstaked in this same
+   * transaction; claims on the others are unaffected. */
+  const claimLockedValidators = state.unstake.on ? ctx.validators : [];
 
   const nfts = claimable ?? [];
   const pickedNfts = nfts.filter((nft) => state.claim.selected.includes(claimNftKey(nft)));
 
   const operations: ValidatorOperation[] = [];
-  if (ctx.validator) {
-    const target = { validator: ctx.validator };
+  for (const validator of ctx.validators) {
+    const target = { validator };
     if (state.stake.on) {
       operations.push(
         createValidatorOperation(state.stake.mode, { ...target, amount: state.stake.amount }),
@@ -82,7 +89,7 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
       operations.push(
         createValidatorOperation('unstake', {
           ...target,
-          stakeUnitResource,
+          stakeUnitResource: resourceOf(state.unstake.resource, validator),
           amount: state.unstake.amount,
         }),
       );
@@ -91,7 +98,7 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
       operations.push(
         createValidatorOperation('lock-owner-stake-units', {
           ...target,
-          stakeUnitResource: lockResource,
+          stakeUnitResource: resourceOf(state.lock.resource, validator),
           amount: state.lock.amount,
         }),
       );
@@ -117,7 +124,7 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
   if (state.claim.on) {
     const byValidator = new Map<string, { resource: string; ids: string[] }>();
     for (const nft of pickedNfts) {
-      if (claimLock?.address === nft.validatorAddress) continue;
+      if (claimLockedValidators.includes(nft.validatorAddress)) continue;
       const entry = byValidator.get(nft.validatorAddress) ?? {
         resource: nft.resourceAddress,
         ids: [],
@@ -159,7 +166,9 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
                 {
                   value: 'stake',
                   label: form.stake.optionPublic,
-                  title: onLedger && !onLedger.acceptsDelegatedStake
+                  title: ctx.validators.some(
+                    (address) => ctx.states[address]?.acceptsDelegatedStake === false,
+                  )
                     ? form.stake.optionPublicClosed
                     : form.stake.optionPublicHint,
                 },
@@ -185,8 +194,8 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
             <AddressField
               categories={['resource']}
               label={form.unstake.resourceLabel}
-              hint={onLedger?.stakeUnitResource ? form.resourceAutofilled : form.unstake.resourceHint}
-              value={stakeUnitResource}
+              hint={soleValidator ? form.resourceAutofilled : form.resourcePerValidator}
+              value={soleStakeUnitResource}
               onChange={(resource) => patch('unstake', { resource, on: true })}
               placeholder="resource_…"
             />
@@ -220,7 +229,7 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
                     : [...state.claim.selected, key],
                 })
               }
-              lockedValidator={claimLock}
+              lockedValidators={claimLockedValidators}
             />
           </div>
         </FormBlock>
@@ -235,8 +244,8 @@ export default function ValidatorStakingTool({ t }: ConsoleToolProps) {
             <AddressField
               categories={['resource']}
               label={form.lock.resourceLabel}
-              hint={onLedger?.stakeUnitResource ? form.resourceAutofilled : undefined}
-              value={lockResource}
+              hint={soleValidator ? form.resourceAutofilled : form.resourcePerValidator}
+              value={soleLockResource}
               onChange={(resource) => patch('lock', { resource, on: true })}
               placeholder="resource_…"
             />

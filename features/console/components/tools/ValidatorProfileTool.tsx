@@ -32,10 +32,10 @@ export default function ValidatorProfileTool({ t }: ConsoleToolProps) {
 
   const filled = FIELDS.some((field) => values[field].trim());
 
-  const operations: ValidatorOperation[] =
-    ctx.validator && filled
-      ? [createValidatorOperation('profile', { validator: ctx.validator, ...values })]
-      : [];
+  // The same metadata written to every validator switched on above.
+  const operations: ValidatorOperation[] = filled
+    ? ctx.validators.map((validator) => createValidatorOperation('profile', { validator, ...values }))
+    : [];
 
   return (
     <ValidatorFormShell

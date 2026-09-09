@@ -2954,6 +2954,10 @@
       "detecting": "Looking up your validators…",
       "showManifest": "Show manifest",
       "hideManifest": "Hide manifest",
+      "detectedValidator": "Detected validator",
+      "selectedCount": "{count} selected",
+      "addValidator": "Add another validator address",
+      "removeValidator": "Remove this address",
       "forms": {
         "registration": {
           "title": "Settings to change",
@@ -3068,7 +3072,8 @@
             "noneFound": "This account holds no stake claim NFTs.",
             "notYet": "Not redeemable yet — matures at epoch {epoch}."
           },
-          "resourceAutofilled": "Read from the validator; change it only if you know why."
+          "resourceAutofilled": "Read from the validator; change it only if you know why.",
+          "resourcePerValidator": "Resolved per validator from the ledger, since each one mints its own."
         },
         "create": {
           "title": "New validator",
