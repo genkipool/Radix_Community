@@ -37,7 +37,7 @@ import {
   buildOlympiaExportPayloads,
   type MnemonicWordCount,
 } from '@/features/console/lib/olympia-export';
-import { fetchEntityDetails } from '@/services/gateway/entities';
+import { fetchEntityDetailsLive } from '@/services/gateway/entities';
 import { fetchNonFungibleLocations } from '@/services/gateway/state';
 import {
   NotAnAccountError,
@@ -632,7 +632,7 @@ export const resolveVaultAddressTool = defineMcpTool({
   }),
   handler: async ({ account, resource, network }) => {
     if (!account.startsWith('account_')) throw new Error('Provide an account_… address.');
-    const details = await fetchEntityDetails(account, network).catch(() => null);
+    const details = await fetchEntityDetailsLive(account, network).catch(() => null);
     if (!details) throw new Error('Could not read that account from the ledger.');
     const holdings = mapHoldings(details as Record<string, unknown>);
     const fungible = holdings.fungibles.find((x) => x.resourceAddress === resource);
@@ -833,7 +833,7 @@ export const getKnownAddressesTool = defineMcpTool({
 
 /** The Node half of the probe: the same reads, through the cached services. */
 const serverProbe = (network: 'mainnet' | 'stokenet'): SecurityProbe => ({
-  entityDetails: (address) => fetchEntityDetails(address, network),
+  entityDetails: (address) => fetchEntityDetailsLive(address, network),
   wellKnownAddresses: () => fetchKnownAddresses(network),
   badgeLocation: async (resource, localId) => {
     const located = await fetchNonFungibleLocations(resource, [localId], network);

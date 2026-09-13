@@ -42,14 +42,18 @@ const RESOURCE_METADATA_KEYS = [
   'pool_address',
 ];
 
-export async function fetchEntityDetails(
+/**
+ * Entity details straight from the Gateway, never cached.
+ *
+ * For reads that must show the ledger as it is now: balances, owner badges and
+ * validator state that the MCP tools read right before building a transaction.
+ * A validator created a minute ago has to show its owner badge, not the account
+ * as it was hours earlier.
+ */
+export async function fetchEntityDetailsLive(
   address: string,
   network: Network = 'mainnet',
 ): Promise<EntityDetailsResponse | null> {
-  "use cache";
-  cacheLife("hours");
-  cacheTag('entities', `entity-${address}`);
-
   const gateway = getGateway(network);
   try {
     const res = await withRetry(() =>
@@ -80,8 +84,23 @@ export async function fetchEntityDetails(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error({ err: error }, 'Error fetching entity details: %s', message);
-    throw error; // Re-throw to bypass cache
+    throw error; // Re-throw: a failed read must never be cached
   }
+}
+
+/**
+ * Entity details cached for hours, for pages, share cards and metadata, where
+ * a slightly old read is fine and the Gateway rate limit is not.
+ */
+export async function fetchEntityDetails(
+  address: string,
+  network: Network = 'mainnet',
+): Promise<EntityDetailsResponse | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag('entities', `entity-${address}`);
+
+  return fetchEntityDetailsLive(address, network);
 }
 
 /**
