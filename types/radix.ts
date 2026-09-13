@@ -48,8 +48,15 @@ export interface Validator {
     effectiveFee: number;
 
     // Connection & Location
-    onlineStatus: boolean;
-    acceptsConnect: boolean;
+    /**
+     * Up and validating (true), down (false) or no evidence either way (null).
+     * Decided in services/nodeTelemetry: consensus first, then our node.
+     */
+    onlineStatus: boolean | null;
+    /** What `onlineStatus` was decided from. */
+    onlineReason?: OnlineReason;
+    /** Its gossip port takes inbound connections; null when no address is known. */
+    acceptsConnect: boolean | null;
     provider: string;
     providerPercent: number;
     country: string;
@@ -59,6 +66,13 @@ export interface Validator {
     // Technical Details
     version: string;
     commit: string;
+
+    /**
+     * What our own full node observes of this validator's node, or null when
+     * it knows nothing of it. When present it is the source of `acceptsConnect`,
+     * `country`, `countryCode`, `version` and `commit`, and part of `onlineStatus`.
+     */
+    node?: ValidatorNodeTelemetry | null;
 
     // Epoch Performance
     epochPerformance: {
@@ -79,8 +93,44 @@ export interface Validator {
     proposalsMissed: number;
 }
 
+/**
+ * One validator node as seen from the peer-to-peer network by our full node.
+ * Written to Redis by scripts/node-telemetry, read by services/nodeTelemetry.
+ */
+export interface ValidatorNodeTelemetry {
+    /** ISO 3166-1 alpha-2 code of the country its IP is located in. */
+    countryCode: string | null;
+    /** Connected to our node within the last half hour. */
+    online: boolean;
+    /** Its gossip port answered (true) or not (false); null with no known address. */
+    acceptsConnections: boolean | null;
+    /** Node software version, when the network exposes it. */
+    version: string | null;
+    /** Commit the node was built from, alongside `version`. */
+    commit: string | null;
+    /** Unix milliseconds it was last connected; 0 when only known by address. */
+    lastSeen: number;
+}
+
+/**
+ * Evidence behind `Validator.onlineStatus`, strongest first:
+ * - producing / missing_proposals: consensus, for active validators.
+ * - connected: connected to our node.
+ * - reachable / unreachable: its gossip port answered a probe, or not.
+ * - no_data: nothing to go on.
+ */
+export type OnlineReason =
+    | 'producing'
+    | 'missing_proposals'
+    | 'connected'
+    | 'reachable'
+    | 'unreachable'
+    | 'no_data';
+
 export interface NetworkStats {
     totalStaked: number;
+    /** Stake delegated to validators in the active set. Absent in older caches. */
+    activeStaked?: number;
     activeValidators: number;
     totalValidators: number;
     avgApy: number;

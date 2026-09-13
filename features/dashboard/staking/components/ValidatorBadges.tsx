@@ -1,9 +1,13 @@
 import React from 'react';
 import {
-    Shield, Users, ShieldCheck, Globe, Building, Tag, Loader2, type LucideIcon,
+    Shield, Users, ShieldCheck, Cable, Globe, Building, Tag, Loader2, type LucideIcon,
 } from 'lucide-react';
 import { sanitizeText } from '@/utils/sanitize';
-import type { TranslationsT } from '@/features/dashboard/types';
+import type { TranslationsT, DashboardDict } from '@/features/dashboard/types';
+import type { Validator } from '@/types/radix';
+import {
+    connectDisplay, onlineDisplay, stakeDisplay, toneStyle, type StateDisplay,
+} from '../lib/validatorHealth';
 import { useProtocolVote } from '../context/ProtocolVoteContext';
 import { protocolVoteDisplayName, isNoneProtocolVote } from '../constants/protocolUpdate';
 
@@ -18,46 +22,50 @@ const baseCls = (compact: boolean) =>
     }`;
 
 /* ─────────────────────────────────────────
-   OnlineBadge
+   StateBadge: one state, its colour and the sentence explaining it
 ───────────────────────────────────────── */
-export const OnlineBadge = ({
-    online, labelOn, labelOff, compact = false,
+export const StateBadge = ({
+    display, icon: Icon, compact = false, alwaysLabel = false,
 }: {
-    online: boolean; labelOn: string; labelOff: string; compact?: boolean;
-}) => {
-    const color = online ? '#16a34a' : '#d97706';
-    return (
-        <span
-            className={baseCls(compact)}
-            style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
-            title={sanitizeText(online ? labelOn : labelOff)}
-        >
-            <ShieldCheck className={compact ? 'w-2.5 h-2.5 shrink-0' : 'size-3 shrink-0'} />
-            {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(online ? labelOn : labelOff)}</span>}
-        </span>
-    );
-};
+    display: StateDisplay;
+    icon: LucideIcon;
+    compact?: boolean;
+    /** Keep the label on narrow screens too, for roomy placements. */
+    alwaysLabel?: boolean;
+}) => (
+    <span
+        className={baseCls(compact)}
+        style={toneStyle(display.color)}
+        title={sanitizeText(display.title || display.label)}
+    >
+        <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'size-3 shrink-0'} aria-hidden="true" />
+        {!compact && (
+            <span className={`mt-[1px] ${alwaysLabel ? '' : 'hidden sm:inline'}`}>{sanitizeText(display.label)}</span>
+        )}
+    </span>
+);
 
-/* ─────────────────────────────────────────
-   ConnectBadge
-───────────────────────────────────────── */
-export const ConnectBadge = ({
-    accepts, labelYes, labelNo, compact = false, icon: Icon = Users,
-}: {
-    accepts: boolean; labelYes: string; labelNo: string; compact?: boolean; icon?: LucideIcon;
-}) => {
-    const color = accepts ? '#16a34a' : '#d97706';
-    return (
-        <span
-            className={baseCls(compact)}
-            style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
-            title={sanitizeText(accepts ? labelYes : labelNo)}
-        >
-            <Icon className={compact ? 'w-2.5 h-2.5 shrink-0' : 'size-3 shrink-0'} />
-            {!compact && <span className="mt-[1px] hidden sm:inline">{sanitizeText(accepts ? labelYes : labelNo)}</span>}
-        </span>
-    );
-};
+interface ValidatorStateBadgeProps {
+    validator: Validator;
+    details?: Partial<DashboardDict['details']>;
+    compact?: boolean;
+    alwaysLabel?: boolean;
+}
+
+/** Up and validating, down, or no data: see services/nodeTelemetry. */
+export const OnlineBadge = ({ validator, details, ...rest }: ValidatorStateBadgeProps) => (
+    <StateBadge display={onlineDisplay(validator, details)} icon={ShieldCheck} {...rest} />
+);
+
+/** Whether its node's gossip port takes inbound connections. */
+export const ConnectBadge = ({ validator, details, ...rest }: ValidatorStateBadgeProps) => (
+    <StateBadge display={connectDisplay(validator, details)} icon={Cable} {...rest} />
+);
+
+/** Whether it takes delegated stake. */
+export const StakeBadge = ({ validator, details, ...rest }: ValidatorStateBadgeProps) => (
+    <StateBadge display={stakeDisplay(validator, details)} icon={Users} {...rest} />
+);
 
 /* ─────────────────────────────────────────
    VoteBadge
@@ -105,7 +113,7 @@ export const VoteBadge = ({
                 onPointerDown={(e) => e.stopPropagation()}
                 onPointerUp={(e) => e.stopPropagation()}
                 className={`${baseCls(compact)} overflow-hidden cursor-pointer transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60`}
-                style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
+                style={toneStyle(color)}
                 title={canSend ? `${label}: ${buttonLabel}` : `${label}: ${actionLabel} (—)`}
             >
                 {isVotingThis
@@ -126,7 +134,7 @@ export const VoteBadge = ({
     return (
         <span
             className={`${baseCls(compact)} overflow-hidden`}
-            style={{ color, borderColor: `${color}45`, backgroundColor: `${color}15` }}
+            style={toneStyle(color)}
             title={`${label}: ${displayText}`}
         >
             <Shield className={`shrink-0 ${compact ? 'w-2.5 h-2.5' : 'size-3'}`} />

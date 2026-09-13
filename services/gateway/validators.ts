@@ -15,6 +15,7 @@ import type { Validator, NetworkStats } from '@/types/radix';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import { after } from 'next/server';
 import { getRedis } from '@/lib/redis';
+import { readNodeTelemetry, withNodeHealth } from '@/services/nodeTelemetry';
 
 
 // ── Opaque Gateway response type aliases ─────────────────────────────────────
@@ -397,6 +398,10 @@ export async function fetchValidatorsWithLedger(
     // superar los límites hiperestrictos 160req/min de Cloudflare Radix.
     const holdersMap = new Map<string, number>();
 
+    // What our full node observes of each validator node (online, reachable,
+    // country, version). Started now, applied once the validators are built.
+    const nodeTelemetryPromise = readNodeTelemetry(network);
+
     // ── Phase 4: Holder counts (INSTANT REDIS) ──────────────────────
     if (lsuAddresses.length > 0) {
         try {
@@ -634,8 +639,9 @@ export async function fetchValidatorsWithLedger(
             apyProjection,
             effectiveFee,
 
-            onlineStatus: v.active_in_epoch !== undefined,
-            acceptsConnect: acceptsDelegatedStake,
+            // Decided below by withNodeHealth, from consensus and our node.
+            onlineStatus: null,
+            acceptsConnect: null,
             provider: providerFinal, providerPercent: 0,
             country: countryFinal, countryPercent: 0, countryCode,
 
@@ -768,6 +774,11 @@ export async function fetchValidatorsWithLedger(
         }
     }
 
+    // Decide each node's health and lay what our node observed over the
+    // Gateway data, before the country shares below are grouped.
+    const nodeTelemetry = await nodeTelemetryPromise;
+    validators.forEach((v, i) => { validators[i] = withNodeHealth(v, nodeTelemetry); });
+
     // Compute rank and delegatedStakePercent
     validators.sort((a, b) => b.delegatedStake - a.delegatedStake);
 
@@ -816,6 +827,7 @@ export function computeNetworkStats(
 ): NetworkStats {
     const totalStaked = validators.reduce((sum, v) => sum + v.delegatedStake, 0);
     const activeValidators = validators.filter(v => v.status === 'active');
+    const activeStaked = activeValidators.reduce((sum, v) => sum + v.delegatedStake, 0);
     const avgApy = activeValidators.length > 0
         ? activeValidators.reduce((sum, v) => sum + v.apy, 0) / activeValidators.length
         : 0;
@@ -825,6 +837,7 @@ export function computeNetworkStats(
 
     return {
         totalStaked: roundTo(totalStaked, 4),
+        activeStaked: roundTo(activeStaked, 4),
         activeValidators: activeValidators.length,
         totalValidators: validators.length,
         avgApy: roundTo(avgApy, 4),

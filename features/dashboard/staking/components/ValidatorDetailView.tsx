@@ -9,7 +9,7 @@ import { formatDisplayUrl } from '@/utils/formatters';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { validatorIconSrc } from '../lib/validatorIcon';
 import { StatusLabel } from './ValidatorDetailComponents';
-import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
+import { OnlineBadge, ConnectBadge, StakeBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { StakingPopup } from './StakingPopup';
 import { CopyButton } from '@/components/ui/CopyButton';
@@ -91,21 +91,9 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                     {/* Tags row */}
                     <div className="flex flex-wrap items-center gap-1.5">
                         <StatusLabel status={v.status} t={t} />
-                        <OnlineBadge
-                            online={v.onlineStatus}
-                            labelOn={dt?.details?.online ?? 'Online'}
-                            labelOff={dt?.details?.offline ?? 'Offline'}
-                        />
-                        <ConnectBadge
-                            accepts={v.externalStakeAccepted}
-                            labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'}
-                            labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'}
-                        />
-                        <ConnectBadge
-                            accepts={v.acceptsConnect}
-                            labelYes={dt?.details?.accepts_connect ?? 'Accepts Connection'}
-                            labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'}
-                        />
+                        <OnlineBadge validator={v} details={dt?.details} />
+                        <StakeBadge validator={v} details={dt?.details} />
+                        <ConnectBadge validator={v} details={dt?.details} />
                         <VoteBadge vote={v.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={v} actionLabel={dt?.details?.vote_action ?? 'Votar'} namedAction={dt?.details?.vote_action_named ?? 'Votar {name}'} />
                     </div>
 

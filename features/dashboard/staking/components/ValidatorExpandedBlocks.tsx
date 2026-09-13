@@ -70,6 +70,7 @@ export const ProfileBlock = ({
             <ValidatorProfileMetrics
                 validator={validator}
                 dt={dt}
+                locale={locale}
                 className="mb-2"
             />
 

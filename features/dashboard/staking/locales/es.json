@@ -38,7 +38,8 @@
         "uptime": "Porcentaje de propuestas de bloque realizadas con éxito en los últimos 14 días.",
         "pending_fee": "Este validador tiene un cambio de comisión programado que entrará en vigor próximamente.",
         "effective_fee": "Lo que la comisión te cuesta en rentabilidad: la comisión del validador aplicada al APY previsto, es decir, el porcentaje anual de tu stake que se queda el validador.",
-        "delegators": "Número total de cuentas únicas que han delegado XRD a este validador."
+        "delegators": "Número total de cuentas únicas que han delegado XRD a este validador.",
+        "version": "Versión del software que ejecuta el nodo del validador, observada desde la red."
       },
       "stake_button": "Delegar",
       "stake_hint": "Delega tu XRD a este validador y empieza a ganar recompensas.",
@@ -145,7 +146,21 @@
       "rewards_modal_no_data": "Aún no hay datos de recompensas.",
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Cerrar",
-      "rewards_modal_loading": "Cargando..."
+      "rewards_modal_loading": "Cargando...",
+      "location": "Ubicación",
+      "node_version": "Versión del nodo",
+      "health_producing": "Está proponiendo bloques en el consenso.",
+      "health_missing_proposals": "No ha hecho ninguna propuesta en las últimas épocas: su nodo no está validando.",
+      "health_connected": "Conectado ahora mismo a nuestro nodo.",
+      "health_reachable": "Su puerto de red responde.",
+      "health_unreachable": "Su puerto de red no responde.",
+      "health_no_data": "Nuestro nodo no tiene datos de este validador.",
+      "health_online_unknown": "Sin datos",
+      "health_connect_yes": "Su puerto de red acepta conexiones entrantes.",
+      "health_connect_no": "Su puerto de red no acepta conexiones entrantes.",
+      "health_connect_unknown": "Sin comprobar",
+      "health_connect_none": "No conocemos ninguna dirección de su nodo para comprobarlo.",
+      "health_version_unobserved": "Nuestro nodo no está conectado a este validador, así que no puede leer su versión."
     },
     "validator_rewards_modal_title": "Descargar Historial de Recompensas",
     "validator_rewards_modal_desc": "Selecciona un año para descargar el desglose de recompensas que este validador ha generado durante ese periodo en formato CSV de CoinTracking.",

@@ -2,19 +2,20 @@
 
 import React, { useState } from 'react';
 import { m, AnimatePresence } from "motion/react";
-import { Globe, ExternalLink, Server, Stamp, Check, Users, Cable, Download, Plus } from 'lucide-react';
+import { Globe, ExternalLink, Server, Stamp, Check, Download, Plus } from 'lucide-react';
 import { getStatusColor } from '@/utils/validators';
 import { truncateAddress, formatDisplayUrl } from '@/utils/formatters';
 import { sanitizeText, isValidUrl } from '@/utils/sanitize';
 import { HighlightText } from '@/components/ui/HighlightText';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
-import { OnlineBadge, ConnectBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
+import { OnlineBadge, ConnectBadge, StakeBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
 import { ValidatorShareActions, validatorPageUrl } from './ValidatorShareActions';
 import { validatorIconSrc } from '../lib/validatorIcon';
 import { QrPopover } from '@/components/ui/QrPopover';
 import { buildValidatorStats } from '../lib/validatorStats';
+import { validatorLocation } from '../lib/validatorNode';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { StakingPopup } from './StakingPopup';
@@ -78,6 +79,7 @@ export const Layout1Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale);
+    const location = validatorLocation(validator, locale);
 
     return (
         <div className="flex flex-col h-full">
@@ -107,9 +109,9 @@ export const Layout1Col = ({
                                 <HighlightText text={safeName} query={searchQuery} />
                             </h3>
                             <StatusLabel status={validator.status} t={t} />
-                            <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} />
-                            <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} icon={Users} />
-                            <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} icon={Cable} />
+                            <OnlineBadge validator={validator} details={dt?.details} />
+                            <StakeBadge validator={validator} details={dt?.details} />
+                            <ConnectBadge validator={validator} details={dt?.details} />
                             <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                         </div>
 
@@ -137,10 +139,12 @@ export const Layout1Col = ({
                                 <Server className="size-3.5 shrink-0" />
                                 {sanitizeText(validator.provider)} ({validator.providerPercent}%)
                             </span>
-                            <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.country)} (${validator.countryPercent}%)`}>
-                                <Globe className="size-3.5 shrink-0" />
-                                {sanitizeText(validator.country)} ({validator.countryPercent}%)
-                            </span>
+                            {location && (
+                                <span className="flex items-center gap-1 cursor-default" title={`${location.name} (${validator.countryPercent}%)`}>
+                                    <Globe className="size-3.5 shrink-0" />
+                                    {location.name} ({validator.countryPercent}%)
+                                </span>
+                            )}
                             <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
@@ -182,6 +186,7 @@ export const Layout2Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale, { compact: columns === 3 });
+    const location = validatorLocation(validator, locale);
 
     return (
         <div className={`flex flex-col h-full ${!isExpanded ? 'min-h-[200px]' : ''}`}>
@@ -215,9 +220,9 @@ export const Layout2Col = ({
                             </h3>
                             <div className={`flex items-center gap-1.5 shrink-0 ${columns === 2 ? 'flex-wrap' : ''}`}>
                                 <StatusLabel status={validator.status} t={t} compact={columns === 3} />
-                                <OnlineBadge online={validator.onlineStatus} labelOn={dt?.details?.online ?? 'Online'} labelOff={dt?.details?.offline ?? 'Offline'} compact={columns === 3} />
-                                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes={dt?.details?.accepts_stake ?? 'Accepts Stake'} labelNo={dt?.details?.no_accepts_stake ?? 'No Stake'} compact={columns === 3} icon={Users} />
-                                <ConnectBadge accepts={validator.acceptsConnect} labelYes={dt?.details?.accepts_connect ?? 'Connect'} labelNo={dt?.details?.no_accepts_connect ?? 'No Connect'} compact={columns === 3} icon={Cable} />
+                                <OnlineBadge validator={validator} details={dt?.details} compact={columns === 3} />
+                                <StakeBadge validator={validator} details={dt?.details} compact={columns === 3} />
+                                <ConnectBadge validator={validator} details={dt?.details} compact={columns === 3} />
                                 <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                             </div>
                         </div>
@@ -231,10 +236,10 @@ export const Layout2Col = ({
                         onPointerDown={e => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
-                            {sanitizeText(validator.country) && (
-                                <span className="flex items-center gap-1 shrink-0 cursor-default" title={sanitizeText(validator.country)}>
+                            {location && (
+                                <span className="flex items-center gap-1 shrink-0 cursor-default" title={location.name}>
                                     <Globe className="size-3 shrink-0" />
-                                    <span className="truncate">{sanitizeText(validator.country)}</span>
+                                    <span className="truncate">{location.name}</span>
                                 </span>
                             )}
                             <div className="flex items-center gap-2 min-w-0">
@@ -288,6 +293,7 @@ export const Layout4Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale, { compact: true });
+    const location = validatorLocation(validator, locale);
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
@@ -302,9 +308,9 @@ export const Layout4Col = ({
                     </h3>
                     <div className="flex items-center gap-1 flex-wrap mt-0.5">
                         <StatusLabel status={validator.status} t={t} compact />
-                        <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
-                        <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
-                        <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
+                        <OnlineBadge validator={validator} details={dt?.details} compact />
+                        <StakeBadge validator={validator} details={dt?.details} compact />
+                        <ConnectBadge validator={validator} details={dt?.details} compact />
                         <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
                     </div>
                 </div>
@@ -327,8 +333,8 @@ export const Layout4Col = ({
                 onPointerDown={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
-                    {sanitizeText(validator.country) && (
-                        <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
+                    {location && (
+                        <span title={location.name} className="shrink-0 cursor-default">
                             <Globe className="size-3.5" />
                         </span>
                     )}
@@ -375,6 +381,7 @@ export const Layout6Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale, { compact: true });
+    const location = validatorLocation(validator, locale);
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
@@ -398,9 +405,9 @@ export const Layout6Col = ({
             {/* Row 2: Labels */}
             <div className="flex items-center gap-1 px-2 pb-2 flex-wrap">
                 <StatusLabel status={validator.status} t={t} compact />
-                <OnlineBadge online={validator.onlineStatus} labelOn="" labelOff="" compact />
-                <ConnectBadge accepts={validator.externalStakeAccepted} labelYes="" labelNo="" compact icon={Users} />
-                <ConnectBadge accepts={validator.acceptsConnect} labelYes="" labelNo="" compact icon={Cable} />
+                <OnlineBadge validator={validator} details={dt?.details} compact />
+                <StakeBadge validator={validator} details={dt?.details} compact />
+                <ConnectBadge validator={validator} details={dt?.details} compact />
                 <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
             </div>
 
@@ -420,8 +427,8 @@ export const Layout6Col = ({
                         <a href={validator.website} target="_blank" rel="noopener noreferrer" title={formatDisplayUrl(validator.website)}>
                             <Globe className="size-3.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] cursor-pointer transition-colors shrink-0" />
                         </a>
-                    ) : sanitizeText(validator.country) ? (
-                        <span title={sanitizeText(validator.country)} className="shrink-0 cursor-default">
+                    ) : location ? (
+                        <span title={location.name} className="shrink-0 cursor-default">
                             <Globe className="size-3.5 text-[var(--color-text-muted)]" />
                         </span>
                     ) : null}
