@@ -16,7 +16,8 @@ every five minutes from cron. Standard library only.
 | Gateway `/state/validators/list` (hourly) | which node keys are validators; only those are published |
 | `babylonnode api system peers` | connected nodes: IP, version, commit, whether our node dialled them |
 | `babylonnode api system addressbook` | addresses of nodes our node is not connected to |
-| TCP connect to the gossip port | whether a node accepts inbound connections |
+| System API `identity` and `version` | our own node, which never appears among its own peers |
+| TCP connect to the gossip port | whether a node accepts inbound connections (for our own node: a peer dialling in, or its public address answering) |
 | ip-api.com, country.is | country of each IP (cached for a week) |
 
 ## Data
