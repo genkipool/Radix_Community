@@ -18,6 +18,7 @@ import { Check, Copy, MoreVertical, QrCode as QrIcon, Share2, X } from 'lucide-r
 import { useMounted } from '@/hooks/useMounted';
 import { Portal } from '@/components/ui/Portal';
 import { QrCode } from '@/components/ui/QrCode';
+import { QrPopover } from '@/components/ui/QrPopover';
 import { useAnchoredPosition } from '@/hooks/useAnchoredPosition';
 
 const WhatsappIcon = ({ className }: { className?: string }) => (
@@ -123,7 +124,7 @@ const ThirdIcon = ({
  * validator's photo, in a column narrow enough that the padding was all that
  * stood between the three icons.
  */
-const SIZES = {
+const SIZES: Record<string, { box: string; icon: string; row: string; dense?: string }> = {
   inline: { box: 'size-9', icon: 'size-4', row: 'gap-0.5' },
   /** Beside a button in a panel or a modal: no box, but real space between. */
   panel: { box: '', icon: 'size-5', row: 'gap-3' },
@@ -131,10 +132,15 @@ const SIZES = {
   touch: { box: '', icon: 'size-6', row: 'gap-4' },
   // Spread rather than spaced by a fixed gap: given the width of the photo
   // above them, the outer two icons line up with its edges and the gap is
-  // whatever the width leaves over.
-  cardSmall: { box: '', icon: 'size-4', row: 'w-full justify-between' },
+  // whatever the width leaves over. `dense` is the glyph once the QR makes it
+  // four icons, which would otherwise stand a few pixels apart under a narrow
+  // photo.
+  cardSmall: { box: '', icon: 'size-4', row: 'w-full justify-between', dense: 'size-3.5' },
+  cardMedium: { box: '', icon: 'size-6', row: 'w-full justify-between', dense: 'size-5' },
   card: { box: '', icon: 'size-6', row: 'w-full justify-between' },
-} as const;
+};
+
+export type ShareTargetsSize = 'inline' | 'panel' | 'touch' | 'cardSmall' | 'cardMedium' | 'card';
 
 export function ShareTargets({
   url,
@@ -145,6 +151,7 @@ export function ShareTargets({
   copiedLabel,
   /** What that third target is called when it opens the system sheet. */
   shareLabel,
+  qr,
   size = 'inline',
   className = '',
 }: {
@@ -153,7 +160,13 @@ export function ShareTargets({
   copyLabel?: string;
   copiedLabel?: string;
   shareLabel?: string;
-  size?: keyof typeof SIZES;
+  /**
+   * Adds the link as a QR, between Telegram and the third target, shown while
+   * the pointer rests on it. Pointer rows only: a touch layout offers the QR
+   * from its menu instead.
+   */
+  qr?: { label: string; hint?: string };
+  size?: ShareTargetsSize;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -161,8 +174,12 @@ export function ShareTargets({
 
   if (!url) return null;
 
-  const { box, icon, row } = SIZES[size];
-  const style = `flex ${box} shrink-0 items-center justify-center rounded-lg border border-transparent text-[var(--color-text-muted)] opacity-60 transition-all hover:opacity-100 hover:text-[var(--color-primary)]`;
+  const { box, row, ...glyph } = SIZES[size];
+  // Four icons under a narrow photo: smaller glyphs and no transparent border,
+  // so the space goes to the gaps between them.
+  const dense = Boolean(qr && copyLabel && glyph.dense);
+  const icon = dense ? glyph.dense! : glyph.icon;
+  const style = `flex ${box} shrink-0 items-center justify-center rounded-lg ${dense ? '' : 'border border-transparent'} text-[var(--color-text-muted)] opacity-60 transition-all hover:opacity-100 hover:text-[var(--color-primary)]`;
   const thirdLabel = (systemShare ? shareLabel : undefined) ?? copyLabel ?? '';
 
   const onShare = async () => {
@@ -193,6 +210,9 @@ export function ShareTargets({
       >
         <TelegramIcon className={icon} />
       </a>
+      {qr && (
+        <QrPopover url={url} label={qr.label} hint={qr.hint} unstyled className={style} iconClassName={icon} />
+      )}
       {copyLabel && (
         <button
           type="button"
@@ -209,8 +229,8 @@ export function ShareTargets({
 }
 
 /**
- * The same three targets behind a menu button, for cards with no room for a row
- * of them.
+ * The same targets behind a menu button, for cards with no room for a row of
+ * them, in the same order: WhatsApp, Telegram, the QR, then the third target.
  *
  * The menu lists them as full rows — icon on the left, name on the right —
  * rather than as three bare glyphs. Bare glyphs are a fingertip apart on a
@@ -371,6 +391,20 @@ export function ShareMenu({
               <TelegramIcon className="size-5 shrink-0 sm:size-4" />
               Telegram
             </a>
+            {qrLabel && (
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setQrOpen(true);
+                  closeMenu();
+                }}
+                className={rowStyle}
+              >
+                <QrIcon className="size-5 shrink-0 sm:size-4" />
+                {qrLabel}
+              </button>
+            )}
             {copyLabel && (
               <button
                 role="menuitem"
@@ -384,20 +418,6 @@ export function ShareMenu({
                   className="size-5 shrink-0 sm:size-4"
                 />
                 {copied ? (copiedLabel ?? thirdLabel) : thirdLabel}
-              </button>
-            )}
-            {qrLabel && (
-              <button
-                role="menuitem"
-                type="button"
-                onClick={() => {
-                  setQrOpen(true);
-                  closeMenu();
-                }}
-                className={rowStyle}
-              >
-                <QrIcon className="size-5 shrink-0 sm:size-4" />
-                {qrLabel}
               </button>
             )}
           </div>

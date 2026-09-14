@@ -11,9 +11,8 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { StatusLabel } from './ValidatorDetailComponents';
 import { OnlineBadge, ConnectBadge, StakeBadge, VoteBadge, EntityTagsGrid } from './ValidatorBadges';
 import { StatDivider, StatCell, BizRow } from './ValidatorLayoutPrimitives';
-import { ValidatorShareActions, validatorPageUrl } from './ValidatorShareActions';
+import { ValidatorShareActions } from './ValidatorShareActions';
 import { validatorIconSrc } from '../lib/validatorIcon';
-import { QrPopover } from '@/components/ui/QrPopover';
 import { buildValidatorStats } from '../lib/validatorStats';
 import { validatorLocation } from '../lib/validatorNode';
 import { ValidatorExpandedBody } from './ValidatorExpandedBody';
@@ -40,7 +39,7 @@ const CsvButton = ({ onClick, showText = true, title }: { onClick: () => void; s
             title={title}
         >
             <Download className="size-3.5" />
-            {showText && <span className="text-[10px] font-black uppercase tracking-tight">CSV</span>}
+            {showText && <span className="text-box-cap text-[10px] font-black uppercase tracking-tight">CSV</span>}
         </button>
     );
 };
@@ -97,7 +96,7 @@ export const Layout1Col = ({
                     </div>
                     {/* Same width as the photo, so the outer icons sit on its edges */}
                     <div className={`${PHOTO_1COL} mt-auto pt-2`}>
-                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} />
+                        <ValidatorShareActions validator={validator} dt={dt} locale={locale} network={network} showQr />
                     </div>
                 </div>
 
@@ -132,28 +131,22 @@ export const Layout1Col = ({
                                 <a href={validator.website} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors truncate max-w-[200px] cursor-pointer">
                                     <ExternalLink className="size-3.5 shrink-0" />
-                                    <span className="truncate" title={sanitizeText(validator.website)}>{formatDisplayUrl(validator.website)}</span>
+                                    <span className="truncate text-box-cap" title={sanitizeText(validator.website)}>{formatDisplayUrl(validator.website)}</span>
                                 </a>
                             )}
                             <span className="flex items-center gap-1 cursor-default" title={`${sanitizeText(validator.provider)} (${validator.providerPercent}%)`}>
                                 <Server className="size-3.5 shrink-0" />
-                                {sanitizeText(validator.provider)} ({validator.providerPercent}%)
+                                <span className="text-box-cap">{sanitizeText(validator.provider)} ({validator.providerPercent}%)</span>
                             </span>
                             {location && (
                                 <span className="flex items-center gap-1 cursor-default" title={`${location.name} (${validator.countryPercent}%)`}>
                                     <Globe className="size-3.5 shrink-0" />
-                                    {location.name} ({validator.countryPercent}%)
+                                    <span className="text-box-cap">{location.name} ({validator.countryPercent}%)</span>
                                 </span>
                             )}
                             <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton address={validator.address} onCopy={onCopy} copiedAddress={copiedAddress} />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} title={dt?.details?.download_rewards_tooltip} />}
-                                <QrPopover
-                                    url={validatorPageUrl(validator.address, locale ?? 'en', network)}
-                                    label={dt?.card?.qr ?? 'Show QR'}
-                                    hint={dt?.card?.qr_hint}
-                                    className="hidden sm:flex"
-                                />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -186,7 +179,6 @@ export const Layout2Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale, { compact: columns === 3 });
-    const location = validatorLocation(validator, locale);
 
     return (
         <div className={`flex flex-col h-full ${!isExpanded ? 'min-h-[200px]' : ''}`}>
@@ -207,7 +199,8 @@ export const Layout2Col = ({
                     <div className={`${photo2Col(columns)} mt-auto pt-1.5`}>
                         <ValidatorShareActions
                             validator={validator} dt={dt} locale={locale} network={network}
-                            size={columns === 3 ? 'cardSmall' : 'card'}
+                            size={columns === 3 ? 'cardSmall' : 'cardMedium'}
+                            showQr
                         />
                     </div>
                 </div>
@@ -230,18 +223,16 @@ export const Layout2Col = ({
                         <StatDivider items={stats.slice(3)} />
                     </div>
 
+                    {/* One line whatever the validator carries: the website and the
+                        address give way (truncated) before the tags and the
+                        delegate button, which never wrap below them. */}
                     <div
-                        className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
+                        className={`w-full text-left flex flex-nowrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-t border-[var(--color-card-border)] ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                         onClick={e => e.stopPropagation()}
                         onPointerDown={e => e.stopPropagation()}
                     >
-                        <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-wrap">
-                            {location && (
-                                <span className="flex items-center gap-1 shrink-0 cursor-default" title={location.name}>
-                                    <Globe className="size-3 shrink-0" />
-                                    <span className="truncate">{location.name}</span>
-                                </span>
-                            )}
+                        <div className="flex flex-nowrap items-center gap-x-3 text-[10px] text-[var(--color-text-muted)] min-w-0 flex-1 overflow-hidden">
+                            <WebsiteLink website={validator.website} showDomain={columns !== 3} />
                             <div className="flex items-center gap-2 min-w-0">
                                 <CopyAddressButton
                                     address={validator.address}
@@ -254,12 +245,6 @@ export const Layout2Col = ({
                                     end={columns === 3 ? 6 : 12}
                                 />
                                 {onDownloadCsv && <CsvButton onClick={() => onDownloadCsv(validator.address)} showText={columns !== 3} title={dt?.details?.download_rewards_tooltip} />}
-                                <QrPopover
-                                    url={validatorPageUrl(validator.address, locale ?? 'en', network)}
-                                    label={dt?.card?.qr ?? 'Show QR'}
-                                    hint={dt?.card?.qr_hint}
-                                    className="hidden sm:flex"
-                                />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -293,7 +278,6 @@ export const Layout4Col = ({
     const statusColor = getStatusColor(validator.status);
     const safeName = sanitizeText(validator.name);
     const stats = buildValidatorStats(validator, dt, locale, { compact: true });
-    const location = validatorLocation(validator, locale);
 
     return (
         <div className={`flex flex-col h-full bg-[var(--color-surface)] ${!isExpanded ? 'min-h-[220px]' : ''}`}>
@@ -328,16 +312,12 @@ export const Layout4Col = ({
 
             {/* Row 3: Footer */}
             <div
-                className={`block w-full text-left flex flex-wrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
+                className={`w-full text-left flex flex-nowrap items-center justify-between gap-2 px-3 py-2 ${!isExpanded ? 'mt-auto' : ''} cursor-auto`}
                 onClick={e => e.stopPropagation()}
                 onPointerDown={e => e.stopPropagation()}
             >
-                <div className="flex items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0">
-                    {location && (
-                        <span title={location.name} className="shrink-0 cursor-default">
-                            <Globe className="size-3.5" />
-                        </span>
-                    )}
+                <div className="flex flex-nowrap items-center gap-x-3 text-[10px] text-[var(--color-text-muted)] flex-1 min-w-0 overflow-hidden">
+                    <WebsiteLink website={validator.website} showDomain={false} iconClassName="size-3.5" />
                     <div className="flex items-center gap-2 min-w-0">
                         <CopyAddressButton
                             address={validator.address}
@@ -460,6 +440,31 @@ export const Layout6Col = ({
 /* ─── Shared helpers ──────────────────────────── */
 
 /**
+ * The validator's website for a card footer: an external-link icon, plus the
+ * domain when the card has room for it. The domain is the first thing to be
+ * truncated when the footer runs out of width. Nothing when there is no valid
+ * website.
+ */
+const WebsiteLink = ({
+    website, showDomain, iconClassName = 'size-3',
+}: { website?: string; showDomain: boolean; iconClassName?: string }) => {
+    if (!website || !isValidUrl(website)) return null;
+    const domain = formatDisplayUrl(website);
+    return (
+        <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={domain}
+            className={`flex items-center gap-1 hover:text-[var(--color-primary)] transition-colors cursor-pointer ${showDomain ? 'min-w-0' : 'shrink-0'}`}
+        >
+            <ExternalLink className={`${iconClassName} shrink-0`} />
+            {showDomain && <span className="truncate text-box-cap">{domain}</span>}
+        </a>
+    );
+};
+
+/**
  * Animated expand panel shared by all layout variants.
  *
  * It grows into whatever height the card is given: expanded cards on the same
@@ -548,10 +553,10 @@ const CopyAddressButton = ({
             title={address}
         >
             <Stamp className={`shrink-0 text-[var(--color-primary)] ${small ? 'size-3' : 'size-3.5'}`} />
-            <span className={`block translate-y-[0.5px] ${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
+            <span className={`block text-box-cap ${noTruncate ? '' : 'truncate'} ${noTruncate ? '' : (small ? 'max-w-[140px]' : 'max-w-[220px] sm:max-w-xs')} ${isCopied ? 'text-green-700 dark:text-green-400' : ''}`}>
                 {sanitizeText(displayText)}
             </span>
-            <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0 translate-y-[-0.5px]" />
+            <CopyButton value={address} variant="minimal" size="xs" forceCopied={isCopied} className="pointer-events-none !p-0 !border-0 !min-h-0 !min-w-0" />
         </div>
     );
 };

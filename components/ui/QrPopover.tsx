@@ -29,6 +29,7 @@ export function QrPopover({
   size = 168,
   className = '',
   iconClassName = 'size-3.5',
+  unstyled = false,
 }: {
   url: string;
   /** Accessible name of the trigger, and the QR's alt text. */
@@ -38,13 +39,17 @@ export function QrPopover({
   size?: number;
   className?: string;
   iconClassName?: string;
+  /** Drop the trigger's own box and colours, for a row that styles its icons itself. */
+  unstyled?: boolean;
 }) {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** The code, its padding, and the line under it. */
   const boxWidth = size + 28;
+  // Centred under its icon: the code belongs to the icon, not to the end of a row.
   const { anchorRef, position, open, place, close } = useAnchoredPosition({
     width: boxWidth,
     height: size + 28 + (hint ? 38 : 0),
+    align: 'center',
   });
 
   useEffect(() => () => {
@@ -79,9 +84,13 @@ export function QrPopover({
         onFocus={place}
         onBlur={close}
         onClick={() => (open ? close() : place())}
-        className={`flex shrink-0 items-center justify-center rounded-md p-1 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
-          open ? 'text-[var(--color-primary)]' : ''
-        } ${className}`}
+        className={
+          unstyled
+            ? `${className} ${open ? 'text-[var(--color-primary)] opacity-100' : ''}`
+            : `flex shrink-0 items-center justify-center rounded-md p-1 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)] ${
+                open ? 'text-[var(--color-primary)]' : ''
+              } ${className}`
+        }
       >
         <QrIcon className={iconClassName} />
       </button>
