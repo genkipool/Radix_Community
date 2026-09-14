@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { PATHNAME_HEADER } from '@/lib/structured-data';
+import {
+    SESSION_COOKIE_NAME,
+    buildSessionCookieHeader,
+    renewSessionToken,
+} from '@/lib/auth/sessionToken';
 
 const locales = ['en', 'es'];
 const defaultLocale = 'en';
@@ -25,7 +30,25 @@ function getLocale(request: NextRequest) {
     return defaultLocale;
 }
 
-export function proxy(request: NextRequest) {
+/**
+ * Keeps a wallet session alive while it is used: a page request carrying a
+ * session issued more than a day ago gets it back signed for another six
+ * months. A renewal that fails never costs the page; the session simply stays
+ * as it was.
+ */
+async function withRenewedSession(request: NextRequest, response: NextResponse) {
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!token) return response;
+    try {
+        const renewed = await renewSessionToken(token);
+        if (renewed) response.headers.append('Set-Cookie', buildSessionCookieHeader(renewed));
+    } catch {
+        // Missing secret or a signing error: serve the page with the session untouched.
+    }
+    return response;
+}
+
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const pathnameHasLocale = locales.some(
@@ -39,14 +62,14 @@ export function proxy(request: NextRequest) {
         // instead of every page having to remember to render its own.
         const requestHeaders = new Headers(request.headers);
         requestHeaders.set(PATHNAME_HEADER, pathname);
-        return NextResponse.next({ request: { headers: requestHeaders } });
+        return withRenewedSession(request, NextResponse.next({ request: { headers: requestHeaders } }));
     }
 
     const locale = getLocale(request);
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${locale}${pathname === '/' ? '' : pathname}`;
 
-    return NextResponse.redirect(redirectUrl, { status: 308 });
+    return withRenewedSession(request, NextResponse.redirect(redirectUrl, { status: 308 }));
 }
 
 export const config = {
