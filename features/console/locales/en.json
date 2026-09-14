@@ -2957,6 +2957,85 @@
         "unreadable": "Unreadable rule",
         "recoveryInProgress": "A recovery proposal is in flight on this controller right now.",
         "withdrawAttempt": "Someone is attempting to withdraw the owner badge out of this controller."
+      },
+      "levelTitle": "Security level",
+      "levelHint": "Where the account sits on a four-level scale, based on who controls it on ledger.",
+      "levelScale": "{current} of {max}",
+      "levels": {
+        "none": {
+          "label": "None",
+          "meaning": "The owner role is AllowAll: anyone can withdraw the funds and change the account."
+        },
+        "low": {
+          "label": "Low",
+          "meaning": "A loose owner badge, outside any Access Controller: it is transferable and has no recovery."
+        },
+        "basic": {
+          "label": "Basic",
+          "meaning": "A single key, the seed phrase. It holds as long as the phrase is safe, but there is no second factor and no recovery."
+        },
+        "high": {
+          "label": "High",
+          "meaning": "The owner badge lives in an Access Controller: several factors, separate roles and recovery if you lose one."
+        },
+        "unknown": {
+          "label": "Undetermined",
+          "meaning": "What the ledger returned is not enough to place the account on the scale."
+        }
+      },
+      "improveTitle": "How to improve security",
+      "improveHint": "The steps to move up a level, most urgent first. This tool sends nothing: you sign every change from your wallet.",
+      "improveHintShielded": "The account is already at the top level. These settings strengthen it further, based on its Access Controller's configuration.",
+      "improveBasics": "At any level: never type your seed phrase into a website or share it, read the manifest before signing, and reject transactions you did not start.",
+      "improvements": {
+        "abandonOpenAccount": {
+          "title": "Do not use this account",
+          "detail": "With AllowAll anyone can withdraw its funds and change its configuration. Send nothing to this address and, if anything of yours depends on it, move it to an account you control."
+        },
+        "backupSeedPhrase": {
+          "title": "Keep the seed phrase offline",
+          "detail": "Right now the seed phrase is the account. Write it on paper or metal and store it somewhere safe, never in screenshots, phone notes or the cloud. Confirm in the Radix Wallet that the backup is done."
+        },
+        "applyShield": {
+          "title": "Apply a security shield",
+          "detail": "In the Radix Wallet, build a security shield from several factors (this device, an Arculus card, a Ledger, a password) and apply it to the account. The owner badge moves into an Access Controller and the account reaches the high level: lose one factor and you recover with the others. Applying it is a transaction with a small XRD fee."
+        },
+        "guardBadgeHolder": {
+          "title": "Protect whatever holds the badge",
+          "detail": "While the owner badge is loose, this account is only as safe as the entity holding it. Secure that entity and do not sign anything that moves the badge."
+        },
+        "moveBadgeToController": {
+          "title": "Put the badge in an Access Controller",
+          "detail": "Create an Access Controller holding the owner badge, with primary, recovery and confirmation roles built from different factors. It then stops being an NFT that hands the account to whoever receives it."
+        },
+        "reviewRule": {
+          "title": "Read the owner rule",
+          "detail": "This rule is not one this check knows how to judge. Inspect it in the explorer before sending funds: which badges it requires and who holds them."
+        },
+        "retryCheck": {
+          "title": "Check it again",
+          "detail": "It may be a passing Gateway failure, or an account that does not exist on this network yet. Repeat the check in a while and confirm the console is on the address's network."
+        },
+        "answerRecovery": {
+          "title": "Review what is in flight",
+          "detail": "If you did not start the recovery proposal or the badge withdrawal attempt, act now: cancel or lock it from your wallet with the factors you still hold, before the delay runs out."
+        },
+        "addPrimaryFactors": {
+          "title": "Require more than one factor to sign",
+          "detail": "A single factor is enough to act as the owner today. Requiring at least two in the primary role means a stolen device is no longer enough to empty the account."
+        },
+        "enableTimedRecovery": {
+          "title": "Turn on timed recovery",
+          "detail": "With a delay set, the recovery role can complete a recovery without the confirmation role once that time has passed, and the primary role can cancel it meanwhile. It is currently disabled."
+        },
+        "fundFeeVault": {
+          "title": "Deposit XRD in the controller",
+          "detail": "The controller has no fee vault. With XRD in it, it can pay for its own recovery even when the account has no funds or you cannot use it."
+        },
+        "keepFactorsApart": {
+          "title": "Keep your factors apart",
+          "detail": "A shield is worth the distance between its factors: do not keep the card, the Ledger and the password in the same place, and check now and then that they still work."
+        }
       }
     },
     "walletPlayground": {

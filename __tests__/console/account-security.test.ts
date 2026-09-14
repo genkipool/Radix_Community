@@ -6,8 +6,12 @@ import {
   ownerBadgeLocalId,
   ownerControlOf,
   pickSecurityWellKnown,
+  SECURITY_LEVELS,
+  securityImprovements,
   summariseAccessRule,
+  VERDICT_LEVEL,
   VERDICT_SEVERITY,
+  type ControllerConfig,
 } from '@/features/console/lib/account-security';
 import {
   accountAddressKind,
@@ -247,6 +251,84 @@ describe('controller configuration', () => {
   });
 });
 
+/* ─── Level and improvements ─────────────────────────────────────────────── */
+
+describe('security level', () => {
+  it('ranks a loose badge below a key and AllowAll below everything', () => {
+    const rank = (verdict: keyof typeof VERDICT_LEVEL) => SECURITY_LEVELS.indexOf(VERDICT_LEVEL[verdict]!);
+    expect(rank('open')).toBeLessThan(rank('badgeInAccount'));
+    expect(rank('badgeInAccount')).toBeLessThan(rank('key'));
+    expect(rank('key')).toBeLessThan(rank('accessController'));
+    expect(VERDICT_LEVEL.badgeElsewhere).toBe(VERDICT_LEVEL.badgeInAccount);
+  });
+
+  it('gives no level to a verdict it could not read', () => {
+    expect(VERDICT_LEVEL.unknown).toBeNull();
+    expect(VERDICT_LEVEL.badgeUnknown).toBeNull();
+    expect(VERDICT_LEVEL.other).toBeNull();
+  });
+});
+
+describe('security improvements', () => {
+  const oneOf = (count: number) => ({
+    kind: 'countOf' as const,
+    threshold: 1,
+    badges: Array.from({ length: count }, (_, index) => ({ resource: `resource_${index}` })),
+  });
+  const controller = (overrides: Partial<ControllerConfig> = {}): ControllerConfig => ({
+    address: SHIELDED.controller,
+    timedRecoveryDelayMinutes: 1440,
+    recoveryInProgress: false,
+    badgeWithdrawAttempt: false,
+    primaryRoleLocked: false,
+    hasFeeVault: true,
+    roles: { primary: { ...oneOf(2), threshold: 2 }, recovery: oneOf(3), confirmation: oneOf(1) },
+    ...overrides,
+  });
+
+  it('points a key-controlled account at a shield, after its seed phrase', () => {
+    expect(securityImprovements({ verdict: 'key' }, null)).toEqual(['backupSeedPhrase', 'applyShield']);
+  });
+
+  it('tells a loose badge to go into a controller', () => {
+    for (const verdict of ['badgeInAccount', 'badgeElsewhere'] as const) {
+      expect(securityImprovements({ verdict }, null)).toContain('moveBadgeToController');
+    }
+  });
+
+  it('leaves a well-configured shield with only the general advice', () => {
+    expect(securityImprovements({ verdict: 'accessController' }, controller())).toEqual(['keepFactorsApart']);
+  });
+
+  it('reads what a shield leaves weaker, with anything in flight first', () => {
+    const steps = securityImprovements(
+      { verdict: 'accessController' },
+      controller({
+        recoveryInProgress: true,
+        timedRecoveryDelayMinutes: null,
+        hasFeeVault: false,
+        roles: { primary: oneOf(3), recovery: oneOf(3), confirmation: oneOf(1) },
+      }),
+    );
+    expect(steps).toEqual([
+      'answerRecovery',
+      'addPrimaryFactors',
+      'enableTimedRecovery',
+      'fundFeeVault',
+      'keepFactorsApart',
+    ]);
+  });
+
+  it('does not ask for more factors on a primary role it could not read', () => {
+    const unreadable = { kind: 'unknown' as const, threshold: null, badges: [] };
+    const steps = securityImprovements(
+      { verdict: 'accessController' },
+      controller({ roles: { primary: unreadable, recovery: null, confirmation: null } }),
+    );
+    expect(steps).not.toContain('addPrimaryFactors');
+  });
+});
+
 /* ─── Wiring ─────────────────────────────────────────────────────────────── */
 
 describe('account security section wiring', () => {
@@ -296,6 +378,36 @@ describe('account security section wiring', () => {
       }
       for (const kind of ['preallocated-secp256k1', 'preallocated-ed25519', 'allocated', 'unknown']) {
         expect((section.addressKind as Record<string, string>)[kind], kind).toBeTruthy();
+      }
+      for (const level of [...SECURITY_LEVELS, 'unknown']) {
+        const entry = (section.levels as Record<string, { label: string; meaning: string }>)[level];
+        expect(entry?.label, level).toBeTruthy();
+        expect(entry?.meaning, level).toBeTruthy();
+      }
+      // Every step any verdict or controller can produce, gathered from the
+      // function itself rather than from a list someone has to keep in sync.
+      const everyStep = new Set([
+        ...verdicts.flatMap((verdict) =>
+          securityImprovements({ verdict: verdict as keyof typeof VERDICT_LEVEL }, null),
+        ),
+        ...securityImprovements(
+          { verdict: 'accessController' },
+          {
+            address: 'accesscontroller_x',
+            timedRecoveryDelayMinutes: null,
+            recoveryInProgress: true,
+            badgeWithdrawAttempt: false,
+            primaryRoleLocked: false,
+            hasFeeVault: false,
+            roles: { primary: { kind: 'allowAll', threshold: null, badges: [] }, recovery: null, confirmation: null },
+          },
+        ),
+      ]);
+      expect(everyStep.size).toBe(12);
+      for (const step of everyStep) {
+        const entry = (section.improvements as Record<string, { title: string; detail: string }>)[step];
+        expect(entry?.title, step).toBeTruthy();
+        expect(entry?.detail, step).toBeTruthy();
       }
     }
   });

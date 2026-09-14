@@ -125,6 +125,54 @@ describe('the wallet provider’s network, cookie vs. choice', () => {
     expect(screen.getByTestId('active')).toHaveTextContent('stokenet');
   });
 
+  it('keeps the live cookie over a stale server prop when the provider remounts', () => {
+    // Switching language remounts the provider from a prefetched layout whose
+    // `initialNetwork` was read before the user moved to Mainnet. Starting from
+    // that prop flipped the console to Stokenet and wrote it into the cookie.
+    setCookie('mainnet');
+    render(
+      <RadixWalletProvider initialSession={null} initialNetwork="stokenet">
+        <ActiveNetwork />
+      </RadixWalletProvider>,
+    );
+    expect(screen.getByTestId('active')).toHaveTextContent('mainnet');
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(screen.getByTestId('active')).toHaveTextContent('mainnet');
+    expect(document.cookie).toContain('radix_active_network=mainnet');
+  });
+
+  it('keeps a chosen ledger the wallet is not connected on, across a remount', () => {
+    // Signed in on Stokenet only, then switched to browse Mainnet. The provider
+    // used to fall back to "the one network with a session" on mount, so a
+    // language switch (which remounts it) put the console back on Stokenet.
+    setCookie('mainnet');
+    const stokenetOnly = {
+      mainnet: null,
+      stokenet: { identityAddress: 'identity_tdx_2_1x', personaLabel: 'Test', accounts: [] },
+    };
+    renderAndSettle(
+      <RadixWalletProvider initialSession={stokenetOnly} initialNetwork="mainnet">
+        <ActiveNetwork />
+      </RadixWalletProvider>,
+    );
+    expect(screen.getByTestId('active')).toHaveTextContent('mainnet');
+  });
+
+  it('opens on the connected ledger when nothing was chosen', () => {
+    const stokenetOnly = {
+      mainnet: null,
+      stokenet: { identityAddress: 'identity_tdx_2_1x', personaLabel: 'Test', accounts: [] },
+    };
+    renderAndSettle(
+      <RadixWalletProvider initialSession={stokenetOnly} initialNetwork={null}>
+        <ActiveNetwork />
+      </RadixWalletProvider>,
+    );
+    expect(screen.getByTestId('active')).toHaveTextContent('stokenet');
+  });
+
   it('lets a later choice move the wallet, once the page has claimed one', () => {
     // The wallet popover and the profile modal go through the same call, and
     // they must keep working for the rest of the session.

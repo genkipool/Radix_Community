@@ -103,11 +103,13 @@ function resolveNetwork(
   session: { mainnet?: unknown; stokenet?: unknown } | null,
 ): Network {
   if (fromUrl) return fromUrl;
-  const preferred = cookieValue === 'stokenet' ? 'stokenet' : 'mainnet';
-  if (session?.mainnet && session?.stokenet) return preferred;
+  // The reader's last choice wins over where the wallet is connected, as in
+  // `RadixWalletProvider`: otherwise the server renders one ledger and the
+  // client switches to the other straight after hydrating.
+  if (cookieValue === 'mainnet' || cookieValue === 'stokenet') return cookieValue;
   if (session?.mainnet) return 'mainnet';
   if (session?.stokenet) return 'stokenet';
-  return preferred;
+  return 'mainnet';
 }
 
 const EMPTY_NETWORK_STATS: NetworkStats = {
