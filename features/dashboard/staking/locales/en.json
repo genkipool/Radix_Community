@@ -38,7 +38,8 @@
         "uptime": "Percentage of successfully completed block proposals in the last 14 days.",
         "pending_fee": "This validator has a scheduled fee change that will take effect soon.",
         "effective_fee": "What the commission costs you in yield: the validator's fee applied to the projected APY, that is, the annual percentage of your stake the validator keeps.",
-        "delegators": "Total number of unique accounts that have delegated XRD to this validator."
+        "delegators": "Total number of unique accounts that have delegated XRD to this validator.",
+        "version": "Software version the validator's node is running, as observed from the network."
       },
       "stake_button": "Stake",
       "stake_hint": "Delegate your XRD to this validator and start earning rewards.",
@@ -145,7 +146,21 @@
       "rewards_modal_no_data": "No reward data available yet. The cron job needs to run first.",
       "rewards_modal_error": "Error",
       "rewards_modal_close": "Close",
-      "rewards_modal_loading": "Loading..."
+      "rewards_modal_loading": "Loading...",
+      "location": "Location",
+      "node_version": "Node version",
+      "health_producing": "It is proposing blocks in consensus.",
+      "health_missing_proposals": "It made no proposal in the last epochs: its node is not validating.",
+      "health_connected": "Connected to our node right now.",
+      "health_reachable": "Its network port answers.",
+      "health_unreachable": "Its network port does not answer.",
+      "health_no_data": "Our node has no data about this validator.",
+      "health_online_unknown": "No data",
+      "health_connect_yes": "Its network port accepts inbound connections.",
+      "health_connect_no": "Its network port does not accept inbound connections.",
+      "health_connect_unknown": "Unchecked",
+      "health_connect_none": "No address of its node is known to check it.",
+      "health_version_unobserved": "Our node is not connected to this validator, so it cannot read its version."
     },
     "validator_rewards_modal_title": "Download Rewards History",
     "validator_rewards_modal_desc": "Select a year to download the rewards breakdown that this validator has generated during that period in CoinTracking CSV format.",

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Shield, Activity, Coins, Lock } from 'lucide-react';
+import { Shield, Activity, Coins, Lock, Hourglass, Percent } from 'lucide-react';
 import { RadixIcon } from '@/components/shared/RadixIcon';
-import { formatXRD, formatNumber } from '@/utils/formatters';
+import { formatXRD, formatNumber, formatPercent } from '@/utils/formatters';
 import { StatCard } from './StatCard';
 
 import type { DashboardStatsRowProps } from '../types';
@@ -22,12 +22,51 @@ const formatCompact = (value: number, locale: string): string => {
     return value.toLocaleString(locale, { maximumFractionDigits: 2 });
 };
 
+/** Both views lay six cards out the same way. */
+const GRID = 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8';
+
+type SharedStatProps = Pick<DashboardStatsRowProps, 'stats' | 'dt' | 'locale' | 'isLoading'>;
+
+/* ─── Cards shared by the staking and explorer views ─── */
+
+/** Epoch and round of the ledger the figures were read at. */
+const EpochRoundStat = ({ stats, dt, isLoading }: SharedStatProps) => (
+    <StatCard
+        icon={<Hourglass className="size-5" />}
+        label={dt?.explorer?.ledger_epoch_round || 'Epoch / Round'}
+        value={stats.epoch ? `${stats.epoch} / ${stats.round ?? '---'}` : '---'}
+        description={dt?.explorer?.desc_epoch_round}
+        isLoading={isLoading}
+    />
+);
+
+/** Share of the stake delegated to validators in the active set. */
+const ActiveStakeStat = ({ stats, dt, locale, isLoading }: SharedStatProps) => {
+    const { activeStaked, totalStaked } = stats;
+    const known = activeStaked !== undefined && totalStaked > 0;
+
+    return (
+        <StatCard
+            icon={<Percent className="size-5" />}
+            label={dt?.network?.active_stake ?? 'Active Stake'}
+            value={known ? formatPercent((activeStaked / totalStaked) * 100, 2, locale) : '---'}
+            description={dt?.network?.desc_active_stake}
+            fullValue={known
+                ? `${formatXRD(activeStaked, locale)} / ${formatXRD(totalStaked, locale)} ${dt?.network?.xrd ?? 'XRD'}`
+                : undefined}
+            isLoading={isLoading}
+        />
+    );
+};
+
 export const DashboardStatsRow = ({
     activeView, stats, marketData, isLoading = false, dt, locale,
 }: DashboardStatsRowProps) => {
+    const shared = { stats, dt, locale, isLoading };
+
     if (activeView === 'staking') {
         return (
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-8">
+            <div className={GRID}>
                 <StatCard
                     icon={<Coins className="size-5" />}
                     label={dt?.network?.total_staked ?? ''}
@@ -36,6 +75,7 @@ export const DashboardStatsRow = ({
                     fullValue={`${stats.totalStaked.toLocaleString(locale)} XRD`}
                     isLoading={isLoading}
                 />
+                <ActiveStakeStat {...shared} />
                 <StatCard
                     icon={<Shield className="size-5" />}
                     label={dt?.network?.active_validators ?? ''}
@@ -58,6 +98,7 @@ export const DashboardStatsRow = ({
                     fullValue={`${stats.avgUptime.toLocaleString(locale)}%`}
                     isLoading={isLoading}
                 />
+                <EpochRoundStat {...shared} />
             </div>
         );
     }
@@ -70,7 +111,7 @@ export const DashboardStatsRow = ({
     const tvl = isEur ? (marketData?.totalValueLockedEur ?? 0) : (marketData?.totalValueLockedUsd ?? 0);
 
     return (
-        <div className="grid grid-cols-2 xl:grid-cols-6 gap-3 mb-8">
+        <div className={GRID}>
             <StatCard
                 icon={<Activity className="size-5" />}
                 label={dt?.explorer?.ledger_txs || 'Total Transactions'}
@@ -80,13 +121,7 @@ export const DashboardStatsRow = ({
                 fullValue={stats.stateVersion ? stats.stateVersion.toLocaleString(locale) : undefined}
                 isLoading={isLoading}
             />
-            <StatCard
-                icon={<Shield className="size-5" />}
-                label={dt?.explorer?.ledger_epoch_round || 'Epoch / Round'}
-                value={stats.epoch ? `${stats.epoch} / ${stats.round}` : '---'}
-                description={dt?.explorer?.desc_epoch_round}
-                isLoading={isLoading}
-            />
+            <EpochRoundStat {...shared} />
             <StatCard
                 icon={
                     <RadixIcon

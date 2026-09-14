@@ -2,11 +2,11 @@
  * The figures a validator card shows, built once for every layout.
  *
  * The four card layouts differ in how much room they have, not in what they
- * report: stake, fee, APY, effective fee, uptime and delegators, in that
- * order. Each used to spell the six out by hand with its own decimal count,
- * which is how the same validator could read 4,9% in a dense grid and 4,95%
- * one column wider. The numbers live here now, at two decimals everywhere,
- * and a layout only decides how to draw them.
+ * report: stake, fee and APY on the first row; uptime, delegators and the
+ * node's version on the second. Each used to spell the figures out by hand
+ * with its own decimal count, which is how the same validator could read 4,9%
+ * in a dense grid and 4,95% one column wider. The numbers live here now, at
+ * two decimals everywhere, and a layout only decides how to draw them.
  */
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -15,6 +15,7 @@ import { getUptimeColor, getUptimeTooltipText } from '@/utils/validators';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import type { StatItem } from '../types/components.types';
+import { shortVersion, validatorVersion } from './validatorNode';
 
 /** Decimals every validator figure is shown with, whatever the layout. */
 const DECIMALS = 2;
@@ -28,9 +29,9 @@ export type ValidatorStatKey =
     | 'stake'
     | 'fee'
     | 'apy'
-    | 'effectiveFee'
     | 'uptime'
-    | 'delegators';
+    | 'delegators'
+    | 'version';
 
 export interface ValidatorStat extends StatItem {
     key: ValidatorStatKey;
@@ -58,6 +59,7 @@ export function buildValidatorStats(
     const details = dt?.details;
     const tips = card?.tooltips;
 
+    const version = validatorVersion(validator);
     const overweight = validator.delegatedStakePercent > SHARE_WARNING_PERCENT;
     const showShare = overweight || !compact;
 
@@ -103,12 +105,6 @@ export function buildValidatorStats(
             value: formatPercent(validator.apyProjection, DECIMALS, locale),
         },
         {
-            key: 'effectiveFee',
-            label: details?.effective_fee ?? 'Effective Fee',
-            tooltip: tips?.effective_fee,
-            value: formatPercent(validator.effectiveFee, DECIMALS, locale),
-        },
-        {
             key: 'uptime',
             label: card?.uptime_14d ?? 'Uptime 14d',
             tooltip: getUptimeTooltipText(validator.recentUptime, true, details),
@@ -120,6 +116,14 @@ export function buildValidatorStats(
             label: details?.delegators ?? 'Delegators',
             tooltip: tips?.delegators,
             value: formatNumber(validator.delegators, 0, locale),
+        },
+        {
+            key: 'version',
+            label: card?.version ?? 'Version',
+            tooltip: version ? tooltipWith(version, tips?.version) : (details?.health_version_unobserved ?? tips?.version),
+            value: version
+                ? <span className="font-mono tracking-tight">{shortVersion(version)}</span>
+                : <span className="text-[var(--color-text-muted)] font-bold">{details?.unknown ?? 'Unknown'}</span>,
         },
     ];
 }

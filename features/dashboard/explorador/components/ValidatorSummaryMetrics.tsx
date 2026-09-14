@@ -1,11 +1,15 @@
 'use client';
 import React, { useEffect } from 'react';
 import { registerAddressForPolling, unregisterAddressForPolling } from '@/services/liveDataStore';
-import { Activity, ShieldCheck, Users, Globe, Server, ExternalLink } from 'lucide-react';
+import { Activity, ExternalLink } from 'lucide-react';
 import type { Validator } from '@/types/radix';
 import type { DashboardDict } from '@/features/dashboard/types';
 import { SummaryInlineRow } from './EntityPanelShared';
-import { VoteBadge } from '@/features/dashboard/staking/components/ValidatorBadges';
+import {
+    VoteBadge, StateBadge, OnlineBadge, StakeBadge, ConnectBadge,
+} from '@/features/dashboard/staking/components/ValidatorBadges';
+import { binaryDisplay } from '@/features/dashboard/staking/lib/validatorHealth';
+import { ValidatorNodeFacts } from '@/features/dashboard/staking/components/ValidatorNodeFacts';
 import { formatXRDFull, formatXRDExact, formatPercent, formatDisplayUrl } from '@/utils/formatters';
 
 export interface MetricRowProps {
@@ -228,47 +232,16 @@ function ValidatorPositionMetrics({
 }
 
 /**
- * Status Pill Helper (Internal to match Staking design)
- */
-function StatusPill({
-    label,
-    color,
-    icon: Icon
-}: {
-    label: string;
-    color: string;
-    icon: React.ElementType
-}) {
-    return (
-        <span
-            className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-bold leading-none align-middle transition-all duration-300"
-            style={{
-                color,
-                borderColor: `${color}45`,
-                backgroundColor: `${color}15`,
-            }}
-        >
-            <Icon size={12} className="shrink-0" />
-            <span className="mt-[1px]">{label}</span>
-        </span>
-    );
-}
-
-/**
  * Profile / Social Metrics
  */
 export function ValidatorProfileMetrics({
-    validator, dt, className = ""
+    validator, dt, locale, className = ""
 }: Partial<ValidatorMetricsProps> & { className?: string }) {
     if (!validator) return null;
     const dd: Partial<DashboardDict['details']> = dt?.details || {};
     const st: Partial<DashboardDict['status']> = dt?.status || {};
 
     const profileLabel = dd.profile || 'Perfil de Staking';
-
-    // Design Colors from Staking Primitives
-    const colorSuccess = '#16a34a';
-    const colorWarning = '#d97706';
 
     // The protocol-update vote is rendered by the shared VoteBadge below.
     const voteValue = validator.protocolUpdateVote;
@@ -296,49 +269,15 @@ export function ValidatorProfileMetrics({
                     </div>
                 )}
 
-                {(() => {
-                    type TechItem = { icon?: React.ReactNode; k: string; v: string; hi?: string };
-                    const techItems = ([
-                        validator.country ? { icon: <Globe className="size-3" />, k: dd.country ?? 'Country', v: validator.country } : null,
-                        validator.provider ? { icon: <Server className="size-3" />, k: dd.provider ?? 'Provider', v: validator.provider } : null,
-                        validator.version ? { k: dd.version ?? 'Version', v: validator.version, hi: 'var(--color-primary)' } : null
-                    ] as (TechItem | null)[]).filter((f): f is TechItem => !!f);
-
-                    if (techItems.length === 0) return null;
-
-                    return (
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            {techItems.map((f) => (
-                                <span key={f.k} className="inline-flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] bg-[var(--color-surface-hover)]/50 px-2 py-0.5 rounded-md border border-[var(--color-card-border)]/50">
-                                    {f.icon && <span className="opacity-70">{f.icon}</span>}
-                                    <span className="font-bold uppercase tracking-tight opacity-50">{f.k}:</span>
-                                    <span className="font-semibold text-[var(--color-text-main)]" style={f.hi ? { color: f.hi } : undefined}>{f.v}</span>
-                                </span>
-                            ))}
-                        </div>
-                    );
-                })()}
                 <div className="flex flex-wrap gap-2 pt-1">
-                    <StatusPill
+                    <StateBadge
+                        alwaysLabel
                         icon={Activity}
-                        label={validator.status === 'active' ? (st.active || 'Activo') : (st.inactive || 'Inactivo')}
-                        color={validator.status === 'active' ? colorSuccess : colorWarning}
+                        display={binaryDisplay(validator.status === 'active', st.active || 'Activo', st.inactive || 'Inactivo')}
                     />
-                    <StatusPill
-                        icon={ShieldCheck}
-                        label={validator.onlineStatus ? (dd.online || 'En línea') : (dd.offline || 'Desconectado')}
-                        color={validator.onlineStatus ? colorSuccess : colorWarning}
-                    />
-                    <StatusPill
-                        icon={Users}
-                        label={validator.externalStakeAccepted ? (dd.accepts_stake || 'Acepta Stake') : (dd.no_accepts_stake || 'Cerrado')}
-                        color={validator.externalStakeAccepted ? colorSuccess : colorWarning}
-                    />
-                    <StatusPill
-                        icon={Users}
-                        label={validator.acceptsConnect ? (dd.accepts_connect || 'Acepta Conexión') : (dd.no_accepts_connect || 'Privado')}
-                        color={validator.acceptsConnect ? colorSuccess : colorWarning}
-                    />
+                    <OnlineBadge validator={validator} details={dd} alwaysLabel />
+                    <StakeBadge validator={validator} details={dd} alwaysLabel />
+                    <ConnectBadge validator={validator} details={dd} alwaysLabel />
                     {/* Same control as the collapsed card: display for anyone,
                         an actionable "Vote <name>" for the validator's owner. */}
                     <VoteBadge
@@ -349,6 +288,8 @@ export function ValidatorProfileMetrics({
                         namedAction={dd.vote_action_named ?? 'Votar {name}'}
                     />
                 </div>
+                {/* Where the node runs and what it runs, observed by our full node. */}
+                <ValidatorNodeFacts validator={validator} dt={dt} locale={locale} className="pt-1" />
             </div>
         </div>
     );

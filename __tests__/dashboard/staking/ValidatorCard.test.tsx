@@ -77,6 +77,7 @@ vi.mock('@/features/dashboard/staking/components/ValidatorDetailComponents', () 
 vi.mock('@/features/dashboard/staking/components/ValidatorBadges', () => ({
   OnlineBadge: () => <div data-testid="online-badge" />,
   ConnectBadge: () => <div data-testid="connect-badge" />,
+  StakeBadge: () => <div data-testid="stake-badge" />,
   VoteBadge: () => <div data-testid="vote-badge" />,
   EntityTagsGrid: () => <div data-testid="tags-grid" />,
 }));

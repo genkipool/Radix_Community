@@ -598,6 +598,7 @@ export default function DashboardClient({
     const totalStaked = realValidators.reduce((s, v) => s + v.totalStakeXRD, 0);
     return {
       totalStaked,
+      activeStaked: active.reduce((s, v) => s + v.totalStakeXRD, 0),
       activeValidators: active.length,
       totalValidators: realValidators.length,
       avgApy: active.length > 0 ? active.reduce((s, v) => s + v.apy, 0) / active.length : 0,
