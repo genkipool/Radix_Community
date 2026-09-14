@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const network = validateNetwork(searchParams.get('network'));
 
     try {
-        const { validators, networkStats } = await getValidatorsCached(network);
+        const { validators, networkStats, fingerprint } = await getValidatorsCached(network);
 
         // An empty set is not a state this network can be in: every Radix
         // network has validators. Answering 200 with an empty list told the
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         }, 'Serving validators data');
 
         return NextResponse.json(
-            { validators, networkStats },
+            { validators, networkStats, fingerprint },
             {
                 headers: {
                     'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300',
