@@ -30,7 +30,6 @@ const CTX = {
   xrdAddress: XRD,
   ownerBadgeResource: BADGE,
   badgeIdByValidator: BADGES,
-  feeLock: '10',
 };
 
 const op = (kind: ValidatorOperationKind, values: Record<string, string> = {}) =>
@@ -76,10 +75,10 @@ describe('batch assembly', () => {
     expect(manifest).toContain('NonFungibleLocalId("[bb]")');
   });
 
-  it('locks the fee once, at the top', () => {
+  it('leaves the fee to the wallet, which rejects a manifest that locks it', () => {
     const manifest = build([op('register', { validator: V1 }), op('register', { validator: V2 })]);
-    expect(manifest.match(/"lock_fee"/g)).toHaveLength(1);
-    expect(manifest.indexOf('"lock_fee"')).toBeLessThan(manifest.indexOf('"register"'));
+    expect(manifest).not.toContain('"lock_fee"');
+    expect(manifest.trimStart().startsWith('CALL_METHOD')).toBe(true);
   });
 
   it('omits the proof entirely when nothing in the batch is owner-gated', () => {

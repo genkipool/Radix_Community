@@ -34,7 +34,6 @@ const CTX = {
   xrdAddress: XRD,
   ownerBadgeResource: OWNER_BADGE,
   badgeIdByValidator: BADGES,
-  feeLock: '50',
 };
 
 /** What the registration form emits with N validators switched on. */
@@ -48,7 +47,7 @@ describe('one transaction across several validators', () => {
     const manifest = buildValidatorBatchManifest(voteOn(VALIDATORS), CTX);
 
     expect(manifest.match(/create_proof_of_non_fungibles/g)).toHaveLength(1);
-    expect(manifest.match(/"lock_fee"/g)).toHaveLength(1);
+    expect(manifest).not.toContain('"lock_fee"');
     expect(manifest.match(/signal_protocol_update_readiness/g)).toHaveLength(4);
 
     for (const badge of Object.values(BADGES)) {

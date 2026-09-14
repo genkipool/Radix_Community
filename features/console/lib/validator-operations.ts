@@ -420,14 +420,12 @@ export function validateValidatorBatch(
 /* ─── Manifest assembly ──────────────────────────────────────────────────── */
 
 export interface ValidatorBatchContext {
-  /** Account that locks the fee, presents the badges and receives everything. */
+  /** Account that presents the badges and receives everything. */
   account: string;
   xrdAddress: string;
   ownerBadgeResource: string;
   /** validator address → owner badge local id held by `account`. */
   badgeIdByValidator: Record<string, string>;
-  /** XRD locked for the network fee. */
-  feeLock?: string;
 }
 
 const withdraw = (account: string, resource: string, amount: string) => `
@@ -474,14 +472,6 @@ TAKE_NON_FUNGIBLES_FROM_WORKTOP
       .map((id) => `NonFungibleLocalId("${escapeManifestString(id)}")`)
       .join(', ')})
     Bucket("${bucket}")
-;
-`;
-
-const lockFee = (account: string, amount: string) => `
-CALL_METHOD
-    Address("${account}")
-    "lock_fee"
-    Decimal("${escapeManifestString(amount)}")
 ;
 `;
 
@@ -587,9 +577,12 @@ function plainOperation(operation: ValidatorOperation): string {
 }
 
 /**
- * One manifest for the whole batch: fee lock, a single proof carrying every
- * badge the batch needs, the operations in the operator's order, and one
- * closing deposit.
+ * One manifest for the whole batch: a single proof carrying every badge the
+ * batch needs, the operations in the operator's order, and one closing deposit.
+ *
+ * There is no fee lock. The wallet adds its own from the fee payer the user
+ * picks, and rejects a manifest that already locks the fee from an account
+ * (`invalidRequest`, reproduced with the Radix Wallet on Stokenet).
  *
  * The single proof is what makes batching cheap — the engine keeps it in the
  * auth zone for the rest of the transaction, so N owner calls across M
@@ -629,7 +622,6 @@ export function buildValidatorBatchManifest(
     .join('');
 
   return (
-    lockFee(ctx.account, ctx.feeLock ?? '10') +
     proof +
     body +
     (returnsToWorktop ? depositAll(ctx.account) : '')
