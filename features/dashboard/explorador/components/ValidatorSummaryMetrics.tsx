@@ -289,7 +289,7 @@ export function ValidatorProfileMetrics({
                     />
                 </div>
                 {/* Where the node runs and what it runs, observed by our full node. */}
-                <ValidatorNodeFacts validator={validator} dt={dt} locale={locale} className="pt-1" />
+                <ValidatorNodeFacts validator={validator} dt={dt} locale={locale} className="pt-1.5" />
             </div>
         </div>
     );

@@ -85,7 +85,7 @@ export const AddressRow = ({
 ───────────────────────────────────────── */
 export const VEB_STYLES = `
     /* LAYOUT */
-    .veb { background: var(--color-bg); border-top: 1px solid var(--color-card-border); display: flex; flex-direction: column; min-height: 100%; height: 100%; }
+    .veb { background: var(--color-bg); border-top: 1px solid var(--color-card-border); display: flex; flex-direction: column; flex: 1 0 auto; min-height: 100%; }
     .veb-main-grid { display: grid; grid-template-columns: 1fr; flex: 1; }
     .veb-classic-grid { flex: 1; display: flex; flex-direction: column; }
     .veb-block { border-bottom: 1px solid var(--color-card-border); display: flex; flex-direction: column; justify-content: center; height: 100%; }
@@ -189,11 +189,12 @@ export const VEB_STYLES = `
     .veb-techpill-icon { color: var(--color-text-muted); opacity: 0.45; display: flex; }
     .veb-techpill-k { color: var(--color-text-muted); }
     .veb-techpill-v { font-weight: 600; color: var(--color-text-main); }
-    .veb-profile-addrs { 
-        display: grid; 
-        grid-template-columns: 1fr 1fr; 
-        gap: 16px 32px; 
-        margin-top: 12px; 
+    /* No margin: .veb-profile's 14px gap is the space above, matching the
+       14px above the location and version row. */
+    .veb-profile-addrs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 32px;
     }
     @media (max-width: 900px) {
         .veb-profile-addrs { grid-template-columns: 1fr; gap: 12px; }
@@ -251,7 +252,8 @@ export const VEB_STYLES = `
     .veb-ar-content:hover .veb-ar-code { color: var(--color-primary); opacity: 1; }
 
     /* CTA */
-    .veb-cta { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 24px; padding: 16px 32px !important; width: 100%; box-sizing: border-box; }
+    /* Always the last thing in the card, level across a row of expanded cards. */
+    .veb-cta { margin-top: auto; display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 24px; padding: 16px 32px !important; width: 100%; box-sizing: border-box; }
     .veb-cta-hint { font-size: 14px; color: var(--color-text-muted); font-weight: 500; line-height: 1.4; margin: 0 !important; flex: 1; }
     .veb-cta-btn { height: 40px !important; padding: 0 40px !important; border-radius: 12px !important; font-size: 13px !important; font-weight: 700 !important; white-space: nowrap; background: var(--color-primary) !important; color: white !important; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 20%, transparent) !important; transition: all 0.3s ease !important; flex-shrink: 0; }
     .veb-cta-btn:hover { opacity: 0.9 !important; }
