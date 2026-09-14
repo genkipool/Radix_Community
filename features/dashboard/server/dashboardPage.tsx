@@ -208,6 +208,7 @@ export async function DashboardPageShell({
       serverQueryClient.setQueryData(['validators', network], {
         validators: validatorsData.validators as Validator[],
         networkStats,
+        fingerprint: validatorsData.fingerprint,
       });
     }
   } catch (error) {

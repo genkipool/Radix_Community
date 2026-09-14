@@ -15,6 +15,8 @@ import type { Validator, NetworkStats } from '@/types/radix';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import { after } from 'next/server';
 import { getRedis } from '@/lib/redis';
+import { fetchValidatorListRest, gatewayRestBase } from './validatorList';
+import { fetchLiveValidatorSetFingerprint, validatorSetFingerprint } from './validatorSetFingerprint';
 import { readNodeTelemetry, withNodeHealth } from '@/services/nodeTelemetry';
 
 
@@ -172,6 +174,8 @@ function fetchUptimeBatched(
 
 export interface ValidatorsFetchResult {
     validators: Validator[];
+    /** Validator set fingerprint of the Gateway list the validators were built from. */
+    fingerprint: string;
     ledgerState: {
         epoch: number;
         state_version?: number;
@@ -184,72 +188,14 @@ export async function fetchValidatorsWithLedger(
     network: 'mainnet' | 'stokenet' = 'mainnet',
 ): Promise<ValidatorsFetchResult> {
     const gateway = getGateway(network);
-    const restBase = network === 'stokenet'
-        ? 'https://gateway-stokenet.radix.community'
-        : 'https://mainnet.radixdlt.com';
+    const restBase = gatewayRestBase(network);
 
     /* ── Phase 1: basic validator list + current status ──
-       We use the REST API directly for the validator list so we can request
-       opt_ins that the SDK wrapper doesn't expose, specifically:
-         - validator_active_in_epoch  → gives us active_in_epoch.stake
-         - explicit_metadata          → validator metadata (name, icon, etc.)
-       The state field (stake_unit_resource_address, stake_vault, etc.) is
-       always included by default in the /state/validators/list response.
+       Read over REST for the opt-ins the SDK wrapper does not expose; see
+       validatorList.ts. The same read gives the validator set fingerprint.
     ── */
-    const fetchAllValidatorsRest = async (): Promise<GatewayValidator[]> => {
-        const items: GatewayValidator[] = [];
-        let cursor: string | undefined = undefined;
-        do {
-            const body: Record<string, unknown> = {
-                limit_per_page: 100,
-                opt_ins: {
-                    validator_active_in_epoch: true,
-                    explicit_metadata: true
-                },
-            };
-            if (cursor) body.cursor = cursor;
-            try {
-                // Retried: a rate limit or a 5xx on ONE page used to end the
-                // whole walk, and the caller could not tell the difference
-                // between "the read broke" and "this network has no
-                // validators".
-                const data = await withRetry(async () => {
-                    const res = await fetch(`${restBase}/state/validators/list`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body),
-                    });
-                    if (!res.ok) {
-                        throw Object.assign(new Error(`Gateway ${res.status}`), {
-                            status: res.status,
-                        });
-                    }
-                    return res.json() as Promise<{
-                        validators?: { items?: GatewayValidator[]; next_cursor?: string };
-                        items?: GatewayValidator[];
-                        next_cursor?: string;
-                    }>;
-                });
-                const page = data?.validators?.items ?? data?.items ?? [];
-                items.push(...page);
-                cursor = data?.validators?.next_cursor ?? data?.next_cursor ?? undefined;
-            } catch (err) {
-                // Nothing read at all: report it. A later page failing is
-                // different — the list we have is real and worth keeping, it
-                // is just short, and saying nothing about it would be worse.
-                if (items.length === 0) throw err;
-                logger.error(
-                    { err, network, gathered: items.length },
-                    '[fetchAllValidatorsRest] Page failed; continuing with what was read',
-                );
-                break;
-            }
-        } while (cursor);
-        return items;
-    };
-
     const [validatorsList, currentStatus] = await Promise.all([
-        fetchAllValidatorsRest(),
+        fetchValidatorListRest<GatewayValidator>(network),
         withRetry(() => gateway.status.getCurrent()),
     ]);
 
@@ -805,6 +751,7 @@ export async function fetchValidatorsWithLedger(
 
     return {
         validators,
+        fingerprint: validatorSetFingerprint(validatorsList),
         ledgerState: {
             epoch: currentStatus.ledger_state.epoch,
             state_version: currentStatus.ledger_state.state_version,
@@ -858,7 +805,7 @@ export function computeNetworkStats(
 // Used by both the Data Cache and the background revalidator.
 // ─────────────────────────────────────────────────────────────────────────────
 async function fetchValidatorsRaw(network: Network) {
-    const { validators, ledgerState } = await fetchValidatorsWithLedger(network);
+    const { validators, ledgerState, fingerprint } = await fetchValidatorsWithLedger(network);
 
     if (!validators || validators.length === 0) {
         throw new Error(`Gateway returned empty validator set for ${network}`);
@@ -866,6 +813,7 @@ async function fetchValidatorsRaw(network: Network) {
 
     return {
         validators,
+        fingerprint,
         networkStats: computeNetworkStats(
             validators,
             ledgerState.epoch,
@@ -900,6 +848,64 @@ async function getValidatorsFromDataCache(network: Network) {
 // ─────────────────────────────────────────────────────────────────────────────
 const REVALIDATION_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
+/** Longest a rebuild may hold the lock; a crashed one frees it on its own. */
+const REBUILD_LOCK_TTL_S = 120;
+
+/**
+ * Oldest cached copy that is served while it refreshes in the background.
+ *
+ * Stale-while-revalidate only refreshes when someone asks, so after a quiet
+ * night the first visitor used to be handed stake and uptime from hours before.
+ * Past this age the copy is rebuilt before answering instead.
+ */
+export const MAX_STALE_AGE_MS = 30 * 60 * 1000;
+
+/** Whether a copy saved at `updatedAt` is too old to serve even once more. */
+export function isPastMaxStaleAge(updatedAt: number | undefined, now = Date.now()): boolean {
+    return !updatedAt || now - updatedAt > MAX_STALE_AGE_MS;
+}
+
+/**
+ * The list rebuilt from the Gateway right now and saved as the new cached copy.
+ *
+ * Null when another request is already rebuilding or the rebuild fails: in
+ * either case the cached copy is still the best answer available, and it goes
+ * on being served while the background refresh catches up.
+ */
+async function rebuildValidatorsNow(network: Network, reason: string, context: Record<string, unknown>) {
+    const redis = getRedis();
+    if (!redis) return null;
+
+    const lockKey = `radix_validators_${network}_rebuild_lock`;
+    const claimed = await redis.set(lockKey, '1', { nx: true, ex: REBUILD_LOCK_TTL_S }).catch(() => null);
+    if (!claimed) return null;
+
+    try {
+        logger.info({ network, reason, ...context }, '[ValidatorsService] Rebuilding instead of serving the cached copy');
+        const fresh = { ...(await fetchValidatorsRaw(network)), updatedAt: Date.now() };
+        await redis.set(`radix_validators_${network}_backup`, fresh);
+        after(() => revalidateTag(`validators-${network}`, 'max'));
+        return fresh;
+    } catch (err) {
+        logger.error({ err, network, reason }, '[ValidatorsService] Rebuild failed; serving the cached copy');
+        return null;
+    } finally {
+        redis.del(lockKey).catch(() => undefined);
+    }
+}
+
+/**
+ * Rebuilds when the cached copy no longer matches the live validator set
+ * fingerprint: a validator was created or removed, one registered, opened
+ * delegation, changed its fee or its profile. Null when nothing changed or the
+ * fingerprint cannot be read.
+ */
+async function rebuildIfValidatorSetChanged(network: Network, cachedFingerprint?: string) {
+    const liveFingerprint = await fetchLiveValidatorSetFingerprint(network);
+    if (!liveFingerprint || liveFingerprint === cachedFingerprint) return null;
+    return rebuildValidatorsNow(network, 'validator-set-changed', { cachedFingerprint, liveFingerprint });
+}
+
 /**
  * Cached validator data with SWR (Stale-While-Revalidate) pattern.
  *
@@ -924,10 +930,19 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
             const staleData = await redis.get<{
                 validators: Validator[];
                 networkStats: NetworkStats | null;
+                fingerprint?: string;
                 updatedAt?: number;
             }>(backupKey);
 
             if (staleData?.validators && staleData.validators.length > 0) {
+                // Not served stale: a copy old enough that its stake and
+                // uptime mislead, or one missing a change a delegator would
+                // notice. Anything else is served now and refreshed below.
+                const rebuilt = isPastMaxStaleAge(staleData.updatedAt)
+                    ? await rebuildValidatorsNow(network, 'past-max-stale-age', { updatedAt: staleData.updatedAt })
+                    : await rebuildIfValidatorSetChanged(network, staleData.fingerprint);
+                if (rebuilt) return rebuilt;
+
                 logger.info(
                     { network, count: staleData.validators.length },
                     '[ValidatorsService] Serving stale data from Redis for rapid response',

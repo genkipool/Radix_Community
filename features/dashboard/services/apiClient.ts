@@ -274,11 +274,31 @@ export async function apiFetchHistoricalStakingBalance(
     return totalStaking;
 }
 
+/**
+ * @param fingerprint  The validator set fingerprint the caller wants to see.
+ *                     It goes into the URL, so a changed set is a different
+ *                     URL and no CDN copy of the old list can answer it.
+ */
 export async function apiFetchValidators(
     network: 'mainnet' | 'stokenet' = 'mainnet',
-): Promise<{ validators: import('@/types/radix').Validator[]; networkStats: import('@/types/radix').NetworkStats }> {
-    const res = await fetch(`/api/validators?network=${network}`);
+    fingerprint?: string,
+): Promise<{
+    validators: import('@/types/radix').Validator[];
+    networkStats: import('@/types/radix').NetworkStats;
+    fingerprint?: string;
+}> {
+    const version = fingerprint ? `&v=${encodeURIComponent(fingerprint)}` : '';
+    const res = await fetch(`/api/validators?network=${network}${version}`);
     if (!res.ok) throw new Error(`Validators API error: ${res.status}`);
+    return res.json();
+}
+
+/** The live validator set fingerprint (see /api/validators/fingerprint). */
+export async function apiFetchValidatorSetFingerprint(
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<{ fingerprint: string }> {
+    const res = await fetch(`/api/validators/fingerprint?network=${network}`);
+    if (!res.ok) throw new Error(`Validators fingerprint API error: ${res.status}`);
     return res.json();
 }
 
