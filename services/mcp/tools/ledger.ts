@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { fetchEntityDetails, fetchNonFungibleDataCached } from '@/services/gateway/entities';
+import { fetchEntityDetailsLive, fetchNonFungibleDataCached } from '@/services/gateway/entities';
 import {
   fetchTransactionDetails,
   getRecentTransactionsCached,
@@ -93,7 +93,7 @@ export const lookupEntityTool = defineMcpTool({
       throw new Error('Malformed address (bech32m checksum failed). Check for typos.');
     }
 
-    const details = (await fetchEntityDetails(address, network)) as Record<string, unknown>;
+    const details = (await fetchEntityDetailsLive(address, network)) as Record<string, unknown>;
     const typed = details.details as Record<string, unknown> | undefined;
 
     return cliRender(
@@ -127,7 +127,7 @@ export const getAccountBalancesTool = defineMcpTool({
     network: networkSchema,
   }),
   handler: async ({ address, network }) => {
-    const details = (await fetchEntityDetails(address, network)) as Record<string, unknown>;
+    const details = (await fetchEntityDetailsLive(address, network)) as Record<string, unknown>;
     const { fungibles, nonFungibles } = mapHoldings(details);
 
     return cliRender(
@@ -531,7 +531,7 @@ export const getComponentStateTool = defineMcpTool({
     network: networkSchema,
   }),
   handler: async ({ address, network }) => {
-    const details = (await fetchEntityDetails(address, network)) as Record<string, unknown>;
+    const details = (await fetchEntityDetailsLive(address, network)) as Record<string, unknown>;
     const typed = details.details as Record<string, unknown> | undefined;
     if (!typed?.state) {
       throw new Error('This entity has no decoded component state. Use lookup_entity instead.');
@@ -606,7 +606,7 @@ export const getComponentBlueprintTool = defineMcpTool({
     let resolvedBlueprint = blueprintName;
 
     if (!address.startsWith('package_')) {
-      const details = (await fetchEntityDetails(address, network)) as Record<string, unknown>;
+      const details = (await fetchEntityDetailsLive(address, network)) as Record<string, unknown>;
       const typed = details.details as Record<string, unknown> | undefined;
       if (!typed?.package_address) {
         throw new Error('This entity has no blueprint (not a component). Use lookup_entity instead.');

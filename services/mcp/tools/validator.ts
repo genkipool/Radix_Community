@@ -36,7 +36,11 @@ import {
 } from '@/features/console/lib/validator-lookup';
 import { RADIX_TOKEN_ADDRESSES } from '@/features/wallet/constants/radix-addresses';
 import { RadixNetworkId } from '@/features/wallet/constants/network';
-import { fetchEntityDetails, fetchNonFungibleDataCached } from '@/services/gateway/entities';
+import {
+  fetchEntityDetails,
+  fetchEntityDetailsLive,
+  fetchNonFungibleDataCached,
+} from '@/services/gateway/entities';
 import type { Network } from '@/services/gateway/client';
 import { defineMcpTool } from '../registry';
 import { staticallyValidateManifest } from '@/services/ret';
@@ -60,7 +64,7 @@ const networkIdOf = (network: Network) =>
  */
 async function ownerBadgesOf(account: string, network: Network) {
   const badgeResource = RADIX_TOKEN_ADDRESSES[networkIdOf(network)].OWNER_BADGE;
-  const details = await fetchEntityDetails(account, network);
+  const details = await fetchEntityDetailsLive(account, network);
   const held = nonFungibleHoldingsOf(details).find(
     (holding) => holding.resourceAddress === badgeResource,
   );
@@ -125,7 +129,7 @@ export const getValidatorStateTool = defineMcpTool({
     network: networkSchema,
   }),
   handler: async ({ validator, network }) => {
-    const state = parseValidatorState(await fetchEntityDetails(validator, network));
+    const state = parseValidatorState(await fetchEntityDetailsLive(validator, network));
     if (!state) {
       return cliRender(
         cliBanner('Radix validator · state'),
@@ -159,7 +163,7 @@ export const listClaimableStakeNftsTool = defineMcpTool({
     network: networkSchema,
   }),
   handler: async ({ account, network }) => {
-    const accountDetails = await fetchEntityDetails(account, network);
+    const accountDetails = await fetchEntityDetailsLive(account, network);
     const currentEpoch = epochOf(accountDetails);
 
     const perResource = await Promise.all(
@@ -169,7 +173,7 @@ export const listClaimableStakeNftsTool = defineMcpTool({
         if (!validatorAddress) return [];
 
         const [validatorDetails, data] = await Promise.all([
-          fetchEntityDetails(validatorAddress, network).catch(() => null),
+          fetchEntityDetailsLive(validatorAddress, network).catch(() => null),
           fetchNonFungibleDataCached(holding.resourceAddress, holding.ids, network),
         ]);
 
