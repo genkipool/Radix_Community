@@ -189,7 +189,7 @@ export const TagBadge = ({ tag, t, compact = false }: { tag: string; t?: Partial
             title={label}
         >
             <Icon size={compact ? 10 : 12} className="shrink-0" />
-            {!compact && <span className="mt-[1px] hidden sm:inline">{label}</span>}
+            {!compact && <span className="text-box-cap hidden sm:inline">{label}</span>}
         </span>
     );
 };

@@ -28,9 +28,16 @@ const MARGIN = 8;
 export function useAnchoredPosition({
   width,
   height,
+  align = 'end',
 }: {
   width: number;
   height: number;
+  /**
+   * `end` lines the panel's right edge up with the trigger's, which suits a
+   * menu opening from a button at the end of a row. `center` puts it under the
+   * middle of the trigger, for a panel that belongs to the icon itself.
+   */
+  align?: 'end' | 'center';
 }) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState<AnchoredPosition | null>(null);
@@ -42,12 +49,15 @@ export function useAnchoredPosition({
     const rect = anchorRef.current?.getBoundingClientRect();
     if (!rect) return;
     const fitsBelow = rect.bottom + MARGIN + height <= window.innerHeight;
+    const preferredLeft = align === 'center'
+      ? rect.left + rect.width / 2 - width / 2
+      : rect.right - width;
     setPosition({
       top: fitsBelow
         ? rect.bottom + MARGIN
         : Math.max(MARGIN, rect.top - MARGIN - height),
       left: Math.min(
-        Math.max(MARGIN, rect.right - width),
+        Math.max(MARGIN, preferredLeft),
         window.innerWidth - width - MARGIN,
       ),
     });

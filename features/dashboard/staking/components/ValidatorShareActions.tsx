@@ -13,7 +13,7 @@
  * gives the three icons a row under the photo; from four columns up there is no
  * such room, so they live behind a dots menu that opens on hover.
  */
-import { ShareMenu, ShareTargets } from '@/components/ui/ShareTargets';
+import { ShareMenu, ShareTargets, type ShareTargetsSize } from '@/components/ui/ShareTargets';
 import { BASE_URL } from '@/lib/seo';
 import { sanitizeText } from '@/utils/sanitize';
 import type { DashboardDict, Network } from '@/features/dashboard/types';
@@ -30,6 +30,7 @@ export const ValidatorShareActions = ({
     network = 'mainnet',
     size = 'card',
     variant = 'row',
+    showQr = false,
     className = 'flex w-full items-center justify-center',
 }: {
     validator: Validator;
@@ -37,9 +38,11 @@ export const ValidatorShareActions = ({
     locale?: string;
     network?: Network;
     /** Icon size of the row (ignored by the menu, whose popup is always inline). */
-    size?: 'inline' | 'panel' | 'touch' | 'cardSmall' | 'card';
+    size?: ShareTargetsSize;
     /** `row` shows the three icons; `menu` hides them behind the dots button. */
     variant?: 'row' | 'menu';
+    /** Row only: the validator's link as a QR, between Telegram and copy. */
+    showQr?: boolean;
     className?: string;
 }) => {
     const url = validatorPageUrl(validator.address, locale, network);
@@ -76,6 +79,7 @@ export const ValidatorShareActions = ({
                     copyLabel={copyLabel}
                     copiedLabel={copiedLabel}
                     shareLabel={shareLabel}
+                    qr={showQr ? { label: dt?.card?.qr ?? 'Show QR', hint: dt?.card?.qr_hint } : undefined}
                     size={size}
                 />
             )}

@@ -245,3 +245,28 @@ button[disabled],
     opacity: 0.7;
   }
 }
+
+/*
+ * Text centred on its letters, not on its line box.
+ *
+ * Flex `items-center` centres boxes, and a line box carries the font's ascender
+ * and descender space unevenly, so text sat up to 1.6px above the icon beside
+ * it, by an amount that changes with the font (the monospace address the most).
+ * Trimming the box from the cap height to the baseline makes the centred box
+ * the letters themselves, whatever the font. Browsers without `text-box` keep
+ * the previous look.
+ *
+ * A trimmed box is shorter than the glyphs, so a truncating `overflow: hidden`
+ * would shave off ascenders and descenders: overflow is clipped sideways only,
+ * which keeps the ellipsis and lets the letters paint in full.
+ *
+ * `clip`, unlike `hidden`, does not let a flex item shrink below its text, so a
+ * truncated label would push past its slot and over its neighbours. The zero
+ * minimum width gives that back.
+ */
+.text-box-cap {
+  text-box: trim-both cap alphabetic;
+  overflow-x: clip;
+  overflow-y: visible;
+  min-width: 0;
+}
