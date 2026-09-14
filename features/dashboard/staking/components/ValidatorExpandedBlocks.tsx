@@ -71,7 +71,6 @@ export const ProfileBlock = ({
                 validator={validator}
                 dt={dt}
                 locale={locale}
-                className="mb-2"
             />
 
             <div className="veb-profile-addrs">

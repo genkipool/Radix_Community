@@ -459,20 +459,27 @@ export const Layout6Col = ({
 
 /* ─── Shared helpers ──────────────────────────── */
 
-/** Animated expand panel shared by all layout variants */
+/**
+ * Animated expand panel shared by all layout variants.
+ *
+ * It grows into whatever height the card is given: expanded cards on the same
+ * grid row are stretched to the tallest one, and the body passes that height
+ * down so the delegate call to action sits at the bottom of every card in the
+ * row, level with its neighbours.
+ */
 const ExpandPanel = ({
     isExpanded, validator, t, onCopy, copiedAddress, columns, network = 'mainnet', marketData, locale, onDownloadCsv,
 }: ExpandPanelProps) => (
     <AnimatePresence initial={false}>
         {isExpanded && (
             <m.div
-                className="overflow-hidden w-full"
+                className="overflow-hidden w-full flex-1 flex flex-col"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 1, height: 0 }}
                 transition={EXPAND_TRANSITION}
             >
-                <div className="min-h-[300px]">
+                <div className="min-h-[300px] flex-1 flex flex-col">
                     <ValidatorExpandedBody
                         validator={validator}
                         t={t}
