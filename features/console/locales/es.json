@@ -2958,6 +2958,85 @@
         "unreadable": "Regla ilegible",
         "recoveryInProgress": "Hay una propuesta de recuperación en marcha en este controller ahora mismo.",
         "withdrawAttempt": "Alguien está intentando sacar la insignia de dueño de este controller."
+      },
+      "levelTitle": "Nivel de seguridad",
+      "levelHint": "Dónde queda la cuenta en una escala de cuatro niveles, según quién la controla en el ledger.",
+      "levelScale": "{current} de {max}",
+      "levels": {
+        "none": {
+          "label": "Nula",
+          "meaning": "El rol de dueño es AllowAll: cualquiera puede retirar los fondos y cambiar la cuenta."
+        },
+        "low": {
+          "label": "Baja",
+          "meaning": "Una insignia de dueño suelta, fuera de un Access Controller: es transferible y no tiene recuperación."
+        },
+        "basic": {
+          "label": "Básica",
+          "meaning": "Una sola clave, la de la frase semilla. Aguanta mientras la frase esté a salvo, pero no hay segundo factor ni recuperación."
+        },
+        "high": {
+          "label": "Alta",
+          "meaning": "La insignia de dueño vive en un Access Controller: varios factores, roles separados y recuperación si pierdes uno."
+        },
+        "unknown": {
+          "label": "Sin determinar",
+          "meaning": "Con lo que ha devuelto el ledger no se puede situar la cuenta en la escala."
+        }
+      },
+      "improveTitle": "Cómo mejorar la seguridad",
+      "improveHint": "Los pasos para subir de nivel, del más urgente al menos. Esta herramienta no envía nada: cada cambio lo firmas tú desde tu cartera.",
+      "improveHintShielded": "La cuenta ya está en el nivel más alto. Estos ajustes la refuerzan a partir de la configuración de su Access Controller.",
+      "improveBasics": "En cualquier nivel: no escribas la frase semilla en ninguna web ni se la des a nadie, lee el manifiesto antes de firmar y rechaza las transacciones que no hayas iniciado tú.",
+      "improvements": {
+        "abandonOpenAccount": {
+          "title": "No uses esta cuenta",
+          "detail": "Con AllowAll cualquiera puede retirar sus fondos y cambiar su configuración. No envíes nada a esta dirección y, si algo tuyo depende de ella, muévelo a una cuenta que controles."
+        },
+        "backupSeedPhrase": {
+          "title": "Guarda la frase semilla sin conexión",
+          "detail": "Hoy la frase semilla es la cuenta. Apúntala en papel o metal y guárdala en un lugar seguro, nunca en capturas, notas del móvil ni la nube. Confirma en la Radix Wallet que la copia de seguridad está hecha."
+        },
+        "applyShield": {
+          "title": "Aplica un escudo de seguridad",
+          "detail": "En la Radix Wallet, crea un escudo de seguridad con varios factores (este dispositivo, una tarjeta Arculus, un Ledger, una contraseña) y aplícalo a la cuenta. La insignia de dueño pasa a un Access Controller y la cuenta sube a nivel alto: si pierdes un factor, la recuperas con los demás. Aplicarlo es una transacción con una pequeña fee en XRD."
+        },
+        "guardBadgeHolder": {
+          "title": "Protege a quien tiene la insignia",
+          "detail": "Mientras la insignia de dueño esté suelta, esta cuenta es tan segura como la entidad que la guarda. Asegura esa entidad y no firmes nada que mueva la insignia."
+        },
+        "moveBadgeToController": {
+          "title": "Mete la insignia en un Access Controller",
+          "detail": "Crea un Access Controller con la insignia de dueño dentro y roles primario, de recuperación y de confirmación basados en factores distintos. Así deja de ser un NFT que controla la cuenta quien lo reciba."
+        },
+        "reviewRule": {
+          "title": "Lee la regla de dueño",
+          "detail": "Esta regla no es de las que esta comprobación sabe valorar. Revísala en el explorador antes de enviar fondos: qué insignias exige y quién las tiene."
+        },
+        "retryCheck": {
+          "title": "Vuelve a comprobarla",
+          "detail": "Puede ser un fallo puntual del Gateway o una cuenta que aún no existe en esta red. Repite la comprobación en un rato y confirma que la consola está en la red de la dirección."
+        },
+        "answerRecovery": {
+          "title": "Revisa lo que está en marcha",
+          "detail": "Si la propuesta de recuperación o el intento de sacar la insignia no los has iniciado tú, actúa ya: cancélalos o bloquéalos desde tu cartera con los factores que conserves antes de que venza el retraso."
+        },
+        "addPrimaryFactors": {
+          "title": "Exige más de un factor para firmar",
+          "detail": "Hoy basta un único factor para actuar como dueño. Pedir al menos dos en el rol primario hace que un dispositivo robado no alcance para vaciar la cuenta."
+        },
+        "enableTimedRecovery": {
+          "title": "Activa la recuperación temporizada",
+          "detail": "Con un retraso configurado, el rol de recuperación puede completar una recuperación sin el de confirmación cuando pasa ese tiempo, y mientras tanto el rol primario puede cancelarla. Ahora está desactivada."
+        },
+        "fundFeeVault": {
+          "title": "Deposita XRD en el controller",
+          "detail": "El controller no tiene bóveda de fees. Con XRD en ella puede pagar su propia recuperación aunque la cuenta no tenga fondos o no puedas usarla."
+        },
+        "keepFactorsApart": {
+          "title": "Guarda los factores por separado",
+          "detail": "Un escudo vale lo que la distancia entre sus factores: no guardes la tarjeta, el Ledger y la contraseña en el mismo sitio, y comprueba de vez en cuando que siguen funcionando."
+        }
       }
     },
     "walletPlayground": {

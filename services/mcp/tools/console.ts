@@ -45,7 +45,14 @@ import {
   type AccountSecurityReport,
   type SecurityProbe,
 } from '@/features/console/services/accountSecurity';
-import type { RuleSummary, SecurityNote, SecurityVerdict } from '@/features/console/lib/account-security';
+import {
+  SECURITY_LEVELS,
+  securityImprovements,
+  VERDICT_LEVEL,
+  type RuleSummary,
+  type SecurityNote,
+  type SecurityVerdict,
+} from '@/features/console/lib/account-security';
 import { mapHoldings } from '@/features/console/lib/account-holdings';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import type { Network } from '@/services/gateway/client';
@@ -880,6 +887,13 @@ const ACCOUNT_KIND_TEXT: Record<string, string> = {
   allocated: 'allocated on ledger (create_advanced or securified)',
 };
 
+/** "basic (2 of 3)": the verdict on the same scale the console draws. */
+const levelText = (verdict: SecurityVerdict): string => {
+  const level = VERDICT_LEVEL[verdict];
+  if (!level) return 'undetermined';
+  return `${level} (${SECURITY_LEVELS.indexOf(level)} of ${SECURITY_LEVELS.length - 1})`;
+};
+
 /** "1 of 3 badges": how many factors a controller role actually needs. */
 const ruleText = (rule: RuleSummary | null): string => {
   if (!rule) return 'unreadable rule';
@@ -960,6 +974,7 @@ export const verifyAccountSecurityTool = defineMcpTool({
           ['Network', network],
           ['Address kind', report.accountKind ? ACCOUNT_KIND_TEXT[report.accountKind] : 'unknown'],
           ['Verdict', report.verdict],
+          ['Security level', levelText(report.verdict)],
         ]),
         VERDICT_MEANING[report.verdict],
         `${cliSection('What controls it')}\n${cliKeyValues(controlRows)}`,
@@ -977,6 +992,8 @@ export const verifyAccountSecurityTool = defineMcpTool({
         address: report.address,
         network,
         verdict: report.verdict,
+        level: VERDICT_LEVEL[report.verdict],
+        improvements: securityImprovements(report, report.controllerConfig),
         accountKind: report.accountKind,
         controller: report.controller,
         notes: report.notes,

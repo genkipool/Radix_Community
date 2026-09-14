@@ -6,7 +6,14 @@ import { CopyButton } from '@/components/ui/CopyButton';
 import { useRadixWallet } from '@/features/wallet/hooks/useRadixWallet';
 import { truncateAddress } from '@/utils/formatters';
 import { securityInputState, useAccountSecurity } from '../../hooks/useAccountSecurity';
-import { VERDICT_SEVERITY, type RuleSummary, type SecurityNote } from '../../lib/account-security';
+import {
+  SECURITY_LEVELS,
+  securityImprovements,
+  VERDICT_LEVEL,
+  VERDICT_SEVERITY,
+  type RuleSummary,
+  type SecurityNote,
+} from '../../lib/account-security';
 import type { AccountSecurityReport } from '../../services/accountSecurity';
 import type { ConsoleToolProps } from '../ConsoleToolView';
 import { ToolSection } from '../shared/ToolSection';
@@ -30,21 +37,25 @@ const SEVERITY_STYLE = {
     icon: ShieldCheck,
     text: 'text-[var(--color-success)]',
     box: 'border-[var(--color-success)]/40 bg-[var(--color-success)]/5',
+    bar: 'bg-[var(--color-success)]',
   },
   warn: {
     icon: KeyRound,
     text: 'text-[var(--color-warning)]',
     box: 'border-[var(--color-warning)]/40 bg-[var(--color-warning)]/5',
+    bar: 'bg-[var(--color-warning)]',
   },
   bad: {
     icon: ShieldOff,
     text: 'text-[var(--color-danger)]',
     box: 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/5',
+    bar: 'bg-[var(--color-danger)]',
   },
   neutral: {
     icon: HelpCircle,
     text: 'text-[var(--color-text-muted)]',
     box: 'border-[var(--color-card-border)] bg-[var(--color-surface)]',
+    bar: 'bg-[var(--color-text-muted)]',
   },
 } as const;
 
@@ -93,6 +104,92 @@ function VerdictBanner({ report, labels }: { report: AccountSecurityReport; labe
 }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
+
+/**
+ * The verdict placed on the four-level scale: a meter with one segment per step
+ * above "none", and the whole scale spelled out so the reader sees what the
+ * levels above theirs would take.
+ */
+function LevelPanel({ report, labels }: { report: AccountSecurityReport; labels: Labels }) {
+  const level = VERDICT_LEVEL[report.verdict];
+  const reached = level ? SECURITY_LEVELS.indexOf(level) : 0;
+  const steps = SECURITY_LEVELS.length - 1;
+  const { text, box, bar } = SEVERITY_STYLE[VERDICT_SEVERITY[report.verdict]];
+  const current = labels.levels[level ?? 'unknown'];
+
+  return (
+    <ToolSection title={labels.levelTitle} hint={labels.levelHint}>
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className={`text-sm font-bold ${text}`}>{current.label}</p>
+          {level && (
+            <span className="text-xs font-mono text-[var(--color-text-muted)]">
+              {labels.levelScale.replace('{current}', String(reached)).replace('{max}', String(steps))}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-1.5" aria-hidden>
+          {SECURITY_LEVELS.slice(1).map((step, index) => (
+            <span
+              key={step}
+              className={`h-2 rounded-full ${index < reached ? bar : 'bg-[var(--color-card-border)]'}`}
+            />
+          ))}
+        </div>
+        {!level && <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{current.meaning}</p>}
+      </div>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {[...SECURITY_LEVELS].reverse().map((step) => {
+          const isCurrent = step === level;
+          return (
+            <li
+              key={step}
+              aria-current={isCurrent || undefined}
+              className={`rounded-lg border p-3 space-y-0.5 ${isCurrent ? box : 'border-[var(--color-card-border)]'}`}
+            >
+              <p className={`text-xs font-semibold ${isCurrent ? text : 'text-[var(--color-text-main)]'}`}>
+                {labels.levels[step].label}
+              </p>
+              <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">{labels.levels[step].meaning}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </ToolSection>
+  );
+}
+
+/** The steps that would raise the level, or harden a shield that has it. */
+function ImprovePanel({ report, labels }: { report: AccountSecurityReport; labels: Labels }) {
+  const steps = securityImprovements(report, report.controllerConfig);
+  if (steps.length === 0) return null;
+
+  return (
+    <ToolSection
+      title={labels.improveTitle}
+      hint={report.verdict === 'accessController' ? labels.improveHintShielded : labels.improveHint}
+    >
+      <ol className="space-y-3">
+        {steps.map((step, index) => (
+          <li key={step} className="flex items-start gap-3">
+            <span className="size-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
+              {index + 1}
+            </span>
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-xs font-semibold text-[var(--color-text-main)]">{labels.improvements[step].title}</p>
+              <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
+                {labels.improvements[step].detail}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="text-xs leading-relaxed pt-3 border-t border-[var(--color-card-border)] text-[var(--color-text-muted)]">
+        {labels.improveBasics}
+      </p>
+    </ToolSection>
+  );
+}
 
 function ControlDetails({ report, labels }: { report: AccountSecurityReport; labels: Labels }) {
   const control = report.ownerControl;
@@ -237,6 +334,10 @@ export default function AccountSecurityTool({ t }: ConsoleToolProps) {
           <ToolSection title={labels.controlTitle} hint={labels.controlHint}>
             <ControlDetails report={report} labels={labels} />
           </ToolSection>
+
+          <LevelPanel report={report} labels={labels} />
+
+          <ImprovePanel report={report} labels={labels} />
 
           {report.notes.length > 0 && (
             <ToolSection title={labels.notesTitle}>

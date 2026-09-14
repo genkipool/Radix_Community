@@ -454,3 +454,89 @@ function explicitRoleRules(roleAssignments: unknown): Map<string, RuleSummary> {
 }
 
 const isSet = (value: unknown) => value !== null && value !== undefined;
+
+/* ─── Security level and how to raise it ─────────────────────────────────── */
+
+/** The scale a verdict is placed on, weakest first. */
+export type SecurityLevel = 'none' | 'low' | 'basic' | 'high';
+
+export const SECURITY_LEVELS: readonly SecurityLevel[] = ['none', 'low', 'basic', 'high'];
+
+/**
+ * Where each verdict sits on that scale, so a reader sees how far the account
+ * is from the strongest setup without having to learn the verdicts.
+ *
+ * It follows `VERDICT_SEVERITY`: a loose owner badge ranks below a plain key
+ * (transferable, and still no recovery), and AllowAll below everything. A
+ * verdict that could not be read gets no level rather than a guessed one.
+ */
+export const VERDICT_LEVEL: Record<SecurityVerdict, SecurityLevel | null> = {
+  open: 'none',
+  badgeInAccount: 'low',
+  badgeElsewhere: 'low',
+  key: 'basic',
+  accessController: 'high',
+  badgeUnknown: null,
+  other: null,
+  unknown: null,
+};
+
+/** One step that would make the account safer, most urgent first. */
+export type SecurityImprovement =
+  | 'abandonOpenAccount'
+  | 'backupSeedPhrase'
+  | 'applyShield'
+  | 'guardBadgeHolder'
+  | 'moveBadgeToController'
+  | 'reviewRule'
+  | 'retryCheck'
+  | 'answerRecovery'
+  | 'addPrimaryFactors'
+  | 'enableTimedRecovery'
+  | 'fundFeeVault'
+  | 'keepFactorsApart';
+
+/**
+ * What to do next, decided from the same facts as the verdict so the console
+ * and the MCP server never advise differently.
+ *
+ * Below the top level the steps are the way up. A shielded account is already
+ * there, so its steps come from its controller: what is in flight, then what
+ * its roles and settings leave weaker than they could be.
+ */
+export function securityImprovements(
+  security: Pick<AccountSecurity, 'verdict'>,
+  controller: ControllerConfig | null,
+): SecurityImprovement[] {
+  switch (security.verdict) {
+    case 'open':
+      return ['abandonOpenAccount'];
+    case 'key':
+      return ['backupSeedPhrase', 'applyShield'];
+    case 'badgeInAccount':
+    case 'badgeElsewhere':
+      return ['guardBadgeHolder', 'moveBadgeToController'];
+    case 'other':
+      return ['reviewRule'];
+    case 'badgeUnknown':
+    case 'unknown':
+      return ['retryCheck'];
+    case 'accessController':
+      break;
+  }
+
+  const steps: SecurityImprovement[] = [];
+  if (controller?.recoveryInProgress || controller?.badgeWithdrawAttempt) steps.push('answerRecovery');
+  const primary = controller?.roles.primary;
+  if (
+    primary &&
+    (primary.kind === 'allowAll' ||
+      (primary.kind !== 'denyAll' && primary.badges.length > 0 && (primary.threshold ?? primary.badges.length) <= 1))
+  ) {
+    steps.push('addPrimaryFactors');
+  }
+  if (controller && controller.timedRecoveryDelayMinutes === null) steps.push('enableTimedRecovery');
+  if (controller && !controller.hasFeeVault) steps.push('fundFeeVault');
+  steps.push('keepFactorsApart');
+  return steps;
+}
