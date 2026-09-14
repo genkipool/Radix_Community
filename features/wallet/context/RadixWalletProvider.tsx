@@ -26,6 +26,12 @@ function networkNameFromId(id: RadixNetworkId): 'mainnet' | 'stokenet' {
   return id === RadixNetworkId.Mainnet ? 'mainnet' : 'stokenet';
 }
 
+/** The ledger last chosen in this browser, or null on the server and when unset. */
+function storedNetwork(): 'mainnet' | 'stokenet' | null {
+  const stored = getCookie('radix_active_network');
+  return stored === 'mainnet' || stored === 'stokenet' ? stored : null;
+}
+
 /** Convert server session payload into client-side NetworkSessions. */
 function sessionsFromPayload(payload: SessionPayload | null): NetworkSessions {
   if (!payload) return { mainnet: null, stokenet: null };
@@ -104,16 +110,23 @@ export function RadixWalletProvider({
     () => sessionsFromPayload(initialSession),
   );
   const [activeNetwork, setActiveNetwork] = useState<'mainnet' | 'stokenet'>(
-    // Server-side default (no localStorage available to prevent hydration mismatch)
     () => {
       const initial = sessionsFromPayload(initialSession);
-      if (initialNetwork === 'mainnet' || initialNetwork === 'stokenet') {
-        if (initialNetwork === 'mainnet' && initial.mainnet) return 'mainnet';
-        if (initialNetwork === 'stokenet' && initial.stokenet) return 'stokenet';
-        if (initial.mainnet && !initial.stokenet) return 'mainnet';
-        if (!initial.mainnet && initial.stokenet) return 'stokenet';
-        if (!initial.mainnet && !initial.stokenet) return initialNetwork;
-      }
+      // `initialNetwork` is the cookie as the server read it when this layout
+      // was rendered, and that payload can be older than the page. Switching
+      // language remounts this provider from the prefetched `/{otherLocale}`
+      // tree, rendered before the last network change, so the stale prop put
+      // the console back on the previous ledger and the persist effect below
+      // then wrote it into the cookie. In the browser the live cookie is the
+      // fresher answer; on a first load it is the same cookie the server read,
+      // so hydration still matches.
+      //
+      // A remembered ledger is kept even without a session on it: someone
+      // signed in on Stokenet who switched to browse Mainnet must stay there
+      // when the provider remounts (a language switch, a reload). Where the
+      // wallet is connected only decides when nothing was chosen.
+      const preferred = storedNetwork() ?? initialNetwork;
+      if (preferred === 'mainnet' || preferred === 'stokenet') return preferred;
       if (initial.mainnet && initial.stokenet) return 'mainnet';
       if (initial.mainnet) return 'mainnet';
       if (initial.stokenet) return 'stokenet';
@@ -153,17 +166,8 @@ export function RadixWalletProvider({
       if (networkChosenRef.current) return;
 
       if (stored === 'mainnet' || stored === 'stokenet') {
-        if (stored === 'mainnet' && initial.mainnet) {
-          setActiveNetwork('mainnet');
-        } else if (stored === 'stokenet' && initial.stokenet) {
-          setActiveNetwork('stokenet');
-        } else if (initial.mainnet && !initial.stokenet) {
-          setActiveNetwork('mainnet');
-        } else if (!initial.mainnet && initial.stokenet) {
-          setActiveNetwork('stokenet');
-        } else if (!initial.mainnet && !initial.stokenet) {
-          setActiveNetwork(stored); // Remember UI selection even when disconnected
-        }
+        // The last choice, whether or not the wallet is connected on it.
+        setActiveNetwork(stored);
       } else {
         if (initial.mainnet && !initial.stokenet) {
           setActiveNetwork('mainnet');
