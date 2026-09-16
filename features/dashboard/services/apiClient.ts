@@ -303,6 +303,38 @@ export async function apiFetchValidatorSetFingerprint(
 }
 
 /**
+ * The protocol-update signal these validators have cast, read from the ledger
+ * (see /api/validators/votes). Asked only for the validators the connected
+ * wallet owns, whose badge is the actionable one.
+ */
+export async function apiFetchProtocolVotes(
+    addresses: string[],
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<{ votes: Record<string, string> }> {
+    if (addresses.length === 0) return { votes: {} };
+    const params = new URLSearchParams({ network, addresses: addresses.join(',') });
+    const res = await fetch(`/api/validators/votes?${params}`);
+    if (!res.ok) throw new Error(`Protocol votes API error: ${res.status}`);
+    return res.json();
+}
+
+/**
+ * Drops the cached signal for a validator, right after one has been signed, so
+ * the next read asks the ledger instead of answering from before the vote.
+ */
+export async function apiForgetProtocolVote(
+    address: string,
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<void> {
+    const params = new URLSearchParams({ network, address });
+    try {
+        await fetch(`/api/validators/votes?${params}`, { method: 'DELETE' });
+    } catch {
+        // Best effort: the cached answer expires on its own soon enough.
+    }
+}
+
+/**
  * Fetches the available years for validator rewards.
  */
 export async function apiFetchValidatorRewardsYears(address: string): Promise<{ years: number[] }> {

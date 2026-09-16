@@ -111,7 +111,7 @@ export const Layout1Col = ({
                             <OnlineBadge validator={validator} details={dt?.details} />
                             <StakeBadge validator={validator} details={dt?.details} />
                             <ConnectBadge validator={validator} details={dt?.details} />
-                            <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
+                            <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} network={network} />
                         </div>
 
                         <StatDivider items={stats} />
@@ -216,7 +216,7 @@ export const Layout2Col = ({
                                 <OnlineBadge validator={validator} details={dt?.details} compact={columns === 3} />
                                 <StakeBadge validator={validator} details={dt?.details} compact={columns === 3} />
                                 <ConnectBadge validator={validator} details={dt?.details} compact={columns === 3} />
-                                <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
+                                <VoteBadge vote={validator.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} compact={columns === 3} validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} network={network} />
                             </div>
                         </div>
                         <StatDivider items={stats.slice(0, 3)} />
@@ -295,7 +295,7 @@ export const Layout4Col = ({
                         <OnlineBadge validator={validator} details={dt?.details} compact />
                         <StakeBadge validator={validator} details={dt?.details} compact />
                         <ConnectBadge validator={validator} details={dt?.details} compact />
-                        <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
+                        <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} network={network} />
                     </div>
                 </div>
                 {/* Sharing, at the far end of the header. This layout serves
@@ -388,7 +388,7 @@ export const Layout6Col = ({
                 <OnlineBadge validator={validator} details={dt?.details} compact />
                 <StakeBadge validator={validator} details={dt?.details} compact />
                 <ConnectBadge validator={validator} details={dt?.details} compact />
-                <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} />
+                <VoteBadge vote={validator.protocolUpdateVote} label="" compact validator={validator} actionLabel={dt?.details?.vote_action ?? 'Votar'} network={network} />
             </div>
 
             {/* Row 3: Single-column info */}

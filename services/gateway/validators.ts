@@ -92,8 +92,11 @@ const METADATA_KEYS = {
     OWNER_BADGE: 'owner_badge',
 };
 
+// The same update carries a different version name on each ledger, so both
+// spellings map to the one label a reader recognises.
 const PROTOCOL_SIGNALS: Record<string, string> = {
-    '96e00440adafe5e2000000cuttlefish': 'Cuttlefish'
+    '96e00440adafe5e2000000cuttlefish': 'Cuttlefish',
+    '034d3327f58995c6000000cuttlefish': 'Cuttlefish',
 };
 
 function getMetadataValue(metadata: GatewayMetadata | null | undefined, key: string): string {
@@ -389,7 +392,7 @@ export async function fetchValidatorsWithLedger(
     const activeCount = validatorsList.filter((v: GatewayValidator) => v.active_in_epoch).length;
     let votedCount = 0;
     validatorsList.forEach((v: GatewayValidator) => {
-        if (v.active_in_epoch && protocolVotesCache[v.address as string]) {
+        if (network === 'mainnet' && v.active_in_epoch && protocolVotesCache[v.address as string]) {
             votedCount++;
         }
     });
@@ -506,7 +509,12 @@ export async function fetchValidatorsWithLedger(
             (state?.consensus_public_key as Record<string, string>)?.key_hex ||
             (v.details as Record<string, Record<string, Record<string, string>>>)?.public_key?.key_hex || '';
 
-        const rawProtocolVote = protocolVotesCache[v.address] || '';
+        // The snapshot was generated against mainnet and only ever held
+        // mainnet addresses, so asking it about a Stokenet validator can only
+        // ever answer "None". Reading the signal live, for the validators the
+        // connected wallet owns, is what services/gateway/protocolVotes.ts is
+        // for; this stays as the cheap answer for the other cards.
+        const rawProtocolVote = (network === 'mainnet' ? protocolVotesCache[v.address] : '') || '';
         const protocolVote = PROTOCOL_SIGNALS[rawProtocolVote] || sanitizeText(rawProtocolVote) || 'None';
 
         // ── Technical & Location ──
