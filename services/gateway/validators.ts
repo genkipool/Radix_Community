@@ -10,7 +10,7 @@ import { getGateway, withRetry, runWithLimit, CONCURRENCY, type Network } from '
 import logger from '@/lib/logger';
 import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
-import protocolVotesCacheRaw from '@/constants/protocol-votes.json';
+import { getVotesMap, advanceVoteTail } from './protocolVotes';
 import type { Validator, NetworkStats } from '@/types/radix';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import { after } from 'next/server';
@@ -69,7 +69,6 @@ type GatewayResponse = {
     validators?: { items?: GatewayValidator[]; next_cursor?: string } | GatewayValidator[];
 };
 
-const protocolVotesCache = protocolVotesCacheRaw as Record<string, string>;
 // ── Server-side holders cache ─────────────────────────────────────────────────
 // LSU Holder counts are now completely decoupled from this synchronous flow.
 // A specialized background cron job (/api/cron/sync-holders) throttles requests
@@ -197,9 +196,12 @@ export async function fetchValidatorsWithLedger(
        Read over REST for the opt-ins the SDK wrapper does not expose; see
        validatorList.ts. The same read gives the validator set fingerprint.
     ── */
-    const [validatorsList, currentStatus] = await Promise.all([
+    const [validatorsList, currentStatus, protocolVotes] = await Promise.all([
         fetchValidatorListRest<GatewayValidator>(network),
         withRetry(() => gateway.status.getCurrent()),
+        // Every vote the ledger has told us about, per network. See
+        // protocolVotes.ts: the hand-generated snapshot only seeds mainnet.
+        getVotesMap(network),
     ]);
 
     logger.info({
@@ -392,7 +394,7 @@ export async function fetchValidatorsWithLedger(
     const activeCount = validatorsList.filter((v: GatewayValidator) => v.active_in_epoch).length;
     let votedCount = 0;
     validatorsList.forEach((v: GatewayValidator) => {
-        if (network === 'mainnet' && v.active_in_epoch && protocolVotesCache[v.address as string]) {
+        if (v.active_in_epoch && protocolVotes[v.address as string]) {
             votedCount++;
         }
     });
@@ -509,12 +511,7 @@ export async function fetchValidatorsWithLedger(
             (state?.consensus_public_key as Record<string, string>)?.key_hex ||
             (v.details as Record<string, Record<string, Record<string, string>>>)?.public_key?.key_hex || '';
 
-        // The snapshot was generated against mainnet and only ever held
-        // mainnet addresses, so asking it about a Stokenet validator can only
-        // ever answer "None". Reading the signal live, for the validators the
-        // connected wallet owns, is what services/gateway/protocolVotes.ts is
-        // for; this stays as the cheap answer for the other cards.
-        const rawProtocolVote = (network === 'mainnet' ? protocolVotesCache[v.address] : '') || '';
+        const rawProtocolVote = protocolVotes[v.address] || '';
         const protocolVote = PROTOCOL_SIGNALS[rawProtocolVote] || sanitizeText(rawProtocolVote) || 'None';
 
         // ── Technical & Location ──
@@ -965,6 +962,15 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                     after(async () => {
                         try {
                             logger.info({ network }, '[ValidatorsService] Background revalidation started');
+                            /*
+                             * Protocol-update votes first, so the list rebuilt
+                             * just below already carries whatever the ledger
+                             * has learned since the last read. This is the
+                             * tail's normal trigger: it runs while someone is
+                             * using the site, which is the only time the
+                             * answer is needed, so it needs no cron of its own.
+                             */
+                            await advanceVoteTail(network);
                             const freshResult = await fetchValidatorsRaw(network);
 
                             // Update Redis with current timestamp + Invalidate Data Cache

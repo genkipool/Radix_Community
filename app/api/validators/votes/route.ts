@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchProtocolVotes, forgetProtocolVote } from '@/services/gateway/protocolVotes';
+import { fetchProtocolVotes, forgetProtocolVote, advanceVoteTail } from '@/services/gateway/protocolVotes';
 import { validateAddress, validateNetwork } from '@/utils/apiValidation';
 import logger from '@/lib/logger';
 
@@ -66,5 +66,11 @@ export async function DELETE(request: Request) {
     }
 
     await forgetProtocolVote(address, network);
+    /*
+     * A vote was just signed, so this is the cheapest moment to move the tail:
+     * it puts the new signal in the shared store for everyone, not just for
+     * the owner whose own badge already reads it live.
+     */
+    await advanceVoteTail(network);
     return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
+import { advanceVoteTail } from '@/services/gateway/protocolVotes';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -29,9 +30,21 @@ export async function GET(request: Request) {
     revalidateTag('stake-history', 'max');
     revalidateTag('round-proposer', 'max');
 
-    return NextResponse.json({ 
-      success: true, 
+    /*
+     * Protocol-update votes, as a safety net. The tail is normally advanced by
+     * whoever reads the validator list, so this only matters when nobody has
+     * looked in a while, and it needs no schedule of its own: this route is
+     * already being pinged. It does nothing when no update is open.
+     */
+    const votes = await Promise.all([
+      advanceVoteTail('mainnet'),
+      advanceVoteTail('stokenet'),
+    ]);
+
+    return NextResponse.json({
+      success: true,
       message: 'Radix cache revalidated successfully',
+      votes: { mainnet: votes[0], stokenet: votes[1] },
       timestamp: new Date().toISOString()
     });
   } catch (_error) {
