@@ -94,7 +94,7 @@ export const ValidatorDetailView: React.FC<ValidatorDetailViewProps> = ({
                         <OnlineBadge validator={v} details={dt?.details} />
                         <StakeBadge validator={v} details={dt?.details} />
                         <ConnectBadge validator={v} details={dt?.details} />
-                        <VoteBadge vote={v.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={v} actionLabel={dt?.details?.vote_action ?? 'Votar'} namedAction={dt?.details?.vote_action_named ?? 'Votar {name}'} />
+                        <VoteBadge vote={v.protocolUpdateVote} label={dt?.details?.vote ?? 'Vote'} validator={v} actionLabel={dt?.details?.vote_action ?? 'Votar'} namedAction={dt?.details?.vote_action_named ?? 'Votar {name}'} network={network} />
                     </div>
 
                     {/* Website */}

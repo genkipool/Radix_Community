@@ -676,7 +676,7 @@ export default function DashboardClient({
   /* ===============═══════════ RENDER ===============═════════ */
   return (
     <EntityBadgeContext.Provider value={EntityBadgeAdapter}>
-    <ProtocolVoteProvider ownerValidatorMap={ownerValidatorMap}>
+    <ProtocolVoteProvider ownerValidatorMap={ownerValidatorMap} network={stakingNetwork as 'mainnet' | 'stokenet'}>
     <div className="pb-20">
       {/* ── Hero ── */}
       <ContentHero
