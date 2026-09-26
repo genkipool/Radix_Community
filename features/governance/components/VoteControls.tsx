@@ -30,7 +30,15 @@ export function Notice({ icon: Icon, tone = 'muted', children }: { icon: typeof 
  * started, no wallet, wrong network), the account to vote with and its
  * current vote. Renders nothing a reader cannot act on.
  */
-export function VoteAccess({ vote, item, g, language, now }: { vote: CastVote; item: GovernanceItem; g: G; language: string; now: number }) {
+export function VoteAccess({ vote, item, g, language, now, compact = false }: {
+    vote: CastVote;
+    item: GovernanceItem;
+    g: G;
+    language: string;
+    now: number;
+    /** Only the connect button, no explanatory box (inside the results box). */
+    compact?: boolean;
+}) {
     if (vote.phase === 'closed') return <Notice icon={Lock}>{g.vote_closed || 'Voting is closed.'}</Notice>;
     if (vote.phase === 'upcoming' && item.start) {
         return (
@@ -41,20 +49,24 @@ export function VoteAccess({ vote, item, g, language, now }: { vote: CastVote; i
     }
     if (vote.phase !== 'open') return null;
 
+    const connectButton = (
+        <button
+            type="button"
+            disabled={vote.isLoading}
+            onClick={vote.connect}
+            className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+            {vote.isLoading ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
+            {g.connect_to_vote || 'Connect wallet to vote'}
+        </button>
+    );
+    if (!vote.isConnected && compact) return connectButton;
     if (!vote.isConnected) {
         return (
             <div className="rounded-xl border border-dashed border-[var(--color-primary)]/40 bg-[var(--color-primary)]/5 p-4 text-center space-y-3">
                 <p className="text-sm font-bold text-[var(--color-text-main)]">{g.connect_title || 'Connect your wallet to vote'}</p>
                 <p className="text-[13px] text-[var(--color-text-muted)]">{g.connect_subtitle}</p>
-                <button
-                    type="button"
-                    disabled={vote.isLoading}
-                    onClick={vote.connect}
-                    className="inline-flex items-center justify-center gap-2 w-full h-11 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
-                    {vote.isLoading ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-                    {g.connect_mainnet || 'Connect wallet'}
-                </button>
+                {connectButton}
             </div>
         );
     }
@@ -66,18 +78,39 @@ export function VoteAccess({ vote, item, g, language, now }: { vote: CastVote; i
             </Notice>
         );
     }
-    if (!vote.account) return <Notice icon={AlertTriangle} tone="warn">{g.wallet_accounts_empty}</Notice>;
+    if (vote.accounts.length === 0) return <Notice icon={AlertTriangle} tone="warn">{g.wallet_accounts_empty}</Notice>;
 
+    const labelOf = (address: string) => vote.accounts.find(a => a.address === address)?.label || shortenAddress(address);
     return (
         <div className="space-y-3">
-            <AccountPicker accounts={vote.accounts} value={vote.account} onChange={vote.selectAccount} label={g.account_label || 'Account you vote with'} />
+            <AccountPicker
+                accounts={vote.accounts}
+                selected={vote.selectedAccounts}
+                onToggle={vote.toggleAccount}
+                onSetAll={vote.setAccounts}
+                label={vote.accounts.length > 1 ? (g.accounts_label || 'Accounts you vote with') : (g.account_label || 'Account you vote with')}
+                labels={{ all: g.accounts_all || 'All accounts', count: g.accounts_count || '{n} accounts', none: g.accounts_none || 'Pick at least one account' }}
+            />
             {vote.currentLoading ? (
                 <div className="h-11 rounded-xl bg-[var(--color-surface)] animate-pulse" aria-hidden />
-            ) : vote.currentText ? (
-                <Notice icon={CheckCircle2} tone="ok">{fill(g.current_vote || 'This account already voted: {choice}.', { choice: vote.currentText })}</Notice>
-            ) : (
-                <Notice icon={Info}>{g.no_vote_yet || 'This account has not voted here yet.'}</Notice>
-            )}
+            ) : vote.current.length === 1 ? (
+                vote.current[0].text
+                    ? <Notice icon={CheckCircle2} tone="ok">{fill(g.current_vote || 'This account already voted: {choice}.', { choice: vote.current[0].text })}</Notice>
+                    : <Notice icon={Info}>{g.no_vote_yet || 'This account has not voted here yet.'}</Notice>
+            ) : vote.current.length > 1 ? (
+                <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 space-y-2">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{g.current_votes_title || 'Current vote of each account'}</p>
+                    <ul className="space-y-1.5">
+                        {vote.current.map(c => (
+                            <li key={c.account} className="flex items-center justify-between gap-3 text-xs">
+                                <span className="truncate font-semibold text-[var(--color-text-main)]" title={c.account}>{labelOf(c.account)}</span>
+                                <span className={`shrink-0 font-semibold ${c.text ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-muted)]'}`}>{c.text ?? (g.not_voted || 'Not voted')}</span>
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">{g.multi_account_hint}</p>
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -95,11 +128,15 @@ export function VoteSubmit({ vote, item, g, language }: { vote: CastVote; item: 
                 <button
                     type="button"
                     onClick={vote.submit}
-                    disabled={vote.picked.length === 0 || tx.isSending}
+                    disabled={vote.picked.length === 0 || vote.selectedAccounts.length === 0 || tx.isSending}
                     className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 disabled:opacity-40 transition-opacity"
                 >
                     {tx.isSending && <Loader2 className="size-4 animate-spin" />}
-                    {tx.isSending ? (g.sending || 'Confirm the vote in your wallet…') : vote.current ? (g.submit_change || 'Change my vote') : (g.submit || 'Vote')}
+                    {tx.isSending
+                        ? (g.sending || 'Confirm the vote in your wallet…')
+                        : vote.selectedAccounts.length > 1
+                            ? fill(g.submit_many || 'Vote with {n} accounts', { n: String(vote.selectedAccounts.length) })
+                            : vote.anyVoted ? (g.submit_change || 'Change my vote') : (g.submit || 'Vote')}
                 </button>
             )}
             {tx.result && (

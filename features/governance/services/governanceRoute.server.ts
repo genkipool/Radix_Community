@@ -1,10 +1,7 @@
 import 'server-only';
 import { systemByKey } from '../config/systems';
 import { kindFromSegment } from '../lib/paths';
-import { after } from 'next/server';
 import { fetchGovernanceEntries, fetchGovernanceEntry } from './governanceLedger.server';
-import { getCachedTranslation, isTranslatable, requestTranslation } from './translation.server';
-import type { GovernanceEntry } from '../types';
 
 export interface GovernanceRouteParams { locale: string; system: string; kind: string; id: string }
 
@@ -27,35 +24,8 @@ export function requestTime(): number {
     return Math.floor(Date.now() / 1000);
 }
 
-/**
- * Every visible vote plus the time they were read at, with titles and
- * summaries in the reader's language where a translation is stored. Missing
- * translations are produced in the background, one at a time, after the
- * response has been sent, so the next visit shows them.
- */
-export async function loadGovernanceList(locale: string) {
+/** Every visible vote plus the time they were read at. */
+export async function loadGovernanceList() {
     const entries = await fetchGovernanceEntries();
-    if (!isTranslatable(locale)) return { entries, serverNow: requestTime() };
-
-    const missing: GovernanceEntry[] = [];
-    const localized = await Promise.all(entries.map(async (e) => {
-        // The list is read without descriptions; the cache key needs the full item.
-        const full = await fetchGovernanceEntry(e.systemKey, e.kind, e.id).catch(() => null);
-        const t = full ? await getCachedTranslation(full.item, locale) : null;
-        if (!t) {
-            if (full) missing.push(full);
-            return e;
-        }
-        return { ...e, item: { ...e.item, title: t.title || e.item.title, shortDescription: t.shortDescription || e.item.shortDescription } };
-    }));
-
-    if (missing.length) {
-        after(async () => {
-            for (const e of missing) {
-                const { run } = await requestTranslation(e.item, locale);
-                if (run) await run();
-            }
-        });
-    }
-    return { entries: localized, serverNow: requestTime() };
+    return { entries, serverNow: requestTime() };
 }

@@ -33,33 +33,41 @@ function AccountLine({ account }: { account: WalletAccount }) {
 }
 
 /**
- * Account selector for voting: the wallet's accounts with their colour, name
- * and address, as a keyboard-accessible listbox.
+ * Accounts to vote with: one or several (all of them cast the same vote in a
+ * single transaction). A keyboard-accessible multi-select listbox showing each
+ * account's colour, name and address.
  */
-export function AccountPicker({ accounts, value, onChange, label }: {
+export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, labels }: {
     accounts: WalletAccount[];
-    value: string;
-    onChange: (address: string) => void;
+    selected: string[];
+    onToggle: (address: string) => void;
+    onSetAll: (addresses: string[]) => void;
     label: string;
+    labels: { all: string; count: string; none: string };
 }) {
     const [open, setOpen] = useState(false);
     const [active, setActive] = useState(0);
     const listId = useId();
     const rootRef = useRef<HTMLDivElement>(null);
-    const selected = accounts.find(a => a.address === value) ?? accounts[0];
+    const chosen = accounts.filter(a => selected.includes(a.address));
+    const allSelected = chosen.length === accounts.length;
     const single = accounts.length <= 1;
+    // Row 0 is "all accounts" when there is more than one.
+    const rows = single ? accounts.length : accounts.length + 1;
 
-    const choose = (address: string) => { onChange(address); setOpen(false); };
-    const openList = () => { setActive(Math.max(0, accounts.findIndex(a => a.address === value))); setOpen(true); };
+    const activate = (i: number) => {
+        if (!single && i === 0) onSetAll(allSelected ? accounts.slice(0, 1).map(a => a.address) : accounts.map(a => a.address));
+        else onToggle(accounts[single ? i : i - 1].address);
+    };
 
     const onKeyDown = (e: React.KeyboardEvent) => {
         if (single) return;
-        if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openList(); return; }
+        if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setActive(0); setOpen(true); return; }
         if (!open) return;
         if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
-        else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => (i + 1) % accounts.length); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => (i - 1 + accounts.length) % accounts.length); }
-        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(accounts[active].address); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(i => (i + 1) % rows); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => (i - 1 + rows) % rows); }
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(active); }
     };
 
     return (
@@ -77,14 +85,29 @@ export function AccountPicker({ accounts, value, onChange, label }: {
                 aria-haspopup="listbox"
                 aria-label={label}
                 disabled={single}
-                onClick={() => (open ? setOpen(false) : openList())}
+                onClick={() => setOpen(o => !o)}
                 onKeyDown={onKeyDown}
                 className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${open
-                    ? 'border-[var(--color-primary)] bg-[var(--color-card-bg)] shadow-[0_0_0_3px_var(--color-primary)]/10'
+                    ? 'border-[var(--color-primary)] bg-[var(--color-card-bg)]'
                     : 'border-[var(--color-card-border)] bg-[var(--color-surface)] enabled:hover:border-[var(--color-primary)]/50'}`}
             >
-                {selected && <Avatar account={selected} />}
-                {selected && <AccountLine account={selected} />}
+                {chosen.length === 1 ? (
+                    <>
+                        <Avatar account={chosen[0]} />
+                        <AccountLine account={chosen[0]} />
+                    </>
+                ) : chosen.length > 1 ? (
+                    <>
+                        <span className="flex -space-x-2 shrink-0">
+                            {chosen.slice(0, 4).map(a => <span key={a.address} className="ring-2 ring-[var(--color-card-bg)] rounded-xl"><Avatar account={a} size="size-8" /></span>)}
+                        </span>
+                        <span className="min-w-0 text-sm font-bold text-[var(--color-text-main)] truncate">
+                            {allSelected ? labels.all : labels.count.replace('{n}', String(chosen.length))}
+                        </span>
+                    </>
+                ) : (
+                    <span className="text-sm text-[var(--color-text-muted)]">{labels.none}</span>
+                )}
                 {!single && <ChevronDown className={`ml-auto size-4 shrink-0 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />}
             </button>
 
@@ -92,25 +115,41 @@ export function AccountPicker({ accounts, value, onChange, label }: {
                 <ul
                     id={listId}
                     role="listbox"
+                    aria-multiselectable="true"
                     aria-label={label}
-                    className="absolute z-30 mt-2 w-full max-h-72 overflow-auto no-scrollbar rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-1.5 shadow-xl"
+                    className="absolute z-30 mt-2 w-full max-h-80 overflow-auto no-scrollbar rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-1.5 shadow-xl"
                 >
+                    {!single && (
+                        <li
+                            role="option"
+                            aria-selected={allSelected}
+                            tabIndex={-1}
+                            onMouseEnter={() => setActive(0)}
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => activate(0)}
+                            className={`flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer border-b border-[var(--color-card-border)] mb-1 ${active === 0 ? 'bg-[var(--color-surface)]' : ''}`}
+                        >
+                            <Check className={`size-4 shrink-0 rounded border ${allSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white' : 'border-[var(--color-card-border)] text-transparent'}`} />
+                            <span className="text-sm font-bold text-[var(--color-text-main)]">{labels.all}</span>
+                        </li>
+                    )}
                     {accounts.map((a, i) => {
-                        const isSelected = a.address === value;
+                        const row = single ? i : i + 1;
+                        const isSelected = selected.includes(a.address);
                         return (
                             <li
                                 key={a.address}
                                 role="option"
                                 aria-selected={isSelected}
                                 tabIndex={-1}
-                                onMouseEnter={() => setActive(i)}
+                                onMouseEnter={() => setActive(row)}
                                 onMouseDown={e => e.preventDefault()}
-                                onClick={() => choose(a.address)}
-                                className={`flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${i === active ? 'bg-[var(--color-surface)]' : ''}`}
+                                onClick={() => activate(row)}
+                                className={`flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${active === row ? 'bg-[var(--color-surface)]' : ''}`}
                             >
+                                <Check className={`size-4 shrink-0 rounded border ${isSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white' : 'border-[var(--color-card-border)] text-transparent'}`} />
                                 <Avatar account={a} size="size-8" />
                                 <AccountLine account={a} />
-                                {isSelected && <Check className="ml-auto size-4 shrink-0 text-[var(--color-primary)]" />}
                             </li>
                         );
                     })}

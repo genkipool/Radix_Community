@@ -197,7 +197,6 @@
     "voters_total_xrd": "Total",
     "col_date": "Date",
     "col_txid": "Transaction",
-    "translated_from": "Automatically translated from English",
     "show_original": "View original",
     "showing_original": "You are viewing the original English text",
     "show_translation": "View translation",
@@ -209,6 +208,19 @@
     "kpi_turnout_hint": "XRD of voting power",
     "auto_collapse_on": "Auto-collapse on",
     "auto_collapse_off": "Auto-collapse off",
-    "your_current_vote": "Your vote"
+    "your_current_vote": "Your vote",
+    "translate_downloading": "Preparing your browser translator… {pct}",
+    "translated_by_browser": "Translated by your browser, on your device",
+    "connect_to_vote": "Connect wallet to vote",
+    "accounts_label": "Accounts you vote with",
+    "accounts_all": "All accounts",
+    "accounts_count": "{n} accounts",
+    "accounts_none": "Pick at least one account",
+    "current_votes_title": "Current vote of each account",
+    "not_voted": "Not voted",
+    "multi_account_hint": "Every selected account casts the same vote in one transaction; the wallet asks each of them to sign.",
+    "submit_many": "Vote with {n} accounts",
+    "power_share": "{pct} of the total",
+    "power_pending": "Not counted yet: the tally updates in about a minute"
   }
 }

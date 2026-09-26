@@ -5,6 +5,7 @@ import {
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
   User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp, Landmark
 } from 'lucide-react';
+import { prewarmTranslator } from '@/lib/browserTranslator';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -751,6 +752,10 @@ export default function Navbar() {
 
   const switchToLanguage = (targetLang: string) => {
     if (targetLang === language) return;
+    // This click is the user gesture the browser needs to fetch its on-device
+    // translator, used to show English content (governance proposals) in the
+    // chosen language.
+    prewarmTranslator(targetLang);
     dispatch({ type: 'SET_OPTIMISTIC_LANG', value: targetLang });
     setCookie('lang', targetLang);
     const timeout = setTimeout(() => { dispatch({ type: 'SET_OPTIMISTIC_LANG', value: null }); }, 5000);

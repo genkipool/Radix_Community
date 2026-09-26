@@ -8,7 +8,7 @@ const ACCOUNT = 'account_rdx1_test_voter';
 
 describe('buildVoteManifest', () => {
     it('votes on a proposal with the chosen option ids', () => {
-        const m = buildVoteManifest({ component: COMPONENT, kind: 'proposal', itemId: '0', account: ACCOUNT, selection: { type: 'options', optionIds: [0, 2] } });
+        const m = buildVoteManifest({ component: COMPONENT, kind: 'proposal', itemId: '0', accounts: [ACCOUNT], selection: { type: 'options', optionIds: [0, 2] } });
         expect(m).toBe([
             'CALL_METHOD',
             `    Address("${COMPONENT}")`,
@@ -29,20 +29,30 @@ describe('buildVoteManifest', () => {
     });
 
     it('votes on a temperature check with the stance enum variant', () => {
-        const forVote = buildVoteManifest({ component: COMPONENT, kind: 'temperature_check', itemId: '6', account: ACCOUNT, selection: { type: 'stance', stance: 'For' } });
-        const against = buildVoteManifest({ component: COMPONENT, kind: 'temperature_check', itemId: '6', account: ACCOUNT, selection: { type: 'stance', stance: 'Against' } });
+        const forVote = buildVoteManifest({ component: COMPONENT, kind: 'temperature_check', itemId: '6', accounts: [ACCOUNT], selection: { type: 'stance', stance: 'For' } });
+        const against = buildVoteManifest({ component: COMPONENT, kind: 'temperature_check', itemId: '6', accounts: [ACCOUNT], selection: { type: 'stance', stance: 'Against' } });
         expect(forVote).toContain('"vote_on_temperature_check"');
         expect(forVote).toContain('    6u64\n    Enum<0u8>()');
         expect(against).toContain('Enum<1u8>()');
     });
 
     it('refuses anything that could break out of the manifest', () => {
-        const base = { component: COMPONENT, kind: 'proposal' as const, itemId: '0', account: ACCOUNT, selection: { type: 'options' as const, optionIds: [0] } };
-        expect(() => buildVoteManifest({ ...base, account: 'account_x") ; CALL_METHOD' })).toThrow();
+        const base = { component: COMPONENT, kind: 'proposal' as const, itemId: '0', accounts: [ACCOUNT], selection: { type: 'options' as const, optionIds: [0] } };
+        expect(() => buildVoteManifest({ ...base, accounts: ['account_x") ; CALL_METHOD'] })).toThrow();
+        expect(() => buildVoteManifest({ ...base, accounts: [] })).toThrow();
         expect(() => buildVoteManifest({ ...base, itemId: '1u64' })).toThrow();
         expect(() => buildVoteManifest({ ...base, selection: { type: 'options', optionIds: [] } })).toThrow();
         expect(() => buildVoteManifest({ ...base, selection: { type: 'options', optionIds: [-1] } })).toThrow();
         expect(() => buildVoteManifest({ ...base, kind: 'temperature_check', selection: { type: 'stance', stance: 'Maybe' } })).toThrow();
+    });
+});
+
+describe('voting with several accounts', () => {
+    it('casts the vote from every account and makes each one sign', () => {
+        const m = buildVoteManifest({ component: COMPONENT, kind: 'temperature_check', itemId: '7', accounts: [ACCOUNT, 'account_rdx1_test_second', ACCOUNT], selection: { type: 'stance', stance: 'For' } });
+        expect(m.match(/"vote_on_temperature_check"/g)).toHaveLength(2);
+        expect(m.match(/"deposit_batch"/g)).toHaveLength(2);
+        expect(m.indexOf('account_rdx1_test_second')).toBeGreaterThan(m.indexOf(ACCOUNT));
     });
 });
 

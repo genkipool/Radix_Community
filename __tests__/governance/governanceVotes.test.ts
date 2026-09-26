@@ -164,4 +164,13 @@ describe('governanceVoteUtils', () => {
             expect(t.outcome).toBe('approved');
         });
     });
+
+    it('reads the tone from the ledger label when the option is shown translated', () => {
+        const item = parseGovernanceItem(proposal, 'proposal')!;
+        const shown = { ...item, options: item.options.map(o => ({ ...o, label: `ES:${o.label}`, sourceLabel: o.label })) };
+        const vote = extractGovernanceVotes([proposalVote] as unknown as GatewayEvent[])[0];
+        const t = summarizeTally(ballotChoices(vote, shown), { results: [{ vote: '0', votePower: '1500000000' }], accountPower: null }, shown);
+        expect(t.rows[0]).toMatchObject({ label: 'ES:Approve', tone: 'positive' });
+        expect(t.approvalShare).toBe(1);
+    });
 });

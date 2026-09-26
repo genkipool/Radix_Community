@@ -9,7 +9,7 @@ import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { selectedLabels, votingPhase, type VoteSelection } from '../lib/governanceVotes';
 import { buildVoteManifest } from '../lib/voteManifest';
-import { useAccountVote, accountVoteKey } from './useAccountVote';
+import { useAccountVotes, accountVoteKey } from './useAccountVote';
 
 /**
  * Everything needed to cast a vote from any part of the page: wallet and
@@ -21,21 +21,24 @@ export function useCastVote(entry: GovernanceEntry, system: GovernanceSystem, no
     const { item, kind, id } = entry;
     const queryClient = useQueryClient();
     const wallet = useRadixWallet();
-    const [chosenAccount, setChosenAccount] = useState<string | null>(null);
-    const account = wallet.accounts.some(a => a.address === chosenAccount) ? chosenAccount : wallet.accounts[0]?.address ?? null;
-    const currentVote = useAccountVote(item.votersStore, kind, account, system.network);
+    // Accounts that vote; the first shared account until the reader picks.
+    const [chosen, setChosen] = useState<string[] | null>(null);
+    const available = wallet.accounts.map(a => a.address);
+    const selectedAccounts = (chosen ?? available.slice(0, 1)).filter(a => available.includes(a));
+    const currentVotes = useAccountVotes(item.votersStore, kind, selectedAccounts, system.network);
     const [picked, setPicked] = useState<string[]>([]);
     const tx = useConsoleTransaction();
 
     const phase = votingPhase(item, now);
     const onNetwork = wallet.activeNetwork === system.network;
     const maxPick = kind === 'temperature_check' ? 1 : Math.max(1, item.maxSelections);
-    const current = currentVote.data ?? null;
-    const currentText = current
-        ? (current.type === 'stance' ? selectedLabels(current, item).map(stanceLabel) : selectedLabels(current, item)).join(', ')
-        : null;
+    const describe = (selection: VoteSelection) =>
+        (selection.type === 'stance' ? selectedLabels(selection, item).map(stanceLabel) : selectedLabels(selection, item)).join(', ');
+    /** Current vote of each selected account (null when it has not voted). */
+    const current = currentVotes.votes.map(v => ({ account: v.account, selection: v.selection, text: v.selection ? describe(v.selection) : null }));
+    const anyVoted = current.some(v => v.selection);
     /** The ballot can be used right now by this reader. */
-    const canVote = phase === 'open' && wallet.isConnected && onNetwork && !!account;
+    const canVote = phase === 'open' && wallet.isConnected && onNetwork && available.length > 0;
 
     const toggle = (key: string) => {
         if (!canVote) return;
@@ -47,28 +50,30 @@ export function useCastVote(entry: GovernanceEntry, system: GovernanceSystem, no
         });
     };
 
-    const selectAccount = (address: string) => { setChosenAccount(address); setPicked([]); tx.reset(); };
+    const setAccounts = (next: string[]) => { setChosen(next); tx.reset(); };
+    const toggleAccount = (address: string) =>
+        setAccounts(selectedAccounts.includes(address) ? selectedAccounts.filter(a => a !== address) : [...selectedAccounts, address]);
 
     const submit = async () => {
-        if (!account || picked.length === 0) return;
+        if (selectedAccounts.length === 0 || picked.length === 0) return;
         const selection: VoteSelection = kind === 'temperature_check'
             ? { type: 'stance', stance: picked[0] }
             : { type: 'options', optionIds: picked.map(Number) };
-        const manifest = buildVoteManifest({ component: system.component, kind, itemId: id, account, selection });
+        const manifest = buildVoteManifest({ component: system.component, kind, itemId: id, accounts: selectedAccounts, selection });
         const result = await tx.sendTransaction(manifest);
         if (result) {
             setPicked([]);
-            await queryClient.invalidateQueries({ queryKey: accountVoteKey(item.votersStore, account) });
+            await Promise.all(selectedAccounts.map(a => queryClient.invalidateQueries({ queryKey: accountVoteKey(item.votersStore, a) })));
             await queryClient.invalidateQueries({ queryKey: ['governance-tally', system.component, kind, id] });
         }
     };
 
     return {
         phase, canVote, maxPick, picked, toggle, submit, tx,
-        account, selectAccount, accounts: wallet.accounts,
+        accounts: wallet.accounts, selectedAccounts, toggleAccount, setAccounts,
         isConnected: wallet.isConnected, isLoading: wallet.isLoading, onNetwork,
         connect: () => wallet.connect(RadixNetworkId.Mainnet),
-        current, currentText, currentLoading: currentVote.isLoading,
+        current, anyVoted, currentLoading: currentVotes.isLoading,
     };
 }
 

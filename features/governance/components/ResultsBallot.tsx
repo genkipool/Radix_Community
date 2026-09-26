@@ -28,11 +28,11 @@ export function ResultsBallot({ entry, system, choices, tally, g, language, now 
     const gv: Gv = g.vote ?? {};
     const stances = (gv.stances ?? {}) as Record<string, string>;
     const vote = useCastVote(entry, system, now, s => stances[s] || s);
-    const currentKeys = new Set(vote.current ? selectionKeys(vote.current) : []);
+    const currentKeys = new Set(vote.current.flatMap(c => (c.selection ? selectionKeys(c.selection) : [])));
     const rows = tally?.rows ?? choices.map(c => ({ ...c, power: 0, share: 0 }));
 
     return (
-        <section aria-labelledby="results-ballot" className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-4">
+        <section aria-labelledby="results-ballot" className="h-full flex flex-col gap-4 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 id="results-ballot" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
                     <Vote className="size-4 text-[var(--color-primary)]" />{gv.results || 'Results'}
@@ -95,8 +95,9 @@ export function ResultsBallot({ entry, system, choices, tally, g, language, now 
                 })}
             </div>
 
-            <div className="pt-4 border-t border-[var(--color-card-border)] space-y-3">
-                <VoteAccess vote={vote} item={entry.item} g={g} language={language} now={now} />
+            {/* Pushed to the bottom so both boxes of the row end level. */}
+            <div className="mt-auto pt-4 border-t border-[var(--color-card-border)] space-y-3">
+                <VoteAccess vote={vote} item={entry.item} g={g} language={language} now={now} compact />
                 <VoteSubmit vote={vote} item={entry.item} g={g} language={language} />
             </div>
         </section>
