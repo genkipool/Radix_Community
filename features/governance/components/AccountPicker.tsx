@@ -32,6 +32,14 @@ function AccountLine({ account }: { account: WalletAccount }) {
     );
 }
 
+/** Same look as the destination address list of the wallet transfer popup. */
+function rowClass(selected: boolean, active: boolean): string {
+    const state = selected
+        ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold'
+        : active ? 'bg-[var(--color-bg)] text-[var(--color-text-main)]' : 'text-[var(--color-text-main)]';
+    return `group w-full flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${state}`;
+}
+
 /**
  * Accounts to vote with: one or several (all of them cast the same vote in a
  * single transaction). A keyboard-accessible multi-select listbox showing each
@@ -87,7 +95,7 @@ export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, l
                 disabled={single}
                 onClick={() => setOpen(o => !o)}
                 onKeyDown={onKeyDown}
-                className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${open
+                className={`w-full h-14 flex items-center gap-3 rounded-xl border px-3 text-left transition-colors ${open
                     ? 'border-[var(--color-primary)] bg-[var(--color-card-bg)]'
                     : 'border-[var(--color-card-border)] bg-[var(--color-surface)] enabled:hover:border-[var(--color-primary)]/50'}`}
             >
@@ -99,7 +107,12 @@ export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, l
                 ) : chosen.length > 1 ? (
                     <>
                         <span className="flex -space-x-2 shrink-0">
-                            {chosen.slice(0, 4).map(a => <span key={a.address} className="ring-2 ring-[var(--color-card-bg)] rounded-xl"><Avatar account={a} size="size-8" /></span>)}
+                            {chosen.slice(0, 4).map(a => <span key={a.address} className="ring-2 ring-[var(--color-card-bg)] rounded-xl"><Avatar account={a} size="size-9" /></span>)}
+                            {chosen.length > 4 && (
+                                <span className="grid place-items-center size-9 rounded-xl ring-2 ring-[var(--color-card-bg)] bg-[var(--color-surface-hover)] text-[11px] font-bold text-[var(--color-text-secondary)] tabular-nums">
+                                    +{chosen.length - 4}
+                                </span>
+                            )}
                         </span>
                         <span className="min-w-0 text-sm font-bold text-[var(--color-text-main)] truncate">
                             {allSelected ? labels.all : labels.count.replace('{n}', String(chosen.length))}
@@ -117,7 +130,7 @@ export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, l
                     role="listbox"
                     aria-multiselectable="true"
                     aria-label={label}
-                    className="absolute z-30 mt-2 w-full max-h-80 overflow-auto no-scrollbar rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-1.5 shadow-xl"
+                    className="absolute z-30 mt-2 w-full max-h-80 overflow-auto no-scrollbar rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)]/95 backdrop-blur-xl p-1.5 shadow-2xl"
                 >
                     {!single && (
                         <li
@@ -127,10 +140,10 @@ export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, l
                             onMouseEnter={() => setActive(0)}
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => activate(0)}
-                            className={`flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer border-b border-[var(--color-card-border)] mb-1 ${active === 0 ? 'bg-[var(--color-surface)]' : ''}`}
+                            className={`${rowClass(allSelected, active === 0)} mb-1`}
                         >
-                            <Check className={`size-4 shrink-0 rounded border ${allSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white' : 'border-[var(--color-card-border)] text-transparent'}`} />
-                            <span className="text-sm font-bold text-[var(--color-text-main)]">{labels.all}</span>
+                            <span className={`text-xs ${allSelected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{labels.all}</span>
+                            {allSelected && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                         </li>
                     )}
                     {accounts.map((a, i) => {
@@ -145,11 +158,16 @@ export function AccountPicker({ accounts, selected, onToggle, onSetAll, label, l
                                 onMouseEnter={() => setActive(row)}
                                 onMouseDown={e => e.preventDefault()}
                                 onClick={() => activate(row)}
-                                className={`flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-colors ${active === row ? 'bg-[var(--color-surface)]' : ''}`}
+                                className={rowClass(isSelected, active === row)}
                             >
-                                <Check className={`size-4 shrink-0 rounded border ${isSelected ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white' : 'border-[var(--color-card-border)] text-transparent'}`} />
-                                <Avatar account={a} size="size-8" />
-                                <AccountLine account={a} />
+                                <span className="flex items-center gap-2.5 min-w-0 flex-1">
+                                    <Avatar account={a} size="size-7" />
+                                    <span className="flex flex-col min-w-0">
+                                        <span className={`text-xs truncate ${isSelected ? '' : 'font-semibold group-hover:text-[var(--color-primary)]'}`}>{a.label || shortenAddress(a.address)}</span>
+                                        <span className={`text-[10px] truncate ${isSelected ? 'text-[var(--color-primary)]/80 font-normal' : 'text-[var(--color-text-muted)]'}`}>{shortenAddress(a.address)}</span>
+                                    </span>
+                                </span>
+                                {isSelected && <Check className="size-4 shrink-0 ml-2" strokeWidth={2} />}
                             </li>
                         );
                     })}

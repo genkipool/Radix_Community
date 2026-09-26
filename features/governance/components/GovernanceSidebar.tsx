@@ -110,6 +110,7 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                         sublabel: `${kindShort[e.kind]} #${e.id} · ${e.systemName}`,
                         leftVisual: <ItemIcon kind={e.kind} selected={activePath === pathOf(e)} />,
                         href: pathOf(e),
+                        prefetchOnHover: true,
                         isSelected: activePath === pathOf(e),
                     }));
                     return (
