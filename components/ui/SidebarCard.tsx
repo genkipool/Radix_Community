@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import { HoverPrefetchLink } from './HoverPrefetchLink';
 import { HighlightText } from '@/components/ui/HighlightText';
 
 // Re-export so existing consumers (DocsSidebar) can keep their import path
@@ -20,6 +21,9 @@ export interface SidebarCardItem {
     isUserItem?: boolean;
     /** Native Next.js link URL for the sub-item */
     href?: string;
+    /** Fetch the whole page (data included) when the pointer rests on the link,
+     *  so opening it shows the content straight away instead of a skeleton. */
+    prefetchOnHover?: boolean;
     /** @deprecated Use actions instead */
     onAction?: () => void;
     /** @deprecated Use actions instead */
@@ -187,9 +191,9 @@ function SidebarCardRow({
     richItems: boolean;
     onSelectItem: (id: string) => void;
 }) {
-    const { id, label, sublabel, leftVisual, badge, isSelected = false, onAction, actionIcon, actions, href } = item;
+    const { id, label, sublabel, leftVisual, badge, isSelected = false, onAction, actionIcon, actions, href, prefetchOnHover } = item;
 
-    const Component = (href ? Link : 'button') as React.ElementType;
+    const Component = (href ? (prefetchOnHover ? HoverPrefetchLink : Link) : 'button') as React.ElementType;
     const componentProps = href
         ? {
             href,

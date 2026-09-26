@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { HoverPrefetchLink } from '@/components/ui/HoverPrefetchLink';
 import { ArrowRight, Users, CalendarClock } from 'lucide-react';
 import { systemByKey } from '../config/systems';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
@@ -35,7 +35,7 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                 : fill(g.card_closed || 'Closed on {date}', { date: formatDate(item.deadline, language, undefined, 'date') });
 
     return (
-        <Link
+        <HoverPrefetchLink
             href={`/${language}${governanceItemPath(systemKey, kind, id)}`}
             className="group flex flex-col h-full rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 transition-all hover:border-[var(--color-primary)]/50 hover:shadow-lg hover:shadow-[var(--color-primary)]/5 hover:-translate-y-0.5"
         >
@@ -108,6 +108,6 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
                     </span>
                 </div>
             </div>
-        </Link>
+        </HoverPrefetchLink>
     );
 }
