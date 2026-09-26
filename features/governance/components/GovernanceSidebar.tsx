@@ -16,6 +16,7 @@ import type { VotingPhase } from '../lib/governanceVotes';
 import { useNow } from '../hooks/useNow';
 import { useTranslatedList } from './BrowserTranslation';
 import type { G } from './GovernanceBadges';
+import { useGovernanceNav } from './GovernanceNav';
 
 function ItemIcon({ kind, selected }: { kind: 'proposal' | 'temperature_check'; selected: boolean }) {
     const { pending } = useLinkStatus();
@@ -48,6 +49,7 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
     serverNow: number;
 }) {
     const router = useRouter();
+    const nav = useGovernanceNav();
     const pathname = usePathname();
     const now = useNow(serverNow);
     const [query, setQuery] = useState('');
@@ -131,9 +133,11 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                             onToggle={() => toggle(phase)}
                             items={items}
                             richItems
-                            onSelectItem={id => {
+                            onSelectItem={(id, click) => {
                                 const e = byKey.get(id);
-                                if (e) setPending({ path: pathOf(e), from: pathname });
+                                if (!e) return;
+                                setPending({ path: pathOf(e), from: pathname });
+                                nav.openVote(pathOf(e), click);
                             }}
                         />
                     );

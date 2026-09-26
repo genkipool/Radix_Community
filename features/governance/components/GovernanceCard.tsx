@@ -11,6 +11,7 @@ import type { GovernanceEntry } from '../types';
 import { fill, formatDate, formatPct, formatRelative, TONE } from './VoteParts';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { useTranslatedText } from './BrowserTranslation';
+import { useGovernanceNav } from './GovernanceNav';
 
 /**
  * One proposal or temperature check in the list: what it is, whether it is
@@ -28,15 +29,19 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
     const voters = uniqueVoters(item);
     const title = useTranslatedText(item.title);
     const shortDescription = useTranslatedText(item.shortDescription);
+    const nav = useGovernanceNav();
 
     const when = !item.deadline ? null
         : phase === 'open' ? fill(g.card_closes || 'Closes {time}', { time: formatRelative(item.deadline, language, now) })
             : phase === 'upcoming' && item.start ? fill(g.card_starts || 'Opens {time}', { time: formatRelative(item.start, language, now) })
                 : fill(g.card_closed || 'Closed on {date}', { date: formatDate(item.deadline, language, undefined, 'date') });
 
+    const href = `/${language}${governanceItemPath(systemKey, kind, id)}`;
+
     return (
         <HoverPrefetchLink
-            href={`/${language}${governanceItemPath(systemKey, kind, id)}`}
+            href={href}
+            onClick={e => nav.openVote(href, e)}
             className="group flex flex-col h-full rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 transition-all hover:border-[var(--color-primary)]/50 hover:shadow-lg hover:shadow-[var(--color-primary)]/5 hover:-translate-y-0.5"
         >
             <div className="flex flex-wrap items-center gap-2">
