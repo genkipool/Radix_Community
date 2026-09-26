@@ -86,6 +86,8 @@ export function extractGovernanceVotes(events: GatewayEvent[] = []): GovernanceV
 export interface GovernanceItem {
     title: string | null;
     shortDescription: string | null;
+    /** Full text, in Markdown. */
+    description: string | null;
     options: Array<{ id: number; label: string }>;
     links: string[];
     voteCount: number | null;
@@ -102,6 +104,14 @@ export interface GovernanceItem {
     parameterLabel: string | null;
     /** Proposal a temperature check was promoted to, once it passed. */
     elevatedProposalId: string | null;
+    /** Temperature check a proposal came from. */
+    temperatureCheckId: string | null;
+    /** How many options a voter may pick; 1 for a single-choice ballot. */
+    maxSelections: number;
+    /** Hidden by the system's operator (spam, withdrawn…). */
+    hidden: boolean;
+    /** Key-value store mapping each voter account to its current vote. */
+    votersStore: string | null;
 }
 
 /**
@@ -116,6 +126,7 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
     return {
         title: pjText(pjField(item, 'title')),
         shortDescription: pjText(pjField(item, 'short_description')),
+        description: pjText(pjField(item, 'description')),
         options: pjList(pjField(item, 'vote_options')).flatMap(opt => {
             const id = pjNumber(pjFields(pjField(opt, 'id'))[0]);
             const label = pjText(pjField(opt, 'label'));
@@ -131,6 +142,10 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
         author: pjText(pjField(item, 'author')),
         parameterLabel: pjText(pjPath(item, 'parameter_set', 'label')),
         elevatedProposalId: pjText(pjOption(pjField(item, 'elevated_proposal_id'))),
+        temperatureCheckId: pjText(pjField(item, 'temperature_check_id')),
+        maxSelections: pjNumber(pjOption(pjField(item, 'max_selections'))) ?? 1,
+        hidden: pjText(pjField(item, 'hidden')) === 'true',
+        votersStore: pjText(pjField(item, 'voters')),
     };
 }
 
@@ -193,16 +208,28 @@ export interface BallotChoice {
     tone: VoteTone;
 }
 
+/** Every choice an item's ballot offers, none selected. */
+export function itemChoices(kind: GovernanceItemKind, item: GovernanceItem | null, stanceLabel: (s: string) => string = s => s): BallotChoice[] {
+    if (kind === 'temperature_check') {
+        return STANCES.map(key => ({ key, label: stanceLabel(key), selected: false, tone: toneOf(key) }));
+    }
+    return (item?.options ?? []).map(o => ({ key: String(o.id), label: o.label, selected: false, tone: toneOf(o.label) }));
+}
+
+/** Collector / ballot key of each choice in a selection. */
+export function selectionKeys(selection: VoteSelection): string[] {
+    return selection.type === 'stance' ? (selection.stance ? [selection.stance] : []) : selection.optionIds.map(String);
+}
+
 /** Every choice the ballot offered, with the one(s) this vote picked marked. */
 export function ballotChoices(vote: GovernanceVote, item: GovernanceItem | null, stanceLabel: (s: string) => string = s => s): BallotChoice[] {
-    if (vote.selection.type === 'stance') {
-        const picked = vote.selection.stance;
-        const keys = STANCES.includes(picked) || !picked ? STANCES : [...STANCES, picked];
-        return keys.map(key => ({ key, label: stanceLabel(key), selected: key === picked, tone: toneOf(key) }));
-    }
-    const chosen = new Set(vote.selection.optionIds);
-    const options = item?.options.length ? item.options : vote.selection.optionIds.map(id => ({ id, label: `#${id}` }));
-    return options.map(o => ({ key: String(o.id), label: o.label, selected: chosen.has(o.id), tone: toneOf(o.label) }));
+    const picked = new Set(selectionKeys(vote.selection));
+    const choices = itemChoices(vote.kind, item, stanceLabel);
+    // Keep choices the ballot does not list (unknown stance, option of an unreadable item).
+    const extra = [...picked]
+        .filter(key => !choices.some(c => c.key === key))
+        .map(key => ({ key, label: vote.selection.type === 'stance' ? stanceLabel(key) : `#${key}`, selected: false, tone: toneOf(key) }));
+    return [...choices, ...extra].map(c => ({ ...c, selected: picked.has(c.key) }));
 }
 
 export interface VoteTallyInput {
@@ -281,4 +308,26 @@ export function summarizeTally(choices: BallotChoice[], tally: VoteTallyInput, i
         accountPower,
         accountShare: accountPower !== null && turnout > 0 ? accountPower / turnout : null,
     };
+}
+
+/**
+ * Accounts that voted. `vote_count` numbers every vote record, including the
+ * ones that replaced an earlier vote of the same account.
+ */
+export function uniqueVoters(item: GovernanceItem | null): number | null {
+    if (item?.voteCount == null) return null;
+    return Math.max(0, item.voteCount - (item.revoteCount ?? 0));
+}
+
+/** A voter's current vote as stored in the item's `voters` key-value store. */
+export function parseVoterEntry(entry: unknown, kind: GovernanceItemKind): VoteSelection | null {
+    if (!entry || typeof entry !== 'object') return null;
+    if (kind === 'temperature_check') {
+        const stance = pjField(entry, 'vote')?.variant_name;
+        return stance ? { type: 'stance', stance } : null;
+    }
+    const optionIds = pjList(pjField(entry, 'options'))
+        .map(opt => pjNumber(pjFields(opt)[0]))
+        .filter((id): id is number => id !== null);
+    return optionIds.length ? { type: 'options', optionIds } : null;
 }

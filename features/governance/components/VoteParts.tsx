@@ -7,10 +7,10 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { TranslationsT } from '@/features/dashboard/types';
-import type { BallotChoice, GovernanceItem, TallySummary, VoteOutcome, VoteTone, VotingPhase } from '../utils/governanceVoteUtils';
-import { SectionLabel } from './SummaryCardKit';
+import type { BallotChoice, GovernanceItem, TallySummary, VoteOutcome, VoteTone, VotingPhase } from '../lib/governanceVotes';
+import { SectionLabel } from '@/features/dashboard/explorador/components/SummaryCardKit';
 
-export type Gv = Partial<NonNullable<TranslationsT['dashboard']['transactions']['governance_vote']>>;
+export type Gv = Partial<TranslationsT['governance']['vote']>;
 
 /* ── Shared styling and formatting ─────────────────────────── */
 
@@ -21,32 +21,9 @@ export const TONE: Record<VoteTone, { text: string; soft: string; bar: string; i
     neutral: { text: 'text-[var(--color-text-secondary)]', soft: 'border-[var(--color-card-border)] bg-[var(--color-surface)]', bar: 'bg-[var(--color-text-muted)]', icon: CircleDot },
 };
 
-export const fill = (tpl: string, values: Record<string, string>) =>
-    Object.entries(values).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
+import { fill, formatXrd, formatPct, formatDate, formatRelative } from '../lib/format';
 
-export const formatXrd = (n: number, locale?: string) =>
-    new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
-
-export const formatPct = (n: number, locale?: string) =>
-    new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(n);
-
-export function formatDate(sec: number, locale?: string, timeZone?: string) {
-    const opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
-    try {
-        return new Intl.DateTimeFormat(locale, { ...opts, timeZone }).format(sec * 1000);
-    } catch {
-        return new Intl.DateTimeFormat(locale, opts).format(sec * 1000);
-    }
-}
-
-export function formatRelative(sec: number, locale?: string) {
-    const diff = sec - Date.now() / 1000;
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-    const abs = Math.abs(diff);
-    if (abs >= 86_400) return rtf.format(Math.round(diff / 86_400), 'day');
-    if (abs >= 3_600) return rtf.format(Math.round(diff / 3_600), 'hour');
-    return rtf.format(Math.round(diff / 60), 'minute');
-}
+export { fill, formatXrd, formatPct, formatDate, formatRelative };
 
 function Bar({ ratio, className }: { ratio: number; className: string }) {
     const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 1000) / 10;
@@ -185,18 +162,20 @@ export function TurnoutMeter({ tally, item, gv, locale }: { tally: TallySummary;
 
 /* ── Voting window ─────────────────────────────────────────── */
 
-export function VotingWindow({ item, phase, progress, gv, locale, timezone }: {
+export function VotingWindow({ item, phase, progress, gv, locale, timezone, now }: {
     item: GovernanceItem;
     phase: VotingPhase;
     progress: number | null;
     gv: Gv;
     locale?: string;
     timezone?: string;
+    /** Unix seconds; defaults to the clock. */
+    now?: number;
 }) {
     if (!item.start || !item.deadline) return null;
-    const phaseText = phase === 'open' ? fill(gv.ends_rel || 'Closes {time}', { time: formatRelative(item.deadline, locale) })
-        : phase === 'upcoming' ? fill(gv.starts_rel || 'Starts {time}', { time: formatRelative(item.start, locale) })
-            : fill(gv.closed_rel || 'Closed {time}', { time: formatRelative(item.deadline, locale) });
+    const phaseText = phase === 'open' ? fill(gv.ends_rel || 'Closes {time}', { time: formatRelative(item.deadline, locale, now) })
+        : phase === 'upcoming' ? fill(gv.starts_rel || 'Starts {time}', { time: formatRelative(item.start, locale, now) })
+            : fill(gv.closed_rel || 'Closed {time}', { time: formatRelative(item.deadline, locale, now) });
     return (
         <div>
             <SectionLabel>{gv.period || 'Voting period'}</SectionLabel>
@@ -204,17 +183,17 @@ export function VotingWindow({ item, phase, progress, gv, locale, timezone }: {
                 <div className="flex flex-col @md:flex-row @md:items-end justify-between gap-2 text-xs">
                     <span className="flex flex-col">
                         <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.starts || 'Opens'}</span>
-                        <span className="font-semibold text-[var(--color-text-main)]">{formatDate(item.start, locale, timezone)}</span>
+                        <span className="font-semibold text-[var(--color-text-main)]" suppressHydrationWarning>{formatDate(item.start, locale, timezone)}</span>
                     </span>
                     <span className="flex flex-col @md:items-end">
                         <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.ends || 'Closes'}</span>
-                        <span className="font-semibold text-[var(--color-text-main)]">{formatDate(item.deadline, locale, timezone)}</span>
+                        <span className="font-semibold text-[var(--color-text-main)]" suppressHydrationWarning>{formatDate(item.deadline, locale, timezone)}</span>
                     </span>
                 </div>
                 <Bar ratio={progress ?? 0} className={phase === 'closed' ? 'bg-[var(--color-text-muted)]' : 'bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]'} />
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
-                        <CalendarClock className="size-3.5 text-[var(--color-primary)]" />{phaseText}
+                        <CalendarClock className="size-3.5 text-[var(--color-primary)]" /><span suppressHydrationWarning>{phaseText}</span>
                     </p>
                     {item.elevatedProposalId && (
                         <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 text-[var(--color-accent)]">

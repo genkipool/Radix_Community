@@ -1,20 +1,24 @@
 'use client';
 
 import React from 'react';
-import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info } from 'lucide-react';
+import Link from 'next/link';
+import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info, ArrowRight } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { systemByComponent } from '@/features/governance/config/systems';
+import { governanceItemPath } from '@/features/governance/lib/paths';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
-import { useGovernanceItem } from '../hooks/useGovernanceItem';
-import { useGovernanceTally } from '../hooks/useGovernanceTally';
+import { useGovernanceItem } from '@/features/governance/hooks/useGovernanceItem';
+import { useGovernanceTally } from '@/features/governance/hooks/useGovernanceTally';
 import {
-    ballotChoices, selectedLabels, summarizeTally, toneOf, votingPhase, votingProgress,
+    ballotChoices, selectedLabels, summarizeTally, toneOf, uniqueVoters, votingPhase, votingProgress,
     type GovernanceVote, type VotingPhase,
-} from '../utils/governanceVoteUtils';
+} from '@/features/governance/lib/governanceVotes';
 import {
     SummaryCard, SummaryHero, SummaryBody, PlainSummary, FactTile, FactGrid, AddressChip, shortenAddress,
 } from './SummaryCardKit';
 import {
     TONE, fill, formatPct, formatXrd, OutcomeBanner, BallotResults, TurnoutMeter, VotingWindow, LinkList, type Gv,
-} from './GovernanceVoteParts';
+} from '@/features/governance/components/VoteParts';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 
@@ -43,9 +47,11 @@ const PHASE_STYLE: Record<VotingPhase, string> = {
  * when it closes.
  */
 export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, locale, timezone }: GovernanceVoteCardProps) {
-    const gv: Gv = tt?.governance_vote ?? {};
+    const { t, language } = useLanguage();
+    const gv: Gv = t.governance?.vote ?? {};
+    const system = systemByComponent(vote.component);
     const itemQuery = useGovernanceItem(vote, network);
-    const tallyQuery = useGovernanceTally(vote, network);
+    const tallyQuery = useGovernanceTally({ component: vote.component, kind: vote.kind, itemId: vote.itemId, account: vote.account }, network);
     const item = itemQuery.data?.item ?? null;
     const copyTitle = tt?.copy_raw || 'Copy';
     const isProposal = vote.kind === 'proposal';
@@ -171,10 +177,10 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                         icon={Users}
                         label={gv.vote_count || 'Votes cast'}
                         hint={item?.revoteCount
-                            ? fill(gv.revote_hint || 'In total, so far · changed votes: {n}', { n: item.revoteCount.toLocaleString(locale) })
-                            : (gv.vote_count_hint || 'In total, so far')}
+                            ? fill(gv.revote_hint || 'Distinct accounts · changed votes: {n}', { n: item.revoteCount.toLocaleString(locale) })
+                            : (gv.vote_count_hint || 'Distinct accounts that voted')}
                     >
-                        <span className="text-xl font-black font-mono">{item?.voteCount != null ? item.voteCount.toLocaleString(locale) : '—'}</span>
+                        <span className="text-xl font-black font-mono">{uniqueVoters(item)?.toLocaleString(locale) ?? '—'}</span>
                     </FactTile>
                     <FactTile
                         icon={Target}
@@ -195,11 +201,26 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                 {item && <VotingWindow item={item} phase={phase} progress={votingProgress(item)} gv={gv} locale={locale} timezone={timezone} />}
                 {item && <LinkList links={item.links} title={gv.links || 'Learn more'} />}
 
+                {tally?.outcome && (
+                    <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
+                        <Info className="size-3 mt-0.5 shrink-0" />
+                        {gv.outcome_note || 'Indicative result, computed with the quorum and threshold stored on the ledger.'}
+                    </p>
+                )}
                 {tallyQuery.data?.source && (
                     <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
                         <Info className="size-3 mt-0.5 shrink-0" />
                         {fill(gv.source_note || 'The ledger records each vote; its weight in XRD is computed and published by {source}, the dApp that runs this vote.', { source: tallyQuery.data.source })}
                     </p>
+                )}
+                {system && (
+                    <Link
+                        href={`/${language}${governanceItemPath(system.key, vote.kind, vote.itemId)}`}
+                        className="flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 transition-opacity"
+                    >
+                        {gv.open_in_governance || 'See the full vote and cast yours'}
+                        <ArrowRight className="size-4" />
+                    </Link>
                 )}
             </SummaryBody>
         </SummaryCard>

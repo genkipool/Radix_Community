@@ -49,6 +49,8 @@ const DASHBOARD_NAMESPACES = [
   'dashboard',
   'dashboardStaking',
   'dashboardExplorador',
+  // The explorer's governance vote card shares its strings with /governance.
+  'governance',
 ] as const;
 
 export function getDashboardDictionary(locale: string) {
