@@ -2,10 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { extractResourceCreations, decodeMetadataValue, parseNftFieldNames } from '@/features/dashboard/explorador/utils/resourceCreationUtils';
 import type { GatewayEvent } from '@/features/dashboard/types';
 
-// Trimmed receipt of txid_rdx12rde6u42ycgvynxr5828xdms5h28nzzjndj6q9z83u7v6c0nn7dsp383xw:
-// CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY with an empty map (0 NFTs).
-const RES = 'resource_rdx1nfe2dyryeefpzps8tu669j07v6ua4yrk0vh4773m00a4u3d2twg4xt';
-const BADGE = 'resource_rdx1nf89ryugl2ytuh7lfcrpt7ghudnfah7gdcwwjw6y3e6v5cwrr5tfxs';
+// Synthetic receipt shaped like CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+// with an empty map (0 NFTs). Addresses and metadata are made up.
+const RES = 'resource_rdx1_test_collection';
+const BADGE = 'resource_rdx1_test_owner_badge';
+
+// SBOR metadata values: String (0x00), Url (0x0d), Array<String> (0x80), Address (0x08)
+const hex = (t: string) => Array.from(new TextEncoder().encode(t), b => b.toString(16).padStart(2, '0')).join('');
+const len = (t: string) => new TextEncoder().encode(t).length.toString(16).padStart(2, '0');
+const sborString = (t: string) => `5c2200010c${len(t)}${hex(t)}`;
+const sborUrl = (t: string) => `5c220d010c${len(t)}${hex(t)}`;
+const sborStrings = (items: string[]) => `5c228001200c${items.length.toString(16).padStart(2, '0')}${items.map(t => len(t) + hex(t)).join('')}`;
+const SBOR_ADDRESS = `5c22080180${'11'.repeat(30)}`;
+const ICON = 'https://example.com/collection-icon.png';
 
 const meta = (name: string, hex: string) => ({
     substate_id: { entity_address: RES, substate_type: 'MetadataModuleEntry' },
@@ -19,11 +28,11 @@ const rule = (role_key: string, type: string) => ({
 const stateUpdates = {
     new_global_entities: [{ entity_address: RES, entity_type: 'GlobalNonFungibleResource' }],
     created_substates: [
-        meta('name', '5c2200010c0e47454e4b49504f4f4c205345414c'),
-        meta('symbol', '5c2200010c05475345414c'),
-        meta('icon_url', '5c220d010c4568747470733a2f2f72616469782e67656e6b69706f6f6c2e636f6d2f696d672f6c6f676f2f6c6f676f5f52616469785f47656e6b69506f6f6c5f626c616e636f2e77656270'),
-        meta('tags', '5c228001200c020a72616469782d7365616c077369676e696e67'),
-        meta('issuer', '5c22080180516b3e711cea896d4639f52096595e1dbd69b92f819ca7fc4694006b5ecf'),
+        meta('name', sborString('Sample Collection')),
+        meta('symbol', sborString('SMPL')),
+        meta('icon_url', sborUrl(ICON)),
+        meta('tags', sborStrings(['sample', 'signing'])),
+        meta('issuer', SBOR_ADDRESS),
         rule('depositor', 'AllowAll'),
         rule('withdrawer', 'DenyAll'),
         rule('burner', 'DenyAll'),
@@ -67,10 +76,10 @@ const manifest = `CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
 
 describe('resourceCreationUtils', () => {
     it('decodes String, Url and Array<String> metadata and skips addresses', () => {
-        expect(decodeMetadataValue('5c2200010c05475345414c')).toBe('GSEAL');
-        expect(decodeMetadataValue('5c220d010c1b68747470733a2f2f72616469782e67656e6b69706f6f6c2e636f6d')).toBe('https://radix.genkipool.com');
-        expect(decodeMetadataValue('5c228001200c020a72616469782d7365616c077369676e696e67')).toEqual(['radix-seal', 'signing']);
-        expect(decodeMetadataValue('5c22080180516b3e711cea896d4639f52096595e1dbd69b92f819ca7fc4694006b5ecf')).toBeNull();
+        expect(decodeMetadataValue(sborString('SMPL'))).toBe('SMPL');
+        expect(decodeMetadataValue(sborUrl('https://example.com'))).toBe('https://example.com');
+        expect(decodeMetadataValue(sborStrings(['sample', 'signing']))).toEqual(['sample', 'signing']);
+        expect(decodeMetadataValue(SBOR_ADDRESS)).toBeNull();
         expect(decodeMetadataValue('zz')).toBeNull();
     });
 
@@ -84,9 +93,9 @@ describe('resourceCreationUtils', () => {
         expect(c).toMatchObject({
             address: RES,
             kind: 'non_fungible',
-            name: 'GENKIPOOL SEAL',
-            symbol: 'GSEAL',
-            tags: ['radix-seal', 'signing'],
+            name: 'Sample Collection',
+            symbol: 'SMPL',
+            tags: ['sample', 'signing'],
             initialSupply: '0',
             idType: 'Integer',
             mutableFields: ['key_image_url'],
@@ -94,7 +103,7 @@ describe('resourceCreationUtils', () => {
             ownerBadge: BADGE,
             roles: { transfer: 'nobody', mint: 'owner', burn: 'nobody', recall: 'owner' },
         });
-        expect(c.iconUrl).toMatch(/^https:\/\/radix\.genkipool\.com\//);
+        expect(c.iconUrl).toBe(ICON);
     });
 
     it('counts NFTs minted at creation and ignores transactions that create nothing', () => {

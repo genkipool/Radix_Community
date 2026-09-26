@@ -1,22 +1,22 @@
 'use client';
 
 import React from 'react';
-import {
-    Vote, ThumbsUp, ThumbsDown, CircleDot, CheckCircle2, Circle, UserRound, Users, Target,
-    PenLine, ExternalLink, ArrowUpRight, CalendarClock, AlertCircle, RefreshCw,
-} from 'lucide-react';
+import { Vote, UserRound, Users, Target, PenLine, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import { useGovernanceItem } from '../hooks/useGovernanceItem';
+import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import {
-    selectedLabels, toneOf, votingPhase, votingProgress,
-    type GovernanceItem, type GovernanceVote, type VoteTone, type VotingPhase,
+    ballotChoices, selectedLabels, summarizeTally, toneOf, votingPhase, votingProgress,
+    type GovernanceVote, type VotingPhase,
 } from '../utils/governanceVoteUtils';
 import {
-    SummaryCard, SummaryHero, SummaryBody, PlainSummary, SectionLabel, FactTile, FactGrid, AddressChip, shortenAddress,
+    SummaryCard, SummaryHero, SummaryBody, PlainSummary, FactTile, FactGrid, AddressChip, shortenAddress,
 } from './SummaryCardKit';
+import {
+    TONE, fill, formatPct, formatXrd, OutcomeBanner, BallotResults, TurnoutMeter, VotingWindow, LinkList, type Gv,
+} from './GovernanceVoteParts';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
-type Gv = Partial<NonNullable<TranslationsT['dashboard']['transactions']['governance_vote']>>;
 
 interface GovernanceVoteCardProps {
     vote: GovernanceVote;
@@ -28,14 +28,6 @@ interface GovernanceVoteCardProps {
     timezone?: string;
 }
 
-/* ── Tone styling (theme tokens; red marks a vote against) ── */
-
-const TONE: Record<VoteTone, { text: string; soft: string; icon: typeof ThumbsUp }> = {
-    positive: { text: 'text-[var(--color-accent)]', soft: 'border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10', icon: ThumbsUp },
-    negative: { text: 'text-red-500', soft: 'border-red-500/35 bg-red-500/10', icon: ThumbsDown },
-    neutral: { text: 'text-[var(--color-text-secondary)]', soft: 'border-[var(--color-card-border)] bg-[var(--color-surface)]', icon: CircleDot },
-};
-
 const PHASE_STYLE: Record<VotingPhase, string> = {
     open: 'text-[var(--color-accent)] border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10',
     upcoming: 'text-[var(--color-secondary)] border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10',
@@ -43,54 +35,18 @@ const PHASE_STYLE: Record<VotingPhase, string> = {
     unknown: '',
 };
 
-const STANCES = ['For', 'Against'];
-
-/* ── Formatting ── */
-
-function formatDate(sec: number, locale?: string, timeZone?: string) {
-    const opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
-    try {
-        return new Intl.DateTimeFormat(locale, { ...opts, timeZone }).format(sec * 1000);
-    } catch {
-        return new Intl.DateTimeFormat(locale, opts).format(sec * 1000);
-    }
-}
-
-function formatRelative(sec: number, locale?: string) {
-    const diff = sec - Date.now() / 1000;
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-    const abs = Math.abs(diff);
-    if (abs >= 86_400) return rtf.format(Math.round(diff / 86_400), 'day');
-    if (abs >= 3_600) return rtf.format(Math.round(diff / 3_600), 'hour');
-    return rtf.format(Math.round(diff / 60), 'minute');
-}
-
-const fill = (tpl: string, values: Record<string, string>) =>
-    Object.entries(values).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
-
-/** Every choice the ballot offered, with the one(s) this vote picked marked. */
-function buildChoices(vote: GovernanceVote, item: GovernanceItem | null, stanceLabel: (s: string) => string) {
-    if (vote.selection.type === 'stance') {
-        const picked = vote.selection.stance;
-        const keys = STANCES.includes(picked) || !picked ? STANCES : [...STANCES, picked];
-        return keys.map(key => ({ key, label: stanceLabel(key), selected: key === picked, tone: toneOf(key) }));
-    }
-    const chosen = new Set(vote.selection.optionIds);
-    const options = item?.options.length
-        ? item.options
-        : vote.selection.optionIds.map(id => ({ id, label: `#${id}` }));
-    return options.map(o => ({ key: String(o.id), label: o.label, selected: chosen.has(o.id), tone: toneOf(o.label) }));
-}
-
 /**
  * GovernanceVoteCard
  * Explains a vote on a Radix governance proposal or temperature check: what
- * was voted, on which question, and where that vote stands now.
+ * was voted and on which question, how the vote is going or how it ended
+ * (weighted by voting power, against its quorum and approval threshold), and
+ * when it closes.
  */
 export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, locale, timezone }: GovernanceVoteCardProps) {
     const gv: Gv = tt?.governance_vote ?? {};
-    const { data, isLoading, isError } = useGovernanceItem(vote, network);
-    const item = data?.item ?? null;
+    const itemQuery = useGovernanceItem(vote, network);
+    const tallyQuery = useGovernanceTally(vote, network);
+    const item = itemQuery.data?.item ?? null;
     const copyTitle = tt?.copy_raw || 'Copy';
     const isProposal = vote.kind === 'proposal';
 
@@ -100,25 +56,17 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
     const choiceText = (vote.selection.type === 'stance' ? rawChoice.map(stanceLabel) : rawChoice).join(', ') || '—';
     const tone = rawChoice.length === 1 ? toneOf(rawChoice[0]) : 'neutral';
     const ToneIcon = TONE[tone].icon;
-    const choices = buildChoices(vote, item, stanceLabel);
 
+    const choices = ballotChoices(vote, item, stanceLabel);
+    const tally = tallyQuery.data && item ? summarizeTally(choices, tallyQuery.data, item) : null;
     const phase = votingPhase(item);
-    const progress = votingProgress(item);
     const title = item?.title || gv.untitled || 'untitled';
     const kindShort = isProposal ? (gv.short_proposal || 'Proposal') : (gv.short_temperature_check || 'Temperature check');
 
     const summary = fill(
-        (isProposal ? gv.summary_proposal : gv.summary_temperature_check)
-            || 'The account {account} voted "{choice}" on "{title}".',
+        (isProposal ? gv.summary_proposal : gv.summary_temperature_check) || 'The account {account} voted "{choice}" on "{title}".',
         { account: vote.account ? shortenAddress(vote.account) : '—', choice: choiceText, title },
     ) + (vote.replacingVoteId ? fill(gv.summary_replacing || ' This vote replaces its previous vote (no. {id}).', { id: vote.replacingVoteId }) : '');
-
-    const phaseText = !item?.deadline ? null
-        : phase === 'open' ? fill(gv.ends_rel || 'Closes {time}', { time: formatRelative(item.deadline, locale) })
-            : phase === 'upcoming' && item.start ? fill(gv.starts_rel || 'Starts {time}', { time: formatRelative(item.start, locale) })
-                : fill(gv.closed_rel || 'Closed {time}', { time: formatRelative(item.deadline, locale) });
-
-    const compact = new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 });
 
     return (
         <SummaryCard
@@ -158,12 +106,12 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-[var(--color-text-muted)]">
                             <span>{kindShort} #{vote.itemId}</span>
-                            {data?.componentName && <><span aria-hidden>·</span><span className="truncate">{data.componentName}</span></>}
+                            {itemQuery.data?.componentName && <><span aria-hidden>·</span><span className="truncate">{itemQuery.data.componentName}</span></>}
                             {item?.parameterLabel && (
                                 <span className="px-1.5 py-0.5 rounded-md border border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-[10px]">{item.parameterLabel}</span>
                             )}
                         </div>
-                        {isLoading ? (
+                        {itemQuery.isLoading ? (
                             <div className="mt-2 space-y-2 animate-pulse">
                                 <div className="h-5 w-3/4 rounded bg-[var(--color-surface-hover)]" />
                                 <div className="h-3 w-full rounded bg-[var(--color-surface-hover)]" />
@@ -183,50 +131,58 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
             <SummaryBody>
                 <PlainSummary>{summary}</PlainSummary>
 
-                {isError && (
+                {itemQuery.isError && (
                     <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                         <AlertCircle className="size-3.5" />{gv.load_error || 'The vote details could not be loaded.'}
                     </p>
                 )}
 
-                {/* ── Ballot ── */}
-                <div>
-                    <SectionLabel>{gv.options || 'Ballot options'}</SectionLabel>
-                    <ul className="grid grid-cols-1 @md:grid-cols-2 @3xl:grid-cols-3 gap-2">
-                        {choices.map(c => (
-                            <li
-                                key={c.key}
-                                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-[13px] ${c.selected
-                                    ? `${TONE[c.tone].soft} ${TONE[c.tone].text} font-bold`
-                                    : 'border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-[var(--color-text-muted)]'}`}
-                            >
-                                <span className="flex items-center gap-2 min-w-0">
-                                    {c.selected ? <CheckCircle2 className="size-4 shrink-0" /> : <Circle className="size-4 shrink-0 opacity-50" />}
-                                    <span className="break-words">{c.label}</span>
-                                </span>
-                                {c.selected && <span className="text-[10px] uppercase tracking-wider shrink-0">{gv.selected || 'Chosen'}</span>}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                {/* ── How it ended (or is going) ── */}
+                {tally?.outcome && (
+                    <OutcomeBanner outcome={tally.outcome} tally={tally} item={item} final={phase === 'closed'} gv={gv} locale={locale} />
+                )}
+                {tallyQuery.isLoading && network === 'mainnet' && (
+                    <div className="h-20 rounded-xl bg-[var(--color-surface)] animate-pulse" aria-hidden />
+                )}
+
+                <BallotResults choices={choices} tally={tally} gv={gv} locale={locale} />
+                {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={locale} />}
 
                 {/* ── Key facts ── */}
                 <FactGrid>
                     {vote.account && (
-                        <FactTile icon={UserRound} label={gv.voter || 'Voter'} hint={vote.voteId ? fill(gv.vote_number || 'Vote no. {id}', { id: vote.voteId }) : undefined}>
+                        <FactTile
+                            icon={UserRound}
+                            label={gv.voter || 'Voter'}
+                            hint={[
+                                vote.voteId ? fill(gv.vote_number || 'Vote no. {id}', { id: vote.voteId }) : null,
+                                tally?.accountPower != null
+                                    ? fill(gv.voter_power || 'Voting power: {amount} XRD ({share} of the total)', {
+                                        amount: formatXrd(tally.accountPower, locale),
+                                        share: formatPct(tally.accountShare ?? 0, locale),
+                                    })
+                                    : null,
+                            ].filter(Boolean).join(' · ') || undefined}
+                        >
                             <AddressChip address={vote.account} copiedAddress={copiedAddress} onCopy={onCopy} copyTitle={copyTitle} />
                         </FactTile>
                     )}
-                    <FactTile icon={Users} label={gv.vote_count || 'Votes cast'} hint={gv.vote_count_hint || 'In total, so far'}>
+                    <FactTile
+                        icon={Users}
+                        label={gv.vote_count || 'Votes cast'}
+                        hint={item?.revoteCount
+                            ? fill(gv.revote_hint || 'In total, so far · changed votes: {n}', { n: item.revoteCount.toLocaleString(locale) })
+                            : (gv.vote_count_hint || 'In total, so far')}
+                    >
                         <span className="text-xl font-black font-mono">{item?.voteCount != null ? item.voteCount.toLocaleString(locale) : '—'}</span>
                     </FactTile>
                     <FactTile
                         icon={Target}
                         label={gv.to_pass || 'To pass'}
-                        hint={item?.quorum ? fill(gv.quorum_hint || 'Minimum turnout: {amount} XRD of voting power', { amount: compact.format(item.quorum) }) : undefined}
+                        hint={item?.quorum ? fill(gv.quorum_hint || 'Minimum turnout: {amount} XRD of voting power', { amount: formatXrd(item.quorum, locale) }) : undefined}
                     >
                         {item?.approvalThreshold != null
-                            ? fill(gv.to_pass_value || '{pct} of the votes', { pct: new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(item.approvalThreshold) })
+                            ? fill(gv.to_pass_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, locale) })
                             : '—'}
                     </FactTile>
                     {item?.author && (
@@ -236,74 +192,14 @@ export function GovernanceVoteCard({ vote, tt, onCopy, copiedAddress, network, l
                     )}
                 </FactGrid>
 
-                {/* ── Voting window ── */}
-                {item?.start && item.deadline && (
-                    <div>
-                        <SectionLabel>{gv.period || 'Voting period'}</SectionLabel>
-                        <div className="rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 @md:p-4 space-y-3">
-                            <div className="flex flex-col @md:flex-row @md:items-end justify-between gap-2 text-xs">
-                                <span className="flex flex-col">
-                                    <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.starts || 'Opens'}</span>
-                                    <span className="font-semibold text-[var(--color-text-main)]">{formatDate(item.start, locale, timezone)}</span>
-                                </span>
-                                <span className="flex flex-col @md:items-end">
-                                    <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">{gv.ends || 'Closes'}</span>
-                                    <span className="font-semibold text-[var(--color-text-main)]">{formatDate(item.deadline, locale, timezone)}</span>
-                                </span>
-                            </div>
-                            <div
-                                className="h-2 rounded-full bg-[var(--color-card-border)] overflow-hidden"
-                                role="progressbar"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={Math.round((progress ?? 0) * 100)}
-                            >
-                                <div
-                                    className={`h-full rounded-full ${phase === 'closed' ? 'bg-[var(--color-text-muted)]' : 'bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]'}`}
-                                    style={{ width: `${(progress ?? 0) * 100}%` }}
-                                />
-                            </div>
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                {phaseText && (
-                                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
-                                        <CalendarClock className="size-3.5 text-[var(--color-primary)]" />{phaseText}
-                                    </p>
-                                )}
-                                {item.elevatedProposalId && (
-                                    <span className="flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
-                                        <ArrowUpRight className="size-3.5" />
-                                        {fill(gv.elevated || 'Moved on to formal proposal #{id}', { id: item.elevatedProposalId })}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {item && <VotingWindow item={item} phase={phase} progress={votingProgress(item)} gv={gv} locale={locale} timezone={timezone} />}
+                {item && <LinkList links={item.links} title={gv.links || 'Learn more'} />}
 
-                {/* ── Where to read more ── */}
-                {item && item.links.length > 0 && (
-                    <div>
-                        <SectionLabel>{gv.links || 'Learn more'}</SectionLabel>
-                        <div className="flex flex-wrap gap-2">
-                            {item.links.map(link => {
-                                let label = link;
-                                try { const u = new URL(link); label = u.hostname.replace(/^www\./, '') + (u.pathname.length > 1 ? u.pathname : ''); } catch { /* keep raw */ }
-                                return (
-                                    <a
-                                        key={link}
-                                        href={link}
-                                        target="_blank"
-                                        rel="noopener noreferrer nofollow"
-                                        className="max-w-full flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-card-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 transition-colors"
-                                        title={link}
-                                    >
-                                        <ExternalLink className="size-3 shrink-0" />
-                                        <span className="truncate">{label}</span>
-                                    </a>
-                                );
-                            })}
-                        </div>
-                    </div>
+                {tallyQuery.data?.source && (
+                    <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[var(--color-text-muted)]">
+                        <Info className="size-3 mt-0.5 shrink-0" />
+                        {fill(gv.source_note || 'The ledger records each vote; its weight in XRD is computed and published by {source}, the dApp that runs this vote.', { source: tallyQuery.data.source })}
+                    </p>
                 )}
             </SummaryBody>
         </SummaryCard>

@@ -89,6 +89,8 @@ export interface GovernanceItem {
     options: Array<{ id: number; label: string }>;
     links: string[];
     voteCount: number | null;
+    /** Votes that replaced an earlier vote of the same account. */
+    revoteCount: number | null;
     /** Unix seconds. */
     start: number | null;
     deadline: number | null;
@@ -121,6 +123,7 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
         }),
         links: pjList(pjField(item, 'links')).map(pjText).filter((l): l is string => !!l && /^https?:\/\//i.test(l)),
         voteCount: pjNumber(pjField(item, 'vote_count')),
+        revoteCount: pjNumber(pjField(item, 'revote_count')),
         start: pjNumber(pjField(item, 'start')),
         deadline: pjNumber(pjField(item, 'deadline')),
         quorum: fromItemOrParams('quorum'),
@@ -174,4 +177,108 @@ export function votingPhase(item: GovernanceItem | null, nowSec = Date.now() / 1
 export function votingProgress(item: GovernanceItem | null, nowSec = Date.now() / 1000): number | null {
     if (!item?.start || !item.deadline || item.deadline <= item.start) return null;
     return Math.min(1, Math.max(0, (nowSec - item.start) / (item.deadline - item.start)));
+}
+
+/* ─────────────────────────────────────────
+   Ballot and weighted result
+   ───────────────────────────────────────── */
+
+const STANCES = ['For', 'Against'];
+
+export interface BallotChoice {
+    /** Key the vote collector uses for this choice: option id or stance. */
+    key: string;
+    label: string;
+    selected: boolean;
+    tone: VoteTone;
+}
+
+/** Every choice the ballot offered, with the one(s) this vote picked marked. */
+export function ballotChoices(vote: GovernanceVote, item: GovernanceItem | null, stanceLabel: (s: string) => string = s => s): BallotChoice[] {
+    if (vote.selection.type === 'stance') {
+        const picked = vote.selection.stance;
+        const keys = STANCES.includes(picked) || !picked ? STANCES : [...STANCES, picked];
+        return keys.map(key => ({ key, label: stanceLabel(key), selected: key === picked, tone: toneOf(key) }));
+    }
+    const chosen = new Set(vote.selection.optionIds);
+    const options = item?.options.length ? item.options : vote.selection.optionIds.map(id => ({ id, label: `#${id}` }));
+    return options.map(o => ({ key: String(o.id), label: o.label, selected: chosen.has(o.id), tone: toneOf(o.label) }));
+}
+
+export interface VoteTallyInput {
+    results: Array<{ vote: string; votePower: string }>;
+    accountPower: string | null;
+}
+
+export type VoteOutcome = 'approved' | 'rejected' | 'no_quorum';
+
+export interface TallyRow extends BallotChoice {
+    /** Voting power behind this choice, in XRD. */
+    power: number;
+    /** Share of all the voting power cast, 0..1. */
+    share: number;
+}
+
+export interface TallySummary {
+    rows: TallyRow[];
+    /** Voting power that took part, in XRD. */
+    turnout: number;
+    /** Turnout relative to the quorum (1 = exactly the quorum). */
+    quorumRatio: number | null;
+    quorumMet: boolean | null;
+    /** Share in favour among the votes that take a side (abstentions left out). */
+    approvalShare: number | null;
+    /** Result by the item's own rules; provisional while voting is open. */
+    outcome: VoteOutcome | null;
+    accountPower: number | null;
+    accountShare: number | null;
+}
+
+const toPower = (v: string | null | undefined) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
+/**
+ * Weighs the ballot with the collector's tally and applies the item's rules:
+ * enough voting power must take part (quorum) and the share in favour among
+ * decisive votes must reach the approval threshold.
+ */
+export function summarizeTally(choices: BallotChoice[], tally: VoteTallyInput, item: GovernanceItem | null): TallySummary {
+    const powerOf = new Map(tally.results.map(r => [r.vote, toPower(r.votePower)]));
+    const extra: BallotChoice[] = tally.results
+        .filter(r => !choices.some(c => c.key === r.vote))
+        .map(r => ({ key: r.vote, label: r.vote, selected: false, tone: toneOf(r.vote) }));
+    const all = [...choices, ...extra];
+    const turnout = all.reduce((sum, c) => sum + (powerOf.get(c.key) ?? 0), 0);
+    const rows = all.map(c => {
+        const power = powerOf.get(c.key) ?? 0;
+        return { ...c, power, share: turnout > 0 ? power / turnout : 0 };
+    });
+
+    const inFavour = rows.filter(r => r.tone === 'positive').reduce((s, r) => s + r.power, 0);
+    const against = rows.filter(r => r.tone === 'negative').reduce((s, r) => s + r.power, 0);
+    const hasSides = rows.some(r => r.tone === 'positive');
+    const approvalShare = hasSides && inFavour + against > 0 ? inFavour / (inFavour + against) : hasSides ? 0 : null;
+
+    const quorumRatio = item?.quorum ? turnout / item.quorum : null;
+    const quorumMet = quorumRatio === null ? null : quorumRatio >= 1;
+    const threshold = item?.approvalThreshold ?? null;
+    const outcome: VoteOutcome | null = quorumMet === false
+        ? 'no_quorum'
+        : quorumMet && approvalShare !== null && threshold !== null
+            ? (approvalShare >= threshold ? 'approved' : 'rejected')
+            : null;
+
+    const accountPower = tally.accountPower === null ? null : toPower(tally.accountPower);
+    return {
+        rows,
+        turnout,
+        quorumRatio,
+        quorumMet,
+        approvalShare,
+        outcome,
+        accountPower,
+        accountShare: accountPower !== null && turnout > 0 ? accountPower / turnout : null,
+    };
 }
