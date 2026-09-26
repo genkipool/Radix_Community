@@ -10,6 +10,7 @@ import { fill } from '../lib/format';
 import { TONE, type Gv } from './VoteParts';
 import { VoteAccess, VoteSubmit } from './VoteControls';
 import type { G } from './GovernanceBadges';
+import { CollapsibleCard } from './CollapsibleCard';
 
 /**
  * Side panel of the Proposal tab: pick the account and the option(s), sign in
@@ -29,13 +30,13 @@ export function VotePanel({ entry, system, g, language, now }: {
     const choices = itemChoices(entry.kind, entry.item, stanceLabel);
 
     return (
-        <section aria-labelledby="vote-panel-title" className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] overflow-hidden">
-            <h2 id="vote-panel-title" className="px-5 py-4 flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)] border-b border-[var(--color-card-border)] bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10">
-                <Wallet className="size-4 text-[var(--color-primary)]" />
-                {g.vote_title || 'Your vote'}
-            </h2>
-
-            <div className="p-5 space-y-4">
+        <CollapsibleCard
+            id="vote-panel-title"
+            icon={Wallet}
+            title={g.vote_title || 'Your vote'}
+            headerClassName="bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10"
+        >
+            <div className="space-y-4">
                 <VoteAccess vote={vote} item={entry.item} g={g} language={language} now={now} />
 
                 {vote.canVote && (
@@ -69,6 +70,6 @@ export function VotePanel({ entry, system, g, language, now }: {
 
                 <VoteSubmit vote={vote} item={entry.item} g={g} language={language} />
             </div>
-        </section>
+        </CollapsibleCard>
     );
 }

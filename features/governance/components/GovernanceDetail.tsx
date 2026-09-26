@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes } from 'lucide-react';
+import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
-import { votingPhase } from '../lib/governanceVotes';
+import { uniqueVoters, votingPhase, type GovernanceItemKind, type RuleSet } from '../lib/governanceVotes';
 import { governanceItemPath } from '../lib/paths';
 import { useNow } from '../hooks/useNow';
 import { fill, formatDate, LinkList, type Gv } from './VoteParts';
+import { formatDuration, formatPct, formatXrd } from '../lib/format';
+import { CollapsibleCard } from './CollapsibleCard';
 import { VotePanel } from './VotePanel';
 import { ResultsDashboard } from './ResultsDashboard';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
@@ -30,14 +32,64 @@ function Row({ icon: Icon, label, children }: { icon: typeof Hash; label: string
     );
 }
 
+/** The rules of each stage of the process the vote belongs to, as the ledger keeps them. */
+function RulesBlock({ ruleSet, kind, g, language }: { ruleSet: RuleSet; kind: GovernanceItemKind; g: G; language: string }) {
+    const gv: Gv = g.vote ?? {};
+    const stages = (['temperature_check', 'proposal'] as const).flatMap(k => (ruleSet.stages[k] ? [[k, ruleSet.stages[k]] as const] : []));
+    if (stages.length === 0) return null;
+    const stat = (label: string, value: string) => (
+        <div className="min-w-0">
+            <dt className="text-[10px] text-[var(--color-text-muted)]">{label}</dt>
+            <dd className="truncate font-mono text-xs font-bold text-[var(--color-text-main)]">{value}</dd>
+        </div>
+    );
+    return (
+        <div className="mt-4 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3.5 space-y-3">
+            <div>
+                <p className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                    <Scale className="size-3.5 text-[var(--color-primary)]" />{g.rules_title || 'Governance rules'}
+                </p>
+                <p className="mt-1.5 text-xs font-bold text-[var(--color-text-main)]">
+                    {ruleSet.label ?? ruleSet.id}
+                    {ruleSet.version && <span className="font-normal text-[var(--color-text-muted)]"> · {fill(g.rules_version || 'version {v}', { v: ruleSet.version })}</span>}
+                </p>
+                {ruleSet.id && ruleSet.label && <p className="font-mono text-[10px] text-[var(--color-text-muted)]">{ruleSet.id}</p>}
+            </div>
+            {stages.map(([k, rules]) => {
+                const current = k === kind;
+                return (
+                    <div key={k} className={`rounded-lg border p-3 ${current ? 'border-[var(--color-primary)]/45 bg-[var(--color-primary)]/5' : 'border-[var(--color-card-border)] bg-[var(--color-card-bg)]'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold text-[var(--color-text-main)]">
+                                {k === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : (gv.kind_temperature_check || 'Temperature check')}
+                            </span>
+                            {current && (
+                                <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-[var(--color-primary)]/15 text-[var(--color-primary)]">
+                                    {g.rules_this_vote || 'This vote'}
+                                </span>
+                            )}
+                        </div>
+                        <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4">
+                            {rules.votingDays !== null && stat(g.rules_duration || 'Duration', formatDuration(rules.votingDays * 86_400, language))}
+                            {rules.quorum !== null && stat(g.rules_quorum || 'Quorum', `${formatXrd(rules.quorum, language)} XRD`)}
+                            {rules.approvalThreshold !== null && stat(g.rules_approval || 'Approval', formatPct(rules.approvalThreshold, language))}
+                        </dl>
+                    </div>
+                );
+            })}
+            {g.rules_note && <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">{g.rules_note}</p>}
+        </div>
+    );
+}
+
 function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; system: GovernanceSystem; g: G; language: string }) {
     const { item, kind, id } = entry;
     const gv: Gv = g.vote ?? {};
     const { copied, copy } = useCopy();
     const link = (k: 'proposal' | 'temperature_check', target: string) => `/${language}${governanceItemPath(system.key, k, target)}`;
+    const votes = uniqueVoters(item);
     return (
-        <section aria-labelledby="vote-details" className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5">
-            <h2 id="vote-details" className="mb-2 text-sm font-bold text-[var(--color-text-main)]">{g.details || 'Vote details'}</h2>
+        <CollapsibleCard id="vote-details" icon={Info} title={g.details || 'Vote details'}>
             <Row icon={Landmark} label={g.detail_system || 'System'}>
                 <a href={system.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
                     {system.name}<ExternalLink className="size-3" />
@@ -47,10 +99,24 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
                 {kind === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : (gv.kind_temperature_check || 'Temperature check')}
             </Row>
             <Row icon={Hash} label={g.detail_number || 'Number'}>#{id}</Row>
-            {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters || 'Category'}>{item.parameterLabel}</Row>}
+            {item.parameterLabel && !item.ruleSet && <Row icon={Layers} label={g.detail_parameters || 'Category'}>{item.parameterLabel}</Row>}
+            {item.quorum !== null && <Row icon={Target} label={g.detail_quorum || 'Quorum'}>{formatXrd(item.quorum, language)} XRD</Row>}
+            {item.approvalThreshold !== null && (
+                <Row icon={ThumbsUp} label={g.detail_threshold || 'Approval threshold'}>
+                    {fill(g.detail_threshold_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, language) })}
+                </Row>
+            )}
             {kind === 'proposal' && item.maxSelections > 1 && <Row icon={ListChecks} label={g.detail_max_options || 'Options per ballot'}>{item.maxSelections}</Row>}
+            {item.start && item.deadline && <Row icon={Hourglass} label={g.detail_duration || 'Duration'}>{formatDuration(item.deadline - item.start, language)}</Row>}
             {item.start && <Row icon={CalendarClock} label={gv.starts || 'Opens'}><span suppressHydrationWarning>{formatDate(item.start, language)}</span></Row>}
             {item.deadline && <Row icon={CalendarClock} label={gv.ends || 'Closes'}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
+            {votes !== null && (
+                <Row icon={Users} label={g.detail_voters || 'Voters'}>
+                    {item.revoteCount
+                        ? fill(g.detail_voters_value || '{n} ({changed} changed their vote)', { n: votes.toLocaleString(language), changed: item.revoteCount.toLocaleString(language) })
+                        : votes.toLocaleString(language)}
+                </Row>
+            )}
             {item.author && (
                 <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')}>
                     <Link href={`/${language}/dashboard/account/${item.author}`} className="font-mono hover:text-[var(--color-primary)]" title={item.author}>{shortenAddress(item.author)}</Link>
@@ -72,7 +138,8 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
                     <ArrowUpRight className="size-3.5" />{fill(g.to_proposal || 'Moved on to formal proposal #{id}', { id: item.elevatedProposalId })}
                 </Link>
             )}
-        </section>
+            {item.ruleSet && <RulesBlock ruleSet={item.ruleSet} kind={kind} g={g} language={language} />}
+        </CollapsibleCard>
     );
 }
 
@@ -180,7 +247,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                             )}
                             <LinkList links={item.links} title={gv.links || 'Learn more'} />
                         </div>
-                        <aside className="space-y-4 order-1 lg:order-2 lg:sticky lg:top-24">
+                        <aside className="space-y-4 order-1 lg:order-2 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto no-scrollbar lg:pb-2">
                             <VotePanel entry={entry} system={system} g={g} language={language} now={now} />
                             <DetailsCard entry={entry} system={system} g={g} language={language} />
                         </aside>
