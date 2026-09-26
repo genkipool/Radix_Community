@@ -412,3 +412,23 @@ export async function apiFetchNonFungibleLocation(resourceAddress: string, local
     }
     return locationMap;
 }
+
+/**
+ * Current value of one key-value store entry, with schema field names
+ * (programmatic JSON). Returns null when the key does not exist.
+ */
+export async function apiFetchKeyValueEntry(
+    kvsAddress: string,
+    keyJson: { kind: string; value: string },
+    network: 'mainnet' | 'stokenet' = 'mainnet',
+): Promise<unknown | null> {
+    const baseUrl = network === 'stokenet' ? 'https://gateway-stokenet.radix.community' : 'https://mainnet.radixdlt.com';
+    const res = await fetch(`${baseUrl}/state/key-value-store/data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key_value_store_address: kvsAddress, keys: [{ key_json: keyJson }] }),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json() as { entries?: Array<{ value?: { programmatic_json?: unknown } }> };
+    return data.entries?.[0]?.value?.programmatic_json ?? null;
+}
