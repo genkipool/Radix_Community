@@ -16,6 +16,8 @@ import { ProtocolVoteCard } from './ProtocolVoteCard';
 import { OracleUpdateSection, AirdropSection, VaultCreationSection, BetVoteSection, RatesChangedSection, MetadataUpdatesSection, ProposerSection } from './TransactionSummaryPanels';
 import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
+import { ResourceCreationCard } from './ResourceCreationCard';
+import { extractResourceCreations } from '../utils/resourceCreationUtils';
 
 import { getTransactionFlags, isSwapTransaction, extractSwapData } from '../utils/transactionUtils';
 
@@ -82,6 +84,13 @@ const TransactionTabs = ({
     const resourceGroups = getResourceGroups(balanceChanges, network);
     const initiators = getInitiators(balanceChanges);
     const realTransferAddresses = getRealTransferAddresses(balanceChanges);
+
+    /* ── Resources brought into existence by this transaction ── */
+    const resourceCreations = extractResourceCreations(
+        receipt?.state_updates as Parameters<typeof extractResourceCreations>[0],
+        receipt?.events ?? [],
+        String(manifest_instructions || ''),
+    );
 
     /* ── NFT-only groups ── */
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
@@ -175,6 +184,26 @@ const TransactionTabs = ({
                                 </div>
                             );
                         })()}
+
+                        {/* Resource creation: new NFT collection or token */}
+                        {resourceCreations.map(creation => (
+                            <ResourceCreationCard
+                                key={creation.address}
+                                creation={creation}
+                                creator={parsed.lockFeeAccount}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                onResourceClick={onResourceClick}
+                                network={network}
+                                locale={locale}
+                            />
+                        ))}
+
+                        {/* Lock Fee */}
+                        {lockFeeAmountFormatted && (
+                            <LockFeePanel lockFeeAmount={lockFeeAmountFormatted} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
+                        )}
 
                         {/* Asset transfers / Swap settlement */}
                         {(() => {
@@ -278,11 +307,6 @@ const TransactionTabs = ({
                                 />
                             ));
                         })()}
-
-                        {/* Lock Fee */}
-                        {lockFeeAmountFormatted && (
-                            <LockFeePanel lockFeeAmount={lockFeeAmountFormatted} lockFeeAccount={parsed.lockFeeAccount} mainAction={parsed.mainAction} nftId={parsed.nftId} actualFeePaid={actualFeePaid} tt={tt} onCopy={onCopy} copiedAddress={copiedAddress} />
-                        )}
 
                         {/* Auth Badge */}
                         {parsed.badgeResource && badgeAmountFormatted && (
