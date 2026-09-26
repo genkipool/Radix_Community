@@ -170,6 +170,7 @@
       "total_summary": "Total Transfer Action",
       "system_generation": "System/Network token generation via Component",
       "system_burn": "System/Network token burn via Component",
+      "deposited_to_origin": "Deposited into the origin account itself",
       "network_operation": "Network Operation",
       "validator_emissions": "Network Validator Emissions / Staking Rewards",
       "validator_emissions_subtitle": "generated or minted by system.",

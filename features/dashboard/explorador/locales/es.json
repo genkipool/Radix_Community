@@ -172,6 +172,7 @@
       "total_summary": "Suma Total Desplazada",
       "system_generation": "Generación de componente del sistema",
       "system_burn": "Quema de token del sistema/red vía Componente",
+      "deposited_to_origin": "Depositado en la propia cuenta de origen",
       "network_operation": "Operación de Red",
       "validator_emissions": "Emisiones de Red / Recompensas de Staking",
       "validator_emissions_subtitle": "generado o emitido por el sistema.",

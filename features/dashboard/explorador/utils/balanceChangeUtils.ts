@@ -30,29 +30,38 @@ export function getResourceGroups(
 
 /**
  * getRealTransferAddresses
- * Returns a set of addresses that have at least one non-fee balance change
- * (either fungible or non-fungible).
+ * Returns the set of addresses that have a non-fee fungible balance change,
+ * i.e. addresses that get a row of their own in some fungible card and so
+ * carry their fee nested there. NFT-only addresses are left out on purpose:
+ * their NFTs hang off their fee row, which must stay visible.
  */
 export function getRealTransferAddresses(
     balanceChanges: BalanceChanges | undefined
 ): Set<string> {
     const addresses = new Set<string>();
-    
-    // Non-fee fungible changes
+
     (balanceChanges?.fungible_balance_changes ?? []).forEach(f => {
         if (!isConsensusManager(sanitizeText(f.entity_address)) && parseFloat(f.balance_change) !== 0) {
             addresses.add(sanitizeText(f.entity_address));
         }
     });
-    
-    // Non-fungible changes (count all as "real" transfers)
-    (balanceChanges?.non_fungible_balance_changes ?? []).forEach(nf => {
-        if (!isConsensusManager(sanitizeText(nf.entity_address))) {
-            addresses.add(sanitizeText(nf.entity_address));
-        }
-    });
 
     return addresses;
+}
+
+/**
+ * hasAssetTransfers
+ * True when the transaction moves anything besides fees: a fungible
+ * balance change or any NFT deposit/withdrawal (mints included).
+ */
+export function hasAssetTransfers(
+    balanceChanges: BalanceChanges | undefined
+): boolean {
+    if (getRealTransferAddresses(balanceChanges).size > 0) return true;
+    return (balanceChanges?.non_fungible_balance_changes ?? []).some(nf =>
+        !isConsensusManager(sanitizeText(nf.entity_address)) &&
+        ((nf.added?.length ?? 0) > 0 || (nf.removed?.length ?? 0) > 0)
+    );
 }
 
 /**

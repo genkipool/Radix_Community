@@ -88,6 +88,17 @@ export function AssetTransferGroup({
         );
     };
 
+    const nftChanges = balanceChanges.non_fungible_balance_changes ?? [];
+    const removedNftIds = new Set(nftChanges.flatMap(n => n.removed ?? []));
+    // Ids that show up as added but never left another vault were minted here.
+    const mintedNftCount = nftChanges.reduce((s, n) => s + (n.added ?? []).filter(id => !removedNftIds.has(id)).length, 0);
+    // A mint straight into the origin account leaves the destination column with nothing else to show.
+    const nftsKeptByOrigin = originActors.some(o => nftChanges.some(n => n.entity_address === o.entity_address && (n.added?.length ?? 0) > 0));
+    // actualFeePaid comes locale-formatted ("0,4058" in es), which parseFloat misreads; the footer gets the raw sum.
+    const feePaidRaw = (balanceChanges.fungible_fee_balance_changes ?? [])
+        .filter(f => f.type === 'FeePayment')
+        .reduce((s, f) => s + Math.abs(parseFloat(f.balance_change || '0')), 0);
+
     return (
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-card-border)] overflow-hidden mb-4 last:mb-0">
             <h3 className="px-4 py-3 text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-semibold border-b border-[var(--color-card-border)] bg-[var(--color-surface)] flex items-center justify-between gap-2">
@@ -326,7 +337,9 @@ export function AssetTransferGroup({
                                         )}
                                     </div>
                                 )
-                                : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
+                                : nftsKeptByOrigin
+                                    ? <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.deposited_to_origin || 'Deposited into the origin account itself'}</div>
+                                    : <div className="text-xs text-[var(--color-text-muted)] italic py-2">{tt?.system_burn || 'System component burn'}</div>
                         }
                         {/* Orphan NFT deposits (no matching fungible receiver) — exclude initiator addresses */}
                         {(() => {
@@ -383,11 +396,11 @@ export function AssetTransferGroup({
             <TransferFooter
                 senders={originActors}
                 receivers={destActors}
-                actualFeePaid={actualFeePaid}
+                actualFeePaid={feePaidRaw > 0 ? String(feePaidRaw) : actualFeePaid}
                 tt={tt}
                 resourceAddress={group[0]?.resource_address}
                 isResourceBurned={isFungibleBurned(group[0]?.resource_address)}
-                mintedNftCount={isUnstake ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.added?.length || 0), 0) : undefined}
+                mintedNftCount={isUnstake ? nftChanges.reduce((s, n) => s + (n.added?.length || 0), 0) : mintedNftCount}
                 burnedNftCount={isClaim ? (balanceChanges.non_fungible_balance_changes ?? []).reduce((s, n) => s + (n.removed?.length || 0), 0) : undefined}
                 network={network}
                 locale={locale}

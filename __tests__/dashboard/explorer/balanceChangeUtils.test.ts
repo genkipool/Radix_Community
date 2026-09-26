@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getResourceGroups, getInitiators, getNftOnlyGroups } from '@/features/dashboard/explorador/utils/balanceChangeUtils';
+import { getResourceGroups, getInitiators, getNftOnlyGroups, getRealTransferAddresses, hasAssetTransfers } from '@/features/dashboard/explorador/utils/balanceChangeUtils';
 import type { BalanceChanges } from '@/features/dashboard/explorador/types';
 
 describe('balanceChangeUtils', () => {
@@ -98,6 +98,32 @@ describe('balanceChangeUtils', () => {
                 entity_address: ACCOUNT_1,
                 balance_change: '0'
             });
+        });
+    });
+
+    describe('NFT mint paid by the receiving account', () => {
+        // MINT_RUID_NON_FUNGIBLE deposited into the same account that pays the fee
+        const bc: BalanceChanges = {
+            fungible_fee_balance_changes: [
+                { type: 'FeePayment', entity_address: ACCOUNT_1, resource_address: XRD, balance_change: '-0.40582230199' },
+                { type: 'FeeDistributed', entity_address: CM, resource_address: XRD, balance_change: '0.202911150995' },
+            ],
+            fungible_balance_changes: [],
+            non_fungible_balance_changes: [
+                { entity_address: ACCOUNT_1, resource_address: 'nft_1', added: ['{99a338da6575f0cd-271554d222c7b82f-8c9ceca9158e1924-c0cc2979085446b3}'], removed: [] }
+            ]
+        };
+
+        it('keeps the NFT-only account out of the nested-fee set', () => {
+            expect(getRealTransferAddresses(bc).size).toBe(0);
+        });
+
+        it('still counts the mint as an asset transfer', () => {
+            expect(hasAssetTransfers(bc)).toBe(true);
+        });
+
+        it('treats a fee-only transaction as having no asset transfers', () => {
+            expect(hasAssetTransfers({ ...bc, non_fungible_balance_changes: [] })).toBe(false);
         });
     });
 });
