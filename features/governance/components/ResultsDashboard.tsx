@@ -235,7 +235,7 @@ export function ResultsDashboard({ entry, system, g, language, now }: {
                         ? fill(tally.approvalShare >= item.approvalThreshold ? (g.kpi_support_ok || 'Above the {pct} needed') : (g.kpi_support_ko || 'Needs at least {pct}'), { pct: formatPct(item.approvalThreshold, language) })
                         : undefined}
                 />
-                <Kpi icon={Users} label={g.kpi_voters || 'Voters'} value={voters?.toLocaleString(language) ?? '—'} hint={item.revoteCount ? fill(gv.revote_hint || 'changed votes: {n}', { n: String(item.revoteCount) }) : undefined} />
+                <Kpi icon={Users} label={g.kpi_voters || 'Voters'} value={voters?.toLocaleString(language) ?? '—'} hint={item.revoteCount ? fill(gv.revote_hint || 'changed votes: {n}', { n: item.revoteCount.toLocaleString(language) }) : undefined} />
                 <div className="col-span-2 md:col-span-1">
                     <Kpi icon={Hourglass} label={g.kpi_time || 'Time'} value={<span suppressHydrationWarning>{time.value}</span>} hint={time.hint} />
                 </div>

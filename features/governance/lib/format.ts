@@ -3,11 +3,15 @@
 export const fill = (tpl: string, values: Record<string, string>) =>
     Object.entries(values).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), tpl);
 
-/** XRD amount, compact for large ones; below 1 it keeps two significant digits so tiny amounts never read as 0. */
+/**
+ * XRD amount in the reader's locale, always with two decimals (compact for
+ * large amounts: 942.91M, 942,91 M). Amounts under 0.01 keep two significant
+ * digits so a tiny one never reads as 0.
+ */
 export const formatXrd = (n: number, locale?: string) =>
-    n > 0 && n < 1
+    n > 0 && n < 0.01
         ? new Intl.NumberFormat(locale, { maximumSignificantDigits: 2 }).format(n)
-        : new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+        : new Intl.NumberFormat(locale, { notation: 'compact', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 export const formatPct = (n: number, locale?: string) =>
     new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(n);
