@@ -20,7 +20,7 @@ import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { getTransactionFlags, isSwapTransaction, extractSwapData } from '../utils/transactionUtils';
 
 import type { TranslationsT } from '@/features/dashboard/types';
-import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyGroups } from '../utils/balanceChangeUtils';
+import { getResourceGroups, getInitiators, getRealTransferAddresses, getNftOnlyGroups, hasAssetTransfers } from '../utils/balanceChangeUtils';
 
 
 
@@ -258,7 +258,7 @@ const TransactionTabs = ({
                             });
 
                             // If the whole transaction is ONLY fees (no real transfers at all), hide the section as per user request
-                            if (realTransferAddresses.size === 0) return null;
+                            if (!hasAssetTransfers(balanceChanges)) return null;
 
                             return filteredGroups.map((group) => (
                                 <AssetTransferGroup
@@ -278,13 +278,6 @@ const TransactionTabs = ({
                                 />
                             ));
                         })()}
-
-                        {/* NFT-only transfers: pass a synthetic group so AssetTransferGroup's
-                            orphan-NFT detection handles rendering within the same card design */}
-                        {nftOnlyGroups.map((group) => (
-                            <AssetTransferGroup key={'nft-rg-' + (group[0]?.entity_address || '') + '-' + (group[0]?.resource_address || '')} group={group} balanceChanges={balanceChanges as BalanceChanges} initiators={initiators} realTransferAddresses={realTransferAddresses} actualFeePaid={actualFeePaid} t={t as TranslationsT} formatEntity={formatEntity} readingMode={readingMode} {...shared} />
-                        ))}
-
 
                         {/* Lock Fee */}
                         {lockFeeAmountFormatted && (
