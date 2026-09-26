@@ -103,8 +103,6 @@ export interface GovernanceItem {
     approvalThreshold: number | null;
     author: string | null;
     parameterLabel: string | null;
-    /** Governance rules the vote was created under (RadixDAO keeps a snapshot on each item). */
-    ruleSet: RuleSet | null;
     /** Proposal a temperature check was promoted to, once it passed. */
     elevatedProposalId: string | null;
     /** Temperature check a proposal came from. */
@@ -115,41 +113,6 @@ export interface GovernanceItem {
     hidden: boolean;
     /** Key-value store mapping each voter account to its current vote. */
     votersStore: string | null;
-}
-
-/** Rules of one stage of a governance process. */
-export interface StageRules {
-    votingDays: number | null;
-    /** Minimum voting power that has to take part, in XRD. */
-    quorum: number | null;
-    /** Share of the votes an option needs to pass, 0..1. */
-    approvalThreshold: number | null;
-}
-
-/** A named, versioned set of governance rules with the rules of each stage. */
-export interface RuleSet {
-    id: string | null;
-    label: string | null;
-    version: string | null;
-    stages: Partial<Record<GovernanceItemKind, StageRules>>;
-}
-
-const RULE_STAGES: GovernanceItemKind[] = ['temperature_check', 'proposal'];
-
-function parseRuleSet(item: unknown): RuleSet | null {
-    const set = pjField(item, 'parameter_set');
-    if (!set) return null;
-    const stages: RuleSet['stages'] = {};
-    for (const kind of RULE_STAGES) {
-        const rules = pjPath(set, 'parameters', kind);
-        if (!rules) continue;
-        stages[kind] = {
-            votingDays: pjNumber(pjField(rules, 'voting_days')),
-            quorum: pjNumber(pjField(rules, 'quorum')),
-            approvalThreshold: pjNumber(pjField(rules, 'approval_threshold')),
-        };
-    }
-    return { id: pjText(pjField(set, 'id')), label: pjText(pjField(set, 'label')), version: pjText(pjField(set, 'version')), stages };
 }
 
 /**
@@ -179,7 +142,6 @@ export function parseGovernanceItem(item: unknown, kind: GovernanceItemKind): Go
         approvalThreshold: fromItemOrParams('approval_threshold'),
         author: pjText(pjField(item, 'author')),
         parameterLabel: pjText(pjPath(item, 'parameter_set', 'label')),
-        ruleSet: parseRuleSet(item),
         elevatedProposalId: pjText(pjOption(pjField(item, 'elevated_proposal_id'))),
         temperatureCheckId: pjText(pjField(item, 'temperature_check_id')),
         maxSelections: pjNumber(pjOption(pjField(item, 'max_selections'))) ?? 1,

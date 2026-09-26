@@ -57,7 +57,8 @@ interface SidebarCardProps {
     href?: string;
     /** Items rendered inside when expanded */
     items: SidebarCardItem[];
-    onSelectItem: (id: string) => void;
+    /** `e` is the link click, for items with an `href` (call preventDefault to take over navigation). */
+    onSelectItem: (id: string, e?: React.MouseEvent) => void;
     /** If true, render items as list rows with left visual */
     richItems?: boolean;
     /** Empty state message */
@@ -189,7 +190,8 @@ function SidebarCardRow({
     item: SidebarCardItem;
     searchQuery: string;
     richItems: boolean;
-    onSelectItem: (id: string) => void;
+    /** `e` is the link click, for items with an `href` (call preventDefault to take over navigation). */
+    onSelectItem: (id: string, e?: React.MouseEvent) => void;
 }) {
     const { id, label, sublabel, leftVisual, badge, isSelected = false, onAction, actionIcon, actions, href, prefetchOnHover } = item;
 
@@ -200,7 +202,7 @@ function SidebarCardRow({
             onClick: (e: React.MouseEvent) => {
                 // Native open in new tab support
                 if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
-                    onSelectItem(id);
+                    onSelectItem(id, e);
                 }
             }
         }

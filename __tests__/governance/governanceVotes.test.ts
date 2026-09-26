@@ -94,15 +94,6 @@ describe('governanceVoteUtils', () => {
             quorum: 1350832592,
             approvalThreshold: 0.66,
             parameterLabel: 'Constitutional',
-            ruleSet: {
-                id: 'dao-constitutional',
-                label: 'Constitutional',
-                version: '1',
-                stages: {
-                    temperature_check: { votingDays: 5, quorum: null, approvalThreshold: 0.5 },
-                    proposal: { votingDays: 7, quorum: 1350832592, approvalThreshold: 0.66 },
-                },
-            },
         });
         expect(parseGovernanceItem(null, 'proposal')).toBeNull();
     });
