@@ -21,6 +21,19 @@ vi.mock('lucide-react', () => ({
   Mail: () => <div data-testid="mail" />,
   Check: () => <div data-testid="check" />,
   Landmark: () => <div data-testid="landmark" />,
+  ArrowUpRight: () => <div data-testid="arrow-up-right" />,
+  Vote: () => <div data-testid="vote" />,
+  ThumbsUp: () => <div data-testid="thumbs-\1p" />,
+  ThumbsDown: () => <div data-testid="thumbs-\1own" />,
+  CircleDot: () => <div data-testid="circle-\1ot" />,
+  CheckCircle2: () => <div data-testid="check-\1ircle-\1" />,
+  Circle: () => <div data-testid="circle" />,
+  UserRound: () => <div data-testid="user-\1ound" />,
+  Target: () => <div data-testid="target" />,
+  PenLine: () => <div data-testid="pen-\1ine" />,
+  CalendarClock: () => <div data-testid="calendar-\1lock" />,
+  RefreshCw: () => <div data-testid="refresh-\1w" />,
+  Info: () => <div data-testid="info" />,
 }));
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

@@ -18,6 +18,8 @@ import { parseManifest, resolveAirdropData } from '../utils/parseManifest';
 import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
+import { GovernanceVoteCard } from './GovernanceVoteCard';
+import { extractGovernanceVotes } from '../utils/governanceVoteUtils';
 
 import { getTransactionFlags, isSwapTransaction, extractSwapData } from '../utils/transactionUtils';
 
@@ -91,6 +93,9 @@ const TransactionTabs = ({
         receipt?.events ?? [],
         String(manifest_instructions || ''),
     );
+
+    /* ── Votes cast on governance proposals / temperature checks ── */
+    const governanceVotes = extractGovernanceVotes(receipt?.events ?? []);
 
     /* ── NFT-only groups ── */
     const nftOnlyGroups = getNftOnlyGroups(balanceChanges, resourceGroups.length);
@@ -184,6 +189,20 @@ const TransactionTabs = ({
                                 </div>
                             );
                         })()}
+
+                        {/* Governance vote */}
+                        {governanceVotes.map(vote => (
+                            <GovernanceVoteCard
+                                key={`${vote.component}-${vote.kind}-${vote.itemId}-${vote.voteId}`}
+                                vote={vote}
+                                tt={tt}
+                                onCopy={onCopy}
+                                copiedAddress={copiedAddress}
+                                network={network}
+                                locale={locale}
+                                timezone={timezone}
+                            />
+                        ))}
 
                         {/* Resource creation: new NFT collection or token */}
                         {resourceCreations.map(creation => (
