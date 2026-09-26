@@ -19,7 +19,7 @@ import { ValidatorInlinePanel } from './ValidatorInlinePanel';
 import { ResourceCreationCard } from './ResourceCreationCard';
 import { extractResourceCreations } from '../utils/resourceCreationUtils';
 import { GovernanceVoteCard } from './GovernanceVoteCard';
-import { extractGovernanceVotes } from '../utils/governanceVoteUtils';
+import { extractGovernanceVotes } from '@/features/governance/lib/governanceVotes';
 
 import { getTransactionFlags, isSwapTransaction, extractSwapData } from '../utils/transactionUtils';
 

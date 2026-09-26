@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     ballotChoices, summarizeTally,
     extractGovernanceVotes, parseGovernanceItem, findStoreAddress, selectedLabels, toneOf, votingPhase, votingProgress,
-} from '@/features/dashboard/explorador/utils/governanceVoteUtils';
+} from '@/features/governance/lib/governanceVotes';
 import type { GatewayEvent } from '@/features/dashboard/types';
 
 const ACCOUNT = 'account_rdx1_test_voter';

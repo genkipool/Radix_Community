@@ -7,7 +7,7 @@ import type { Network } from '@/features/dashboard/types';
 import {
     findStoreAddress, parseGovernanceItem, specFor,
     type GovernanceItem, type GovernanceVote,
-} from '../utils/governanceVoteUtils';
+} from '../lib/governanceVotes';
 
 export interface GovernanceItemData {
     item: GovernanceItem | null;

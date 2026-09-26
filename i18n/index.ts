@@ -40,6 +40,8 @@ import forumEs from '@/features/forum/locales/es.json';
 import gamesEn from '@/features/games/locales/en.json';
 import gamesEs from '@/features/games/locales/es.json';
 
+import governanceEn from '@/features/governance/locales/en.json';
+import governanceEs from '@/features/governance/locales/es.json';
 import googleWalletEn from '@/features/google-wallet/locales/en.json';
 import googleWalletEs from '@/features/google-wallet/locales/es.json';
 
@@ -108,6 +110,7 @@ const en = mergeTranslations(commonEn, [
   forumEn,
   gamesEn,
   googleWalletEn,
+  governanceEn,
   homeEn,
   hyperscaleEn,
   infrastructureEn,
@@ -130,6 +133,7 @@ const es = mergeTranslations(commonEs, [
   forumEs,
   gamesEs,
   googleWalletEs,
+  governanceEs,
   homeEs,
   hyperscaleEs,
   infrastructureEs,
@@ -152,6 +156,7 @@ export type Dictionary = typeof commonEn &
   typeof forumEn &
   typeof gamesEn &
   typeof googleWalletEn &
+  typeof governanceEn &
   typeof homeEn &
   typeof hyperscaleEn &
   typeof infrastructureEn &
@@ -166,7 +171,7 @@ export const translations = {
 export type FeatureKey =
   | 'academy' | 'blog' | 'chat' | 'cipher' | 'community' | 'console' | 'dapps' | 'dashboard'
   | 'dashboardStaking' | 'dashboardExplorador' | 'docs' | 'forum'
-  | 'games' | 'googleWallet' | 'home' | 'hyperscale' | 'infrastructure'
+  | 'games' | 'googleWallet' | 'governance' | 'home' | 'hyperscale' | 'infrastructure'
   | 'seal' | 'sign';
 
 const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ default: Record<string, unknown> }>>> = {
@@ -185,6 +190,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     forum: () => import('@/features/forum/locales/en.json'),
     games: () => import('@/features/games/locales/en.json'),
     googleWallet: () => import('@/features/google-wallet/locales/en.json'),
+    governance: () => import('@/features/governance/locales/en.json'),
     home: () => import('@/features/home/locales/en.json'),
     hyperscale: () => import('@/features/hyperscale/locales/en.json'),
     infrastructure: () => import('@/features/infrastructure/locales/en.json'),
@@ -206,6 +212,7 @@ const featureLoaders: Record<'en' | 'es', Record<FeatureKey, () => Promise<{ def
     forum: () => import('@/features/forum/locales/es.json'),
     games: () => import('@/features/games/locales/es.json'),
     googleWallet: () => import('@/features/google-wallet/locales/es.json'),
+    governance: () => import('@/features/governance/locales/es.json'),
     home: () => import('@/features/home/locales/es.json'),
     hyperscale: () => import('@/features/hyperscale/locales/es.json'),
     infrastructure: () => import('@/features/infrastructure/locales/es.json'),

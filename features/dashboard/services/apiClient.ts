@@ -432,17 +432,3 @@ export async function apiFetchKeyValueEntry(
     const data = await res.json() as { entries?: Array<{ value?: { programmatic_json?: unknown } }> };
     return data.entries?.[0]?.value?.programmatic_json ?? null;
 }
-
-/** Weighted tally of a governance vote (see /api/governance-votes). */
-export async function apiFetchGovernanceTally(params: {
-    component: string;
-    type: 'proposal' | 'temperature_check';
-    id: string;
-    account?: string | null;
-}): Promise<{ results: Array<{ vote: string; votePower: string }>; accountPower: string | null; source: string } | null> {
-    const query = new URLSearchParams({ component: params.component, type: params.type, id: params.id });
-    if (params.account) query.set('account', params.account);
-    const res = await fetch(`/api/governance-votes?${query.toString()}`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
-}

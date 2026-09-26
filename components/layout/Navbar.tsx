@@ -3,7 +3,7 @@ import {
   Menu, X, Sun, Moon, Globe,
   Server, Layers, BarChart2, BookOpen, GraduationCap, Gamepad2,
   Smartphone, FileText, MessageSquare, Eye, Check, Route, Sparkles,
-  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp
+  User, RefreshCcw, LogOut, Terminal, CreditCard, Zap, Nfc, Library, Milestone, Info, Stamp, Landmark
 } from 'lucide-react';
 import { useEffect, useTransition, useRef, ReactNode, useReducer } from 'react';
 import { useTheme, Theme } from '@/context/ThemeContext';
@@ -98,6 +98,7 @@ const NAV_POPUP_ITEMS: Record<string, PopupItem[]> = {
     { key: 'gumball_club', href: 'https://gumball-club.radixdlt.com/', icon: <Gamepad2 className="size-4" />, descKey: 'popup_wallet_gumball_desc' },
   ],
   community: [
+    { key: 'governance', href: '/governance', icon: <Landmark className="size-4" />, descKey: 'popup_com_governance_desc' },
     { key: 'blog', href: '/blog', icon: <FileText className="size-4" />, descKey: 'popup_com_blog_desc' },
     { key: 'forum', href: '/forum', icon: <MessageSquare className="size-4" />, descKey: 'popup_com_forum_desc' },
     { key: 'social_youtube', href: 'https://www.youtube.com/c/radixdlt', icon: <YoutubeIcon className="size-4" />, descKey: 'popup_soc_yt_desc' },

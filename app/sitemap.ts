@@ -6,6 +6,8 @@ import { CONSOLE_TOOL_SLUGS } from '@/features/console/types/console.types';
 import { AREAS } from '@/features/community/data/communityData';
 import { selectIndexableValidators } from '@/features/dashboard/lib/validatorIndexing';
 import logger from '@/lib/logger';
+import { fetchGovernanceEntries } from '@/features/governance/services/governanceLedger.server';
+import { governanceItemPath } from '@/features/governance/lib/paths';
 
 const BASE_URL = 'https://radix-community.genkipool.com';
 const LOCALES = ['en', 'es'] as const;
@@ -38,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         '/dapps',
         '/games',
         '/academy',
+        '/governance',
         '/blog',
         '/community',
         '/hyperscale',
@@ -71,6 +74,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             },
         }))
     )
+
+    // ── Governance votes ───────────────────────────────────────────────────
+    // Every proposal and temperature check has its own page, read from the
+    // ledger. There are few of them and people share them, so each is listed.
+    let governanceSitemap: MetadataRoute.Sitemap = [];
+    try {
+        const entries = await fetchGovernanceEntries();
+        governanceSitemap = entries.flatMap((e) => {
+            const path = governanceItemPath(e.systemKey, e.kind, e.id);
+            return LOCALES.map((locale) => ({
+                url: `${BASE_URL}/${locale}${path}`,
+                changeFrequency: 'daily' as const,
+                priority: 0.6,
+                alternates: {
+                    languages: {
+                        ...Object.fromEntries(LOCALES.map((loc) => [loc, `${BASE_URL}/${loc}${path}`])),
+                        'x-default': `${BASE_URL}${path}`,
+                    },
+                },
+            }));
+        });
+    } catch {
+        // The ledger could not be read: the section page itself is still listed above.
+    }
 
     // ── Validator pages ────────────────────────────────────────────────────
     // Validators are the ONE enumerable entity kind (a few hundred on mainnet)
@@ -118,5 +145,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         logger.error({ err: error }, '[sitemap] Failed to list validators');
     }
 
-    return [...fullSitemap, ...validatorSitemap]
+    return [...fullSitemap, ...governanceSitemap, ...validatorSitemap]
 }

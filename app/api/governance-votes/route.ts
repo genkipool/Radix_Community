@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import logger from '@/lib/logger';
 import { validateAddress } from '@/utils/apiValidation';
-import { collectorFor, fetchVoteTally, type CollectorItemType } from '@/services/governance/voteCollector';
+import { collectorFor, fetchVoteTally, type CollectorItemType } from '@/features/governance/services/voteCollector.server';
 
 const TYPES: readonly CollectorItemType[] = ['proposal', 'temperature_check'];
 const NO_STORE = { 'Cache-Control': 'no-cache, private, max-age=0, must-revalidate' };
 
 /**
- * GET /api/governance-votes?component=…&type=proposal|temperature_check&id=…&account=…
- * Weighted tally of a governance vote, taken from that dApp's vote collector.
+ * GET /api/governance-votes?component=…&type=proposal|temperature_check&id=…[&account=…][&top=N]
+ * Weighted tally of a governance vote, taken from that system's vote collector.
+ * `account` adds that account's voting power; `top` the N largest voters
+ * (a large N returns every voter, sorted by voting power).
  */
 export async function GET(request: NextRequest) {
     const params = new URL(request.url).searchParams;
@@ -16,6 +18,8 @@ export async function GET(request: NextRequest) {
     const type = params.get('type') as CollectorItemType | null;
     const id = params.get('id') ?? '';
     const account = params.get('account') ? validateAddress(params.get('account')) : null;
+    // `top` is capped well above any vote so far; the list is only public ledger data.
+    const top = Math.min(Math.max(Number(params.get('top')) || 0, 0), 10_000);
 
     if (!component || !type || !TYPES.includes(type) || !/^\d{1,19}$/.test(id)) {
         return NextResponse.json(null, { status: 400, headers: NO_STORE });
@@ -24,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (!collectorFor(component)) return NextResponse.json(null, { headers: NO_STORE });
 
     try {
-        const tally = await fetchVoteTally(component, type, id, account);
+        const tally = await fetchVoteTally(component, type, id, { account, topVoters: top });
         return NextResponse.json(tally, {
             headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
         });
