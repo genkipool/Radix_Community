@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Activity, Target, ThumbsUp, Users, Hourglass, Info, ExternalLink } from 'lucide-react';
+import { Activity, Target, ThumbsUp, Users, Hourglass, Info, ExternalLink, Loader2 } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
@@ -153,7 +153,9 @@ function VotersTable({ tally, voters, choices, g, language }: {
                                         </td>
                                         <td className="pl-5 pr-10 py-2 text-right whitespace-nowrap">
                                             {v.votePower === null ? (
-                                                <span className="text-xs text-[var(--color-text-muted)]" title={g.power_pending}>—</span>
+                                                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-text-muted)]" title={g.power_pending}>
+                                                    <Loader2 className="size-3 animate-spin" />{g.power_counting || 'Counting…'}
+                                                </span>
                                             ) : (
                                                 <span className="inline-flex flex-col items-end leading-tight tabular-nums">
                                                     <span className="font-mono text-xs font-bold text-[var(--color-text-main)]">{formatXrd(p, language)} XRD</span>
