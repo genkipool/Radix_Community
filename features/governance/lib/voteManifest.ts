@@ -9,8 +9,14 @@ const ADDRESS = /^[a-z0-9_]+$/;
  * Transaction manifest casting (or replacing) a vote.
  *
  * No `lock_fee`: the wallet adds its own fee payment and refuses a request
- * that already locks one. The blueprint checks the account's owner rule, which
- * the wallet satisfies by signing with that account.
+ * that already locks one.
+ *
+ * The closing `deposit_batch` on the voting account is not optional. The
+ * blueprint asserts the account's owner rule, and the wallet only signs with
+ * accounts whose owner-protected methods the manifest calls; passing the
+ * account as a plain argument is not enough. Without it the wallet does not
+ * sign with that account, its preview fails and it answers
+ * `failedToPrepareTransaction`. The official dApp ends its vote the same way.
  */
 export function buildVoteManifest(params: {
     component: string;
@@ -41,6 +47,11 @@ export function buildVoteManifest(params: {
         `    Address("${account}")`,
         `    ${itemId}u64`,
         `    ${vote}`,
+        ';',
+        'CALL_METHOD',
+        `    Address("${account}")`,
+        '    "deposit_batch"',
+        '    Expression("ENTIRE_WORKTOP")',
         ';',
         '',
     ].join('\n');

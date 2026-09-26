@@ -19,6 +19,7 @@
     "gen:og-backdrop": "npx tsx scripts/gen-og-backdrop.tsx"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@hookform/resolvers": "^5.4.0",
     "@noble/curves": "1.9.7",
     "@radixdlt/babylon-gateway-api-sdk": "^1.10.1",

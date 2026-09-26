@@ -11,12 +11,12 @@ export interface TallyTarget {
     itemId: string;
     /** Adds this account's voting power to the response. */
     account?: string | null;
-    /** Adds the N largest voters. */
-    top?: number;
+    /** Adds every voter with its transaction and time. */
+    voters?: boolean;
 }
 
 export const tallyKey = (t: TallyTarget) =>
-    ['governance-tally', t.component, t.kind, t.itemId, t.account ?? null, t.top ?? 0] as const;
+    ['governance-tally', t.component, t.kind, t.itemId, t.account ?? null, !!t.voters] as const;
 
 /**
  * Weighted tally of a proposal or temperature check, as published by the
@@ -27,7 +27,7 @@ export function useGovernanceTally(target: TallyTarget, network: Network, enable
     return useQuery({
         queryKey: tallyKey(target),
         queryFn: () => apiFetchGovernanceTally({
-            component: target.component, type: target.kind, id: target.itemId, account: target.account, top: target.top,
+            component: target.component, type: target.kind, id: target.itemId, account: target.account, voters: target.voters,
         }),
         enabled: enabled && network === 'mainnet',
         staleTime: 60_000,

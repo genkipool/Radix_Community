@@ -18,7 +18,7 @@ export default async function GovernanceLayout({
     const { locale } = await params;
     const [t, { entries, serverNow }] = await Promise.all([
         getFeatureDictionary(locale as Locale, ['governance']),
-        loadGovernanceList(),
+        loadGovernanceList(locale),
     ]);
 
     return (

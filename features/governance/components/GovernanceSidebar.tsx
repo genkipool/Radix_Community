@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLinkStatus } from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { CircleDot, Clock, Lock, FileText, Thermometer } from 'lucide-react';
 import SidebarLayout from '@/components/layout/SidebarLayout';
@@ -14,6 +15,19 @@ import { governanceItemPath } from '../lib/paths';
 import type { VotingPhase } from '../lib/governanceVotes';
 import { useNow } from '../hooks/useNow';
 import type { G } from './GovernanceBadges';
+
+function ItemIcon({ kind, selected }: { kind: 'proposal' | 'temperature_check'; selected: boolean }) {
+    const { pending } = useLinkStatus();
+    const Icon = kind === 'proposal' ? FileText : Thermometer;
+    return (
+        <span className={`grid place-items-center size-8 rounded-lg transition-colors ${selected
+            ? 'bg-[var(--color-bg)]/20 text-[var(--color-bg)]'
+            : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'}`}
+        >
+            <Icon className={`size-4 ${pending ? 'animate-pulse' : ''}`} />
+        </span>
+    );
+}
 
 const GROUP_STYLE: Record<VotingPhase, { icon: React.ReactNode; gradient: string }> = {
     open: { icon: <CircleDot className="size-5" />, gradient: 'from-emerald-500 to-teal-400' },
@@ -38,6 +52,9 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
     const [query, setQuery] = useState('');
     const [expanded, setExpanded] = useState<Set<VotingPhase>>(new Set(PHASE_ORDER));
     const [autoCollapse, setAutoCollapse] = useState(false);
+    // Marks the clicked item at once; the route catches up behind it.
+    const [pending, setPending] = useState<{ path: string; from: string } | null>(null);
+    const activePath = pending && pending.from === pathname ? pending.path : pathname;
 
     const groups = groupByPhase(entries.filter(e => matchesQuery(e, query)), now);
     const pathOf = (e: GovernanceEntry) => `/${language}${governanceItemPath(e.systemKey, e.kind, e.id)}`;
@@ -73,6 +90,8 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                     onAutoCollapseChange={setAutoCollapse}
                     collapseAllLabel={g.collapse_all}
                     expandAllLabel={g.expand_all}
+                    autoCollapseActiveTitle={g.auto_collapse_on}
+                    autoCollapseInactiveTitle={g.auto_collapse_off}
                 />
             }
             onHeaderClick={() => router.push(`/${language}/governance`)}
@@ -86,12 +105,9 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                         id: entryKey(e),
                         label: e.item.title || g.vote?.untitled || 'untitled',
                         sublabel: `${kindShort[e.kind]} #${e.id} · ${e.systemName}`,
-                        leftVisual: (
-                            <span className="grid place-items-center size-8 rounded-lg bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                                {e.kind === 'proposal' ? <FileText className="size-4" /> : <Thermometer className="size-4" />}
-                            </span>
-                        ),
-                        isSelected: pathname === pathOf(e),
+                        leftVisual: <ItemIcon kind={e.kind} selected={activePath === pathOf(e)} />,
+                        href: pathOf(e),
+                        isSelected: activePath === pathOf(e),
                     }));
                     return (
                         <SidebarCard
@@ -113,7 +129,7 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                             richItems
                             onSelectItem={id => {
                                 const e = byKey.get(id);
-                                if (e) router.push(pathOf(e));
+                                if (e) setPending({ path: pathOf(e), from: pathname });
                             }}
                         />
                     );
