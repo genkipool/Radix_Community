@@ -94,7 +94,6 @@
     "submit_change": "Change my vote",
     "sending": "Confirm the vote in your wallet…",
     "success": "Vote recorded on the ledger!",
-    "view_tx": "View the transaction",
     "tally_delay": "The XRD tally takes about a minute to update.",
     "error_rejected": "You cancelled the signature in the wallet.",
     "error_generic": "The vote could not be recorded ({code}).",
@@ -221,6 +220,7 @@
     "multi_account_hint": "Every selected account casts the same vote in one transaction; the wallet asks each of them to sign.",
     "submit_many": "Vote with {n} accounts",
     "power_share": "{pct} of the total",
+    "power_counting": "Counting…",
     "power_pending": "Not counted yet: the tally updates in about a minute"
   }
 }

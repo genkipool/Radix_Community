@@ -31,6 +31,9 @@ export function useGovernanceTally(target: TallyTarget, network: Network, enable
         }),
         enabled: enabled && network === 'mainnet',
         staleTime: 60_000,
+        // A fresh vote has no voting power until the collector counts it
+        // (about a minute): ask again until every voter has one.
+        refetchInterval: q => (q.state.data?.voters?.some(v => v.votePower === null) ? 30_000 : false),
         retry: 1,
     });
 }

@@ -142,9 +142,13 @@ export function VoteSubmit({ vote, item, g, language }: { vote: CastVote; item: 
             {tx.result && (
                 <Notice icon={CheckCircle2} tone="ok">
                     <p className="font-bold">{g.success || 'Vote recorded on the ledger!'}</p>
-                    <Link href={`/${language}/dashboard/tx/${tx.result.transactionIntentHash}`} className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs text-[var(--color-primary)] hover:underline break-all">
+                    <Link
+                        href={`/${language}/dashboard/tx/${tx.result.transactionIntentHash}`}
+                        title={tx.result.transactionIntentHash}
+                        className="mt-1 flex items-center gap-1.5 min-w-0 max-w-full font-mono text-xs text-[var(--color-primary)] hover:underline whitespace-nowrap"
+                    >
+                        <span className="truncate">{shortenAddress(tx.result.transactionIntentHash)}</span>
                         <ExternalLink className="size-3.5 shrink-0" />
-                        {g.view_tx || 'View the transaction'}: {shortenAddress(tx.result.transactionIntentHash)}
                     </Link>
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">{g.tally_delay}</p>
                 </Notice>

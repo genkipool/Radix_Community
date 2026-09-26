@@ -95,7 +95,6 @@
     "submit_change": "Cambiar mi voto",
     "sending": "Confirma el voto en tu billetera…",
     "success": "¡Voto registrado en el ledger!",
-    "view_tx": "Ver la transacción",
     "tally_delay": "El recuento en XRD tarda alrededor de un minuto en actualizarse.",
     "error_rejected": "Has cancelado la firma en la billetera.",
     "error_generic": "No se pudo registrar el voto ({code}).",
@@ -222,6 +221,7 @@
     "multi_account_hint": "Todas las cuentas marcadas votarán lo mismo en una sola transacción; la billetera pedirá la firma de cada una.",
     "submit_many": "Votar con {n} cuentas",
     "power_share": "{pct} del total",
+    "power_counting": "Calculando…",
     "power_pending": "Aún sin contar: el recuento se actualiza en aproximadamente un minuto"
   }
 }
