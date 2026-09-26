@@ -52,10 +52,16 @@ const proposal = {
         { kind: 'Array', field_name: 'vote_options', elements: [option(0, 'Approve'), option(1, 'Reject'), option(2, 'Abstain')] },
         { kind: 'Array', field_name: 'links', elements: [{ kind: 'String', value: 'https://example.org/discussion' }, { kind: 'String', value: 'javascript:alert(1)' }] },
         { kind: 'Tuple', field_name: 'parameter_set', fields: [
+            { kind: 'String', field_name: 'id', value: 'dao-constitutional' },
             { kind: 'String', field_name: 'label', value: 'Constitutional' },
+            { kind: 'String', field_name: 'version', value: '1' },
             { kind: 'Enum', field_name: 'parameters', variant_name: 'Standard', fields: [
-                { kind: 'Tuple', field_name: 'temperature_check', fields: [{ kind: 'Decimal', field_name: 'approval_threshold', value: '0.5' }] },
+                { kind: 'Tuple', field_name: 'temperature_check', fields: [
+                    { kind: 'U16', field_name: 'voting_days', value: '5' },
+                    { kind: 'Decimal', field_name: 'approval_threshold', value: '0.5' },
+                ] },
                 { kind: 'Tuple', field_name: 'proposal', fields: [
+                    { kind: 'U16', field_name: 'voting_days', value: '7' },
                     { kind: 'Decimal', field_name: 'quorum', value: '1350832592' },
                     { kind: 'Decimal', field_name: 'approval_threshold', value: '0.66' },
                 ] },
@@ -88,6 +94,15 @@ describe('governanceVoteUtils', () => {
             quorum: 1350832592,
             approvalThreshold: 0.66,
             parameterLabel: 'Constitutional',
+            ruleSet: {
+                id: 'dao-constitutional',
+                label: 'Constitutional',
+                version: '1',
+                stages: {
+                    temperature_check: { votingDays: 5, quorum: null, approvalThreshold: 0.5 },
+                    proposal: { votingDays: 7, quorum: 1350832592, approvalThreshold: 0.66 },
+                },
+            },
         });
         expect(parseGovernanceItem(null, 'proposal')).toBeNull();
     });
