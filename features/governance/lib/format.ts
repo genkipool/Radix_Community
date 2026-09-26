@@ -37,3 +37,9 @@ export function formatDuration(seconds: number, locale?: string): string {
         : abs >= 3_600 ? [Math.floor(abs / 3_600), 'hour'] : [Math.max(1, Math.floor(abs / 60)), 'minute'];
     return new Intl.NumberFormat(locale, { style: 'unit', unit, unitDisplay: unit === 'day' ? 'long' : 'short' }).format(value);
 }
+
+/** A share of a total, never rounding a real but tiny share down to "0 %". */
+export function formatShare(share: number, locale?: string): string {
+    if (share > 0 && share < 0.001) return `< ${formatPct(0.001, locale)}`;
+    return formatPct(share, locale);
+}

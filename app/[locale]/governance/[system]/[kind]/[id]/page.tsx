@@ -6,7 +6,6 @@ import { GovernanceDetail } from '@/features/governance/components/GovernanceDet
 import { resolveGovernanceRoute, type GovernanceRouteParams } from '@/features/governance/services/governanceRoute.server';
 import { renderProposalMarkdown } from '@/features/governance/lib/markdown.server';
 import { governanceItemPath } from '@/features/governance/lib/paths';
-import { getCachedTranslation } from '@/features/governance/services/translation.server';
 
 /** Ledger data is cached for minutes in the service layer; the page stays dynamic. */
 export const dynamic = 'force-dynamic';
@@ -33,11 +32,6 @@ export default async function GovernanceItemPage({ params }: Props) {
     const [t, route] = await Promise.all([getFeatureDictionary(p.locale as Locale, ['governance']), resolveGovernanceRoute(p)]);
     if (!route) notFound();
     const { entry, system, serverNow } = route;
-    // A stored translation is served with the page; otherwise the client asks for one.
-    const cached = p.locale !== 'en' ? await getCachedTranslation(entry.item, p.locale) : null;
-    const initialTranslation = cached
-        ? { status: 'ready' as const, title: cached.title, shortDescription: cached.shortDescription, options: cached.options, descriptionHtml: renderProposalMarkdown(cached.description) }
-        : null;
 
     return (
         <GovernanceDetail
@@ -47,7 +41,6 @@ export default async function GovernanceItemPage({ params }: Props) {
             g={t.governance}
             language={p.locale}
             serverNow={serverNow}
-            initialTranslation={initialTranslation}
         />
     );
 }

@@ -8,7 +8,7 @@ import type { GovernanceEntry } from '../types';
 import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { itemChoices, summarizeTally, uniqueVoters, votingPhase, votingProgress, type BallotChoice, type TallySummary } from '../lib/governanceVotes';
 import { OutcomeBanner, TurnoutMeter, VotingWindow, fill, formatDate, formatPct, formatXrd, type Gv } from './VoteParts';
-import { formatDuration } from '../lib/format';
+import { formatDuration, formatShare } from '../lib/format';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
 import { ResultsBallot } from './ResultsBallot';
@@ -26,7 +26,7 @@ function Kpi({ icon: Icon, label, value, hint, accent, meter, title }: {
     title?: string;
 }) {
     return (
-        <div className="min-w-0 rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-4" title={title}>
+        <div className="h-full min-w-0 flex flex-col rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-4" title={title}>
             <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">
                 <Icon className="size-3.5 text-[var(--color-primary)] shrink-0" />{label}
             </span>
@@ -126,10 +126,10 @@ function VotersTable({ tally, voters, choices, g, language }: {
                         <thead className="sticky top-0 z-10 bg-[var(--color-card-bg)] shadow-[0_1px_0_var(--color-card-border)]">
                             <tr className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">
                                 <th className="text-left font-bold px-5 py-2.5">#</th>
-                                <th className="text-left font-bold px-3 py-2.5">{g.col_account || 'Account'}</th>
-                                <th className="text-left font-bold px-3 py-2.5">{g.col_vote || 'Vote'}</th>
-                                <th className="text-right font-bold px-3 py-2.5">{g.col_power || 'Voting power'}</th>
-                                <th className="text-left font-bold px-3 py-2.5">{g.col_date || 'Date'}</th>
+                                <th className="text-left font-bold px-5 py-2.5">{g.col_account || 'Account'}</th>
+                                <th className="text-left font-bold px-5 py-2.5">{g.col_vote || 'Vote'}</th>
+                                <th className="text-right font-bold pl-5 pr-10 py-2.5">{g.col_power || 'Voting power'}</th>
+                                <th className="text-left font-bold px-5 py-2.5">{g.col_date || 'Date'}</th>
                                 <th className="text-left font-bold px-5 py-2.5">{g.col_txid || 'Transaction'}</th>
                             </tr>
                         </thead>
@@ -139,7 +139,7 @@ function VotersTable({ tally, voters, choices, g, language }: {
                                 return (
                                     <tr key={v.account} className="border-t border-[var(--color-card-border)] hover:bg-[var(--color-surface)] transition-colors">
                                         <td className="px-5 py-2.5 font-mono text-xs text-[var(--color-text-muted)]">{i + 1}</td>
-                                        <td className="px-3 py-2.5">
+                                        <td className="px-5 py-2.5">
                                             <span className="inline-flex items-center gap-1 whitespace-nowrap">
                                                 <Link href={`/${language}/dashboard/account/${v.account}`} prefetch={false} className="font-mono text-xs text-[var(--color-text-main)] hover:text-[var(--color-primary)]" title={v.account}>
                                                     {shortenAddress(v.account)}
@@ -147,19 +147,23 @@ function VotersTable({ tally, voters, choices, g, language }: {
                                                 <CopyButton value={v.account} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
                                             </span>
                                         </td>
-                                        <td className="px-3 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
+                                        <td className="px-5 py-2.5 text-xs font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
                                             {v.choices.map(choiceLabel).join(', ')}
                                             {v.changes > 0 && <span className="ml-1.5 text-[10px] font-normal text-[var(--color-text-muted)]" title={g.vote?.changed_vote}>↻</span>}
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-xs whitespace-nowrap">
-                                            {v.votePower === null ? <span className="text-[var(--color-text-muted)]">—</span> : (
-                                                <>
-                                                    <span className="font-bold text-[var(--color-text-main)]">{formatXrd(p, language)} XRD</span>
-                                                    {tally && tally.turnout > 0 && <span className="ml-2 text-[var(--color-text-muted)]">{formatPct(p / tally.turnout, language)}</span>}
-                                                </>
+                                        <td className="pl-5 pr-10 py-2 text-right whitespace-nowrap">
+                                            {v.votePower === null ? (
+                                                <span className="text-xs text-[var(--color-text-muted)]" title={g.power_pending}>—</span>
+                                            ) : (
+                                                <span className="inline-flex flex-col items-end leading-tight tabular-nums">
+                                                    <span className="font-mono text-xs font-bold text-[var(--color-text-main)]">{formatXrd(p, language)} XRD</span>
+                                                    {tally && tally.turnout > 0 && (
+                                                        <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{fill(g.power_share || '{pct} of the total', { pct: formatShare(p / tally.turnout, language) })}</span>
+                                                    )}
+                                                </span>
                                             )}
                                         </td>
-                                        <td className="px-3 py-2.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap" suppressHydrationWarning>
+                                        <td className="px-5 py-2.5 text-xs text-[var(--color-text-muted)] whitespace-nowrap" suppressHydrationWarning>
                                             {formatDate(Date.parse(v.time) / 1000, language)}
                                         </td>
                                         <td className="px-5 py-2.5 whitespace-nowrap">
@@ -247,9 +251,9 @@ export function ResultsDashboard({ entry, system, g, language, now }: {
             )}
 
             {/* The results box is also the ballot: vote from here while voting is open. */}
-            <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <div className="@container grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <ResultsBallot entry={entry} system={system} choices={choices} tally={tally} g={g} language={language} now={now} />
-                <div className="rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5">
+                <div className="h-full rounded-2xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 space-y-5">
                     {tally && <TurnoutMeter tally={tally} item={item} gv={gv} locale={language} />}
                     <VotingWindow item={item} phase={phase} progress={votingProgress(item, now)} gv={gv} locale={language} now={now} />
                 </div>

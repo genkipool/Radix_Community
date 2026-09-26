@@ -88,7 +88,8 @@ export interface GovernanceItem {
     shortDescription: string | null;
     /** Full text, in Markdown. */
     description: string | null;
-    options: Array<{ id: number; label: string }>;
+    /** `sourceLabel` keeps the ledger's label when `label` is shown translated. */
+    options: Array<{ id: number; label: string; sourceLabel?: string }>;
     links: string[];
     voteCount: number | null;
     /** Votes that replaced an earlier vote of the same account. */
@@ -213,7 +214,8 @@ export function itemChoices(kind: GovernanceItemKind, item: GovernanceItem | nul
     if (kind === 'temperature_check') {
         return STANCES.map(key => ({ key, label: stanceLabel(key), selected: false, tone: toneOf(key) }));
     }
-    return (item?.options ?? []).map(o => ({ key: String(o.id), label: o.label, selected: false, tone: toneOf(o.label) }));
+    // The tone (for / against / neutral) is read from the ledger's own label, whatever language is shown.
+    return (item?.options ?? []).map(o => ({ key: String(o.id), label: o.label, selected: false, tone: toneOf(o.sourceLabel ?? o.label) }));
 }
 
 /** Collector / ballot key of each choice in a selection. */

@@ -15,8 +15,7 @@ import { ResultsDashboard } from './ResultsDashboard';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
-import { useItemTranslation, type TranslationResponse } from '../hooks/useItemTranslation';
-import { Languages, Loader2 } from 'lucide-react';
+import { TranslationBar, useTranslatedHtml, useTranslatedList, useTranslatedText } from './BrowserTranslation';
 
 type Tab = 'proposal' | 'results';
 
@@ -82,7 +81,7 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
  * vote on) and its result as a dashboard. The tab lives in the URL
  * (`?tab=results`) so either view can be shared.
  */
-export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g, language, serverNow, initialTranslation }: {
+export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g, language, serverNow }: {
     entry: GovernanceEntry;
     system: GovernanceSystem;
     /** Proposal text, rendered and sanitised on the server. */
@@ -90,24 +89,18 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     g: G;
     language: string;
     serverNow: number;
-    /** Stored translation served with the page, when there is one. */
-    initialTranslation: TranslationResponse | null;
 }) {
-    const translationQuery = useItemTranslation(originalEntry, language, initialTranslation);
-    const [showOriginal, setShowOriginal] = useState(false);
-    const translation = translationQuery.data?.status === 'ready' ? translationQuery.data : null;
-    const translated = !!translation && !showOriginal;
+    // Translated on the reader's device when the browser can; the original otherwise.
+    const { item: original } = originalEntry;
+    const title = useTranslatedText(original.title);
+    const shortDescription = useTranslatedText(original.shortDescription);
+    const optionLabels = useTranslatedList(original.options.map(o => o.label));
+    const descriptionHtml = useTranslatedHtml(originalHtml);
     // Everything below reads the entry, so a translated copy of it translates the whole page.
-    const entry: GovernanceEntry = translated ? {
+    const entry: GovernanceEntry = {
         ...originalEntry,
-        item: {
-            ...originalEntry.item,
-            title: translation.title || originalEntry.item.title,
-            shortDescription: translation.shortDescription || originalEntry.item.shortDescription,
-            options: originalEntry.item.options.map(o => ({ ...o, label: translation.options?.find(t => t.id === o.id)?.label || o.label })),
-        },
-    } : originalEntry;
-    const descriptionHtml = translated && translation.descriptionHtml ? translation.descriptionHtml : originalHtml;
+        item: { ...original, title, shortDescription, options: original.options.map((o, i) => ({ ...o, label: optionLabels[i] ?? o.label, sourceLabel: o.label })) },
+    };
     const searchParams = useSearchParams();
     const [tab, setTabState] = useState<Tab>(searchParams.get('tab') === 'results' ? 'results' : 'proposal');
     const now = useNow(serverNow);
@@ -142,6 +135,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                     {item.parameterLabel && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]">{item.parameterLabel}</span>
                     )}
+                    <TranslationBar g={g} />
                 </div>
                 <h1 className="mt-3 text-2xl md:text-4xl font-bold leading-tight text-[var(--color-text-main)] break-words">
                     {item.title || gv.untitled || 'untitled'}
@@ -150,23 +144,6 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                     <p className="mt-3 max-w-4xl text-sm md:text-base leading-relaxed text-[var(--color-text-secondary)]">{item.shortDescription}</p>
                 )}
             </header>
-
-            {(translationQuery.data?.status === 'pending' || translation) && (
-                <div className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-text-muted)]">
-                    {translationQuery.data?.status === 'pending' ? (
-                        <><Loader2 className="size-3.5 animate-spin text-[var(--color-primary)]" />{g.translating || 'Translating…'}</>
-                    ) : (
-                        <>
-                            <Languages className="size-3.5 text-[var(--color-primary)]" />
-                            {showOriginal ? (g.showing_original || 'You are viewing the original English text') : (g.translated_from || 'Automatically translated from English')}
-                            <span aria-hidden>·</span>
-                            <button type="button" onClick={() => setShowOriginal(v => !v)} className="font-bold text-[var(--color-primary)] hover:underline">
-                                {showOriginal ? (g.show_translation || 'View translation') : (g.show_original || 'View original')}
-                            </button>
-                        </>
-                    )}
-                </div>
-            )}
 
             <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-6 border-b border-[var(--color-card-border)]">
                 {tabs.map(t => {

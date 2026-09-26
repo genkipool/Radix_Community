@@ -22,11 +22,14 @@ export function buildVoteManifest(params: {
     component: string;
     kind: GovernanceItemKind;
     itemId: string;
-    account: string;
+    /** One or more accounts; each casts the same vote in the same transaction. */
+    accounts: string[];
     selection: VoteSelection;
 }): string {
-    const { component, kind, itemId, account, selection } = params;
-    if (!ADDRESS.test(component) || !ADDRESS.test(account)) throw new Error('Invalid address');
+    const { component, kind, itemId, accounts, selection } = params;
+    const unique = [...new Set(accounts)];
+    if (unique.length === 0) throw new Error('At least one account is needed');
+    if (!ADDRESS.test(component) || !unique.every(a => ADDRESS.test(a))) throw new Error('Invalid address');
     if (!/^\d{1,19}$/.test(itemId)) throw new Error('Invalid item id');
 
     let vote: string;
@@ -40,7 +43,7 @@ export function buildVoteManifest(params: {
     }
 
     const method = kind === 'temperature_check' ? 'vote_on_temperature_check' : 'vote_on_proposal';
-    return [
+    const votes = unique.flatMap(account => [
         'CALL_METHOD',
         `    Address("${component}")`,
         `    "${method}"`,
@@ -48,11 +51,14 @@ export function buildVoteManifest(params: {
         `    ${itemId}u64`,
         `    ${vote}`,
         ';',
+    ]);
+    // One owner-protected call per account, so the wallet asks every one of them to sign.
+    const signers = unique.flatMap(account => [
         'CALL_METHOD',
         `    Address("${account}")`,
         '    "deposit_batch"',
         '    Expression("ENTIRE_WORKTOP")',
         ';',
-        '',
-    ].join('\n');
+    ]);
+    return [...votes, ...signers, ''].join('\n');
 }

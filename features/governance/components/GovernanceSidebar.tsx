@@ -14,6 +14,7 @@ import { groupByPhase, matchesQuery, PHASE_ORDER, entryKey } from '../lib/entrie
 import { governanceItemPath } from '../lib/paths';
 import type { VotingPhase } from '../lib/governanceVotes';
 import { useNow } from '../hooks/useNow';
+import { useTranslatedList } from './BrowserTranslation';
 import type { G } from './GovernanceBadges';
 
 function ItemIcon({ kind, selected }: { kind: 'proposal' | 'temperature_check'; selected: boolean }) {
@@ -56,7 +57,9 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
     const [pending, setPending] = useState<{ path: string; from: string } | null>(null);
     const activePath = pending && pending.from === pathname ? pending.path : pathname;
 
-    const groups = groupByPhase(entries.filter(e => matchesQuery(e, query)), now);
+    const titles = useTranslatedList(entries.map(e => e.item.title ?? ''));
+    const titleOf = new Map(entries.map((e, i) => [entryKey(e), titles[i] || e.item.title]));
+    const groups = groupByPhase(entries.filter(e => matchesQuery(e, query) || (titleOf.get(entryKey(e)) ?? '').toLowerCase().includes(query.trim().toLowerCase())), now);
     const pathOf = (e: GovernanceEntry) => `/${language}${governanceItemPath(e.systemKey, e.kind, e.id)}`;
     const byKey = new Map(entries.map(e => [entryKey(e), e]));
 
@@ -103,7 +106,7 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                     if (list.length === 0) return null;
                     const items: SidebarCardItem[] = list.map(e => ({
                         id: entryKey(e),
-                        label: e.item.title || g.vote?.untitled || 'untitled',
+                        label: titleOf.get(entryKey(e)) || g.vote?.untitled || 'untitled',
                         sublabel: `${kindShort[e.kind]} #${e.id} · ${e.systemName}`,
                         leftVisual: <ItemIcon kind={e.kind} selected={activePath === pathOf(e)} />,
                         href: pathOf(e),

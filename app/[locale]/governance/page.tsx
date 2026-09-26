@@ -23,7 +23,7 @@ export default async function GovernancePage({ params }: { params: Promise<{ loc
     const { locale } = await params;
     const [t, { entries, serverNow }] = await Promise.all([
         getFeatureDictionary(locale as Locale, ['governance']),
-        loadGovernanceList(locale),
+        loadGovernanceList(),
     ]);
     return <GovernanceOverview entries={entries} g={t.governance} language={locale} serverNow={serverNow} />;
 }

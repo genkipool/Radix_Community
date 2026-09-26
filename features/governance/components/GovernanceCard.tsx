@@ -10,6 +10,7 @@ import { governanceItemPath } from '../lib/paths';
 import type { GovernanceEntry } from '../types';
 import { fill, formatDate, formatPct, formatRelative, TONE } from './VoteParts';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
+import { useTranslatedText } from './BrowserTranslation';
 
 /**
  * One proposal or temperature check in the list: what it is, whether it is
@@ -25,6 +26,8 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
     const tally = tallyQuery.data ? summarizeTally(itemChoices(kind, item, s => stances[s] || s), tallyQuery.data, item) : null;
     const leader = tally && tally.turnout > 0 ? [...tally.rows].sort((a, b) => b.power - a.power)[0] : null;
     const voters = uniqueVoters(item);
+    const title = useTranslatedText(item.title);
+    const shortDescription = useTranslatedText(item.shortDescription);
 
     const when = !item.deadline ? null
         : phase === 'open' ? fill(g.card_closes || 'Closes {time}', { time: formatRelative(item.deadline, language, now) })
@@ -43,10 +46,10 @@ export function GovernanceCard({ entry, g, now, language }: { entry: GovernanceE
             </div>
 
             <h3 className="mt-3 text-base md:text-lg font-bold leading-snug text-[var(--color-text-main)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
-                {item.title || g.vote?.untitled || 'untitled'}
+                {title || g.vote?.untitled || 'untitled'}
             </h3>
-            {item.shortDescription && (
-                <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)] line-clamp-3">{item.shortDescription}</p>
+            {shortDescription && (
+                <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)] line-clamp-3">{shortDescription}</p>
             )}
 
             <div className="mt-auto pt-4 space-y-3">
