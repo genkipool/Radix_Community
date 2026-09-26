@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-    Sparkles, Info, Check, Copy, Layers, Coins, Send, PlusCircle, Flame, Undo2,
+    Sparkles, Info, Layers, Coins, Send, PlusCircle, Flame, Undo2,
     UserRound, KeyRound, Fingerprint, Pencil, Package,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -11,6 +11,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { sanitizeText } from '@/utils/sanitize';
 import type { Network, TranslationsT } from '@/features/dashboard/types';
 import type { ResourceCreation, RoleHolder } from '../utils/resourceCreationUtils';
+import { CopyButton, FactTile, shortenAddress } from './SummaryCardKit';
 
 type Tt = Partial<TranslationsT['dashboard']['transactions']>;
 type Rc = Partial<NonNullable<TranslationsT['dashboard']['transactions']['resource_creation']>>;
@@ -24,36 +25,6 @@ interface ResourceCreationCardProps {
     onResourceClick?: (addr: string) => void;
     network: Network;
     locale?: string;
-}
-
-const shorten = (addr: string) => (addr.length > 22 ? `${addr.slice(0, 12)}…${addr.slice(-6)}` : addr);
-
-function CopyButton({ value, copiedAddress, onCopy, title }: { value: string; copiedAddress: string | null; onCopy: (v: string) => void; title: string }) {
-    return (
-        <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onCopy(value); }}
-            className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-surface-hover)] transition-colors shrink-0"
-            title={title}
-            aria-label={title}
-        >
-            {copiedAddress === value ? <Check className="size-3.5 text-[var(--color-accent)]" /> : <Copy className="size-3.5" />}
-        </button>
-    );
-}
-
-/** Small labelled tile for the facts grid. */
-function FactTile({ icon: Icon, label, children, hint }: { icon: LucideIcon; label: string; children: React.ReactNode; hint?: string }) {
-    return (
-        <div className="min-w-0 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-1.5">
-            <span className="flex items-center gap-1.5 text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                <Icon className="size-3 text-[var(--color-primary)] shrink-0" />
-                <span className="truncate">{label}</span>
-            </span>
-            <div className="min-w-0 text-sm font-semibold text-[var(--color-text-main)]">{children}</div>
-            {hint && <span className="text-[11px] leading-snug text-[var(--color-text-muted)]">{hint}</span>}
-        </div>
-    );
 }
 
 const HOLDER_STYLE: Record<RoleHolder, string> = {
@@ -136,11 +107,11 @@ export function ResourceCreationCard({
             <div className="relative p-4 @md:p-5 bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-[var(--color-secondary)]/10">
                 <div className="flex flex-col @md:flex-row @md:items-center gap-4">
                     <div className="relative shrink-0 self-start">
-                        {/* Brand gradient backdrop: white logos vanish on a light surface, coloured ones still read on it */}
-                        <div className="size-16 @md:size-20 rounded-2xl overflow-hidden p-2 bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] shadow-lg shadow-[var(--color-primary)]/20 ring-1 ring-[var(--color-primary)]/30 grid place-items-center">
+                        {/* Transparent: the collection's own logo decides its colours */}
+                        <div className="size-16 @md:size-20 rounded-2xl overflow-hidden bg-transparent border border-[var(--color-card-border)] grid place-items-center">
                             {iconUrl
                                 ? <SafeImage src={iconUrl} alt={name} fallbackName={name} className="size-full object-contain" />
-                                : <KindIcon className="size-8 text-white" />}
+                                : <KindIcon className="size-8 text-[var(--color-primary)]" />}
                         </div>
                         <span className="absolute -top-2 -right-2 flex items-center gap-1 rounded-full bg-[var(--color-primary)] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
                             <Sparkles className="size-2.5" />
@@ -169,7 +140,7 @@ export function ResourceCreationCard({
                                 className="font-mono text-xs text-[var(--color-text-secondary)] truncate enabled:hover:text-[var(--color-primary)] enabled:underline decoration-[var(--color-primary)]/30 underline-offset-2 transition-colors text-left"
                                 title={creation.address}
                             >
-                                {shorten(creation.address)}
+                                {shortenAddress(creation.address)}
                             </button>
                             <CopyButton value={creation.address} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
                         </div>
@@ -208,7 +179,7 @@ export function ResourceCreationCard({
                     {creator && (
                         <FactTile icon={UserRound} label={rc.created_by || 'Created by'}>
                             <span className="flex items-center gap-1 min-w-0">
-                                <span className="font-mono text-xs truncate" title={creator}>{shorten(creator)}</span>
+                                <span className="font-mono text-xs truncate" title={creator}>{shortenAddress(creator)}</span>
                                 <CopyButton value={creator} copiedAddress={copiedAddress} onCopy={onCopy} title={copyTitle} />
                             </span>
                         </FactTile>
@@ -231,7 +202,7 @@ export function ResourceCreationCard({
                                     className="truncate text-left enabled:hover:text-[var(--color-primary)] transition-colors"
                                     title={creation.ownerBadge}
                                 >
-                                    {badge?.name || shorten(creation.ownerBadge)}
+                                    {badge?.name || shortenAddress(creation.ownerBadge)}
                                 </button>
                             </span>
                         ) : (
