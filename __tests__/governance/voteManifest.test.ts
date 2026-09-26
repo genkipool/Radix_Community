@@ -17,6 +17,12 @@ describe('buildVoteManifest', () => {
             '    0u64',
             '    Array<Tuple>(Tuple(0u32), Tuple(2u32))',
             ';',
+            // Makes the wallet sign with the voting account (owner-protected method).
+            'CALL_METHOD',
+            `    Address("${ACCOUNT}")`,
+            '    "deposit_batch"',
+            '    Expression("ENTIRE_WORKTOP")',
+            ';',
             '',
         ].join('\n'));
         expect(m).not.toContain('lock_fee');

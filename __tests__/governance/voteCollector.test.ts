@@ -23,11 +23,14 @@ describe('voteCollector', () => {
         }));
         vi.stubGlobal('fetch', fetchMock);
 
-        const tally = await fetchVoteTally(DAO, 'proposal', '0', { account: VOTER, topVoters: 1 });
+        const tally = await fetchVoteTally(DAO, 'proposal', '0', { account: VOTER, withVoters: true });
         expect(tally).toEqual({
             results: [{ vote: '0', votePower: '899008040.9' }],
             accountPower: '12.5',
-            voters: { total: 2, top: [{ account: VOTER, vote: '0', votePower: '12.5' }] },
+            accountVotes: [
+                { account: 'account_rdx1other', vote: '1', votePower: '5' },
+                { account: VOTER, vote: '0', votePower: '12.5' },
+            ],
             source: 'vote.radixdao.org',
         });
         expect(fetchMock.mock.calls.map(c => c[0])).toEqual([

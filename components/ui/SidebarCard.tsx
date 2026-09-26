@@ -240,8 +240,9 @@ function SidebarCardRow({
                                 <p
                                     className="text-xs mt-0.5 truncate"
                                     style={{
-                                        color: isSelected ? 'rgba(var(--color-bg-rgb,0,0,0),0.7)' : 'var(--color-text-muted)',
-                                        opacity: isSelected ? 0.85 : 1,
+                                        // Same treatment as the simple rows: the selected row is primary on bg.
+                                        color: isSelected ? 'var(--color-bg)' : 'var(--color-text-muted)',
+                                        opacity: isSelected ? 0.8 : 1,
                                     }}
                                 >
                                     {sublabel}

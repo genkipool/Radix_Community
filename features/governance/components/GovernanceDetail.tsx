@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
@@ -15,6 +15,8 @@ import { ResultsDashboard } from './ResultsDashboard';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
+import { useItemTranslation, type TranslationResponse } from '../hooks/useItemTranslation';
+import { Languages, Loader2 } from 'lucide-react';
 
 type Tab = 'proposal' | 'results';
 
@@ -80,7 +82,7 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
  * vote on) and its result as a dashboard. The tab lives in the URL
  * (`?tab=results`) so either view can be shared.
  */
-export function GovernanceDetail({ entry, system, descriptionHtml, g, language, serverNow }: {
+export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g, language, serverNow, initialTranslation }: {
     entry: GovernanceEntry;
     system: GovernanceSystem;
     /** Proposal text, rendered and sanitised on the server. */
@@ -88,17 +90,39 @@ export function GovernanceDetail({ entry, system, descriptionHtml, g, language, 
     g: G;
     language: string;
     serverNow: number;
+    /** Stored translation served with the page, when there is one. */
+    initialTranslation: TranslationResponse | null;
 }) {
-    const router = useRouter();
-    const pathname = usePathname();
+    const translationQuery = useItemTranslation(originalEntry, language, initialTranslation);
+    const [showOriginal, setShowOriginal] = useState(false);
+    const translation = translationQuery.data?.status === 'ready' ? translationQuery.data : null;
+    const translated = !!translation && !showOriginal;
+    // Everything below reads the entry, so a translated copy of it translates the whole page.
+    const entry: GovernanceEntry = translated ? {
+        ...originalEntry,
+        item: {
+            ...originalEntry.item,
+            title: translation.title || originalEntry.item.title,
+            shortDescription: translation.shortDescription || originalEntry.item.shortDescription,
+            options: originalEntry.item.options.map(o => ({ ...o, label: translation.options?.find(t => t.id === o.id)?.label || o.label })),
+        },
+    } : originalEntry;
+    const descriptionHtml = translated && translation.descriptionHtml ? translation.descriptionHtml : originalHtml;
     const searchParams = useSearchParams();
-    const tab: Tab = searchParams.get('tab') === 'results' ? 'results' : 'proposal';
+    const [tab, setTabState] = useState<Tab>(searchParams.get('tab') === 'results' ? 'results' : 'proposal');
     const now = useNow(serverNow);
     const { item, kind, id } = entry;
     const phase = votingPhase(item, now);
     const gv: Gv = g.vote ?? {};
 
-    const setTab = (next: Tab) => router.replace(next === 'results' ? `${pathname}?tab=results` : pathname, { scroll: false });
+    // Switching tabs is purely client-side: the URL is updated for sharing
+    // without a round trip to the server (Next keeps useSearchParams in sync).
+    const setTab = (next: Tab) => {
+        setTabState(next);
+        const url = new URL(window.location.href);
+        if (next === 'results') url.searchParams.set('tab', 'results'); else url.searchParams.delete('tab');
+        window.history.replaceState(null, '', url);
+    };
     const tabs: Array<{ key: Tab; label: string; icon: typeof FileText }> = [
         { key: 'proposal', label: kind === 'proposal' ? (g.tab_proposal || 'Proposal') : (g.tab_temperature_check || 'Temperature check'), icon: FileText },
         { key: 'results', label: g.tab_results || 'Result', icon: BarChart3 },
@@ -126,6 +150,23 @@ export function GovernanceDetail({ entry, system, descriptionHtml, g, language, 
                     <p className="mt-3 max-w-4xl text-sm md:text-base leading-relaxed text-[var(--color-text-secondary)]">{item.shortDescription}</p>
                 )}
             </header>
+
+            {(translationQuery.data?.status === 'pending' || translation) && (
+                <div className="mt-4 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-[var(--color-card-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs text-[var(--color-text-muted)]">
+                    {translationQuery.data?.status === 'pending' ? (
+                        <><Loader2 className="size-3.5 animate-spin text-[var(--color-primary)]" />{g.translating || 'Translating…'}</>
+                    ) : (
+                        <>
+                            <Languages className="size-3.5 text-[var(--color-primary)]" />
+                            {showOriginal ? (g.showing_original || 'You are viewing the original English text') : (g.translated_from || 'Automatically translated from English')}
+                            <span aria-hidden>·</span>
+                            <button type="button" onClick={() => setShowOriginal(v => !v)} className="font-bold text-[var(--color-primary)] hover:underline">
+                                {showOriginal ? (g.show_translation || 'View translation') : (g.show_original || 'View original')}
+                            </button>
+                        </>
+                    )}
+                </div>
+            )}
 
             <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-6 border-b border-[var(--color-card-border)]">
                 {tabs.map(t => {
@@ -168,6 +209,7 @@ export function GovernanceDetail({ entry, system, descriptionHtml, g, language, 
                         </aside>
                     </div>
                 ) : (
+                    // Full width: the results box itself is the ballot.
                     <ResultsDashboard entry={entry} system={system} g={g} language={language} now={now} />
                 )}
             </div>
