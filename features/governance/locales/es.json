@@ -545,7 +545,8 @@
         "fact_threshold": "Parte del voto a favor que hace falta para aprobar",
         "counted_share": "El {pct} de las direcciones que votaron cuenta con este método ({n} de {of}); el resto no cumple sus requisitos",
         "decisive_share": "Bastaba el {pct} de las direcciones del lado ganador ({n} de {of}), empezando por las que más pesan, para decidir el resultado aunque todas las demás votaran lo contrario",
-        "fact_option": "{n} direcciones votaron «{label}» ({pct} de las que votaron)"
+        "fact_option": "{n} direcciones votaron «{label}» ({pct} de las que votaron)",
+        "threshold_mark": "Umbral de aprobación: hace falta al menos el {pct} a favor para aprobar. Es la raya vertical de la barra"
       },
       "col_resistance": "Resistencia",
       "resistance": {
@@ -584,7 +585,8 @@
       "fact_quorum": "Quórum",
       "fact_threshold": "Umbral",
       "address_one": "{n} dirección",
-      "address_many": "{n} direcciones"
+      "address_many": "{n} direcciones",
+      "threshold_short": "umbral {pct}"
     }
   }
 }

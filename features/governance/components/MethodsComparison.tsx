@@ -156,15 +156,25 @@ function SupportMeter({ r, c, threshold, language }: { r: MethodResult; c: C; th
     const title = hasSides
         ? tip(c, 'support', { pct: formatPct(ratio, language), threshold: threshold === null ? '—' : formatPct(threshold, language) })
         : tip(c, 'support_winner', { pct: formatPct(ratio, language), label: r.winner?.label ?? '' });
+    const showThreshold = hasSides && threshold !== null;
     return (
-        <span className="flex items-center gap-2.5 w-full cursor-help" title={title}>
-            <span className="relative flex-1 h-2 rounded-full bg-[var(--color-card-border)]">
+        <span className="flex flex-col gap-1.5 w-full cursor-help" title={title}>
+            {/* The share in favour on the left; the threshold on the right, marked with the same tick as the bar. */}
+            <span className="flex items-baseline justify-between gap-2">
+                <span className="font-mono text-xs font-bold text-[var(--color-text-main)] tabular-nums">{formatPct(ratio, language)}</span>
+                {showThreshold && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] tabular-nums" title={tip(c, 'threshold_mark', { pct: formatPct(threshold, language) })}>
+                        <span className="w-0.5 h-2.5 rounded-full bg-[var(--color-text-main)]" aria-hidden />
+                        {fill(c.threshold_short || 'threshold {pct}', { pct: formatPct(threshold, language) })}
+                    </span>
+                )}
+            </span>
+            <span className="relative h-2 rounded-full bg-[var(--color-card-border)]">
                 <span className={`absolute inset-y-0 left-0 rounded-full ${ok ? TONE.positive.bar : TONE.negative.bar}`} style={{ width: `${Math.min(1, ratio) * 100}%` }} />
-                {hasSides && threshold !== null && (
+                {showThreshold && (
                     <span className="absolute -top-1 -bottom-1 w-0.5 rounded-full bg-[var(--color-text-main)]" style={{ left: `calc(${threshold * 100}% - 1px)` }} aria-hidden />
                 )}
             </span>
-            <span className="w-12 text-right font-mono text-xs font-bold text-[var(--color-text-main)] tabular-nums">{formatPct(ratio, language)}</span>
         </span>
     );
 }

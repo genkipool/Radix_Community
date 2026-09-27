@@ -544,7 +544,8 @@
         "fact_threshold": "Share of the vote in favour needed to pass",
         "counted_share": "{pct} of the addresses that voted count under this method ({n} of {of}); the rest do not meet its requirements",
         "decisive_share": "{pct} of the addresses on the winning side ({n} of {of}), heaviest first, were enough to decide the result even if everyone else voted the other way",
-        "fact_option": "{n} addresses voted \"{label}\" ({pct} of those who voted)"
+        "fact_option": "{n} addresses voted \"{label}\" ({pct} of those who voted)",
+        "threshold_mark": "Approval threshold: at least {pct} in favour is needed to pass. It is the vertical line on the bar"
       },
       "col_resistance": "Resistance",
       "resistance": {
@@ -583,7 +584,8 @@
       "fact_quorum": "Quorum",
       "fact_threshold": "Threshold",
       "address_one": "{n} address",
-      "address_many": "{n} addresses"
+      "address_many": "{n} addresses",
+      "threshold_short": "threshold {pct}"
     }
   }
 }
