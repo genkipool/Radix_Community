@@ -163,9 +163,9 @@ function SupportMeter({ r, c, threshold, language }: { r: MethodResult; c: C; th
             <span className="flex items-baseline justify-between gap-2">
                 <span className="font-mono text-xs font-bold text-[var(--color-text-main)] tabular-nums">{formatPct(ratio, language)}</span>
                 {showThreshold && (
-                    <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] tabular-nums" title={tip(c, 'threshold_mark', { pct: formatPct(threshold, language) })}>
-                        <span className="w-0.5 h-2.5 rounded-full bg-[var(--color-text-main)]" aria-hidden />
-                        {fill(c.threshold_short || 'threshold {pct}', { pct: formatPct(threshold, language) })}
+                    <span className="inline-flex items-baseline gap-1 text-[10px] text-[var(--color-text-muted)] tabular-nums" title={tip(c, 'threshold_mark', { pct: formatPct(threshold, language) })}>
+                        <span className="self-center w-0.5 h-2.5 rounded-full bg-[var(--color-text-main)]" aria-hidden />
+                        <span>{fill(c.threshold_short || 'threshold {pct}', { pct: formatPct(threshold, language) })}</span>
                     </span>
                 )}
             </span>
@@ -242,8 +242,12 @@ function Stat({ label, title, children }: { label: string; title?: string; child
 }
 
 /** Everything behind one rule's figures. */
-function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResult; c: C; rule: string; attack: string; quorum: number | null; language: string }) {
+function MethodDetail({ r, c, rule, attack, quorum, threshold, language }: { r: MethodResult; c: C; rule: string; attack: string; quorum: number | null; threshold: number | null; language: string }) {
     const d = r.decisive;
+    // The bars show shares of all the weight, abstentions included; the threshold counts only for and against,
+    // so the mark sits where the bar in favour has to reach: threshold × (for + against) / total.
+    const decisiveShare = r.rows.filter(x => x.tone !== 'neutral').reduce((sum, x) => sum + x.share, 0);
+    const thresholdMark = threshold !== null && r.approvalShare !== null && decisiveShare > 0 ? threshold * decisiveShare : null;
     const sideLabel = d ? { for: c.side_for || 'in favour', against: c.side_against || 'against', winner: c.side_winner || 'behind the winner' }[d.side] : '';
     return (
         <div className="grid gap-5 lg:grid-cols-2 px-4 sm:px-5 pb-5 pt-1">
@@ -259,12 +263,22 @@ function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResul
                                     <div className="flex items-center justify-between gap-3 text-xs">
                                         <span className={`font-semibold truncate ${TONE[x.tone].text}`}>{x.label}</span>
                                         <span className="flex items-baseline gap-2 shrink-0">
+                                            {/* The threshold on the row whose bar carries its tick. */}
+                                            {x.tone === 'positive' && thresholdMark !== null && threshold !== null && (
+                                                <span className="inline-flex items-baseline gap-1 mr-1 text-[10px] text-[var(--color-text-muted)] tabular-nums cursor-help" title={tip(c, 'threshold_mark', { pct: formatPct(threshold, language) })}>
+                                                    <span className="self-center w-0.5 h-2.5 rounded-full bg-[var(--color-text-main)]" aria-hidden />
+                                                    <span>{fill(c.threshold_short || 'threshold {pct}', { pct: formatPct(threshold, language) })}</span>
+                                                </span>
+                                            )}
                                             <span className="text-[11px] text-[var(--color-text-muted)]">{addressesText(c, r.addressesByChoice[x.key] ?? 0, language)}</span>
                                             <span className="font-mono font-bold text-[var(--color-text-main)] w-12 text-right">{formatPct(x.share, language)}</span>
                                         </span>
                                     </div>
-                                    <div className="mt-1 h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
+                                    <div className="relative mt-1 h-1.5 rounded-full bg-[var(--color-card-border)]">
                                         <div className={`h-full rounded-full ${TONE[x.tone].bar}`} style={{ width: `${x.share * 100}%` }} />
+                                        {x.tone === 'positive' && thresholdMark !== null && (
+                                            <span className="absolute -top-1 -bottom-1 w-0.5 rounded-full bg-[var(--color-text-main)]" style={{ left: `calc(${Math.min(1, thresholdMark) * 100}% - 1px)` }} aria-hidden />
+                                        )}
                                     </div>
                                 </li>
                             ))}
@@ -429,7 +443,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
             </button>
             {open && !pending && (
                 <div id={panelId} className="border-t border-[var(--color-card-border)] pt-4">
-                    <MethodDetail r={r} c={c} rule={rule} attack={attack} quorum={quorum} language={language} />
+                    <MethodDetail r={r} c={c} rule={rule} attack={attack} quorum={quorum} threshold={threshold} language={language} />
                 </div>
             )}
         </li>
