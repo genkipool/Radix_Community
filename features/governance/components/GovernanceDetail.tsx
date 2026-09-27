@@ -24,9 +24,9 @@ type Tab = 'proposal' | 'results' | 'compare';
 
 const tabFromParam = (value: string | null): Tab => (value === 'results' || value === 'compare' ? value : 'proposal');
 
-function Row({ icon: Icon, label, children }: { icon: typeof Hash; label: string; children: React.ReactNode }) {
+function Row({ icon: Icon, label, hint, children }: { icon: typeof Hash; label: string; hint?: string; children: React.ReactNode }) {
     return (
-        <div className="flex items-start justify-between gap-3 py-2.5 border-t first:border-t-0 border-[var(--color-card-border)]">
+        <div className={`flex items-start justify-between gap-3 py-2.5 border-t first:border-t-0 border-[var(--color-card-border)] ${hint ? 'cursor-help' : ''}`} title={hint}>
             <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] shrink-0">
                 <Icon className="size-3.5 text-[var(--color-primary)]" />{label}
             </span>
@@ -41,56 +41,59 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
     const { copied, copy } = useCopy();
     const link = (k: 'proposal' | 'temperature_check', target: string) => `/${language}${governanceItemPath(system.key, k, target)}`;
     const votes = uniqueVoters(item);
+    // What each row means, shown on hover.
+    const hints = (g.detail_hints ?? {}) as Record<string, string>;
+    const kindHint = kind === 'proposal' ? hints.kind_proposal : hints.kind_temperature_check;
     return (
         <CollapsibleCard id="vote-details" icon={Info} title={g.details || 'Vote details'}>
-            <Row icon={Landmark} label={g.detail_system || 'System'}>
+            <Row icon={Landmark} label={g.detail_system || 'System'} hint={hints.system}>
                 <a href={system.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-[var(--color-primary)]">
                     {system.name}<ExternalLink className="size-3" />
                 </a>
             </Row>
-            <Row icon={FileText} label={g.detail_kind || 'Type'}>
+            <Row icon={FileText} label={g.detail_kind || 'Type'} hint={kindHint}>
                 {kind === 'proposal' ? (gv.kind_proposal || 'Formal proposal') : (gv.kind_temperature_check || 'Temperature check')}
             </Row>
-            <Row icon={Hash} label={g.detail_number || 'Number'}>#{id}</Row>
-            {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters || 'Category'}>{item.parameterLabel}</Row>}
-            {item.quorum !== null && <Row icon={Target} label={g.detail_quorum || 'Quorum'}>{formatXrd(item.quorum, language)} XRD</Row>}
+            <Row icon={Hash} label={g.detail_number || 'Number'} hint={hints.number}>#{id}</Row>
+            {item.parameterLabel && <Row icon={Layers} label={g.detail_parameters || 'Category'} hint={hints.parameters}>{item.parameterLabel}</Row>}
+            {item.quorum !== null && <Row icon={Target} label={g.detail_quorum || 'Quorum'} hint={hints.quorum}>{formatXrd(item.quorum, language)} XRD</Row>}
             {item.approvalThreshold !== null && (
-                <Row icon={ThumbsUp} label={g.detail_threshold || 'Approval threshold'}>
+                <Row icon={ThumbsUp} label={g.detail_threshold || 'Approval threshold'} hint={hints.threshold}>
                     {fill(g.detail_threshold_value || '{pct} in favour', { pct: formatPct(item.approvalThreshold, language) })}
                 </Row>
             )}
-            {kind === 'proposal' && item.maxSelections > 1 && <Row icon={ListChecks} label={g.detail_max_options || 'Options per ballot'}>{item.maxSelections}</Row>}
-            {item.start && item.deadline && <Row icon={Hourglass} label={g.detail_duration || 'Duration'}>{formatDuration(item.deadline - item.start, language)}</Row>}
-            {item.start && <Row icon={CalendarClock} label={gv.starts || 'Opens'}><span suppressHydrationWarning>{formatDate(item.start, language)}</span></Row>}
-            {item.deadline && <Row icon={CalendarClock} label={gv.ends || 'Closes'}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
+            {kind === 'proposal' && item.maxSelections > 1 && <Row icon={ListChecks} label={g.detail_max_options || 'Options per ballot'} hint={hints.max_options}>{item.maxSelections}</Row>}
+            {item.start && item.deadline && <Row icon={Hourglass} label={g.detail_duration || 'Duration'} hint={hints.duration}>{formatDuration(item.deadline - item.start, language)}</Row>}
+            {item.start && <Row icon={CalendarClock} label={gv.starts || 'Opens'} hint={hints.starts}><span suppressHydrationWarning>{formatDate(item.start, language)}</span></Row>}
+            {item.deadline && <Row icon={CalendarClock} label={gv.ends || 'Closes'} hint={hints.ends}><span suppressHydrationWarning>{formatDate(item.deadline, language)}</span></Row>}
             {votes !== null && (
-                <Row icon={Users} label={g.detail_voters || 'Voters'}>
+                <Row icon={Users} label={g.detail_voters || 'Voters'} hint={hints.voters}>
                     {item.revoteCount
                         ? fill(g.detail_voters_value || '{n} ({changed} changed their vote)', { n: votes.toLocaleString(language), changed: item.revoteCount.toLocaleString(language) })
                         : votes.toLocaleString(language)}
                 </Row>
             )}
             {item.author && (
-                <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')}>
+                <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')} hint={kind === 'proposal' ? hints.author_proposal : hints.author_temperature_check}>
                     <span className="inline-flex items-center gap-1 font-mono">
                         <Link href={`/${language}/dashboard/account/${item.author}`} className="hover:text-[var(--color-primary)]" title={item.author}>{shortenAddress(item.author)}</Link>
                         <CopyButton value={item.author} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
                     </span>
                 </Row>
             )}
-            <Row icon={Boxes} label={g.detail_component || 'Component'}>
+            <Row icon={Boxes} label={g.detail_component || 'Component'} hint={hints.component}>
                 <span className="inline-flex items-center gap-1 font-mono">
                     <span title={system.component}>{shortenAddress(system.component)}</span>
                     <CopyButton value={system.component} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
                 </span>
             </Row>
             {kind === 'proposal' && item.temperatureCheckId && (
-                <Link href={link('temperature_check', item.temperatureCheckId)} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline">
+                <Link href={link('temperature_check', item.temperatureCheckId)} title={hints.from_tc} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:underline">
                     <ArrowDownLeft className="size-3.5" />{fill(g.from_tc || 'Comes from temperature check #{id}', { id: item.temperatureCheckId })}
                 </Link>
             )}
             {kind === 'temperature_check' && item.elevatedProposalId && (
-                <Link href={link('proposal', item.elevatedProposalId)} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent)] hover:underline">
+                <Link href={link('proposal', item.elevatedProposalId)} title={hints.to_proposal} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-accent)] hover:underline">
                     <ArrowUpRight className="size-3.5" />{fill(g.to_proposal || 'Moved on to formal proposal #{id}', { id: item.elevatedProposalId })}
                 </Link>
             )}
