@@ -98,6 +98,7 @@ export function GovernanceOverview({ entries, g, language, serverNow }: {
             <ContentHero
                 brandName=""
                 title={g.hero_title || 'Radix Governance'}
+                gradient="from-[var(--color-primary)] via-[var(--color-secondary)] to-[var(--color-accent)]"
                 heroPadding="pt-12 pb-10"
                 subtitle={g.hero_subtitle}
             >
