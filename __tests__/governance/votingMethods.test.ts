@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareMethods, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
+import { balanceExtremes, balanceScore, compareMethods, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
 import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
 
 const item: GovernanceItem = {
@@ -100,14 +100,82 @@ describe('new methods', () => {
     });
 });
 
+describe('resistance to manipulation', () => {
+    it('prices a flip under 1 XRD = 1 vote in XRD: splitting gains nothing', () => {
+        // 10 000 in favour against 2 500: another 7 500 against brings it to 50 %.
+        expect(byKey('linear').resistance).toBe('high');
+        expect(byKey('linear').attack).toEqual({ xrd: 7_500, addresses: 1, years: 0 });
+    });
+
+    it('prices a flip under 1 address = 1 vote in new addresses', () => {
+        // 1 in favour, 5 against: 4 empty addresses in favour tie it at 50 % and it passes.
+        const r = byKey('one_address');
+        expect(r.resistance).toBe('very_low');
+        expect(r.attack).toEqual({ xrd: 4, addresses: 4, years: 0 });
+    });
+
+    it('asks for old accounts when the rule leaves new ones out', () => {
+        // Only the five old accounts count (2 500 against): 2 500 XRD in favour, in a 2-year-old account.
+        expect(byKey('veterans').attack).toEqual({ xrd: 2_500, addresses: 1, years: 2 });
+    });
+
+    it('tips a double majority with the headcount', () => {
+        // Rejected by addresses: 4 empty addresses in favour make 5 against 5.
+        expect(byKey('double_majority').attack).toMatchObject({ addresses: 4, years: 0 });
+    });
+
+    it('has nothing to flip without a clear result', () => {
+        const r = compareMethods([voter('a', 'For', 100, 10)], choices, item).find(x => x.key === 'veterans')!;
+        expect(r.attack).toBeNull();
+    });
+});
+
+describe('balance', () => {
+    const at = (resistance: 'very_low' | 'low' | 'medium' | 'high', spread: number) =>
+        ({ resistance, concentration: { nakamoto: 1, spread, effective: 1, top1: 0, top10: 0 } });
+
+    it('needs both resistance and decentralisation', () => {
+        expect(balanceScore(at('high', 1))).toBe(1);
+        // Fully decentralised but free to game: not balanced at all.
+        expect(balanceScore(at('very_low', 1))).toBe(0);
+        expect(balanceScore(at('high', 0.25))).toBeCloseTo(0.5);
+    });
+
+    it('picks the extremes, the least balanced being the most lopsided on a tie', () => {
+        const capped = at('high', 0.56);
+        const linear = at('high', 0.1);
+        const quadratic = at('very_low', 0.26);
+        const oneAddress = at('very_low', 1);
+        const { most, least } = balanceExtremes([linear, capped, quadratic, oneAddress]);
+        expect(most).toBe(capped);
+        expect(least).toBe(oneAddress);
+    });
+});
+
+describe('degree of decentralisation', () => {
+    it('is effective voters over voters, so the whole distribution counts', () => {
+        // Same top holder, a different tail: the Nakamoto coefficient (1) cannot tell them apart.
+        const even = concentration([60, 10, 10, 10, 10]);
+        const skewed = concentration([60, 37, 1, 1, 1]);
+        expect(even.nakamoto).toBe(1);
+        expect(skewed.nakamoto).toBe(1);
+        expect(even.spread).toBeCloseTo(even.effective / 5);
+        expect(even.spread!).toBeGreaterThan(skewed.spread!);
+    });
+
+    it('counts the addresses behind each option', () => {
+        expect(byKey('linear').addressesByChoice).toEqual({ For: 1, Against: 5 });
+    });
+});
+
 describe('concentration', () => {
     it('counts the fewest voters above half and the effective voters', () => {
         const c = concentration([1, 1, 1, 1]);
         expect(c.nakamoto).toBe(3);
         expect(c.effective).toBeCloseTo(4);
         expect(c.top1).toBeCloseTo(0.25);
-        // Four equal voters: 3 is the most possible, so it is as spread out as it gets.
-        expect(c.spread).toBe(1);
+        // Four equal voters: as decentralised as it gets.
+        expect(c.spread).toBeCloseTo(1);
         expect(concentrationLevel(c)).toBe('minimal');
     });
 

@@ -3,7 +3,7 @@
 import React, { useId, useState } from 'react';
 import {
     Scale, Coins, Users, Hourglass, Shuffle, ChevronDown, BadgeCheck, XCircle, AlertTriangle, Info, Loader2,
-    Equal, ArrowLeftRight, PieChart, Target, Crown, Network,
+    Equal, ArrowLeftRight, PieChart, Target, Crown, Network, ShieldCheck, ShieldAlert, Shield, ShieldX, Gauge, TriangleAlert,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
@@ -12,8 +12,8 @@ import { useGovernanceTally } from '../hooks/useGovernanceTally';
 import { useAccountAges } from '../hooks/useAccountAges';
 import { itemChoices } from '../lib/governanceVotes';
 import {
-    METHODS, METHOD_PARAMS, compareMethods, concentrationLevel,
-    type ConcentrationLevel, type MethodFamily, type MethodKey, type MethodResult, type MethodVoter,
+    METHODS, METHOD_PARAMS, balanceExtremes, compareMethods, concentrationLevel,
+    type ConcentrationLevel, type MethodFamily, type MethodKey, type MethodResult, type MethodVoter, type Resistance,
 } from '../lib/votingMethods';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE, type Gv } from './VoteParts';
@@ -41,6 +41,14 @@ const LEVEL_STYLE: Record<ConcentrationLevel, { dot: string; text: string }> = {
     minimal: { dot: 'bg-[var(--color-accent)]', text: 'text-[var(--color-accent)]' },
 };
 
+const RESISTANCE_STYLE: Record<Resistance, { icon: LucideIcon; cls: string; dot: string }> = {
+    very_low: { icon: ShieldX, cls: 'text-red-500 border-red-500/35 bg-red-500/10', dot: 'bg-red-500' },
+    low: { icon: ShieldAlert, cls: 'text-orange-600 dark:text-orange-400 border-orange-500/35 bg-orange-500/10', dot: 'bg-orange-500' },
+    medium: { icon: Shield, cls: 'text-yellow-600 dark:text-yellow-400 border-yellow-500/35 bg-yellow-500/10', dot: 'bg-yellow-500' },
+    high: { icon: ShieldCheck, cls: 'text-[var(--color-accent)] border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10', dot: 'bg-[var(--color-accent)]' },
+};
+const RESISTANCE_ORDER: Resistance[] = ['very_low', 'low', 'medium', 'high'];
+
 /** Figures the rule texts quote, in the reader's locale. */
 function ruleParams(language: string): Params {
     const n = (x: number) => x.toLocaleString(language);
@@ -64,8 +72,66 @@ function tip(c: C, key: string, values: Params = {}): string | undefined {
 }
 
 function methodText(c: C, key: MethodKey, params: Params) {
-    const m = (c.methods as Record<string, { name?: string; rule?: string }> | undefined)?.[key] ?? {};
-    return { name: fill(m.name || key, params), rule: fill(m.rule || '', params) };
+    const m = (c.methods as Record<string, { name?: string; rule?: string; attack?: string }> | undefined)?.[key] ?? {};
+    return { name: fill(m.name || key, params), rule: fill(m.rule || '', params), attack: fill(m.attack || '', params) };
+}
+
+/** Rules whose cheapest attack is many addresses rather than more XRD. */
+const PER_ADDRESS_ATTACK = new Set<MethodKey>([
+    'quadratic', 'cube_root', 'logarithmic', 'tiered', 'one_address', 'one_address_min', 'one_address_sybil',
+    'address_age', 'veterans_address', 'hybrid_half', 'double_majority', 'quadratic_seniority', 'sybil_quadratic',
+]);
+
+/** "1 address" / "142 addresses" in the reader's language. */
+function addressesText(c: C, n: number, language: string): string {
+    return fill(n === 1 ? (c.address_one || '{n} address') : (c.address_many || '{n} addresses'), { n: n.toLocaleString(language) });
+}
+
+/** "1 year" / "2 years" in the reader's language. */
+function yearsText(c: C, years: number, language: string): string {
+    return fill(years === 1 ? (c.year_one || '{n} year') : (c.year_many || '{n} years'), { n: years.toLocaleString(language) });
+}
+
+/** What it would take one person to flip this vote under the rule, in one sentence. */
+function attackText(r: MethodResult, c: C, language: string): string {
+    const a = r.attack;
+    if (!a) return c.cost_none || 'There is no clear result to turn around (no quorum or no valid votes).';
+    if (a.impossible) return c.cost_impossible || 'Adding votes cannot turn this result around.';
+    // Exact amounts, in full: no compact notation and no rounding beyond cents.
+    const amount = (n: number) => n.toLocaleString(language, { maximumFractionDigits: 2 });
+    const values = {
+        xrd: amount(a.xrd),
+        addresses: a.addresses.toLocaleString(language),
+        each: amount(a.addresses ? a.xrd / a.addresses : 0),
+        years: yearsText(c, a.years, language),
+        pct: r.eligibleXrd > 0 ? formatShare(a.xrd / r.eligibleXrd, language) : '—',
+    };
+    // Rules gamed with many small addresses are priced per address; the rest in XRD.
+    const perAddress = PER_ADDRESS_ATTACK.has(r.key) && !(r.key === 'double_majority' && r.outcome === 'rejected');
+    if (perAddress) return fill(a.years ? (c.cost_addresses_aged || '') : (c.cost_addresses || ''), values);
+    if (a.years) return fill(c.cost_capital_aged || '', values);
+    return fill(a.addresses > 1 ? (c.cost_capital_split || '') : (c.cost_capital || ''), values);
+}
+
+function ResistancePill({ r, c, attack, language }: { r: MethodResult; c: C; attack: string; language: string }) {
+    const { icon: Icon, cls } = RESISTANCE_STYLE[r.resistance];
+    const label = ((c.resistance ?? {}) as Record<string, string>)[r.resistance] || r.resistance;
+    // Level, what it means, how this rule is gamed and what it would take here.
+    const title = [
+        fill(c.resistance_title || 'Resistance to manipulation: {level}', { level: label }),
+        tip(c, `resistance_${r.resistance}`),
+        '',
+        `${c.resistance_how || 'How'}: ${attack}`,
+        `${c.resistance_here || 'In this vote'}: ${attackText(r, c, language)}`,
+    ].filter(line => line !== undefined).join('\n');
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 max-w-full h-7 px-2.5 rounded-full border text-[11px] font-bold cursor-help ${cls}`}
+            title={title}
+        >
+            <Icon className="size-3.5 shrink-0" /><span className="truncate">{label}</span>
+        </span>
+    );
 }
 
 function OutcomePill({ r, c }: { r: MethodResult; c: C }) {
@@ -108,18 +174,20 @@ function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: stri
     const { nakamoto, spread } = r.concentration;
     const level = concentrationLevel(r.concentration);
     if (nakamoto === null || spread === null || !level) return <span className="text-xs text-[var(--color-text-muted)]">—</span>;
-    const most = Math.floor(r.counted / 2) + 1;
     const levels = (c.levels ?? {}) as Record<string, string>;
     const title = tip(c, 'nakamoto', {
         n: nakamoto.toLocaleString(language), of: r.counted.toLocaleString(language), share: formatPct(nakamoto / r.counted, language),
-        most: most.toLocaleString(language), spread: formatPct(spread, language), level: levels[level] || level,
+        eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }), spread: formatPct(spread, language), level: levels[level] || level,
     });
     return (
         <span className="flex flex-col gap-1 w-full min-w-0 cursor-help" title={title}>
-            <span className="flex items-baseline justify-between gap-2">
+            {/* The addresses holding half, then the level and its degree, on one centred line; the bar below. */}
+            <span className="flex items-baseline gap-2 min-w-0">
                 <span className="font-mono text-sm font-black text-[var(--color-text-main)] tabular-nums">{nakamoto.toLocaleString(language)}</span>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold truncate ${LEVEL_STYLE[level].text}`}>
-                    <span className={`size-1.5 rounded-full shrink-0 ${LEVEL_STYLE[level].dot}`} />{levels[level] || level}
+                {/* Same typeface for the level and its degree, so both sit on one baseline. */}
+                <span className={`flex items-baseline gap-1 min-w-0 text-[10px] font-bold ${LEVEL_STYLE[level].text}`}>
+                    <span className="truncate">{levels[level] || level}</span>
+                    <span className="shrink-0 tabular-nums">{formatPct(spread, language)}</span>
                 </span>
             </span>
             <span className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
@@ -164,7 +232,7 @@ function Stat({ label, title, children }: { label: string; title?: string; child
 }
 
 /** Everything behind one rule's figures. */
-function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C; rule: string; quorum: number | null; language: string }) {
+function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResult; c: C; rule: string; attack: string; quorum: number | null; language: string }) {
     const d = r.decisive;
     const sideLabel = d ? { for: c.side_for || 'in favour', against: c.side_against || 'against', winner: c.side_winner || 'behind the winner' }[d.side] : '';
     return (
@@ -180,7 +248,10 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
                                 <li key={x.key}>
                                     <div className="flex items-center justify-between gap-3 text-xs">
                                         <span className={`font-semibold truncate ${TONE[x.tone].text}`}>{x.label}</span>
-                                        <span className="font-mono font-bold text-[var(--color-text-main)]">{formatPct(x.share, language)}</span>
+                                        <span className="flex items-baseline gap-2 shrink-0">
+                                            <span className="text-[11px] text-[var(--color-text-muted)]">{addressesText(c, r.addressesByChoice[x.key] ?? 0, language)}</span>
+                                            <span className="font-mono font-bold text-[var(--color-text-main)] w-12 text-right">{formatPct(x.share, language)}</span>
+                                        </span>
                                     </div>
                                     <div className="mt-1 h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
                                         <div className={`h-full rounded-full ${TONE[x.tone].bar}`} style={{ width: `${x.share * 100}%` }} />
@@ -205,10 +276,22 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
             <div className="flex flex-col justify-between gap-4 min-w-0">
                 <div className="grid grid-cols-2 gap-2">
                     <Stat label={c.detail_counted || 'Addresses that count'} title={tip(c, 'detail_counted')}>
-                        {r.counted.toLocaleString(language)}
-                        {r.excluded > 0 && <span className="ml-1 text-xs font-normal text-[var(--color-text-muted)]">{fill(c.detail_excluded || '({n} left out)', { n: r.excluded.toLocaleString(language) })}</span>}
+                        {/* "115/120 (5 do not count)": the ones that count out of everyone who voted. */}
+                        {r.counted.toLocaleString(language)}/{(r.counted + r.excluded).toLocaleString(language)}
+                        {r.excluded > 0 && (
+                            <span className="ml-1 text-xs font-normal text-[var(--color-text-muted)]">
+                                {fill(r.excluded === 1 ? (c.detail_excluded_one || '(1 does not count)') : (c.detail_excluded || '({n} do not count)'), { n: r.excluded.toLocaleString(language) })}
+                            </span>
+                        )}
                     </Stat>
-                    <Stat label={c.detail_effective || 'Effective voters'} title={tip(c, 'detail_effective')}>{r.concentration.effective ? r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }) : '—'}</Stat>
+                    <Stat label={c.detail_effective || 'Effective voters'} title={tip(c, 'detail_effective', { n: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }), of: r.counted.toLocaleString(language) })}>
+                        {r.concentration.effective ? (
+                            <>
+                                {r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 })}
+                                <span className="ml-1 text-xs font-normal text-[var(--color-text-muted)]">{fill(c.of_n || 'of {n}', { n: r.counted.toLocaleString(language) })}</span>
+                            </>
+                        ) : '—'}
+                    </Stat>
                     <Stat label={c.detail_quorum || 'Quorum'} title={tip(c, 'detail_quorum')}>
                         {quorum === null ? '—' : (
                             <span className={r.quorumMet ? 'text-[var(--color-accent)]' : 'text-amber-600 dark:text-amber-400'}>
@@ -217,7 +300,11 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
                         )}
                     </Stat>
                     <Stat label={c.detail_spread || 'Decentralisation'} title={tip(c, 'detail_spread')}>
-                        {r.concentration.spread === null ? '—' : fill(c.detail_spread_value || '{pct} of the most possible', { pct: formatPct(r.concentration.spread, language) })}
+                        {r.concentration.spread === null ? '—' : fill(c.detail_spread_value || '{pct} ({eff} of {of})', {
+                            pct: formatPct(r.concentration.spread, language),
+                            eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
+                            of: r.counted.toLocaleString(language),
+                        })}
                     </Stat>
                 </div>
                 {d ? (
@@ -234,6 +321,13 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
                     </p>
                 )}
             </div>
+            <div className={`lg:col-span-2 flex flex-col items-start gap-2 rounded-xl border p-3 ${RESISTANCE_STYLE[r.resistance].cls.replace(/text-\S+/g, '')}`}>
+                <ResistancePill r={r} c={c} attack={attack} language={language} />
+                <div className="min-w-0 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                    <p><span className="font-bold text-[var(--color-text-main)]">{c.detail_attack || 'How it could be gamed'}: </span>{attack}</p>
+                    <p className="mt-1 font-semibold text-[var(--color-text-main)]">{attackText(r, c, language)}</p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -243,7 +337,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
 }) {
     const [open, setOpen] = useState(r.current);
     const panelId = useId();
-    const { name, rule } = methodText(c, r.key, params);
+    const { name, rule, attack } = methodText(c, r.key, params);
     const pending = r.needsAge && ageLoading;
     const d = r.decisive;
     return (
@@ -254,7 +348,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                 aria-controls={panelId}
                 title={open ? tip(c, 'collapse') : tip(c, 'expand')}
                 onClick={() => setOpen(o => !o)}
-                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.1fr)_minmax(0,1fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
+                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,0.9fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
             >
                 <span className="col-span-6 lg:col-span-1 min-w-0 flex items-start justify-between gap-3">
                     <span className="min-w-0">
@@ -267,7 +361,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                     <ChevronDown className={`lg:hidden size-4 mt-0.5 shrink-0 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
                 </span>
 
-                <span className="col-span-6 sm:col-span-2 lg:col-span-1 min-w-0 flex flex-col gap-1 self-center">
+                <span className="col-span-3 sm:col-span-2 lg:col-span-1 min-w-0 flex flex-col gap-1 self-center">
                     <span className="flex items-center h-7 min-w-0">
                         {pending ? (
                             <span className="inline-flex items-center gap-1.5 max-w-full h-7 px-2.5 rounded-full bg-[var(--color-surface)] text-[11px] text-[var(--color-text-muted)]">
@@ -289,31 +383,58 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                         ) : null}
                     </span>
                 </span>
-                <Cell className="col-span-6 sm:col-span-4 lg:col-span-1" label={c.col_support || 'In favour'} pending={pending}>
+                <Cell className="col-span-6 sm:col-span-2 lg:col-span-1" label={c.col_support || 'In favour'} pending={pending}>
                     <SupportMeter r={r} c={c} threshold={threshold} language={language} />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_counted || 'Count'} pending={pending}>
-                    <span className="font-mono text-sm font-bold text-[var(--color-text-main)] tabular-nums cursor-help" title={tip(c, 'counted', { n: r.counted.toLocaleString(language), out: r.excluded.toLocaleString(language) })}>{r.counted.toLocaleString(language)}</span>
+                    <Fraction
+                        n={r.counted}
+                        of={r.counted + r.excluded}
+                        title={tip(c, 'counted', { n: r.counted.toLocaleString(language), out: r.excluded.toLocaleString(language) })}
+                        shareTitle={tip(c, 'counted_share', {
+                            pct: formatShare(r.counted / Math.max(1, r.counted + r.excluded), language),
+                            n: r.counted.toLocaleString(language), of: (r.counted + r.excluded).toLocaleString(language),
+                        })}
+                        language={language}
+                    />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_nakamoto || 'Control 50 %'} pending={pending}>
                     <SpreadMeter r={r} c={c} language={language} />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_decisive || 'Enough to decide'} pending={pending}>
                     {d ? (
-                        <span className="font-mono text-sm font-bold text-[var(--color-text-main)] tabular-nums whitespace-nowrap cursor-help" title={tip(c, 'decisive', { count: d.count.toLocaleString(language), of: d.of.toLocaleString(language), xrd: formatXrd(d.xrd, language) })}>
-                            {d.count.toLocaleString(language)}
-                            <span className="ml-1 text-[11px] font-normal text-[var(--color-text-muted)]">{fill(c.of_n || 'of {n}', { n: d.of.toLocaleString(language) })}</span>
-                        </span>
+                        <Fraction
+                            n={d.count}
+                            of={d.of}
+                            title={tip(c, 'decisive', { count: d.count.toLocaleString(language), of: d.of.toLocaleString(language), xrd: formatXrd(d.xrd, language) })}
+                            shareTitle={tip(c, 'decisive_share', { pct: formatShare(d.count / Math.max(1, d.of), language), n: d.count.toLocaleString(language), of: d.of.toLocaleString(language) })}
+                            language={language}
+                        />
                     ) : <span className="text-xs text-[var(--color-text-muted)]">—</span>}
+                </Cell>
+                <Cell className="col-span-3 sm:col-span-2 lg:col-span-1 row-start-2 col-start-4 sm:row-auto sm:col-auto" label={c.col_resistance || 'Resistance'} pending={false}>
+                    <ResistancePill r={r} c={c} attack={attack} language={language} />
                 </Cell>
                 <ChevronDown className={`hidden lg:block size-4 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && !pending && (
                 <div id={panelId} className="border-t border-[var(--color-card-border)] pt-4">
-                    <MethodDetail r={r} c={c} rule={rule} quorum={quorum} language={language} />
+                    <MethodDetail r={r} c={c} rule={rule} attack={attack} quorum={quorum} language={language} />
                 </div>
             )}
         </li>
+    );
+}
+
+/** "95/143" with the share underneath, as a row shows it. */
+function Fraction({ n, of, title, shareTitle, language }: { n: number; of: number; title?: string; shareTitle?: string; language: string }) {
+    return (
+        <span className="flex flex-col leading-tight cursor-help" title={title}>
+            <span className="font-mono text-sm font-bold text-[var(--color-text-main)] tabular-nums whitespace-nowrap">
+                {n.toLocaleString(language)}<span className="text-[11px] font-normal text-[var(--color-text-muted)]">/{of.toLocaleString(language)}</span>
+            </span>
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums" title={shareTitle}>{of > 0 ? formatShare(n / of, language) : '—'}</span>
+        </span>
     );
 }
 
@@ -323,7 +444,7 @@ function Cell({ label, className, pending, children }: { label: string; classNam
         <span className={`min-w-0 flex flex-col gap-1 ${className}`}>
             <span className="lg:hidden truncate text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]" title={label}>{label}</span>
             {/* Fixed height: the row does not move when the figures arrive. */}
-            <span className="flex items-center h-8 min-w-0">
+            <span className="flex items-center h-10 min-w-0">
                 {pending ? <span className="block h-2 w-full max-w-24 rounded-full bg-[var(--color-surface)] animate-pulse" aria-hidden /> : children}
             </span>
         </span>
@@ -394,25 +515,61 @@ export function MethodsComparison({ entry, system, g, language, now }: {
     const same = others.filter(r => r.sameAsCurrent).length;
     // Ranked by how spread out the weight is, so a method is not favoured just because more addresses count under it.
     // On a tie the method listed first wins (the current one before the rules that weigh just like it).
-    const spreadOf = (r: MethodResult) => r.concentration.spread ?? 0;
+    // Rounded so float noise (0.9999… against 1) never breaks a real tie.
+    const spreadOf = (r: MethodResult) => Math.round((r.concentration.spread ?? 0) * 1e6) / 1e6;
     const most = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) > spreadOf(best) ? r : best), undefined);
     const least = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) < spreadOf(best) ? r : best), undefined);
     const shown = results.filter(r => family === 'all' || r.family === family);
     const unknownAges = ages.done ? voters.filter(v => v.ageDays === null).length : 0;
     const name = (r: MethodResult) => methodText(c, r.key, params).name;
+    const balance = balanceExtremes(ready);
+    const balanceHint = (r: MethodResult) => fill(c.kpi_balance_hint || '{resistance} resistance · {n} of {of} addresses hold half ({pct} decentralisation)', {
+        resistance: (((c.resistance ?? {}) as Record<string, string>)[r.resistance] || r.resistance).toLowerCase(),
+        n: (r.concentration.nakamoto ?? 0).toLocaleString(language),
+        of: r.counted.toLocaleString(language),
+        pct: formatPct(r.concentration.spread ?? 0, language),
+    });
 
     return (
         <div className="space-y-6">
             <section className="relative overflow-hidden rounded-3xl border border-[var(--color-card-border)] bg-[var(--color-card-bg)] p-5 sm:p-7">
                 <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-[var(--color-primary)]/10 blur-3xl" aria-hidden />
-                <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] xl:items-center">
-                    <div className="min-w-0">
-                        <span className="grid place-items-center size-12 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                            <Scale className="size-6" />
-                        </span>
-                        <h2 className="mt-4 text-xl md:text-2xl font-black text-[var(--color-text-main)]">{c.heading || 'What would another voting method have decided?'}</h2>
-                        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{c.intro}</p>
-                        <div className="mt-5 rounded-2xl bg-[var(--color-surface)] p-4">
+                <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+                    {/* The text spreads over the tiles' height: the age bar lines up with their bottom edge. */}
+                    <div className="min-w-0 flex flex-col justify-between gap-5">
+                        <div className="min-w-0">
+                            <span className="grid place-items-center size-12 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                                <Scale className="size-6" />
+                            </span>
+                            <h2 className="mt-4 text-xl md:text-2xl font-black text-[var(--color-text-main)]">{c.heading || 'What would another voting method have decided?'}</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{c.intro}</p>
+                        </div>
+                        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {[
+                                [Users, c.fact_voters || 'Voters', current.counted.toLocaleString(language), tip(c, 'fact_voters')],
+                                [Coins, c.fact_xrd || 'XRD that voted', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
+                                [Target, c.fact_quorum || 'Quorum', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
+                                [BadgeCheck, c.fact_threshold || 'Threshold', item.approvalThreshold === null ? '—' : formatPct(item.approvalThreshold, language), tip(c, 'fact_threshold')],
+                                // Addresses behind each option, as they voted.
+                                ...current.rows.filter(x => x.power > 0 || x.tone !== 'neutral').map(x => {
+                                    const n = current.addressesByChoice[x.key] ?? 0;
+                                    return [TONE[x.tone].icon, x.label, n.toLocaleString(language), tip(c, 'fact_option', {
+                                        n: n.toLocaleString(language), label: x.label, pct: formatShare(n / Math.max(1, current.counted), language),
+                                    }), TONE[x.tone].text] as const;
+                                }),
+                            ].map(([Icon, label, value, title, tone]) => {
+                                const I = Icon as LucideIcon;
+                                return (
+                                    <div key={label as string} className="min-w-0 rounded-xl border border-[var(--color-card-border)] px-3 py-2 cursor-help" title={title as string | undefined}>
+                                        <dt className={`flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest ${tone ?? 'text-[var(--color-text-muted)]'}`}>
+                                            <I className={`size-3 shrink-0 ${tone ?? 'text-[var(--color-primary)]'}`} /><span className="truncate">{label as string}</span>
+                                        </dt>
+                                        <dd className="mt-0.5 font-mono text-sm font-bold text-[var(--color-text-main)] truncate">{value as string}</dd>
+                                    </div>
+                                );
+                            })}
+                        </dl>
+                        <div className="rounded-2xl bg-[var(--color-surface)] px-4 py-3">
                             <p className="flex items-center gap-2 h-4 text-xs font-semibold text-[var(--color-text-secondary)]">
                                 {ages.done
                                     ? <Hourglass className="size-3.5 shrink-0 text-[var(--color-primary)]" />
@@ -428,6 +585,7 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                             </div>
                         </div>
                     </div>
+                    {/* In pairs: result and today, centralisation, balance. */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Tile
                             icon={Equal}
@@ -461,14 +619,28 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                             value={least ? name(least) : undefined}
                             hint={least ? fill(c.kpi_spread_hint || '{n} addresses needed for half of the weight', { n: (least.concentration.nakamoto ?? 0).toLocaleString(language), pct: formatPct(least.concentration.spread ?? 0, language) }) : undefined}
                         />
+                        <Tile
+                            icon={Gauge}
+                            help={tip(c, 'kpi_balanced')}
+                            label={c.kpi_balanced || 'Most balanced'}
+                            value={balance.most ? name(balance.most) : undefined}
+                            hint={balance.most ? balanceHint(balance.most) : undefined}
+                        />
+                        <Tile
+                            icon={TriangleAlert}
+                            help={tip(c, 'kpi_unbalanced')}
+                            label={c.kpi_unbalanced || 'Least balanced'}
+                            value={balance.least ? name(balance.least) : undefined}
+                            hint={balance.least ? balanceHint(balance.least) : undefined}
+                        />
                     </div>
                 </div>
             </section>
 
-            <section aria-labelledby="methods-list" className="space-y-3">
+            <section aria-labelledby="methods-list" className="@container space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 id="methods-list" className="text-sm font-bold text-[var(--color-text-main)]">{fill(c.list_title || '{n} ways to count the same votes', { n: METHODS.length.toLocaleString(language) })}</h3>
-                    <div role="group" aria-label={c.filter_label || 'Method family'} className="grid grid-cols-5 gap-1 w-full sm:w-[580px] shrink-0 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-1">
+                    <div role="group" aria-label={c.filter_label || 'Method family'} className="grid grid-cols-5 gap-1 w-full @xl:w-[580px] shrink-0 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-1">
                         {(['all', ...FAMILIES] as const).map(f => {
                             const Icon = f === 'all' ? Scale : FAMILY_ICON[f];
                             const label = f === 'all' ? (c.filter_all || 'All') : ((c.families ?? {}) as Record<string, string>)[f] || f;
@@ -484,20 +656,21 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                                     onClick={() => setFamily(f)}
                                     className={`min-w-0 h-8 inline-flex items-center justify-center gap-1.5 px-2 rounded-lg text-xs font-semibold transition-colors ${family === f ? 'bg-[var(--color-card-bg)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
-                                    <Icon className="size-3.5 shrink-0" /><span className="hidden sm:inline truncate">{short}</span>
+                                    <Icon className="size-3.5 shrink-0" /><span className="hidden @xl:inline truncate">{short}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="hidden lg:grid px-5 gap-x-5 grid-cols-[minmax(0,2.2fr)_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.1fr)_minmax(0,1fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                <div className="hidden lg:grid px-5 pt-3 gap-x-5 grid-cols-[minmax(0,1.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,0.9fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
                     <span className="cursor-help" title={tip(c, 'col_method')}>{c.col_method || 'Method'}</span>
                     <span className="cursor-help" title={tip(c, 'col_result')}>{c.col_result || 'Result'}</span>
                     <span className="cursor-help" title={tip(c, 'col_support')}>{c.col_support || 'In favour'}</span>
                     <span className="cursor-help" title={tip(c, 'col_counted')}>{c.col_counted || 'Count'}</span>
                     <span className="cursor-help" title={tip(c, 'col_nakamoto')}>{c.col_nakamoto || 'Control 50 %'}</span>
                     <span className="cursor-help" title={tip(c, 'col_decisive')}>{c.col_decisive || 'Enough to decide'}</span>
+                    <span className="cursor-help" title={tip(c, 'col_resistance')}>{c.col_resistance || 'Resistance'}</span>
                     <span />
                 </div>
 
@@ -524,14 +697,15 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                 <h3 id="methods-glossary" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
                     <Info className="size-4 text-[var(--color-primary)]" />{c.glossary_title || 'How to read it'}
                 </h3>
-                <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     {([
                         [PieChart, c.g_nakamoto_t, c.g_nakamoto],
                         [Target, c.g_decisive_t, c.g_decisive],
                         [Users, c.g_effective_t, c.g_effective],
                         [Hourglass, c.g_age_t, c.g_age],
+                        [ShieldCheck, c.g_resistance_t, c.g_resistance],
                     ] as const).map(([Icon, t, body], i) => (
-                        <div key={i} className="rounded-xl bg-[var(--color-surface)] p-4">
+                        <div key={i} className="rounded-xl bg-[var(--color-surface)] p-4 sm:last:col-span-2 xl:last:col-span-1">
                             <dt className="flex items-center gap-2 text-xs font-bold text-[var(--color-text-main)]"><Icon className="size-3.5 text-[var(--color-primary)]" />{t}</dt>
                             <dd className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">{body}</dd>
                         </div>
@@ -540,11 +714,22 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
                     {(Object.keys(LEVEL_STYLE) as ConcentrationLevel[]).map(l => (
                         <span key={l} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)] cursor-help" title={tip(c, `level_${l}`)}>
-                            <span className={`size-2 rounded-full ${LEVEL_STYLE[l].dot}`} />
                             <span className={`font-bold ${LEVEL_STYLE[l].text}`}>{((c.levels ?? {}) as Record<string, string>)[l]}</span>
                             {((c.level_hints ?? {}) as Record<string, string>)[l]}
                         </span>
                     ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+                    {RESISTANCE_ORDER.map(l => {
+                        const Icon = RESISTANCE_STYLE[l].icon;
+                        return (
+                            <span key={l} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)] cursor-help" title={tip(c, `resistance_${l}`)}>
+                                <Icon className={`size-3 ${RESISTANCE_STYLE[l].cls.split(' ')[0]}`} />
+                                <span className={`font-bold ${RESISTANCE_STYLE[l].cls.split(' ')[0]}`}>{fill(c.resistance_legend || 'Resistance {level}', { level: ((c.resistance ?? {}) as Record<string, string>)[l] || l })}</span>
+                                {((c.resistance_hints ?? {}) as Record<string, string>)[l]}
+                            </span>
+                        );
+                    })}
                 </div>
             </section>
 
