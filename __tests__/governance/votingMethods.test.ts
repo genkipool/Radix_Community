@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareMethods, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
+import { balanceExtremes, balanceScore, compareMethods, concentration, concentrationLevel, type MethodVoter } from '@/features/governance/lib/votingMethods';
 import { itemChoices, type GovernanceItem } from '@/features/governance/lib/governanceVotes';
 
 const item: GovernanceItem = {
@@ -127,6 +127,28 @@ describe('resistance to manipulation', () => {
     it('has nothing to flip without a clear result', () => {
         const r = compareMethods([voter('a', 'For', 100, 10)], choices, item).find(x => x.key === 'veterans')!;
         expect(r.attack).toBeNull();
+    });
+});
+
+describe('balance', () => {
+    const at = (resistance: 'very_low' | 'low' | 'medium' | 'high', spread: number) =>
+        ({ resistance, concentration: { nakamoto: 1, spread, effective: 1, top1: 0, top10: 0 } });
+
+    it('needs both resistance and decentralisation', () => {
+        expect(balanceScore(at('high', 1))).toBe(1);
+        // Fully decentralised but free to game: not balanced at all.
+        expect(balanceScore(at('very_low', 1))).toBe(0);
+        expect(balanceScore(at('high', 0.25))).toBeCloseTo(0.5);
+    });
+
+    it('picks the extremes, the least balanced being the most lopsided on a tie', () => {
+        const capped = at('high', 0.56);
+        const linear = at('high', 0.1);
+        const quadratic = at('very_low', 0.26);
+        const oneAddress = at('very_low', 1);
+        const { most, least } = balanceExtremes([linear, capped, quadratic, oneAddress]);
+        expect(most).toBe(capped);
+        expect(least).toBe(oneAddress);
     });
 });
 

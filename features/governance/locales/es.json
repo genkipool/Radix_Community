@@ -274,7 +274,7 @@
       "col_support": "A favor",
       "col_counted": "Cuentan",
       "col_nakamoto": "Controlan el 50 %",
-      "col_decisive": "Bastaban para decidir",
+      "col_decisive": "Deciden",
       "of_n": "de {n}",
       "badge_current": "Actual",
       "badge_changes": "Cambia el resultado",
@@ -302,7 +302,8 @@
       "detail_split": "Reparto del voto con este método",
       "detail_headcount": "Contando 1 dirección = 1 voto: {pct} a favor.",
       "detail_counted": "Direcciones que cuentan",
-      "detail_excluded": "({n} fuera)",
+      "detail_excluded": "({n} no cuentan)",
+      "detail_excluded_one": "(1 no cuenta)",
       "detail_effective": "Votantes efectivos",
       "detail_quorum": "Quórum",
       "detail_quorum_value": "{xrd} de {quorum} XRD",
@@ -337,15 +338,40 @@
           "rule": "Cada XRD es un voto: 1.000 XRD pesan 1.000 votos. Es el método que usan hoy las votaciones.",
           "attack": "Repartir en varias direcciones no da ningún voto extra. La única forma de pesar más es conseguir más XRD, comprándolos o pidiéndolos prestados antes de que abra la votación."
         },
+        "capped_10k": {
+          "name": "Con tope de 10.000 XRD por dirección",
+          "rule": "Como el actual, pero ninguna dirección puede pesar más de 10.000 XRD: un tope muy bajo que iguala mucho a las carteras.",
+          "attack": "El tope se esquiva repartiendo los XRD en direcciones de 10.000 XRD o menos; en la práctica vuelve a ser 1 XRD = 1 voto y hace falta capital."
+        },
+        "capped_100k": {
+          "name": "Con tope de 100.000 XRD por dirección",
+          "rule": "Como el actual, pero ninguna dirección puede pesar más de 100.000 XRD.",
+          "attack": "El tope se esquiva repartiendo los XRD en direcciones de 100.000 XRD o menos; en la práctica vuelve a ser 1 XRD = 1 voto y hace falta capital."
+        },
         "capped": {
-          "name": "Con tope por dirección",
+          "name": "Con tope de 1.000.000 XRD por dirección",
           "rule": "Como el actual, pero ninguna dirección puede pesar más de {cap} XRD. Limita a las carteras más grandes sin quitarles el voto.",
           "attack": "El tope se esquiva repartiendo los XRD en direcciones de menos de {cap} XRD, así que en la práctica vuelve a ser 1 XRD = 1 voto: hace falta capital."
+        },
+        "capped_10m": {
+          "name": "Con tope de 10.000.000 XRD por dirección",
+          "rule": "Como el actual, pero ninguna dirección puede pesar más de 10 millones de XRD: solo limita a las mayores ballenas.",
+          "attack": "El tope se esquiva repartiendo los XRD en direcciones de 10 millones o menos; en la práctica vuelve a ser 1 XRD = 1 voto y hace falta capital."
         },
         "capped_share": {
           "name": "Con tope del {share} del total",
           "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del {share} de todos los XRD que votaron. El tope crece con la participación.",
           "attack": "Como el tope fijo: repartiendo los XRD en varias direcciones cada parte queda por debajo del {share} y cuenta entera."
+        },
+        "capped_share_5": {
+          "name": "Con tope del 5 % del total",
+          "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del 5 % de todos los XRD que votaron.",
+          "attack": "Repartiendo los XRD en varias direcciones cada parte queda por debajo del 5 % y cuenta entera: hace falta capital."
+        },
+        "capped_share_10": {
+          "name": "Con tope del 10 % del total",
+          "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del 10 % de todos los XRD que votaron.",
+          "attack": "Repartiendo los XRD en varias direcciones cada parte queda por debajo del 10 % y cuenta entera: hace falta capital."
         },
         "quadratic": {
           "name": "Voto cuadrático",
@@ -457,7 +483,7 @@
         "col_support": "Peso a favor sobre el peso a favor y en contra (las abstenciones no cuentan). La raya vertical marca el umbral de aprobación",
         "col_counted": "Direcciones cuyo voto cuenta con este método; el resto queda fuera por no cumplir sus requisitos",
         "col_nakamoto": "El menor número de direcciones que juntas suman más de la mitad del peso del voto. La barra es el grado de descentralización: 100 % si todas pesan igual",
-        "col_decisive": "Cuántas direcciones del lado ganador habrían bastado por sí solas, aunque todas las demás votaran lo contrario",
+        "col_decisive": "Cuántas direcciones del lado ganador, empezando por las que más pesan, habrían bastado por sí solas para decidir la votación, aunque todas las demás votaran lo contrario",
         "outcome_approved": "Hay quórum y el voto a favor supera el umbral de aprobación",
         "outcome_rejected": "Hay quórum, pero el voto a favor no llega al umbral de aprobación",
         "outcome_no_quorum": "Los XRD de las direcciones que cuentan con este método no llegan al quórum, así que el resultado no sería válido",
@@ -475,7 +501,7 @@
         "conc_top10": "Las 9 siguientes direcciones con más peso suman el {pct} del voto",
         "conc_rest": "Todas las demás direcciones juntas suman el {pct} del voto",
         "detail_counted": "Direcciones cuyo voto cuenta con este método, y cuántas quedan fuera",
-        "detail_effective": "Cuántos votantes habría si todos pesaran lo mismo y el poder estuviera igual de centralizado",
+        "detail_effective": "Votantes efectivos: {n} de {of}. Es el número de direcciones del mismo tamaño que darían el mismo reparto del poder. Si votan {of} direcciones pero equivalen a {n}, en la práctica el resultado lo deciden unas {n} carteras. Se calcula como 1 entre la suma de los cuadrados de la parte que pesa cada dirección (índice de Herfindahl). Si todas pesaran igual, saldría {of}",
         "detail_quorum": "XRD de las direcciones que cuentan, frente al mínimo que exige la votación para que el resultado sea válido",
         "kpi_consensus": "Cuántos métodos alternativos habrían dado el mismo resultado que 1 XRD = 1 voto",
         "kpi_current": "Con el método actual, el menor número de direcciones que juntas suman más de la mitad del voto",
@@ -487,11 +513,17 @@
         "level_low": "Grado de descentralización entre el 35 % y el 65 %",
         "detail_spread": "Direcciones que controlan la mitad del voto, frente al máximo posible si todas pesaran igual. 100 % es la descentralización total",
         "level_minimal": "Grado de descentralización del 65 % o más: el peso está cerca de repartirse por igual",
-        "col_resistance": "Lo difícil que es que una sola persona influya más de lo que le corresponde creando direcciones o repartiendo sus XRD. Sin KYC, crear direcciones es gratis",
+        "col_resistance": "Resistencia a la manipulación: lo difícil que es que una sola persona pese más de lo que le corresponde. Sin KYC, crear direcciones y repartir XRD entre ellas es gratis. Muy baja: se engaña casi sin coste. Alta: solo se gana peso comprando XRD. Pasa el ratón por cada método para ver cómo se engaña y cuánto costaría darle la vuelta a esta votación",
         "resistance_very_low": "Una sola persona puede multiplicar su voto creando muchas direcciones, casi sin coste",
-        "resistance_low": "Cada voto extra cuesta poco comparado con lo que pesa: quien tenga capital lo reparte y gana muchos votos",
+        "resistance_low": "Cada voto extra cuesta poco, o la protección del método (un tope, una exclusión) se esquiva gratis repartiendo los XRD en varias direcciones",
         "resistance_medium": "Manipularlo exige haber preparado cuentas con mucha antelación, o solo sirve para bloquear el resultado",
-        "resistance_high": "Repartir en varias direcciones no da ningún voto extra: la única forma de pesar más es tener más XRD"
+        "resistance_high": "Repartir en varias direcciones no da ningún voto extra: la única forma de pesar más es tener más XRD",
+        "kpi_balanced": "El método que mejor combina resistencia a la manipulación y descentralización (media geométrica de las dos): difícil de engañar y con el poder repartido. Una descentralización del 100 % significa que hace falta la mitad de las direcciones más una para reunir la mitad del voto, lo máximo posible: pasa cuando todas pesan igual",
+        "kpi_unbalanced": "El método que peor combina resistencia a la manipulación y descentralización: falla en al menos una de las dos. Un método 100 % descentralizado (todas las direcciones pesan igual) pero que se engaña gratis creando direcciones no es equilibrado",
+        "fact_voters": "Direcciones con voto ya contado por el sistema de votación",
+        "fact_xrd": "Poder de voto total de esas direcciones con el método actual",
+        "fact_quorum": "XRD que tienen que participar para que el resultado sea válido",
+        "fact_threshold": "Parte del voto a favor que hace falta para aprobar"
       },
       "col_resistance": "Resistencia",
       "resistance": {
@@ -503,7 +535,7 @@
       "resistance_legend": "Resistencia {level}",
       "resistance_hints": {
         "very_low": "se multiplica el voto creando direcciones, casi gratis",
-        "low": "cada voto extra cuesta poco",
+        "low": "cada voto extra cuesta poco o la protección se esquiva repartiendo",
         "medium": "exige preparar cuentas con años de antelación o solo sirve para bloquear",
         "high": "repartir no da nada: solo se gana peso con más XRD"
       },
@@ -518,7 +550,17 @@
       "cost_impossible": "Añadiendo votos no se le puede dar la vuelta a este resultado.",
       "cost_none": "No hay un resultado claro al que darle la vuelta (sin quórum o sin votos válidos).",
       "g_resistance_t": "Resistencia a la manipulación",
-      "g_resistance": "Lo difícil que es que una sola persona pese más de lo que le corresponde. Sin KYC, crear direcciones es gratis y repartir XRD entre ellas también, así que los métodos que cuentan direcciones o premian los saldos pequeños se engañan con facilidad. El detalle de cada método calcula cuánto costaría darle la vuelta a esta votación."
+      "g_resistance": "Lo difícil que es que una sola persona pese más de lo que le corresponde. Sin KYC, crear direcciones es gratis y repartir XRD entre ellas también, así que los métodos que cuentan direcciones o premian los saldos pequeños se engañan con facilidad. El detalle de cada método calcula cuánto costaría darle la vuelta a esta votación.",
+      "kpi_balanced": "Más equilibrado",
+      "kpi_unbalanced": "Menos equilibrado",
+      "kpi_balance_hint": "resistencia {resistance} · hacen falta {n} de {of} direcciones para la mitad del voto ({pct} de descentralización)",
+      "resistance_title": "Resistencia a la manipulación: {level}",
+      "resistance_how": "Cómo se engaña",
+      "resistance_here": "En esta votación",
+      "fact_voters": "Votantes",
+      "fact_xrd": "XRD que votaron",
+      "fact_quorum": "Quórum",
+      "fact_threshold": "Umbral"
     }
   }
 }

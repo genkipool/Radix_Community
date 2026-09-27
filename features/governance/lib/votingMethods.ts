@@ -22,7 +22,7 @@ export interface MethodVoter {
 export type MethodFamily = 'wealth' | 'address' | 'seniority' | 'hybrid';
 
 export type MethodKey =
-    | 'linear' | 'capped' | 'capped_share' | 'quadratic' | 'cube_root' | 'logarithmic' | 'tiered'
+    | 'linear' | 'capped_10k' | 'capped_100k' | 'capped' | 'capped_10m' | 'capped_share' | 'capped_share_5' | 'capped_share_10' | 'quadratic' | 'cube_root' | 'logarithmic' | 'tiered'
     | 'one_address' | 'one_address_min' | 'one_address_sybil' | 'address_age'
     | 'one_year' | 'veterans' | 'veterans_address' | 'veterans_bonus' | 'seniority_bonus'
     | 'hybrid_half' | 'double_majority' | 'quadratic_seniority' | 'sybil_quadratic' | 'no_top1' | 'no_whales' | 'whales_only';
@@ -31,6 +31,10 @@ export type MethodKey =
 export const METHOD_PARAMS = {
     /** Most XRD a single address may weigh with. */
     cap: 1_000_000,
+    /** The other fixed caps compared. */
+    caps: { capped_10k: 10_000, capped_100k: 100_000, capped_10m: 10_000_000 },
+    /** The other caps as a share of all the XRD that voted. */
+    capShares: { capped_share_5: 0.05, capped_share_10: 0.1 },
     /** Balance an address needs to count, per address. */
     minBalance: 10_000,
     /** Anti-sybil filter: balance and age an address needs. */
@@ -82,7 +86,7 @@ export type Resistance = 'very_low' | 'low' | 'medium' | 'high';
  * `years` is the account age the rule asks for: new accounts do not count.
  */
 type SybilProfile =
-    | { kind: 'capital'; perXrd: number; years?: number; minXrd?: number; chunk?: 'cap' | 'capShare' }
+    | { kind: 'capital'; perXrd: number; years?: number; minXrd?: number; cap?: number; capShare?: number }
     | { kind: 'addresses'; xrd: number; weight: number; years?: number }
     | { kind: 'hybrid' }
     | { kind: 'double' };
@@ -101,14 +105,29 @@ interface MethodSpec {
 }
 
 const DUST = 1;
+
+/** 1 XRD = 1 vote up to `cap` XRD per address. */
+function capped(key: MethodKey, cap: number): MethodSpec[] {
+    // The cap is dodged for free by splitting: it never holds a whale back.
+    return [{ key, family: 'wealth', resistance: 'low', sybil: { kind: 'capital', perXrd: 1, cap }, needsAge: false, weigh: v => Math.min(v.power, cap) }];
+}
+
+/** 1 XRD = 1 vote up to `share` of all the XRD that voted, per address. */
+function cappedShare(key: MethodKey, share: number): MethodSpec[] {
+    return [{ key, family: 'wealth', resistance: 'low', sybil: { kind: 'capital', perXrd: 1, capShare: share }, needsAge: false, weigh: (v, ctx) => Math.min(v.power, ctx.total * share) }];
+}
 const CAPITAL: SybilProfile = { kind: 'capital', perXrd: 1 };
 const DUST_ADDRESS: SybilProfile = { kind: 'addresses', xrd: DUST, weight: 1 };
 
 export const METHODS: readonly MethodSpec[] = [
     { key: 'linear', family: 'wealth', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: v => v.power },
-    // Splitting into addresses under the cap gets the full weight back: back to 1 XRD = 1 vote.
-    { key: 'capped', family: 'wealth', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, chunk: 'cap' }, needsAge: false, weigh: v => Math.min(v.power, METHOD_PARAMS.cap) },
-    { key: 'capped_share', family: 'wealth', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, chunk: 'capShare' }, needsAge: false, weigh: (v, ctx) => Math.min(v.power, ctx.total * METHOD_PARAMS.capShare) },
+    ...capped('capped_10k', METHOD_PARAMS.caps.capped_10k),
+    ...capped('capped_100k', METHOD_PARAMS.caps.capped_100k),
+    ...capped('capped', METHOD_PARAMS.cap),
+    ...capped('capped_10m', METHOD_PARAMS.caps.capped_10m),
+    ...cappedShare('capped_share', METHOD_PARAMS.capShare),
+    ...cappedShare('capped_share_5', METHOD_PARAMS.capShares.capped_share_5),
+    ...cappedShare('capped_share_10', METHOD_PARAMS.capShares.capped_share_10),
     // Sublinear rules reward splitting: 1 XRD in each of many addresses weighs 1 each.
     { key: 'quadratic', family: 'wealth', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => Math.sqrt(v.power) },
     { key: 'cube_root', family: 'wealth', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => Math.cbrt(v.power) },
@@ -149,8 +168,9 @@ export const METHODS: readonly MethodSpec[] = [
         needsAge: true,
         weigh: v => (isSybilSafe(v) ? Math.sqrt(v.power) : 0),
     },
-    { key: 'no_top1', family: 'hybrid', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
-    { key: 'no_whales', family: 'hybrid', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
+    // Splitting keeps the largest wallets out of the excluded places.
+    { key: 'no_top1', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
+    { key: 'no_whales', family: 'hybrid', resistance: 'low', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
     { key: 'whales_only', family: 'hybrid', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, minXrd: METHOD_PARAMS.whaleMin }, needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.whaleMin ? v.power : 0) },
 ];
 
@@ -342,7 +362,7 @@ function attackCost(
     if (p.kind === 'capital') {
         const xrd = Math.max(p.minXrd ?? 0, need / p.perXrd);
         // A cap is dodged by splitting the XRD into addresses just under it.
-        const chunk = p.chunk === 'cap' ? METHOD_PARAMS.cap : p.chunk === 'capShare' ? (sides.total + xrd) * METHOD_PARAMS.capShare : Infinity;
+        const chunk = p.cap ?? (p.capShare ? (sides.total + xrd) * p.capShare : Infinity);
         return { xrd, addresses: Number.isFinite(chunk) ? Math.max(1, Math.ceil(xrd / chunk)) : 1, years: p.years ?? 0 };
     }
     if (p.kind === 'addresses') {
@@ -464,4 +484,33 @@ export function compareMethods(voters: MethodVoter[], choices: BallotChoice[], i
         ...r,
         sameAsCurrent: r.current || !current || r.counted === 0 ? null : verdict(r) === verdict(current),
     }));
+}
+
+/** Resistance to manipulation on a 0..1 scale. */
+export const RESISTANCE_SCORE: Record<Resistance, number> = { very_low: 0, low: 1 / 3, medium: 2 / 3, high: 1 };
+
+/**
+ * How balanced a rule is, 0..1: the geometric mean of its resistance to
+ * manipulation and its degree of decentralisation. Only a rule that is both
+ * hard to game and spreads power scores high; failing at either sinks it.
+ */
+export function balanceScore(r: Pick<MethodResult, 'resistance' | 'concentration'>): number {
+    return Math.sqrt(RESISTANCE_SCORE[r.resistance] * (r.concentration.spread ?? 0));
+}
+
+/**
+ * The most and the least balanced rules. Ties go to the rule listed first for
+ * the most balanced; for the least, to the most lopsided one (the widest gap
+ * between resistance and decentralisation).
+ */
+export function balanceExtremes<T extends Pick<MethodResult, 'resistance' | 'concentration'>>(results: T[]): { most?: T; least?: T } {
+    const gap = (r: T) => Math.abs(RESISTANCE_SCORE[r.resistance] - (r.concentration.spread ?? 0));
+    let most: T | undefined;
+    let least: T | undefined;
+    for (const r of results) {
+        const score = balanceScore(r);
+        if (!most || score > balanceScore(most)) most = r;
+        if (!least || score < balanceScore(least) || (score === balanceScore(least) && gap(r) > gap(least))) least = r;
+    }
+    return { most, least };
 }

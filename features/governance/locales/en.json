@@ -273,7 +273,7 @@
       "col_support": "In favour",
       "col_counted": "Count",
       "col_nakamoto": "Control 50 %",
-      "col_decisive": "Enough to decide",
+      "col_decisive": "Decisive",
       "of_n": "of {n}",
       "badge_current": "Current",
       "badge_changes": "Changes the result",
@@ -301,7 +301,8 @@
       "detail_split": "How the vote splits with this method",
       "detail_headcount": "Counting 1 address = 1 vote: {pct} in favour.",
       "detail_counted": "Addresses that count",
-      "detail_excluded": "({n} left out)",
+      "detail_excluded": "({n} do not count)",
+      "detail_excluded_one": "(1 does not count)",
       "detail_effective": "Effective voters",
       "detail_quorum": "Quorum",
       "detail_quorum_value": "{xrd} of {quorum} XRD",
@@ -336,15 +337,40 @@
           "rule": "Every XRD is a vote: 1,000 XRD weigh 1,000 votes. This is the method votes use today.",
           "attack": "Splitting into addresses adds no votes. The only way to weigh more is to get more XRD, buying or borrowing it before the vote opens."
         },
+        "capped_10k": {
+          "name": "Capped at 10,000 XRD per address",
+          "rule": "Like today, but no address can weigh more than 10,000 XRD: a very low cap that evens wallets out a lot.",
+          "attack": "The cap is dodged by splitting the XRD into addresses of 10,000 XRD or less; in practice it is back to 1 XRD = 1 vote and it takes capital."
+        },
+        "capped_100k": {
+          "name": "Capped at 100,000 XRD per address",
+          "rule": "Like today, but no address can weigh more than 100,000 XRD.",
+          "attack": "The cap is dodged by splitting the XRD into addresses of 100,000 XRD or less; in practice it is back to 1 XRD = 1 vote and it takes capital."
+        },
         "capped": {
-          "name": "Capped per address",
+          "name": "Capped at 1,000,000 XRD per address",
           "rule": "Like today, but no address can weigh more than {cap} XRD. It limits the largest wallets without taking their vote away.",
           "attack": "The cap is dodged by splitting the XRD into addresses under {cap} XRD, so in practice it is back to 1 XRD = 1 vote: it takes capital."
+        },
+        "capped_10m": {
+          "name": "Capped at 10,000,000 XRD per address",
+          "rule": "Like today, but no address can weigh more than 10 million XRD: it only limits the largest whales.",
+          "attack": "The cap is dodged by splitting the XRD into addresses of 10 million or less; in practice it is back to 1 XRD = 1 vote and it takes capital."
         },
         "capped_share": {
           "name": "Capped at {share} of the total",
           "rule": "1 XRD = 1 vote, but no address can weigh more than {share} of all the XRD that voted. The cap grows with turnout.",
           "attack": "Like the fixed cap: split across addresses, each part stays under {share} and counts in full."
+        },
+        "capped_share_5": {
+          "name": "Capped at 5 % of the total",
+          "rule": "1 XRD = 1 vote, but no address can weigh more than 5 % of all the XRD that voted.",
+          "attack": "Split across addresses, each part stays under 5 % and counts in full: it takes capital."
+        },
+        "capped_share_10": {
+          "name": "Capped at 10 % of the total",
+          "rule": "1 XRD = 1 vote, but no address can weigh more than 10 % of all the XRD that voted.",
+          "attack": "Split across addresses, each part stays under 10 % and counts in full: it takes capital."
         },
         "quadratic": {
           "name": "Quadratic voting",
@@ -456,7 +482,7 @@
         "col_support": "Weight in favour over weight in favour and against (abstentions left out). The vertical line marks the approval threshold",
         "col_counted": "Addresses whose vote counts under this method; the rest are left out for not meeting its requirements",
         "col_nakamoto": "The fewest addresses that together hold more than half of the weight of the vote. The bar is the degree of decentralisation: 100 % when all weigh the same",
-        "col_decisive": "How many addresses on the winning side would have been enough on their own, even if everyone else voted the other way",
+        "col_decisive": "How many addresses on the winning side, heaviest first, would have been enough on their own to decide the vote, even if everyone else voted the other way",
         "outcome_approved": "There is quorum and the vote in favour passes the approval threshold",
         "outcome_rejected": "There is quorum, but the vote in favour does not reach the approval threshold",
         "outcome_no_quorum": "The XRD of the addresses that count under this method fall short of the quorum, so the result would not be valid",
@@ -474,7 +500,7 @@
         "conc_top10": "The next 9 heaviest addresses hold {pct} of the vote",
         "conc_rest": "All other addresses together hold {pct} of the vote",
         "detail_counted": "Addresses whose vote counts under this method, and how many are left out",
-        "detail_effective": "How many voters there would be if all weighed the same and power were just as centralised",
+        "detail_effective": "Effective voters: {n} of {of}. It is the number of equally sized addresses that would share power the same way. If {of} addresses vote but amount to {n}, in practice about {n} wallets decide. It is 1 over the sum of each address's squared share of the weight (Herfindahl index). If all weighed the same it would be {of}",
         "detail_quorum": "XRD of the addresses that count, against the minimum the vote needs for the result to be valid",
         "kpi_consensus": "How many alternative methods would have given the same result as 1 XRD = 1 vote",
         "kpi_current": "Under the current method, the fewest addresses that together hold more than half of the vote",
@@ -486,11 +512,17 @@
         "level_low": "Decentralisation between 35 % and 65 %",
         "detail_spread": "Addresses holding half of the vote, against the most possible if all weighed the same. 100 % is full decentralisation",
         "level_minimal": "Decentralisation of 65 % or more: the weight is close to evenly shared",
-        "col_resistance": "How hard it is for one person to sway more than their share by creating addresses or splitting their XRD. With no KYC, new addresses are free",
+        "col_resistance": "Resistance to manipulation: how hard it is for one person to weigh more than their share. With no KYC, creating addresses and splitting XRD between them is free. Very low: gamed at almost no cost. High: weight only comes from buying XRD. Hover each method to see how it is gamed and what it would take to turn this vote around",
         "resistance_very_low": "One person can multiply their vote by creating many addresses, at almost no cost",
-        "resistance_low": "Each extra vote is cheap compared with its weight: whoever has capital splits it and gains many votes",
+        "resistance_low": "Each extra vote is cheap, or the method's safeguard (a cap, an exclusion) is dodged for free by splitting the XRD across addresses",
         "resistance_medium": "Gaming it takes accounts prepared long in advance, or it only works to block the result",
-        "resistance_high": "Splitting into addresses adds no votes: the only way to weigh more is to hold more XRD"
+        "resistance_high": "Splitting into addresses adds no votes: the only way to weigh more is to hold more XRD",
+        "kpi_balanced": "The method that best combines resistance to manipulation and decentralisation (geometric mean of both): hard to game and with power spread out. 100 % decentralisation means half the addresses plus one are needed to gather half of the vote, the most possible: it happens when all weigh the same",
+        "kpi_unbalanced": "The method that combines them worst: it fails at one of the two at least. A 100 % decentralised method (every address weighs the same) that can be gamed for free by creating addresses is not balanced",
+        "fact_voters": "Addresses whose vote the voting system has already weighed",
+        "fact_xrd": "Total voting power of those addresses under the current method",
+        "fact_quorum": "XRD that must take part for the result to be valid",
+        "fact_threshold": "Share of the vote in favour needed to pass"
       },
       "col_resistance": "Resistance",
       "resistance": {
@@ -502,7 +534,7 @@
       "resistance_legend": "{level} resistance",
       "resistance_hints": {
         "very_low": "votes multiply by creating addresses, almost for free",
-        "low": "each extra vote is cheap",
+        "low": "extra votes are cheap or the safeguard is dodged by splitting",
         "medium": "takes accounts prepared years ahead, or only works to block",
         "high": "splitting gains nothing: only more XRD adds weight"
       },
@@ -517,7 +549,17 @@
       "cost_impossible": "Adding votes cannot turn this result around.",
       "cost_none": "There is no clear result to turn around (no quorum or no valid votes).",
       "g_resistance_t": "Resistance to manipulation",
-      "g_resistance": "How hard it is for one person to weigh more than their share. With no KYC, new addresses are free and so is splitting XRD between them, so methods that count addresses or favour small balances are easy to game. Each method's details price turning this vote around."
+      "g_resistance": "How hard it is for one person to weigh more than their share. With no KYC, new addresses are free and so is splitting XRD between them, so methods that count addresses or favour small balances are easy to game. Each method's details price turning this vote around.",
+      "kpi_balanced": "Most balanced",
+      "kpi_unbalanced": "Least balanced",
+      "kpi_balance_hint": "{resistance} resistance · {n} of {of} addresses needed for half of the vote ({pct} decentralisation)",
+      "resistance_title": "Resistance to manipulation: {level}",
+      "resistance_how": "How it is gamed",
+      "resistance_here": "In this vote",
+      "fact_voters": "Voters",
+      "fact_xrd": "XRD that voted",
+      "fact_quorum": "Quorum",
+      "fact_threshold": "Threshold"
     }
   }
 }
