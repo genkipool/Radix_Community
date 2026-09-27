@@ -65,9 +65,33 @@ interface WeighContext {
     largest: string | null;
 }
 
+/**
+ * How hard it is for one person to sway the vote beyond what they really
+ * hold, with no identity checks: new addresses are free, XRD can be split
+ * between addresses at no cost, and account age belongs to the account, not
+ * to the XRD in it.
+ */
+export type Resistance = 'very_low' | 'low' | 'medium' | 'high';
+
+/**
+ * The cheapest way to add weight under a rule, used to price flipping the result:
+ * - `capital`: more XRD (in one account or split, it weighs the same); `perXrd` is the weight each XRD adds.
+ * - `addresses`: many new addresses holding `xrd` each, `weight` each.
+ * - `hybrid`: new addresses shift the headcount half of the 50 / 50 rule.
+ * - `double`: both majorities; the headcount one can be tipped with empty addresses.
+ * `years` is the account age the rule asks for: new accounts do not count.
+ */
+type SybilProfile =
+    | { kind: 'capital'; perXrd: number; years?: number; minXrd?: number; chunk?: 'cap' | 'capShare' }
+    | { kind: 'addresses'; xrd: number; weight: number; years?: number }
+    | { kind: 'hybrid' }
+    | { kind: 'double' };
+
 interface MethodSpec {
     key: MethodKey;
     family: MethodFamily;
+    resistance: Resistance;
+    sybil: SybilProfile;
     /** Needs every voter's account age. */
     needsAge: boolean;
     /** Weight of one vote; 0 leaves the voter out. */
@@ -76,33 +100,58 @@ interface MethodSpec {
     headcount?: boolean;
 }
 
+const DUST = 1;
+const CAPITAL: SybilProfile = { kind: 'capital', perXrd: 1 };
+const DUST_ADDRESS: SybilProfile = { kind: 'addresses', xrd: DUST, weight: 1 };
+
 export const METHODS: readonly MethodSpec[] = [
-    { key: 'linear', family: 'wealth', needsAge: false, weigh: v => v.power },
-    { key: 'capped', family: 'wealth', needsAge: false, weigh: v => Math.min(v.power, METHOD_PARAMS.cap) },
-    { key: 'capped_share', family: 'wealth', needsAge: false, weigh: (v, ctx) => Math.min(v.power, ctx.total * METHOD_PARAMS.capShare) },
-    { key: 'quadratic', family: 'wealth', needsAge: false, weigh: v => Math.sqrt(v.power) },
-    { key: 'cube_root', family: 'wealth', needsAge: false, weigh: v => Math.cbrt(v.power) },
-    { key: 'logarithmic', family: 'wealth', needsAge: false, weigh: v => Math.log10(1 + v.power) },
-    { key: 'tiered', family: 'wealth', needsAge: false, weigh: v => (v.power > 0 ? 1 + METHOD_PARAMS.tiers.filter(t => v.power >= t).length : 0) },
-    { key: 'one_address', family: 'address', needsAge: false, weigh: v => (v.power > 0 ? 1 : 0) },
-    { key: 'one_address_min', family: 'address', needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.minBalance ? 1 : 0) },
+    { key: 'linear', family: 'wealth', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: v => v.power },
+    // Splitting into addresses under the cap gets the full weight back: back to 1 XRD = 1 vote.
+    { key: 'capped', family: 'wealth', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, chunk: 'cap' }, needsAge: false, weigh: v => Math.min(v.power, METHOD_PARAMS.cap) },
+    { key: 'capped_share', family: 'wealth', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, chunk: 'capShare' }, needsAge: false, weigh: (v, ctx) => Math.min(v.power, ctx.total * METHOD_PARAMS.capShare) },
+    // Sublinear rules reward splitting: 1 XRD in each of many addresses weighs 1 each.
+    { key: 'quadratic', family: 'wealth', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => Math.sqrt(v.power) },
+    { key: 'cube_root', family: 'wealth', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => Math.cbrt(v.power) },
+    { key: 'logarithmic', family: 'wealth', resistance: 'very_low', sybil: { kind: 'addresses', xrd: DUST, weight: Math.log10(1 + DUST) }, needsAge: false, weigh: v => Math.log10(1 + v.power) },
+    { key: 'tiered', family: 'wealth', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => (v.power > 0 ? 1 + METHOD_PARAMS.tiers.filter(t => v.power >= t).length : 0) },
+    { key: 'one_address', family: 'address', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: false, weigh: v => (v.power > 0 ? 1 : 0) },
+    { key: 'one_address_min', family: 'address', resistance: 'low', sybil: { kind: 'addresses', xrd: METHOD_PARAMS.minBalance, weight: 1 }, needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.minBalance ? 1 : 0) },
     {
-        key: 'one_address_sybil', family: 'address', needsAge: true,
+        key: 'one_address_sybil', family: 'address', resistance: 'medium',
+        sybil: { kind: 'addresses', xrd: METHOD_PARAMS.sybilBalance, weight: 1, years: METHOD_PARAMS.sybilDays / DAY_YEAR },
+        needsAge: true,
         weigh: v => (isSybilSafe(v) ? 1 : 0),
     },
-    { key: 'address_age', family: 'address', needsAge: true, weigh: v => (v.ageDays === null || v.power <= 0 ? 0 : 1 + years(v)) },
-    { key: 'one_year', family: 'seniority', needsAge: true, weigh: v => ((v.ageDays ?? -1) >= DAY_YEAR ? v.power : 0) },
-    { key: 'veterans', family: 'seniority', needsAge: true, weigh: v => (isVeteran(v) ? v.power : 0) },
-    { key: 'veterans_address', family: 'seniority', needsAge: true, weigh: v => (isVeteran(v) && v.power > 0 ? 1 : 0) },
-    { key: 'veterans_bonus', family: 'seniority', needsAge: true, weigh: v => (isVeteran(v) ? v.power * bonus(v) : 0) },
-    { key: 'seniority_bonus', family: 'seniority', needsAge: true, weigh: v => (v.ageDays === null ? 0 : v.power * bonus(v)) },
-    { key: 'hybrid_half', family: 'hybrid', needsAge: false, weigh: (v, ctx) => (v.power > 0 && ctx.total > 0 ? 0.5 * (v.power / ctx.total) + 0.5 / ctx.count : 0) },
-    { key: 'double_majority', family: 'hybrid', needsAge: false, headcount: true, weigh: v => v.power },
-    { key: 'quadratic_seniority', family: 'hybrid', needsAge: true, weigh: v => (v.ageDays === null ? 0 : Math.sqrt(v.power) * bonus(v)) },
-    { key: 'sybil_quadratic', family: 'hybrid', needsAge: true, weigh: v => (isSybilSafe(v) ? Math.sqrt(v.power) : 0) },
-    { key: 'no_top1', family: 'hybrid', needsAge: false, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
-    { key: 'no_whales', family: 'hybrid', needsAge: false, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
-    { key: 'whales_only', family: 'hybrid', needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.whaleMin ? v.power : 0) },
+    { key: 'address_age', family: 'address', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: true, weigh: v => (v.ageDays === null || v.power <= 0 ? 0 : 1 + years(v)) },
+    // Age belongs to the account, not to the XRD: bought XRD sent to an old account count in full.
+    { key: 'one_year', family: 'seniority', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, years: 1 }, needsAge: true, weigh: v => ((v.ageDays ?? -1) >= DAY_YEAR ? v.power : 0) },
+    { key: 'veterans', family: 'seniority', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, years: METHOD_PARAMS.veteranDays / DAY_YEAR }, needsAge: true, weigh: v => (isVeteran(v) ? v.power : 0) },
+    {
+        key: 'veterans_address', family: 'seniority', resistance: 'medium',
+        sybil: { kind: 'addresses', xrd: DUST, weight: 1, years: METHOD_PARAMS.veteranDays / DAY_YEAR },
+        needsAge: true,
+        weigh: v => (isVeteran(v) && v.power > 0 ? 1 : 0),
+    },
+    {
+        key: 'veterans_bonus', family: 'seniority', resistance: 'high',
+        sybil: { kind: 'capital', perXrd: 1 + METHOD_PARAMS.bonusPerYear * (METHOD_PARAMS.veteranDays / DAY_YEAR), years: METHOD_PARAMS.veteranDays / DAY_YEAR },
+        needsAge: true,
+        weigh: v => (isVeteran(v) ? v.power * bonus(v) : 0),
+    },
+    { key: 'seniority_bonus', family: 'seniority', resistance: 'high', sybil: CAPITAL, needsAge: true, weigh: v => (v.ageDays === null ? 0 : v.power * bonus(v)) },
+    { key: 'hybrid_half', family: 'hybrid', resistance: 'low', sybil: { kind: 'hybrid' }, needsAge: false, weigh: (v, ctx) => (v.power > 0 && ctx.total > 0 ? 0.5 * (v.power / ctx.total) + 0.5 / ctx.count : 0) },
+    { key: 'double_majority', family: 'hybrid', resistance: 'medium', sybil: { kind: 'double' }, needsAge: false, headcount: true, weigh: v => v.power },
+    { key: 'quadratic_seniority', family: 'hybrid', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: true, weigh: v => (v.ageDays === null ? 0 : Math.sqrt(v.power) * bonus(v)) },
+    {
+        key: 'sybil_quadratic', family: 'hybrid', resistance: 'medium',
+        // The cheapest weight per XRD is the smallest balance that counts.
+        sybil: { kind: 'addresses', xrd: METHOD_PARAMS.sybilBalance, weight: Math.sqrt(METHOD_PARAMS.sybilBalance), years: METHOD_PARAMS.sybilDays / DAY_YEAR },
+        needsAge: true,
+        weigh: v => (isSybilSafe(v) ? Math.sqrt(v.power) : 0),
+    },
+    { key: 'no_top1', family: 'hybrid', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (v.account === ctx.largest ? 0 : v.power) },
+    { key: 'no_whales', family: 'hybrid', resistance: 'high', sybil: CAPITAL, needsAge: false, weigh: (v, ctx) => (ctx.whales.has(v.account) ? 0 : v.power) },
+    { key: 'whales_only', family: 'hybrid', resistance: 'high', sybil: { kind: 'capital', perXrd: 1, minXrd: METHOD_PARAMS.whaleMin }, needsAge: false, weigh: v => (v.power >= METHOD_PARAMS.whaleMin ? v.power : 0) },
 ];
 
 /** The rule the governance systems actually use. */
@@ -196,6 +245,22 @@ export interface MethodResult {
     decisive: Decisive | null;
     /** Whether the result matches the current rule's; null for the current rule itself. */
     sameAsCurrent: boolean | null;
+    resistance: Resistance;
+    /** Cheapest way found to flip the result by adding votes; null when there is no clear result to flip. */
+    attack: Attack | null;
+}
+
+/**
+ * What it would take one person to turn the result around by adding votes on
+ * the losing side: `addresses` new (or old enough) addresses and `xrd` in total.
+ * `impossible` when adding votes cannot flip it under this rule.
+ */
+export interface Attack {
+    xrd: number;
+    addresses: number;
+    /** Account age the addresses need; 0 for brand new ones. */
+    years: number;
+    impossible?: boolean;
 }
 
 type Side = 'for' | 'against' | 'neutral';
@@ -244,6 +309,78 @@ function decisiveVoters(
     // A ballot with no sides: more than half of all the weight behind the winner.
     if (outcome === null && winner) return settle('winner', weighed.filter(x => x.v.choices.includes(winner.key)), w => w > total / 2);
     return null;
+}
+
+/**
+ * Weight the losing side needs to add to flip a sided result.
+ * Approved: in favour F must fall under the threshold; rejected: it must reach it.
+ */
+function weightToFlip(outcome: 'approved' | 'rejected', inFavour: number, against: number, threshold: number): number {
+    if (outcome === 'approved') return Math.max(0, inFavour / threshold - inFavour - against);
+    return threshold >= 1 ? Infinity : Math.max(0, (threshold * against) / (1 - threshold) - inFavour);
+}
+
+/** Fewest whole units of `step` that exceed (approved) or reach (rejected) `need`. */
+function unitsFor(need: number, step: number, outcome: 'approved' | 'rejected'): number {
+    if (!Number.isFinite(need)) return Infinity;
+    return outcome === 'approved' ? Math.floor(need / step) + 1 : Math.max(1, Math.ceil(need / step - 1e-9));
+}
+
+function attackCost(
+    spec: MethodSpec,
+    outcome: VoteOutcome | null,
+    rows: TallyRow[],
+    sides: { pro: number; con: number; proXrd: number; conXrd: number; total: number; count: number },
+    threshold: number,
+): Attack | null {
+    if (outcome !== 'approved' && outcome !== 'rejected') return null;
+    const inFavour = rows.filter(r => r.tone === 'positive').reduce((s, r) => s + r.power, 0);
+    const against = rows.filter(r => r.tone === 'negative').reduce((s, r) => s + r.power, 0);
+    const need = weightToFlip(outcome, inFavour, against, threshold);
+    const p = spec.sybil;
+
+    if (p.kind === 'capital') {
+        const xrd = Math.max(p.minXrd ?? 0, need / p.perXrd);
+        // A cap is dodged by splitting the XRD into addresses just under it.
+        const chunk = p.chunk === 'cap' ? METHOD_PARAMS.cap : p.chunk === 'capShare' ? (sides.total + xrd) * METHOD_PARAMS.capShare : Infinity;
+        return { xrd, addresses: Number.isFinite(chunk) ? Math.max(1, Math.ceil(xrd / chunk)) : 1, years: p.years ?? 0 };
+    }
+    if (p.kind === 'addresses') {
+        const addresses = unitsFor(need, p.weight, outcome);
+        if (!Number.isFinite(addresses)) return { xrd: 0, addresses: 0, years: p.years ?? 0, impossible: true };
+        return { xrd: addresses * p.xrd, addresses, years: p.years ?? 0 };
+    }
+    if (p.kind === 'double') {
+        // Approved: empty addresses against break the headcount majority on their own.
+        if (outcome === 'approved') {
+            const k = Math.floor(sides.pro / threshold - sides.pro - sides.con) + 1;
+            return { xrd: Math.max(1, k) * DUST, addresses: Math.max(1, k), years: 0 };
+        }
+        // Rejected: both majorities are needed, so the XRD and the addresses.
+        const xrdNeed = weightToFlip('rejected', sides.proXrd, sides.conXrd, threshold);
+        const k = threshold >= 1 ? Infinity : Math.max(0, Math.ceil((threshold * sides.con) / (1 - threshold) - sides.pro));
+        if (!Number.isFinite(k) || !Number.isFinite(xrdNeed)) return { xrd: 0, addresses: 0, years: 0, impossible: true };
+        return { xrd: Math.max(xrdNeed, k * DUST), addresses: Math.max(1, k), years: 0 };
+    }
+    // 50 / 50: each empty address adds to the headcount half and dilutes everyone else's share of it.
+    const share = (k: number) => {
+        const n = sides.count + k;
+        const addPro = outcome === 'rejected' ? k : 0;
+        const addCon = outcome === 'approved' ? k : 0;
+        const f = 0.5 * (sides.total ? sides.proXrd / sides.total : 0) + (0.5 * (sides.pro + addPro)) / n;
+        const a = 0.5 * (sides.total ? sides.conXrd / sides.total : 0) + (0.5 * (sides.con + addCon)) / n;
+        return f / (f + a);
+    };
+    const flipped = (k: number) => (outcome === 'approved' ? share(k) < threshold : share(k) >= threshold);
+    let hi = 1;
+    while (!flipped(hi) && hi < 1e12) hi *= 2;
+    if (!flipped(hi)) return { xrd: 0, addresses: 0, years: 0, impossible: true };
+    let lo = 0;
+    while (hi - lo > 1) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (flipped(mid)) hi = mid; else lo = mid;
+    }
+    return { xrd: hi * DUST, addresses: hi, years: 0 };
 }
 
 /** Counts the ballots with one rule. */
@@ -305,6 +442,14 @@ function applyMethod(spec: MethodSpec, voters: MethodVoter[], choices: BallotCho
         winner,
         concentration: concentration(weighed.map(x => x.w)),
         decisive: decisiveVoters(weighed, outcome, winner, threshold, spec.headcount),
+        resistance: spec.resistance,
+        attack: attackCost(spec, outcome, summary.rows, {
+            pro, con,
+            proXrd: weighed.filter(x => x.side === 'for').reduce((s, x) => s + x.v.power, 0),
+            conXrd: weighed.filter(x => x.side === 'against').reduce((s, x) => s + x.v.power, 0),
+            total: weighed.reduce((s, x) => s + x.v.power, 0),
+            count: weighed.length,
+        }, threshold),
     };
 }
 

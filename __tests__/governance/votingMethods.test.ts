@@ -100,6 +100,36 @@ describe('new methods', () => {
     });
 });
 
+describe('resistance to manipulation', () => {
+    it('prices a flip under 1 XRD = 1 vote in XRD: splitting gains nothing', () => {
+        // 10 000 in favour against 2 500: another 7 500 against brings it to 50 %.
+        expect(byKey('linear').resistance).toBe('high');
+        expect(byKey('linear').attack).toEqual({ xrd: 7_500, addresses: 1, years: 0 });
+    });
+
+    it('prices a flip under 1 address = 1 vote in new addresses', () => {
+        // 1 in favour, 5 against: 4 empty addresses in favour tie it at 50 % and it passes.
+        const r = byKey('one_address');
+        expect(r.resistance).toBe('very_low');
+        expect(r.attack).toEqual({ xrd: 4, addresses: 4, years: 0 });
+    });
+
+    it('asks for old accounts when the rule leaves new ones out', () => {
+        // Only the five old accounts count (2 500 against): 2 500 XRD in favour, in a 2-year-old account.
+        expect(byKey('veterans').attack).toEqual({ xrd: 2_500, addresses: 1, years: 2 });
+    });
+
+    it('tips a double majority with the headcount', () => {
+        // Rejected by addresses: 4 empty addresses in favour make 5 against 5.
+        expect(byKey('double_majority').attack).toMatchObject({ addresses: 4, years: 0 });
+    });
+
+    it('has nothing to flip without a clear result', () => {
+        const r = compareMethods([voter('a', 'For', 100, 10)], choices, item).find(x => x.key === 'veterans')!;
+        expect(r.attack).toBeNull();
+    });
+});
+
 describe('concentration', () => {
     it('counts the fewest voters above half and the effective voters', () => {
         const c = concentration([1, 1, 1, 1]);

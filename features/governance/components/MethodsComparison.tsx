@@ -3,7 +3,7 @@
 import React, { useId, useState } from 'react';
 import {
     Scale, Coins, Users, Hourglass, Shuffle, ChevronDown, BadgeCheck, XCircle, AlertTriangle, Info, Loader2,
-    Equal, ArrowLeftRight, PieChart, Target, Crown, Network,
+    Equal, ArrowLeftRight, PieChart, Target, Crown, Network, ShieldCheck, ShieldAlert, Shield, ShieldX,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
@@ -13,7 +13,7 @@ import { useAccountAges } from '../hooks/useAccountAges';
 import { itemChoices } from '../lib/governanceVotes';
 import {
     METHODS, METHOD_PARAMS, compareMethods, concentrationLevel,
-    type ConcentrationLevel, type MethodFamily, type MethodKey, type MethodResult, type MethodVoter,
+    type ConcentrationLevel, type MethodFamily, type MethodKey, type MethodResult, type MethodVoter, type Resistance,
 } from '../lib/votingMethods';
 import { fill, formatPct, formatShare, formatXrd } from '../lib/format';
 import { TONE, type Gv } from './VoteParts';
@@ -41,6 +41,14 @@ const LEVEL_STYLE: Record<ConcentrationLevel, { dot: string; text: string }> = {
     minimal: { dot: 'bg-[var(--color-accent)]', text: 'text-[var(--color-accent)]' },
 };
 
+const RESISTANCE_STYLE: Record<Resistance, { icon: LucideIcon; cls: string; dot: string }> = {
+    very_low: { icon: ShieldX, cls: 'text-red-500 border-red-500/35 bg-red-500/10', dot: 'bg-red-500' },
+    low: { icon: ShieldAlert, cls: 'text-orange-600 dark:text-orange-400 border-orange-500/35 bg-orange-500/10', dot: 'bg-orange-500' },
+    medium: { icon: Shield, cls: 'text-yellow-600 dark:text-yellow-400 border-yellow-500/35 bg-yellow-500/10', dot: 'bg-yellow-500' },
+    high: { icon: ShieldCheck, cls: 'text-[var(--color-accent)] border-[var(--color-accent)]/35 bg-[var(--color-accent)]/10', dot: 'bg-[var(--color-accent)]' },
+};
+const RESISTANCE_ORDER: Resistance[] = ['very_low', 'low', 'medium', 'high'];
+
 /** Figures the rule texts quote, in the reader's locale. */
 function ruleParams(language: string): Params {
     const n = (x: number) => x.toLocaleString(language);
@@ -64,8 +72,44 @@ function tip(c: C, key: string, values: Params = {}): string | undefined {
 }
 
 function methodText(c: C, key: MethodKey, params: Params) {
-    const m = (c.methods as Record<string, { name?: string; rule?: string }> | undefined)?.[key] ?? {};
-    return { name: fill(m.name || key, params), rule: fill(m.rule || '', params) };
+    const m = (c.methods as Record<string, { name?: string; rule?: string; attack?: string }> | undefined)?.[key] ?? {};
+    return { name: fill(m.name || key, params), rule: fill(m.rule || '', params), attack: fill(m.attack || '', params) };
+}
+
+/** "1 year" / "2 years" in the reader's language. */
+function yearsText(c: C, years: number, language: string): string {
+    return fill(years === 1 ? (c.year_one || '{n} year') : (c.year_many || '{n} years'), { n: years.toLocaleString(language) });
+}
+
+/** What it would take one person to flip this vote under the rule, in one sentence. */
+function attackText(r: MethodResult, c: C, language: string): string {
+    const a = r.attack;
+    if (!a) return c.cost_none || 'There is no clear result to turn around (no quorum or no valid votes).';
+    if (a.impossible) return c.cost_impossible || 'Adding votes cannot turn this result around.';
+    const values = {
+        xrd: formatXrd(a.xrd, language),
+        addresses: a.addresses.toLocaleString(language),
+        each: formatXrd(a.addresses ? a.xrd / a.addresses : 0, language),
+        years: yearsText(c, a.years, language),
+        pct: r.eligibleXrd > 0 ? formatShare(a.xrd / r.eligibleXrd, language) : '—',
+    };
+    const perAddress = r.resistance !== 'high' && !(r.key === 'double_majority' && r.outcome === 'rejected');
+    if (perAddress) return fill(a.years ? (c.cost_addresses_aged || '') : (c.cost_addresses || ''), values);
+    if (a.years) return fill(c.cost_capital_aged || '', values);
+    return fill(a.addresses > 1 ? (c.cost_capital_split || '') : (c.cost_capital || ''), values);
+}
+
+function ResistancePill({ r, c, language }: { r: MethodResult; c: C; language: string }) {
+    const { icon: Icon, cls } = RESISTANCE_STYLE[r.resistance];
+    const label = ((c.resistance ?? {}) as Record<string, string>)[r.resistance] || r.resistance;
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 max-w-full h-7 px-2.5 rounded-full border text-[11px] font-bold cursor-help ${cls}`}
+            title={`${label}: ${tip(c, `resistance_${r.resistance}`) ?? ''}\n${attackText(r, c, language)}`}
+        >
+            <Icon className="size-3.5 shrink-0" /><span className="truncate">{label}</span>
+        </span>
+    );
 }
 
 function OutcomePill({ r, c }: { r: MethodResult; c: C }) {
@@ -164,7 +208,7 @@ function Stat({ label, title, children }: { label: string; title?: string; child
 }
 
 /** Everything behind one rule's figures. */
-function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C; rule: string; quorum: number | null; language: string }) {
+function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResult; c: C; rule: string; attack: string; quorum: number | null; language: string }) {
     const d = r.decisive;
     const sideLabel = d ? { for: c.side_for || 'in favour', against: c.side_against || 'against', winner: c.side_winner || 'behind the winner' }[d.side] : '';
     return (
@@ -234,6 +278,13 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
                     </p>
                 )}
             </div>
+            <div className={`lg:col-span-2 flex flex-col sm:flex-row sm:items-start gap-3 rounded-xl border p-3 ${RESISTANCE_STYLE[r.resistance].cls.replace(/text-\S+/g, '')}`}>
+                <span className="shrink-0"><ResistancePill r={r} c={c} language={language} /></span>
+                <div className="min-w-0 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                    <p><span className="font-bold text-[var(--color-text-main)]">{c.detail_attack || 'How it could be gamed'}: </span>{attack}</p>
+                    <p className="mt-1 font-semibold text-[var(--color-text-main)]">{attackText(r, c, language)}</p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -243,7 +294,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
 }) {
     const [open, setOpen] = useState(r.current);
     const panelId = useId();
-    const { name, rule } = methodText(c, r.key, params);
+    const { name, rule, attack } = methodText(c, r.key, params);
     const pending = r.needsAge && ageLoading;
     const d = r.decisive;
     return (
@@ -254,7 +305,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                 aria-controls={panelId}
                 title={open ? tip(c, 'collapse') : tip(c, 'expand')}
                 onClick={() => setOpen(o => !o)}
-                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.1fr)_minmax(0,1fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
+                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.15fr)_minmax(0,1.3fr)_minmax(0,0.6fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
             >
                 <span className="col-span-6 lg:col-span-1 min-w-0 flex items-start justify-between gap-3">
                     <span className="min-w-0">
@@ -267,7 +318,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                     <ChevronDown className={`lg:hidden size-4 mt-0.5 shrink-0 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
                 </span>
 
-                <span className="col-span-6 sm:col-span-2 lg:col-span-1 min-w-0 flex flex-col gap-1 self-center">
+                <span className="col-span-3 sm:col-span-2 lg:col-span-1 min-w-0 flex flex-col gap-1 self-center">
                     <span className="flex items-center h-7 min-w-0">
                         {pending ? (
                             <span className="inline-flex items-center gap-1.5 max-w-full h-7 px-2.5 rounded-full bg-[var(--color-surface)] text-[11px] text-[var(--color-text-muted)]">
@@ -289,7 +340,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                         ) : null}
                     </span>
                 </span>
-                <Cell className="col-span-6 sm:col-span-4 lg:col-span-1" label={c.col_support || 'In favour'} pending={pending}>
+                <Cell className="col-span-6 sm:col-span-2 lg:col-span-1" label={c.col_support || 'In favour'} pending={pending}>
                     <SupportMeter r={r} c={c} threshold={threshold} language={language} />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_counted || 'Count'} pending={pending}>
@@ -306,11 +357,14 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                         </span>
                     ) : <span className="text-xs text-[var(--color-text-muted)]">—</span>}
                 </Cell>
+                <Cell className="col-span-3 sm:col-span-2 lg:col-span-1 row-start-2 col-start-4 sm:row-auto sm:col-auto" label={c.col_resistance || 'Resistance'} pending={false}>
+                    <ResistancePill r={r} c={c} language={language} />
+                </Cell>
                 <ChevronDown className={`hidden lg:block size-4 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && !pending && (
                 <div id={panelId} className="border-t border-[var(--color-card-border)] pt-4">
-                    <MethodDetail r={r} c={c} rule={rule} quorum={quorum} language={language} />
+                    <MethodDetail r={r} c={c} rule={rule} attack={attack} quorum={quorum} language={language} />
                 </div>
             )}
         </li>
@@ -465,10 +519,10 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                 </div>
             </section>
 
-            <section aria-labelledby="methods-list" className="space-y-3">
+            <section aria-labelledby="methods-list" className="@container space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 id="methods-list" className="text-sm font-bold text-[var(--color-text-main)]">{fill(c.list_title || '{n} ways to count the same votes', { n: METHODS.length.toLocaleString(language) })}</h3>
-                    <div role="group" aria-label={c.filter_label || 'Method family'} className="grid grid-cols-5 gap-1 w-full sm:w-[580px] shrink-0 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-1">
+                    <div role="group" aria-label={c.filter_label || 'Method family'} className="grid grid-cols-5 gap-1 w-full @xl:w-[580px] shrink-0 rounded-xl border border-[var(--color-card-border)] bg-[var(--color-surface)] p-1">
                         {(['all', ...FAMILIES] as const).map(f => {
                             const Icon = f === 'all' ? Scale : FAMILY_ICON[f];
                             const label = f === 'all' ? (c.filter_all || 'All') : ((c.families ?? {}) as Record<string, string>)[f] || f;
@@ -484,20 +538,21 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                                     onClick={() => setFamily(f)}
                                     className={`min-w-0 h-8 inline-flex items-center justify-center gap-1.5 px-2 rounded-lg text-xs font-semibold transition-colors ${family === f ? 'bg-[var(--color-card-bg)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                                 >
-                                    <Icon className="size-3.5 shrink-0" /><span className="hidden sm:inline truncate">{short}</span>
+                                    <Icon className="size-3.5 shrink-0" /><span className="hidden @xl:inline truncate">{short}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="hidden lg:grid px-5 gap-x-5 grid-cols-[minmax(0,2.2fr)_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1.1fr)_minmax(0,1fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                <div className="hidden lg:grid px-5 gap-x-5 grid-cols-[minmax(0,2fr)_minmax(0,1.15fr)_minmax(0,1.3fr)_minmax(0,0.6fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
                     <span className="cursor-help" title={tip(c, 'col_method')}>{c.col_method || 'Method'}</span>
                     <span className="cursor-help" title={tip(c, 'col_result')}>{c.col_result || 'Result'}</span>
                     <span className="cursor-help" title={tip(c, 'col_support')}>{c.col_support || 'In favour'}</span>
                     <span className="cursor-help" title={tip(c, 'col_counted')}>{c.col_counted || 'Count'}</span>
                     <span className="cursor-help" title={tip(c, 'col_nakamoto')}>{c.col_nakamoto || 'Control 50 %'}</span>
                     <span className="cursor-help" title={tip(c, 'col_decisive')}>{c.col_decisive || 'Enough to decide'}</span>
+                    <span className="cursor-help" title={tip(c, 'col_resistance')}>{c.col_resistance || 'Resistance'}</span>
                     <span />
                 </div>
 
@@ -524,14 +579,15 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                 <h3 id="methods-glossary" className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-main)]">
                     <Info className="size-4 text-[var(--color-primary)]" />{c.glossary_title || 'How to read it'}
                 </h3>
-                <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     {([
                         [PieChart, c.g_nakamoto_t, c.g_nakamoto],
                         [Target, c.g_decisive_t, c.g_decisive],
                         [Users, c.g_effective_t, c.g_effective],
                         [Hourglass, c.g_age_t, c.g_age],
+                        [ShieldCheck, c.g_resistance_t, c.g_resistance],
                     ] as const).map(([Icon, t, body], i) => (
-                        <div key={i} className="rounded-xl bg-[var(--color-surface)] p-4">
+                        <div key={i} className="rounded-xl bg-[var(--color-surface)] p-4 sm:last:col-span-2 xl:last:col-span-1">
                             <dt className="flex items-center gap-2 text-xs font-bold text-[var(--color-text-main)]"><Icon className="size-3.5 text-[var(--color-primary)]" />{t}</dt>
                             <dd className="mt-1.5 text-xs leading-relaxed text-[var(--color-text-secondary)]">{body}</dd>
                         </div>
@@ -545,6 +601,18 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                             {((c.level_hints ?? {}) as Record<string, string>)[l]}
                         </span>
                     ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+                    {RESISTANCE_ORDER.map(l => {
+                        const Icon = RESISTANCE_STYLE[l].icon;
+                        return (
+                            <span key={l} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)] cursor-help" title={tip(c, `resistance_${l}`)}>
+                                <Icon className={`size-3 ${RESISTANCE_STYLE[l].cls.split(' ')[0]}`} />
+                                <span className={`font-bold ${RESISTANCE_STYLE[l].cls.split(' ')[0]}`}>{fill(c.resistance_legend || 'Resistance {level}', { level: ((c.resistance ?? {}) as Record<string, string>)[l] || l })}</span>
+                                {((c.resistance_hints ?? {}) as Record<string, string>)[l]}
+                            </span>
+                        );
+                    })}
                 </div>
             </section>
 

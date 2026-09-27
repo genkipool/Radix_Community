@@ -333,95 +333,118 @@
       "methods": {
         "linear": {
           "name": "1 XRD = 1 vote",
-          "rule": "Every XRD is a vote: 1,000 XRD weigh 1,000 votes. This is the method votes use today."
+          "rule": "Every XRD is a vote: 1,000 XRD weigh 1,000 votes. This is the method votes use today.",
+          "attack": "Splitting into addresses adds no votes. The only way to weigh more is to get more XRD, buying or borrowing it before the vote opens."
         },
         "capped": {
           "name": "Capped per address",
-          "rule": "Like today, but no address can weigh more than {cap} XRD. It limits the largest wallets without taking their vote away."
+          "rule": "Like today, but no address can weigh more than {cap} XRD. It limits the largest wallets without taking their vote away.",
+          "attack": "The cap is dodged by splitting the XRD into addresses under {cap} XRD, so in practice it is back to 1 XRD = 1 vote: it takes capital."
         },
         "capped_share": {
           "name": "Capped at {share} of the total",
-          "rule": "1 XRD = 1 vote, but no address can weigh more than {share} of all the XRD that voted. The cap grows with turnout."
+          "rule": "1 XRD = 1 vote, but no address can weigh more than {share} of all the XRD that voted. The cap grows with turnout.",
+          "attack": "Like the fixed cap: split across addresses, each part stays under {share} and counts in full."
         },
         "quadratic": {
           "name": "Quadratic voting",
-          "rule": "The vote weighs the square root of the balance: 100 XRD give 10 votes and 1,000,000 XRD give 1,000. Holding more still counts, but each extra XRD counts less."
+          "rule": "The vote weighs the square root of the balance: 100 XRD give 10 votes and 1,000,000 XRD give 1,000. Holding more still counts, but each extra XRD counts less.",
+          "attack": "Splitting multiplies the vote: 1,000,000 XRD in one address are worth 1,000 votes, but split into 1,000,000 addresses of 1 XRD they are worth 1,000,000."
         },
         "cube_root": {
           "name": "Cube root",
-          "rule": "The vote weighs the cube root of the balance: 1,000 XRD give 10 votes and 1,000,000 XRD give 100. It sits between quadratic and logarithmic voting."
+          "rule": "The vote weighs the cube root of the balance: 1,000 XRD give 10 votes and 1,000,000 XRD give 100. It sits between quadratic and logarithmic voting.",
+          "attack": "Even more sensitive to splitting than quadratic: the smaller the parts, the more votes."
         },
         "logarithmic": {
           "name": "Logarithmic voting",
-          "rule": "One vote is added each time the balance grows tenfold: 1,000 XRD give about 3 votes and 1,000,000 XRD about 6. The balance barely matters."
+          "rule": "One vote is added each time the balance grows tenfold: 1,000 XRD give about 3 votes and 1,000,000 XRD about 6. The balance barely matters.",
+          "attack": "An address with 1 XRD weighs almost as much as one with millions, so many small addresses multiply the vote."
         },
         "tiered": {
           "name": "Balance tiers",
-          "rule": "1 to 5 votes by balance: under 1,000 XRD, 1 vote; from 1,000, 2; from 10,000, 3; from 100,000, 4; from 1,000,000, 5."
+          "rule": "1 to 5 votes by balance: under 1,000 XRD, 1 vote; from 1,000, 2; from 10,000, 3; from 100,000, 4; from 1,000,000, 5.",
+          "attack": "Any address with a balance has at least 1 vote: 1,000 addresses with 1 XRD outweigh one with 100 million."
         },
         "one_address": {
           "name": "1 address = 1 vote",
-          "rule": "Every address weighs the same, whatever it holds."
+          "rule": "Every address weighs the same, whatever it holds.",
+          "attack": "New addresses are free and there is no KYC: one person can vote with as many addresses as they like, each holding just enough for the fee."
         },
         "one_address_min": {
           "name": "1 address = 1 vote, from {min} XRD",
-          "rule": "Only addresses holding at least {min} XRD count, and they all weigh the same."
+          "rule": "Only addresses holding at least {min} XRD count, and they all weigh the same.",
+          "attack": "Each extra vote costs {min} XRD in a new address. Whoever has a lot of capital splits it across many addresses and gains a huge number of votes."
         },
         "one_address_sybil": {
           "name": "1 address = 1 vote, sybil-resistant",
-          "rule": "All weigh the same, but only addresses with at least {balance} XRD and {years_sybil} year of age count. Creating many new accounts does not help."
+          "rule": "All weigh the same, but only addresses with at least {balance} XRD and {years_sybil} year of age count. Creating many new accounts does not help.",
+          "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD each. Possible, but it has to be planned well ahead."
         },
         "address_age": {
           "name": "1 address = 1 vote, plus 1 per year",
-          "rule": "Each address has 1 vote, plus 1 extra vote for each full year of age. The balance does not matter; loyalty does."
+          "rule": "Each address has 1 vote, plus 1 extra vote for each full year of age. The balance does not matter; loyalty does.",
+          "attack": "New addresses already have 1 vote, so creating many works just as with 1 address = 1 vote."
         },
         "one_year": {
           "name": "Accounts 1 year or older",
-          "rule": "1 XRD = 1 vote, but only accounts that were 1 year old or more when the vote opened count."
+          "rule": "1 XRD = 1 vote, but only accounts that were 1 year old or more when the vote opened count.",
+          "attack": "Age belongs to the account, not to the XRD: freshly bought XRD can go into an account over a year old. Splitting gains nothing; it takes capital."
         },
         "veterans": {
           "name": "Veterans only ({years}+ years)",
-          "rule": "1 XRD = 1 vote, but only accounts that were {years} years old or more when the vote opened count."
+          "rule": "1 XRD = 1 vote, but only accounts that were {years} years old or more when the vote opened count.",
+          "attack": "An account {years} or more years old is enough to hold XRD bought at the last minute. It leaves out newcomers, not buyers."
         },
         "veterans_address": {
           "name": "Veterans, 1 address = 1 vote",
-          "rule": "Only accounts {years} years old or more count, and they all weigh the same."
+          "rule": "Only accounts {years} years old or more count, and they all weigh the same.",
+          "attack": "It takes many addresses created {years} or more years ago, even with a tiny balance. It cannot be improvised, but it is cheap for whoever prepared it."
         },
         "veterans_bonus": {
           "name": "Veterans with an age bonus",
-          "rule": "Only accounts {years} years old or more count, and every full year adds {bonus} to the vote: 2 years weigh ×1.5 and 3 years ×1.75."
+          "rule": "Only accounts {years} years old or more count, and every full year adds {bonus} to the vote: 2 years weigh ×1.5 and 3 years ×1.75.",
+          "attack": "Splitting gains nothing and the bonus belongs to the account, not to the XRD: in an old account, freshly bought XRD get the bonus too."
         },
         "seniority_bonus": {
           "name": "Age bonus for everyone",
-          "rule": "Every account counts: 1 XRD = 1 vote, plus {bonus} for each full year of age."
+          "rule": "Every account counts: 1 XRD = 1 vote, plus {bonus} for each full year of age.",
+          "attack": "Splitting gains nothing; new accounts just get no bonus. It takes capital."
         },
         "hybrid_half": {
           "name": "Mixed 50 / 50",
-          "rule": "Half of the weight is shared by XRD and the other half equally between addresses."
+          "rule": "Half of the weight is shared by XRD and the other half equally between addresses.",
+          "attack": "Half of the weight is shared per address: with thousands of empty addresses, one person takes almost all of that half."
         },
         "double_majority": {
           "name": "Double majority",
-          "rule": "To pass it must clear the threshold twice: counting 1 XRD = 1 vote and counting 1 address = 1 vote. Like the European Union's qualified majority."
+          "rule": "To pass it must clear the threshold twice: counting 1 XRD = 1 vote and counting 1 address = 1 vote. Like the European Union's qualified majority.",
+          "attack": "Passing takes capital and winning by addresses too, but blocking only takes empty addresses voting against."
         },
         "quadratic_seniority": {
           "name": "Quadratic with an age bonus",
-          "rule": "Square root of the balance, plus {bonus} for each full year of account age."
+          "rule": "Square root of the balance, plus {bonus} for each full year of account age.",
+          "attack": "New addresses count (with no bonus), so splitting into many small addresses multiplies the vote as with quadratic voting."
         },
         "sybil_quadratic": {
           "name": "Sybil-resistant quadratic",
-          "rule": "Square root of the balance, but only addresses with at least {balance} XRD and {years_sybil} year of age count."
+          "rule": "Square root of the balance, but only addresses with at least {balance} XRD and {years_sybil} year of age count.",
+          "attack": "Splitting multiplies the vote, but each address needs {balance} XRD and {years_sybil} year of age: the accounts have to be prepared ahead."
         },
         "no_top1": {
           "name": "Without the largest address",
-          "rule": "1 XRD = 1 vote, leaving out the address with the most XRD. It shows whether a single wallet decides the result."
+          "rule": "1 XRD = 1 vote, leaving out the address with the most XRD. It shows whether a single wallet decides the result.",
+          "attack": "The exclusion is dodged by splitting the XRD into two addresses so neither is the largest. In the end it takes capital, as with 1 XRD = 1 vote."
         },
         "no_whales": {
           "name": "Without the {n} largest",
-          "rule": "1 XRD = 1 vote, leaving out the {n} addresses with the most XRD. It shows whether the result hinges on a few wallets."
+          "rule": "1 XRD = 1 vote, leaving out the {n} addresses with the most XRD. It shows whether the result hinges on a few wallets.",
+          "attack": "Whales dodge the exclusion by splitting their XRD into addresses smaller than the ten largest. It takes capital."
         },
         "whales_only": {
           "name": "Large wallets only",
-          "rule": "1 XRD = 1 vote, but only addresses holding {whale} XRD or more count. It shows what the whales alone would have decided."
+          "rule": "1 XRD = 1 vote, but only addresses holding {whale} XRD or more count. It shows what the whales alone would have decided.",
+          "attack": "Only addresses holding {whale} XRD or more count; splitting gains nothing. It takes a lot of capital, though very few people decide."
         }
       },
       "tips": {
@@ -462,8 +485,39 @@
         "level_moderate": "Decentralisation between 15 % and 35 %",
         "level_low": "Decentralisation between 35 % and 65 %",
         "detail_spread": "Addresses holding half of the vote, against the most possible if all weighed the same. 100 % is full decentralisation",
-        "level_minimal": "Decentralisation of 65 % or more: the weight is close to evenly shared"
-      }
+        "level_minimal": "Decentralisation of 65 % or more: the weight is close to evenly shared",
+        "col_resistance": "How hard it is for one person to sway more than their share by creating addresses or splitting their XRD. With no KYC, new addresses are free",
+        "resistance_very_low": "One person can multiply their vote by creating many addresses, at almost no cost",
+        "resistance_low": "Each extra vote is cheap compared with its weight: whoever has capital splits it and gains many votes",
+        "resistance_medium": "Gaming it takes accounts prepared long in advance, or it only works to block the result",
+        "resistance_high": "Splitting into addresses adds no votes: the only way to weigh more is to hold more XRD"
+      },
+      "col_resistance": "Resistance",
+      "resistance": {
+        "very_low": "Very low",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "resistance_legend": "{level} resistance",
+      "resistance_hints": {
+        "very_low": "votes multiply by creating addresses, almost for free",
+        "low": "each extra vote is cheap",
+        "medium": "takes accounts prepared years ahead, or only works to block",
+        "high": "splitting gains nothing: only more XRD adds weight"
+      },
+      "detail_attack": "How it could be gamed",
+      "year_one": "{n} year",
+      "year_many": "{n} years",
+      "cost_addresses": "To turn this vote around, {addresses} new addresses holding {each} XRD each would do (about {xrd} XRD in total).",
+      "cost_addresses_aged": "To turn it around it would take {addresses} accounts at least {years} old holding {each} XRD each (about {xrd} XRD in total). New accounts do not count.",
+      "cost_capital": "To turn it around it would take {xrd} more XRD ({pct} of what already voted).",
+      "cost_capital_split": "To turn it around it would take {xrd} more XRD ({pct} of what already voted), split across {addresses} addresses to dodge the cap.",
+      "cost_capital_aged": "To turn it around it would take {xrd} more XRD ({pct} of what already voted) held in an account at least {years} old; an old account with freshly bought XRD will do.",
+      "cost_impossible": "Adding votes cannot turn this result around.",
+      "cost_none": "There is no clear result to turn around (no quorum or no valid votes).",
+      "g_resistance_t": "Resistance to manipulation",
+      "g_resistance": "How hard it is for one person to weigh more than their share. With no KYC, new addresses are free and so is splitting XRD between them, so methods that count addresses or favour small balances are easy to game. Each method's details price turning this vote around."
     }
   }
 }
