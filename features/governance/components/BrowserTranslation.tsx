@@ -122,29 +122,35 @@ export function TranslationBar({ g }: { g: G }) {
     // the first interaction to fetch the model.
     if (status !== 'ready' && status !== 'downloading') return null;
 
-    // Same shape as the other pills of the vote header.
-    const shell = 'inline-flex items-center gap-1.5 rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)]';
+    // Same shape as the other pills of the vote header. Every message is laid
+    // out in the same grid cell and only the current one is visible, so the
+    // pill keeps the width of the longest one and never changes size.
+    const shell = 'inline-grid rounded-full border border-[var(--color-card-border)] bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)]';
+    const spinner = <Loader2 className="size-3 shrink-0 animate-spin text-[var(--color-primary)]" />;
+    const icon = <Languages className="size-3 shrink-0 text-[var(--color-primary)]" />;
+    const action = (label: string, current: boolean) => current
+        ? <button type="button" onClick={() => setShowOriginal(!showOriginal)} className="font-bold text-[var(--color-primary)] hover:underline">{label}</button>
+        : <span className="font-bold">{label}</span>;
 
-    if (status === 'downloading') {
-        return (
-            <div className={shell} role="status">
-                <Loader2 className="size-3 animate-spin text-[var(--color-primary)]" />
-                {fill(g.translate_downloading || 'Preparing your browser translator… {pct}', { pct: progress > 0 ? `${Math.round(progress * 100)} %` : '' })}
-            </div>
-        );
-    }
+    const current = status === 'downloading' ? 'downloading' : showOriginal ? 'original' : translating ? 'translating' : 'translated';
+    const variants: Array<{ key: typeof current; lead: React.ReactNode; text: string; action?: string }> = [
+        { key: 'downloading', lead: spinner, text: fill(g.translate_downloading || 'Preparing your browser translator… {pct}', { pct: `${Math.round((current === 'downloading' ? progress : 1) * 100)} %` }) },
+        { key: 'translating', lead: spinner, text: g.translating || 'Translating…', action: g.show_original || 'View original' },
+        { key: 'translated', lead: icon, text: g.translated_by_browser || 'Translated by your browser, on your device', action: g.show_original || 'View original' },
+        { key: 'original', lead: icon, text: g.showing_original || 'You are viewing the original English text', action: g.show_translation || 'View translation' },
+    ];
+
     return (
         <div className={shell} role="status">
-            {translating && !showOriginal
-                ? <Loader2 className="size-3 animate-spin text-[var(--color-primary)]" />
-                : <Languages className="size-3 text-[var(--color-primary)]" />}
-            {showOriginal
-                ? (g.showing_original || 'You are viewing the original English text')
-                : translating ? (g.translating || 'Translating…') : (g.translated_by_browser || 'Translated by your browser, on your device')}
-            <span aria-hidden>·</span>
-            <button type="button" onClick={() => setShowOriginal(!showOriginal)} className="font-bold text-[var(--color-primary)] hover:underline">
-                {showOriginal ? (g.show_translation || 'View translation') : (g.show_original || 'View original')}
-            </button>
+            {variants.map(v => {
+                const on = v.key === current;
+                return (
+                    <span key={v.key} aria-hidden={!on} className={`col-start-1 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap ${on ? '' : 'invisible'}`}>
+                        {v.lead}{v.text}
+                        {v.action && <><span aria-hidden>·</span>{action(v.action, on)}</>}
+                    </span>
+                );
+            })}
         </div>
     );
 }
