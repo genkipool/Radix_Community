@@ -97,8 +97,8 @@ function attackText(r: MethodResult, c: C, language: string): string {
     const a = r.attack;
     if (!a) return c.cost_none || 'There is no clear result to turn around (no quorum or no valid votes).';
     if (a.impossible) return c.cost_impossible || 'Adding votes cannot turn this result around.';
-    // Compact, with decimals only when they say something: "1 mil", "864,28 M".
-    const amount = (n: number) => new Intl.NumberFormat(language, { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+    // Exact amounts, in full: no compact notation and no rounding beyond cents.
+    const amount = (n: number) => n.toLocaleString(language, { maximumFractionDigits: 2 });
     const values = {
         xrd: amount(a.xrd),
         addresses: a.addresses.toLocaleString(language),
