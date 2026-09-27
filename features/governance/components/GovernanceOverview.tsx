@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { m } from 'motion/react';
+import { HeroCollapse } from '@/components/layout/CollapsibleHeroSection';
 import { Vote, Users, Layers, Search, Thermometer, FileText, BadgeCheck } from 'lucide-react';
 import { ContentHero } from '@/components/layout/ContentHero';
 import { GOVERNANCE_SYSTEMS } from '../config/systems';
@@ -11,7 +11,6 @@ import { uniqueVoters, votingPhase, type GovernanceItemKind, type VotingPhase } 
 import { useNow } from '../hooks/useNow';
 import { fill } from './VoteParts';
 import { GovernanceCard } from './GovernanceCard';
-import { LEAVE_MS, useGovernanceNav } from './GovernanceNav';
 import type { G } from './GovernanceBadges';
 
 type StatusFilter = 'all' | VotingPhase;
@@ -63,14 +62,15 @@ const STEP_ICONS = [Thermometer, FileText, BadgeCheck];
  * every vote as a filterable grid (the only list on phones, where the sidebar
  * is hidden).
  */
-export function GovernanceOverview({ entries, g, language, serverNow }: {
+export function GovernanceOverview({ entries, g, language, serverNow, collapsed = false }: {
     entries: GovernanceEntry[];
     g: G;
     language: string;
     serverNow: number;
+    /** A vote is open: the overview is folded away above it. */
+    collapsed?: boolean;
 }) {
     const now = useNow(serverNow);
-    const { leaving } = useGovernanceNav();
     const [status, setStatus] = useState<StatusFilter>('all');
     const [kind, setKind] = useState<KindFilter>('all');
     const [system, setSystem] = useState<string>('all');
@@ -86,15 +86,7 @@ export function GovernanceOverview({ entries, g, language, serverNow }: {
     const steps = (g.how_steps ?? []) as Array<{ title: string; text: string }>;
 
     return (
-        // Folds away like the Docs hero when a vote is opened from here.
-        <m.div
-            initial={false}
-            animate={leaving
-                ? { height: 0, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }
-                : { height: 'auto', opacity: 1, overflow: 'visible', pointerEvents: 'auto' }}
-            transition={{ duration: LEAVE_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
-            className="w-full flex flex-col"
-        >
+        <HeroCollapse collapsed={collapsed}>
             <ContentHero
                 brandName=""
                 title={g.hero_title || 'Radix Governance'}
@@ -195,6 +187,6 @@ export function GovernanceOverview({ entries, g, language, serverNow }: {
                     </section>
                 </div>
             </ContentHero>
-        </m.div>
+        </HeroCollapse>
     );
 }

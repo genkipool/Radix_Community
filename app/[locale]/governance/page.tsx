@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { getFeatureDictionary, type Locale } from '@/i18n/dictionaries';
 import { buildMetadata } from '@/lib/seo';
-import { GovernanceOverview } from '@/features/governance/components/GovernanceOverview';
-import { loadGovernanceList } from '@/features/governance/services/governanceRoute.server';
 
 /** Ledger data is cached for minutes in the service layer; the page stays dynamic. */
 export const dynamic = 'force-dynamic';
@@ -19,11 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     });
 }
 
-export default async function GovernancePage({ params }: { params: Promise<{ locale: string }> }) {
-    const { locale } = await params;
-    const [t, { entries, serverNow }] = await Promise.all([
-        getFeatureDictionary(locale as Locale, ['governance']),
-        loadGovernanceList(),
-    ]);
-    return <GovernanceOverview entries={entries} g={t.governance} language={locale} serverNow={serverNow} />;
+/** The overview itself lives in the governance layout (see GovernanceShell), so it can fold away above a vote. */
+export default function GovernancePage() {
+    return null;
 }
