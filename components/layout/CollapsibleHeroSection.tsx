@@ -15,6 +15,32 @@ interface CollapsibleHeroSectionProps {
 }
 
 /**
+ * The collapse shared by every sidebar page hero (Docs, Games, Governance):
+ * when an item is opened the whole block folds up and fades out, and the
+ * item's content, already rendered below, rises into its place.
+ */
+export function HeroCollapse({ collapsed, className = 'w-full flex flex-col', children }: {
+    collapsed: boolean;
+    className?: string;
+    children: ReactNode;
+}) {
+    return (
+        <m.div
+            initial={false}
+            animate={
+                collapsed
+                    ? { height: 0, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }
+                    : { height: 'auto', opacity: 1, overflow: 'visible', pointerEvents: 'auto' }
+            }
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            className={className}
+        >
+            {children}
+        </m.div>
+    );
+}
+
+/**
  * Wraps a hero + featured-cards layout with shared collapse/expand animations.
  * Used by FeaturedDocsHero and GamesHero to avoid duplicating motion props.
  */
@@ -25,16 +51,7 @@ export function CollapsibleHeroSection({
     gridClassName = 'max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-12 w-full',
 }: CollapsibleHeroSectionProps) {
     return (
-        <m.div
-            initial={false}
-            animate={
-                collapsed
-                    ? { height: 0, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }
-                    : { height: 'auto', opacity: 1, overflow: 'visible', pointerEvents: 'auto' }
-            }
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            className="w-full flex flex-col"
-        >
+        <HeroCollapse collapsed={collapsed}>
             {/* Hero header — Unified in a single motion container to stay static at the top */}
             <div className="w-full">
                 {hero}
@@ -44,6 +61,6 @@ export function CollapsibleHeroSection({
             <div className={gridClassName} style={{ marginTop: 8, marginBottom: 48 }}>
                 {grid}
             </div>
-        </m.div>
+        </HeroCollapse>
     );
 }
