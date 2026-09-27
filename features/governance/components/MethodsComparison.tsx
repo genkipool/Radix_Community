@@ -78,7 +78,7 @@ function methodText(c: C, key: MethodKey, params: Params) {
 
 /** Rules whose cheapest attack is many addresses rather than more XRD. */
 const PER_ADDRESS_ATTACK = new Set<MethodKey>([
-    'quadratic', 'cube_root', 'logarithmic', 'tiered', 'one_address', 'one_address_min', 'one_address_sybil',
+    'quadratic', 'cube_root', 'logarithmic', 'tiered', 'one_address', 'one_address_min', 'one_address_sybil', 'one_address_sybil_age',
     'address_age', 'veterans_address', 'hybrid_half', 'double_majority', 'quadratic_seniority', 'sybil_quadratic',
 ]);
 

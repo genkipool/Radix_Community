@@ -427,6 +427,11 @@
           "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad. Crear muchas cuentas nuevas no sirve de nada.",
           "attack": "Las cuentas nuevas no cuentan: hay que haber preparado direcciones hace más de {years_sybil} año y tener {balance} XRD en cada una. Es posible, pero exige planificarlo con tiempo."
         },
+        "one_address_sybil_age": {
+          "name": "1 dirección = 1 voto, con filtro anti-sybil y +1 por año",
+          "rule": "Solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad. Cada una tiene 1 voto, más 1 por cada año completo de antigüedad.",
+          "attack": "Las cuentas nuevas no cuentan: hay que haber preparado direcciones con {balance} XRD hace más de {years_sybil} año, y cuanto más antiguas, más votos da cada una. Es posible, pero exige planificarlo con años de antelación."
+        },
         "address_age": {
           "name": "1 dirección = 1 voto, más 1 por año",
           "rule": "Cada dirección tiene 1 voto, más 1 voto extra por cada año completo de antigüedad. No importa el saldo, sí la fidelidad.",

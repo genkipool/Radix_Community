@@ -23,7 +23,7 @@ export type MethodFamily = 'wealth' | 'address' | 'seniority' | 'hybrid';
 
 export type MethodKey =
     | 'linear' | 'capped_10k' | 'capped_100k' | 'capped' | 'capped_10m' | 'capped_share' | 'capped_share_5' | 'capped_share_10' | 'quadratic' | 'cube_root' | 'logarithmic' | 'tiered'
-    | 'one_address' | 'one_address_min' | 'one_address_sybil' | 'address_age'
+    | 'one_address' | 'one_address_min' | 'one_address_sybil' | 'one_address_sybil_age' | 'address_age'
     | 'one_year' | 'veterans' | 'veterans_address' | 'veterans_bonus' | 'seniority_bonus'
     | 'hybrid_half' | 'double_majority' | 'quadratic_seniority' | 'sybil_quadratic' | 'no_top1' | 'no_whales' | 'whales_only';
 
@@ -140,6 +140,13 @@ export const METHODS: readonly MethodSpec[] = [
         sybil: { kind: 'addresses', xrd: METHOD_PARAMS.sybilBalance, weight: 1, years: METHOD_PARAMS.sybilDays / DAY_YEAR },
         needsAge: true,
         weigh: v => (isSybilSafe(v) ? 1 : 0),
+    },
+    {
+        // Old accounts count for more, so the cheapest attack is accounts just over a year old: 2 votes each.
+        key: 'one_address_sybil_age', family: 'address', resistance: 'medium',
+        sybil: { kind: 'addresses', xrd: METHOD_PARAMS.sybilBalance, weight: 2, years: METHOD_PARAMS.sybilDays / DAY_YEAR },
+        needsAge: true,
+        weigh: v => (isSybilSafe(v) ? 1 + years(v) : 0),
     },
     { key: 'address_age', family: 'address', resistance: 'very_low', sybil: DUST_ADDRESS, needsAge: true, weigh: v => (v.ageDays === null || v.power <= 0 ? 0 : 1 + years(v)) },
     // Age belongs to the account, not to the XRD: bought XRD sent to an old account count in full.
