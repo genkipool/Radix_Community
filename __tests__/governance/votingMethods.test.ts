@@ -152,14 +152,30 @@ describe('balance', () => {
     });
 });
 
+describe('degree of decentralisation', () => {
+    it('is effective voters over voters, so the whole distribution counts', () => {
+        // Same top holder, a different tail: the Nakamoto coefficient (1) cannot tell them apart.
+        const even = concentration([60, 10, 10, 10, 10]);
+        const skewed = concentration([60, 37, 1, 1, 1]);
+        expect(even.nakamoto).toBe(1);
+        expect(skewed.nakamoto).toBe(1);
+        expect(even.spread).toBeCloseTo(even.effective / 5);
+        expect(even.spread!).toBeGreaterThan(skewed.spread!);
+    });
+
+    it('counts the addresses behind each option', () => {
+        expect(byKey('linear').addressesByChoice).toEqual({ For: 1, Against: 5 });
+    });
+});
+
 describe('concentration', () => {
     it('counts the fewest voters above half and the effective voters', () => {
         const c = concentration([1, 1, 1, 1]);
         expect(c.nakamoto).toBe(3);
         expect(c.effective).toBeCloseTo(4);
         expect(c.top1).toBeCloseTo(0.25);
-        // Four equal voters: 3 is the most possible, so it is as spread out as it gets.
-        expect(c.spread).toBe(1);
+        // Four equal voters: as decentralised as it gets.
+        expect(c.spread).toBeCloseTo(1);
         expect(concentrationLevel(c)).toBe('minimal');
     });
 

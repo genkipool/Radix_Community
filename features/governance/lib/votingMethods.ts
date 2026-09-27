@@ -181,9 +181,10 @@ export interface Concentration {
     /** Fewest voters that together hold more than half of the weight. */
     nakamoto: number | null;
     /**
-     * How spread out the weight is, 0..1: `nakamoto` against the most it could
-     * be (half the voters plus one, when all weigh the same). It does not
-     * depend on how many addresses voted, so votes of any size compare.
+     * Degree of decentralisation, 0..1: effective voters over voters (Simpson
+     * evenness, from the Herfindahl index). 1 when every address weighs the
+     * same. Unlike the Nakamoto coefficient it takes every address into
+     * account, has no jumps with few voters and does not hang on the 50 % line.
      */
     spread: number | null;
     /** Voters that would give the same concentration if all weighed the same (1 / Σ share²). */
@@ -220,7 +221,7 @@ export function concentration(weights: number[]): Concentration {
     const sumSq = w.reduce((s, x) => s + (x / total) ** 2, 0);
     return {
         nakamoto,
-        spread: nakamoto === null ? null : nakamoto / (Math.floor(w.length / 2) + 1),
+        spread: nakamoto === null ? null : 1 / sumSq / w.length,
         effective: 1 / sumSq,
         top1: w[0] / total,
         top10: w.slice(0, 10).reduce((s, x) => s + x, 0) / total,
@@ -250,6 +251,8 @@ export interface MethodResult {
     /** Voters left out by the rule. */
     excluded: number;
     rows: TallyRow[];
+    /** Counted addresses behind each option, by ballot key. */
+    addressesByChoice: Record<string, number>;
     /** Share in favour among decisive votes, 0..1; null on a ballot with no sides. */
     approvalShare: number | null;
     /** Double majority only: share in favour counting one vote per address. */
@@ -425,6 +428,8 @@ function applyMethod(spec: MethodSpec, voters: MethodVoter[], choices: BallotCho
         }
     }
     const results = [...byChoice].map(([vote, w]) => ({ vote, votePower: String(w) }));
+    const addressesByChoice: Record<string, number> = {};
+    for (const { v } of weighed) for (const k of v.choices) addressesByChoice[k] = (addressesByChoice[k] ?? 0) + 1;
     // Quorum is an XRD rule: it is checked apart, with the XRD of the voters that count.
     const summary = summarizeTally(choices, { results, accountPower: null }, item ? { ...item, quorum: null } : null);
     const eligibleXrd = [...xrdByChoice.values()].reduce((s, x) => s + x, 0);
@@ -453,6 +458,7 @@ function applyMethod(spec: MethodSpec, voters: MethodVoter[], choices: BallotCho
         counted: weighed.length,
         excluded: voters.length - weighed.length,
         rows: summary.rows,
+        addressesByChoice,
         approvalShare: weighed.length ? summary.approvalShare : null,
         headcountShare,
         eligibleXrd,
@@ -495,7 +501,8 @@ export const RESISTANCE_SCORE: Record<Resistance, number> = { very_low: 0, low: 
  * hard to game and spreads power scores high; failing at either sinks it.
  */
 export function balanceScore(r: Pick<MethodResult, 'resistance' | 'concentration'>): number {
-    return Math.sqrt(RESISTANCE_SCORE[r.resistance] * (r.concentration.spread ?? 0));
+    // Rounded so float noise (0.9999… against 1) never breaks a real tie.
+    return Math.round(Math.sqrt(RESISTANCE_SCORE[r.resistance] * (r.concentration.spread ?? 0)) * 1e6) / 1e6;
 }
 
 /**

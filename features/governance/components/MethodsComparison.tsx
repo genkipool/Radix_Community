@@ -82,6 +82,11 @@ const PER_ADDRESS_ATTACK = new Set<MethodKey>([
     'address_age', 'veterans_address', 'hybrid_half', 'double_majority', 'quadratic_seniority', 'sybil_quadratic',
 ]);
 
+/** "1 address" / "142 addresses" in the reader's language. */
+function addressesText(c: C, n: number, language: string): string {
+    return fill(n === 1 ? (c.address_one || '{n} address') : (c.address_many || '{n} addresses'), { n: n.toLocaleString(language) });
+}
+
 /** "1 year" / "2 years" in the reader's language. */
 function yearsText(c: C, years: number, language: string): string {
     return fill(years === 1 ? (c.year_one || '{n} year') : (c.year_many || '{n} years'), { n: years.toLocaleString(language) });
@@ -167,22 +172,22 @@ function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: stri
     const { nakamoto, spread } = r.concentration;
     const level = concentrationLevel(r.concentration);
     if (nakamoto === null || spread === null || !level) return <span className="text-xs text-[var(--color-text-muted)]">—</span>;
-    const most = Math.floor(r.counted / 2) + 1;
     const levels = (c.levels ?? {}) as Record<string, string>;
     const title = tip(c, 'nakamoto', {
         n: nakamoto.toLocaleString(language), of: r.counted.toLocaleString(language), share: formatPct(nakamoto / r.counted, language),
-        most: most.toLocaleString(language), spread: formatPct(spread, language), level: levels[level] || level,
+        eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }), spread: formatPct(spread, language), level: levels[level] || level,
     });
     return (
         <span className="flex flex-col gap-1 w-full min-w-0 cursor-help" title={title}>
-            <span className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-sm font-black text-[var(--color-text-main)] tabular-nums">{nakamoto.toLocaleString(language)}</span>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold truncate ${LEVEL_STYLE[level].text}`}>
-                    <span className={`size-1.5 rounded-full shrink-0 ${LEVEL_STYLE[level].dot}`} />{levels[level] || level}
-                </span>
+            <span className={`flex items-center gap-1 min-w-0 text-[10px] font-bold ${LEVEL_STYLE[level].text}`}>
+                <span className="truncate">{levels[level] || level}</span>
+                <span className="shrink-0 font-mono">{formatPct(spread, language)}</span>
             </span>
-            <span className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
-                <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, spread) * 100)}%` }} />
+            <span className="flex items-center gap-2">
+                <span className="font-mono text-sm font-black text-[var(--color-text-main)] tabular-nums">{nakamoto.toLocaleString(language)}</span>
+                <span className="flex-1 h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
+                    <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, spread) * 100)}%` }} />
+                </span>
             </span>
         </span>
     );
@@ -239,7 +244,10 @@ function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResul
                                 <li key={x.key}>
                                     <div className="flex items-center justify-between gap-3 text-xs">
                                         <span className={`font-semibold truncate ${TONE[x.tone].text}`}>{x.label}</span>
-                                        <span className="font-mono font-bold text-[var(--color-text-main)]">{formatPct(x.share, language)}</span>
+                                        <span className="flex items-baseline gap-2 shrink-0">
+                                            <span className="text-[11px] text-[var(--color-text-muted)]">{addressesText(c, r.addressesByChoice[x.key] ?? 0, language)}</span>
+                                            <span className="font-mono font-bold text-[var(--color-text-main)] w-12 text-right">{formatPct(x.share, language)}</span>
+                                        </span>
                                     </div>
                                     <div className="mt-1 h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
                                         <div className={`h-full rounded-full ${TONE[x.tone].bar}`} style={{ width: `${x.share * 100}%` }} />
@@ -288,7 +296,11 @@ function MethodDetail({ r, c, rule, attack, quorum, language }: { r: MethodResul
                         )}
                     </Stat>
                     <Stat label={c.detail_spread || 'Decentralisation'} title={tip(c, 'detail_spread')}>
-                        {r.concentration.spread === null ? '—' : fill(c.detail_spread_value || '{pct} of the most possible', { pct: formatPct(r.concentration.spread, language) })}
+                        {r.concentration.spread === null ? '—' : fill(c.detail_spread_value || '{pct} ({eff} of {of})', {
+                            pct: formatPct(r.concentration.spread, language),
+                            eff: r.concentration.effective.toLocaleString(language, { maximumFractionDigits: 1 }),
+                            of: r.counted.toLocaleString(language),
+                        })}
                     </Stat>
                 </div>
                 {d ? (
@@ -332,7 +344,7 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                 aria-controls={panelId}
                 title={open ? tip(c, 'collapse') : tip(c, 'expand')}
                 onClick={() => setOpen(o => !o)}
-                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.15fr)_minmax(0,1.3fr)_minmax(0,0.6fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
+                className="w-full text-left p-4 sm:px-5 grid gap-x-4 gap-y-3 grid-cols-6 lg:gap-x-5 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,0.9fr)_16px] lg:items-center rounded-2xl hover:bg-[var(--color-surface)]/60 transition-colors"
             >
                 <span className="col-span-6 lg:col-span-1 min-w-0 flex items-start justify-between gap-3">
                     <span className="min-w-0">
@@ -371,14 +383,29 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
                     <SupportMeter r={r} c={c} threshold={threshold} language={language} />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_counted || 'Count'} pending={pending}>
-                    <Fraction n={r.counted} of={r.counted + r.excluded} title={tip(c, 'counted', { n: r.counted.toLocaleString(language), out: r.excluded.toLocaleString(language) })} language={language} />
+                    <Fraction
+                        n={r.counted}
+                        of={r.counted + r.excluded}
+                        title={tip(c, 'counted', { n: r.counted.toLocaleString(language), out: r.excluded.toLocaleString(language) })}
+                        shareTitle={tip(c, 'counted_share', {
+                            pct: formatShare(r.counted / Math.max(1, r.counted + r.excluded), language),
+                            n: r.counted.toLocaleString(language), of: (r.counted + r.excluded).toLocaleString(language),
+                        })}
+                        language={language}
+                    />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_nakamoto || 'Control 50 %'} pending={pending}>
                     <SpreadMeter r={r} c={c} language={language} />
                 </Cell>
                 <Cell className="col-span-2 lg:col-span-1" label={c.col_decisive || 'Enough to decide'} pending={pending}>
                     {d ? (
-                        <Fraction n={d.count} of={d.of} title={tip(c, 'decisive', { count: d.count.toLocaleString(language), of: d.of.toLocaleString(language), xrd: formatXrd(d.xrd, language) })} language={language} />
+                        <Fraction
+                            n={d.count}
+                            of={d.of}
+                            title={tip(c, 'decisive', { count: d.count.toLocaleString(language), of: d.of.toLocaleString(language), xrd: formatXrd(d.xrd, language) })}
+                            shareTitle={tip(c, 'decisive_share', { pct: formatShare(d.count / Math.max(1, d.of), language), n: d.count.toLocaleString(language), of: d.of.toLocaleString(language) })}
+                            language={language}
+                        />
                     ) : <span className="text-xs text-[var(--color-text-muted)]">—</span>}
                 </Cell>
                 <Cell className="col-span-3 sm:col-span-2 lg:col-span-1 row-start-2 col-start-4 sm:row-auto sm:col-auto" label={c.col_resistance || 'Resistance'} pending={false}>
@@ -396,13 +423,13 @@ function MethodRow({ r, c, params, threshold, quorum, ageLoading, language }: {
 }
 
 /** "95/143" with the share underneath, as a row shows it. */
-function Fraction({ n, of, title, language }: { n: number; of: number; title?: string; language: string }) {
+function Fraction({ n, of, title, shareTitle, language }: { n: number; of: number; title?: string; shareTitle?: string; language: string }) {
     return (
         <span className="flex flex-col leading-tight cursor-help" title={title}>
             <span className="font-mono text-sm font-bold text-[var(--color-text-main)] tabular-nums whitespace-nowrap">
                 {n.toLocaleString(language)}<span className="text-[11px] font-normal text-[var(--color-text-muted)]">/{of.toLocaleString(language)}</span>
             </span>
-            <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums">{of > 0 ? formatShare(n / of, language) : '—'}</span>
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)] tabular-nums" title={shareTitle}>{of > 0 ? formatShare(n / of, language) : '—'}</span>
         </span>
     );
 }
@@ -484,7 +511,8 @@ export function MethodsComparison({ entry, system, g, language, now }: {
     const same = others.filter(r => r.sameAsCurrent).length;
     // Ranked by how spread out the weight is, so a method is not favoured just because more addresses count under it.
     // On a tie the method listed first wins (the current one before the rules that weigh just like it).
-    const spreadOf = (r: MethodResult) => r.concentration.spread ?? 0;
+    // Rounded so float noise (0.9999… against 1) never breaks a real tie.
+    const spreadOf = (r: MethodResult) => Math.round((r.concentration.spread ?? 0) * 1e6) / 1e6;
     const most = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) > spreadOf(best) ? r : best), undefined);
     const least = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) < spreadOf(best) ? r : best), undefined);
     const shown = results.filter(r => family === 'all' || r.family === family);
@@ -512,18 +540,25 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                             <h2 className="mt-4 text-xl md:text-2xl font-black text-[var(--color-text-main)]">{c.heading || 'What would another voting method have decided?'}</h2>
                             <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{c.intro}</p>
                         </div>
-                        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {[
                                 [Users, c.fact_voters || 'Voters', current.counted.toLocaleString(language), tip(c, 'fact_voters')],
                                 [Coins, c.fact_xrd || 'XRD that voted', `${formatXrd(current.eligibleXrd, language)}`, tip(c, 'fact_xrd')],
                                 [Target, c.fact_quorum || 'Quorum', item.quorum === null ? '—' : formatXrd(item.quorum, language), tip(c, 'fact_quorum')],
                                 [BadgeCheck, c.fact_threshold || 'Threshold', item.approvalThreshold === null ? '—' : formatPct(item.approvalThreshold, language), tip(c, 'fact_threshold')],
-                            ].map(([Icon, label, value, title]) => {
+                                // Addresses behind each option, as they voted.
+                                ...current.rows.filter(x => x.power > 0 || x.tone !== 'neutral').map(x => {
+                                    const n = current.addressesByChoice[x.key] ?? 0;
+                                    return [TONE[x.tone].icon, x.label, n.toLocaleString(language), tip(c, 'fact_option', {
+                                        n: n.toLocaleString(language), label: x.label, pct: formatShare(n / Math.max(1, current.counted), language),
+                                    }), TONE[x.tone].text] as const;
+                                }),
+                            ].map(([Icon, label, value, title, tone]) => {
                                 const I = Icon as LucideIcon;
                                 return (
                                     <div key={label as string} className="min-w-0 rounded-xl border border-[var(--color-card-border)] px-3 py-2 cursor-help" title={title as string | undefined}>
-                                        <dt className="flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
-                                            <I className="size-3 shrink-0 text-[var(--color-primary)]" /><span className="truncate">{label as string}</span>
+                                        <dt className={`flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest ${tone ?? 'text-[var(--color-text-muted)]'}`}>
+                                            <I className={`size-3 shrink-0 ${tone ?? 'text-[var(--color-primary)]'}`} /><span className="truncate">{label as string}</span>
                                         </dt>
                                         <dd className="mt-0.5 font-mono text-sm font-bold text-[var(--color-text-main)] truncate">{value as string}</dd>
                                     </div>
@@ -624,7 +659,7 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                     </div>
                 </div>
 
-                <div className="hidden lg:grid px-5 pt-3 gap-x-5 grid-cols-[minmax(0,2fr)_minmax(0,1.15fr)_minmax(0,1.3fr)_minmax(0,0.6fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.95fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
+                <div className="hidden lg:grid px-5 pt-3 gap-x-5 grid-cols-[minmax(0,1.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,1.4fr)_minmax(0,0.75fr)_minmax(0,0.9fr)_16px] text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-muted)]">
                     <span className="cursor-help" title={tip(c, 'col_method')}>{c.col_method || 'Method'}</span>
                     <span className="cursor-help" title={tip(c, 'col_result')}>{c.col_result || 'Result'}</span>
                     <span className="cursor-help" title={tip(c, 'col_support')}>{c.col_support || 'In favour'}</span>
@@ -675,7 +710,6 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
                     {(Object.keys(LEVEL_STYLE) as ConcentrationLevel[]).map(l => (
                         <span key={l} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-secondary)] cursor-help" title={tip(c, `level_${l}`)}>
-                            <span className={`size-2 rounded-full ${LEVEL_STYLE[l].dot}`} />
                             <span className={`font-bold ${LEVEL_STYLE[l].text}`}>{((c.levels ?? {}) as Record<string, string>)[l]}</span>
                             {((c.level_hints ?? {}) as Record<string, string>)[l]}
                         </span>
