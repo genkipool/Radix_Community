@@ -106,7 +106,18 @@ describe('concentration', () => {
         expect(c.nakamoto).toBe(3);
         expect(c.effective).toBeCloseTo(4);
         expect(c.top1).toBeCloseTo(0.25);
-        expect(concentrationLevel(c.nakamoto)).toBe('high');
-        expect(concentrationLevel(50)).toBe('low');
+        // Four equal voters: 3 is the most possible, so it is as spread out as it gets.
+        expect(c.spread).toBe(1);
+        expect(concentrationLevel(c)).toBe('minimal');
+    });
+
+    it('rates the level against the most possible, not a fixed count', () => {
+        // One address above half is always extreme.
+        expect(concentrationLevel({ nakamoto: 1, spread: 1 })).toBe('extreme');
+        // 7 of 143 voters: the most possible would be 72.
+        expect(concentrationLevel({ nakamoto: 7, spread: 7 / 72 })).toBe('high');
+        expect(concentrationLevel({ nakamoto: 19, spread: 19 / 72 })).toBe('moderate');
+        expect(concentrationLevel({ nakamoto: 40, spread: 40 / 72 })).toBe('low');
+        expect(concentrationLevel({ nakamoto: 3, spread: 3 / 4 })).toBe('minimal');
     });
 });
