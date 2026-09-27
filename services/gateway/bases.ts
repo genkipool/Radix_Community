@@ -26,7 +26,12 @@ export async function gatewayPost<T>(
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error((data as { message?: string }).message || `Gateway ${res.status}`);
+    // Status and Retry-After travel with the error so withRetry can honour a rate limit.
+    const retryAfter = res.headers.get('retry-after');
+    throw Object.assign(new Error((data as { message?: string }).message || `Gateway ${res.status}`), {
+      status: res.status,
+      ...(retryAfter ? { headers: { 'retry-after': retryAfter } } : {}),
+    });
   }
   return res.json() as Promise<T>;
 }
