@@ -106,15 +106,21 @@ export function GovernanceSidebar({ entries, g, language, serverNow }: {
                 {PHASE_ORDER.map(phase => {
                     const list = groups[phase];
                     if (list.length === 0) return null;
-                    const items: SidebarCardItem[] = list.map(e => ({
-                        id: entryKey(e),
-                        label: titleOf.get(entryKey(e)) || g.vote?.untitled || 'untitled',
-                        sublabel: `${kindShort[e.kind]} #${e.id} · ${e.systemName}`,
-                        leftVisual: <ItemIcon kind={e.kind} selected={activePath === pathOf(e)} />,
-                        href: pathOf(e),
-                        prefetchOnHover: true,
-                        isSelected: activePath === pathOf(e),
-                    }));
+                    const items: SidebarCardItem[] = list.map(e => {
+                        const label = titleOf.get(entryKey(e)) || g.vote?.untitled || 'untitled';
+                        const sublabel = `${kindShort[e.kind]} #${e.id} · ${e.systemName}`;
+                        return {
+                            id: entryKey(e),
+                            label,
+                            sublabel,
+                            // The full title: the row cuts it short.
+                            tooltip: `${label}\n${sublabel}`,
+                            leftVisual: <ItemIcon kind={e.kind} selected={activePath === pathOf(e)} />,
+                            href: pathOf(e),
+                            prefetchOnHover: true,
+                            isSelected: activePath === pathOf(e),
+                        };
+                    });
                     return (
                         <SidebarCard
                             key={phase}

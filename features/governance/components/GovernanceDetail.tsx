@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users } from 'lucide-react';
+import { ArrowLeft, FileText, BarChart3, Landmark, Hash, Layers, ListChecks, CalendarClock, PenLine, ExternalLink, ArrowUpRight, ArrowDownLeft, Boxes, Info, Target, ThumbsUp, Hourglass, Users, Scale } from 'lucide-react';
 import type { GovernanceSystem } from '../config/systems';
 import type { GovernanceEntry } from '../types';
 import { uniqueVoters, votingPhase } from '../lib/governanceVotes';
@@ -14,12 +14,15 @@ import { formatDuration, formatPct, formatXrd } from '../lib/format';
 import { CollapsibleCard } from './CollapsibleCard';
 import { VotePanel } from './VotePanel';
 import { ResultsDashboard } from './ResultsDashboard';
+import { MethodsComparison } from './MethodsComparison';
 import { KindPill, PhasePill, type G } from './GovernanceBadges';
 import { CopyButton, shortenAddress } from '@/features/dashboard/explorador/components/SummaryCardKit';
 import { useCopy } from '../hooks/useCopy';
 import { TranslationBar, useTranslatedHtml, useTranslatedList, useTranslatedText } from './BrowserTranslation';
 
-type Tab = 'proposal' | 'results';
+type Tab = 'proposal' | 'results' | 'compare';
+
+const tabFromParam = (value: string | null): Tab => (value === 'results' || value === 'compare' ? value : 'proposal');
 
 function Row({ icon: Icon, label, children }: { icon: typeof Hash; label: string; children: React.ReactNode }) {
     return (
@@ -96,9 +99,10 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
 }
 
 /**
- * One vote, in two tabs: the proposal itself (text, details and the ballot to
- * vote on) and its result as a dashboard. The tab lives in the URL
- * (`?tab=results`) so either view can be shared.
+ * One vote, in three tabs: the proposal itself (text, details and the ballot
+ * to vote on), its result as a dashboard, and the same ballots counted with
+ * other voting methods. The tab lives in the URL (`?tab=results`,
+ * `?tab=compare`) so any view can be shared.
  */
 export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml: originalHtml, g, language, serverNow }: {
     entry: GovernanceEntry;
@@ -121,7 +125,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
         item: { ...original, title, shortDescription, options: original.options.map((o, i) => ({ ...o, label: optionLabels[i] ?? o.label, sourceLabel: o.label })) },
     };
     const searchParams = useSearchParams();
-    const [tab, setTabState] = useState<Tab>(searchParams.get('tab') === 'results' ? 'results' : 'proposal');
+    const [tab, setTabState] = useState<Tab>(tabFromParam(searchParams.get('tab')));
     const now = useNow(serverNow);
     const { item, kind, id } = entry;
     const phase = votingPhase(item, now);
@@ -132,12 +136,13 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
     const setTab = (next: Tab) => {
         setTabState(next);
         const url = new URL(window.location.href);
-        if (next === 'results') url.searchParams.set('tab', 'results'); else url.searchParams.delete('tab');
+        if (next === 'proposal') url.searchParams.delete('tab'); else url.searchParams.set('tab', next);
         window.history.replaceState(null, '', url);
     };
     const tabs: Array<{ key: Tab; label: string; icon: typeof FileText }> = [
         { key: 'proposal', label: kind === 'proposal' ? (g.tab_proposal || 'Proposal') : (g.tab_temperature_check || 'Temperature check'), icon: FileText },
         { key: 'results', label: g.tab_results || 'Result', icon: BarChart3 },
+        { key: 'compare', label: g.tab_compare || 'Other methods', icon: Scale },
     ];
 
     return (
@@ -164,7 +169,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                 )}
             </header>
 
-            <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-6 border-b border-[var(--color-card-border)]">
+            <div role="tablist" aria-label={item.title ?? undefined} className="mt-6 flex gap-4 sm:gap-6 border-b border-[var(--color-card-border)]">
                 {tabs.map(t => {
                     const active = tab === t.key;
                     const Icon = t.icon;
@@ -177,7 +182,7 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                             aria-selected={active}
                             aria-controls={`panel-${t.key}`}
                             onClick={() => setTab(t.key)}
-                            className={`relative flex items-center gap-2 pb-3 text-sm font-bold transition-colors ${active ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
+                            className={`relative shrink-0 flex items-center gap-2 pb-3 text-sm font-bold transition-colors ${active ? 'text-[var(--color-text-main)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]'}`}
                         >
                             <Icon className={`size-4 ${active ? 'text-[var(--color-primary)]' : ''}`} />
                             {t.label}
@@ -204,9 +209,11 @@ export function GovernanceDetail({ entry: originalEntry, system, descriptionHtml
                             <DetailsCard entry={entry} system={system} g={g} language={language} />
                         </aside>
                     </div>
-                ) : (
+                ) : tab === 'results' ? (
                     // Full width: the results box itself is the ballot.
                     <ResultsDashboard entry={entry} system={system} g={g} language={language} now={now} />
+                ) : (
+                    <MethodsComparison entry={entry} system={system} g={g} language={language} now={now} />
                 )}
             </div>
         </div>
