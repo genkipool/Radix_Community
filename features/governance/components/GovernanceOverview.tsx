@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { m } from 'motion/react';
-import { Landmark, Vote, Users, Layers, Search, Thermometer, FileText, BadgeCheck } from 'lucide-react';
+import { Vote, Users, Layers, Search, Thermometer, FileText, BadgeCheck } from 'lucide-react';
 import { ContentHero } from '@/components/layout/ContentHero';
 import { GOVERNANCE_SYSTEMS } from '../config/systems';
 import type { GovernanceEntry } from '../types';
@@ -99,7 +99,6 @@ export function GovernanceOverview({ entries, g, language, serverNow }: {
                 brandName=""
                 title={g.hero_title || 'Radix Governance'}
                 heroPadding="pt-12 pb-10"
-                badge={{ icon: <Landmark className="size-4 text-[var(--color-primary)]" />, text: g.hero_badge || 'On-ledger governance' }}
                 subtitle={g.hero_subtitle}
             >
                 <div className="max-w-[1500px] mx-auto w-full px-4 sm:px-6 lg:px-12 pb-16 space-y-10">
