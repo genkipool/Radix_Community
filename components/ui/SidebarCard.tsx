@@ -17,6 +17,8 @@ export interface SidebarCardItem {
     leftVisual?: ReactNode;
     /** Optional right badge */
     badge?: ReactNode;
+    /** Hover text, e.g. the full label when it is cut short. */
+    tooltip?: string;
     isSelected?: boolean;
     isUserItem?: boolean;
     /** Native Next.js link URL for the sub-item */
@@ -193,7 +195,7 @@ function SidebarCardRow({
     /** `e` is the link click, for items with an `href` (call preventDefault to take over navigation). */
     onSelectItem: (id: string, e?: React.MouseEvent) => void;
 }) {
-    const { id, label, sublabel, leftVisual, badge, isSelected = false, onAction, actionIcon, actions, href, prefetchOnHover } = item;
+    const { id, label, sublabel, leftVisual, badge, tooltip, isSelected = false, onAction, actionIcon, actions, href, prefetchOnHover } = item;
 
     const Component = (href ? (prefetchOnHover ? HoverPrefetchLink : Link) : 'button') as React.ElementType;
     const componentProps = href
@@ -230,6 +232,7 @@ function SidebarCardRow({
             <Component
                 {...componentProps}
                 className="block w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium"
+                title={tooltip}
                 style={commonStyle}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
