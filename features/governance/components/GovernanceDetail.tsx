@@ -69,7 +69,10 @@ function DetailsCard({ entry, system, g, language }: { entry: GovernanceEntry; s
             )}
             {item.author && (
                 <Row icon={PenLine} label={kind === 'proposal' ? (gv.author_proposal || 'Proposed by') : (gv.author_temperature_check || 'Raised by')}>
-                    <Link href={`/${language}/dashboard/account/${item.author}`} className="font-mono hover:text-[var(--color-primary)]" title={item.author}>{shortenAddress(item.author)}</Link>
+                    <span className="inline-flex items-center gap-1 font-mono">
+                        <Link href={`/${language}/dashboard/account/${item.author}`} className="hover:text-[var(--color-primary)]" title={item.author}>{shortenAddress(item.author)}</Link>
+                        <CopyButton value={item.author} copiedAddress={copied} onCopy={copy} title={g.copy || 'Copy'} />
+                    </span>
                 </Row>
             )}
             <Row icon={Boxes} label={g.detail_component || 'Component'}>
