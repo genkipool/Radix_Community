@@ -97,10 +97,12 @@ function attackText(r: MethodResult, c: C, language: string): string {
     const a = r.attack;
     if (!a) return c.cost_none || 'There is no clear result to turn around (no quorum or no valid votes).';
     if (a.impossible) return c.cost_impossible || 'Adding votes cannot turn this result around.';
+    // Compact, with decimals only when they say something: "1 mil", "864,28 M".
+    const amount = (n: number) => new Intl.NumberFormat(language, { notation: 'compact', maximumFractionDigits: 2 }).format(n);
     const values = {
-        xrd: formatXrd(a.xrd, language),
+        xrd: amount(a.xrd),
         addresses: a.addresses.toLocaleString(language),
-        each: formatXrd(a.addresses ? a.xrd / a.addresses : 0, language),
+        each: amount(a.addresses ? a.xrd / a.addresses : 0),
         years: yearsText(c, a.years, language),
         pct: r.eligibleXrd > 0 ? formatShare(a.xrd / r.eligibleXrd, language) : '—',
     };
@@ -179,15 +181,17 @@ function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: stri
     });
     return (
         <span className="flex flex-col gap-1 w-full min-w-0 cursor-help" title={title}>
-            <span className={`flex items-center gap-1 min-w-0 text-[10px] font-bold ${LEVEL_STYLE[level].text}`}>
-                <span className="truncate">{levels[level] || level}</span>
-                <span className="shrink-0 font-mono">{formatPct(spread, language)}</span>
-            </span>
-            <span className="flex items-center gap-2">
+            {/* The addresses holding half, then the level and its degree, on one centred line; the bar below. */}
+            <span className="flex items-baseline gap-2 min-w-0">
                 <span className="font-mono text-sm font-black text-[var(--color-text-main)] tabular-nums">{nakamoto.toLocaleString(language)}</span>
-                <span className="flex-1 h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
-                    <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, spread) * 100)}%` }} />
+                {/* Same typeface for the level and its degree, so both sit on one baseline. */}
+                <span className={`flex items-baseline gap-1 min-w-0 text-[10px] font-bold ${LEVEL_STYLE[level].text}`}>
+                    <span className="truncate">{levels[level] || level}</span>
+                    <span className="shrink-0 tabular-nums">{formatPct(spread, language)}</span>
                 </span>
+            </span>
+            <span className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
+                <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, spread) * 100)}%` }} />
             </span>
         </span>
     );
