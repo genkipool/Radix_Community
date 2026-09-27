@@ -130,6 +130,21 @@ describe('resistance to manipulation', () => {
     });
 });
 
+describe('anti-sybil with a vote per year', () => {
+    it('counts only old, funded addresses and adds a vote per full year', () => {
+        const r = compareMethods([
+            voter('old', 'For', 2_000, 800),     // 2 full years: 3 votes
+            voter('newer', 'Against', 2_000, 400), // 1 full year: 2 votes
+            voter('fresh', 'Against', 2_000, 30),  // under a year: left out
+            voter('small', 'Against', 500, 900),   // under 1 000 XRD: left out
+        ], choices, item).find(x => x.key === 'one_address_sybil_age')!;
+        expect(r.counted).toBe(2);
+        expect(r.rows.find(x => x.key === 'For')!.power).toBe(3);
+        expect(r.rows.find(x => x.key === 'Against')!.power).toBe(2);
+        expect(r.resistance).toBe('medium');
+    });
+});
+
 describe('balance', () => {
     const at = (resistance: 'very_low' | 'low' | 'medium' | 'high', spread: number) =>
         ({ resistance, concentration: { nakamoto: 1, spread, effective: 1, top1: 0, top10: 0 } });

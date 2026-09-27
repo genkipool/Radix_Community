@@ -426,6 +426,11 @@
           "rule": "All weigh the same, but only addresses with at least {balance} XRD and {years_sybil} year of age count. Creating many new accounts does not help.",
           "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD each. Possible, but it has to be planned well ahead."
         },
+        "one_address_sybil_age": {
+          "name": "1 address = 1 vote, sybil-resistant, +1 per year",
+          "rule": "Only addresses with at least {balance} XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 for each full year of age.",
+          "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD, and the older they are, the more votes each one gives. Possible, but it has to be planned years ahead."
+        },
         "address_age": {
           "name": "1 address = 1 vote, plus 1 per year",
           "rule": "Each address has 1 vote, plus 1 extra vote for each full year of age. The balance does not matter; loyalty does.",
@@ -544,7 +549,8 @@
         "fact_threshold": "Share of the vote in favour needed to pass",
         "counted_share": "{pct} of the addresses that voted count under this method ({n} of {of}); the rest do not meet its requirements",
         "decisive_share": "{pct} of the addresses on the winning side ({n} of {of}), heaviest first, were enough to decide the result even if everyone else voted the other way",
-        "fact_option": "{n} addresses voted \"{label}\" ({pct} of those who voted)"
+        "fact_option": "{n} addresses voted \"{label}\" ({pct} of those who voted)",
+        "threshold_mark": "Approval threshold: at least {pct} in favour is needed to pass. It is the vertical line on the bar"
       },
       "col_resistance": "Resistance",
       "resistance": {
@@ -583,7 +589,8 @@
       "fact_quorum": "Quorum",
       "fact_threshold": "Threshold",
       "address_one": "{n} address",
-      "address_many": "{n} addresses"
+      "address_many": "{n} addresses",
+      "threshold_short": "threshold {pct}"
     }
   }
 }
