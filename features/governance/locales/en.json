@@ -427,8 +427,8 @@
           "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD each. Possible, but it has to be planned well ahead."
         },
         "one_address_sybil_age": {
-          "name": "1 address = 1 vote, sybil-resistant, +1 per year",
-          "rule": "Only addresses with at least {balance} XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 for each full year of age.",
+          "name": "1 address = 1 vote, sybil-resistant, +1 vote per year",
+          "rule": "Only addresses with at least {balance} XRD and {years_sybil} year of age count. Each has 1 vote, plus 1 vote for each full year of age.",
           "attack": "New accounts do not count: it takes addresses set up over {years_sybil} year ago holding {balance} XRD, and the older they are, the more votes each one gives. Possible, but it has to be planned years ahead."
         },
         "address_age": {
