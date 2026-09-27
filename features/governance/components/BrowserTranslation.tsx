@@ -145,9 +145,10 @@ export function TranslationBar({ g }: { g: G }) {
             {variants.map(v => {
                 const on = v.key === current;
                 return (
-                    <span key={v.key} aria-hidden={!on} className={`col-start-1 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap ${on ? '' : 'invisible'}`}>
+                    <span key={v.key} aria-hidden={!on} className={`col-start-1 row-start-1 flex items-center gap-1.5 whitespace-nowrap ${on ? '' : 'invisible'}`}>
                         {v.lead}{v.text}
-                        {v.action && <><span aria-hidden>·</span>{action(v.action, on)}</>}
+                        {/* Always at the far right of the pill, whatever the message. */}
+                        {v.action && <span className="ml-auto flex items-center gap-1.5"><span aria-hidden>·</span>{action(v.action, on)}</span>}
                     </span>
                 );
             })}
