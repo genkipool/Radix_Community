@@ -36,8 +36,9 @@ const OUTCOME_STYLE = {
 const LEVEL_STYLE: Record<ConcentrationLevel, { dot: string; text: string }> = {
     extreme: { dot: 'bg-red-500', text: 'text-red-500' },
     high: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-    moderate: { dot: 'bg-[var(--color-secondary)]', text: 'text-[var(--color-secondary)]' },
-    low: { dot: 'bg-[var(--color-accent)]', text: 'text-[var(--color-accent)]' },
+    moderate: { dot: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400' },
+    low: { dot: 'bg-[var(--color-accent)]/60', text: 'text-[var(--color-accent)]' },
+    minimal: { dot: 'bg-[var(--color-accent)]', text: 'text-[var(--color-accent)]' },
 };
 
 /** Figures the rule texts quote, in the reader's locale. */
@@ -104,12 +105,15 @@ function SupportMeter({ r, c, threshold, language }: { r: MethodResult; c: C; th
 
 /** Voters controlling half the weight, against the most possible (everyone weighing the same). */
 function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: string }) {
-    const { nakamoto } = r.concentration;
-    const level = concentrationLevel(nakamoto);
-    if (nakamoto === null || !level) return <span className="text-xs text-[var(--color-text-muted)]">—</span>;
+    const { nakamoto, spread } = r.concentration;
+    const level = concentrationLevel(r.concentration);
+    if (nakamoto === null || spread === null || !level) return <span className="text-xs text-[var(--color-text-muted)]">—</span>;
     const most = Math.floor(r.counted / 2) + 1;
     const levels = (c.levels ?? {}) as Record<string, string>;
-    const title = tip(c, 'nakamoto', { n: nakamoto.toLocaleString(language), most: most.toLocaleString(language), level: levels[level] || level });
+    const title = tip(c, 'nakamoto', {
+        n: nakamoto.toLocaleString(language), of: r.counted.toLocaleString(language), share: formatPct(nakamoto / r.counted, language),
+        most: most.toLocaleString(language), spread: formatPct(spread, language), level: levels[level] || level,
+    });
     return (
         <span className="flex flex-col gap-1 w-full min-w-0 cursor-help" title={title}>
             <span className="flex items-baseline justify-between gap-2">
@@ -119,7 +123,7 @@ function SpreadMeter({ r, c, language }: { r: MethodResult; c: C; language: stri
                 </span>
             </span>
             <span className="h-1.5 rounded-full bg-[var(--color-card-border)] overflow-hidden">
-                <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, nakamoto / most) * 100)}%` }} />
+                <span className={`block h-full rounded-full ${LEVEL_STYLE[level].dot}`} style={{ width: `${Math.max(3, Math.min(1, spread) * 100)}%` }} />
             </span>
         </span>
     );
@@ -212,7 +216,9 @@ function MethodDetail({ r, c, rule, quorum, language }: { r: MethodResult; c: C;
                             </span>
                         )}
                     </Stat>
-                    <Stat label={c.detail_top1 || 'Largest address'} title={tip(c, 'detail_top1')}>{r.counted ? formatShare(r.concentration.top1, language) : '—'}</Stat>
+                    <Stat label={c.detail_spread || 'Decentralisation'} title={tip(c, 'detail_spread')}>
+                        {r.concentration.spread === null ? '—' : fill(c.detail_spread_value || '{pct} of the most possible', { pct: formatPct(r.concentration.spread, language) })}
+                    </Stat>
                 </div>
                 {d ? (
                     <p className="flex items-start gap-2 rounded-xl border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/5 p-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
@@ -386,9 +392,11 @@ export function MethodsComparison({ entry, system, g, language, now }: {
     const current = results.find(r => r.current)!;
     const others = ready.filter(r => !r.current);
     const same = others.filter(r => r.sameAsCurrent).length;
-    const spread = [...ready].sort((a, b) => (b.concentration.nakamoto ?? 0) - (a.concentration.nakamoto ?? 0));
-    const most = spread[0];
-    const least = spread[spread.length - 1];
+    // Ranked by how spread out the weight is, so a method is not favoured just because more addresses count under it.
+    // On a tie the method listed first wins (the current one before the rules that weigh just like it).
+    const spreadOf = (r: MethodResult) => r.concentration.spread ?? 0;
+    const most = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) > spreadOf(best) ? r : best), undefined);
+    const least = ready.reduce<MethodResult | undefined>((best, r) => (!best || spreadOf(r) < spreadOf(best) ? r : best), undefined);
     const shown = results.filter(r => family === 'all' || r.family === family);
     const unknownAges = ages.done ? voters.filter(v => v.ageDays === null).length : 0;
     const name = (r: MethodResult) => methodText(c, r.key, params).name;
@@ -442,16 +450,16 @@ export function MethodsComparison({ entry, system, g, language, now }: {
                         <Tile
                             icon={Network}
                             help={tip(c, 'kpi_most_spread')}
-                            label={c.kpi_most_spread || 'Most spread out'}
+                            label={c.kpi_most_spread || 'Most decentralised'}
                             value={most ? name(most) : undefined}
-                            hint={most ? fill(c.kpi_spread_hint || '{n} addresses needed for half of the weight', { n: (most.concentration.nakamoto ?? 0).toLocaleString(language) }) : undefined}
+                            hint={most ? fill(c.kpi_spread_hint || '{n} addresses needed for half of the weight', { n: (most.concentration.nakamoto ?? 0).toLocaleString(language), pct: formatPct(most.concentration.spread ?? 0, language) }) : undefined}
                         />
                         <Tile
                             icon={Crown}
                             help={tip(c, 'kpi_most_concentrated')}
-                            label={c.kpi_most_concentrated || 'Most concentrated'}
+                            label={c.kpi_most_concentrated || 'Most centralised'}
                             value={least ? name(least) : undefined}
-                            hint={least ? fill(c.kpi_spread_hint || '{n} addresses needed for half of the weight', { n: (least.concentration.nakamoto ?? 0).toLocaleString(language) }) : undefined}
+                            hint={least ? fill(c.kpi_spread_hint || '{n} addresses needed for half of the weight', { n: (least.concentration.nakamoto ?? 0).toLocaleString(language), pct: formatPct(least.concentration.spread ?? 0, language) }) : undefined}
                         />
                     </div>
                 </div>

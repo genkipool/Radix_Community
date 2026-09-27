@@ -111,6 +111,12 @@ export const CURRENT_METHOD: MethodKey = 'linear';
 export interface Concentration {
     /** Fewest voters that together hold more than half of the weight. */
     nakamoto: number | null;
+    /**
+     * How spread out the weight is, 0..1: `nakamoto` against the most it could
+     * be (half the voters plus one, when all weigh the same). It does not
+     * depend on how many addresses voted, so votes of any size compare.
+     */
+    spread: number | null;
     /** Voters that would give the same concentration if all weighed the same (1 / Σ share²). */
     effective: number;
     /** Weight share of the largest voter and of the ten largest, 0..1. */
@@ -118,20 +124,24 @@ export interface Concentration {
     top10: number;
 }
 
-export type ConcentrationLevel = 'extreme' | 'high' | 'moderate' | 'low';
+export type ConcentrationLevel = 'extreme' | 'high' | 'moderate' | 'low' | 'minimal';
 
-export function concentrationLevel(nakamoto: number | null): ConcentrationLevel | null {
-    if (nakamoto === null) return null;
+/** Upper bounds of `spread` for each level; one address holding half always reads as extreme. */
+export const SPREAD_LEVELS = { high: 0.15, moderate: 0.35, low: 0.65 } as const;
+
+export function concentrationLevel({ nakamoto, spread }: Pick<Concentration, 'nakamoto' | 'spread'>): ConcentrationLevel | null {
+    if (nakamoto === null || spread === null) return null;
     if (nakamoto <= 1) return 'extreme';
-    if (nakamoto <= 3) return 'high';
-    if (nakamoto <= 10) return 'moderate';
-    return 'low';
+    if (spread < SPREAD_LEVELS.high) return 'high';
+    if (spread < SPREAD_LEVELS.moderate) return 'moderate';
+    if (spread < SPREAD_LEVELS.low) return 'low';
+    return 'minimal';
 }
 
 export function concentration(weights: number[]): Concentration {
     const w = weights.filter(x => x > 0).sort((a, b) => b - a);
     const total = w.reduce((s, x) => s + x, 0);
-    if (total <= 0) return { nakamoto: null, effective: 0, top1: 0, top10: 0 };
+    if (total <= 0) return { nakamoto: null, spread: null, effective: 0, top1: 0, top10: 0 };
     let acc = 0;
     let nakamoto: number | null = null;
     for (let i = 0; i < w.length; i++) {
@@ -141,6 +151,7 @@ export function concentration(weights: number[]): Concentration {
     const sumSq = w.reduce((s, x) => s + (x / total) ** 2, 0);
     return {
         nakamoto,
+        spread: nakamoto === null ? null : nakamoto / (Math.floor(w.length / 2) + 1),
         effective: 1 / sumSq,
         top1: w[0] / total,
         top10: w.slice(0, 10).reduce((s, x) => s + x, 0) / total,
