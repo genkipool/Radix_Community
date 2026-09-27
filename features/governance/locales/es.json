@@ -173,6 +173,7 @@
     "tab_proposal": "Propuesta",
     "tab_temperature_check": "Sondeo",
     "tab_results": "Resultado",
+    "tab_compare": "Comparativa",
     "kpi_turnout": "Participación",
     "kpi_quorum": "Quórum alcanzado",
     "kpi_support": "A favor",
@@ -228,6 +229,238 @@
     "submit_many": "Votar con {n} cuentas",
     "power_share": "{pct} del total",
     "power_counting": "Calculando…",
-    "power_pending": "Aún sin contar: el recuento se actualiza en aproximadamente un minuto"
+    "power_pending": "Aún sin contar: el recuento se actualiza en aproximadamente un minuto",
+    "compare": {
+      "heading": "¿Qué habría salido con otro método de voto?",
+      "intro": "Hoy las votaciones se pesan con 1 XRD = 1 voto: quien tiene 1.000 XRD tiene 1.000 votos. Aquí se cuentan las mismas papeletas con otras reglas. Cada votante mantiene lo que eligió y sus XRD; solo cambia cuánto pesa su voto. Así se ve si el resultado depende del método elegido y cuánto poder concentra cada uno.",
+      "kpi_consensus": "Mismo resultado",
+      "kpi_consensus_value": "{n} de {total} métodos",
+      "kpi_consensus_all": "Todos los métodos coinciden con el actual: el resultado no depende del método",
+      "kpi_consensus_hint": "{changed} métodos habrían cambiado el resultado",
+      "kpi_consensus_hint_one": "1 método habría cambiado el resultado",
+      "kpi_current": "Hoy (1 XRD = 1 voto)",
+      "kpi_addresses": "{n} direcciones",
+      "kpi_current_hint": "controlan más de la mitad del voto, de {total} que votaron",
+      "kpi_most_spread": "Más repartido",
+      "kpi_most_concentrated": "Más concentrado",
+      "kpi_spread_hint": "hacen falta {n} direcciones para reunir la mitad del voto",
+      "age_loading": "Leyendo en el ledger la antigüedad de cada cuenta: {n} de {total}",
+      "age_done": "Antigüedad leída en el ledger para las {total} cuentas",
+      "age_pending": "Esperando la antigüedad de las cuentas…",
+      "list_title": "{n} formas de contar los mismos votos",
+      "filter_label": "Familia de métodos",
+      "filter_all": "Todos",
+      "families": {
+        "wealth": "Según los XRD",
+        "address": "Por dirección",
+        "seniority": "Por antigüedad",
+        "hybrid": "Combinados"
+      },
+      "families_short": {
+        "all": "Todos",
+        "wealth": "XRD",
+        "address": "Dirección",
+        "seniority": "Antigüedad",
+        "hybrid": "Mixtos"
+      },
+      "family_hints": {
+        "wealth": "el voto crece con el saldo, más o menos deprisa",
+        "address": "cada dirección pesa lo mismo",
+        "seniority": "premian a las cuentas con más tiempo en la red",
+        "hybrid": "mezclan varias reglas"
+      },
+      "col_method": "Método",
+      "col_result": "Resultado",
+      "col_support": "A favor",
+      "col_counted": "Cuentan",
+      "col_nakamoto": "Controlan el 50 %",
+      "col_decisive": "Bastaban para decidir",
+      "of_n": "de {n}",
+      "badge_current": "Actual",
+      "badge_changes": "Cambia el resultado",
+      "badge_same": "Mismo resultado",
+      "badge_reference": "Referencia",
+      "outcome_approved": "Aprobada",
+      "outcome_rejected": "Rechazada",
+      "outcome_no_quorum": "Sin quórum",
+      "outcome_none": "Nadie cumple la regla",
+      "outcome_winner": "Gana: {label}",
+      "levels": {
+        "extreme": "Una dirección decide",
+        "high": "Muy concentrado",
+        "moderate": "Concentrado",
+        "low": "Repartido"
+      },
+      "level_hints": {
+        "extreme": "1 dirección tiene más de la mitad",
+        "high": "2 o 3 direcciones",
+        "moderate": "de 4 a 10 direcciones",
+        "low": "más de 10 direcciones"
+      },
+      "detail_split": "Reparto del voto con este método",
+      "detail_headcount": "Contando 1 dirección = 1 voto: {pct} a favor.",
+      "detail_counted": "Direcciones que cuentan",
+      "detail_excluded": "({n} fuera)",
+      "detail_effective": "Votantes efectivos",
+      "detail_quorum": "Quórum",
+      "detail_quorum_value": "{xrd} de {quorum} XRD",
+      "detail_top1": "La mayor dirección",
+      "detail_concentration": "Quién tiene el peso del voto",
+      "detail_decisive": "Las {count} mayores de las {of} direcciones {side} (con {xrd} XRD) bastaban para decidirlo, aunque todas las demás hubieran votado lo contrario.",
+      "detail_nobody": "Ninguna dirección cumple los requisitos de este método, así que no hay resultado.",
+      "detail_no_quorum": "Las direcciones que cuentan con este método no reúnen los XRD del quórum, así que el resultado no sería válido y nadie llegó a decidirlo.",
+      "side_for": "a favor",
+      "side_against": "en contra",
+      "side_winner": "que apoyaron la opción ganadora",
+      "conc_top1": "La mayor",
+      "conc_top10": "Las 9 siguientes",
+      "conc_rest": "El resto",
+      "glossary_title": "Cómo leer la comparativa",
+      "g_nakamoto_t": "Controlan el 50 %",
+      "g_nakamoto": "El menor número de direcciones que juntas suman más de la mitad del peso del voto (coeficiente de Nakamoto). Cuanto más alto, más descentralizada está la votación. La barra lo compara con el máximo posible, en el que todas pesan lo mismo.",
+      "g_decisive_t": "Bastaban para decidir",
+      "g_decisive": "Cuántas direcciones del lado ganador, empezando por las que más pesan, habrían bastado por sí solas para lograr el resultado aunque todas las demás hubieran votado lo contrario.",
+      "g_effective_t": "Votantes efectivos",
+      "g_effective": "Cuántos votantes habría si todos pesaran lo mismo y el poder estuviera igual de concentrado. Si 150 cuentas votan pero equivalen a 10 votantes efectivos, deciden unas pocas.",
+      "g_age_t": "Antigüedad de la cuenta",
+      "g_age": "Años completos que llevaba la cuenta en el ledger cuando se abrió la votación: se comprueba si ya tenía algo 1, 2 y 3 años antes. Las cuentas migradas desde Olympia cuentan desde la migración a Babylon (septiembre de 2023).",
+      "note_hypothetical": "Es una simulación: las votaciones reales se cuentan con 1 XRD = 1 voto. El quórum se comprueba con los XRD de las direcciones que cuentan en cada método; el umbral de aprobación es el de la votación.",
+      "note_pending": "{n} votos recientes aún no tienen poder de voto calculado y quedan fuera.",
+      "note_unknown_age": "No se pudo leer la antigüedad de {n} cuentas; los métodos por antigüedad las dejan fuera.",
+      "empty": "Todavía no hay votos con poder de voto calculado que comparar.",
+      "methods": {
+        "linear": {
+          "name": "1 XRD = 1 voto",
+          "rule": "Cada XRD es un voto: 1.000 XRD pesan 1.000 votos. Es el método que usan hoy las votaciones."
+        },
+        "capped": {
+          "name": "Con tope por dirección",
+          "rule": "Como el actual, pero ninguna dirección puede pesar más de {cap} XRD. Limita a las carteras más grandes sin quitarles el voto."
+        },
+        "capped_share": {
+          "name": "Con tope del {share} del total",
+          "rule": "1 XRD = 1 voto, pero ninguna dirección puede pesar más del {share} de todos los XRD que votaron. El tope crece con la participación."
+        },
+        "quadratic": {
+          "name": "Voto cuadrático",
+          "rule": "El voto pesa la raíz cuadrada del saldo: 100 XRD dan 10 votos y 1.000.000 XRD dan 1.000. Tener más sigue contando, pero cada XRD extra cuenta menos."
+        },
+        "cube_root": {
+          "name": "Raíz cúbica",
+          "rule": "El voto pesa la raíz cúbica del saldo: 1.000 XRD dan 10 votos y 1.000.000 XRD dan 100. Está entre el voto cuadrático y el logarítmico."
+        },
+        "logarithmic": {
+          "name": "Voto logarítmico",
+          "rule": "Se suma un voto cada vez que el saldo se multiplica por 10: 1.000 XRD dan unos 3 votos y 1.000.000 XRD unos 6. El saldo casi no importa."
+        },
+        "tiered": {
+          "name": "Por tramos de saldo",
+          "rule": "De 1 a 5 votos según el saldo: menos de 1.000 XRD, 1 voto; desde 1.000, 2; desde 10.000, 3; desde 100.000, 4; desde 1.000.000, 5."
+        },
+        "one_address": {
+          "name": "1 dirección = 1 voto",
+          "rule": "Todas las direcciones pesan igual, tengan lo que tengan."
+        },
+        "one_address_min": {
+          "name": "1 dirección = 1 voto, desde {min} XRD",
+          "rule": "Solo cuentan las direcciones con al menos {min} XRD, y todas pesan igual."
+        },
+        "one_address_sybil": {
+          "name": "1 dirección = 1 voto, con filtro anti-sybil",
+          "rule": "Todas pesan igual, pero solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad. Crear muchas cuentas nuevas no sirve de nada."
+        },
+        "address_age": {
+          "name": "1 dirección = 1 voto, más 1 por año",
+          "rule": "Cada dirección tiene 1 voto, más 1 voto extra por cada año completo de antigüedad. No importa el saldo, sí la fidelidad."
+        },
+        "one_year": {
+          "name": "Solo cuentas de 1 año o más",
+          "rule": "1 XRD = 1 voto, pero solo cuentan las cuentas con 1 año o más de antigüedad cuando se abrió la votación."
+        },
+        "veterans": {
+          "name": "Solo veteranas ({years} años o más)",
+          "rule": "1 XRD = 1 voto, pero solo cuentan las cuentas con {years} años o más de antigüedad cuando se abrió la votación."
+        },
+        "veterans_address": {
+          "name": "Veteranas, 1 dirección = 1 voto",
+          "rule": "Solo cuentan las cuentas con {years} años o más de antigüedad, y todas pesan igual."
+        },
+        "veterans_bonus": {
+          "name": "Veteranas con plus por antigüedad",
+          "rule": "Solo cuentan las cuentas con {years} años o más, y cada año completo suma un {bonus} de voto: 2 años pesan ×1,5 y 3 años ×1,75."
+        },
+        "seniority_bonus": {
+          "name": "Plus por antigüedad para todas",
+          "rule": "Cuentan todas las cuentas: 1 XRD = 1 voto, más un {bonus} por cada año completo de antigüedad."
+        },
+        "hybrid_half": {
+          "name": "Mixto 50 / 50",
+          "rule": "La mitad del peso se reparte según los XRD y la otra mitad a partes iguales entre las direcciones."
+        },
+        "double_majority": {
+          "name": "Doble mayoría",
+          "rule": "Para aprobarse tiene que superar el umbral dos veces: contando 1 XRD = 1 voto y contando 1 dirección = 1 voto. Como la mayoría cualificada de la Unión Europea."
+        },
+        "quadratic_seniority": {
+          "name": "Cuadrático con plus por antigüedad",
+          "rule": "Raíz cuadrada del saldo, más un {bonus} por cada año completo de antigüedad de la cuenta."
+        },
+        "sybil_quadratic": {
+          "name": "Cuadrático anti-sybil",
+          "rule": "Raíz cuadrada del saldo, pero solo cuentan las direcciones con al menos {balance} XRD y {years_sybil} año de antigüedad."
+        },
+        "no_top1": {
+          "name": "Sin la mayor dirección",
+          "rule": "1 XRD = 1 voto, dejando fuera a la dirección con más XRD. Muestra si una sola cartera decide el resultado."
+        },
+        "no_whales": {
+          "name": "Sin las {n} mayores",
+          "rule": "1 XRD = 1 voto, dejando fuera a las {n} direcciones con más XRD. Muestra si el resultado depende de unas pocas carteras."
+        },
+        "whales_only": {
+          "name": "Solo grandes carteras",
+          "rule": "1 XRD = 1 voto, pero solo cuentan las direcciones con {whale} XRD o más. Muestra qué habrían decidido las ballenas por sí solas."
+        }
+      },
+      "tips": {
+        "expand": "Ver el detalle de este método",
+        "collapse": "Ocultar el detalle",
+        "filter_all": "Mostrar los {n} métodos",
+        "col_method": "La regla que decide cuánto pesa cada voto",
+        "col_result": "Lo que habría salido con este método, con el quórum y el umbral de aprobación de la votación",
+        "col_support": "Peso a favor sobre el peso a favor y en contra (las abstenciones no cuentan). La raya vertical marca el umbral de aprobación",
+        "col_counted": "Direcciones cuyo voto cuenta con este método; el resto queda fuera por no cumplir sus requisitos",
+        "col_nakamoto": "El menor número de direcciones que juntas suman más de la mitad del peso del voto. Cuanto más alto, más descentralizado",
+        "col_decisive": "Cuántas direcciones del lado ganador habrían bastado por sí solas, aunque todas las demás votaran lo contrario",
+        "outcome_approved": "Hay quórum y el voto a favor supera el umbral de aprobación",
+        "outcome_rejected": "Hay quórum, pero el voto a favor no llega al umbral de aprobación",
+        "outcome_no_quorum": "Los XRD de las direcciones que cuentan con este método no llegan al quórum, así que el resultado no sería válido",
+        "outcome_winner": "La opción con más peso con este método",
+        "outcome_none": "Ninguna dirección cumple los requisitos de este método",
+        "support": "{pct} a favor; hace falta al menos el {threshold}",
+        "support_winner": "{label} reúne el {pct} del peso",
+        "nakamoto": "{n} direcciones reúnen más de la mitad del peso ({level}). El máximo posible, si todas pesaran lo mismo, sería {most}",
+        "counted": "Cuentan {n} direcciones; {out} quedan fuera con este método",
+        "decisive": "Las {count} mayores de {of} direcciones del lado ganador, con {xrd} XRD, bastaban para decidirlo",
+        "badge_current": "Es el método que usan hoy las votaciones: el resto se compara con él",
+        "badge_changes": "Con este método el resultado habría sido distinto al actual",
+        "badge_same": "Con este método el resultado habría sido el mismo que el actual",
+        "conc_top1": "La dirección con más peso tiene el {pct} del voto",
+        "conc_top10": "Las 9 siguientes direcciones con más peso suman el {pct} del voto",
+        "conc_rest": "Todas las demás direcciones juntas suman el {pct} del voto",
+        "detail_counted": "Direcciones cuyo voto cuenta con este método, y cuántas quedan fuera",
+        "detail_effective": "Cuántos votantes habría si todos pesaran lo mismo y el poder estuviera igual de concentrado",
+        "detail_quorum": "XRD de las direcciones que cuentan, frente al mínimo que exige la votación para que el resultado sea válido",
+        "detail_top1": "Parte del peso del voto que tiene la dirección más grande",
+        "kpi_consensus": "Cuántos métodos alternativos habrían dado el mismo resultado que 1 XRD = 1 voto",
+        "kpi_current": "Con el método actual, el menor número de direcciones que juntas suman más de la mitad del voto",
+        "kpi_most_spread": "El método que necesita más direcciones para reunir la mitad del voto: el poder queda más repartido",
+        "kpi_most_concentrated": "El método que necesita menos direcciones para reunir la mitad del voto: el poder queda más concentrado",
+        "level_extreme": "Una sola dirección tiene más de la mitad del peso y decide sola",
+        "level_high": "Bastan 2 o 3 direcciones para reunir más de la mitad del peso",
+        "level_moderate": "Hacen falta entre 4 y 10 direcciones para reunir más de la mitad del peso",
+        "level_low": "Hacen falta más de 10 direcciones para reunir más de la mitad del peso"
+      }
+    }
   }
 }
