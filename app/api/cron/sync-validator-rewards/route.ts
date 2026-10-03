@@ -10,6 +10,7 @@ import {
     EPOCH_REWARDS_RETENTION,
     EPOCH_REWARDS_MIN_COVERAGE,
     EPOCH_REWARDS_CACHE_TAG,
+    DAILY_TOTALS_EVERY_MS,
 } from '@/services/validatorRewards';
 import logger from '@/lib/logger';
 
@@ -82,16 +83,25 @@ export async function GET(request: Request) {
             if (epoch > 0 && !stored.has(epoch)) missing.push(epoch);
         }
 
-        // Reach back to whichever is further: the last epoch processed, or the
-        // oldest hole still on screen.
+        // The daily totals are written every half hour rather than every
+        // epoch (see DAILY_TOTALS_EVERY_MS). Until the first such write they
+        // stand where every run used to leave them: at the last epoch processed.
+        const totalsFrom = meta?.dailyTotalsEpoch ?? lastEpoch;
+        const totalsDue = !meta?.dailyTotalsAt
+            || Date.now() - Date.parse(meta.dailyTotalsAt) >= DAILY_TOTALS_EVERY_MS;
+
+        // Reach back to whichever is further: the last epoch processed, the
+        // oldest hole still on screen, or, when the totals are due, the last
+        // epoch they include.
         const reachBackTo = Math.min(
             lastEpoch > 0 ? lastEpoch : currentEpoch,
             missing.length > 0 ? Math.min(...missing) : currentEpoch,
+            totalsDue && totalsFrom > 0 ? totalsFrom : currentEpoch,
         );
         const gap = currentEpoch > 0 && reachBackTo > 0 ? currentEpoch - reachBackTo : 0;
         const window = Math.min(Math.max(gap + 1, MIN_EPOCH_FETCH), EPOCH_REWARDS_RETENTION);
 
-        logger.info({ currentEpoch, lastEpoch, missing, window }, '[SyncValidatorRewards] Sync window');
+        logger.info({ currentEpoch, lastEpoch, missing, window, totalsDue, totalsFrom }, '[SyncValidatorRewards] Sync window');
 
         const { events, latestStateVersion, epochs } = await fetchEpochRewardEvents(
             undefined,
@@ -115,7 +125,11 @@ export async function GET(request: Request) {
             ? events.filter((ev) => ev.epoch > lastEpoch || missingSet.has(ev.epoch))
             : events;
 
-        if (newEvents.length === 0) {
+        const dailyEvents = totalsDue
+            ? events.filter((ev) => totalsFrom <= 0 || ev.epoch > totalsFrom)
+            : null;
+
+        if (newEvents.length === 0 && !dailyEvents?.length) {
             await touchSyncRun();
             return NextResponse.json({
                 success: true,
@@ -126,7 +140,7 @@ export async function GET(request: Request) {
         }
 
         // Sync to Redis
-        const result = await syncRewardsToRedis(newEvents, latestStateVersion);
+        const result = await syncRewardsToRedis(newEvents, latestStateVersion, dailyEvents);
 
         // The read path caches for minutes, so without this the epochs just
         // written stay hidden and their reward columns read as empty.

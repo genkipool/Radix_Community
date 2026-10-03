@@ -15,6 +15,12 @@ function fakeRedis() {
             store.set(key, value);
             return 'OK';
         },
+        async eval(_script: string, keys: string[], args: string[]) {
+            if (store.has(keys[1])) return 0;
+            if (args[1] !== '') store.set(keys[0], args[1]);
+            store.set(keys[1], args[0]);
+            return 1;
+        },
         pipeline() {
             const queued: Array<[string, unknown]> = [];
             return {
@@ -66,8 +72,19 @@ describe('redisBlob', () => {
 
         expect(await readBlob(redis, 'old')).toEqual({ legacy: true });
         expect(store.get('old:stamp')).toBeTruthy();
+        expect(String(store.get('old')).startsWith('gz:')).toBe(true);
         expect(await readBlob(redis, 'old')).toEqual({ legacy: true });
         expect(reads.filter((key) => key === 'old')).toHaveLength(1);
+    });
+
+    it('leaves a legacy value alone when a writer stamped it first', async () => {
+        const { redis, store } = fakeRedis();
+        store.set('race', { legacy: true });
+        store.set('race:stamp', 'writer');
+
+        await readBlob(redis, 'race');
+        expect(store.get('race')).toEqual({ legacy: true });
+        expect(store.get('race:stamp')).toBe('writer');
     });
 
     it('answers null for a missing value', async () => {

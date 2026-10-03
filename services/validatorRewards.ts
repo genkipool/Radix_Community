@@ -35,6 +35,10 @@ export interface ValidatorRewardData {
 interface RewardsSyncMeta {
     lastProcessedEpoch: number;
     lastRunTimestamp: string;
+    /** Highest epoch already added to the daily and yearly totals. */
+    dailyTotalsEpoch?: number;
+    /** When the daily and yearly totals were last written. */
+    dailyTotalsAt?: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -72,6 +76,17 @@ export const EPOCH_REWARDS_MIN_COVERAGE = 5;
 
 const GATEWAY_URL = 'https://mainnet.radixdlt.com';
 const MAX_YEARS_TO_KEEP = 5;
+
+/**
+ * How often the daily and yearly totals are rewritten.
+ *
+ * The epoch table is filled on every run, but the totals only feed the CSV
+ * export, and each rewrite moves the whole current year (about 1 MB
+ * compressed). Every half hour keeps that at ~50 writes a day instead of ~290,
+ * and six epochs stay well inside the {@link EPOCH_REWARDS_RETENTION} window
+ * the sync re-fetches, so no epoch is skipped on the way.
+ */
+export const DAILY_TOTALS_EVERY_MS = 30 * 60 * 1000;
 
 
 // ── Gateway API ────────────────────────────────────────────────────────────────
@@ -161,17 +176,29 @@ export async function fetchEpochRewardEvents(
 /**
  * Accumulates epoch reward data into the daily/yearly breakdown in Redis.
  * Idempotent: skips epochs already processed (tracked via lastSyncedEpoch).
+ *
+ * `events` fill the per-epoch history table on every run. `dailyEvents`, when
+ * given, are also added to the daily and yearly totals the CSV export reads;
+ * the caller passes them only every {@link DAILY_TOTALS_EVERY_MS}, because
+ * rewriting those totals is the one write measured in megabytes.
+ *
+ * The totals live in one key per year. Every event of a run is booked on
+ * today's date, so a run only ever touches the current year's key: the past
+ * years are never read or rewritten, and neither is the legacy all-years key
+ * (`validator_rewards_all`, kept only as a read fallback), which at 5.8 MB
+ * rewritten every epoch was what exhausted the Redis monthly bandwidth.
  */
 export async function syncRewardsToRedis(
     events: EpochRewardEntry[],
     _latestStateVersion: number,
+    dailyEvents: EpochRewardEntry[] | null = events,
 ): Promise<{ processedValidators: number; processedEpochs: number[] }> {
     const redis = getRedis();
     if (!redis) throw new Error('Redis not available');
 
     // Group events by validator
     const byValidator = new Map<string, EpochRewardEntry[]>();
-    for (const ev of events) {
+    for (const ev of dailyEvents ?? []) {
         const list = byValidator.get(ev.validatorAddress) ?? [];
         list.push(ev);
         byValidator.set(ev.validatorAddress, list);
@@ -181,114 +208,73 @@ export async function syncRewardsToRedis(
     const processedEpochs = new Set<number>();
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const currentYear = new Date().getFullYear().toString();
+    const previousYear = (Number(currentYear) - 1).toString();
     const cutoffYear = new Date().getFullYear() - MAX_YEARS_TO_KEEP;
 
-    // Read all existing data once
-    let allData: Record<string, ValidatorRewardData> = {};
-    try {
-        allData = (await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL)) ?? {};
-    } catch {
-        // Initial setup
-    }
+    if (byValidator.size > 0) {
+        const yearKey = `${REDIS_REWARDS_YEAR_PREFIX}${currentYear}`;
+        // A failed read must not be mistaken for an empty year: writing back
+        // only this run's figures would wipe every day already booked.
+        const bucket = (await readBlob<Record<string, ValidatorRewardData>>(redis, yearKey)) ?? {};
+        // Read only on the first runs of a year, for validators the new year's
+        // key does not have yet: their last synced epoch is in last year's.
+        let lastYear: Record<string, ValidatorRewardData> | null | undefined;
 
-    for (const [address, validatorEvents] of byValidator) {
-        const data: ValidatorRewardData = allData[address] ?? {
-            lastSyncedEpoch: 0,
-            daily: {},
-            yearly: {},
-            dailyDelegants: {},
-            yearlyDelegants: {},
-        };
-
-        // Ensure new fields exist for existing records
-        if (!data.dailyDelegants) data.dailyDelegants = {};
-        if (!data.yearlyDelegants) data.yearlyDelegants = {};
-        if (!data.dailyStake) data.dailyStake = {};
-
-        for (const ev of validatorEvents) {
-            // Skip already processed epochs
-            if (ev.epoch <= data.lastSyncedEpoch) continue;
-
-            processedEpochs.add(ev.epoch);
-
-            // Accumulate daily
-            data.daily[today] = (data.daily[today] ?? 0) + ev.validatorFeeXrd;
-            data.dailyDelegants[today] = (data.dailyDelegants[today] ?? 0) + ev.stakePoolAddedXrd;
-
-            // Accumulate yearly
-            data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
-            data.yearlyDelegants[currentYear] = (data.yearlyDelegants[currentYear] ?? 0) + ev.stakePoolAddedXrd;
-
-            // Track total stake (use latest epoch's value for that day)
-            data.dailyStake![today] = ev.totalStakeXrd;
-
-            // Track highest epoch
-            if (ev.epoch > data.lastSyncedEpoch) {
-                data.lastSyncedEpoch = ev.epoch;
+        for (const [address, validatorEvents] of byValidator) {
+            let data = bucket[address];
+            if (!data) {
+                if (lastYear === undefined) {
+                    lastYear = await readBlob<Record<string, ValidatorRewardData>>(
+                        redis,
+                        `${REDIS_REWARDS_YEAR_PREFIX}${previousYear}`,
+                    );
+                }
+                data = {
+                    lastSyncedEpoch: lastYear?.[address]?.lastSyncedEpoch ?? 0,
+                    daily: {},
+                    yearly: {},
+                    dailyDelegants: {},
+                    yearlyDelegants: {},
+                    dailyStake: {},
+                };
             }
-        }
-        
-        allData[address] = data;
-    }
 
-    // Prune old years
-    for (const address of Object.keys(allData)) {
-        const data = allData[address];
-        const prune = (map?: Record<string, number>) => {
-            if (!map) return;
-            for (const key of Object.keys(map)) {
-                const year = key.length === 4 ? key : key.substring(0, 4);
-                if (parseInt(year, 10) < cutoffYear) {
-                    delete map[key];
+            // Ensure new fields exist for existing records
+            if (!data.dailyDelegants) data.dailyDelegants = {};
+            if (!data.yearlyDelegants) data.yearlyDelegants = {};
+            if (!data.dailyStake) data.dailyStake = {};
+
+            for (const ev of validatorEvents) {
+                // Skip already processed epochs
+                if (ev.epoch <= data.lastSyncedEpoch) continue;
+
+                processedEpochs.add(ev.epoch);
+
+                // Accumulate daily
+                data.daily[today] = (data.daily[today] ?? 0) + ev.validatorFeeXrd;
+                data.dailyDelegants[today] = (data.dailyDelegants[today] ?? 0) + ev.stakePoolAddedXrd;
+
+                // Accumulate yearly
+                data.yearly[currentYear] = (data.yearly[currentYear] ?? 0) + ev.validatorFeeXrd;
+                data.yearlyDelegants[currentYear] = (data.yearlyDelegants[currentYear] ?? 0) + ev.stakePoolAddedXrd;
+
+                // Track total stake (use latest epoch's value for that day)
+                data.dailyStake[today] = ev.totalStakeXrd;
+
+                // Track highest epoch
+                if (ev.epoch > data.lastSyncedEpoch) {
+                    data.lastSyncedEpoch = ev.epoch;
                 }
             }
-        };
 
-        prune(data.daily);
-        prune(data.yearly);
-        prune(data.dailyDelegants);
-        prune(data.yearlyDelegants);
-        prune(data.dailyStake);
-    }
-
-    queueBlobWrite(pipeline, REDIS_REWARDS_ALL, allData);
-
-    // Write year-indexed keys for efficient per-year reads
-    const yearBuckets = new Map<string, Record<string, ValidatorRewardData>>();
-    for (const [address, data] of Object.entries(allData)) {
-        // Collect all years this validator has data for
-        const years = new Set<string>();
-        if (data.daily) Object.keys(data.daily).forEach(d => years.add(d.substring(0, 4)));
-        if (data.dailyDelegants) Object.keys(data.dailyDelegants).forEach(d => years.add(d.substring(0, 4)));
-        if (data.dailyStake) Object.keys(data.dailyStake).forEach(d => years.add(d.substring(0, 4)));
-
-        for (const yr of years) {
-            if (!yearBuckets.has(yr)) yearBuckets.set(yr, {});
-            const bucket = yearBuckets.get(yr)!;
-
-            // Extract only entries for this year
-            const filterByYear = (map?: Record<string, number>) => {
-                if (!map) return undefined;
-                const filtered: Record<string, number> = {};
-                for (const [key, val] of Object.entries(map)) {
-                    if (key.startsWith(yr)) filtered[key] = val;
-                }
-                return Object.keys(filtered).length > 0 ? filtered : undefined;
-            };
-
-            bucket[address] = {
-                lastSyncedEpoch: data.lastSyncedEpoch,
-                daily: filterByYear(data.daily) ?? {},
-                yearly: data.yearly[yr] !== undefined ? { [yr]: data.yearly[yr] } : {},
-                dailyDelegants: filterByYear(data.dailyDelegants),
-                yearlyDelegants: data.yearlyDelegants?.[yr] !== undefined ? { [yr]: data.yearlyDelegants[yr] } : {},
-                dailyStake: filterByYear(data.dailyStake),
-            };
+            bucket[address] = data;
         }
-    }
 
-    for (const [yr, bucket] of yearBuckets) {
-        queueBlobWrite(pipeline, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`, bucket);
+        queueBlobWrite(pipeline, yearKey, bucket);
+
+        // The year that just fell out of the kept window.
+        const expired = `${REDIS_REWARDS_YEAR_PREFIX}${cutoffYear - 1}`;
+        pipeline.del(expired, `${expired}:stamp`);
     }
 
     // Per-epoch rewards for the history table.
@@ -358,7 +344,13 @@ export async function syncRewardsToRedis(
             previousMeta?.lastProcessedEpoch ?? 0,
         ),
         lastRunTimestamp: new Date().toISOString(),
+        dailyTotalsEpoch: previousMeta?.dailyTotalsEpoch,
+        dailyTotalsAt: previousMeta?.dailyTotalsAt,
     };
+    if (dailyEvents && dailyEvents.length > 0) {
+        meta.dailyTotalsEpoch = Math.max(...dailyEvents.map((ev) => ev.epoch), previousMeta?.dailyTotalsEpoch ?? 0);
+        meta.dailyTotalsAt = new Date().toISOString();
+    }
     pipeline.set(REDIS_REWARDS_META, meta);
 
     await pipeline.exec();
@@ -572,6 +564,7 @@ export async function touchSyncRun(): Promise<void> {
     try {
         const previous = await redis.get<RewardsSyncMeta>(REDIS_REWARDS_META);
         await redis.set(REDIS_REWARDS_META, {
+            ...previous,
             lastProcessedEpoch: previous?.lastProcessedEpoch ?? 0,
             lastRunTimestamp: new Date().toISOString(),
         } satisfies RewardsSyncMeta);
