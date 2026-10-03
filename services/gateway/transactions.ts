@@ -18,6 +18,7 @@
 import { getGateway, withRetry, type Network } from './client';
 import { getXrdAddress } from '@/features/dashboard/explorador/constants';
 import logger from '@/lib/logger';
+import { readBlob, writeBlob } from '@/lib/redisBlob';
 import { revalidateTag, cacheTag, cacheLife } from 'next/cache';
 import type { TransactionInfo, StakeHistoryEntry, ValidatorOp, Validator } from '@/types/radix';
 import { matchesTransactionTag } from '@/features/dashboard/explorador/utils/filterUtils';
@@ -634,9 +635,9 @@ export async function enrichTransactionsProposerInfo(
 
     try {
         const backupKey = `radix_validators_${network}_backup`;
-        const validatorData = await redis.get<{
+        const validatorData = await readBlob<{
             validators: Validator[];
-        }>(backupKey);
+        }>(redis, backupKey);
 
         if (!validatorData?.validators?.length) return transactions;
 
@@ -1003,7 +1004,7 @@ async function getFilteredTransactionsFromDataCache(
     // Seed Redis for SWR
     const redis = getRedis();
     if (backupKey && redis && result.transactions && result.transactions.length > 0) {
-        redis.set(backupKey, result).catch(e =>
+        writeBlob(redis, backupKey, { ...result, updatedAt: Date.now() }).catch(e =>
             logger.error({ err: e }, '[TransactionsService] Failed to seed Redis for filtered query'),
         );
     }
@@ -1073,7 +1074,7 @@ export async function fetchFilteredTransactions(options: {
     // ── Step 1: Redis Fast Hit ───────────────────────────────────────────────
     if (redis) {
         try {
-            const stale = await redis.get<{ transactions: TransactionInfo[]; nextCursor: string; updatedAt?: number }>(backupKey);
+            const stale = await readBlob<{ transactions: TransactionInfo[]; nextCursor: string; updatedAt?: number }>(redis, backupKey);
             if (stale?.transactions && stale.transactions.length > 0) {
                 logger.info({ tag, address, count: stale.transactions.length }, '[TransactionsService] Serving filtered transactions from Redis');
 
@@ -1086,7 +1087,7 @@ export async function fetchFilteredTransactions(options: {
                         try {
                             const fresh = await fetchFilteredTransactionsRaw(opParams);
                             if (fresh.transactions && fresh.transactions.length > 0) {
-                                await redis.set(backupKey, { ...fresh, updatedAt: Date.now() });
+                                await writeBlob(redis, backupKey, { ...fresh, updatedAt: Date.now() });
                                 revalidateTag(`transactions-${network}`, 'max');
                                 logger.info({ tag, network }, '[TransactionsService] Background filter revalidation complete');
                             }
@@ -1454,7 +1455,9 @@ async function getRecentTransactionsFromDataCache(
         const redis = getRedis();
         if (redis && result.transactions && result.transactions.length > 0) {
             const backupKey = `radix_txs_${network}_tip_${limit}_backup`;
-            redis.set(backupKey, result).catch((e) =>
+            // Stamped now for the same reason as the validator list: an
+            // undated copy was rebuilt by the very next read.
+            writeBlob(redis, backupKey, { ...result, updatedAt: Date.now() }).catch((e) =>
                 logger.error({ err: e, network }, '[TransactionsService] Failed to seed Redis on cache miss'),
             );
 
@@ -1488,11 +1491,11 @@ export async function getRecentTransactionsCached(
     // ── Step 1: Try Storage for instant SWR return (tip only) ──────────────
     if (redis && isTip) {
         try {
-            const staleData = await redis.get<{
+            const staleData = await readBlob<{
                 transactions: TransactionInfo[];
                 nextCursor: string | undefined;
                 updatedAt?: number;
-            }>(backupKey);
+            }>(redis, backupKey);
 
             if (staleData?.transactions && staleData.transactions.length > 0) {
                 logger.info(
@@ -1516,7 +1519,7 @@ export async function getRecentTransactionsCached(
 
                             if (freshResult.transactions && freshResult.transactions.length > 0) {
                                 // Update Redis with timestamp + Invalidate Data Cache
-                                await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
+                                await writeBlob(redis, backupKey, { ...freshResult, updatedAt: Date.now() });
 
 
 

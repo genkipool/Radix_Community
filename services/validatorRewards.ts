@@ -1,5 +1,6 @@
 import { getRedis } from '@/lib/redis';
 import logger from '@/lib/logger';
+import { queueBlobWrite, readBlob } from '@/lib/redisBlob';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,7 @@ export async function syncRewardsToRedis(
     // Read all existing data once
     let allData: Record<string, ValidatorRewardData> = {};
     try {
-        allData = (await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL)) ?? {};
+        allData = (await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL)) ?? {};
     } catch {
         // Initial setup
     }
@@ -250,7 +251,7 @@ export async function syncRewardsToRedis(
         prune(data.dailyStake);
     }
 
-    pipeline.set(REDIS_REWARDS_ALL, allData);
+    queueBlobWrite(pipeline, REDIS_REWARDS_ALL, allData);
 
     // Write year-indexed keys for efficient per-year reads
     const yearBuckets = new Map<string, Record<string, ValidatorRewardData>>();
@@ -287,7 +288,7 @@ export async function syncRewardsToRedis(
     }
 
     for (const [yr, bucket] of yearBuckets) {
-        pipeline.set(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`, bucket);
+        queueBlobWrite(pipeline, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`, bucket);
     }
 
     // Per-epoch rewards for the history table.
@@ -318,7 +319,7 @@ export async function syncRewardsToRedis(
         let existingEpochRewards: Record<string, Record<string, { fee: number; pool: number }>> | null = null;
         let readFailed = false;
         try {
-            existingEpochRewards = await redis.get(REDIS_EPOCH_REWARDS);
+            existingEpochRewards = await readBlob(redis, REDIS_EPOCH_REWARDS);
         } catch (e) {
             readFailed = true;
             logger.error({ err: e }, '[ValidatorRewards] Could not read epoch rewards; skipping epoch-map write to avoid destroying stored epochs');
@@ -340,7 +341,7 @@ export async function syncRewardsToRedis(
                 pruned[k.toString()] = merged[k.toString()];
             }
 
-            pipeline.set(REDIS_EPOCH_REWARDS, pruned);
+            queueBlobWrite(pipeline, REDIS_EPOCH_REWARDS, pruned);
         }
     }
 
@@ -384,7 +385,7 @@ async function getCachedAllEpochRewards() {
     const redis = getRedis();
     if (!redis) return null;
     try {
-        return await redis.get<Record<string, Record<string, { fee: number; pool: number }>>>(REDIS_EPOCH_REWARDS);
+        return await readBlob<Record<string, Record<string, { fee: number; pool: number }>>>(redis, REDIS_EPOCH_REWARDS);
     } catch (e) {
         logger.error({ err: e }, '[ValidatorRewards] Failed to read epoch rewards from Redis');
         return null;
@@ -431,7 +432,7 @@ export async function getAvailableYears(
 
         const checks = await Promise.all(
             candidateYears.map(async (yr) => {
-                const data = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${yr}`);
+                const data = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${yr}`);
                 if (data && data[validatorAddress]) return yr;
                 return null;
             })
@@ -443,7 +444,7 @@ export async function getAvailableYears(
         }
 
         // Fallback to legacy monolithic key
-        const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
+        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL);
         const data = allData?.[validatorAddress];
         if (!data?.yearly) return [];
         return Object.keys(data.yearly).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
@@ -468,7 +469,7 @@ export async function generateRewardsCsv(
 
     try {
         // Try year-indexed key first (efficient)
-        const yearData = await redis.get<Record<string, ValidatorRewardData>>(`${REDIS_REWARDS_YEAR_PREFIX}${year}`);
+        const yearData = await readBlob<Record<string, ValidatorRewardData>>(redis, `${REDIS_REWARDS_YEAR_PREFIX}${year}`);
         const yearEntry = yearData?.[validatorAddress];
         if (yearEntry?.daily) {
             const entries = Object.entries(yearEntry.daily)
@@ -488,7 +489,7 @@ export async function generateRewardsCsv(
         }
 
         // Fallback to legacy monolithic key
-        const allData = await redis.get<Record<string, ValidatorRewardData>>(REDIS_REWARDS_ALL);
+        const allData = await readBlob<Record<string, ValidatorRewardData>>(redis, REDIS_REWARDS_ALL);
         const data = allData?.[validatorAddress];
         if (!data?.daily) return null;
 
@@ -543,7 +544,7 @@ export async function getStoredEpochRewardEpochs(): Promise<number[]> {
     if (!redis) return [];
 
     try {
-        const data = await redis.get<Record<string, unknown>>(REDIS_EPOCH_REWARDS);
+        const data = await readBlob<Record<string, unknown>>(redis, REDIS_EPOCH_REWARDS);
         if (!data) return [];
         return Object.keys(data)
             .map(Number)
