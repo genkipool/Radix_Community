@@ -8,6 +8,7 @@
 
 import { getGateway, withRetry, runWithLimit, CONCURRENCY, type Network } from './client';
 import logger from '@/lib/logger';
+import { readBlob, writeBlob } from '@/lib/redisBlob';
 import { sanitizeText, sanitizeIconUrl, isValidUrl } from '@/utils/sanitize';
 import { roundTo } from '@/utils/validators';
 import { getVotesMap, advanceVoteTail } from './protocolVotes';
@@ -840,7 +841,9 @@ async function getValidatorsFromDataCache(network: Network) {
     const redis = getRedis();
     if (redis) {
         const backupKey = `radix_validators_${network}_backup`;
-        redis.set(backupKey, result).catch((e) =>
+        // Stamped now: this body only runs on a miss, so the list is fresh. A
+        // copy without a date was taken as stale and rebuilt on the next read.
+        writeBlob(redis, backupKey, { ...result, updatedAt: Date.now() }).catch((e) =>
             logger.error({ err: e, network }, '[ValidatorsService] Failed to seed Redis on cache miss'),
         );
     }
@@ -888,7 +891,7 @@ async function rebuildValidatorsNow(network: Network, reason: string, context: R
     try {
         logger.info({ network, reason, ...context }, '[ValidatorsService] Rebuilding instead of serving the cached copy');
         const fresh = { ...(await fetchValidatorsRaw(network)), updatedAt: Date.now() };
-        await redis.set(`radix_validators_${network}_backup`, fresh);
+        await writeBlob(redis, `radix_validators_${network}_backup`, fresh);
         after(() => revalidateTag(`validators-${network}`, 'max'));
         return fresh;
     } catch (err) {
@@ -932,12 +935,12 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
     // ── Step 1: Try Storage for instant SWR return ─────────────────────────
     if (redis) {
         try {
-            const staleData = await redis.get<{
+            const staleData = await readBlob<{
                 validators: Validator[];
                 networkStats: NetworkStats | null;
                 fingerprint?: string;
                 updatedAt?: number;
-            }>(backupKey);
+            }>(redis, backupKey);
 
             if (staleData?.validators && staleData.validators.length > 0) {
                 // Not served stale: a copy old enough that its stake and
@@ -974,7 +977,7 @@ export async function getValidatorsCached(network: Network = 'mainnet') {
                             const freshResult = await fetchValidatorsRaw(network);
 
                             // Update Redis with current timestamp + Invalidate Data Cache
-                            await redis.set(backupKey, { ...freshResult, updatedAt: Date.now() });
+                            await writeBlob(redis, backupKey, { ...freshResult, updatedAt: Date.now() });
 
                             // revalidateTag is safe here because we're in a standard server action/route/after context
                             revalidateTag(`validators-${network}`, 'max');
