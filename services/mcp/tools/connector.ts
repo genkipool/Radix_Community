@@ -128,6 +128,14 @@ export const setupWalletConnectorTool = defineMcpTool({
         'cancel_request). WALLET_UNREACHABLE / NOT_DELIVERED → it never reached the phone\n' +
         '(check_wallet_connection). Trace anything with connector_log; list with pending_requests.',
 
+      cliSection('6. Updates, and a phone with no network'),
+      'radix-connector-mcp check-update / update (or the check_update / update_connector tools):\n' +
+        'updating never requires pairing the phone again. With no network on the phone it can\n' +
+        'still sign over the USB cable: `radix-connector-mcp relay --listen <ip>:8787`, listed in\n' +
+        'RADIX_CONNECT_RELAYS, set as the wallet\'s signaling server (URL ending in /, STUN never\n' +
+        'empty), plus a WireGuard tunnel from the phone as its default route (USB tethering alone\n' +
+        'is ignored by the wallet\'s WebRTC).',
+
       cliSection('Security'),
       '• The phone signs; every action is approved there (human-in-the-loop).\n' +
         '• The connector stores only the channel password locally (0600 on Unix); the\n' +
