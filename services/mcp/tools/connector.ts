@@ -114,6 +114,20 @@ export const setupWalletConnectorTool = defineMcpTool({
         `  • mainnet dapp_definition:  ${mainnetDapp || '(set NEXT_PUBLIC_RADIX_DAPP_ADDRESS_MAINNET)'}\n` +
         `  • stokenet dapp_definition: ${stokenetDapp}`,
 
+      cliSection('5. Personas, data and the phone\'s queue'),
+      'Beyond transactions (connector >= 0.4.0):\n' +
+        '  • request_login — log in with a persona (its proof is verified locally); can also ask\n' +
+        '    for accounts with proofs and persona data in the same approval.\n' +
+        '  • request_ownership_proof — prove EXACT accounts / the persona, nothing to pick.\n' +
+        '  • request_authorized — use_persona, reset, one-time or ONGOING accounts and data.\n' +
+        '  • request_data — exact/minimum accounts, name, emails, phone numbers.\n' +
+        'The wallet shows ONE request at a time and cannot withdraw one: send one, wait for it.\n' +
+        'Failures carry code / stage / retry_safe. retry_safe = NO (NO_ANSWER) → do not resend:\n' +
+        'the user answers on the phone and await_response collects it. PENDING_IN_WALLET → an\n' +
+        'earlier request is waiting (answer it, or force-close + reopen the wallet, then\n' +
+        'cancel_request). WALLET_UNREACHABLE / NOT_DELIVERED → it never reached the phone\n' +
+        '(check_wallet_connection). Trace anything with connector_log; list with pending_requests.',
+
       cliSection('Security'),
       '• The phone signs; every action is approved there (human-in-the-loop).\n' +
         '• The connector stores only the channel password locally (0600 on Unix); the\n' +
