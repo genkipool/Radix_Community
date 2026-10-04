@@ -106,6 +106,9 @@ export const setupWalletConnectorTool = defineMcpTool({
         '     → validate_transaction_manifest → preview_transaction → explain_manifest.\n' +
         '  2) Sign on the local connector: send_transaction { manifest, network, dapp_definition, origin }.\n' +
         '     The user approves on the phone. It returns the transaction intent hash.\n' +
+        '     Since 0.6.0 it simulates the manifest first and does NOT ring the phone when the\n' +
+        '     simulation fails (PREVIEW_FAILED, retry_safe: yes); preview_only: true simulates\n' +
+        '     without sending. A safety net, not a replacement for preview_transaction here.\n' +
         '  3) Confirm: transaction_status { intent_hash, network } (here or on the connector).\n' +
         `  4) ALWAYS show the transaction to the user on the custom dashboard: ${dashboardTxUrl('<network>')}`,
       'ALWAYS pass dapp_definition + origin so the wallet treats the request as a verified dApp\n' +
@@ -126,11 +129,22 @@ export const setupWalletConnectorTool = defineMcpTool({
         'the user answers on the phone and await_response collects it. PENDING_IN_WALLET → an\n' +
         'earlier request is waiting (answer it, or force-close + reopen the wallet, then\n' +
         'cancel_request). WALLET_UNREACHABLE / NOT_DELIVERED → it never reached the phone\n' +
-        '(check_wallet_connection). Trace anything with connector_log; list with pending_requests.',
+        '(check_wallet_connection). Trace anything with connector_log; list with pending_requests.\n' +
+        'Do not wait more than ~60 s on a send nobody sees: read connector_log (request_start →\n' +
+        'turn_taken → channel_open → delivered → answered) to see WHERE it stopped, instead of\n' +
+        'resending blindly.\n' +
+        'Several processes may share one paired link (two AI sessions, a sudo prompt, a CLI). The\n' +
+        'wallet keeps ONE channel per link, so they must take turns: since 0.6.0 every connector\n' +
+        'takes a machine-wide turn (a file lock in ~/.config/radix-connect/links) and waits for the\n' +
+        'wallet to settle (turn_taken.waited_ms, settling). Older connectors do not, and one of them\n' +
+        'running beside the others can make requests vanish: update every program on the machine.',
 
       cliSection('6. Updates, and a phone with no network'),
       'radix-connector-mcp check-update / update (or the check_update / update_connector tools):\n' +
-        'updating never requires pairing the phone again. With no network on the phone it can\n' +
+        'updating never requires pairing the phone again. RESTART the AI tool afterwards: a session\n' +
+        'keeps running the binary it started with (on Linux /proc/<pid>/exe shows "(deleted)"), and\n' +
+        'that old copy keeps the old behaviour until the session is restarted.\n' +
+        'With no network on the phone it can\n' +
         'still sign over the USB cable: `radix-connector-mcp relay --listen <ip>:8787`, listed in\n' +
         'RADIX_CONNECT_RELAYS, set as the wallet\'s signaling server (URL ending in /, STUN never\n' +
         'empty), plus a WireGuard tunnel from the phone as its default route (USB tethering alone\n' +
