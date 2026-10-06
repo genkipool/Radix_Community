@@ -1,0 +1,13 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Radix DLT",
+      "description": "Skills for interacting with the Radix DLT ecosystem and MCP server.",
+      "skills": [
+        "radix-community-web"
+      ]
+    }
+  ]
+}

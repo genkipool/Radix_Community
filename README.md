@@ -1,6 +1,6 @@
 # Radix DLT - Web Portal (Community Proposal)
 
-[![skills.sh](https://skills.sh/b/genkipool/Radix_Community)](https://skills.sh/genkipool/Radix_Community)
+[![skills.sh](https://skills.sh/b/genkipool/radix_community)](https://skills.sh/genkipool/radix_community)
 
 > **Community Note:** This project has been developed and driven by the Radix community. The central goal of this repository is to propose, iterate, and refine this web portal to present it as a candidate for the **official Radix DLT website**.
 

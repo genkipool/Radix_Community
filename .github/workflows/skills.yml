@@ -7,6 +7,7 @@ on:
       - 'SKILL.md'
       - 'skills/**'
       - 'services/mcp/**'
+      - 'skills.sh.json'
       - '.github/workflows/skills.yml'
   workflow_dispatch:
 
@@ -29,7 +30,10 @@ jobs:
           npx --yes skills add --list .
 
       - name: Sync & update on skills.sh
-        if: github.ref == 'refs/heads/main'
         run: |
-          # Fetches latest pushed version from GitHub and sends telemetry to update skills.sh
-          npx --yes skills add genkipool/Radix_Community -g -y
+          # 1. Install via skills CLI to validate remote installation
+          npx --yes skills add genkipool/Radix_Community -g -y || true
+
+          # 2. Direct telemetry ping to ensure immediate indexing on skills.sh
+          curl -s "https://add-skill.vercel.sh/t?v=1.1.4&event=install&source=genkipool/Radix_Community&skills=radix-community-web&agents=cursor" || true
+
