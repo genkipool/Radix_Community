@@ -1,0 +1,35 @@
+name: Skills.sh Sync
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'SKILL.md'
+      - 'skills/**'
+      - 'services/mcp/**'
+      - '.github/workflows/skills.yml'
+  workflow_dispatch:
+
+jobs:
+  sync-skills:
+    name: Sync Skill with skills.sh
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate local Skill definition
+        run: |
+          npx --yes skills add --list .
+
+      - name: Sync & update on skills.sh
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Fetches latest pushed version from GitHub and sends telemetry to update skills.sh
+          npx --yes skills add genkipool/Radix_Community -g -y

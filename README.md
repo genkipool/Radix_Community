@@ -1,5 +1,7 @@
 # Radix DLT - Web Portal (Community Proposal)
 
+[![skills.sh](https://skills.sh/b/genkipool/Radix_Community)](https://skills.sh/genkipool/Radix_Community)
+
 > **Community Note:** This project has been developed and driven by the Radix community. The central goal of this repository is to propose, iterate, and refine this web portal to present it as a candidate for the **official Radix DLT website**.
 
 A modern, ultra-fast, and highly interactive portal built with the **Next.js (App Router)** ecosystem. Designed to centralize all knowledge, tools, applications, and discussions of the Radix DLT network into a single, fluid ecosystem.
@@ -39,6 +41,14 @@ The project is divided into several vertical modules or "features", each focused
 
 ### 🌍 DApps & Games Directory
 - Indexed and categorized directories of projects built on Radix (Decentralized Finance, Exchanges, Web3 Games).
+
+### 🤖 AI Agent Skill (`radix-community-web`)
+- Reusable skill for AI coding agents (Claude Code, Cursor, Antigravity, Windsurf, Codex).
+- Gives agents full access to site docs, on-ledger data (accounts, tokens, validators), transaction manifest builders, and wallet pairing.
+- Install with:
+  ```bash
+  npx skills add genkipool/Radix_Community
+  ```
 
 ---
 
